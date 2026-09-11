@@ -10,13 +10,13 @@ import { loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { getGlobalSystemRepo } from '../repo';
+import { getTestProjectSystemRepo } from '../repository/test-utils';
 import { exportResourceType, exportResources } from './export';
 import { BulkExporter } from './utils/bulkexporter';
 
 describe('Export', () => {
   const app = express();
-  const systemRepo = getGlobalSystemRepo();
+  const systemRepo = getTestProjectSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -29,7 +29,6 @@ describe('Export', () => {
 
   test('Success', async () => {
     const accessToken = await initTestAuth({ membership: { admin: true } });
-    expect(accessToken).toBeDefined();
 
     const res1 = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -158,7 +157,6 @@ describe('Export', () => {
       await exporter.start('http://example.com');
 
       const { project } = await createTestProject();
-      expect(project).toBeDefined();
       await exportResourceType(exporter, 'Observation', 1, since);
       const bulkDataExport = await exporter.close(project);
       expect(bulkDataExport.status).toBe('completed');

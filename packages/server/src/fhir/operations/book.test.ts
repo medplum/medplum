@@ -26,7 +26,7 @@ import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getGlobalSystemRepo } from '../../fhir/repo';
+import type { SystemRepository } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { addTestUser, createTestProject } from '../../test.setup';
 import type {
@@ -34,7 +34,6 @@ import type {
   SchedulingParametersExtensionExtension,
 } from './utils/scheduling-parameters';
 
-const systemRepo = getGlobalSystemRepo();
 const app = express();
 const request = supertest(app);
 
@@ -63,11 +62,12 @@ const threeDayAvailability: SchedulingParametersExtensionExtension = {
 };
 
 describe('Appointment/$book', () => {
-  let project: TestProjectResult<{ withAccessToken: true }>;
+  let project: TestProjectResult<{ withAccessToken: true; withRepo: true }>;
   let practitioner1: Practitioner;
   let practitioner2: Practitioner;
   let patient: Patient;
   let officeVisitService: WithId<HealthcareService>;
+  let systemRepo: SystemRepository;
 
   const officeVisit: CodeableConcept = {
     coding: [{ system: 'https://example.com/fhir', code: 'office-visit' }],
@@ -78,7 +78,8 @@ describe('Appointment/$book', () => {
     // try to be more resilient to concurrent tests touching the same tables
     config.transactionAttempts = 5;
     await initApp(app, config);
-    project = await createTestProject({ withAccessToken: true });
+    project = await createTestProject({ withAccessToken: true, withRepo: true });
+    systemRepo = project.repo.getSystemRepo();
     practitioner1 = await makePractitioner({ timezone: 'America/New_York' });
     practitioner2 = await makePractitioner({ timezone: 'America/New_York' });
     patient = await makePatient();
@@ -2059,8 +2060,9 @@ describe('Appointment/$book', () => {
 });
 
 describe('scheduling flow integration test', () => {
-  let project: TestProjectResult<{ withAccessToken: true }>;
+  let project: TestProjectResult<{ withAccessToken: true; withRepo: true }>;
   let service: WithId<HealthcareService>;
+  let systemRepo: SystemRepository;
 
   const officeVisitConcept: CodeableConcept = {
     coding: [{ system: 'https://example.com/fhir', code: 'office-visit' }],
@@ -2071,7 +2073,8 @@ describe('scheduling flow integration test', () => {
     // try to be more resilient to concurrent tests touching the same tables
     config.transactionAttempts = 5;
     await initApp(app, config);
-    project = await createTestProject({ withAccessToken: true });
+    project = await createTestProject({ withAccessToken: true, withRepo: true });
+    systemRepo = project.repo.getSystemRepo();
     service = await systemRepo.createResource<HealthcareService>({
       resourceType: 'HealthcareService',
       name: 'Office Visit',

@@ -11,7 +11,13 @@ import { initApp, shutdownApp } from '../../app';
 import { createUser } from '../../auth/newuser';
 import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
-import { getSuperAdminAccessToken, initTestAuth, setupRecaptchaMock, withTestContext } from '../../test.setup';
+import {
+  getSuperAdminAccessToken,
+  getSuperAdminTestProject,
+  initTestAuth,
+  setupRecaptchaMock,
+  withTestContext,
+} from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
 import { PRACTITIONER_READONLY_RESOURCE_TYPES } from './projectinit';
 
@@ -146,11 +152,9 @@ describe('Project $init', () => {
   });
 
   test('Requires owner to be User', async () => {
-    const superAdminClientToken = await getSuperAdminAccessToken();
-    expect(superAdminClientToken).toBeDefined();
-
+    const { repo: superAdminRepo, accessToken: superAdminClientToken } = await getSuperAdminTestProject();
     const doc = await withTestContext(() =>
-      getGlobalSystemRepo().createResource<Practitioner>({ resourceType: 'Practitioner' })
+      superAdminRepo.createResource<Practitioner>({ resourceType: 'Practitioner' })
     );
 
     const projectName = 'Test Init Project ' + randomUUID();

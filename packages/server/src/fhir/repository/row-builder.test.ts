@@ -9,6 +9,7 @@ import { getConfig, loadTestConfig } from '../../config/loader';
 import type { ArrayColumnPaddingConfig, MedplumServerConfig } from '../../config/types';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject, withTestContext } from '../../test.setup';
+import type { SystemRepository } from '../repo';
 import { getProjectSystemRepo, Repository } from '../repo';
 import type { ColumnValue } from './row-builder';
 import {
@@ -21,7 +22,7 @@ import {
 
 describe('Repository Row Builder', () => {
   let testProject: WithId<Project>;
-  let systemRepo: Repository;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();

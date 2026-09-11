@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, withTestContext } from '../../test.setup';
-import type { Repository } from '../repo';
+import type { Repository, SystemRepository } from '../repo';
 
 describe('$refresh-reference-display', () => {
   const app = express();
@@ -16,7 +16,7 @@ describe('$refresh-reference-display', () => {
   let accessToken: string;
   let client: WithId<ClientApplication>;
   let accessPolicy: WithId<AccessPolicy>;
-  let systemRepo: Repository;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();

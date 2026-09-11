@@ -8,13 +8,14 @@ import { authenticator } from 'otplib';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 describe('Scope', () => {
   const app = express();
-  const systemRepo = getGlobalSystemRepo();
+  let systemRepo: SystemRepository;
   const email = `multi${randomUUID()}@example.com`;
   const password = randomUUID();
   // Patient scopes require a Patient context, which is provided to the login by this launch
@@ -32,6 +33,7 @@ describe('Scope', () => {
         email,
         password,
       });
+      systemRepo = await getProjectSystemRepo(project);
 
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',

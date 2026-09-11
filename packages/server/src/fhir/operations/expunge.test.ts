@@ -16,11 +16,9 @@ import {
   waitForAsyncJob,
   withTestContext,
 } from '../../test.setup';
-import { getGlobalSystemRepo } from '../repo';
+import { getTestProjectSystemRepo } from '../repository/test-utils';
 import { SelectQuery } from '../sql';
 import { Expunger } from './expunge';
-
-const systemRepo = getGlobalSystemRepo();
 
 describe('Expunge', () => {
   const app = express();
@@ -48,13 +46,13 @@ describe('Expunge', () => {
   });
 
   test('Expunge single resource', async () => {
+    const systemRepo = getTestProjectSystemRepo();
     const patient = await withTestContext(() =>
       systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
       })
     );
-    expect(patient).toBeDefined();
 
     // Expect the patient to be in the "Patient" and "Patient_History" tables
     expect(await existsInDatabase('Patient', patient.id)).toBe(true);
@@ -96,36 +94,33 @@ describe('Expunge', () => {
       membership: { admin: true },
     });
 
-    const { project, client, membership, accessToken } = await createTestProject({
+    const { project, client, membership, accessToken, repo } = await createTestProject({
       withClient: true,
       withAccessToken: true,
+      withRepo: true,
       membership: opts.membership,
       project: { link: [{ project: createReference(linkedProject) }] },
     });
 
     const linkedPatient = await linkedRepo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: linkedProject.id },
       name: [{ given: ['Linked'], family: 'Patient' }],
     });
 
-    const patient = await systemRepo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: project.id },
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     const linkedObs = await linkedRepo.createResource<Observation>({
       resourceType: 'Observation',
-      meta: { project: linkedProject.id },
       status: 'final',
       code: { coding: [{ system: LOINC, code: '12345-6' }] },
       subject: { reference: 'Patient/' + linkedPatient.id },
     });
 
-    const obs = await systemRepo.createResource<Observation>({
+    const obs = await repo.createResource<Observation>({
       resourceType: 'Observation',
-      meta: { project: project.id },
       status: 'final',
       code: { coding: [{ system: LOINC, code: '12345-6' }] },
       subject: { reference: 'Patient/' + patient.id },
@@ -168,20 +163,19 @@ describe('Expunge', () => {
   });
 
   test('Project admin can expunge patient everything within own project', async () => {
-    const { project, accessToken } = await createTestProject({
+    const { accessToken, repo } = await createTestProject({
       withAccessToken: true,
+      withRepo: true,
       membership: { admin: true },
     });
 
-    const patient = await systemRepo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: project.id },
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    const obs = await systemRepo.createResource<Observation>({
+    const obs = await repo.createResource<Observation>({
       resourceType: 'Observation',
-      meta: { project: project.id },
       status: 'final',
       code: { coding: [{ system: LOINC, code: '12345-6' }] },
       subject: { reference: 'Patient/' + patient.id },
@@ -210,10 +204,9 @@ describe('Expunge', () => {
 
   test('Project admin cannot expunge patient everything in another project', async () => {
     // Patient belongs to an unrelated project
-    const { project: otherProject } = await createTestProject({});
-    const otherPatient = await systemRepo.createResource<Patient>({
+    const { repo: otherRepo } = await createTestProject({ withRepo: true });
+    const otherPatient = await otherRepo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: otherProject.id },
       name: [{ given: ['Bob'], family: 'Jones' }],
     });
 
@@ -238,38 +231,31 @@ describe('Expunge', () => {
   });
 
   test('Expunger.expunge() expunges all resource types', async () => {
-    //setup
-    const { project, client, membership } = await createTestProject({ withClient: true });
-    expect(project).toBeDefined();
-    expect(client).toBeDefined();
-    expect(membership).toBeDefined();
+    const { project, client, membership, repo } = await createTestProject({
+      withClient: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
 
-    const patient = await systemRepo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: project.id },
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-    expect(patient).toBeDefined();
-    const patient2 = await systemRepo.createResource<Patient>({
+    const patient2 = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: project.id },
       name: [{ given: ['Bob'], family: 'Smith' }],
     });
-    const patient3 = await systemRepo.createResource<Patient>({
+    const patient3 = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: project.id },
       name: [{ given: ['Bob'], family: 'Smith' }],
     });
-    expect(patient3).toBeDefined();
 
-    const obs = await systemRepo.createResource<Observation>({
+    const obs = await repo.createResource<Observation>({
       resourceType: 'Observation',
-      meta: { project: project.id },
       status: 'final',
       code: { coding: [{ system: LOINC, code: '12345-6' }] },
       subject: { reference: 'Patient/' + patient.id },
     });
-    expect(obs).toBeDefined();
 
     expect(await existsInCache('Project', project.id)).toBe(true);
     expect(await existsInCache('ClientApplication', client.id)).toBe(true);
@@ -280,7 +266,7 @@ describe('Expunge', () => {
     expect(await existsInCache('Observation', obs.id)).toBe(true);
 
     //execute
-    await new Expunger(systemRepo, project.id, 2).expunge();
+    await new Expunger(repo, project.id, 2).expunge();
 
     //result
 
