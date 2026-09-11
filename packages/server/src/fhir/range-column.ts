@@ -21,11 +21,11 @@ import type {
   SearchParameter,
   Timing,
 } from '@medplum/fhirtypes';
+import { shouldSearchParameterExist } from './presence';
 import type { RangeColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
 import { Column, ColumnType, Condition, Negation } from './sql';
-import { shouldTokenExistForMissingOrPresent } from './tokens';
 
 type Interval<T extends number | Date> = {
   left?: T;
@@ -381,7 +381,7 @@ export function buildRangeColumnsSearchFilter(
       return new Condition(column, 'RANGE_STRICTLY_LEFT_OF', formatRange(range), colType);
     case Operator.MISSING:
     case Operator.PRESENT: {
-      const shouldExist = shouldTokenExistForMissingOrPresent(filter.operator, filter.value);
+      const shouldExist = shouldSearchParameterExist(filter.operator, filter.value);
       return new Condition(column, shouldExist ? '!=' : '=', null);
     }
     default:

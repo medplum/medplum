@@ -11,12 +11,13 @@ import {
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { NIL, v5 } from 'uuid';
 import type { ArrayColumnPaddingConfig } from '../config/types';
+import { shouldSearchParameterExist } from './presence';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
 import { Column, Condition, Disjunction, Negation, truncateTextColumn, TypedCondition } from './sql';
 import type { Token } from './tokens';
-import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent } from './tokens';
+import { buildTokensForSearchParameter } from './tokens';
 
 const DELIM = '\x01';
 const NULL_SYSTEM = '\x02';
@@ -224,13 +225,13 @@ export function buildTokenColumnsSearchFilter(
           hashTokenColumnValue(filter.code),
           'UUID[]'
         );
-        if (!shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
+        if (!shouldSearchParameterExist(filter.operator, filter.value)) {
           return new Negation(cond);
         }
         return cond;
       }
 
-      if (shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
+      if (shouldSearchParameterExist(filter.operator, filter.value)) {
         return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_NOT_EMPTY', undefined, 'UUID[]');
       } else {
         return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_EMPTY', undefined, 'UUID[]');
