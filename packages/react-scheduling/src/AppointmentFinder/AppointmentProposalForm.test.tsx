@@ -250,7 +250,6 @@ describe('AppointmentProposalForm', () => {
 
       expect(await screen.findByText('No times are available for this selection.')).toBeInTheDocument();
     });
-
   });
 
   describe('Narrowing resources to the chosen site', () => {
