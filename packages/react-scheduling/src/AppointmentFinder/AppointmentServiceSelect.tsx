@@ -18,7 +18,11 @@ const SERVICE_PAGE_SIZE = 25;
  * it makes each response its own first page by name, and the true first page is
  * contained in the union of the two.
  */
-const SERVICE_SEARCH_CRITERIA = { _count: String(SERVICE_PAGE_SIZE), _sort: 'name' };
+const SERVICE_SEARCH_CRITERIA = {
+  'active:not': 'false',
+  _count: String(SERVICE_PAGE_SIZE),
+  _sort: 'name',
+};
 
 export interface AppointmentServiceSelectProps {
   readonly defaultValue?: WithId<HealthcareService>;

@@ -1,8 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { HTTP_TERMINOLOGY_HL7_ORG, createReference, parseSearchRequest } from '@medplum/core';
-import type { Appointment, Parameters, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import {
+  HTTP_TERMINOLOGY_HL7_ORG,
+  createReference,
+  parseSearchRequest,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
+import type { Appointment, HealthcareService, Parameters, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -204,6 +209,52 @@ describe('Appointment/$cancel', () => {
       .set('Authorization', `Bearer ${project.accessToken}`);
 
     expect(response).toHaveStatus(200);
+  });
+
+  test('Succeeds for an appointment belonging to an inactive HealthcareService', async () => {
+    // An appointment booked while the service was active must remain cancelable
+    // after the service is deactivated, even though $find/$book now reject it.
+    const inactiveService = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Inactive Visit',
+      active: false,
+      type: [{ coding: [{ system: 'https://example.com/fhir', code: 'inactive-visit' }] }],
+      meta: { project: project.project.id },
+    });
+    const serviceType = toServiceTypeCodeableConcepts(inactiveService);
+
+    const serviceSchedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      actor: [createReference(practitioner)],
+      serviceType,
+      meta: { project: project.project.id },
+    });
+    const slot = await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      status: 'busy',
+      start: '2026-05-15T14:00:00Z',
+      end: '2026-05-15T15:00:00Z',
+      schedule: createReference(serviceSchedule),
+      serviceType,
+      meta: { project: project.project.id },
+    });
+    const appointment = await systemRepo.createResource<Appointment>({
+      resourceType: 'Appointment',
+      status: 'booked',
+      start: '2026-05-15T14:00:00Z',
+      end: '2026-05-15T15:00:00Z',
+      serviceType,
+      participant: [{ actor: createReference(practitioner), status: 'accepted' }],
+      slot: [createReference(slot)],
+      meta: { project: project.project.id },
+    });
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
+
+    expect(response).toHaveStatus(200);
+    expect(response.body).toMatchObject({ resourceType: 'Appointment', id: appointment.id, status: 'cancelled' });
   });
 
   test.each(['cancelled', 'fulfilled', 'noshow', 'entered-in-error'] as Appointment['status'][])(
