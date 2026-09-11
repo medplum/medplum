@@ -29,7 +29,7 @@ const STATUS_COLORS: Record<Appointment['status'], string> = {
 
 export interface AppointmentDetailsProps {
   readonly appointment: WithId<Appointment>;
-  readonly onCancelled?: (appointment: WithId<Appointment>) => void;
+  readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
   /** Overrides the value set the cancellation reason is coded against. */
   readonly cancellationReasonValueSet?: string;
 }
@@ -98,7 +98,11 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
         }
       }
 
-      onCancelled?.(cancelled);
+      try {
+        await onCancelled?.(cancelled);
+      } catch (error) {
+        console.error(error);
+      }
     } catch (err: unknown) {
       setCancelError(err);
     } finally {
