@@ -1665,17 +1665,27 @@ function buildChainedSearchUsingReferenceTable(
   let innerQuery: SelectQuery;
   if (link.code === '_compartment') {
     innerQuery = new SelectQuery(currentTable).whereExpr(
-      getCompartmentJoinCondition(selectQuery.effectiveTableName, link, currentTable)
+      withProjectFilter(
+        repo,
+        getCompartmentJoinCondition(selectQuery.effectiveTableName, link, currentTable),
+        currentTable,
+        link.targetType
+      )
     );
   } else if (link.implementation.type === SearchParameterType.CANONICAL) {
     innerQuery = new SelectQuery(currentTable).whereExpr(
-      getCanonicalJoinCondition(selectQuery.effectiveTableName, link, currentTable)
+      withProjectFilter(
+        repo,
+        getCanonicalJoinCondition(selectQuery.effectiveTableName, link, currentTable),
+        currentTable,
+        link.targetType
+      )
     );
   } else {
     innerQuery = new SelectQuery(currentTable).whereExpr(
       lookupTableJoinCondition(selectQuery.effectiveTableName, link, currentTable)
     );
-    currentTable = linkLiteralReference(innerQuery, currentTable, link);
+    currentTable = linkLiteralReference(repo, innerQuery, currentTable, link);
   }
 
   // Add joins to inner query for all subsequent chain links
@@ -1686,13 +1696,18 @@ function buildChainedSearchUsingReferenceTable(
       // Compartment search is joined directly to the target table as a special case
       const nextTable = innerQuery.getNextJoinAlias();
       const join = getCompartmentJoinCondition(currentTable, link, nextTable);
-      innerQuery.join('LEFT JOIN', nextChainedTable(link), nextTable, join);
+      innerQuery.join(
+        'LEFT JOIN',
+        nextChainedTable(link),
+        nextTable,
+        withProjectFilter(repo, join, nextTable, link.targetType)
+      );
       currentTable = nextTable;
     } else if (link.implementation.type === SearchParameterType.CANONICAL) {
-      currentTable = linkCanonicalReference(innerQuery, currentTable, link);
+      currentTable = linkCanonicalReference(repo, innerQuery, currentTable, link);
     } else {
-      const lookupTable = linkReferenceLookupTable(innerQuery, currentTable, link);
-      currentTable = linkLiteralReference(innerQuery, lookupTable, link);
+      const lookupTable = linkReferenceLookupTable(repo, innerQuery, currentTable, link);
+      currentTable = linkLiteralReference(repo, innerQuery, lookupTable, link);
     }
   }
 
@@ -1714,15 +1729,26 @@ function buildChainedSearchUsingReferenceTable(
 
 /**
  * Join a query to the next table via canonical reference (i.e. by `url`).
+ * @param repo - The repository.
  * @param selectQuery - The query to which the join will be added.
  * @param currentTable - The "current" table in the chained search construction.
  * @param link - The current link of the chained search.
  * @returns The next table alias.
  */
-function linkCanonicalReference(selectQuery: SelectQuery, currentTable: string, link: ChainedSearchLink): string {
+function linkCanonicalReference(
+  repo: Repository,
+  selectQuery: SelectQuery,
+  currentTable: string,
+  link: ChainedSearchLink
+): string {
   const nextTable = selectQuery.getNextJoinAlias();
   const join = getCanonicalJoinCondition(currentTable, link, nextTable);
-  selectQuery.join('LEFT JOIN', nextChainedTable(link), nextTable, join);
+  selectQuery.join(
+    'LEFT JOIN',
+    nextChainedTable(link),
+    nextTable,
+    withProjectFilter(repo, join, nextTable, link.targetType)
+  );
   return nextTable;
 }
 
@@ -1741,12 +1767,18 @@ function getCompartmentJoinCondition(currentTable: string, link: ChainedSearchLi
 
 /**
  * Join a query to a reference lookup table for chained search.
+ * @param repo - The repository.
  * @param selectQuery - The query to which the join will be added.
  * @param currentTable - The "current" table in the chained search construction.
  * @param link - The current link of the chained search.
  * @returns The next table alias.
  */
-function linkReferenceLookupTable(selectQuery: SelectQuery, currentTable: string, link: ChainedSearchLink): string {
+function linkReferenceLookupTable(
+  repo: Repository,
+  selectQuery: SelectQuery,
+  currentTable: string,
+  link: ChainedSearchLink
+): string {
   const referenceTable = selectQuery.getNextJoinAlias();
   selectQuery.join(
     'LEFT JOIN',
@@ -1759,19 +1791,30 @@ function linkReferenceLookupTable(selectQuery: SelectQuery, currentTable: string
 
 /**
  * Join a query to the next resource table for chained search.
+ * @param repo - The repository.
  * @param selectQuery - The query to which the join will be added.
  * @param lookupTable - The "current" table in the chained search construction, assumed to be a reference lookup table.
  * @param link - The current link of the chained search.
  * @returns The next table alias.
  */
-function linkLiteralReference(selectQuery: SelectQuery, lookupTable: string, link: ChainedSearchLink): string {
+function linkLiteralReference(
+  repo: Repository,
+  selectQuery: SelectQuery,
+  lookupTable: string,
+  link: ChainedSearchLink
+): string {
   const nextColumn = link.direction === Direction.FORWARD ? 'targetId' : 'resourceId';
   const nextTable = selectQuery.getNextJoinAlias();
   selectQuery.join(
     'LEFT JOIN',
     link.targetType,
     nextTable,
-    new Condition(new Column(nextTable, 'id'), '=', new Column(lookupTable, nextColumn))
+    withProjectFilter(
+      repo,
+      new Condition(new Column(nextTable, 'id'), '=', new Column(lookupTable, nextColumn)),
+      nextTable,
+      link.targetType
+    )
   );
 
   return nextTable;
@@ -1799,6 +1842,20 @@ function getCanonicalJoinCondition(currentTable: string, link: ChainedSearchLink
   return new Condition(new Column(targetTable, 'url'), eq, new Column(sourceTable, link.implementation.columnName));
 }
 
+function withProjectFilter(
+  repo: Repository,
+  condition: Expression,
+  tableAlias: string,
+  resourceType: string
+): Expression {
+  // No compartment restrictions for admins.
+  const projectIds = repo.isSuperAdmin() ? undefined : repo.getPermittedProjectIds(resourceType);
+  if (!projectIds) {
+    return condition;
+  }
+  return new Conjunction([condition, new Condition(new Column(tableAlias, 'projectId'), 'IN', projectIds)]);
+}
+
 function nextChainedTable(link: ChainedSearchLink): string {
   if (link.implementation.type === SearchParameterType.CANONICAL || link.code === '_compartment') {
     // Compartment and canonical links join the far resource table directly
@@ -1812,6 +1869,22 @@ function nextChainedTable(link: ChainedSearchLink): string {
 
 /**
  * Constructs the condition for joining a resource table to a reference lookup table for chained search.
+ *
+ * Unlike every other join in a chained search, this one carries no project filter. It cannot yet:
+ * `"<ResourceType>_References"."projectId"` is still NULL for rows written before data migration
+ * v45, and widening the filter to admit NULL makes the covering
+ * `(projectId, code, targetId)` index unusable -- Postgres will not build a BitmapOr for
+ * `"projectId" IN (...) OR "projectId" IS NULL`, so it falls back to scanning the table. That is
+ * worse than no filter at all, which at least leaves the index-only scans on the primary key and
+ * the `(targetId, code)` index intact.
+ *
+ * Omitting it is safe. A reference row can only reach a result through the resource tables joined
+ * at both of its ends, and those joins are project-filtered, so a row belonging to another project
+ * widens the candidate set but never the result set.
+ *
+ * TODO: once v45 is known to have completed on every deployment, add the project filter here (as
+ * a plain `IN`, with no NULL arm) so that chained search can range scan on the `(projectId, code)`
+ * prefix instead of driving the reference table from its join key.
  * @param currentTable - The "current" table in the chained search construction, assumed to be a resource table.
  * @param link - The current link of the chained search.
  * @param nextTable - The reference lookup table next in the chained search.

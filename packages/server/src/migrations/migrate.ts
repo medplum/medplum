@@ -311,9 +311,18 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: Resour
         { name: 'resourceId', type: 'UUID', notNull: true },
         { name: 'targetId', type: 'UUID', notNull: true },
         { name: 'code', type: 'TEXT', notNull: true },
+        // The project of the referencing resource, i.e. always equal to "<resourceType>"."projectId"
+        // for the row's resourceId. Functionally dependent on resourceId, so not part of the primary key.
+        // Nullable until the data migration that backfills it has run everywhere.
+        { name: 'projectId', type: 'UUID' },
       ],
       compositePrimaryKey: ['resourceId', 'targetId', 'code'],
-      indexes: [{ columns: ['targetId', 'code'], indexType: 'btree', include: ['resourceId'] }],
+      indexes: [
+        { columns: ['targetId', 'code'], indexType: 'btree', include: ['resourceId'] },
+        // "code" precedes "targetId" so that a project-scoped search for a single search parameter
+        // can range scan on the (projectId, code) prefix when targetId is unbound.
+        { columns: ['projectId', 'code', 'targetId'], indexType: 'btree', include: ['resourceId'] },
+      ],
     }
   );
 }

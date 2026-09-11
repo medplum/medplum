@@ -6,6 +6,8 @@ import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { systemResourceProjectId } from '../../constants';
+import { getLogger } from '../../logger';
 import { getGlobalSystemRepo } from '../repo';
 import { repoAccess } from '../repository/access-tracker';
 import { lookupTables } from '../searchparameter';
@@ -89,11 +91,13 @@ describe('ReferenceTable', () => {
           resourceId: obs.id,
           code: 'patient',
           targetId: patient1,
+          projectId: systemResourceProjectId,
         },
         {
           resourceId: obs.id,
           code: 'subject',
           targetId: patient1,
+          projectId: systemResourceProjectId,
         },
       ]);
 
@@ -109,16 +113,19 @@ describe('ReferenceTable', () => {
           resourceId: obs.id,
           code: 'encounter',
           targetId: encounterId,
+          projectId: systemResourceProjectId,
         },
         {
           resourceId: obs.id,
           code: 'patient',
           targetId: patient2,
+          projectId: systemResourceProjectId,
         },
         {
           resourceId: obs.id,
           code: 'subject',
           targetId: patient2,
+          projectId: systemResourceProjectId,
         },
       ]);
 
@@ -171,11 +178,13 @@ describe('ReferenceTable', () => {
           resourceId: obs.id,
           code: 'patient',
           targetId: patientId,
+          projectId: systemResourceProjectId,
         },
         {
           resourceId: obs.id,
           code: 'subject',
           targetId: patientId,
+          projectId: systemResourceProjectId,
         },
       ]);
     });
@@ -204,6 +213,32 @@ describe('ReferenceTable', () => {
       // Verify at least one resource was indexed
       const rows = await refTable.getExistingRows(getReferenceTestClient(resources[0].resourceType), [resources[0]]);
       expect(rows.length).toBeGreaterThan(0);
+    });
+
+    test('logs the ids of changed resources rather than their contents', async () => {
+      const obs = await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        subject: { reference: 'Patient/' + randomUUID() },
+        status: 'registered',
+        code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
+      });
+
+      const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
+      try {
+        await refTable.batchIndexResources(
+          getReferenceTestClient(obs.resourceType),
+          [{ ...obs, subject: { reference: 'Patient/' + randomUUID() } }],
+          false
+        );
+
+        // Resources carry PHI, so only their ids belong in a log line
+        expect(infoSpy).toHaveBeenCalledWith(
+          'Reference changes detected',
+          expect.objectContaining({ sampleIds: [obs.id] })
+        );
+      } finally {
+        infoSpy.mockRestore();
+      }
     });
   });
 

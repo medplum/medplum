@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+import { systemResourceProjectId } from '../constants';
 import type { AuthState } from '../oauth/middleware';
 import { createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
@@ -320,11 +321,13 @@ describe('Reference checks', () => {
         code: 'organization',
         resourceId: '1',
         targetId: orgId,
+        projectId: systemResourceProjectId,
       },
       {
         code: 'organization',
         resourceId: '2',
         targetId: orgId,
+        projectId: systemResourceProjectId,
       },
     ]);
   });
