@@ -43,15 +43,19 @@ ATTESTATIONS="--provenance=true --sbom=true"
 PLATFORMS="--platform linux/amd64,linux/arm64"
 
 # Build tags
-TAGS="--tag $DOCKERHUB_REPOSITORY:latest --tag $DOCKERHUB_REPOSITORY:$GITHUB_SHA"
+TAGS="--tag $DOCKERHUB_REPOSITORY:$GITHUB_SHA"
 
-# If this is a release, tag with version
-# Release is specified with a "--release" argument
+# Tag with version for a release ("--release"), and move the "latest" tag only
+# when this build really is the newest version ("--latest")
 for arg in "$@"; do
   if [[ "$arg" == "--release" ]]; then
     VERSION=$(node -p "require('./package.json').version")
     TAGS="$TAGS --tag $DOCKERHUB_REPOSITORY:$VERSION"
-    break
+    continue
+  fi
+  if [[ "$arg" == "--latest" ]]; then
+    TAGS="$TAGS --tag $DOCKERHUB_REPOSITORY:latest"
+    continue
   fi
 done
 
