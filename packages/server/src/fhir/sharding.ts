@@ -130,18 +130,18 @@ export function resolveShardId(
     if (strictShardingEnforcement) {
       throw shardRoutingError(
         'Operation cannot be routed to a project shard from global-only routing',
-        `project: ${projectTypes.join(', ')}, source: ${source || 'unknown'}`
+        `projectTypes: ${projectTypes.join(', ')}, source: ${source || 'unknown'}`
       );
     } else {
       getLogger().warn('Operation cannot be routed to a project shard from global-only routing', {
-        project: projectTypes.join(', '),
+        projectTypes: projectTypes.join(', '),
         source: source || 'unknown',
       });
     }
   }
 
   // fallback to GLOBAL_SHARD_ID MUST go away when global-only routing touching
-  // project-scoped resources always throws instead of logs
+  // project-scoped resources always throws
   // no need to gate the fallback on strictShardingEnforcement; it throws early before reaching this point.
   const routingShardId = routing.kind === 'project-shard' ? routing.shardId : GLOBAL_SHARD_ID;
 

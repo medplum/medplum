@@ -2794,8 +2794,8 @@ export function getShardSystemRepo(
 /**
  * Returns a SystemRepository for the specified project's shard.
  *
- * Note: This is a passthrough to `getGlobalSystemRepo` to facilitate
- * future sharding support.
+ * Note: resolves to getShardSystemRepo(TODO_SHARD_ID) until realproject-shard
+ * routing is implemented.
  *
  * @param _projectId - The project's ID, reference, or resource.
  * @returns A SystemRepository for the project's shard.
