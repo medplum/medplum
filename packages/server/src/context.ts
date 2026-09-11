@@ -59,6 +59,7 @@ export type AuthenticatedContextOptions = {
 
 export class AuthenticatedRequestContext extends RequestContext {
   readonly authState: Readonly<AuthState>;
+  readonly project: WithId<Project>;
   readonly repo: Repository;
   readonly isAsync: boolean;
   readonly fhirRateLimiter?: FhirRateLimiter;
@@ -88,11 +89,12 @@ export class AuthenticatedRequestContext extends RequestContext {
 
     this.authState = authState;
     this.repo = repo;
+    const project = repo.currentProject();
+    if (!project) {
+      throw new Error('Authenticated repository must have a current project');
+    }
+    this.project = project;
     this.isAsync = options?.async ?? false;
-  }
-
-  get project(): WithId<Project> {
-    return this.authState.project;
   }
 
   get membership(): WithId<ProjectMembership> {
@@ -105,10 +107,6 @@ export class AuthenticatedRequestContext extends RequestContext {
 
   get profile(): Reference<ProfileResource | Bot | ClientApplication> {
     return this.membership.profile;
-  }
-
-  get authentication(): Readonly<AuthState> {
-    return this.authState;
   }
 
   /**
