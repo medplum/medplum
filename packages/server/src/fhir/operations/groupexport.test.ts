@@ -29,6 +29,48 @@ describe('Group Export', () => {
     await shutdownApp();
   });
 
+  test('Excludes linked project members and resolved references', async () =>
+    withTestContext(async () => {
+      const linked = await createTestProject({ withRepo: true });
+      const linkedPatient = await linked.repo.createResource<Patient>({ resourceType: 'Patient' });
+      const linkedOrg = await linked.repo.createResource<Organization>({ resourceType: 'Organization' });
+      const caller = await createTestProject({
+        withRepo: true,
+        withAccessToken: true,
+        project: { link: [{ project: { reference: getReferenceString(linked.project) } }] },
+      });
+      const ownPatient = await caller.repo.createResource<Patient>({
+        resourceType: 'Patient',
+        managingOrganization: { reference: getReferenceString(linkedOrg) },
+      });
+      const group = await caller.repo.createResource<Group>({
+        resourceType: 'Group',
+        type: 'person',
+        actual: true,
+        member: [
+          { entity: { reference: getReferenceString(ownPatient) } },
+          { entity: { reference: getReferenceString(linkedPatient) } },
+          { entity: { reference: getReferenceString(linkedOrg) } },
+        ],
+      });
+      expect((await caller.repo.readResource('Patient', linkedPatient.id)).id).toBe(linkedPatient.id);
+      expect((await caller.repo.readResource('Organization', linkedOrg.id)).id).toBe(linkedOrg.id);
+
+      const initRes = await request(app)
+        .get(`/fhir/R4/Group/${group.id}/$export`)
+        .auth(caller.accessToken, { type: 'bearer' });
+      expect(initRes).toHaveStatus(202);
+      const result = await waitForAsyncJob(initRes.headers['content-location'], app, caller.accessToken);
+      const output = result.output as unknown as BulkDataExportOutput[];
+      expect(output.map((entry) => entry.type)).not.toContain('Organization');
+      const patientOutput = output.find((entry) => entry.type === 'Patient');
+      expect(patientOutput).toBeDefined();
+      const content = (getBinaryStorage() as FileSystemStorage).readFileByUrlForTests(
+        new URL(patientOutput?.url as string)
+      );
+      expect(JSON.parse(content.trim()).id).toBe(ownPatient.id);
+    }));
+
   test('Export Group', async () => {
     // Create first patient
     const res1 = await request(app)
@@ -398,6 +440,9 @@ describe('Group Export', () => {
 
       const bulkDataExport = await exporter.close(project);
       expect(bulkDataExport.status).toBe('completed');
+      const binary = exporter.writers.Patient.binary;
+      expect(binary.securityContext).toEqual({ reference: getReferenceString(asyncJob) });
+      expect((await repo.readResource('Binary', binary.id)).id).toBe(binary.id);
     }));
 
   test('Export carries access-policy compartment as account', () =>

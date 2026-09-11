@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import type { BulkDataExportOutput, Observation } from '@medplum/fhirtypes';
+import type { AccessPolicy, AsyncJob, Binary, BulkDataExportOutput, Observation, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -9,9 +9,10 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
 import { getBinaryStorage } from '../../storage/loader';
-import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { getGlobalSystemRepo } from '../repo';
-import { exportResourceType, exportResources } from './export';
+import { addTestUser, createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { getGlobalSystemRepo, Repository } from '../repo';
+import { rewriteAttachments, RewriteMode } from '../rewrite';
+import { exportResources, exportResourceType } from './export';
 import { BulkExporter } from './utils/bulkexporter';
 
 describe('Export', () => {
@@ -26,6 +27,127 @@ describe('Export', () => {
   afterAll(async () => {
     await shutdownApp();
   });
+
+  test('Requester policy protects export jobs and Binary downloads', async () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withRepo: true });
+      await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const policy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: 'Patient', readonly: true },
+          { resourceType: 'AsyncJob', criteria: 'AsyncJob?requester=%profile', readonly: true },
+          { resourceType: 'Binary', readonly: true },
+        ],
+      };
+      const owner = await addTestUser(project, { accessPolicy: structuredClone(policy) });
+      const other = await addTestUser(project, { accessPolicy: structuredClone(policy) });
+      // Jobs without a known requester must not match either user's policy.
+      await repo.getSystemRepo().createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'completed',
+        request: 'https://example.com/legacy-export',
+        requestTime: new Date().toISOString(),
+        meta: { project: project.id },
+      });
+      const initRes = await request(app)
+        .get('/fhir/R4/$export?_type=Patient')
+        .auth(owner.accessToken, { type: 'bearer' });
+      expect(initRes).toHaveStatus(202);
+      const location = new URL(initRes.headers['content-location']);
+      await waitForAsyncJob(location.toString(), app, owner.accessToken);
+      const jobId = location.pathname.split('/').pop() as string;
+      const job = await repo.getSystemRepo().readResource<AsyncJob>('AsyncJob', jobId);
+      expect(job.requester?.reference).toBe(`Practitioner/${owner.profile.id}`);
+      expect(job.meta?.author?.reference).toBe('system');
+      const binaryRef = job.output?.parameter?.[0].part?.find((part) => part.name === 'url')?.valueUri as string;
+
+      for (const [user, expectedIds] of [
+        [owner, [jobId]],
+        [other, []],
+      ] as const) {
+        const searchRes = await request(app).get('/fhir/R4/AsyncJob').auth(user.accessToken, { type: 'bearer' });
+        expect(searchRes).toHaveStatus(200);
+        expect(searchRes.body.entry?.map((entry: { resource: AsyncJob }) => entry.resource.id) ?? []).toEqual(
+          expectedIds
+        );
+      }
+      for (const [path, deniedStatus] of [
+        // Bulk polling falls back to BulkDataExport, for which this policy grants no read access.
+        [location.pathname, 403],
+        [`/fhir/R4/AsyncJob/${jobId}`, 404],
+        [`/fhir/R4/${binaryRef}/$presigned-url`, 403],
+      ] as const) {
+        const denied = await request(app).get(path).auth(other.accessToken, { type: 'bearer' });
+        expect(denied.status, path).toBe(deniedStatus);
+        const allowed = await request(app).get(path).auth(owner.accessToken, { type: 'bearer' });
+        expect(allowed).toHaveStatus(200);
+      }
+    }));
+
+  test.each(['/$export', '/Patient/$export'])('Excludes linked project resources on %s', async (endpoint) =>
+    withTestContext(async () => {
+      const linked = await createTestProject({ withRepo: true });
+      const linkedPatient = await linked.repo.createResource<Patient>({ resourceType: 'Patient' });
+      const caller = await createTestProject({
+        withAccessToken: true,
+        withRepo: true,
+        project: { link: [{ project: { reference: `Project/${linked.project.id}` } }] },
+      });
+      const ownPatient = await caller.repo.createResource<Patient>({ resourceType: 'Patient' });
+      // Prove the linked data is ordinarily readable by the caller.
+      expect((await caller.repo.readResource('Patient', linkedPatient.id)).id).toBe(linkedPatient.id);
+
+      const initRes = await request(app)
+        .get(`/fhir/R4${endpoint}?_type=Patient`)
+        .auth(caller.accessToken, { type: 'bearer' });
+      expect(initRes).toHaveStatus(202);
+      const location = new URL(initRes.headers['content-location']);
+      await waitForAsyncJob(location.toString(), app, caller.accessToken);
+      const statusRes = await request(app).get(location.pathname).auth(caller.accessToken, { type: 'bearer' });
+      expect(statusRes).toHaveStatus(200);
+      const output = statusRes.body.output as BulkDataExportOutput[];
+      expect(output).toHaveLength(1);
+      const content = (getBinaryStorage() as FileSystemStorage).readFileByUrlForTests(new URL(output[0].url));
+      expect(JSON.parse(content.trim()).id).toBe(ownPatient.id);
+    })
+  );
+
+  test('Export Binary requires access to its AsyncJob', async () =>
+    withTestContext(async () => {
+      const caller = await createTestProject({ withRepo: true, withClient: true });
+      const patient = await caller.repo.createResource<Patient>({ resourceType: 'Patient', active: true });
+      const exporter = new BulkExporter(caller.repo);
+      const job = await exporter.start('http://example.com/fhir/R4/$export');
+      await exportResources(exporter, caller.project, ['Patient'], 'System');
+
+      const restrictedRepo = new Repository({
+        author: { reference: `ClientApplication/${caller.client.id}` },
+        projects: [caller.project],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            { resourceType: 'Patient', criteria: 'Patient?active=false' },
+            { resourceType: 'AsyncJob', criteria: 'AsyncJob?status=active' },
+            { resourceType: 'Binary', readonly: true },
+          ],
+        },
+      });
+      await expect(restrictedRepo.readResource('Patient', patient.id)).rejects.toThrow();
+      await expect(restrictedRepo.readResource('AsyncJob', job.id)).rejects.toThrow();
+      const binary = exporter.writers.Patient.binary;
+      expect(binary.securityContext).toEqual({ reference: `AsyncJob/${job.id}` });
+      await expect(restrictedRepo.readResource<Binary>('Binary', binary.id)).rejects.toThrow();
+      const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, restrictedRepo, {
+        url: `Binary/${binary.id}`,
+      });
+      expect(result.url).toBe(`Binary/${binary.id}`);
+      const authorized = await rewriteAttachments(RewriteMode.PRESIGNED_URL, caller.repo, {
+        url: `Binary/${binary.id}`,
+      });
+      const content = (getBinaryStorage() as FileSystemStorage).readFileByUrlForTests(new URL(authorized.url));
+      expect(JSON.parse(content.trim()).id).toBe(patient.id);
+    }));
 
   test('Success', async () => {
     const accessToken = await initTestAuth({ membership: { admin: true } });
@@ -83,7 +205,6 @@ describe('Export', () => {
     expect(Object.values(output).map((ex) => ex.type)).toContainExactly([
       'ClientApplication',
       'Observation',
-      'OperationDefinition',
       'Patient',
       'Project',
       'ProjectMembership',

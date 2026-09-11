@@ -6550,6 +6550,22 @@
             }
           },
           {
+            "id" : "AsyncJob.requester",
+            "path" : "AsyncJob.requester",
+            "definition" : "The profile that requested the job. Assigned by the server when the job is created and preserved through subsequent updates. Absent for system-initiated jobs without a requesting profile.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Resource"]
+            }],
+            "base" : {
+              "path" : "AsyncJob.requester",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "AsyncJob.output",
             "path" : "AsyncJob.output",
             "definition" : "Outputs resulting from the async job.",

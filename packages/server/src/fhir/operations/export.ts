@@ -95,12 +95,20 @@ export async function exportResourceType<T extends Resource>(
   since?: string
 ): Promise<void> {
   const repo = exporter.repo;
+  const projectId = repo.currentProject()?.id;
   const searchRequest: SearchRequest<T> | undefined = {
     resourceType,
     count,
     filters: since ? [{ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since }] : undefined,
     sortRules: [{ code: '_lastUpdated', descending: false }],
   };
+  // Bulk exports contain only the current project's data, even when linked projects are readable.
+  if (projectId) {
+    searchRequest.filters = [
+      { code: '_project', operator: Operator.EQUALS, value: projectId },
+      ...(searchRequest.filters ?? []),
+    ];
+  }
   await repo.processAllResources(searchRequest, async (resource) => {
     await exporter.writeResource(resource);
   });
