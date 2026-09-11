@@ -19,13 +19,12 @@ import { CalendarDateInput, ReferenceDisplay, ResourceInput } from '@medplum/rea
 import { IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { BookableActorType } from '../actors';
-import { BOOKABLE_ACTOR_TYPES, getActorType, getActorTypeLabel } from '../actors';
+import { getActorType, getActorTypeLabel } from '../actors';
 import type { DateTimeRange } from '../types';
-import { AppointmentActorSelect } from './AppointmentActorSelect';
+import { AppointmentActorSelections } from './AppointmentActorSelections';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
-import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
+import type { ActorSelections } from './AppointmentFinder.schedules';
 import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
 import { getDurationMinutes, isViewerTimezone } from './AppointmentFinder.times';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
@@ -96,13 +95,6 @@ export interface AppointmentProposalFormProps {
  * Gathers what a visit is held on, finds a time every one of them is free, and
  * hands the proposal out to be booked.
  *
- * One field per scheduling role, each searching the schedules bookable for the
- * chosen visit type. Everything named attends, because `$find` intersects their
- * schedules — so naming a second room narrows the times rather than widening them.
- *
- * Only a time the search offered can be chosen: the field holding it accepts no
- * input, so nothing can be booked onto time nobody checked availability for.
- *
  * Writes nothing and announces nothing: `onBook` owns that. Mount this to do
  * something other than `$book` with the proposal — hold it through `$hold`, or
  * write it inside a transaction of your own. {@link AppointmentBookingForm} is the
@@ -139,7 +131,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [booked, setBooked] = useState(false);
   const [bookError, setBookError] = useState<unknown>(undefined);
 
-  const selectionError = getSelectionError(selections);
+  // Memoised because it builds the combinations to find out whether any of them are
+  // possible, and every render of the form is not a change of selection.
+  const selectionError = useMemo(() => getSelectionError(selections), [selections]);
 
   // Derived, not a flag: closing is never its own rule, so losing the last provider
   // closes the search however it was lost.
@@ -161,7 +155,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // was offered from.
   const clearChosen = useCallback((): void => setChosen(undefined), []);
 
-  const daySearch = useDaySearch({ service, combinations, timezone, defaultStart, onDaysChanged: clearChosen });
+  const daySearch = useDaySearch({ service, combinations, timezone, defaultStart, onResultsReplaced: clearChosen });
   const { reset: resetDaySearch } = daySearch;
 
   // The first window is back and nothing is holding the search up, so what it found —
@@ -200,8 +194,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   }
 
   const chooseResources = useCallback(
-    (update: (selections: ActorSelections) => ActorSelections): void => {
-      setSelections(update);
+    (next: ActorSelections): void => {
+      setSelections(next);
       // A chosen time is a proposal carrying the Slots it was found for. Booked after
       // a resource changes it would hold whoever is named inside the proposal, and
       // `$book` cannot catch that: the proposal is internally consistent.
@@ -295,22 +289,20 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           onChange={chooseService}
         />
 
-        {BOOKABLE_ACTOR_TYPES.map((actorType) => (
-          <ActorField
-            key={`${actorType}-${actorFieldsKey}`}
-            actorType={actorType}
-            service={service}
-            location={location}
-            disabled={!service}
-            onChange={chooseResources}
-          />
-        ))}
+        <AppointmentActorSelections
+          key={`actors-${actorFieldsKey}`}
+          value={selections}
+          service={service}
+          location={location}
+          disabled={!service}
+          onChange={chooseResources}
+        />
 
         <ChosenTime
           appointment={chosen}
           timezone={timezone}
           searching={searching}
-          blockedBy={service ? selectionError : 'Choose a visit type'}
+          blockedBy={service ? selectionError : 'Choose a visit type first.'}
           onToggleFinder={toggleFinder}
         />
 
@@ -376,8 +368,20 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
             <>
               {!daySearch.hasTimes && (
                 <Text c="dimmed" ta="center">
-                  No times are available for this selection.
+                  {daySearch.hasMoreCombinations
+                    ? 'No times yet for the options searched so far.'
+                    : 'No times are available for this selection.'}
                 </Text>
+              )}
+              {daySearch.hasMoreCombinations && (
+                <Stack gap={4}>
+                  <Text size="xs" c="dimmed" ta="center">
+                    {getSearchedOptionsHint(daySearch.searchedCombinationCount, daySearch.totalCombinationCount)}
+                  </Text>
+                  <Button variant="subtle" onClick={daySearch.searchMoreCombinations}>
+                    Search more options
+                  </Button>
+                </Stack>
               )}
               {/* No signal for how far ahead there's anything to find, so this has no end state. */}
               <Button variant="subtle" loading={daySearch.loadingMoreDays} onClick={daySearch.showMoreDays}>
@@ -438,7 +442,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
         </Button>
         {blockedBy && (
           <Text size="xs" c="dimmed">
-            {blockedBy} first.
+            {blockedBy}
           </Text>
         )}
       </Stack>
@@ -492,44 +496,6 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
     return 'Close time finder';
   }
   return chosen ? 'Change time' : 'Find a time';
-}
-
-interface ActorFieldProps {
-  readonly actorType: BookableActorType;
-  readonly service: WithId<HealthcareService> | undefined;
-  readonly location: WithId<Location> | undefined;
-  readonly disabled?: boolean;
-  readonly onChange: (update: (selections: ActorSelections) => ActorSelections) => void;
-}
-
-/**
- * One role's field, writing its own key of the selections.
- *
- * A component of its own so the callback it hands down is stable per role: the
- * field searches on a changed callback, and an inline one would be new on every
- * keystroke anywhere in the form.
- *
- * @param props - The React props.
- * @returns The field for that role.
- */
-function ActorField(props: ActorFieldProps): JSX.Element {
-  const { actorType, service, location, disabled, onChange } = props;
-
-  const handleChange = useCallback(
-    (candidates: readonly ScheduleCandidate[]) =>
-      onChange((selections) => ({ ...selections, [actorType]: candidates })),
-    [onChange, actorType]
-  );
-
-  return (
-    <AppointmentActorSelect
-      actorType={actorType}
-      service={service}
-      location={location}
-      disabled={disabled}
-      onChange={handleChange}
-    />
-  );
 }
 
 /**
@@ -591,6 +557,16 @@ function toRange(appointment: Appointment | undefined): DateTimeRange | undefine
     return undefined;
   }
   return { start: new Date(appointment.start), end: new Date(appointment.end) };
+}
+
+/**
+ * The line above "Search more options": how much of the search has been run.
+ * @param searched - How many ways of holding the visit have been searched.
+ * @param total - How many there are in all.
+ * @returns The line to show.
+ */
+function getSearchedOptionsHint(searched: number, total: number): string {
+  return `Showing times for ${searched} of ${total} ways of holding this visit.`;
 }
 
 /**

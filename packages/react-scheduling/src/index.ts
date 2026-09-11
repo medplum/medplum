@@ -5,6 +5,7 @@ export type * from './types';
 
 // Export all components
 export * from './AppointmentFinder/AppointmentActorSelect';
+export * from './AppointmentFinder/AppointmentActorSelections';
 export * from './AppointmentFinder/AppointmentBookingForm';
 export * from './AppointmentFinder/AppointmentDayTimes';
 export * from './AppointmentFinder/AppointmentFinder.schedules';

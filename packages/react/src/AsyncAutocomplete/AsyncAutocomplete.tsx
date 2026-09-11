@@ -38,6 +38,8 @@ export interface AsyncAutocompleteProps<T> extends Omit<
   readonly creatable?: boolean;
   readonly clearable?: boolean;
   readonly required?: boolean;
+  /** Whether to show the asterisk. Defaults to `required`. */
+  readonly withAsterisk?: boolean;
   readonly className?: string;
   readonly placeholder?: string;
   readonly leftSection?: ReactNode;
@@ -67,6 +69,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     creatable,
     clearable,
     required,
+    withAsterisk,
     placeholder,
     leftSection,
     maxValues,
@@ -306,6 +309,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           leftSection={leftSection}
           rightSection={abortController ? <Loader size={16} /> : clearButton}
           required={required}
+          withAsterisk={withAsterisk}
           disabled={disabled}
         >
           <Pill.Group data-testid={AsyncAutocompleteTestIds.selectedItems}>
