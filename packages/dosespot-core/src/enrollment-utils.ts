@@ -4,7 +4,7 @@
 import type { Project, ProjectSetting } from '@medplum/fhirtypes';
 
 /**
- * The name of the {@link Project.systemSetting} entry that caps the total number
+ * The name of the `Project.systemSetting` entry that caps the total number
  * of clinicians the DoseSpot enrollment bots (admin-driven and self-service) are
  * allowed to enroll in a Project.
  *
@@ -25,9 +25,7 @@ export const DOSESPOT_MAX_CLINICIANS_SYSTEM_SETTING = 'dosespotMaxClinicians';
  * @returns The configured limit as a positive integer, or `undefined` if no
  * valid limit is configured (meaning enrollment is unlimited).
  */
-export function getDoseSpotMaxClinicians(
-  project: Pick<Project, 'systemSetting'> | undefined
-): number | undefined {
+export function getDoseSpotMaxClinicians(project: Pick<Project, 'systemSetting'> | undefined): number | undefined {
   const setting: ProjectSetting | undefined = project?.systemSetting?.find(
     (s) => s.name === DOSESPOT_MAX_CLINICIANS_SYSTEM_SETTING
   );
@@ -46,10 +44,7 @@ export function getDoseSpotMaxClinicians(
  * @param currentClinicianCount - The number of clinicians already enrolled.
  * @returns True if `currentClinicianCount` is greater than or equal to `maxClinicians`.
  */
-export function isDoseSpotEnrollmentLimitReached(
-  maxClinicians: number,
-  currentClinicianCount: number
-): boolean {
+export function isDoseSpotEnrollmentLimitReached(maxClinicians: number, currentClinicianCount: number): boolean {
   return currentClinicianCount >= maxClinicians;
 }
 

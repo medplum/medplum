@@ -49,7 +49,11 @@ async function simulatedSelfEnrollBot(
 
   // Already enrolled? The bot advances the existing clinician -- the limit only applies to new clinicians.
   if (membership.identifier?.some((i) => i.system?.includes('dosespot'))) {
-    return { status: 'advanced', doseSpotClinicianId: getNextClinicianId(membership), enrolledClinicianCount: enrolledCount };
+    return {
+      status: 'advanced',
+      doseSpotClinicianId: getNextClinicianId(membership),
+      enrolledClinicianCount: enrolledCount,
+    };
   }
 
   // Guard rail: refuse to enroll if the Project's clinician cap has been reached.
@@ -70,7 +74,12 @@ async function simulatedSelfEnrollBot(
     ],
   });
 
-  return { status: 'created', doseSpotClinicianId, enrolledClinicianCount: enrolledCount + 1, maxClinicians: check.maxClinicians };
+  return {
+    status: 'created',
+    doseSpotClinicianId,
+    enrolledClinicianCount: enrolledCount + 1,
+    maxClinicians: check.maxClinicians,
+  };
 }
 
 function getNextClinicianId(membership: ProjectMembership): number {
