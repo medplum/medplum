@@ -144,7 +144,7 @@ import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { lookupTables } from './searchparameter';
 import type { ShardRouting } from './sharding';
-import { GLOBAL_SHARD_ID, normalizeShardId, resolveShardId, shardRoutingError } from './sharding';
+import { GLOBAL_SHARD_ID, normalizeShardId, resolveShardId, shardRoutingError, TODO_SHARD_ID } from './sharding';
 import type { Expression, PgQueryable } from './sql';
 import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
 
@@ -2288,7 +2288,7 @@ export class Repository extends FhirRepository implements Disposable {
     return input;
   }
 
-  isSuperAdmin(): boolean {
+  isSuperAdmin(): this is SuperAdminRepository {
     return !!this.context.superAdmin;
   }
 
@@ -2676,7 +2676,15 @@ export class Repository extends FhirRepository implements Disposable {
   }
 }
 
-export class SystemRepository extends Repository {}
+declare const superAdminRepository: unique symbol;
+export type SuperAdminRepository = Repository & {
+  readonly [superAdminRepository]: true;
+};
+
+declare const systemRepository: unique symbol;
+export type SystemRepository = SuperAdminRepository & {
+  readonly [systemRepository]: true;
+};
 
 type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJobs'>;
 
@@ -2694,13 +2702,14 @@ function createSystemRepository(
   transaction?: TransactionBinding,
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
-  return new SystemRepository(
+  const repo = new Repository(
     {
       ...contextDefaults,
       routing,
       superAdmin: true,
       strictMode: true,
       extendedMode: true,
+      accessPolicy: undefined,
       author: {
         reference: 'system',
       },
@@ -2709,6 +2718,26 @@ function createSystemRepository(
     connections,
     transaction
   );
+
+  return asSystemRepository(repo);
+}
+
+function asSystemRepository(repo: Repository): SystemRepository {
+  if (!repo.isSuperAdmin()) {
+    throw new Error('System repository is not a super admin');
+  }
+  const context = repo.getConfig();
+  if (context.author.reference !== 'system') {
+    throw new Error('Repository author is not the system');
+  }
+  if (context.accessPolicy) {
+    throw new Error('System repository cannot have access policy');
+  }
+  if (context.projects) {
+    throw new Error('System repository cannot have projects');
+  }
+
+  return repo as SystemRepository;
 }
 
 /*
@@ -2777,7 +2806,7 @@ export async function getProjectSystemRepo(
   // Eventually, this will resolve the project's shard and return
   // a SystemRepository for that shard.
   // But for now, all projects are on the global shard.
-  return getGlobalSystemRepo();
+  return getShardSystemRepo(TODO_SHARD_ID);
 }
 
 const patchOperationDefinition: OperationDefinition = {

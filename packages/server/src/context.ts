@@ -16,7 +16,7 @@ import { randomUUID } from 'node:crypto';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { FhirRateLimiter, getFhirQuotaConfig } from './fhir/fhirquota';
-import type { Repository, SystemRepository } from './fhir/repo';
+import type { Repository, SuperAdminRepository, SystemRepository } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
 import { getLogger, globalLogger, writeLineToStdout } from './logger';
 import type { AuthState } from './oauth/middleware';
@@ -263,9 +263,17 @@ function getResourceCap(authState: AuthState, logger?: Logger): ResourceCap | un
     : undefined;
 }
 
-export function requireSuperAdmin(): AuthenticatedRequestContext {
+type SuperAdminRequestContext = AuthenticatedRequestContext & {
+  readonly repo: SuperAdminRepository;
+};
+
+function isSuperAdminContext(ctx: AuthenticatedRequestContext): ctx is SuperAdminRequestContext {
+  return ctx.repo.isSuperAdmin();
+}
+
+export function requireSuperAdmin(): SuperAdminRequestContext {
   const ctx = getAuthenticatedContext();
-  if (!ctx.project.superAdmin) {
+  if (!isSuperAdminContext(ctx)) {
     throw new OperationOutcomeError(forbidden);
   }
   return ctx;

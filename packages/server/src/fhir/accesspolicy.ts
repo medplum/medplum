@@ -49,15 +49,18 @@ export async function getRepoForLogin(
   extendedMode?: boolean,
   remoteAddress?: string
 ): Promise<Repository> {
-  const { login, membership: realMembership, onBehalfOfMembership } = authState;
+  const { login, membership: realMembership, onBehalfOfMembership, project: realProject } = authState;
   const membership = onBehalfOfMembership ?? realMembership;
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  const globalSystemRepo = getGlobalSystemRepo();
   let profile: WithId<ProfileResource | Bot | ClientApplication> | undefined = authState.profile;
   if (!profile) {
     try {
-      profile = await globalSystemRepo.readReference<ProfileResource | Bot | ClientApplication>(realMembership.profile);
+      // project system repo since not all ProfileResource types are global
+      const realProjectSystemRepo = await getProjectSystemRepo(realProject);
+      profile = await realProjectSystemRepo.readReference<ProfileResource | Bot | ClientApplication>(
+        realMembership.profile
+      );
     } catch (err: unknown) {
       if (!(err instanceof OperationOutcomeError && isNotFound(err.outcome))) {
         throw err;
@@ -65,12 +68,14 @@ export async function getRepoForLogin(
     }
   }
 
-  let project = authState.project;
+  let project = realProject;
+  let globalSystemRepo: SystemRepository | undefined;
   if (membership.project.reference !== realMembership.project.reference) {
+    globalSystemRepo = getGlobalSystemRepo();
     project = await globalSystemRepo.readReference<Project>(membership.project);
   }
 
-  const allowedProjects = await getAllowedProjects(project);
+  const allowedProjects = await getAllowedProjects(project, globalSystemRepo);
 
   return new Repository({
     routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
@@ -92,9 +97,13 @@ export async function getRepoForLogin(
 /**
  * Resolves a project and the projects it links to, which its members may read from.
  * @param project - The project whose links to resolve.
+ * @param systemRepo - Optional system repository used to read projects
  * @returns The project followed by each linked project that could be read.
  */
-export async function getAllowedProjects(project: WithId<Project>): Promise<WithId<Project>[]> {
+export async function getAllowedProjects(
+  project: WithId<Project>,
+  systemRepo?: SystemRepository
+): Promise<WithId<Project>[]> {
   const allowedProjects: WithId<Project>[] = [project];
   if (project.link) {
     const linkedProjectRefs: Reference<Project>[] = [];
@@ -104,8 +113,9 @@ export async function getAllowedProjects(project: WithId<Project>): Promise<With
       }
     }
 
-    const systemRepo = await getProjectSystemRepo(project);
-    const linkedProjectsOrError = await systemRepo.readReferences<Project>(linkedProjectRefs);
+    const linkedProjectsOrError = await (systemRepo ?? getGlobalSystemRepo()).readReferences<Project>(
+      linkedProjectRefs
+    );
     for (let i = 0; i < linkedProjectsOrError.length; i++) {
       const linkedProjectOrError = linkedProjectsOrError[i];
       if (isResource(linkedProjectOrError)) {
