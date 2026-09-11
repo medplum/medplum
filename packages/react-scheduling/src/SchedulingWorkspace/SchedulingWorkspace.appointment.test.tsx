@@ -5,7 +5,7 @@ import { createReference } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../constants';
+import { APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM, APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../constants';
 import { installCancelStub } from '../stories/mockCancel';
 import { installValueSetStub } from '../stories/mockValueSet';
 import { DrRiveraPractitioner, SchedulingFixtures } from '../stories/scheduling';
@@ -127,6 +127,17 @@ describe('SchedulingWorkspace appointment details', () => {
     await waitFor(async () => {
       const stored = await medplum.readResource('Appointment', APPOINTMENT.id);
       expect(stored.status).toBe('cancelled');
+      // The operation is handed the reason as a coding out of the value set, which is
+      // what it writes to the appointment.
+      expect(stored.cancelationReason).toStrictEqual({
+        coding: [
+          {
+            system: APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM,
+            code: 'pat-fb',
+            display: 'Patient: Feeling Better',
+          },
+        ],
+      });
     });
   });
 

@@ -3,14 +3,8 @@
 import { Alert, Badge, Button, Divider, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { formatCodeableConcept, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
-import type {
-  Appointment,
-  AppointmentParticipant,
-  Parameters,
-  Reference,
-  ValueSetExpansionContains,
-} from '@medplum/fhirtypes';
-import { ReferenceDisplay, ValueSetAutocomplete } from '@medplum/react';
+import type { Appointment, AppointmentParticipant, CodeableConcept, Parameters, Reference } from '@medplum/fhirtypes';
+import { CodeableConceptInput, ReferenceDisplay } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { Fragment, useCallback, useState } from 'react';
@@ -18,7 +12,7 @@ import { formatDayHeading, formatZonedTime } from '../../AppointmentFinder/Appoi
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 
 /** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
-const CANCELABLE_STATUSES: readonly Appointment['status'][] = ['pending', 'booked'];
+const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
 
 const STATUS_COLORS: Record<Appointment['status'], string> = {
   proposed: 'yellow',
@@ -65,7 +59,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const otherActors = getOtherActors(appointment);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<unknown>();
-  const [reason, setReason] = useState<ValueSetExpansionContains>();
+  const [reason, setReason] = useState<CodeableConcept>();
 
   const cancel = useCallback(async (): Promise<void> => {
     if (!reason) {
@@ -81,9 +75,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           parameter: [
             {
               name: 'cancelationReason',
-              valueCodeableConcept: {
-                coding: [{ system: reason.system, code: reason.code, display: reason.display }],
-              },
+              valueCodeableConcept: reason,
             },
           ],
         } satisfies Parameters
@@ -141,23 +133,20 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           {normalizeErrorString(cancelError)}
         </Alert>
       )}
-      {CANCELABLE_STATUSES.includes(appointment.status) ? (
+      {CANCELABLE_STATUSES.has(appointment.status) ? (
         <>
-          {/*
-           * Coded against the value set rather than against a list kept here, and not
-           * `creatable`: a reason typed in by hand would be written as a code no
-           * terminology knows.
-           */}
-          <ValueSetAutocomplete
+          <CodeableConceptInput
+            name="cancelationReason"
+            path="Appointment.cancelationReason"
             binding={cancellationReasonValueSet ?? APPOINTMENT_CANCELLATION_REASON_VALUE_SET}
             label="Cancellation reason"
             placeholder="Search reasons"
             maxValues={1}
             creatable={false}
+            withHelpText={false}
             required
-            onChange={(reasons) => setReason(reasons[0])}
+            onChange={setReason}
           />
-          {/* Nothing is cancelled without a reason for it. */}
           <Button color="red" variant="light" loading={cancelling} disabled={!reason} onClick={cancel}>
             Cancel Appointment
           </Button>
