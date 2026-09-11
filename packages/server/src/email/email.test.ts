@@ -8,7 +8,6 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import { simpleParser } from 'mailparser';
-import type Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
@@ -201,7 +200,7 @@ describe('Email', () => {
     await sendEmail(systemRepo, {
       to: 'alice@example.com',
       cc: null as unknown as string,
-      bcc: [null as unknown as string, {} as unknown as Mail.Address],
+      bcc: [null as unknown as string, {}],
       subject: 'Hello',
       text: 'Hello Alice',
     });

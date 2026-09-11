@@ -3,18 +3,30 @@
 import type { Organization, Parameters } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import {
+  BILLING_ORGANIZATION_IDENTIFIER_VALUE,
+  EIN_SYSTEM,
+  MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM,
+  NPI_SYSTEM,
   ORGANIZATION_TYPE_SYSTEM,
   PAYER_ORGANIZATION_TYPE,
+  PROVIDER_ORGANIZATION_TYPE,
   buildPayerRefreshOps,
+  buildUpdatedOrganization,
   formatPayerCategory,
   getPayerCategory,
   isPayerNotFoundError,
+  isValidBillingPhone,
   parsePayerSearchPage,
   upsertIdentifier,
+  upsertPhone,
+  withCandidProviderExtensions,
 } from './billing';
 import {
+  CANDID_BILLING_ORGANIZATION_PROFILE,
   CANDID_ELIGIBILITY_PAYER_ID_SYSTEM,
   CANDID_ELIGIBILITY_SUPPORT_EXTENSION,
+  CANDID_IS_BILLING_PROVIDER_EXTENSION,
+  CANDID_IS_RENDERING_PROVIDER_EXTENSION,
   CANDID_PAYER_CATEGORY_SYSTEM,
   CANDID_PAYER_UUID_SYSTEM,
   CHC_PAYER_ID_SYSTEM,
@@ -37,6 +49,24 @@ function makeDirectoryPayer(overrides: Partial<Organization> = {}): Organization
 }
 
 describe('billing utils', () => {
+  describe('isValidBillingPhone', () => {
+    test('accepts formatted 10-digit numbers', () => {
+      expect(isValidBillingPhone('(212) 555-1234')).toBe(true);
+      expect(isValidBillingPhone('9177773344')).toBe(true);
+    });
+
+    test('rejects numbers starting with 0 or 1', () => {
+      expect(isValidBillingPhone('0125551234')).toBe(false);
+      expect(isValidBillingPhone('1234567890')).toBe(false);
+    });
+
+    test('rejects wrong lengths', () => {
+      expect(isValidBillingPhone('212555123')).toBe(false);
+      expect(isValidBillingPhone('21255512345')).toBe(false);
+      expect(isValidBillingPhone('')).toBe(false);
+    });
+  });
+
   describe('upsertIdentifier', () => {
     test('appends a new identifier', () => {
       expect(upsertIdentifier(undefined, CHC_PAYER_ID_SYSTEM, '60054')).toEqual([
@@ -220,6 +250,150 @@ describe('billing utils', () => {
       ['SNF', 'SNF'],
     ])('formats %s as %s', (code, expected) => {
       expect(formatPayerCategory(code)).toBe(expected);
+    });
+  });
+  describe('upsertPhone', () => {
+    test('replaces the phone entry, preserving email entries', () => {
+      const telecom = [
+        { system: 'email' as const, value: 'billing@example.com' },
+        { system: 'phone' as const, value: '0000000000', use: 'work' as const },
+      ];
+      expect(upsertPhone(telecom, '2125551234')).toEqual([
+        { system: 'email', value: 'billing@example.com' },
+        { system: 'phone', value: '2125551234', use: 'work' },
+      ]);
+    });
+
+    test('appends when no phone exists and removes on empty', () => {
+      expect(upsertPhone(undefined, '2125551234')).toEqual([{ system: 'phone', value: '2125551234' }]);
+      expect(upsertPhone([{ system: 'phone', value: '2125551234' }], '')).toBeUndefined();
+    });
+  });
+
+  describe('buildUpdatedOrganization', () => {
+    test('builds a new billing organization with prov type, identifiers, and digits-only EIN', () => {
+      const result = buildUpdatedOrganization(
+        { resourceType: 'Organization' },
+        {
+          name: ' Test Medical Practice LLC ',
+          npi: '3564119220',
+          ein: '12-3456789',
+          phone: '6175550142',
+          address: { line: ['456 Medical Center Drive'], city: 'Boston', state: 'MA', postalCode: '02101' },
+        }
+      );
+
+      expect(result.name).toBe('Test Medical Practice LLC');
+      expect(result.identifier).toEqual([
+        { system: NPI_SYSTEM, value: '3564119220' },
+        { system: EIN_SYSTEM, value: '123456789' },
+        { system: MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM, value: BILLING_ORGANIZATION_IDENTIFIER_VALUE },
+      ]);
+      expect(result.type).toEqual([
+        {
+          coding: [
+            { system: ORGANIZATION_TYPE_SYSTEM, code: PROVIDER_ORGANIZATION_TYPE, display: 'Healthcare Provider' },
+          ],
+        },
+      ]);
+      expect(result.telecom).toEqual([{ system: 'phone', value: '6175550142' }]);
+      expect(result.address?.[0]?.city).toBe('Boston');
+      expect(result.meta?.profile).toEqual([CANDID_BILLING_ORGANIZATION_PROFILE]);
+    });
+
+    test('claims the billing organization profile once, keeping profiles from elsewhere', () => {
+      const existing: Organization = {
+        resourceType: 'Organization',
+        meta: { versionId: '1', profile: ['https://example.com/StructureDefinition/legacy-org'] },
+      };
+      const fields = { name: 'Org', npi: '3564119220', ein: '123456789', phone: '' };
+
+      const once = buildUpdatedOrganization(existing, fields);
+      expect(once.meta?.profile).toEqual([
+        'https://example.com/StructureDefinition/legacy-org',
+        CANDID_BILLING_ORGANIZATION_PROFILE,
+      ]);
+      expect(once.meta?.versionId).toBe('1');
+
+      expect(buildUpdatedOrganization(once, fields).meta?.profile).toEqual(once.meta?.profile);
+    });
+
+    test('does not duplicate the prov type or clobber unrelated identifiers and types', () => {
+      const existing: Organization = {
+        resourceType: 'Organization',
+        id: 'org-1',
+        name: 'Old Name',
+        type: [
+          { coding: [{ system: ORGANIZATION_TYPE_SYSTEM, code: PROVIDER_ORGANIZATION_TYPE }] },
+          { coding: [{ system: 'https://example.com/custom-type', code: 'clinic' }] },
+        ],
+        identifier: [
+          { system: 'https://example.com/legacy-id', value: 'legacy' },
+          { system: NPI_SYSTEM, value: '1234567893' },
+        ],
+      };
+
+      const result = buildUpdatedOrganization(existing, {
+        name: 'New Name',
+        npi: '3564119220',
+        ein: '123456789',
+        phone: '',
+      });
+
+      expect(result.id).toBe('org-1');
+      expect(result.type).toHaveLength(2);
+      expect(result.identifier).toEqual([
+        { system: 'https://example.com/legacy-id', value: 'legacy' },
+        { system: NPI_SYSTEM, value: '3564119220' },
+        { system: EIN_SYSTEM, value: '123456789' },
+        { system: MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM, value: BILLING_ORGANIZATION_IDENTIFIER_VALUE },
+      ]);
+      expect(result.telecom).toBeUndefined();
+    });
+
+    test('replaces only the first address, keeping any others', () => {
+      const existing: Organization = {
+        resourceType: 'Organization',
+        address: [
+          { city: 'Boston', state: 'MA' },
+          { city: 'Providence', state: 'RI' },
+        ],
+      };
+      const result = buildUpdatedOrganization(existing, {
+        name: 'Org',
+        npi: '3564119220',
+        ein: '123456789',
+        phone: '',
+        address: { city: 'Cambridge', state: 'MA' },
+      });
+      expect(result.address).toEqual([
+        { city: 'Cambridge', state: 'MA' },
+        { city: 'Providence', state: 'RI' },
+      ]);
+    });
+  });
+  describe('withCandidProviderExtensions', () => {
+    test('sets the billing and rendering flags Candid requires', () => {
+      const result = withCandidProviderExtensions({ resourceType: 'Organization' });
+      expect(result.extension).toEqual([
+        { url: CANDID_IS_BILLING_PROVIDER_EXTENSION, valueBoolean: true },
+        { url: CANDID_IS_RENDERING_PROVIDER_EXTENSION, valueBoolean: false },
+      ]);
+    });
+
+    test('replaces stale flags and preserves unrelated extensions', () => {
+      const result = withCandidProviderExtensions({
+        resourceType: 'Organization',
+        extension: [
+          { url: 'https://example.com/other', valueString: 'keep-me' },
+          { url: CANDID_IS_RENDERING_PROVIDER_EXTENSION, valueBoolean: true },
+        ],
+      });
+      expect(result.extension).toEqual([
+        { url: 'https://example.com/other', valueString: 'keep-me' },
+        { url: CANDID_IS_BILLING_PROVIDER_EXTENSION, valueBoolean: true },
+        { url: CANDID_IS_RENDERING_PROVIDER_EXTENSION, valueBoolean: false },
+      ]);
     });
   });
 });

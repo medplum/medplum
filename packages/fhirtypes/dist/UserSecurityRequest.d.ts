@@ -115,6 +115,12 @@ export interface UserSecurityRequest {
   used?: boolean;
 
   /**
+   * The time at which this request expires, and is therefore no longer
+   * valid.
+   */
+  expiresAt?: string;
+
+  /**
    * Redirect URI used when redirecting a client back to the client
    * application.
    */

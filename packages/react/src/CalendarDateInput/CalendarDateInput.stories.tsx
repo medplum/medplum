@@ -88,6 +88,28 @@ export const Range = (): JSX.Element => {
 };
 
 /**
+ * A day picked, with the stretch shown alongside it banded out from there: the day picked keeps
+ * the darker mark, and the days that came with it are only on show.
+ * @returns The story.
+ */
+export const SelectedDayWithinAStretch = (): JSX.Element => {
+  const [selected, setSelected] = useState<Date>(weekdaysOfMonth()[2]);
+  const shown = { start: selected, end: new Date(selected.getFullYear(), selected.getMonth(), selected.getDate() + 2) };
+  return (
+    <Document>
+      <CalendarDateInput
+        availableDates={weekdaysOfMonth()}
+        selected={selected}
+        range={shown}
+        allowUnavailableDates
+        onChangeMonth={(date: Date) => console.log(date)}
+        onClick={setSelected}
+      />
+    </Document>
+  );
+};
+
+/**
  * A calendar that can be asked about a day with nothing on it.
  * @returns The story.
  */

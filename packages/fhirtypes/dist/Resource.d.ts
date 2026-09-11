@@ -44,6 +44,7 @@ import type { Contract } from './Contract.d.ts';
 import type { Coverage } from './Coverage.d.ts';
 import type { CoverageEligibilityRequest } from './CoverageEligibilityRequest.d.ts';
 import type { CoverageEligibilityResponse } from './CoverageEligibilityResponse.d.ts';
+import type { Cron } from './Cron.d.ts';
 import type { DetectedIssue } from './DetectedIssue.d.ts';
 import type { Device } from './Device.d.ts';
 import type { DeviceDefinition } from './DeviceDefinition.d.ts';
@@ -62,6 +63,7 @@ import type { Encounter } from './Encounter.d.ts';
 import type { Endpoint } from './Endpoint.d.ts';
 import type { EnrollmentRequest } from './EnrollmentRequest.d.ts';
 import type { EnrollmentResponse } from './EnrollmentResponse.d.ts';
+import type { Enterprise } from './Enterprise.d.ts';
 import type { EpisodeOfCare } from './EpisodeOfCare.d.ts';
 import type { EventDefinition } from './EventDefinition.d.ts';
 import type { Evidence } from './Evidence.d.ts';
@@ -214,6 +216,7 @@ export type Resource = AccessPolicy
   | Coverage
   | CoverageEligibilityRequest
   | CoverageEligibilityResponse
+  | Cron
   | DetectedIssue
   | Device
   | DeviceDefinition
@@ -232,6 +235,7 @@ export type Resource = AccessPolicy
   | Endpoint
   | EnrollmentRequest
   | EnrollmentResponse
+  | Enterprise
   | EpisodeOfCare
   | EventDefinition
   | Evidence

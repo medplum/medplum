@@ -1,0 +1,375 @@
+{
+  "name": "Cron",
+  "location": "medplum",
+  "description": "A scheduled job that executes a Bot on a recurring schedule.",
+  "properties": [
+    {
+      "name": "Cron",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "Cron",
+      "min": 0,
+      "max": "*",
+      "short": "A scheduled job that executes a Bot on a recurring schedule.",
+      "definition": "A scheduled job that executes a Bot on a recurring schedule.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Cron.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Cron.meta",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "Cron.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Cron.language",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The base language in which the resource is written.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Cron.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "Cron.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Cron.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Cron.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Cron.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "An identifier for this cron job",
+      "definition": "An identifier for this cron job.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "active",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "Cron.active",
+      "min": 1,
+      "max": "1",
+      "short": "Whether the job is registered with the scheduler",
+      "definition": "Whether the scheduled job runs. Setting this to false unregisters the job while leaving the schedule itself intact, so the job can be turned back on without redefining it.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "onBehalfOf",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "ProjectMembership",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "Cron.onBehalfOf",
+      "min": 1,
+      "max": "1",
+      "short": "The membership on whose behalf the job runs",
+      "definition": "The project membership whose identity and access policy the scheduled job assumes when it runs.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "parameter",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "Cron.parameter",
+      "min": 0,
+      "max": "*",
+      "short": "Input passed to the target",
+      "definition": "Input passed to the target each time the scheduled job runs, with the same structure as Parameters.parameter. The target is always invoked with the whole Cron resource, so these parameters arrive alongside the schedule that produced them.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "name",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Cron.parameter.name",
+      "min": 1,
+      "max": "1",
+      "short": "Name from the definition",
+      "definition": "The name of the parameter (reference to the operation definition).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "value[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [],
+      "path": "Cron.parameter.value[x]",
+      "min": 0,
+      "max": "1",
+      "short": "If parameter is a data type",
+      "definition": "If the parameter is a data type.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "resource",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "Cron.parameter.resource",
+      "min": 0,
+      "max": "1",
+      "short": "If parameter is a whole resource",
+      "definition": "If the parameter is a whole resource.",
+      "comment": "When resolving references in resources, the operation definition may specify how references may be resolved between parameters. If a reference cannot be resolved between the parameters, the application should fall back to it's general resource resolution methods.",
+      "inherited": false
+    },
+    {
+      "name": "cronString",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Cron.cronString",
+      "min": 1,
+      "max": "1",
+      "short": "The schedule on which the job runs",
+      "definition": "A schedule for the job to be executed, as a cron expression. An expression that is not a valid five-field cron expression is rejected on write.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "endTime",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "Cron.endTime",
+      "min": 0,
+      "max": "1",
+      "short": "The point after which the job stops running",
+      "definition": "The point in time after which the job no longer runs. A job whose end time has already passed is never scheduled, and a running one is removed once the time passes. When absent, the job runs until it is disabled or deleted.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "targetReference",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Bot",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "Cron.targetReference",
+      "min": 1,
+      "max": "1",
+      "short": "The target invoked by the scheduled job",
+      "definition": "The target invoked each time the scheduled job runs.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "The identifier of the cron job",
+      "expression": "Cron.identifier"
+    },
+    {
+      "name": "on-behalf-of",
+      "type": "reference",
+      "description": "The project membership on whose behalf the cron job runs",
+      "expression": "Cron.onBehalfOf"
+    },
+    {
+      "name": "target",
+      "type": "reference",
+      "description": "The Bot invoked by the cron job",
+      "expression": "Cron.targetReference"
+    }
+  ]
+}

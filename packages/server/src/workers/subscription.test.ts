@@ -126,7 +126,6 @@ describe('Subscription Worker', () => {
       extendedMode: true,
       projects: [botProjectDetails.project],
       author: createReference(botProjectDetails.client),
-      currentProject: botProjectDetails.project,
     });
 
     mockLambdaClient = mockClient(LambdaClient);
@@ -291,15 +290,15 @@ describe('Subscription Worker', () => {
             headers: {
               'Content-Type': ContentType.FHIR_JSON,
               Authorization: 'Basic xyz',
-              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
-              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+              'x-trace-id': '12345678901234567890123456789012',
+              traceparent: expect.stringMatching(/^00-12345678901234567890123456789012-[0-9a-f]{16}-01$/),
               'X-Medplum-Subscription': subscription.id,
               'X-Medplum-Interaction': 'create',
             },
           })
         );
       },
-      { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
+      { traceId: '12345678901234567890123456789012' }
     ));
 
   test('Create-only subscription', () =>
@@ -414,13 +413,13 @@ describe('Subscription Worker', () => {
               'X-Medplum-Interaction': 'delete',
               'X-Medplum-Deleted-Resource': `Patient/${patient.id}`,
               'X-Signature': createHmac('sha256', secret).update('{}').digest('hex'),
-              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
-              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+              'x-trace-id': '12345678901234567890123456789012',
+              traceparent: expect.stringMatching(/^00-12345678901234567890123456789012-[0-9a-f]{16}-01$/),
             },
           })
         );
       },
-      { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
+      { traceId: '12345678901234567890123456789012' }
     ));
 
   test('Send subscriptions with signature', () =>
@@ -468,15 +467,15 @@ describe('Subscription Worker', () => {
             headers: {
               'Content-Type': ContentType.FHIR_JSON,
               'X-Signature': signature,
-              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
-              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+              'x-trace-id': '12345678901234567890123456789012',
+              traceparent: expect.stringMatching(/^00-12345678901234567890123456789012-[0-9a-f]{16}-01$/),
               'X-Medplum-Subscription': subscription.id,
               'X-Medplum-Interaction': 'create',
             },
           })
         );
       },
-      { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
+      { traceId: '12345678901234567890123456789012' }
     ));
 
   test('Send subscriptions with legacy signature extension', () =>
@@ -524,15 +523,15 @@ describe('Subscription Worker', () => {
             headers: {
               'Content-Type': ContentType.FHIR_JSON,
               'X-Signature': signature,
-              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
-              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+              'x-trace-id': '12345678901234567890123456789012',
+              traceparent: expect.stringMatching(/^00-12345678901234567890123456789012-[0-9a-f]{16}-01$/),
               'X-Medplum-Subscription': subscription.id,
               'X-Medplum-Interaction': 'create',
             },
           })
         );
       },
-      { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
+      { traceId: '12345678901234567890123456789012' }
     ));
 
   test('Ignore non-subscription subscriptions', () =>

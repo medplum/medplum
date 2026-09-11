@@ -6,18 +6,22 @@ import {
   endOfMonth,
   enumerateDateRange,
   filterByTimeOfDay,
-  formatDateRange,
+  formatTimezoneLabel,
   formatZonedTime,
   getActorGroupKey,
   getAppointmentKey,
   getDurationMinutes,
   getFindWindowError,
+  getZonedDayRange,
   groupAppointmentsByDay,
+  isViewerTimezone,
   parseDayKey,
   parseZonedTime,
 } from './AppointmentFinder.times';
 
 const EASTERN = 'America/New_York';
+const PACIFIC = 'America/Los_Angeles';
+const ARIZONA = 'America/Phoenix';
 
 describe('filterByTimeOfDay', () => {
   const morning = buildProposedAppointment({ start: '2026-07-27T13:00:00.000Z' }); // 9:00 Eastern
@@ -90,6 +94,29 @@ describe('groupAppointmentsByDay', () => {
     expect(day.date.getFullYear()).toBe(2026);
     expect(day.date.getMonth()).toBe(6);
     expect(day.date.getDate()).toBe(27);
+  });
+
+  test('Lists every day searched, including the ones offering nothing', () => {
+    const days = groupAppointmentsByDay([buildProposedAppointment({ start: '2026-07-27T13:00:00.000Z' })], EASTERN, {
+      start: new Date(2026, 6, 27),
+      end: new Date(2026, 6, 29, 23, 59, 59, 999),
+    });
+
+    expect(days.map((day) => day.key)).toStrictEqual(['2026-07-27', '2026-07-28', '2026-07-29']);
+    expect(days[0].groups).toHaveLength(1);
+    expect(days[1].groups).toStrictEqual([]);
+    expect(days[2].groups).toStrictEqual([]);
+  });
+
+  test('Keeps a day that offered times outside the days searched', () => {
+    // The search window is local days, but times are read in the site's own timezone,
+    // so a result can land a day off the searched edge.
+    const days = groupAppointmentsByDay([buildProposedAppointment({ start: '2026-07-26T13:00:00.000Z' })], EASTERN, {
+      start: new Date(2026, 6, 27),
+      end: new Date(2026, 6, 27, 23, 59, 59, 999),
+    });
+
+    expect(days.map((day) => day.key)).toStrictEqual(['2026-07-26', '2026-07-27']);
   });
 });
 
@@ -209,21 +236,6 @@ describe('enumerateDateRange', () => {
   });
 });
 
-describe('formatDateRange', () => {
-  test('Says which days are being searched', () => {
-    expect(formatDateRange({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 27) })).toBe('Monday, July 27');
-    expect(formatDateRange({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 30) })).toBe(
-      'Monday, July 27 – Thursday, July 30'
-    );
-    expect(formatDateRange({ start: new Date(2026, 6, 27) })).toBe('From Monday, July 27');
-    expect(formatDateRange({ end: new Date(2026, 6, 30) })).toBe('Through Thursday, July 30');
-  });
-
-  test('Says nothing when neither end was asked for', () => {
-    expect(formatDateRange({})).toBeUndefined();
-  });
-});
-
 describe('getFindWindowError', () => {
   test('A range inside the window can be searched', () => {
     expect(getFindWindowError({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 27, 23, 59) })).toBeUndefined();
@@ -242,5 +254,92 @@ describe('getFindWindowError', () => {
     expect(getFindWindowError({})).toBeUndefined();
     expect(getFindWindowError({ start: new Date(2026, 6, 27) })).toBeUndefined();
     expect(getFindWindowError({ end: new Date(2026, 6, 27) })).toBeUndefined();
+  });
+});
+
+describe('formatZonedTime', () => {
+  const summer = new Date('2026-07-27T13:30:00.000Z');
+  const winter = new Date('2026-01-27T14:30:00.000Z');
+
+  test('Names the zone only when asked to', () => {
+    expect(formatZonedTime(summer, EASTERN)).toBe('9:30 AM');
+    expect(formatZonedTime(summer, EASTERN, { withTimezone: true })).toBe('9:30 AM ET');
+  });
+
+  test('Names the zone the same way on either side of a daylight saving change', () => {
+    // The generic name spares the reader "EDT" in July and "EST" in January for what they
+    // think of as one zone.
+    expect(formatZonedTime(winter, EASTERN, { withTimezone: true })).toBe('9:30 AM ET');
+  });
+});
+
+describe('formatTimezoneLabel', () => {
+  test('Writes the zone the short way', () => {
+    expect(formatTimezoneLabel(EASTERN)).toBe('ET');
+    expect(formatTimezoneLabel(PACIFIC)).toBe('PT');
+  });
+
+  test('Uses the standard abbreviation for a zone that never changes', () => {
+    // Arizona keeps standard time all year, so there is nothing for a generic name to
+    // generalise over and the abbreviation stands on its own.
+    expect(formatTimezoneLabel(ARIZONA)).toBe('MST');
+  });
+});
+
+describe('isViewerTimezone', () => {
+  test('Answers against the viewer it is given', () => {
+    expect(isViewerTimezone(EASTERN, EASTERN)).toBe(true);
+    expect(isViewerTimezone(EASTERN, PACIFIC)).toBe(false);
+  });
+
+  test('Judges by identifier, not by the clock the zones happen to share', () => {
+    // Arizona keeps standard time all year, so it reads the same as Pacific for half of it.
+    // Naming the zone regardless keeps the rule one a reader can state.
+    expect(isViewerTimezone(ARIZONA, PACIFIC)).toBe(false);
+  });
+
+  test("An unresolved zone is the viewer's own, since that is what gets displayed", () => {
+    expect(isViewerTimezone(undefined, PACIFIC)).toBe(true);
+  });
+});
+
+describe('getZonedDayRange', () => {
+  // Well clear of the runner's clock, so nothing here is floored at now.
+  const AUGUST_17 = new Date(2099, 7, 17);
+
+  test('Bounds the day at the site, not at the viewer', () => {
+    const range = getZonedDayRange(AUGUST_17, EASTERN);
+
+    // Midnight Eastern on the 17th through midnight on the 18th, so an 11pm–12am
+    // slot still satisfies `$find`'s `end <= range.end`.
+    expect(range.start.toISOString()).toBe('2099-08-17T04:00:00.000Z');
+    expect(range.end.toISOString()).toBe('2099-08-18T04:00:00.000Z');
+  });
+
+  test('Covers a day that daylight saving made short or long', () => {
+    const hours = (day: Date, timezone: string): number => {
+      const range = getZonedDayRange(day, timezone);
+      return (range.end.getTime() - range.start.getTime()) / 3_600_000;
+    };
+
+    // Assuming an ordinary 24 hours would lose an hour of one and overrun the other.
+    expect(hours(new Date(2099, 2, 8), EASTERN)).toBe(23);
+    expect(hours(new Date(2099, 10, 1), EASTERN)).toBe(25);
+  });
+
+  test('Never starts in the past, and a day gone by is read as today', () => {
+    const now = new Date();
+    const range = getZonedDayRange(new Date(2020, 0, 1), EASTERN);
+
+    expect(range.start.getTime()).toBeGreaterThanOrEqual(now.getTime());
+    // Today at the site ends the range, rather than a day five years gone.
+    expect(range.end.getTime()).toBeGreaterThan(range.start.getTime());
+  });
+
+  test("Without a zone it bounds the day on the viewer's own clock", () => {
+    const range = getZonedDayRange(AUGUST_17);
+
+    expect(range.start).toStrictEqual(new Date(2099, 7, 17, 0, 0, 0, 0));
+    expect(range.end).toStrictEqual(new Date(2099, 7, 18, 0, 0, 0, 0));
   });
 });

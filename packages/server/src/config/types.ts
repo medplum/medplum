@@ -230,7 +230,7 @@ export interface MedplumServerConfig {
 
   /**
    * Optional list of email domains that are blocked server-wide, regardless of
-   * any project-level `allowedEmailDomain` setting (e.g. disposable email providers).
+   * any project-level `allowedPractitionerEmailDomain` setting (e.g. disposable email providers).
    * Matched case-insensitively against the domain portion of the email address.
    */
   blockedEmailDomains?: string[];
@@ -248,6 +248,51 @@ export interface MedplumServerConfig {
    * as they are necesary for system functionality.
    */
   enabledSearchParameters?: string[];
+
+  /**
+   * Optional customizations to the server generated CapabilityStatement.
+   */
+  capabilityStatement?: MedplumCapabilityStatementConfig;
+}
+
+export interface MedplumCapabilityStatementConfig {
+  /**
+   * Partial CapabilityStatement merged over the server generated statement.
+   * Top level fields replace the generated values wholesale, so setting `rest` here replaces the
+   * generated `rest` entirely; prefer the filters below to restrict it.
+   */
+  overlay?: Record<string, unknown>;
+
+  /**
+   * Optional allowlist of advertised resource types. Cannot be combined with `excludeResourceTypes`.
+   */
+  includeResourceTypes?: string[];
+
+  /**
+   * Optional denylist of advertised resource types. Cannot be combined with `includeResourceTypes`.
+   */
+  excludeResourceTypes?: string[];
+
+  /**
+   * Optional advertised interactions, keyed by resource type.
+   * The `*` key sets the default for resource types that are not listed explicitly.
+   * An empty array advertises no interactions for that resource type.
+   */
+  interactions?: Record<string, string[]>;
+
+  /**
+   * Optional advertised system level interactions, such as `transaction` and `batch`.
+   */
+  systemInteractions?: string[];
+
+  /**
+   * Controls the advertised `supportedProfile` for each resource type.
+   * - `true` or omitted: advertise the server generated profiles (US Core).
+   * - `false`: omit `supportedProfile` entirely.
+   * - object: per resource type override, keyed by resource type. Listed types replace the generated
+   *   profiles (an empty array advertises none for that type); unlisted types keep the generated defaults.
+   */
+  supportedProfiles?: boolean | Record<string, string[]>;
 }
 
 export interface SubscriptionAutoDisableTrigger {

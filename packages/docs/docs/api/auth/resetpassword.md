@@ -47,6 +47,8 @@ await medplum.post('auth/resetpassword', {
 
 ### Notes
 
+- Reset links expire one hour after they are issued
+- Requesting a new reset invalidates any earlier reset link for that user
 - When resetting password for project-scoped users, `projectId` must be provided
 - Omit `projectId` when resetting password for system-level users
 - If you are building a custom reset password email, set sendEmail to false

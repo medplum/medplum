@@ -15,7 +15,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { bcryptHashPassword, isEmailDomainAllowed } from './utils';
+import { bcryptHashPassword, projectRegistrationAllowed } from './utils';
 import { verifyEmail } from './verifyemail';
 
 export const newUserValidator = makeValidationMiddleware([
@@ -75,8 +75,9 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       sendOutcome(res, normalizeOperationOutcome(err));
       return;
     }
-    if (!isEmailDomainAllowed(email, project, config.blockedEmailDomains)) {
-      sendOutcome(res, badRequest('Email domain is not allowed for this project', 'email'));
+    const registrationOutcome = projectRegistrationAllowed(project);
+    if (registrationOutcome) {
+      sendOutcome(res, registrationOutcome);
       return;
     }
   }
@@ -148,7 +149,7 @@ export async function createUser(request: NewUserRequest): Promise<WithId<User>>
   return result;
 }
 
-async function sendVerificationEmail(user: WithId<User>, login: WithId<Login>): Promise<void> {
+export async function sendVerificationEmail(user: WithId<User>, login: WithId<Login>): Promise<void> {
   const redirectUri = concatUrls(getConfig().appBaseUrl, `register?login=${login.id}`);
   const systemRepo = getGlobalSystemRepo();
   const { id, secret } = await verifyEmail(systemRepo, user, redirectUri);

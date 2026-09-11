@@ -10,7 +10,7 @@ import { inviteUser } from '../../admin/invite';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getAuthTokens, tryLogin } from '../../oauth/utils';
-import { createTestProject } from '../../test.setup';
+import { createTestProject, getSuperAdminTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
 
 describe('User/$update-email', () => {
@@ -226,10 +226,7 @@ describe('User/$update-email', () => {
     });
 
     // User Super Admin to call operation
-    const { accessToken: superAdminToken } = await createTestProject({
-      withAccessToken: true,
-      project: { superAdmin: true },
-    });
+    const { accessToken: superAdminToken } = await getSuperAdminTestProject();
 
     const newEmail = `user+${randomUUID()}@example.com`;
     const res = await request(app)

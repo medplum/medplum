@@ -198,6 +198,7 @@ const booleanKeys = new Set([
   'logAuditEvents',
   'mcpEnabled',
   'registerEnabled',
+  'requireVerifiedEmailForProjectCreation',
   'serverScopedSubscriptionsEnabled',
   'require',
   'rejectUnauthorized',
@@ -211,6 +212,7 @@ export function isBooleanConfig(key: string): boolean {
 }
 
 const objectKeys = new Set([
+  'capabilityStatement',
   'tls',
   'ssl',
   'defaultProjectFeatures',

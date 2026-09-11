@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, resolveId } from '@medplum/core';
+import { badRequest, createReference, resolveId } from '@medplum/core';
 import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { USER_SECURITY_REQUEST_EXPIRATION_MS } from '../constants';
 import type { Repository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
@@ -18,7 +19,8 @@ const app = express();
 export async function createUserSecurityRequest(
   repo: Repository,
   user: User,
-  type: UserSecurityRequest['type']
+  type: UserSecurityRequest['type'],
+  overrides?: Partial<UserSecurityRequest>
 ): Promise<WithId<UserSecurityRequest>> {
   return repo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',
@@ -28,6 +30,7 @@ export async function createUserSecurityRequest(
     type,
     user: createReference(user),
     secret: generateSecret(16),
+    ...overrides,
   });
 }
 
@@ -108,4 +111,58 @@ describe('Verify email handler', () => {
     });
     expect(res2).toHaveStatus(400);
   });
+  test('Sets expiration and supersedes prior requests', async () =>
+    withTestContext(async () => {
+      const first = await verifyEmail(systemRepo, user);
+      expect(new Date(first.expiresAt as string).getTime()).toBeGreaterThan(Date.now());
+
+      await verifyEmail(systemRepo, user);
+
+      const firstAfter = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', first.id);
+      expect(firstAfter.used).toBe(true);
+
+      const res = await request(app).post('/auth/verifyemail').type('json').send({
+        id: first.id,
+        secret: first.secret,
+      });
+      expect(res).toHaveStatus(400);
+    }));
+
+  test('Expired UserSecurityRequest', async () =>
+    withTestContext(async () => {
+      const usr = await createUserSecurityRequest(systemRepo, user, 'verify-email', {
+        expiresAt: new Date(Date.now() - 1000).toISOString(),
+      });
+
+      const res = await request(app).post('/auth/verifyemail').type('json').send({
+        id: usr.id,
+        secret: usr.secret,
+      });
+      expect(res).toHaveStatus(400);
+      expect(res.body).toMatchObject(badRequest('Expired'));
+
+      const userAfter = await systemRepo.readResource<User>('User', user.id);
+      expect(userAfter.emailVerified).not.toStrictEqual(true);
+    }));
+
+  test('UserSecurityRequest without expiresAt expires from lastUpdated', async () =>
+    withTestContext(async () => {
+      // Predates the expiresAt field, so it falls back to lastUpdated plus the verify-email window
+      const usr = await createUserSecurityRequest(systemRepo, user, 'verify-email', {
+        meta: {
+          project: resolveId(user.project),
+          lastUpdated: new Date(
+            Date.now() - USER_SECURITY_REQUEST_EXPIRATION_MS['verify-email'] - 60_000
+          ).toISOString(),
+        },
+      });
+      expect(usr.expiresAt).toBeUndefined();
+
+      const res = await request(app).post('/auth/verifyemail').type('json').send({
+        id: usr.id,
+        secret: usr.secret,
+      });
+      expect(res).toHaveStatus(400);
+      expect(res.body).toMatchObject(badRequest('Expired'));
+    }));
 });

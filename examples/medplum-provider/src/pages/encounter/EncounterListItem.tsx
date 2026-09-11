@@ -39,7 +39,7 @@ export function EncounterListItem({ encounter, selectedEncounterId, getItemUri }
             [classes.selected]: isSelected,
           })}
         >
-          <Stack gap={0} flex={1}>
+          <Stack gap={0} flex={1} miw={0}>
             <Group justify="space-between" align="flex-start" wrap="nowrap">
               <Text fw={700} className={classes.title} flex={1}>
                 {title}
