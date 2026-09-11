@@ -80,6 +80,26 @@ function hasPill(name: string): boolean {
   return screen.queryAllByText(name).some((node) => node.className.includes('Pill'));
 }
 
+/**
+ * What every asterisk on screen is marking, so a test can say where the mark sits
+ * rather than only that something carries one.
+ * @returns The label text beside each asterisk, in document order.
+ */
+function asteriskedLabels(): string[] {
+  return Array.from(document.querySelectorAll('[class*="InputWrapper-required"]')).map((mark) =>
+    (mark.closest('label, .mantine-InputWrapper-label')?.textContent ?? '').replace('*', '').trim()
+  );
+}
+
+/**
+ * How many fields are marked required. Mantine puts the attribute on the input
+ * wrapper rather than on a control, since `PillsInput` renders a div there.
+ * @returns The count.
+ */
+function requiredFieldCount(): number {
+  return document.querySelectorAll('.mantine-PillsInput-input[required]').length;
+}
+
 async function click(name: string): Promise<void> {
   const button = screen.getByRole('button', { name });
   await act(async () => {
@@ -185,6 +205,25 @@ describe('AppointmentActorSelections', () => {
 
     expect(screen.getByRole('button', { name: 'Remove provider 1' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Remove provider 2' })).toBeInTheDocument();
+  });
+
+  test('The asterisk marks the actor type, while every row stays required', async () => {
+    const medplum = await setupClient();
+    await setup(medplum);
+
+    // A lone row is the whole question, so it carries the mark itself. Only the
+    // provider is required; the room and the device are not.
+    expect(asteriskedLabels()).toStrictEqual(['Provider']);
+    expect(requiredFieldCount()).toBe(1);
+
+    await pick(/^provider$/i, 'riv', 'Dr. Maya Rivera');
+    await click('Add another provider');
+
+    // Neither row is what has to be answered, so the mark moves up to the heading over
+    // them. Both rows stay required all the same: it is `withAsterisk` that decides
+    // what is marked, so suppressing the mark no longer costs the field its state.
+    expect(asteriskedLabels()).toStrictEqual(['Provider']);
+    expect(requiredFieldCount()).toBe(2);
   });
 
   test('Answering one actor type leaves the others as they were', async () => {

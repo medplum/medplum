@@ -36,6 +36,8 @@ export interface AppointmentActorSelectProps {
   readonly placeholder?: string;
   /** Whether the field must be answered. Defaults to whether its actor type is required. */
   readonly required?: boolean;
+  /** Whether to mark the field with an asterisk. Defaults to `required`. */
+  readonly withAsterisk?: boolean;
 }
 
 /**
@@ -80,6 +82,7 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
       name={actorType}
       label={label}
       required={required}
+      withAsterisk={props.withAsterisk}
       description={props.description}
       placeholder={placeholder}
       error={error}
