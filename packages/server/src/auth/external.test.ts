@@ -5,6 +5,7 @@ import { ContentType, OAuthTokenAuthMethod } from '@medplum/core';
 import type { ClientApplication, DomainConfiguration, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { createClient } from '../admin/client';
@@ -13,6 +14,7 @@ import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
+import { getUserByEmailWithoutProject } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { mockFetchJson, mockFetchText } from '../test.setup.fetch';
 import { registerNew } from './register';
@@ -280,6 +282,142 @@ describe('External', () => {
     expect(redirect.host).toStrictEqual(domain);
     expect(redirect.pathname).toStrictEqual('/auth/callback');
     expect(redirect.searchParams.get('code')).toBeTruthy();
+  });
+
+  test('Login is scoped to the client project across tenants', async () => {
+    // A user who belongs only to a different project is not logged in through a
+    // ClientApplication in another project. External login resolves the user by email
+    // (including server-scoped users via getUserByEmailWithoutProject), but membership is
+    // scoped to the client's project, so a user with no membership there results in
+    // "User not found" and no authorization code is issued.
+    const otherEmail = `other-${randomUUID()}@example.com`;
+    await withTestContext(() =>
+      registerNew({
+        firstName: 'Other',
+        lastName: 'User',
+        projectName: 'Other Project ' + randomUUID(),
+        email: otherEmail,
+        password: 'password!@#',
+        remoteAddress: '6.6.6.6',
+        userAgent: 'Mozilla/5.0',
+      })
+    );
+
+    // The user is server-scoped, and so is resolvable by email with no project.
+    const otherUser = await withTestContext(() => getUserByEmailWithoutProject(otherEmail));
+    expect(otherUser).toBeDefined();
+
+    // Drive the callback with a client from a different project and a token asserting the
+    // other user's email.
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: externalAuthClient.id }),
+    });
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(otherEmail)));
+
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('User not found');
+  });
+
+  test('id_token verification rejects invalid tokens', async () => {
+    // Missing id_token in the token endpoint response.
+    const noJwksUrl = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: externalAuthClient.id }),
+    });
+    fetchMock.mockImplementation(() => mockFetchJson({}));
+    let res = await request(app).get(noJwksUrl);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Missing id_token in external identity provider response');
+
+    const jwksClient = await withTestContext(() =>
+      createClient(systemRepo, { project, name: 'JWKS Client', redirectUri })
+    );
+    const idp = {
+      ...identityProvider,
+      jwksUrl: 'https://issuer.example.com/.well-known/jwks.json',
+      identitySource: 'email' as const,
+      identityMappingMode: 'user-email' as const,
+    };
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: jwksClient.id }),
+    });
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
+
+    // JWKS configured without an issuer.
+    await withTestContext(() => systemRepo.updateResource<ClientApplication>({ ...jwksClient, identityProvider: idp }));
+    res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Missing issuer for external identity provider');
+
+    // Issuer configured, but the (unsigned) token does not verify against the JWKS.
+    await withTestContext(() =>
+      systemRepo.updateResource<ClientApplication>({
+        ...jwksClient,
+        identityProvider: { ...idp, issuer: 'https://issuer.example.com' },
+      })
+    );
+    res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Failed to verify code - check your identity provider configuration');
+  });
+
+  test('id_token that verifies against the JWKS is accepted', async () => {
+    const issuer = 'https://issuer.example.com';
+    const jwksUrl = 'https://issuer.example.com/.well-known/verified-jwks.json';
+    const keyPair = await generateKeyPair('ES256');
+    const publicJwk = await exportJWK(keyPair.publicKey);
+
+    const jwksClient = await withTestContext(() =>
+      createClient(systemRepo, { project, name: 'JWKS Verified Client', redirectUri })
+    );
+    await withTestContext(() =>
+      systemRepo.updateResource<ClientApplication>({
+        ...jwksClient,
+        identityProvider: {
+          ...identityProvider,
+          issuer,
+          jwksUrl,
+          identitySource: 'email',
+          identityMappingMode: 'user-email',
+        },
+      })
+    );
+
+    const signIdToken = (audience: string): Promise<string> =>
+      new SignJWT({ email })
+        .setProtectedHeader({ alg: 'ES256' })
+        .setIssuer(issuer)
+        .setAudience(audience)
+        .setExpirationTime('2h')
+        .sign(keyPair.privateKey);
+
+    // The token endpoint returns the signed token; the JWKS endpoint returns the public key.
+    const mockIdToken = (jwt: string): void => {
+      fetchMock.mockImplementation((input: any) =>
+        String(input).includes('verified-jwks')
+          ? mockFetchJson({ keys: [publicJwk] })
+          : mockFetchJson({ id_token: jwt })
+      );
+    };
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: jwksClient.id }),
+    });
+
+    // Audience defaults to the IdP client ID, so a token audienced to it is accepted.
+    mockIdToken(await signIdToken(identityProvider.clientId));
+    let res = await request(app).get(url);
+    expect(res).toHaveStatus(302);
+    expect(new URL(res.header.location).searchParams.get('code')).toBeTruthy();
+
+    // A token audienced to a different relying party is rejected.
+    mockIdToken(await signIdToken('some-other-client'));
+    res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Failed to verify code - check your identity provider configuration');
   });
 
   test('Invalid client', async () => {
