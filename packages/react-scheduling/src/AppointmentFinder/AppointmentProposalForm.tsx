@@ -151,7 +151,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [booked, setBooked] = useState(false);
   const [bookError, setBookError] = useState<unknown>(undefined);
 
-  const selectionError = getSelectionError(selections);
+  const selectionError = useMemo(() => getSelectionError(selections), [selections]);
 
   // Each field is asked for on its own, by a visit type whose eligibility names it.
   const requirements = useMemo(() => getSchedulingRequirements(service), [service]);
