@@ -132,23 +132,19 @@ function getFieldsList(
 ): string[] {
   const result = [] as string[];
   const keys = new Set<string>();
-  const names = new Set<string>();
 
   // Add properties first
   for (const key of Object.keys(typeSchema.elements)) {
     result.push(key);
     keys.add(key.toLowerCase());
-    names.add(buildFieldNameString(key));
   }
 
-  // Add search parameters if unique
+  // Add search parameters if unique by code
   if (searchParams) {
     for (const code of Object.keys(searchParams)) {
-      const name = buildFieldNameString(code);
-      if (!keys.has(code) && !names.has(name)) {
+      if (!keys.has(code)) {
         result.push(code);
         keys.add(code);
-        names.add(name);
       }
     }
   }
