@@ -22,6 +22,18 @@ const MORE_DAYS = 2;
 // Generous heuristic for how many time results might be returned for a given day.
 const TIMES_PER_DAY = 50;
 
+/**
+ * How many actor combinations one round of the search covers.
+ *
+ * Each one is a `$find` request of its own, and the product grows by
+ * multiplication: one of five providers and one of five rooms is twenty-five
+ * ways of holding the visit. Nobody reads twenty-five lists of times, and firing
+ * them all costs the server twenty-five availability resolutions to answer a
+ * question the first few usually settle. So a round is asked, and the rest are
+ * asked for.
+ */
+const COMBINATION_WAVE = 6;
+
 export interface UseDaySearchOptions {
   /** The service being booked. No search runs without one. */
   readonly service: WithId<HealthcareService> | undefined;
@@ -31,8 +43,11 @@ export interface UseDaySearchOptions {
   readonly timezone: string | undefined;
   /** The day to open on. Defaults to today. */
   readonly defaultStart?: Date;
-  /** Fired when the days picked change, so the caller can drop what it chose from the old ones. */
-  readonly onDaysChanged?: () => void;
+  /**
+   * Fired when what is on show is replaced rather than added to, so the caller can
+   * drop the time it chose out of results that no longer exist.
+   */
+  readonly onResultsReplaced?: () => void;
 }
 
 export interface UseDaySearchResult {
@@ -48,6 +63,14 @@ export interface UseDaySearchResult {
   readonly loadingMoreDays: boolean;
   /** Set only when every combination's `$find` failed. */
   readonly findRequestError: Error | undefined;
+  /** How many of the actor combinations the times on show were searched for. */
+  readonly searchedCombinationCount: number;
+  /** How many ways of holding the visit the current selections come to in all. */
+  readonly totalCombinationCount: number;
+  /** Whether any combination has yet to be searched. */
+  readonly hasMoreCombinations: boolean;
+  /** Takes in another round of actor combinations. */
+  readonly searchMoreCombinations: () => void;
   /** A window `$find` will not answer, caught before the request is made. */
   readonly windowError: string | undefined;
   /**
@@ -75,12 +98,15 @@ export interface UseDaySearchResult {
  * and the fetch have to sit together to stay honest.
  *
  * @param options - The service, actors and zone to search against, and the day to open on.
- * @returns The days on show with their times, load and error state, and the three ways in.
+ * @returns The days on show with their times, load and error state, and the ways in.
  */
 export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
-  const { service, combinations, timezone, defaultStart, onDaysChanged } = options;
+  const { service, combinations, timezone, defaultStart, onResultsReplaced } = options;
 
   const [daySearch, setDaySearch] = useState<DaySearch>(() => openDaySearch(defaultStart ?? new Date()));
+  const [combinationLimit, setCombinationLimit] = useState(COMBINATION_WAVE);
+
+  const searchedCombinations = useMemo(() => combinations.slice(0, combinationLimit), [combinations, combinationLimit]);
 
   // Derived rather than held, because the zone is not always known when a day is picked: a
   // search opened straight from the calendar has no service named yet.
@@ -88,7 +114,7 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
 
   const search = useProposedAppointments({
     service,
-    combinations,
+    combinations: searchedCombinations,
     range: siteWindow,
     count: TIMES_PER_DAY * getDayCount(siteWindow.start, siteWindow.end),
   });
@@ -107,9 +133,9 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
   const chooseDayRange = useCallback(
     (start: Date, end?: Date): void => {
       setDaySearch(openDaySearch(start, end));
-      onDaysChanged?.();
+      onResultsReplaced?.();
     },
-    [onDaysChanged]
+    [onResultsReplaced]
   );
 
   // `search.appointments` is the settled result of the current window rather than an
@@ -122,15 +148,20 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     }));
   }, [search.appointments]);
 
-  // `original` is carried over, so the days picked stay picked and `onDaysChanged` does not
-  // fire: it is the extension that goes, not the choice of days.
+  // `original` is carried over, so the days picked stay picked and `onResultsReplaced`
+  // does not fire: it is the extension that goes, not the choice of days.
   const reset = useCallback((): void => {
-    setDaySearch((previous) => ({
-      original: previous.original,
-      range: previous.original,
-      found: [],
-    }));
+    setDaySearch(backToFirstWindow);
+    setCombinationLimit(COMBINATION_WAVE);
   }, []);
+
+  // Unlike `reset`, this does announce itself: the times are refetched, so a chosen
+  // one is replaced by an equal object the caller would no longer recognise.
+  const searchMoreCombinations = useCallback((): void => {
+    setCombinationLimit((limit) => limit + COMBINATION_WAVE);
+    setDaySearch(backToFirstWindow);
+    onResultsReplaced?.();
+  }, [onResultsReplaced]);
 
   // A spinner rather than empty days: only while the first window is still out, before
   // "Show more days" has moved the search past it.
@@ -144,6 +175,10 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     loadingMoreDays: search.loading && !loadingFirstDays,
     findRequestError: search.error,
     windowError: search.windowError,
+    searchedCombinationCount: searchedCombinations.length,
+    totalCombinationCount: combinations.length,
+    hasMoreCombinations: combinations.length > searchedCombinations.length,
+    searchMoreCombinations,
     chooseDayRange,
     showMoreDays,
     reset,
@@ -163,6 +198,15 @@ interface DaySearch {
   readonly range: DateTimeRange;
   /** Times the earlier windows offered, kept on screen while a further one is out. */
   readonly found: readonly Appointment[];
+}
+
+/**
+ * Puts the search back on the days it opened on, dropping everything found since.
+ * @param previous - The search as it stands.
+ * @returns It, narrowed to the days first picked and holding no times.
+ */
+function backToFirstWindow(previous: DaySearch): DaySearch {
+  return { original: previous.original, range: previous.original, found: [] };
 }
 
 /**
