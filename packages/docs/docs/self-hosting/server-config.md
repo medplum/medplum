@@ -324,9 +324,9 @@ Optional flag to use TLS when connecting to the SMTP relay (TLS-on-connect, as o
 
 ### emailProvider
 
-Optional email provider setting. Can be one of: `'none'`, `'awsses'`, `'smtp'`.
+Optional email provider setting. Can be one of: `'none'`, `'awsses'`, `'smtp'`. See [Send Emails with Amazon SES](/docs/self-hosting/amazon-ses) for SES setup, or [Send SMTP Emails with SendGrid](/docs/self-hosting/sendgrid) for an SMTP example.
 
-**Default:** `'awsses'` if in AWS, otherwise `'none'`
+**Default:** `'smtp'` if an `smtp` block is configured, otherwise `'awsses'`
 
 ### allowProjectSmtp
 
@@ -591,7 +591,7 @@ The OAuth registration URL. By default, Medplum server uses built in OAuth, so `
 
 ### approvedSenderEmails
 
-Optional comma separated list of approved sender email addresses for AWS SES.
+Optional comma separated list of approved sender email addresses. When a Bot or the `$send-email` operation supplies its own `From` address, it is only used if it appears in this list; otherwise the server falls back to `supportEmail`. When using AWS SES, every address must be a verified identity. See [Send Emails with Amazon SES](/docs/self-hosting/amazon-ses).
 
 **Default:** None
 
