@@ -26,7 +26,7 @@ export const PAYER_ORGANIZATION_TYPE = 'pay';
 export const PROVIDER_ORGANIZATION_TYPE = 'prov';
 
 /**
- * Marker identifier stamped on organizations managed through Billing Settings; the billing organization
+ * Marker identifier stamped on organizations managed through Candid Billing Setup; the billing organization
  * list filters on it so unrelated Organizations (payers, facilities) never appear.
  */
 export const MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM = 'https://www.medplum.com/provider';
@@ -224,7 +224,7 @@ export interface BillingOrganizationFormValues {
 
 /**
  * Applies billing form values onto an Organization, stamping the `prov` type (so the encounter billing picker
- * finds it) and the provider-app marker identifier (so Billing Settings lists it). Other fields are preserved.
+ * finds it) and the provider-app marker identifier (so Candid Billing Setup lists it). Other fields are preserved.
  * @param organization - The existing Organization, or a bare `{resourceType: 'Organization'}` for create.
  * @param fields - The billing form values.
  * @returns The updated Organization resource (not persisted).

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Stack, Tabs, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import type { Organization, Practitioner, Reference } from '@medplum/fhirtypes';
+import type { Organization, Practitioner, PractitionerRole } from '@medplum/fhirtypes';
 import { Document, LinkTabs, useSearchOne } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -22,7 +22,7 @@ const TABS = [
   { label: 'Billing Organizations', value: 'Organizations' },
   { label: 'Billing Practitioners', value: 'Practitioners' },
   { label: 'Enrolled Payers', value: 'Payers' },
-  { label: 'Candid Payer Directory', value: 'Directory' },
+  { label: 'Payer Directory', value: 'Directory' },
 ];
 
 export function BillingSetupPage(): JSX.Element {
@@ -39,14 +39,14 @@ export function BillingSetupPage(): JSX.Element {
     undefined
   );
   const [editingPractitioner, setEditingPractitioner] = useState<
-    { practitioner: WithId<Practitioner>; billingOrganization?: Reference<Organization> } | undefined
+    { practitioner: WithId<Practitioner>; roles: WithId<PractitionerRole>[] } | undefined
   >(undefined);
   const [detailsPayer, setDetailsPayer] = useState<Organization | undefined>(undefined);
 
   return (
     <Document>
       <Stack gap="lg">
-        <Title order={1}>Billing Settings</Title>
+        <Title order={1}>Candid Billing Setup</Title>
         <LinkTabs baseUrl="/Settings/Billing" tabs={TABS}>
           <Tabs.Panel value="Organizations" pt="md">
             <BillingOrganizationList
@@ -59,9 +59,7 @@ export function BillingSetupPage(): JSX.Element {
           <Tabs.Panel value="Practitioners" pt="md">
             <BillingPractitionerList
               savedVersion={practitionersVersion}
-              onSelectPractitioner={(practitioner, billingOrganization) =>
-                setEditingPractitioner({ practitioner, billingOrganization })
-              }
+              onSelectPractitioner={(practitioner, roles) => setEditingPractitioner({ practitioner, roles })}
             />
           </Tabs.Panel>
           <Tabs.Panel value="Payers" pt="md">
@@ -85,7 +83,7 @@ export function BillingSetupPage(): JSX.Element {
           candidBotId={createBot?.id}
           candidEditBotId={editBot?.id}
           practitioner={editingPractitioner?.practitioner}
-          billingOrganization={editingPractitioner?.billingOrganization}
+          roles={editingPractitioner?.roles ?? []}
           onClose={() => setEditingPractitioner(undefined)}
           onSaved={() => setPractitionersVersion((version) => version + 1)}
         />
