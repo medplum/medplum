@@ -83,6 +83,18 @@ export async function searchField(label: RegExp, query: string): Promise<HTMLEle
   return listbox;
 }
 
+/**
+ * Adds another row to one actor type, for a second one the visit needs.
+ * @param lowercaseLabel - The actor type as the form writes it, e.g. `provider`.
+ */
+export async function addActorRow(lowercaseLabel: string): Promise<void> {
+  const button = screen.getByRole('button', { name: `Add another ${lowercaseLabel}` });
+  await act(async () => {
+    fireEvent.click(button);
+  });
+  await settleAutocomplete();
+}
+
 export async function chooseActor(role: RegExp, query: string, name: string): Promise<void> {
   const listbox = await searchField(role, query);
   await act(async () => {
