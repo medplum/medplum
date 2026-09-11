@@ -16,6 +16,43 @@ This guide explains how to enroll a new prescriber in DoseSpot. Medplum provides
 
 Both bots support full EPCS enrollment (IDP + TFA). The self-service bot auto-advances through each registration stage on each call, while the admin bot requires explicit `initIdp`/`initTfa` flags.
 
+## Enrollment Limit Guard Rail
+
+Both enrollment bots enforce an optional Project-level cap on the total number of clinicians they are allowed to enroll. This lets clinic admins control prescriber seat limits without code changes.
+
+The limit is configured in the [`Project.systemSetting`](/docs/self-hosting/project-settings#project-system-settings) field on the Project resource (set by Super Admins):
+
+```json
+{
+  "resourceType": "Project",
+  "systemSetting": [
+    { "name": "dosespotMaxClinicians", "valueInteger": 50 }
+  ]
+}
+```
+
+| Setting | Type | Description | Default |
+|---|---|---|---|
+| `dosespotMaxClinicians` | integer | The maximum number of clinicians the enrollment bots may enroll in the Project. | unlimited |
+
+### How the Guard Rail Works
+
+1. Before enrolling a new clinician, each enrollment bot counts the clinicians already enrolled in the Project
+2. If the count has reached the `dosespotMaxClinicians` limit, the bot stops and returns an error instead of enrolling a new clinician:
+
+```
+DoseSpot enrollment limit reached: 50 of 50 clinicians enrolled.
+Increase the 'dosespotMaxClinicians' project system setting to enroll more clinicians.
+```
+
+3. Updating the existing clinician (for example, auto-advancing through registration stages) is always allowed -- the limit only applies to creating new clinicians
+
+### Notes
+
+- If the setting is not present, or the value is not a positive integer, enrollment is unlimited
+- Bots use the `getDoseSpotMaxClinicians`, `isDoseSpotEnrollmentLimitReached`, and `checkDoseSpotEnrollmentLimit` helpers from `@medplum/dosespot-core` to read and enforce the limit
+- Project members can read the setting, but only Super Admins can modify it
+
 ## Admin-Driven Enrollment (dosespot-enroll-prescriber-bot)
 
 :::note[Prerequisites]

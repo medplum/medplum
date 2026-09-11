@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export {
+  checkDoseSpotEnrollmentLimit,
+  DOSESPOT_MAX_CLINICIANS_SYSTEM_SETTING,
+  getDoseSpotMaxClinicians,
+  isDoseSpotEnrollmentLimitReached,
+} from './enrollment-utils';
+export {
   DOSESPOT_ADD_FAVORITE_MEDICATION_BOT,
   DOSESPOT_ADD_PATIENT_PHARMACY_BOT,
   DOSESPOT_CLINIC_FAVORITE_ID_SYSTEM,
