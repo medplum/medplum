@@ -87,7 +87,7 @@ function hasPill(name: string): boolean {
  */
 function asteriskedLabels(): string[] {
   return Array.from(document.querySelectorAll('[class*="InputWrapper-required"]')).map((mark) =>
-    (mark.closest('label, .mantine-InputWrapper-label')?.textContent ?? '').replace('*', '').trim()
+    (mark.closest('label, .mantine-InputWrapper-label')?.textContent ?? '').replaceAll('*', '').trim()
   );
 }
 
