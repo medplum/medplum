@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { Logger, OperationOutcomeError, badRequest, forbidden, isUUID, parseLogLevel } from '@medplum/core';
+import { Logger, OperationOutcomeError, badRequest, forbidden, parseLogLevel } from '@medplum/core';
 import type {
   Bot,
   ClientApplication,
@@ -24,7 +24,7 @@ import { authenticateTokenImpl } from './oauth/middleware';
 import { getRateLimitRedis } from './redis';
 import type { IRequestContext } from './request-context-store';
 import { requestContextStore } from './request-context-store';
-import { parseTraceparent } from './traceparent';
+import { generateTraceId, getTraceId } from './util/tracing';
 
 export class RequestContext implements IRequestContext {
   readonly requestId: string;
@@ -146,6 +146,12 @@ export function getAuthenticatedContext(): AuthenticatedRequestContext {
 
 export async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { requestId, traceId } = requestIds(req);
+
+  // Echo the identifiers so that a caller can correlate its own logs with Medplum's without
+  // having to supply (and have Medplum trust) an identifier of its own.
+  res.set('X-Request-Id', requestId);
+  res.set('X-Trace-Id', traceId);
+
   let ctx: RequestContext | undefined;
   try {
     const result = await authenticateTokenImpl(req);
@@ -194,39 +200,9 @@ export async function runInAuthenticatedContext<T>(
 ): Promise<T> {
   const repo = await getRepoForLogin(authState, true);
   requestId ??= randomUUID();
-  traceId ??= randomUUID();
+  traceId ??= generateTraceId();
 
   return requestContextStore.run(new AuthenticatedRequestContext(requestId, traceId, authState, repo, options), fn);
-}
-
-export function getTraceId(req: Request): string | undefined {
-  const xTraceId = req.header('x-trace-id');
-  if (xTraceId && isUUID(xTraceId)) {
-    return xTraceId;
-  }
-
-  const traceparent = req.header('traceparent');
-  if (traceparent && parseTraceparent(traceparent)) {
-    return traceparent;
-  }
-
-  const amznTraceId = req.header('x-amzn-trace-id');
-  if (amznTraceId) {
-    return extractAmazonTraceId(amznTraceId);
-  }
-
-  return undefined;
-}
-
-export function extractAmazonTraceId(amznTraceId: string): string | undefined {
-  // https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-request-tracing.html
-  // Definition: Field=version-time-id
-  // Example header: X-Amzn-Trace-Id: Root=1-67891233-abcdef012345678912345678
-  // Example header: X-Amzn-Trace-Id: Self=1-67891233-12456789abcdef012345678;Root=1-67891233-abcdef012345678912345678
-  // Example in Athena: "TID_e0fbe3c75b3c5a45ab84fb156906649b"
-  const regex = /(?:Root|Self)=([^;]+)/;
-  const match = regex.exec(amznTraceId);
-  return match ? match[1] : undefined;
 }
 
 export function buildTracingExtension(): Extension | undefined {
@@ -256,8 +232,11 @@ export function buildTracingExtension(): Extension | undefined {
 }
 
 function requestIds(req: Request): { requestId: string; traceId: string } {
+  // The request ID is always minted here, never taken from the caller. A caller-controlled request
+  // ID cannot be relied upon during an incident, because a caller can collide, reuse, or forge it.
+  // Callers correlate using the X-Request-Id response header instead.
   const requestId = randomUUID();
-  const traceId = getTraceId(req) ?? randomUUID();
+  const traceId = getTraceId(req) ?? generateTraceId();
 
   return { requestId, traceId };
 }

@@ -46,6 +46,28 @@ describe('ResourceTimeline', () => {
     expect(items).toBeDefined();
   });
 
+  test('Shows skeleton while loading, then hides it', async () => {
+    let resolveLoad: (value: PromiseSettledResult<Bundle>[]) => void = () => undefined;
+    const pendingLoad = new Promise<PromiseSettledResult<Bundle>[]>((resolve) => {
+      resolveLoad = resolve;
+    });
+
+    await setup({
+      value: HomerEncounter,
+      loadTimelineResources: () => pendingLoad,
+    });
+
+    expect(screen.getAllByTestId('timeline-item-skeleton').length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('timeline-item')).toBeNull();
+
+    await act(async () => {
+      resolveLoad(await loadTimelineResources(medplum, 'Encounter', HomerEncounter.id as string));
+    });
+
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
+    expect(screen.queryByTestId('timeline-item-skeleton')).toBeNull();
+  });
+
   test('Renders resource', async () => {
     await setup({
       value: HomerEncounter,

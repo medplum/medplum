@@ -320,7 +320,7 @@ export const medplumEslintConfig = [
    * we don't need type checking for vite.config.ts or vitest.config.ts files
    */
   {
-    files: ['**/vite.config.ts', '**/vitest.config.ts'],
+    files: ['**/vite.config.ts', '**/vite.*.config.ts', '**/vitest.config.ts'],
     extends: [tseslint.configs.disableTypeChecked],
   },
 ];

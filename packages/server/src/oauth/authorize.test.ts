@@ -548,6 +548,60 @@ describe('OAuth Authorize', () => {
     expect(location.host).not.toBe('example.com');
   });
 
+  test('Rejects expired refresh token as id_token_hint', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+      scope: 'openid offline_access',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.code).toBeDefined();
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res1.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2).toHaveStatus(200);
+    expect(res2.body.refresh_token).toBeDefined();
+
+    // Use the refresh token, which rotates the login's refresh secret and expires this token
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'refresh_token',
+      refresh_token: res2.body.refresh_token,
+    });
+    expect(res3).toHaveStatus(200);
+
+    // Confirm that the original refresh token is no longer accepted for its own grant type
+    const res4 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'refresh_token',
+      refresh_token: res2.body.refresh_token,
+    });
+    expect(res4).toHaveStatus(400);
+
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id,
+      redirect_uri: client.redirectUris?.[0] as string,
+      scope: 'openid',
+      code_challenge: 'xyz',
+      code_challenge_method: 'plain',
+      id_token_hint: res2.body.refresh_token,
+      prompt: 'none',
+    });
+    const res5 = await request(app).get('/oauth2/authorize?' + params.toString());
+    expect(res5).toHaveStatus(302);
+    expect(res5.headers.location).toBeDefined();
+
+    const location = new URL(res5.headers.location);
+    expect(location.host).toBe('example.com');
+    expect(location.searchParams.get('code')).toBeNull();
+    expect(location.searchParams.get('error')).toBe('login_required');
+  });
+
   test('Post success', async () => {
     const params = new URLSearchParams({
       response_type: 'code',

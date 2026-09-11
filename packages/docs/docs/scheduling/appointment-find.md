@@ -187,7 +187,12 @@ The Appointments are virtual — they are not persisted in the FHIR store. Each 
 1. Reading each Schedule's `SchedulingParameters` extension to determine recurring availability windows, slot duration, buffer times, and alignment constraints
 2. Fetching existing Slot resources for each Schedule in the requested range (busy, busy-tentative, busy-unavailable, and free slots)
 3. Adding time for existing Slot resources with status `free`
-4. Subtracting occupied time for existing Slot resources with status `busy`, `busy-tentative`, or `busy-unavailable`.
+4. Removing occupied time: `busy`, `busy-tentative`, and `busy-unavailable` slots block a time when the bookings covering it reach the strictest applicable limit — the requested `slotCapacity` or the tolerance of any booking already there (see [Overbooking](/docs/scheduling/defining-availability#overbooking)).
+   :::note
+
+   Under the default `slotCapacity` of 1, a single `busy` Slot is blocking. A capacity-1 booking is never offered for overbooking.
+
+   :::
 5. Applying alignment intervals and offsets to produce valid start times
 6. Returning Appointments up to `_count`
 

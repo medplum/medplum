@@ -19,7 +19,7 @@
     "@medplum/fhirtypes": "5.1.37",
     "@medplum/react-hooks": "5.1.37",
     "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.5",
+    "@types/react-dom": "19.2.7",
     "@vitejs/plugin-react": "6.1.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",

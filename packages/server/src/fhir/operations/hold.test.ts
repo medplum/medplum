@@ -701,6 +701,111 @@ describe('Appointment/$hold', () => {
     ]);
   });
 
+  test('with slotCapacity > 1, $hold succeeds while capacity remains', async () => {
+    const practitioner = await makePractitioner({ timezone: 'America/New_York' });
+    const schedule = await makeSchedule({
+      actor: practitioner,
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            threeDayAvailability,
+            { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
+            { url: 'service', valueReference: createReference(officeVisitService) },
+            { url: 'slotCapacity', valuePositiveInt: 2 },
+          ],
+        },
+      ],
+    });
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    // One existing capacity-2 booking leaves room for one more.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      start,
+      end,
+      status: 'busy',
+      schedule: createReference(schedule),
+      meta: { project: project.project.id },
+      extension: [{ url: 'https://medplum.com/fhir/StructureDefinition/SchedulingSlotCapacity', valuePositiveInt: 2 }],
+    });
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$hold')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send(holdParams({ schedule, start, end }));
+
+    expect(response).toHaveStatus(201);
+
+    // The held slot is stamped with the capacity it was created under.
+    const heldSlots = await systemRepo.searchResources<Slot>(
+      parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}&status=busy-tentative`)
+    );
+    expect(heldSlots).toHaveLength(1);
+    expect(heldSlots[0].extension).toEqual([
+      { url: 'https://medplum.com/fhir/StructureDefinition/SchedulingSlotCapacity', valuePositiveInt: 2 },
+    ]);
+  });
+
+  test('with slotCapacity > 1, $hold buffer time is still exclusive', async () => {
+    const practitioner = await makePractitioner({ timezone: 'America/New_York' });
+    const schedule = await makeSchedule({
+      actor: practitioner,
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            threeDayAvailability,
+            { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
+            { url: 'service', valueReference: createReference(officeVisitService) },
+            { url: 'slotCapacity', valuePositiveInt: 2 },
+            { url: 'bufferBefore', valueDuration: { value: 20, unit: 'min' } },
+          ],
+        },
+      ],
+    });
+    const start = '2026-01-15T16:00:00Z'; // 11am EST
+    const end = '2026-01-15T17:00:00Z'; // 12pm EST
+
+    // An existing capacity-2 booking at 10-11am EST. It has room for another booking,
+    // but the proposed bufferBefore (10:40-11am EST) overlaps it, and buffers cannot
+    // be overbooked.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      start: '2026-01-15T15:00:00Z',
+      end: '2026-01-15T16:00:00Z',
+      status: 'busy',
+      schedule: createReference(schedule),
+      meta: { project: project.project.id },
+      extension: [{ url: 'https://medplum.com/fhir/StructureDefinition/SchedulingSlotCapacity', valuePositiveInt: 2 }],
+    });
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$hold')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send(
+        holdParams({
+          schedule,
+          start,
+          end,
+          extraSlots: [
+            {
+              resourceType: 'Slot',
+              status: 'busy-unavailable',
+              schedule: createReference(schedule),
+              start: '2026-01-15T15:40:00Z', // 10:40am EST
+              end: start,
+              comment: 'buffer before appointment',
+            },
+          ],
+        })
+      );
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toBe('Requested time slot is not available');
+  });
+
   test('rejects when a busy slot already exists at the requested time', async () => {
     const practitioner = await makePractitioner({ timezone: 'America/New_York' });
     const schedule = await makeSchedule({ actor: practitioner });
@@ -794,7 +899,7 @@ describe('Appointment/$hold', () => {
     expect(response.body).toHaveProperty('issue', [
       expect.objectContaining({
         severity: 'error',
-        details: { text: "Expected exactly one 'busy' slot per schedule" },
+        details: { text: "Slot status must be 'busy' or 'busy-unavailable', got 'free'" },
       }),
     ]);
     expect(response).toHaveStatus(400);

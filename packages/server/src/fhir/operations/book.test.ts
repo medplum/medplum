@@ -6,6 +6,7 @@ import {
   getReferenceString,
   isDefined,
   parseSearchRequest,
+  SchedulingSlotCapacityURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
@@ -97,6 +98,8 @@ describe('Appointment/$book', () => {
   function makeSchedulingExtension(opts?: {
     service?: WithId<HealthcareService>;
     duration?: number;
+    slotCapacity?: number;
+    bufferBefore?: number;
   }): SchedulingParametersExtension {
     const duration = opts?.duration ?? 60;
     const extension: SchedulingParametersExtension = {
@@ -115,6 +118,14 @@ describe('Appointment/$book', () => {
         url: 'service',
         valueReference: createReference(opts.service),
       });
+    }
+
+    if (opts?.slotCapacity !== undefined) {
+      extension.extension.push({ url: 'slotCapacity', valuePositiveInt: opts.slotCapacity });
+    }
+
+    if (opts?.bufferBefore !== undefined) {
+      extension.extension.push({ url: 'bufferBefore', valueDuration: { value: opts.bufferBefore, unit: 'min' } });
     }
 
     return extension;
@@ -441,6 +452,411 @@ describe('Appointment/$book', () => {
     // Check no additional slot was created
     const slots = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
     expect(slots).toHaveLength(1);
+  });
+
+  test('with slotCapacity > 1, $book succeeds while capacity remains', async () => {
+    const practitioner = await makePractitioner({ timezone: 'America/New_York' });
+    const schedule = await makeSchedule({
+      actor: practitioner,
+      extension: [makeSchedulingExtension({ service: officeVisitService, slotCapacity: 2 })],
+    });
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    // One existing capacity-2 booking (stamped capacity 2) leaves room for one more.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      start,
+      end,
+      status: 'busy',
+      schedule: createReference(schedule),
+      meta: { project: project.project.id },
+      extension: [{ url: SchedulingSlotCapacityURI, valuePositiveInt: 2 }],
+    });
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType: toServiceTypeCodeableConcepts(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response).toHaveStatus(201);
+    // The schedule now holds two concurrent bookings: the pre-existing one plus the new one.
+    const slots = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
+    expect(slots).toHaveLength(2);
+    // $book stamped the new slot with its capacity too.
+    expect(slots.every((slot) => slot.extension?.some((ext) => ext.url === SchedulingSlotCapacityURI))).toBe(true);
+  });
+
+  test('with slotCapacity > 1, $book fails once capacity is full', async () => {
+    const practitioner = await makePractitioner({ timezone: 'America/New_York' });
+    const schedule = await makeSchedule({
+      actor: practitioner,
+      extension: [makeSchedulingExtension({ service: officeVisitService, slotCapacity: 2 })],
+    });
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    // Two existing capacity-2 bookings (stamped capacity 2) fill capacity 2.
+    for (let i = 0; i < 2; i++) {
+      await systemRepo.createResource<Slot>({
+        resourceType: 'Slot',
+        start,
+        end,
+        status: 'busy',
+        schedule: createReference(schedule),
+        meta: { project: project.project.id },
+        extension: [{ url: SchedulingSlotCapacityURI, valuePositiveInt: 2 }],
+      });
+    }
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType: toServiceTypeCodeableConcepts(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', code: 'invalid', details: { text: 'Requested time slot is not available' } }],
+    });
+    expect(response).toHaveStatus(400);
+
+    // No third slot was created
+    const slots = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
+    expect(slots).toHaveLength(2);
+  });
+
+  test('with slotCapacity > 1, concurrent $book requests cannot exceed capacity', async () => {
+    const practitioner = await makePractitioner({ timezone: 'America/New_York' });
+    const schedule = await makeSchedule({
+      actor: practitioner,
+      extension: [makeSchedulingExtension({ service: officeVisitService, slotCapacity: 2 })],
+    });
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    // One existing capacity-2 booking (stamped capacity 2) leaves exactly one unit for the racers.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      start,
+      end,
+      status: 'busy',
+      schedule: createReference(schedule),
+      meta: { project: project.project.id },
+      extension: [{ url: SchedulingSlotCapacityURI, valuePositiveInt: 2 }],
+    });
+
+    const book = (): ReturnType<typeof request.post> =>
+      request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'appointment',
+              resource: {
+                resourceType: 'Appointment',
+                status: 'proposed',
+                start,
+                end,
+                serviceType: toServiceTypeCodeableConcepts(officeVisitService),
+                participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+                contained: [
+                  {
+                    resourceType: 'Slot',
+                    status: 'busy',
+                    schedule: createReference(schedule),
+                    start,
+                    end,
+                  } satisfies Slot,
+                ],
+              } satisfies Appointment,
+            },
+          ],
+        });
+
+    // Fire both at once. Under SERIALIZABLE, one commits and the other hits a
+    // serialization failure, retries, re-reads the now-full slot, and is
+    // rejected. The assertion holds regardless of scheduling: exactly one wins,
+    // and capacity is never exceeded.
+    const responses = await Promise.all([book(), book()]);
+    const successes = responses.filter((r) => r.status === 201);
+    const failures = responses.filter((r) => r.status !== 201);
+    expect(successes).toHaveLength(1);
+    expect(failures).toHaveLength(1);
+
+    // 1 seed + 1 winner = 2 busy slots; the loser created nothing.
+    const slots = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
+    expect(slots).toHaveLength(2);
+  });
+
+  test('a capacity-1 booking cannot be overbooked by a capacity-2 service', async () => {
+    const practitioner = await makePractitioner({ timezone: 'America/New_York' });
+
+    const mkService = async (code: string, cap: number): Promise<WithId<HealthcareService>> =>
+      systemRepo.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
+        name: code,
+        type: [{ coding: [{ system: 'https://example.com/fhir', code }] }],
+        meta: { project: project.project.id },
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
+              { url: 'slotCapacity', valuePositiveInt: cap },
+            ],
+          },
+        ],
+      });
+
+    const serviceA = await mkService('svc-a', 1); // exclusive
+    const serviceB = await mkService('svc-b', 2); // overbookable
+
+    // One schedule (one practitioner) that books both service types.
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner)],
+      serviceType: [...toServiceTypeCodeableConcepts(serviceA), ...toServiceTypeCodeableConcepts(serviceB)],
+    });
+
+    const start = '2026-01-15T14:00:00Z'; // Thu 9am EST
+    const end = '2026-01-15T15:00:00Z';
+
+    const book = (service: WithId<HealthcareService>): ReturnType<typeof request.post> =>
+      request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'appointment',
+              resource: {
+                resourceType: 'Appointment',
+                status: 'proposed',
+                start,
+                end,
+                serviceType: toServiceTypeCodeableConcepts(service),
+                participant: [{ actor: createReference(practitioner), status: 'tentative' }],
+                contained: [{ resourceType: 'Slot', status: 'busy', schedule: createReference(schedule), start, end }],
+              } satisfies Appointment,
+            },
+          ],
+        });
+
+    // Book Service A (capacity 1) first. Its slot is left unstamped (capacity 1).
+    const bookA = await book(serviceA);
+    expect(bookA).toHaveStatus(201);
+    const [aSlot] = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
+    expect(aSlot.extension?.some((ext) => ext.url === SchedulingSlotCapacityURI)).toBeFalsy();
+
+    // Service B (capacity 2) must NOT be able to overbook A's exclusive slot.
+    const bookB = await book(serviceB);
+    expect(bookB.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', code: 'invalid', details: { text: 'Requested time slot is not available' } }],
+    });
+    expect(bookB).toHaveStatus(400);
+
+    // Only A's booking exists.
+    const slots = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
+    expect(slots).toHaveLength(1);
+  });
+
+  test('a forged slotCapacity stamp on the request is ignored (set authoritatively)', async () => {
+    const practitioner = await makePractitioner({ timezone: 'America/New_York' });
+
+    const mkService = async (code: string, cap: number): Promise<WithId<HealthcareService>> =>
+      systemRepo.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
+        name: code,
+        type: [{ coding: [{ system: 'https://example.com/fhir', code }] }],
+        meta: { project: project.project.id },
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
+              { url: 'slotCapacity', valuePositiveInt: cap },
+            ],
+          },
+        ],
+      });
+
+    const serviceA = await mkService('svc-a', 1); // exclusive
+    const serviceB = await mkService('svc-b', 2); // overbookable
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner)],
+      serviceType: [...toServiceTypeCodeableConcepts(serviceA), ...toServiceTypeCodeableConcepts(serviceB)],
+    });
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    // Book capacity-1 service A, but forge a high capacity on the contained slot,
+    // as a malicious client might to defeat others' exclusivity.
+    const bookA = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType: toServiceTypeCodeableConcepts(serviceA),
+              participant: [{ actor: createReference(practitioner), status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                  extension: [{ url: SchedulingSlotCapacityURI, valuePositiveInt: 99 }],
+                },
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+    expect(bookA).toHaveStatus(201);
+
+    // The forged stamp was stripped: capacity 1 is stored unstamped.
+    const [aSlot] = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
+    expect(aSlot.extension?.some((ext) => ext.url === SchedulingSlotCapacityURI)).toBeFalsy();
+
+    // ...so a capacity-2 booking still cannot overbook it.
+    const bookB = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType: toServiceTypeCodeableConcepts(serviceB),
+              participant: [{ actor: createReference(practitioner), status: 'tentative' }],
+              contained: [{ resourceType: 'Slot', status: 'busy', schedule: createReference(schedule), start, end }],
+            } satisfies Appointment,
+          },
+        ],
+      });
+    expect(bookB).toHaveStatus(400);
+  });
+
+  // Regression: `validateSlots` only checks `busy-unavailable` slots when the corresponding buffer
+  // is non-zero, so with both buffers at 0 a zero-length one used to slip through.
+  test('a zero-length contained Slot does not split the availability window', async () => {
+    const practitioner = await makePractitioner({ timezone: 'America/New_York' });
+    const schedule = await makeSchedule({
+      actor: practitioner,
+      extension: [makeSchedulingExtension({ service: officeVisitService })], // slotCapacity defaults to 1
+    });
+
+    const book = (start: string, end: string, extra?: Slot): ReturnType<typeof request.post> =>
+      request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'appointment',
+              resource: {
+                resourceType: 'Appointment',
+                status: 'proposed',
+                start,
+                end,
+                serviceType: toServiceTypeCodeableConcepts(officeVisitService),
+                participant: [{ actor: createReference(practitioner), status: 'tentative' }],
+                contained: [
+                  { resourceType: 'Slot', status: 'busy', schedule: createReference(schedule), start, end },
+                  ...(extra ? [extra] : []),
+                ],
+              } satisfies Appointment,
+            },
+          ],
+        });
+
+    // An ordinary 9am booking, carrying a zero-length blocker at 1:30pm the same day.
+    const blocker = '2026-01-15T18:30:00Z'; // Thu 1:30pm EST, mid-way through an available window
+    const first = await book('2026-01-15T14:00:00Z', '2026-01-15T15:00:00Z', {
+      resourceType: 'Slot',
+      status: 'busy-unavailable',
+      schedule: createReference(schedule),
+      start: blocker,
+      end: blocker,
+    });
+    expect(first).toHaveStatus(400);
+
+    // The rejection is total — neither the blocker nor the booking it rode in on was created.
+    const stored = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
+    expect(stored).toHaveLength(0);
+
+    // 1pm-2pm straddles the blocker's instant, and stays bookable because no blocker survived.
+    const second = await book('2026-01-15T18:00:00Z', '2026-01-15T19:00:00Z');
+    expect(second).toHaveStatus(201);
   });
 
   test('fails without a HealthcareService reference embedded in serviceType', async () => {
@@ -840,6 +1256,10 @@ describe('Appointment/$book', () => {
               url: 'service',
               valueReference: createReference(officeVisitService),
             },
+            {
+              url: 'slotCapacity',
+              valuePositiveInt: 2,
+            },
           ],
         },
       ],
@@ -935,6 +1355,9 @@ describe('Appointment/$book', () => {
         status: 'busy-unavailable',
       },
     ]);
+
+    // buffer slot does not get the slotCapacity extension stamped onto it
+    expect(bufferSlots[0]).not.toHaveProperty('extension');
   });
 
   test('with bufferAfter', async () => {
@@ -1563,6 +1986,76 @@ describe('Appointment/$book', () => {
     expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toBe('Appointment falls outside schedule planning horizon');
   });
+
+  test('slotCapacity does not apply to bufferBefore', async () => {
+    // Capacity-2 schedule, but an existing exclusive (capacity-1, unstamped) booking at
+    // 10am — e.g. from a capacity-1 service on the same actor — must not be offered.
+    const schedule = await makeSchedule({
+      actor: practitioner1,
+      extension: [
+        makeSchedulingExtension({
+          service: officeVisitService,
+          slotCapacity: 2,
+          bufferBefore: 20,
+        }),
+      ],
+    });
+
+    // Create an existing slot with capacity 2; the appointment we are trying to book
+    // will have `bufferBefore` that overlaps this, and so should be disallowed.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.project.id },
+      schedule: createReference(schedule),
+      status: 'busy',
+      start: '2026-03-17T11:00:00-04:00', // 11am EDT
+      end: '2026-03-17T12:00:00-04:00', // 12am EDT
+      extension: [{ url: 'https://medplum.com/fhir/StructureDefinition/SchedulingSlotCapacity', valuePositiveInt: 2 }],
+    });
+
+    const start = '2026-03-17T12:00:00-04:00'; // 12am EDT
+    const end = '2026-03-17T13:00:00-04:00'; // 1pm EDT
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType: toServiceTypeCodeableConcepts(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+                {
+                  resourceType: 'Slot',
+                  status: 'busy-unavailable',
+                  schedule: createReference(schedule),
+                  start: '2026-03-17T11:40:00-04:00', // 11:40am EDT
+                  end: '2026-03-17T12:00:00-04:00', // 12pm EDT
+                  comment: 'buffer before appointment',
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toBe('Requested time slot is not available');
+  });
 });
 
 describe('scheduling flow integration test', () => {
@@ -1646,6 +2139,81 @@ describe('scheduling flow integration test', () => {
     expect(appointments).toHaveLength(1);
     expect(appointments[0]).toHaveProperty('status', 'booked');
     expect(appointments[0]).not.toHaveProperty('contained');
+  });
+
+  test('every $find proposal can be booked when overbooking and buffers are configured', async () => {
+    const practitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.project.id },
+      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/Phoenix' }],
+    });
+
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner)],
+      serviceType: toServiceTypeCodeableConcepts(service),
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            threeDayAvailability,
+            { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
+            { url: 'service', valueReference: createReference(service) },
+            { url: 'slotCapacity', valuePositiveInt: 2 },
+            { url: 'bufferBefore', valueDuration: { value: 20, unit: 'min' } },
+            { url: 'bufferAfter', valueDuration: { value: 20, unit: 'min' } },
+          ],
+        },
+      ],
+    });
+
+    // An existing capacity-2 booking inside the search window. It has room for another
+    // appointment, but its time is exclusive as far as buffer time is concerned.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.project.id },
+      schedule: createReference(schedule),
+      status: 'busy',
+      start: new Date('2026-01-28T09:00:00.000-07:00').toISOString(),
+      end: new Date('2026-01-28T10:00:00.000-07:00').toISOString(),
+      extension: [{ url: 'https://medplum.com/fhir/StructureDefinition/SchedulingSlotCapacity', valuePositiveInt: 2 }],
+    });
+
+    const findResponse = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .query({
+        start: new Date('2026-01-28T07:00:00.000-07:00').toISOString(),
+        end: new Date('2026-01-28T17:00:00.000-07:00').toISOString(),
+        'service-type-reference': `HealthcareService/${service.id}`,
+        schedule: `Schedule/${schedule.id}`,
+      });
+
+    expect(findResponse).toHaveStatus(200);
+    const proposals: Appointment[] = ((findResponse.body as Bundle<Appointment>).entry ?? [])
+      .map((entry) => entry.resource)
+      .filter(isDefined);
+    expect(proposals.length).toBeGreaterThan(0);
+
+    // Anything $find proposes must be bookable. Each proposal is booked against the same
+    // starting state, so the resources created by one are removed before the next.
+    for (const proposal of proposals) {
+      const bookResponse = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [{ name: 'appointment', resource: proposal }],
+        });
+
+      expect(bookResponse, `booking the proposal starting at ${proposal.start}`).toHaveStatus(201);
+
+      const created = ((bookResponse.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
+      for (const resource of created) {
+        await systemRepo.deleteResource(resource.resourceType, resource.id as string);
+      }
+    }
   });
 
   test('booking a slot as a patient with a minimal access policy', async () => {
@@ -1835,5 +2403,95 @@ describe('scheduling flow integration test', () => {
     // explicit check against a possible problem: creating the Slot does not
     // set `meta.author` to the creating Patient, which could leak PHI.
     expect(otherPatientResponse.body.entry[0].resource.meta).not.toHaveProperty('author');
+  });
+
+  test('booking a slot as a patient who cannot read Schedule.actor', async () => {
+    // The same minimal policy as above, less the read on Practitioner. `$book` validates
+    // the proposed appointment through the same scheduling parameters `$find` does, so it
+    // used to fail here too even though the Schedule names a timezone of its own.
+    const practitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.project.id },
+      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
+    });
+
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner)],
+      serviceType: toServiceTypeCodeableConcepts(service),
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'service', valueReference: createReference(service) },
+            // Deliberately not the actor's zone, so the times below can only have come
+            // from the Schedule.
+            { url: 'timezone', valueCode: 'America/Phoenix' },
+            threeDayAvailability,
+            { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
+          ],
+        },
+      ],
+    });
+
+    const { accessToken, profile } = await addTestUser(project.project, {
+      resourceType: 'Patient',
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: 'HealthcareService', interaction: ['read'] },
+          { resourceType: 'Schedule', interaction: ['read'] },
+          { resourceType: 'Patient', criteria: 'Patient?_compartment=%patient', interaction: ['read'] },
+          { resourceType: 'Slot', interaction: ['create', 'search'] },
+          { resourceType: 'Appointment', interaction: ['create'], criteria: 'Appointment?_compartment=%patient' },
+        ],
+      } satisfies AccessPolicy,
+    });
+
+    const start = '2026-01-28T16:00:00Z'; // 09:00 America/Phoenix (UTC-7)
+    const end = '2026-01-28T17:00:00Z'; // 10:00 America/Phoenix
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              start,
+              end,
+              status: 'proposed',
+              serviceType: toServiceTypeCodeableConcepts(service),
+              participant: [
+                { actor: createReference(profile), status: 'accepted' },
+                { actor: createReference(practitioner), status: 'accepted' },
+              ],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                  status: 'busy',
+                  serviceType: [officeVisitConcept],
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response).toHaveStatus(201);
+
+    const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
+    const appointments = entries.filter(isAppointment);
+    expect(appointments).toHaveLength(1);
+    expect(appointments[0]).toHaveProperty('status', 'booked');
+    expect(appointments[0]).toHaveProperty('start', start);
+    expect(appointments[0]).toHaveProperty('end', end);
   });
 });

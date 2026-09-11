@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Button, Center, Group, Loader, ScrollArea, TextInput } from '@mantine/core';
+import { ActionIcon, Button, Group, ScrollArea, TextInput } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
 import type { MedplumClient, ProfileResource } from '@medplum/core';
 import { createReference, normalizeErrorString } from '@medplum/core';
@@ -29,7 +29,7 @@ import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceDiffTable } from '../ResourceDiffTable/ResourceDiffTable';
 import { ResourceTable } from '../ResourceTable/ResourceTable';
 import type { TimelineItemProps } from '../Timeline/Timeline';
-import { Timeline, TimelineItem } from '../Timeline/Timeline';
+import { Timeline, TimelineItem, TimelineItemSkeleton } from '../Timeline/Timeline';
 import { sortByDateAndPriority } from '../utils/date';
 import classes from './ResourceTimeline.module.css';
 
@@ -59,6 +59,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   const [history, setHistory] = useState<Bundle>();
   const [items, setItems] = useState<Resource[]>([]);
   const [countToShow, setCountToShow] = useState(10);
+  const [loading, setLoading] = useState(true);
   const loadTimelineResources = props.loadTimelineResources;
 
   const itemsRef = useRef(items);
@@ -117,6 +118,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       }
 
       sortAndSetItems(newItems);
+      setLoading(false);
     },
     [sortAndSetItems]
   );
@@ -142,7 +144,12 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     } else {
       [resourceType, id] = props.value.reference?.split('/') as [ResourceType, string];
     }
-    loadTimelineResources(medplum, resourceType, id).then(handleBatchResponse).catch(console.error);
+    loadTimelineResources(medplum, resourceType, id)
+      .then(handleBatchResponse)
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
   }, [medplum, props.value, loadTimelineResources, handleBatchResponse]);
 
   useEffect(() => loadTimeline(), [loadTimeline]);
@@ -231,9 +238,9 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
   if (!resource) {
     return (
-      <Center style={{ width: '100%', height: '100%' }}>
-        <Loader />
-      </Center>
+      <Timeline>
+        <TimelineSkeletonItems />
+      </Timeline>
     );
   }
 
@@ -284,6 +291,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
           </Form>
         </Panel>
       )}
+      {loading && items.length === 0 && <TimelineSkeletonItems />}
       {itemsToShow.map((item) => {
         const key = `${item.resourceType}/${item.id}/${item.meta?.versionId}`;
         const menu = props.getMenu
@@ -319,6 +327,16 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
         </Group>
       )}
     </Timeline>
+  );
+}
+
+function TimelineSkeletonItems(): JSX.Element {
+  return (
+    <>
+      <TimelineItemSkeleton lines={3} />
+      <TimelineItemSkeleton lines={6} />
+      <TimelineItemSkeleton lines={4} />
+    </>
   );
 }
 

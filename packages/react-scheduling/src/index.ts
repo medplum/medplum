@@ -7,7 +7,6 @@ export type * from './types';
 export * from './AppointmentFinder/AppointmentActorSelect';
 export * from './AppointmentFinder/AppointmentBookingForm';
 export * from './AppointmentFinder/AppointmentDayTimes';
-export * from './AppointmentFinder/AppointmentFinder.roles';
 export * from './AppointmentFinder/AppointmentFinder.schedules';
 export * from './AppointmentFinder/AppointmentFinder.times';
 export * from './AppointmentFinder/AppointmentOptionRow';
@@ -24,4 +23,5 @@ export * from './AppointmentFinder/useProposedAppointments';
 export * from './hooks/useSchedulingResources';
 
 // Helpers the components are built on, usable without them
+export * from './actors';
 export * from './availability';
