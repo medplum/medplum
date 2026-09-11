@@ -216,6 +216,35 @@ describe('External', () => {
     expect(redirect.searchParams.get('login')).toBeTruthy();
   });
 
+  test('Marks the user email verified', async () => {
+    // Invited users start unverified, and external auth is the only login they have
+    const verifiedEmail = `verify-${randomUUID()}@${domain}`;
+    const { user } = await withTestContext(() =>
+      inviteUser({
+        project,
+        email: verifiedEmail,
+        resourceType: 'Practitioner',
+        firstName: 'Verify',
+        lastName: 'User',
+        sendEmail: false,
+      })
+    );
+    expect(user.emailVerified).toBeFalsy();
+
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ domain }),
+    });
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(verifiedEmail)));
+
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(302);
+
+    // The identity provider vouched for the account, so no separate proof is required
+    const updated = await systemRepo.readResource<User>('User', user.id);
+    expect(updated.emailVerified).toBe(true);
+  });
+
   test('Server config identity provider success', async () => {
     const issuer = `https://${randomUUID()}.example.com`;
     const config = getConfig();
