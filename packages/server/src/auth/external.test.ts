@@ -397,7 +397,9 @@ describe('External', () => {
     // The token endpoint returns the signed token; the JWKS endpoint returns the public key.
     const mockIdToken = (jwt: string): void => {
       fetchMock.mockImplementation((input: any) =>
-        String(input).includes('verified-jwks') ? mockFetchJson({ keys: [publicJwk] }) : mockFetchJson({ id_token: jwt })
+        String(input).includes('verified-jwks')
+          ? mockFetchJson({ keys: [publicJwk] })
+          : mockFetchJson({ id_token: jwt })
       );
     };
     const url = appendQueryParams('/auth/external', {
