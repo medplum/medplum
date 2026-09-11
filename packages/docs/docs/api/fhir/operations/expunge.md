@@ -4,7 +4,7 @@ sidebar_position: 21
 
 # Resource $expunge
 
-The `$expunge` operation permanently deletes a resource and all of its history from the database. Unlike a standard FHIR delete (which creates a "tombstone" record by marking it as deleted), expunge completely removes all traces of the resource.
+The `$expunge` operation permanently deletes a resource and all of its history from the database. Unlike a standard FHIR delete (which creates a "tombstone" record by marking it as deleted), expunge removes the resource rows themselves. When audit persistence is enabled, Medplum still records an `AuditEvent` with `meta.expunged: true` for the expunged id. `AuditEvent` resources themselves cannot be expunged, including by super admins.
 
 :::warning[]
 This operation is **irreversible**. Once a resource is expunged, it cannot be recovered. Use with caution.
@@ -45,7 +45,9 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Patient/example-id/$expunge' \
 
 ### Expunge Everything (Project Compartment)
 
-When expunging a Project or using `everything=true`, the operation deletes all resources belonging to that compartment. This runs as an async job due to the potentially large number of resources involved.
+When expunging a Project, or when `everything=true`, Medplum starts an async job that walks **every FHIR resource type** in the target compartment (currently Patient and Project compartments). For each type it searches `_compartment`, then hard-deletes matching rows in batches of 10,000, including associated Binary storage. The HTTP request returns `202 Accepted` immediately; poll the `AsyncJob` for completion.
+
+The walk skips `AuditEvent` so the job can finish without wiping the audit trail. Those rows stay even when a super admin expunges a project or a patient compartment.
 
 ```bash
 curl -X POST 'https://api.medplum.com/fhir/R4/Project/project-id/$expunge?everything=true' \
@@ -113,12 +115,15 @@ If you don't have admin privileges:
 - Deletes the resource and all of its history versions
 - Removes associated Binary resources referenced by the resource
 - The operation is synchronous and returns immediately
+- When audit persistence is enabled, records an `AuditEvent` with `meta.expunged: true` for the expunged id
+- `AuditEvent` resources cannot be expunged
 
 ### Everything Mode (Project Expunge)
 - Iterates through all resource types in the compartment
 - Deletes resources in batches of 10,000
 - Also deletes associated Binary resources
 - Runs as an async job to handle large datasets
+- Skips `AuditEvent` so the audit trail remains
 
 ## Related Documentation
 

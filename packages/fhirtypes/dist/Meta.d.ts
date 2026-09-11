@@ -111,4 +111,9 @@ export interface Meta {
    * True when this version represents a logical delete tombstone.
    */
   deleted?: boolean;
+
+  /**
+   * True when this AuditEvent records an expunge (physical delete).
+   */
+  expunged?: boolean;
 }
