@@ -9,7 +9,6 @@ import { ResourceName, SearchControl, useMedplum } from '@medplum/react';
 import { IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
-import type { BillingPractitioners } from '../../hooks/useBillingPractitioners';
 import { EIN_SYSTEM, NPI_SYSTEM, isCompleteBillingAddress } from '../../utils/billing';
 import { showErrorNotification } from '../../utils/notifications';
 
@@ -22,7 +21,7 @@ const DEFAULT_SEARCH: SearchRequest = {
 };
 
 export interface BillingPractitionerListProps {
-  readonly billingPractitioners: BillingPractitioners;
+  readonly savedVersion: number;
   readonly onSelectPractitioner: (
     practitioner: WithId<Practitioner>,
     billingOrganization: Reference<Organization> | undefined
@@ -30,8 +29,7 @@ export interface BillingPractitionerListProps {
 }
 
 export function BillingPractitionerList(props: BillingPractitionerListProps): JSX.Element {
-  const { billingPractitioners, onSelectPractitioner } = props;
-  const { savedVersion } = billingPractitioners;
+  const { savedVersion, onSelectPractitioner } = props;
   const medplum = useMedplum();
   const [search, setSearch] = useState<SearchRequest>(DEFAULT_SEARCH);
   const [billsUnder, setBillsUnder] = useState<Record<string, Reference<Organization>>>({});

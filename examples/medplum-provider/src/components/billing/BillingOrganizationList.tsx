@@ -9,7 +9,6 @@ import { SearchControl } from '@medplum/react';
 import { IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import type { BillingOrganizations } from '../../hooks/useBillingOrganizations';
 import {
   BILLING_ORGANIZATION_IDENTIFIER_VALUE,
   EIN_SYSTEM,
@@ -33,14 +32,14 @@ const DEFAULT_SEARCH: SearchRequest = {
 };
 
 export interface BillingOrganizationListProps {
-  readonly billingOrganizations: BillingOrganizations;
+  readonly candidBotId: string | undefined;
+  readonly savedVersion: number;
   readonly onNewOrganization: () => void;
   readonly onSelectOrganization: (organization: WithId<Organization>) => void;
 }
 
 export function BillingOrganizationList(props: BillingOrganizationListProps): JSX.Element {
-  const { billingOrganizations, onNewOrganization, onSelectOrganization } = props;
-  const { candidBotId, savedVersion } = billingOrganizations;
+  const { candidBotId, savedVersion, onNewOrganization, onSelectOrganization } = props;
   const [search, setSearch] = useState<SearchRequest>(DEFAULT_SEARCH);
 
   const additionalColumns: SearchControlAdditionalColumn[] = [

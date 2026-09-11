@@ -3,7 +3,7 @@
 import { Stack, Tabs, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Organization, Practitioner, Reference } from '@medplum/fhirtypes';
-import { Document, LinkTabs } from '@medplum/react';
+import { Document, LinkTabs, useSearchOne } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { BillingOrganizationList } from '../../components/billing/BillingOrganizationList';
@@ -13,9 +13,8 @@ import { BillingPractitionerModal } from '../../components/billing/BillingPracti
 import { ImportedPayerList } from '../../components/billing/ImportedPayerList';
 import { PayerDetailsModal } from '../../components/billing/PayerDetailsModal';
 import { PayerDirectorySearch } from '../../components/billing/PayerDirectorySearch';
-import { useBillingOrganizations } from '../../hooks/useBillingOrganizations';
-import { useBillingPractitioners } from '../../hooks/useBillingPractitioners';
 import { useCandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
+import { CANDID_CREATE_PROVIDER_BOT_IDENTIFIER, CANDID_EDIT_PROVIDER_BOT_IDENTIFIER } from '../../utils/candid';
 
 // Explicit values keep the URL segments capitalized (/Settings/Billing/Payers); plain string
 // tabs would be lowercased.
@@ -27,8 +26,14 @@ const TABS = [
 ];
 
 export function BillingSetupPage(): JSX.Element {
-  const billingOrganizations = useBillingOrganizations();
-  const billingPractitioners = useBillingPractitioners();
+  const [createBot] = useSearchOne('Bot', {
+    identifier: `${CANDID_CREATE_PROVIDER_BOT_IDENTIFIER.system}|${CANDID_CREATE_PROVIDER_BOT_IDENTIFIER.value}`,
+  });
+  const [editBot] = useSearchOne('Bot', {
+    identifier: `${CANDID_EDIT_PROVIDER_BOT_IDENTIFIER.system}|${CANDID_EDIT_PROVIDER_BOT_IDENTIFIER.value}`,
+  });
+  const [organizationsVersion, setOrganizationsVersion] = useState(0);
+  const [practitionersVersion, setPractitionersVersion] = useState(0);
   const directory = useCandidPayerDirectory();
   const [editingOrganization, setEditingOrganization] = useState<{ organization?: WithId<Organization> } | undefined>(
     undefined
@@ -45,14 +50,15 @@ export function BillingSetupPage(): JSX.Element {
         <LinkTabs baseUrl="/Settings/Billing" tabs={TABS}>
           <Tabs.Panel value="Organizations" pt="md">
             <BillingOrganizationList
-              billingOrganizations={billingOrganizations}
+              candidBotId={createBot?.id}
+              savedVersion={organizationsVersion}
               onNewOrganization={() => setEditingOrganization({})}
               onSelectOrganization={(organization) => setEditingOrganization({ organization })}
             />
           </Tabs.Panel>
           <Tabs.Panel value="Practitioners" pt="md">
             <BillingPractitionerList
-              billingPractitioners={billingPractitioners}
+              savedVersion={practitionersVersion}
               onSelectPractitioner={(practitioner, billingOrganization) =>
                 setEditingPractitioner({ practitioner, billingOrganization })
               }
@@ -67,17 +73,21 @@ export function BillingSetupPage(): JSX.Element {
         </LinkTabs>
 
         <BillingOrganizationModal
-          billingOrganizations={billingOrganizations}
+          candidBotId={createBot?.id}
+          candidEditBotId={editBot?.id}
           organization={editingOrganization?.organization}
           opened={editingOrganization !== undefined}
           onClose={() => setEditingOrganization(undefined)}
+          onSaved={() => setOrganizationsVersion((version) => version + 1)}
         />
 
         <BillingPractitionerModal
-          billingPractitioners={billingPractitioners}
+          candidBotId={createBot?.id}
+          candidEditBotId={editBot?.id}
           practitioner={editingPractitioner?.practitioner}
           billingOrganization={editingPractitioner?.billingOrganization}
           onClose={() => setEditingPractitioner(undefined)}
+          onSaved={() => setPractitionersVersion((version) => version + 1)}
         />
 
         <PayerDetailsModal

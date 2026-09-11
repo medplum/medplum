@@ -2,21 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Input, Stack, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { createReference, getIdentifier } from '@medplum/core';
-import type { Address, Organization, Practitioner, Reference } from '@medplum/fhirtypes';
-import { AddressInput, Modal, ResourceInput } from '@medplum/react';
+import { createReference, getIdentifier, getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { Address, Organization, Practitioner, PractitionerRole, Reference } from '@medplum/fhirtypes';
+import { AddressInput, Modal, ResourceInput, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import type { BillingPractitioners } from '../../hooks/useBillingPractitioners';
 import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import {
   BILLING_ORGANIZATION_IDENTIFIER_VALUE,
   EIN_SYSTEM,
   MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM,
   NPI_SYSTEM,
+  buildUpdatedPractitioner,
   isCompleteBillingAddress,
   isValidNpi,
+  withCandidPractitionerExtensions,
+  withCandidProviderId,
 } from '../../utils/billing';
+import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
+import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
 /**
@@ -24,16 +28,20 @@ import { CandidRegistrationAlert } from './CandidRegistrationAlert';
  * closed); `billingOrganization` is the organization on their active role, from the row that opened it.
  */
 export interface BillingPractitionerModalProps {
-  readonly billingPractitioners: BillingPractitioners;
+  readonly candidBotId: string | undefined;
+  readonly candidEditBotId: string | undefined;
   readonly practitioner: WithId<Practitioner> | undefined;
   readonly billingOrganization: Reference<Organization> | undefined;
   readonly onClose: () => void;
+  readonly onSaved: () => void;
 }
 
 type FormErrors = Partial<Record<'npi' | 'ein' | 'address', string>>;
 
 export function BillingPractitionerModal(props: BillingPractitionerModalProps): JSX.Element {
-  const { billingPractitioners, practitioner, billingOrganization, onClose } = props;
+  const { candidBotId, candidEditBotId, practitioner, billingOrganization, onClose, onSaved } = props;
+  const medplum = useMedplum();
+  const [saving, setSaving] = useState(false);
 
   const [npi, setNpi] = useState('');
   const [ein, setEin] = useState('');
@@ -71,14 +79,69 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
     if (Object.keys(validationErrors).length > 0) {
       return;
     }
-    const saved = await billingPractitioners.savePractitioner(
-      practitioner as WithId<Practitioner>,
-      { npi: npi.trim(), ein: ein.trim(), address },
-      organization && 'resourceType' in organization ? createReference(organization) : organization,
-      registration
-    );
-    if (saved) {
+    setSaving(true);
+    try {
+      let built = buildUpdatedPractitioner(practitioner as WithId<Practitioner>, {
+        npi: npi.trim(),
+        ein: ein.trim(),
+        address,
+      });
+      built = withCandidProviderId(
+        built,
+        registration.status === 'registered' ? registration.candidProviderId : undefined
+      );
+      const candidProviderId = getIdentifier(built, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
+      const botId = candidProviderId ? candidEditBotId : candidBotId;
+      if (botId) {
+        built = withCandidPractitionerExtensions(built, billsIndividually);
+      }
+      const saved = await medplum.updateResource(built as WithId<Practitioner>);
+      const organizationReference =
+        organization && 'resourceType' in organization ? createReference(organization) : organization;
+      const role = await medplum.searchOne('PractitionerRole', {
+        practitioner: getReferenceString(saved),
+        active: 'true',
+      });
+      if (organizationReference) {
+        if (role) {
+          await medplum.patchResource('PractitionerRole', role.id, [
+            { op: role.organization ? 'replace' : 'add', path: '/organization', value: organizationReference },
+          ]);
+        } else {
+          await medplum.createResource<PractitionerRole>({
+            resourceType: 'PractitionerRole',
+            active: true,
+            practitioner: createReference(saved),
+            organization: organizationReference,
+          });
+        }
+      } else if (role?.organization) {
+        // Keep the role active to preserve its unrelated authorizations.
+        await medplum.patchResource('PractitionerRole', role.id, [{ op: 'remove', path: '/organization' }]);
+      }
+      showSuccessNotification({ title: 'Success', message: 'Billing details updated' });
+      if (botId) {
+        try {
+          await medplum.executeBot(botId, saved, 'application/fhir+json');
+          showSuccessNotification({
+            title: 'Success',
+            message: candidProviderId ? 'Updated in Candid' : 'Registered with Candid',
+          });
+        } catch (error) {
+          showErrorNotification(
+            new Error(
+              `Practitioner saved, but ${candidProviderId ? 'updating them in' : 'registering them with'} Candid failed: ${normalizeErrorString(error)}. ` +
+                'Save the practitioner again to retry.'
+            )
+          );
+        }
+      }
+      onSaved();
       onClose();
+    } catch (error) {
+      showErrorNotification(error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -89,10 +152,7 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
       size="lg"
       title="Billing details"
       actions={
-        <Button
-          onClick={() => handleSave().catch(console.error)}
-          loading={billingPractitioners.saving || registration.status === 'loading'}
-        >
+        <Button onClick={() => handleSave().catch(console.error)} loading={saving || registration.status === 'loading'}>
           {registration.status === 'registered' ? 'Edit' : 'Save'}
         </Button>
       }
@@ -101,7 +161,7 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
         <Stack gap="md">
           <CandidRegistrationAlert
             registration={registration}
-            registersAs={billingPractitioners.candidBotId ? 'this practitioner as a rendering provider' : undefined}
+            registersAs={candidBotId ? 'this practitioner as a rendering provider' : undefined}
           />
           <TextInput
             label="NPI"
