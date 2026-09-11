@@ -9,6 +9,7 @@ import {
   AuthorizationFixtures,
   AuthorizationValueSets,
   DIAGNOSIS_VALUE_SET,
+  ImagingBenchFixtures,
   InfusionService,
   IronInfusionService,
   MainClinic,
@@ -26,6 +27,7 @@ import { AppointmentBookingForm } from './AppointmentBookingForm';
 
 const STORY_FIXTURES = [
   ...SchedulingFixtures,
+  ...ImagingBenchFixtures,
   ...SurgicalFixtures,
   ...AuthorizationFixtures,
   ...SubClinicProviderFixtures,
@@ -92,8 +94,10 @@ UntypedMedicalRecordNumbers.decorators = [withFindStub()];
  * A visit that needs a whole team free at once: a surgeon, an anesthesiologist
  * and an operating room.
  *
- * Everything named attends — `$find` intersects their schedules — so naming a
- * second surgeon narrows the times rather than widening them.
+ * The two directions read differently. A second name in the *same* row is an
+ * alternative, so either surgeon will do and the times widen; a second *row* is
+ * another person the visit needs, and `$find` intersects their schedules, so the
+ * times narrow.
  * @returns The story.
  */
 export const SurgicalTeam = (): JSX.Element => (

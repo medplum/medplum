@@ -9,14 +9,20 @@ import type { JSX } from 'react';
 import { useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { withFixtures } from '../stories/decorators';
-import { MainClinic, SchedulingFixtures, UltrasoundImagingService, WalkInService } from '../stories/scheduling';
+import {
+  ImagingBenchFixtures,
+  MainClinic,
+  SchedulingFixtures,
+  UltrasoundImagingService,
+  WalkInService,
+} from '../stories/scheduling';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import type { ScheduleCandidate } from './AppointmentFinder.schedules';
 
 export default {
   title: 'Medplum/AppointmentActorSelect',
   component: AppointmentActorSelect,
-  decorators: [withFixtures(SchedulingFixtures)],
+  decorators: [withFixtures([...SchedulingFixtures, ...ImagingBenchFixtures])],
 } as Meta;
 
 /**

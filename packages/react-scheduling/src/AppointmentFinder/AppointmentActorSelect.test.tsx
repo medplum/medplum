@@ -126,9 +126,9 @@ describe('AppointmentActorSelect', () => {
     expect(chosen.actorResource?.id).toBe('dr-rivera');
   });
 
-  test('Keeps both picks, because everything chosen attends', async () => {
-    // `$find` intersects the schedules, so a second provider narrows the times
-    // to the ones both are free for rather than replacing the first.
+  test('Keeps both picks, because they are alternatives rather than a correction', async () => {
+    // The names in one field are the ones that would each do, so a second provider
+    // widens the search rather than replacing the first.
     const medplum = await setupClient();
     const { onChange } = await setup(medplum);
     const input = screen.getByRole('searchbox');
