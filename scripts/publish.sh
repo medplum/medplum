@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 
+set -xe
+
+TAG=''
+if [ ! -z "$1" ]; then
+  TAG="--tag $1"
+fi
+
 PACKAGES=(
-  "agent"
   "app"
   "bot-layer"
   "ccda"
@@ -12,7 +18,6 @@ PACKAGES=(
   "definitions"
   "dosespot-react"
   "eslint-config"
-  "expo-polyfills"
   "fhir-router"
   "fhirtypes"
   "health-gorilla-core"
@@ -26,6 +31,6 @@ PACKAGES=(
 for package in ${PACKAGES[@]}; do
   echo "Publish $package"
   pushd packages/$package
-  npm publish --access public
+  npm publish --provenance --access public $TAG
   popd
 done
