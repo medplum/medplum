@@ -5,11 +5,20 @@ import { useDisclosure } from '@mantine/hooks';
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import type { Patient, Reference } from '@medplum/fhirtypes';
 import { ResourceAvatar, useMedplum, useResource, useWhisper } from '@medplum/react';
-import { IconArrowRight, IconCheck, IconCircleFilled, IconMicrophone, IconUsers, IconX } from '@tabler/icons-react';
+import {
+  IconArrowRight,
+  IconBrain,
+  IconCheck,
+  IconCircleFilled,
+  IconMicrophone,
+  IconUsers,
+  IconX,
+} from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
-import type { SpaceModelOption } from '../../utils/spaceModels';
+import type { ReasoningEffort, SpaceModelOption } from '../../utils/spaceModels';
+import { REASONING_EFFORTS } from '../../utils/spaceModels';
 import { OpenAILogo } from './OpenAILogo';
 import { PatientPicker } from './PatientPicker';
 import classes from './PromptComposer.module.css';
@@ -59,6 +68,8 @@ interface PromptComposerProps {
   models: SpaceModelOption[];
   selectedModel: string;
   onModelChange: (value: string) => void;
+  selectedReasoningEffort: ReasoningEffort;
+  onReasoningEffortChange: (value: ReasoningEffort) => void;
   selectedPatients: (Patient | Reference<Patient>)[];
   setSelectedPatients: React.Dispatch<React.SetStateAction<(Patient | Reference<Patient>)[]>>;
 }
@@ -72,6 +83,8 @@ export function PromptComposer({
   models,
   selectedModel,
   onModelChange,
+  selectedReasoningEffort,
+  onReasoningEffortChange,
   selectedPatients,
   setSelectedPatients,
 }: PromptComposerProps): JSX.Element {
@@ -79,9 +92,11 @@ export function PromptComposer({
   const isVoiceEnabled = medplum.getProject()?.features?.includes('ai-realtime') ?? false;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [modelPickerOpen, modelPickerHandlers] = useDisclosure(false);
+  const [effortPickerOpen, effortPickerHandlers] = useDisclosure(false);
   const [patientPickerOpen, patientPickerHandlers] = useDisclosure(false);
   const patientPickerDropdownRef = useRef<HTMLDivElement>(null);
   const modelPickerDropdownRef = useRef<HTMLDivElement>(null);
+  const effortPickerDropdownRef = useRef<HTMLDivElement>(null);
   const [scrollable, setScrollable] = useState(false);
 
   // Track whether the textarea has grown past its max height and become scrollable
@@ -149,6 +164,32 @@ export function PromptComposer({
     }
     prevModelPickerOpen.current = modelPickerOpen;
   }, [modelPickerOpen]);
+
+  useEffect(() => {
+    if (!effortPickerOpen) {
+      return undefined;
+    }
+    const handler = (e: MouseEvent): void => {
+      if (effortPickerDropdownRef.current && !effortPickerDropdownRef.current.contains(e.target as Node)) {
+        effortPickerHandlers.close();
+      }
+    };
+    const raf = requestAnimationFrame(() => {
+      document.addEventListener('mousedown', handler);
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('mousedown', handler);
+    };
+  }, [effortPickerOpen, effortPickerHandlers]);
+
+  const prevEffortPickerOpen = useRef(false);
+  useEffect(() => {
+    if (prevEffortPickerOpen.current && !effortPickerOpen) {
+      textareaRef.current?.focus();
+    }
+    prevEffortPickerOpen.current = effortPickerOpen;
+  }, [effortPickerOpen]);
 
   const inputRef = useRef(input);
   useEffect(() => {
@@ -220,6 +261,8 @@ export function PromptComposer({
   };
 
   const selectedModelLabel = models.find((m) => m.value === selectedModel)?.label ?? selectedModel;
+  const selectedEffortLabel =
+    REASONING_EFFORTS.find((e) => e.value === selectedReasoningEffort)?.label ?? selectedReasoningEffort;
 
   let inputPlaceholder = 'Ask, search, or make anything...';
   if (mode === 'voice') {
@@ -410,6 +453,58 @@ export function PromptComposer({
                           <OpenAILogo size={24} />
                           <Text size="sm">{model.label}</Text>
                         </Group>
+                      </Menu.Item>
+                    ))}
+                  </Menu>
+                </Popover.Dropdown>
+              </Popover>
+
+              {/* Reasoning effort selector */}
+              <Popover opened={effortPickerOpen} position="top-end" shadow="md" radius="md">
+                <Popover.Target>
+                  <Tooltip label="Reasoning effort" position="top" openDelay={100} disabled={effortPickerOpen}>
+                    <button
+                      type="button"
+                      className={classes.modelPickerButton}
+                      data-open={effortPickerOpen || undefined}
+                      aria-haspopup="menu"
+                      aria-expanded={effortPickerOpen}
+                      onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                      onClick={() => {
+                        if (effortPickerOpen) {
+                          effortPickerHandlers.close();
+                        } else {
+                          effortPickerHandlers.open();
+                        }
+                      }}
+                    >
+                      <IconBrain size={18} stroke={1.5} />
+                      <Text fz="sm" fw={450} lh={1}>
+                        {selectedEffortLabel}
+                      </Text>
+                    </button>
+                  </Tooltip>
+                </Popover.Target>
+                <Popover.Dropdown ref={effortPickerDropdownRef} p={4} miw={160}>
+                  <Menu>
+                    <Menu.Label style={{ padding: 'calc(var(--mantine-spacing-xs) / 2) var(--mantine-spacing-xs)' }}>
+                      Reasoning effort
+                    </Menu.Label>
+                    {REASONING_EFFORTS.map((effort) => (
+                      <Menu.Item
+                        key={effort.value}
+                        className={classes.modelMenuItem}
+                        rightSection={
+                          effort.value === selectedReasoningEffort ? (
+                            <IconCheck size={16} color="var(--mantine-color-blue-6)" />
+                          ) : null
+                        }
+                        onClick={() => {
+                          onReasoningEffortChange(effort.value);
+                          effortPickerHandlers.close();
+                        }}
+                      >
+                        <Text size="sm">{effort.label}</Text>
                       </Menu.Item>
                     ))}
                   </Menu>
