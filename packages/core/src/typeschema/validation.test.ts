@@ -8,6 +8,7 @@ import type {
   AppointmentParticipant,
   Binary,
   Bundle,
+  BundleEntry,
   CarePlan,
   CodeSystem,
   Condition,
@@ -26,6 +27,7 @@ import type {
   Patient,
   Questionnaire,
   QuestionnaireItem,
+  Reference,
   Resource,
   RiskAssessment,
   StructureDefinition,
@@ -700,8 +702,40 @@ describe('FHIR resource validation', () => {
         }
       }
     }`) as Patient;
-    expect(() => validateResource(patient)).not.toThrow();
+    // `__proto__` and `constructor` are not valid Element properties, so the resource is rejected.
+    expect(() => validateResource(patient)).toThrow('Invalid additional property');
+    // The important part: validating it never touches String.prototype.
     expect('hi'.trim()).toStrictEqual('hi');
+    expect(('1988-11-18' as any).valueOf()).toStrictEqual('1988-11-18');
+  });
+
+  test('Invariants using string functions with primitive extensions', () => {
+    // bdl-8 is `fullUrl.exists() implies fullUrl.contains('/_history/').not()`.
+    // A `_fullUrl` sibling must not make the invariant unevaluable.
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'collection',
+      entry: [
+        {
+          fullUrl: 'http://example.com/Patient/1',
+          _fullUrl: { id: 'f1' },
+          resource: { resourceType: 'Patient', id: '1' },
+        } as unknown as BundleEntry,
+      ],
+    };
+    expect(() => validateResource(bundle)).not.toThrow();
+
+    // ref-1 is `reference.startsWith('#').not() or ...`
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: {
+        // No actual primitive value
+        _reference: { extension: [{ url: 'http://example.com/note', valueString: 'note' }] },
+      } as unknown as Reference<Patient>,
+    };
+    expect(() => validateResource(observation)).not.toThrow();
   });
 
   test('Slice on value type', () => {
@@ -1050,7 +1084,8 @@ describe('FHIR resource validation', () => {
     const binary: Binary = { resourceType: 'Binary', contentType: ContentType.JSON };
     // Intentionally invalid: data should be base64 string, not object
     binary.data = { foo: 'bar' } as unknown as string;
-    expect(() => validateResource(binary)).toThrow('Invalid additional property "foo" (Binary.data.foo)');
+    // Rejected on the type of the value itself; the object is never walked into.
+    expect(() => validateResource(binary)).toThrow('Invalid JSON type: expected string, but got object (Binary.data)');
   });
 
   test('base64Binary exceeds configured byte cap fails', () => {

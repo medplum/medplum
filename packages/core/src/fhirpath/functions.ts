@@ -4,13 +4,14 @@ import type { Reference, Resource } from '@medplum/fhirtypes';
 import type { Atom, AtomContext } from '../fhirlexer/parse';
 import type { TypedValue } from '../types';
 import { PropertyType, isResource } from '../types';
-import { calculateAge, getExtension, isEmpty, resolveId } from '../utils';
+import { calculateAge, getExtension, resolveId } from '../utils';
 import { DotAtom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
 import {
   booleanToTypedValue,
   fhirPathIs,
   isQuantity,
+  isTypedValueEmpty,
   removeDuplicates,
   singleton,
   toJsBoolean,
@@ -64,7 +65,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns True if the input collection is empty ({ }) and false otherwise.
    */
   empty: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
-    return booleanToTypedValue(input.every((e) => isEmpty(e.value)));
+    return booleanToTypedValue(input.every(isTypedValueEmpty));
   },
 
   /**
@@ -97,7 +98,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (criteria) {
       return booleanToTypedValue(input.some((e) => toJsBoolean(criteria.eval(context, [e]))));
     } else {
-      return booleanToTypedValue(input.length > 0 && input.every((e) => !isEmpty(e.value)));
+      return booleanToTypedValue(input.length > 0 && !input.some(isTypedValueEmpty));
     }
   },
 
@@ -1914,7 +1915,8 @@ export const functions: Record<string, FhirPathFunction> = {
 
   extension: (context: AtomContext, input: TypedValue[], urlAtom: Atom): TypedValue[] => {
     const url = urlAtom.eval(context, input)[0].value as string;
-    const resource = input?.[0]?.value;
+    // For a primitive, extensions live on the `_property` sibling rather than on the value itself.
+    const resource = input?.[0]?.primitiveExtension ?? input?.[0]?.value;
     if (resource) {
       const extension = getExtension(resource, url);
       if (extension) {
@@ -1939,6 +1941,10 @@ function applyStringFunc<T>(
     return [];
   }
   const [{ value }] = validateInput(input, 1);
+  if (value === undefined) {
+    // A primitive that carries only an extension has no value to operate on.
+    return [];
+  }
   if (typeof value !== 'string') {
     throw new TypeError('String function cannot be called with non-string');
   }
