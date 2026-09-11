@@ -45,11 +45,15 @@ POST [base]/[resourceType]/[id]/$expunge
 
 Subsequent requests for the resource will result in HTTP 404 Not Found, as if the resource never existed.
 
+When audit persistence is enabled (`saveAuditEvents`), Medplum records an `AuditEvent` with `meta.expunged: true` whose `entity.what` references the expunged resource. The resource and its history are still permanently removed. `AuditEvent` resources themselves cannot be expunged, including by super admins.
+
+`meta.expunged` is server-controlled, like `meta.deleted`. Only the `$expunge` audit path sets it. Create and update ignore a client-supplied value; an update of an expunge `AuditEvent` cannot clear the flag.
+
 The `$expunge` operation is only available to users with administrator access to the Project in which the resource belongs.
 
 ### Expunge Everything Option
 
-The Medplum `$expunge` operation supports an optional `everything` flag to systematically expunge everything in the resource [compartment](https://hl7.org/fhir/R4/compartmentdefinition.html). Currently, only the "Patient" and "Project" compartments are supported.
+The Medplum `$expunge` operation supports an optional `everything` flag to systematically expunge everything in the resource [compartment](https://hl7.org/fhir/R4/compartmentdefinition.html). Currently, only the "Patient" and "Project" compartments are supported. The job iterates every resource type in that compartment and hard-deletes matching rows in batches. It skips `AuditEvent` so the audit trail remains.
 
 ```
 POST [base]/[resourceType]/[id]/$expunge?everything=true

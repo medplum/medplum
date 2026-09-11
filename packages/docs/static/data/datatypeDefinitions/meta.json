@@ -257,6 +257,22 @@
       "definition": "The list of compartments containing this resource",
       "comment": "The list of compartments containing this resource",
       "inherited": false
+    },
+    {
+      "name": "expunged",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "Meta.expunged",
+      "min": 0,
+      "max": "1",
+      "short": "True when this AuditEvent records an expunge (physical delete).",
+      "definition": "True when this AuditEvent records an expunge (physical delete).",
+      "comment": "",
+      "inherited": false
     }
   ]
 }
