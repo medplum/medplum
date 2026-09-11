@@ -126,7 +126,6 @@ describe('Subscription Worker', () => {
       extendedMode: true,
       projects: [botProjectDetails.project],
       author: createReference(botProjectDetails.client),
-      currentProject: botProjectDetails.project,
     });
 
     mockLambdaClient = mockClient(LambdaClient);
@@ -291,15 +290,15 @@ describe('Subscription Worker', () => {
             headers: {
               'Content-Type': ContentType.FHIR_JSON,
               Authorization: 'Basic xyz',
-              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
-              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+              'x-trace-id': '12345678901234567890123456789012',
+              traceparent: expect.stringMatching(/^00-12345678901234567890123456789012-[0-9a-f]{16}-01$/),
               'X-Medplum-Subscription': subscription.id,
               'X-Medplum-Interaction': 'create',
             },
           })
         );
       },
-      { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
+      { traceId: '12345678901234567890123456789012' }
     ));
 
   test('Create-only subscription', () =>
@@ -414,13 +413,13 @@ describe('Subscription Worker', () => {
               'X-Medplum-Interaction': 'delete',
               'X-Medplum-Deleted-Resource': `Patient/${patient.id}`,
               'X-Signature': createHmac('sha256', secret).update('{}').digest('hex'),
-              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
-              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+              'x-trace-id': '12345678901234567890123456789012',
+              traceparent: expect.stringMatching(/^00-12345678901234567890123456789012-[0-9a-f]{16}-01$/),
             },
           })
         );
       },
-      { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
+      { traceId: '12345678901234567890123456789012' }
     ));
 
   test('Send subscriptions with signature', () =>
@@ -468,15 +467,15 @@ describe('Subscription Worker', () => {
             headers: {
               'Content-Type': ContentType.FHIR_JSON,
               'X-Signature': signature,
-              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
-              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+              'x-trace-id': '12345678901234567890123456789012',
+              traceparent: expect.stringMatching(/^00-12345678901234567890123456789012-[0-9a-f]{16}-01$/),
               'X-Medplum-Subscription': subscription.id,
               'X-Medplum-Interaction': 'create',
             },
           })
         );
       },
-      { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
+      { traceId: '12345678901234567890123456789012' }
     ));
 
   test('Send subscriptions with legacy signature extension', () =>
@@ -524,15 +523,15 @@ describe('Subscription Worker', () => {
             headers: {
               'Content-Type': ContentType.FHIR_JSON,
               'X-Signature': signature,
-              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
-              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+              'x-trace-id': '12345678901234567890123456789012',
+              traceparent: expect.stringMatching(/^00-12345678901234567890123456789012-[0-9a-f]{16}-01$/),
               'X-Medplum-Subscription': subscription.id,
               'X-Medplum-Interaction': 'create',
             },
           })
         );
       },
-      { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
+      { traceId: '12345678901234567890123456789012' }
     ));
 
   test('Ignore non-subscription subscriptions', () =>
@@ -2745,30 +2744,32 @@ describe('Subscription Worker', () => {
           resource: [{ resourceType: 'Patient', criteria: `Patient?_compartment=${allowedOrgId}` }],
         });
 
-        // Create the "no access" membership FIRST so that `findProjectMembership` returns
-        // it ahead of the "has access" membership -- this is what makes the
-        // `authorMembershipId` plumbing necessary in the first place.
-        const noAccessMembership = await superAdminRepo.createResource<ProjectMembership>({
+        // Two memberships for the same profile, created without policies: `findProjectMembership`
+        // returns them in no particular order, so which policy goes where is decided after the fact.
+        const membershipTemplate: ProjectMembership = {
           resourceType: 'ProjectMembership',
           user: createReference(client),
           profile: createReference(practitioner),
           project: createReference(wsProject),
+        };
+        const membershipA = await superAdminRepo.createResource<ProjectMembership>(membershipTemplate);
+        const membershipB = await superAdminRepo.createResource<ProjectMembership>(membershipTemplate);
+
+        // Whichever membership the unordered lookup returns first gets the denying policy, so a
+        // worker that fell back to `findProjectMembership` would deny the allowed subscription.
+        const firstFound = await workerUtils.findProjectMembership(wsProject.id, createReference(practitioner));
+        expect([membershipA.id, membershipB.id]).toContain(firstFound?.id);
+        const [noAccessMembership, hasAccessMembership] =
+          firstFound?.id === membershipA.id ? [membershipA, membershipB] : [membershipB, membershipA];
+
+        await superAdminRepo.updateResource<ProjectMembership>({
+          ...noAccessMembership,
           accessPolicy: createReference(noAccessPolicy),
         });
-
-        const hasAccessMembership = await superAdminRepo.createResource<ProjectMembership>({
-          resourceType: 'ProjectMembership',
-          user: createReference(client),
-          profile: createReference(practitioner),
-          project: createReference(wsProject),
+        await superAdminRepo.updateResource<ProjectMembership>({
+          ...hasAccessMembership,
           accessPolicy: createReference(hasAccessPolicy),
         });
-
-        // Sanity check: the unordered membership lookup returns the denying membership
-        // first.  If this ever changes, the rest of the test stops exercising what it
-        // intends to exercise.
-        const firstFound = await workerUtils.findProjectMembership(wsProject.id, createReference(practitioner));
-        expect(firstFound?.id).toStrictEqual(noAccessMembership.id);
 
         // Two WebSocket subscriptions, one bound with each membership.
         const noAccessSub = await wsRepo.createResource<Subscription>({

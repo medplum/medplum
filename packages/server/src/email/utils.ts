@@ -3,9 +3,8 @@
 import type { WithId } from '@medplum/core';
 import { OperationOutcomeError, badRequest } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
-import MailComposer from 'nodemailer/lib/mail-composer/index.js';
-import type Mail from 'nodemailer/lib/mailer';
-import type { Address } from 'nodemailer/lib/mailer';
+import type { Address, SendMailOptions } from 'nodemailer';
+import MailComposer from 'nodemailer/lib/mail-composer';
 import { getConfig } from '../config/loader';
 import type { MedplumSmtpConfig } from '../config/types';
 import { getLogger } from '../logger';
@@ -82,7 +81,7 @@ export function isEmailConfigured(): boolean {
  * @param projectSmtp - Optional project SMTP configuration.
  * @returns The from address to use.
  */
-export function getFromAddress(options: Mail.Options, projectSmtp?: ProjectSmtpConfig): string {
+export function getFromAddress(options: SendMailOptions, projectSmtp?: ProjectSmtpConfig): string {
   const config = getConfig();
   const approvedSenderEmails = projectSmtp ? projectSmtp.approvedSenderEmails : config.approvedSenderEmails;
   const defaultFrom = projectSmtp ? projectSmtp.fromAddress : config.supportEmail;
@@ -141,7 +140,7 @@ export function applyFromDisplayName(fromAddress: string, appName: string | unde
  * @param input - nodemailer address input.
  * @returns Array of string addresses.
  */
-export function buildAddresses(input: string | Address | (string | Address)[] | undefined): string[] | undefined {
+export function buildAddresses(input: SendMailOptions['from']): string[] | undefined {
   if (!input) {
     return undefined;
   }
@@ -156,7 +155,7 @@ export function buildAddresses(input: string | Address | (string | Address)[] | 
  * @param address - nodemailer address input.
  * @returns String address.
  */
-export function addressToString(address: (string | Address)[] | Address | string | undefined): string | undefined {
+export function addressToString(address: SendMailOptions['from']): string | undefined {
   if (!address) {
     return undefined;
   }
@@ -195,7 +194,7 @@ export function extractEmailFromAddress(address: string | undefined): string | u
  * @param options - The nodemailer options.
  * @returns The raw email message.
  */
-export function buildRawMessage(options: Mail.Options): Promise<Uint8Array> {
+export function buildRawMessage(options: SendMailOptions): Promise<Uint8Array> {
   const msg = new MailComposer(options);
   return new Promise((resolve, reject) => {
     msg.compile().build((err, message) => {

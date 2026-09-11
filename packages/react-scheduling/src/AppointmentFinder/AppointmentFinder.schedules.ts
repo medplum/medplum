@@ -10,15 +10,14 @@ import {
   serviceTypeIncludesService,
 } from '@medplum/core';
 import type { HealthcareService, Location, PractitionerRole, Reference, Resource, Schedule } from '@medplum/fhirtypes';
-import type { SchedulingActor, SchedulingRole } from './AppointmentFinder.roles';
+import type { SchedulingActor, SchedulingActorType } from '../actors';
 import {
-  ROLE_LABELS,
-  SCHEDULING_ROLES,
-  getSchedulingRole,
+  BOOKABLE_ACTOR_TYPES,
+  getActorType,
+  getActorTypeLabel,
   isBookableActorType,
-  isRoleRequired,
-  isSchedulingActorType,
-} from './AppointmentFinder.roles';
+  REQUIRED_ACTOR_TYPES,
+} from '../actors';
 import { getActorsKey } from './AppointmentFinder.times';
 
 /**
@@ -36,18 +35,8 @@ export interface ScheduleCandidate {
  * @param candidate - The candidate to read.
  * @returns Its schedule's only actor.
  */
-function getCandidateActor(candidate: ScheduleCandidate): SchedulingActor {
+export function getCandidateActor(candidate: ScheduleCandidate): SchedulingActor {
   return candidate.schedule.actor[0];
-}
-
-/**
- * Returns the role a candidate fills, from the type of its actor.
- * @param candidate - The candidate to read.
- * @returns The role, or undefined for an actor of a type nothing books against.
- */
-export function getCandidateRole(candidate: ScheduleCandidate): SchedulingRole | undefined {
-  const actorType = getActorType(getCandidateActor(candidate).reference);
-  return isSchedulingActorType(actorType) ? getSchedulingRole(actorType) : undefined;
 }
 
 /**
@@ -66,15 +55,15 @@ export function getCandidateDisplay(candidate: ScheduleCandidate): string {
 }
 
 /**
- * What an appointment is being asked for: the schedules chosen, per role.
+ * What an appointment is being asked for: the schedules chosen, per actor type.
  * Everything named attends.
  */
-export type ActorSelections = Partial<Record<SchedulingRole, readonly ScheduleCandidate[]>>;
+export type ActorSelections = Partial<Record<SchedulingActorType, readonly ScheduleCandidate[]>>;
 
 export interface SearchScheduleCandidatesOptions {
   /** Which of the service's actors to offer. */
-  readonly role: SchedulingRole;
-  /** What the user typed. Empty offers whatever the role has, unfiltered by name. */
+  readonly actorType: SchedulingActorType;
+  /** What the user typed. Empty offers whatever the actor type has, unfiltered by name. */
   readonly query: string;
   /**
    * The site being booked at. Actors sited elsewhere are left out: a room or a
@@ -91,30 +80,35 @@ export interface SearchScheduleCandidatesOptions {
 const DEFAULT_COUNT = 25;
 
 /**
- * The chained filters that scope a Schedule search to one role's actors.
- * @param role - The role whose actors to offer.
+ * The chained filters that scope a Schedule search to actors of one type.
+ * @param actorType - The type of actors to offer.
  * @param query - What the user typed, or empty to match any name.
  * @returns The `actor:` criteria to search with.
  */
-function getActorCriteria(role: SchedulingRole, query: string): Record<string, string> {
-  switch (role) {
-    case 'provider':
+function getActorCriteria(actorType: SchedulingActorType, query: string): Record<string, string> {
+  switch (actorType) {
+    case 'Practitioner':
       return {
         'actor:Practitioner.active:not': 'false',
         ...(query ? { 'actor:Practitioner.name': query } : undefined),
       };
-    case 'room':
+    case 'Location':
       return {
         'actor:Location.status:not': 'inactive',
         ...(query ? { 'actor:Location.name': query } : undefined),
       };
-    case 'device':
+    case 'Device':
       return {
         'actor:Device.status:not': 'inactive',
         ...(query ? { 'actor:Device.device-name': query } : undefined),
       };
+    case 'HealthcareService':
+    case 'Patient':
+    case 'PractitionerRole':
+    case 'RelatedPerson':
+      throw new Error(`Got unsupported actor type ${actorType}`);
     default:
-      return assertNever(role);
+      return assertNever(actorType);
   }
 }
 
@@ -133,7 +127,7 @@ export async function searchScheduleCandidates(
   options: SearchScheduleCandidatesOptions
 ): Promise<ScheduleCandidate[]> {
   const count = (options.count ?? DEFAULT_COUNT).toString();
-  const actorCriteria = getActorCriteria(options.role, options.query);
+  const actorCriteria = getActorCriteria(options.actorType, options.query);
 
   const tokens = service ? getServiceTypeTokens(service) : [];
   const typeCriteria = tokens.length > 0 ? { 'service-type': tokens.join(',') } : {};
@@ -191,13 +185,15 @@ function toScheduleCandidate(
     return undefined;
   }
 
-  // Leaves out schedules held on a PractitionerRole
-  const reference = schedule.actor[0].reference;
-  if (!reference || !isBookableActorType(getActorType(reference))) {
+  // Leaves out schedules held on a PractitionerRole, HealthcareService, or other
+  // resource that are not commonly used for scheduling.
+  const actor = schedule.actor[0];
+  const referenceStr = actor.reference;
+  if (!referenceStr || !isBookableActorType(getActorType(actor))) {
     return undefined;
   }
 
-  return { schedule, actorResource: actors.get(reference) };
+  return { schedule, actorResource: actors.get(referenceStr) };
 }
 
 /** How far up a `partOf` chain of Locations to look. */
@@ -265,8 +261,8 @@ async function searchRolesByPractitioner(
   const references = [
     ...new Set(
       candidates
+        .filter((candidate) => getActorType(getCandidateActor(candidate)) === 'Practitioner')
         .map((candidate) => getCandidateActor(candidate).reference)
-        .filter((reference) => getActorType(reference) === 'Practitioner')
     ),
   ];
 
@@ -324,26 +320,29 @@ async function isCandidateAtLocation(
   options: FilterCandidatesOptions | undefined
 ): Promise<boolean> {
   const actor = candidate.actorResource;
-  const actorReference = getCandidateActor(candidate).reference;
-  const role = getCandidateRole(candidate);
+  const actorReference = getCandidateActor(candidate);
+  const actorType = getActorType(actorReference);
 
-  switch (role) {
-    case 'room':
+  switch (actorType) {
+    case 'Location':
       // A room is the Location, so it sites itself.
-      return isWithinLocation(medplum, actorReference, locationReference, options);
-    case 'device': {
+      return isWithinLocation(medplum, actorReference.reference, locationReference, options);
+    case 'Device': {
       // Where a device is kept is recorded on the Device itself, which is only
       // to hand when the search could include it.
       const device = actor?.resourceType === 'Device' ? actor : undefined;
       return isWithinLocation(medplum, device?.location?.reference, locationReference, options);
     }
-    case 'provider':
-      return isPractitionerAtLocation(actorReference, locationReference, getRoles);
-    case undefined:
+    case 'Practitioner':
+      return isPractitionerAtLocation(actorReference.reference, locationReference, getRoles);
+    case 'HealthcareService':
+    case 'Patient':
+    case 'PractitionerRole':
+    case 'RelatedPerson':
       // An actor of a type nothing books against, so nothing sites it either.
       return true;
     default:
-      return assertNever(role);
+      return assertNever(actorType);
   }
 }
 
@@ -371,10 +370,6 @@ async function isPractitionerAtLocation(
     return true;
   }
   return practiceLocations.some((roleLocation) => roleLocation.reference === locationReference);
-}
-
-function getActorType(reference: string | undefined): string | undefined {
-  return reference?.split('/')[0];
 }
 
 /**
@@ -438,12 +433,12 @@ async function readLocation(
 }
 
 /**
- * Returns everything chosen, across roles.
+ * Returns everything chosen, across actor types
  * @param selections - What has been chosen.
- * @returns The chosen candidates, in `SCHEDULING_ROLES` order.
+ * @returns The chosen candidates in `BOOKABLE_ACTOR_TYPES` order
  */
 export function getSelectedCandidates(selections: ActorSelections): ScheduleCandidate[] {
-  return SCHEDULING_ROLES.flatMap((role) => selections[role] ?? []);
+  return BOOKABLE_ACTOR_TYPES.flatMap((actorType) => selections[actorType] ?? []);
 }
 
 function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> {
@@ -456,8 +451,12 @@ function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> 
  * @returns A message to show the user, or undefined when the search can run.
  */
 export function getSelectionError(selections: ActorSelections): string | undefined {
-  const missing = SCHEDULING_ROLES.find((role) => isRoleRequired(role) && (selections[role] ?? []).length === 0);
-  return missing ? `Choose at least one ${ROLE_LABELS[missing].toLowerCase()}` : undefined;
+  const missing = [...REQUIRED_ACTOR_TYPES].find((actorType) => !selections[actorType]?.length);
+  if (!missing) {
+    return undefined;
+  }
+  const label = getActorTypeLabel(missing).toLowerCase();
+  return `Choose at least one ${label}`;
 }
 
 /**

@@ -21,7 +21,13 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
-import { createTestProject, initTestAuth, setupRecaptchaMock, withTestContext } from '../../test.setup';
+import {
+  createTestProject,
+  getSuperAdminAccessToken,
+  initTestAuth,
+  setupRecaptchaMock,
+  withTestContext,
+} from '../../test.setup';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { createProject } from './projectinit';
 
@@ -72,8 +78,7 @@ describe('Project clone', () => {
     });
     expect(obs).toBeDefined();
 
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
+    const superAdminAccessToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post(`/fhir/R4/Project/${project.id}/$clone`)
@@ -115,8 +120,7 @@ describe('Project clone', () => {
     const newProjectName = 'A New Name for cloned project';
     expect(project).toBeDefined();
 
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
+    const superAdminAccessToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post(`/fhir/R4/Project/${project.id}/$clone`)
@@ -179,8 +183,7 @@ describe('Project clone', () => {
     const newProjectName = 'A New Name for a cloned project';
     expect(project).toBeDefined();
 
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
+    const superAdminAccessToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post(`/fhir/R4/Project/${project.id}/$clone`)
@@ -211,8 +214,7 @@ describe('Project clone', () => {
     const resourceTypes = ['ProjectMembership'];
     expect(project).toBeDefined();
 
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
+    const superAdminAccessToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post(`/fhir/R4/Project/${project.id}/$clone`)
@@ -248,8 +250,7 @@ describe('Project clone', () => {
     const includeIds = [membership.id];
     expect(project).toBeDefined();
 
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
+    const superAdminAccessToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post(`/fhir/R4/Project/${project.id}/$clone`)
@@ -285,8 +286,7 @@ describe('Project clone', () => {
     const excludeIds = [membership.id];
     expect(project).toBeDefined();
 
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
+    const superAdminAccessToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post(`/fhir/R4/Project/${project.id}/$clone`)
@@ -342,8 +342,7 @@ describe('Project clone', () => {
         },
       });
 
-      const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-      expect(superAdminAccessToken).toBeDefined();
+      const superAdminAccessToken = await getSuperAdminAccessToken();
 
       const res = await request(app)
         .post(`/fhir/R4/Project/${project.id}/$clone`)

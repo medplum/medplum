@@ -48,7 +48,14 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorageKey } from '../storage/base';
 import { getBinaryStorage } from '../storage/loader';
-import { bundleContains, createTestProject, mockStdoutWrite, spyOnQuery, withTestContext } from '../test.setup';
+import {
+  bundleContains,
+  createTestProject,
+  getSuperAdminTestProject,
+  mockStdoutWrite,
+  spyOnQuery,
+  withTestContext,
+} from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
@@ -440,8 +447,8 @@ describe('FHIR Repo', () => {
 
       try {
         const family = randomUUID();
-        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
-        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+        const p1 = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+        const p2 = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
 
         writeSpy.mockClear();
         await repo.search({
@@ -452,7 +459,10 @@ describe('FHIR Repo', () => {
         const auditEventLog = writeSpy.mock.calls.map((call) => call[0] as string).find((s) => s.includes('search'));
         expect(auditEventLog).toBeDefined();
         const auditEvent = JSON.parse(auditEventLog as string) as AuditEvent;
-        expect(auditEvent.entity?.[0].detail).toStrictEqual([{ type: 'numResults', valueString: '2' }]);
+        expect(auditEvent.entity?.[0].detail).toContainExactly([
+          { type: 'result', valueString: getReferenceString(p1) },
+          { type: 'result', valueString: getReferenceString(p2) },
+        ]);
       } finally {
         getConfig().logAuditEvents = prevLogAuditEvents;
         writeSpy.mockRestore();
@@ -687,7 +697,7 @@ describe('FHIR Repo', () => {
 
   test('Super Admin update ignores submitted meta.author', () =>
     withTestContext(async () => {
-      const { client, repo } = await createTestProject({ withClient: true, withRepo: true, superAdmin: true });
+      const { client, repo } = await getSuperAdminTestProject();
       const fakeAuthor = 'Practitioner/' + randomUUID();
 
       const patient = await repo.createResource<Patient>({
@@ -844,7 +854,6 @@ describe('FHIR Repo', () => {
 
       const repo = new Repository({
         projects: [project],
-        currentProject: project,
         extendedMode: true,
         skipBackgroundJobs: true,
         author: {
@@ -1515,7 +1524,7 @@ describe('FHIR Repo', () => {
     const expungeAccessCases: ExpungeAccessCase[] = [
       {
         name: 'Super Admin',
-        createRepo: async () => (await createTestProject({ withRepo: true, superAdmin: true })).repo,
+        createRepo: async () => (await getSuperAdminTestProject()).repo,
         canExpungeOtherProject: true,
       },
       {
@@ -2038,7 +2047,7 @@ describe('FHIR Repo', () => {
     }));
 
   test('__version column', async () => {
-    const { repo } = await createTestProject({ withRepo: true, superAdmin: true });
+    const { repo } = await getSuperAdminTestProject();
 
     await withTestContext(async () => {
       const patient = await repo.createResource<Patient>({

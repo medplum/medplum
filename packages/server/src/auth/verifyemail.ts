@@ -11,6 +11,12 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
+import {
+  consumeSecurityRequest,
+  getSecurityRequestExpiration,
+  isSecurityRequestExpired,
+  supersedePriorSecurityRequests,
+} from './securityrequest';
 
 export const verifyEmailValidator = makeValidationMiddleware([
   body('id').isUUID().withMessage('Invalid request ID'),
@@ -31,6 +37,11 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
     return;
   }
 
+  if (isSecurityRequestExpired(securityRequest)) {
+    sendOutcome(res, badRequest('Expired'));
+    return;
+  }
+
   if (!timingSafeEqualStr(securityRequest.secret, req.body.secret)) {
     sendOutcome(res, badRequest('Incorrect secret'));
     return;
@@ -40,8 +51,10 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
 
   await systemRepo.withTransaction(
     async (txRepo) => {
+      // Consume the request first, so that concurrent requests carrying the same token
+      // cannot both get through
+      await consumeSecurityRequest(txRepo, securityRequest);
       await txRepo.updateResource<User>({ ...user, emailVerified: true });
-      await txRepo.updateResource<UserSecurityRequest>({ ...securityRequest, used: true });
     },
     { resourceTypes: ['User', 'UserSecurityRequest'], source: 'verifyEmailHandler' }
   );
@@ -64,9 +77,12 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
  */
 export async function verifyEmail(
   systemRepo: SystemRepository,
-  user: User,
+  user: WithId<User>,
   redirectUri?: string
 ): Promise<WithId<UserSecurityRequest>> {
+  // Invalidate any prior verification requests, so that only the newest link works
+  await supersedePriorSecurityRequests(systemRepo, user, 'verify-email');
+
   // Create the email verification request
   return systemRepo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',
@@ -74,6 +90,7 @@ export async function verifyEmail(
     type: 'verify-email',
     user: createReference(user),
     secret: generateSecret(16),
+    expiresAt: getSecurityRequestExpiration('verify-email'),
     redirectUri,
   });
 }

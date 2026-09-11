@@ -2,16 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Input, Stack, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { getIdentifier } from '@medplum/core';
+import { getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Address, Organization } from '@medplum/fhirtypes';
-import { AddressInput, Modal } from '@medplum/react';
+import { AddressInput, Modal, useMedplum } from '@medplum/react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
-import type { BillingOrganizations } from '../../hooks/useBillingOrganizations';
 import { useCandidProviderContracts } from '../../hooks/useCandidProviderContracts';
 import type { CandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
-import { EIN_SYSTEM, NPI_SYSTEM, isValidBillingPhone } from '../../utils/billing';
+import {
+  EIN_SYSTEM,
+  NPI_SYSTEM,
+  buildUpdatedOrganization,
+  isValidBillingPhone,
+  withCandidProviderExtensions,
+  withCandidProviderId,
+} from '../../utils/billing';
+import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
+import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
 import { CandidContractAlert } from './CandidContractAlert';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
@@ -23,10 +31,12 @@ const FORM_ID = 'billing-organization-form';
 
 /** Props for the billing organization modal; `organization` is the one to edit, or undefined to create a new one. */
 export interface BillingOrganizationModalProps {
-  readonly billingOrganizations: BillingOrganizations;
+  readonly candidBotId: string | undefined;
+  readonly candidEditBotId: string | undefined;
   readonly organization: WithId<Organization> | undefined;
   readonly opened: boolean;
   readonly onClose: () => void;
+  readonly onSaved: () => void;
 }
 
 /**
@@ -39,7 +49,8 @@ export interface BillingOrganizationModalProps {
  * @returns The BillingOrganizationModal React node.
  */
 export function BillingOrganizationModal(props: BillingOrganizationModalProps): JSX.Element {
-  const { billingOrganizations, organization, opened, onClose } = props;
+  const { candidBotId, candidEditBotId, organization, opened, onClose, onSaved } = props;
+  const [saving, setSaving] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState<CandidProviderRegistration['status']>('unavailable');
 
   return (
@@ -49,7 +60,7 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
       size="lg"
       title={organization ? 'Edit billing organization' : 'New billing organization'}
       actions={
-        <Button type="submit" form={FORM_ID} loading={billingOrganizations.saving || registrationStatus === 'loading'}>
+        <Button type="submit" form={FORM_ID} loading={saving || registrationStatus === 'loading'}>
           {registrationStatus === 'registered' ? 'Edit' : 'Save'}
         </Button>
       }
@@ -57,10 +68,15 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
       {opened && (
         <BillingOrganizationForm
           key={organization?.id ?? 'new'}
-          billingOrganizations={billingOrganizations}
+          candidBotId={candidBotId}
+          candidEditBotId={candidEditBotId}
           organization={organization}
           onRegistrationStatusChange={setRegistrationStatus}
-          onSaved={onClose}
+          onSavingChange={setSaving}
+          onSaved={() => {
+            onSaved();
+            onClose();
+          }}
         />
       )}
     </Modal>
@@ -72,9 +88,11 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
  * lookup for the NPI on the form, and resets it to unavailable when the form unmounts.
  */
 interface BillingOrganizationFormProps {
-  readonly billingOrganizations: BillingOrganizations;
+  readonly candidBotId: string | undefined;
+  readonly candidEditBotId: string | undefined;
   readonly organization: WithId<Organization> | undefined;
   readonly onRegistrationStatusChange: (status: CandidProviderRegistration['status']) => void;
+  readonly onSavingChange: (saving: boolean) => void;
   readonly onSaved: () => void;
 }
 
@@ -85,14 +103,13 @@ interface BillingOrganizationFormProps {
 type FormErrors = Partial<Record<'phone', string>>;
 
 /**
- * The billing organization fields, seeded from the organization at mount. On a failed save the
- * hook has already shown the error notification, so the form stays open with the entered values
- * for the user to fix and retry; `onSaved` fires only after a successful save.
+ * The billing organization fields, seeded from the organization at mount.
  * @param props - The BillingOrganizationForm React props.
  * @returns The BillingOrganizationForm React node.
  */
 function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Element {
-  const { billingOrganizations, organization, onRegistrationStatusChange, onSaved } = props;
+  const { candidBotId, candidEditBotId, organization, onRegistrationStatusChange, onSavingChange, onSaved } = props;
+  const medplum = useMedplum();
 
   const [name, setName] = useState(() => organization?.name ?? '');
   const [npi, setNpi] = useState(() => getIdentifierValue(organization, NPI_SYSTEM));
@@ -128,13 +145,52 @@ function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Eleme
     if (Object.keys(validationErrors).length > 0) {
       return;
     }
-    const saved = await billingOrganizations.saveOrganization(
-      organization,
-      { name, npi: npi.trim(), ein: ein.trim(), phone, address },
-      registration
-    );
-    if (saved) {
+    onSavingChange(true);
+    try {
+      let built = buildUpdatedOrganization(organization ?? { resourceType: 'Organization' }, {
+        name,
+        npi: npi.trim(),
+        ein: ein.trim(),
+        phone,
+        address,
+      });
+      built = withCandidProviderId(
+        built,
+        registration.status === 'registered' ? registration.candidProviderId : undefined
+      );
+      const candidProviderId = getIdentifier(built, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
+      const botId = candidProviderId ? candidEditBotId : candidBotId;
+      if (botId) {
+        built = withCandidProviderExtensions(built);
+      }
+      const saved = organization
+        ? await medplum.updateResource(built as WithId<Organization>)
+        : await medplum.createResource(built);
+      showSuccessNotification({
+        title: 'Success',
+        message: organization ? 'Billing organization updated' : 'Billing organization created',
+      });
+      if (botId) {
+        try {
+          await medplum.executeBot(botId, saved, 'application/fhir+json');
+          showSuccessNotification({
+            title: 'Success',
+            message: candidProviderId ? 'Updated in Candid' : 'Registered with Candid',
+          });
+        } catch (error) {
+          showErrorNotification(
+            new Error(
+              `Billing organization saved, but ${candidProviderId ? 'updating it in' : 'registering it with'} Candid failed: ${normalizeErrorString(error)}. ` +
+                'Save the organization again to retry.'
+            )
+          );
+        }
+      }
       onSaved();
+    } catch (error) {
+      showErrorNotification(error);
+    } finally {
+      onSavingChange(false);
     }
   };
 
@@ -149,9 +205,7 @@ function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Eleme
         <CandidRegistrationAlert
           registration={registration}
           registersAs={
-            billingOrganizations.candidBotId
-              ? 'this organization as an organization provider, billing under its own NPI'
-              : undefined
+            candidBotId ? 'this organization as an organization provider, billing under its own NPI' : undefined
           }
         />
         <CandidContractAlert contracts={contracts} subject="this organization" />

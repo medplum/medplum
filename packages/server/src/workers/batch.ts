@@ -253,8 +253,8 @@ export async function queueLegacyBatchProcessing(
  * @returns The user's repository.
  */
 async function getBatchUserRepo(authState: Readonly<AuthState>, userConfig: UserConfiguration): Promise<Repository> {
-  const { login, project, membership } = authState;
-  return getRepoForLogin({ login, project, membership, userConfig }, true);
+  const { login, project, membership, smartAppLaunch } = authState;
+  return getRepoForLogin({ login, project, membership, smartAppLaunch, userConfig }, true);
 }
 
 /**
@@ -575,13 +575,13 @@ function countBundleErrors(bundle: Bundle): number {
  */
 export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<void> {
   const bundle = job.data.bundle;
-  const { login, project, membership } = job.data.authState;
+  const { login, project, membership, smartAppLaunch } = job.data.authState;
   const logger = getBatchLogger(job.data.asyncJob.id, job.id);
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
 
   // Prepare the original submitting user's repo
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
-  const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
+  const repo = await getRepoForLogin({ login, project, membership, smartAppLaunch, userConfig }, true);
   // This path runs the whole bundle through `processBatch`, which dispatches both telemetry events
   // itself; it only needed listeners subscribed. See the TODO in `execBatchJob` about the routes a
   // bare FhirRouter exposes.

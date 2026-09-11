@@ -4,7 +4,7 @@ import { Box } from '@mantine/core';
 import { HomerSimpson } from '@medplum/mock';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
-import { PatientSummary } from './PatientSummary';
+import { PatientSummary, PatientSummarySkeleton } from './PatientSummary';
 
 export default {
   title: 'Medplum/PatientSummary',
@@ -14,5 +14,11 @@ export default {
 export const Patient = (): JSX.Element => (
   <Box w={350}>
     <PatientSummary patient={HomerSimpson} />
+  </Box>
+);
+
+export const Loading = (): JSX.Element => (
+  <Box w={350}>
+    <PatientSummarySkeleton />
   </Box>
 );

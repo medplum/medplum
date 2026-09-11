@@ -6,7 +6,14 @@ import { useCallback, useMemo, useState } from 'react';
 import type { DateTimeRange } from '../types';
 import type { ActorCombination } from './AppointmentFinder.schedules';
 import type { AppointmentDay } from './AppointmentFinder.times';
-import { addDays, endOfDay, getDayCount, groupAppointmentsByDay, startOfDay } from './AppointmentFinder.times';
+import {
+  addDays,
+  endOfDay,
+  getDayCount,
+  getZonedDayRange,
+  groupAppointmentsByDay,
+  startOfDay,
+} from './AppointmentFinder.times';
 import { useProposedAppointments } from './useProposedAppointments';
 
 // How many days "Show more days" reaches further each time it is pressed.
@@ -75,11 +82,15 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
 
   const [daySearch, setDaySearch] = useState<DaySearch>(() => openDaySearch(defaultStart ?? new Date()));
 
+  // Derived rather than held, because the zone is not always known when a day is picked: a
+  // search opened straight from the calendar has no service named yet.
+  const siteWindow = useMemo(() => toSiteWindow(daySearch.range, timezone), [daySearch.range, timezone]);
+
   const search = useProposedAppointments({
     service,
     combinations,
-    range: daySearch.range,
-    count: TIMES_PER_DAY * getDayCount(daySearch.range.start, daySearch.range.end),
+    range: siteWindow,
+    count: TIMES_PER_DAY * getDayCount(siteWindow.start, siteWindow.end),
   });
 
   const selectedDayRange = useMemo(
@@ -139,11 +150,16 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
   };
 }
 
-/** The days on offer, and the times the ones already answered came back with. */
+/**
+ * The days on offer, and the times the ones already answered came back with.
+ *
+ * Days are held as the viewer's own calendar writes them, which is how they are picked and
+ * how they are drawn. Bounding them to the site is left to {@link toSiteWindow}.
+ */
 interface DaySearch {
-  /** The window the search opened on, which is what putting the added days away goes back to. */
+  /** The days the search opened on, which is what putting the added days away goes back to. */
   readonly original: DateTimeRange;
-  /** The days being asked about now, which is the newest window alone. Both ends closed, as `$find` requires. */
+  /** The days being asked about now, which is the newest stretch alone. */
   readonly range: DateTimeRange;
   /** Times the earlier windows offered, kept on screen while a further one is out. */
   readonly found: readonly Appointment[];
@@ -174,6 +190,16 @@ function openDaySearch(start: Date, end: Date = start): DaySearch {
   const from = floorToNow(start);
   const window = { start: from, end: endOfDay(end > from ? end : from) };
   return { original: window, range: window, found: [] };
+}
+
+/**
+ * Bounds a stretch of days by the site's midnights, for `$find` to answer.
+ * @param days - The days to ask about, on the viewer's calendar.
+ * @param timezone - The site's IANA timezone. Defaults to the browser's.
+ * @returns The window, both ends closed, as `$find` requires.
+ */
+function toSiteWindow(days: DateTimeRange, timezone?: string): DateTimeRange {
+  return { start: getZonedDayRange(days.start, timezone).start, end: getZonedDayRange(days.end, timezone).end };
 }
 
 /**

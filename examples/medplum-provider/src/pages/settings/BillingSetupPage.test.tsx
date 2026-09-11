@@ -214,7 +214,7 @@ describe('BillingSetupPage', () => {
         return resources.practitioners ?? [];
       }
       if (resourceType === 'PractitionerRole') {
-        return resources.roles ?? [];
+        return (resources.roles ?? []).filter((role) => params.get('active') !== 'true' || role.active === true);
       }
       return (params.get('identifier') ?? '').startsWith(MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM)
         ? (resources.organizations ?? [])
@@ -227,11 +227,17 @@ describe('BillingSetupPage', () => {
       const all = route(resourceType, params);
       const offset = Number(params.get('_offset') ?? 0);
       const count = Number(params.get('_count') ?? all.length);
+      const nextParams = new URLSearchParams(params);
+      nextParams.set('_offset', String(offset + count));
       return {
         resourceType: 'Bundle',
         type: 'searchset',
         total: all.length,
         entry: all.slice(offset, offset + count).map((resource) => ({ resource })),
+        link:
+          offset + count < all.length
+            ? [{ relation: 'next', url: `${medplum.fhirUrl(resourceType)}?${nextParams}` }]
+            : undefined,
       };
     }) as any);
   };
@@ -243,12 +249,11 @@ describe('BillingSetupPage', () => {
       editProvider?: boolean;
       listProviders?: boolean;
       getContracts?: boolean;
-      practitionerRole?: PractitionerRole;
     } = {}
   ): ReturnType<typeof vi.spyOn> =>
     vi.spyOn(medplum, 'searchOne').mockImplementation((async (resourceType: string, query: any) => {
       if (resourceType !== 'Bot') {
-        return resourceType === 'PractitionerRole' ? bots.practitionerRole : undefined;
+        return undefined;
       }
       const identifier = ((query?.identifier as string) ?? '').split('|')[1];
       if (identifier === CANDID_CREATE_PROVIDER_BOT_IDENTIFIER.value) {
@@ -307,14 +312,14 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    expect(screen.getByText('Billing Settings')).toBeInTheDocument();
+    expect(screen.getByText('Candid Billing Setup')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Billing Organizations' })).toHaveAttribute('aria-selected', 'true');
     expect(await within(screen.getByRole('tabpanel')).findByText('No results')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Enrolled Payers' }));
     expect(await within(screen.getByRole('tabpanel')).findByText('No results')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
     expect(await screen.findByText(/payer directory bot is not deployed/)).toBeInTheDocument();
   });
 
@@ -670,7 +675,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
 
     expect(await screen.findByText(/payer directory bot is not deployed/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Search the payer directory')).not.toBeInTheDocument();
@@ -697,7 +702,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
     await user.type(await screen.findByLabelText('Search the payer directory'), 'cigna');
     await user.click(screen.getByRole('button', { name: /Search/ }));
 
@@ -728,7 +733,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
     await user.click(await screen.findByRole('button', { name: /Search/ }));
 
     expect(await screen.findByLabelText('Imported')).toBeInTheDocument();
@@ -754,7 +759,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
     await user.click(await screen.findByRole('button', { name: /Search/ }));
 
     expect(await screen.findByText('MEDICARE OF TEXAS')).toBeInTheDocument();
@@ -789,7 +794,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
     await user.click(await screen.findByRole('button', { name: /Search/ }));
     await user.click(await screen.findByText('AETNA'));
 
@@ -817,7 +822,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
     const searchButton = await screen.findByRole('button', { name: /Search/ });
 
     await user.click(searchButton);
@@ -839,7 +844,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
     const input = await screen.findByLabelText('Search the payer directory');
 
     await user.type(input, 'cigna{Enter}');
@@ -860,7 +865,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
     await user.click(await screen.findByRole('button', { name: /Search/ }));
     expect(await screen.findByText('PAYER 00')).toBeInTheDocument();
 
@@ -882,7 +887,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
     const input = await screen.findByLabelText('Search the payer directory');
     // No clear button until there is something to clear
     expect(screen.queryByRole('button', { name: 'Clear search' })).not.toBeInTheDocument();
@@ -995,7 +1000,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    await user.click(screen.getByRole('tab', { name: 'Payer Directory' }));
     await user.click(await screen.findByRole('button', { name: /Search/ }));
     expect(await screen.findByText('PAYER 00')).toBeInTheDocument();
     // One loaded page plus one reachable via the next-page token
@@ -1044,6 +1049,76 @@ describe('BillingSetupPage', () => {
       expect(await screen.findByText('Test Medical Practice LLC')).toBeInTheDocument();
       const practitionerSearches = (searchSpy.mock.calls as unknown[][]).filter((call) => call[0] === 'Practitioner');
       expect(practitionerSearches).toHaveLength(1);
+    });
+
+    test('shows all distinct organizations across active role pages, including individual billing', async () => {
+      const secondRole: WithId<PractitionerRole> = {
+        ...smithBillsUnderPractice,
+        id: 'role-second',
+        organization: { reference: 'Organization/org-second', display: 'Second Practice' },
+      };
+      const searchSpy = mockSearches({
+        practitioners: [drSmith],
+        roles: [
+          ...Array.from({ length: 100 }, (_, i) => ({ ...smithBillsUnderPractice, id: `role-${i}` })),
+          secondRole,
+          { ...smithBillsUnderPractice, id: 'role-individual', organization: undefined },
+          {
+            ...smithBillsUnderPractice,
+            id: 'role-inactive',
+            active: false,
+            organization: { reference: 'Organization/org-inactive', display: 'Inactive Practice' },
+          },
+        ],
+      });
+      mockBots();
+
+      setup('Practitioners');
+
+      expect(await screen.findByText('Second Practice')).toBeInTheDocument();
+      expect(screen.getAllByText('Test Medical Practice LLC')).toHaveLength(1);
+      expect(screen.getByText('Individually')).toBeInTheDocument();
+      expect(screen.getByText('Missing Tax ID')).toBeInTheDocument();
+      expect(screen.getByText('Incomplete address')).toBeInTheDocument();
+      expect(screen.queryByText('Inactive Practice')).not.toBeInTheDocument();
+      const roleQueries = (searchSpy.mock.calls as unknown[][])
+        .filter((call) => call[0] === 'PractitionerRole')
+        .map((call) => new URLSearchParams(call[1] as string));
+      expect(roleQueries).toHaveLength(2);
+      expect(roleQueries[0].get('active')).toBe('true');
+      expect(roleQueries[1].get('_offset')).toBe('100');
+    });
+
+    test('edits the first active role with the organization input when a practitioner has multiple organizations', async () => {
+      const user = userEvent.setup();
+      const secondRole: WithId<PractitionerRole> = {
+        ...smithBillsUnderPractice,
+        id: 'role-second',
+        organization: { reference: 'Organization/org-second', display: 'Second Practice' },
+      };
+      mockSearches({ practitioners: [drSmith], roles: [smithBillsUnderPractice, secondRole] });
+      mockBots();
+      vi.spyOn(medplum, 'readReference').mockResolvedValue(billingOrg);
+      vi.spyOn(medplum, 'updateResource').mockResolvedValue(drSmith);
+      const patchSpy = vi.spyOn(medplum, 'patchResource').mockResolvedValue(smithBillsUnderPractice);
+
+      setup('Practitioners');
+
+      await screen.findByText('Second Practice');
+      await user.click(screen.getByText('Alice Smith'));
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).queryByLabelText(/Practitioner role/)).not.toBeInTheDocument();
+      expect(await within(dialog).findByText('Test Medical Practice LLC')).toBeInTheDocument();
+      await user.click(within(dialog).getByTitle('Clear all'));
+      await fillPractitionerBillingIdentity(user, dialog);
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      await waitFor(() => {
+        expect(patchSpy).toHaveBeenCalledExactlyOnceWith('PractitionerRole', 'role-smith', [
+          { op: 'remove', path: '/organization' },
+        ]);
+      });
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     });
 
     test('flags what a practitioner is missing, and individual billing', async () => {
@@ -1106,10 +1181,61 @@ describe('BillingSetupPage', () => {
       });
     });
 
+    test.each([true, false])('patches the current role when changing organization (assigned: %s)', async (assigned) => {
+      const user = userEvent.setup();
+      const nextOrganization: WithId<Organization> = { ...billingOrg, id: 'org-next', name: 'Next Practice' };
+      const currentRole = await medplum.createResource<PractitionerRole>({
+        ...smithBillsUnderPractice,
+        organization: assigned ? smithBillsUnderPractice.organization : undefined,
+        code: [{ text: 'Primary care' }],
+        telecom: [{ system: 'phone', value: '6175550123' }],
+      });
+      mockSearches({ practitioners: [drSmith], organizations: [nextOrganization], roles: [currentRole] });
+      mockBots();
+      vi.spyOn(medplum, 'readReference').mockResolvedValue(billingOrg);
+      vi.spyOn(medplum, 'updateResource').mockResolvedValue(drSmith);
+      const patchSpy = vi.spyOn(medplum, 'patchResource');
+      const createSpy = vi.spyOn(medplum, 'createResource');
+      const deleteSpy = vi.spyOn(medplum, 'deleteResource');
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Alice Smith'));
+      const dialog = await screen.findByRole('dialog');
+      if (assigned) {
+        await within(dialog).findByText('Test Medical Practice LLC');
+        await user.click(within(dialog).getByTitle('Clear all'));
+      }
+      await user.type(within(dialog).getByRole('searchbox'), 'Next');
+      const option = await screen.findByRole('option', { name: /Next Practice/, hidden: true });
+      expect(within(option).getByText(/456 Medical Center Drive/)).toBeInTheDocument();
+      await user.click(option);
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(patchSpy).toHaveBeenCalledExactlyOnceWith('PractitionerRole', currentRole.id, [
+        {
+          op: assigned ? 'replace' : 'add',
+          path: '/organization',
+          value: expect.objectContaining({ reference: 'Organization/org-next' }),
+        },
+      ]);
+      expect(createSpy).not.toHaveBeenCalled();
+      expect(deleteSpy).not.toHaveBeenCalled();
+      expect(await medplum.readResource('PractitionerRole', currentRole.id)).toEqual(
+        expect.objectContaining({
+          active: true,
+          organization: expect.objectContaining({ reference: 'Organization/org-next' }),
+          code: currentRole.code,
+          telecom: currentRole.telecom,
+        })
+      );
+    });
+
     test('clears the organization from the role when switching to individual billing', async () => {
       const user = userEvent.setup();
       mockSearches({ practitioners: [drSmith], organizations: [billingOrg], roles: [smithBillsUnderPractice] });
-      mockBots({ payers: true, practitionerRole: smithBillsUnderPractice });
+      mockBots({ payers: true });
       vi.spyOn(medplum, 'readReference').mockResolvedValue(billingOrg);
       vi.spyOn(medplum, 'updateResource').mockResolvedValue(drSmith);
       const patchSpy = vi.spyOn(medplum, 'patchResource').mockResolvedValue(smithBillsUnderPractice);

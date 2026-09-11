@@ -159,6 +159,8 @@ export async function graphqlHandler(
   return [allOk, result, { contentType: ContentType.JSON }];
 }
 
+const introspectionRegex = /query IntrospectionQuery|__schema|__type(?!name)/;
+
 /**
  * Returns true if the query is a GraphQL introspection query.
  *
@@ -169,7 +171,7 @@ export async function graphqlHandler(
  * @returns True if the query is an introspection query.
  */
 function isIntrospectionQuery(query: string): boolean {
-  return query.includes('query IntrospectionQuery') || query.includes('__schema');
+  return introspectionRegex.test(query);
 }
 
 /**

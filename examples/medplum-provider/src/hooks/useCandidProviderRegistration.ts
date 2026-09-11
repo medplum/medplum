@@ -9,6 +9,7 @@ import { isValidNpi } from '../utils/billing';
 import { CANDID_LIST_PROVIDERS_BOT_IDENTIFIER, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../utils/candid';
 
 export type ProviderResource = Organization | Practitioner;
+type ProviderResourceType = ProviderResource['resourceType'];
 
 /** The NPI is looked up as it is typed, so wait for the typing to settle. */
 const LOOKUP_DEBOUNCE_MS = 400;
@@ -23,11 +24,13 @@ const LOOKUP_DEBOUNCE_MS = 400;
  * - `failed` — the lookup itself failed, so registration state is unknown.
  */
 export type CandidProviderRegistration =
-  | { status: 'unavailable' }
-  | { status: 'loading' }
-  | { status: 'registered'; candidProviderId: string; npi: string }
-  | { status: 'unregistered' }
-  | { status: 'failed'; message: string };
+  | { status: 'unavailable'; resourceType: ProviderResourceType | undefined }
+  | ({ resourceType: ProviderResourceType } & (
+      | { status: 'loading' }
+      | { status: 'registered'; candidProviderId: string; npi: string }
+      | { status: 'unregistered' }
+      | { status: 'failed'; message: string }
+    ));
 
 /**
  * Asks Candid whether it already holds a provider for the NPI on the form, instead of trusting a locally
@@ -37,7 +40,7 @@ export type CandidProviderRegistration =
  * @returns What Candid knows about this provider.
  */
 export function useCandidProviderRegistration(
-  resourceType: ProviderResource['resourceType'] | undefined,
+  resourceType: ProviderResourceType | undefined,
   npi: string
 ): CandidProviderRegistration {
   const medplum = useMedplum();
@@ -45,7 +48,7 @@ export function useCandidProviderRegistration(
     identifier: `${CANDID_LIST_PROVIDERS_BOT_IDENTIFIER.system}|${CANDID_LIST_PROVIDERS_BOT_IDENTIFIER.value}`,
   });
   const listBotId = listBotOutcome === undefined ? undefined : (listBot?.id ?? '');
-  const [registration, setRegistration] = useState<CandidProviderRegistration>({ status: 'unavailable' });
+  const [registration, setRegistration] = useState<CandidProviderRegistration>({ status: 'unavailable', resourceType });
 
   const currentNpi = npi.trim();
   const [trimmedNpi] = useDebouncedValue(currentNpi, LOOKUP_DEBOUNCE_MS);
@@ -55,12 +58,12 @@ export function useCandidProviderRegistration(
       return undefined;
     }
     if (!listBotId || !resourceType || !isValidNpi(trimmedNpi)) {
-      setRegistration({ status: 'unavailable' });
+      setRegistration({ status: 'unavailable', resourceType });
       return undefined;
     }
 
     let cancelled = false;
-    setRegistration({ status: 'loading' });
+    setRegistration({ status: 'loading', resourceType });
     medplum
       .executeBot(listBotId, { npi: trimmedNpi }, 'application/json')
       .then((result: Parameters) => {
@@ -72,12 +75,14 @@ export function useCandidProviderRegistration(
           .find((r): r is ProviderResource => r?.resourceType === resourceType);
         const candidProviderId = match && getIdentifier(match, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
         setRegistration(
-          candidProviderId ? { status: 'registered', candidProviderId, npi: trimmedNpi } : { status: 'unregistered' }
+          candidProviderId
+            ? { status: 'registered', resourceType, candidProviderId, npi: trimmedNpi }
+            : { status: 'unregistered', resourceType }
         );
       })
       .catch((error) => {
         if (!cancelled) {
-          setRegistration({ status: 'failed', message: normalizeErrorString(error) });
+          setRegistration({ status: 'failed', resourceType, message: normalizeErrorString(error) });
         }
       });
 
@@ -86,8 +91,11 @@ export function useCandidProviderRegistration(
     };
   }, [medplum, listBotId, trimmedNpi, resourceType]);
 
-  if (trimmedNpi !== currentNpi && listBotId && resourceType) {
-    return { status: 'loading' };
+  if (!resourceType || !listBotId || !isValidNpi(currentNpi)) {
+    return { status: 'unavailable', resourceType };
+  }
+  if (trimmedNpi !== currentNpi || registration.resourceType !== resourceType) {
+    return { status: 'loading', resourceType };
   }
   return registration;
 }

@@ -3,7 +3,13 @@
 import type { MedplumClient } from '@medplum/core';
 import type { Project, ProjectSetting } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
-import { DEFAULT_MODELS, getDefaultModel, getProjectModels } from './spaceModels';
+import {
+  DEFAULT_MODELS,
+  DEFAULT_REASONING_EFFORT,
+  REASONING_EFFORTS,
+  getDefaultModel,
+  getProjectModels,
+} from './spaceModels';
 
 function mockMedplum(setting?: ProjectSetting[]): MedplumClient {
   const project: Project = { resourceType: 'Project', setting };
@@ -68,5 +74,16 @@ describe('getDefaultModel', () => {
 
   test('falls back to built-in default when empty', () => {
     expect(getDefaultModel([])).toBe(DEFAULT_MODELS[0].value);
+  });
+});
+
+describe('REASONING_EFFORTS', () => {
+  test('offers low through xhigh in order', () => {
+    expect(REASONING_EFFORTS.map((e) => e.value)).toEqual(['low', 'medium', 'high', 'xhigh']);
+  });
+
+  test('defaults to high', () => {
+    expect(DEFAULT_REASONING_EFFORT).toBe('high');
+    expect(REASONING_EFFORTS.some((e) => e.value === DEFAULT_REASONING_EFFORT)).toBe(true);
   });
 });
