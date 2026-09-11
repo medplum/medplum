@@ -96,6 +96,18 @@ function schedulesAsked(get: ReturnType<typeof vi.spyOn>): string[] {
   return get.mock.calls.map((call: unknown[]) => new URL(String(call[0])).searchParams.get('schedule') as string);
 }
 
+/**
+ * The stretch of days each `$find` was asked about, as whole days.
+ * @param get - The spy standing in for `$find`.
+ * @returns One `start/end` pair per request, to the day.
+ */
+function daysAsked(get: ReturnType<typeof vi.spyOn>): string[] {
+  return get.mock.calls.map((call: unknown[]) => {
+    const { searchParams } = new URL(String(call[0]));
+    return `${searchParams.get('start')?.slice(0, 10)}/${searchParams.get('end')?.slice(0, 10)}`;
+  });
+}
+
 describe('useDaySearch combination rounds', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -150,6 +162,33 @@ describe('useDaySearch combination rounds', () => {
     expect(schedulesAsked(get)).toHaveLength(9);
     expect(screen.getByTestId('searched')).toHaveTextContent('9');
     expect(screen.getByTestId('more')).toHaveTextContent('no');
+  });
+
+  test('Taking in another round keeps the days reached into, and asks about them again', async () => {
+    const get = respond();
+    const combinations = Array.from({ length: 9 }, (_, index) => combinationOf(index));
+
+    render(<Harness combinations={combinations} />, medplumWrapper);
+    await settle();
+    // Read the two stretches off the requests rather than naming days: the search opens
+    // on today whenever the day it was handed has already gone by.
+    const [opened] = daysAsked(get);
+    get.mockClear();
+
+    await click('Show more days');
+    const [extension] = daysAsked(get);
+    get.mockClear();
+
+    await click('Search more options');
+
+    // Widening the actors is not narrowing the days: the stretch paged into stays, and
+    // the whole of it goes out as one window. Asked about the newest days alone, the
+    // added combinations would never be searched over the earlier ones, which would go
+    // on showing the narrower round's times with no sign that they were narrower.
+    const asked = daysAsked(get);
+    const wholeStretch = `${opened.split('/')[0]}/${extension.split('/')[1]}`;
+    expect(asked).toHaveLength(9);
+    expect(new Set(asked)).toStrictEqual(new Set([wholeStretch]));
   });
 
   test('Reaching further into the days keeps the round it is searching', async () => {
