@@ -156,10 +156,12 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
   }, []);
 
   // Unlike `reset`, this does announce itself: the times are refetched, so a chosen
-  // one is replaced by an equal object the caller would no longer recognise.
+  // one is replaced by an equal object the caller would no longer recognise. The days
+  // paged in are kept and asked again rather than dropped, since asking for more
+  // actors is not asking about fewer days.
   const searchMoreCombinations = useCallback((): void => {
     setCombinationLimit((limit) => limit + COMBINATION_WAVE);
-    setDaySearch(backToFirstWindow);
+    setDaySearch(reaskEveryDayOnShow);
     onResultsReplaced?.();
   }, [onResultsReplaced]);
 
@@ -207,6 +209,25 @@ interface DaySearch {
  */
 function backToFirstWindow(previous: DaySearch): DaySearch {
   return { original: previous.original, range: previous.original, found: [] };
+}
+
+/**
+ * Puts every day on show back into one window, for the search to answer again.
+ *
+ * A wider round of combinations has to cover the days already on screen and not only
+ * the newest stretch of them: `range` is what gets asked about, so leaving it where
+ * "Show more days" left it would search the added actors over those last days alone
+ * and quietly leave the earlier ones showing the narrower round's times.
+ *
+ * @param previous - The search as it stands.
+ * @returns It, over every day it has reached, holding no times.
+ */
+function reaskEveryDayOnShow(previous: DaySearch): DaySearch {
+  return {
+    original: previous.original,
+    range: { start: previous.original.start, end: previous.range.end },
+    found: [],
+  };
 }
 
 /**

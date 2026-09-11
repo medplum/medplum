@@ -131,7 +131,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [booked, setBooked] = useState(false);
   const [bookError, setBookError] = useState<unknown>(undefined);
 
-  const selectionError = getSelectionError(selections);
+  // Memoised because it builds the combinations to find out whether any of them are
+  // possible, and every render of the form is not a change of selection.
+  const selectionError = useMemo(() => getSelectionError(selections), [selections]);
 
   // Derived, not a flag: closing is never its own rule, so losing the last provider
   // closes the search however it was lost.
