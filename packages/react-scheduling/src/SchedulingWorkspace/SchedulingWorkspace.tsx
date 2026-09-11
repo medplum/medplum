@@ -46,6 +46,7 @@ const NONE_DESELECTED: DeselectedIdsByActorType = {
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
+  readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
   /**
    * Overrides the value set the appointment detail view offers cancellation reasons
    * from, for a host coding them against its own terminology.
@@ -95,7 +96,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // What the calendar highlights
   const [highlight, setHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
-
 
   // Finds all bookable Schedules, with one search per bookable actor type.
   useEffect(() => {
@@ -270,6 +270,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           <AppointmentDetails
             appointment={openAppointment}
             cancellationReasonValueSet={appointmentCancellationReasonValueSet}
+            onCancelled={props.onCancelled}
           />
         )}
       </Drawer>
