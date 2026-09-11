@@ -121,8 +121,10 @@ export function resolveShardId(
   }
 
   if (!projectTypes) {
+    // only globalTypes, either routing.kind is acceptable
     return GLOBAL_SHARD_ID;
   }
+  // projectTypes are present below here
 
   if (routing.kind === 'global-only') {
     if (strictShardingEnforcement) {
@@ -138,8 +140,9 @@ export function resolveShardId(
     }
   }
 
-  // the fallback to global MUST go away when global-only routing touching
-  // project-scoped resources is throws instead of logs
+  // fallback to GLOBAL_SHARD_ID MUST go away when global-only routing touching
+  // project-scoped resources always throws instead of logs
+  // no need to gate the fallback on strictShardingEnforcement; it throws early before reaching this point.
   const routingShardId = routing.kind === 'project-shard' ? routing.shardId : GLOBAL_SHARD_ID;
 
   const normalizedShardId = normalizeShardId(routingShardId);

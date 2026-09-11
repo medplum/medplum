@@ -54,6 +54,7 @@ describe('resolveShardId', () => {
 
     afterEach(() => {
       logSpy.mockRestore();
+      resetStrictShardingEnforcement();
     });
 
     test('Routes global resource types to the global shard', () => {
@@ -77,7 +78,6 @@ describe('resolveShardId', () => {
           source: 'shard-project',
         })
       );
-      resetStrictShardingEnforcement();
     });
 
     test('logs warning when an operation mixes global and project resource types', () => {
