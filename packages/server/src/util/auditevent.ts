@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource } from '@medplum/core';
-import { append, createReference, flatMapFilter, isResource, isResourceWithId, resolveId } from '@medplum/core';
+import type { ProfileResource, WithId } from '@medplum/core';
+import {
+  append,
+  createReference,
+  flatMapFilter,
+  getReferenceString,
+  isResource,
+  isResourceWithId,
+  resolveId,
+} from '@medplum/core';
 import type {
   AuditEvent,
   AuditEventAgent,
@@ -487,6 +495,8 @@ export function getAuditEventEntityRole(resource: Resource): Coding {
   }
 }
 
-export function numResultsDetail(numResults: number): AuditEventEntityDetail[] {
-  return [{ type: 'numResults', valueString: numResults.toString() }];
+export function searchResultsDetail<T extends Resource>(
+  results: WithId<T>[] | undefined
+): AuditEventEntityDetail[] | undefined {
+  return results?.map((resource) => ({ type: 'result', valueString: getReferenceString(resource) }));
 }
