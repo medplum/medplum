@@ -135,13 +135,15 @@ describe('Appointment/$book', () => {
     actor: Practitioner;
     extension?: Extension[];
     planningHorizon?: Schedule['planningHorizon'];
+    healthcareService?: WithId<HealthcareService>;
   }): Promise<WithId<Schedule>> {
+    const service = opts.healthcareService ?? officeVisitService;
     return systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
       meta: { project: project.project.id },
       actor: [createReference(opts.actor)],
-      serviceType: toServiceTypeCodeableConcepts(officeVisitService),
-      extension: opts.extension ?? [makeSchedulingExtension({ service: officeVisitService })],
+      serviceType: toServiceTypeCodeableConcepts(service),
+      extension: opts.extension ?? [makeSchedulingExtension({ service })],
       planningHorizon: opts.planningHorizon,
     });
   }
@@ -395,6 +397,114 @@ describe('Appointment/$book', () => {
       },
     ]);
     expect(response).toHaveStatus(400);
+  });
+
+  test('fails when the HealthcareService is inactive', async () => {
+    const healthcareService = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Inactive visit type',
+      active: false,
+      type: [{ coding: [{ system: 'https://example.com/fhir', code: 'inactive-visit-type' }] }],
+      meta: { project: project.project.id },
+    });
+    const actor = await makePractitioner({ timezone: 'America/New_York' });
+    const schedule = await makeSchedule({ actor, healthcareService });
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType: toServiceTypeCodeableConcepts(healthcareService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response.body).toHaveProperty('issue', [
+      {
+        severity: 'error',
+        code: 'invalid',
+        details: {
+          text: 'HealthcareService is inactive',
+        },
+        expression: ['HealthcareService'],
+      },
+    ]);
+    expect(response).toHaveStatus(400);
+
+    // Nothing was booked
+    const slots = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
+    expect(slots).toHaveLength(0);
+  });
+
+  test('succeeds when the HealthcareService is explicitly active', async () => {
+    const healthcareService = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Active visit type',
+      active: true,
+      type: [{ coding: [{ system: 'https://example.com/fhir', code: 'active-visit-type' }] }],
+      meta: { project: project.project.id },
+    });
+    const actor = await makePractitioner({ timezone: 'America/New_York' });
+    const schedule = await makeSchedule({ actor, healthcareService });
+
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType: toServiceTypeCodeableConcepts(healthcareService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response).toHaveStatus(201);
+    expect((response.body as Bundle).entry?.map((entry) => entry.resource).filter(isDefined)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ resourceType: 'Appointment', status: 'booked', start, end })])
+    );
   });
 
   test('fails when there is an overlapping busy slot booked', async () => {
