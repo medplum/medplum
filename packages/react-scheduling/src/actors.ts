@@ -15,9 +15,11 @@ export type SchedulingActorType = Dereference<SchedulingActor>['resourceType'];
  * Actor types whose schedules may be offered for booking, in the order they are
  * asked about.
  *
- * Each type becomes one question, because `$find` intersects the schedules it is
- * given: a time is offered only when the practitioner *and* the location *and*
- * the device are all free for it.
+ * Each type becomes its own question, because `$find` intersects the schedules it
+ * is given: a time is offered only when the practitioner *and* the location *and*
+ * the device are all free for it. Asking for *either* of two practitioners is a
+ * second request rather than a second schedule on the same one — see
+ * `getActorCombinations`.
  *
  * Does not include `PractitionerRole` to prevent double-booking a `Practitioner`
  * who holds multiple roles. A practitioner is booked on their `Practitioner`,

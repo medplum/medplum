@@ -55,10 +55,37 @@ export function getCandidateDisplay(candidate: ScheduleCandidate): string {
 }
 
 /**
- * What an appointment is being asked for: the schedules chosen, per actor type.
- * Everything named attends.
+ * One thing an appointment needs, of a single actor type.
+ *
+ * The candidates in it are alternatives: a row naming two
+ * providers asks for *either* of them rather than both.
  */
-export type ActorSelections = Partial<Record<SchedulingActorType, readonly ScheduleCandidate[]>>;
+export interface ActorRequirement {
+  readonly id: string;
+  readonly candidates: readonly ScheduleCandidate[];
+}
+
+/**
+ * What an appointment is being asked for, per actor type.
+ *
+ * Each actor type holds a list of requirements, and the two directions read
+ * differently: requirements are ANDed, so two provider rows ask for two
+ * providers, while the candidates within one row are ORed.
+ */
+export type ActorSelections = Partial<Record<SchedulingActorType, readonly ActorRequirement[]>>;
+
+// Used to tell one row from another within a form.
+let nextRequirementId = 0;
+
+/**
+ * Opens a new requirement row.
+ * @param candidates - What it starts out asking for. Empty by default.
+ * @returns The row.
+ */
+export function createActorRequirement(candidates: readonly ScheduleCandidate[] = []): ActorRequirement {
+  nextRequirementId++;
+  return { id: `requirement-${nextRequirementId}`, candidates };
+}
 
 export interface SearchScheduleCandidatesOptions {
   /** Which of the service's actors to offer. */
@@ -433,12 +460,34 @@ async function readLocation(
 }
 
 /**
- * Returns everything chosen, across actor types
+ * Returns everything chosen, across rows and actor types.
  * @param selections - What has been chosen.
- * @returns The chosen candidates in `BOOKABLE_ACTOR_TYPES` order
+ * @returns The chosen candidates in `BOOKABLE_ACTOR_TYPES` order, then row order.
  */
 export function getSelectedCandidates(selections: ActorSelections): ScheduleCandidate[] {
+  return getRequirements(selections).flatMap((requirement) => [...requirement.candidates]);
+}
+
+/**
+ * Returns every row across every actor type, in the order they are asked about.
+ * @param selections - What has been chosen.
+ * @returns The rows, empty ones included.
+ */
+export function getRequirements(selections: ActorSelections): ActorRequirement[] {
   return BOOKABLE_ACTOR_TYPES.flatMap((actorType) => selections[actorType] ?? []);
+}
+
+/**
+ * Returns the rows that actually ask for something.
+ *
+ * A row nobody has named anyone in asks for nothing, so it drops out rather than
+ * emptying the product of the rows around it.
+ *
+ * @param selections - What has been chosen.
+ * @returns The rows holding at least one candidate.
+ */
+function getFilledRequirements(selections: ActorSelections): ActorRequirement[] {
+  return getRequirements(selections).filter((requirement) => requirement.candidates.length > 0);
 }
 
 function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> {
@@ -446,23 +495,39 @@ function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> 
 }
 
 /**
+ * The most alternatives worth expanding into requests at all.
+ *
+ * The search runs a few combinations at a time, so this is not the size of a
+ * round: it is the point past which the whole product is more than anyone is
+ * going to sit through, whatever order it is asked in.
+ */
+export const MAX_ACTOR_COMBINATIONS = 100;
+
+/**
  * Reports why the current selections cannot be searched, if they cannot.
  * @param selections - What has been chosen.
- * @returns A message to show the user, or undefined when the search can run.
+ * @returns A whole sentence to show the user, or undefined when the search can run.
  */
 export function getSelectionError(selections: ActorSelections): string | undefined {
-  const missing = [...REQUIRED_ACTOR_TYPES].find((actorType) => !selections[actorType]?.length);
-  if (!missing) {
-    return undefined;
+  const missing = [...REQUIRED_ACTOR_TYPES].find(
+    (actorType) => !(selections[actorType] ?? []).some((requirement) => requirement.candidates.length > 0)
+  );
+  if (missing) {
+    return `Choose at least one ${getActorTypeLabel(missing).toLowerCase()} first.`;
   }
-  const label = getActorTypeLabel(missing).toLowerCase();
-  return `Choose at least one ${label}`;
+  if (countActorCombinations(selections) > MAX_ACTOR_COMBINATIONS) {
+    return 'Too many alternatives to search. Remove some names.';
+  }
+  if (getActorCombinations(selections).length === 0) {
+    return 'Nobody can fill every row at once. Name someone else in one of them.';
+  }
+  return undefined;
 }
 
 /**
  * One way of holding an appointment: a set of actors whose schedules `$find`
- * intersects in a single request. A role contributes as many actors as were
- * chosen for it, since everything chosen attends.
+ * intersects in a single request. Each requirement contributes exactly one
+ * actor, since a row is satisfied by any one of its alternatives.
  */
 export interface ActorCombination {
   /** Matches `getActorGroupKey` of the appointments offered for these actors. */
@@ -473,18 +538,91 @@ export interface ActorCombination {
 }
 
 /**
+ * Counts the combinations the selections expand into, without building them.
+ *
+ * An upper bound rather than an exact count: the ones that would name the same
+ * actor twice are only recognised while building. Enough to decide whether the
+ * product is worth expanding at all.
+ *
+ * @param selections - What has been chosen.
+ * @returns How many ways there are of satisfying every row, or 0 when nothing
+ *   has been chosen.
+ */
+export function countActorCombinations(selections: ActorSelections): number {
+  const requirements = getFilledRequirements(selections);
+  if (requirements.length === 0) {
+    return 0;
+  }
+  return requirements.reduce((total, requirement) => total * requirement.candidates.length, 1);
+}
+
+/**
  * Builds the sets of actors an appointment could be held on.
  *
  * One combination is one `$find` request: the schedules within it are
- * intersected, so its times are the times all of those actors are free.
+ * intersected, so its times are the times all of those actors are free. Rows are
+ * ANDed and the alternatives within a row are ORed, so the combinations are the
+ * product of the rows — one alternative taken from each.
+ *
+ * Ordered as an odometer with the last row turning fastest, so the first
+ * combination is every row's first pick and the rounds the search runs stay
+ * predictable.
  *
  * @param selections - What has been chosen.
- * @returns One combination holding every chosen actor, in role order, or an
- *   empty list when nothing is chosen.
+ * @returns One combination per way of satisfying every row, or an empty list
+ *   when nothing is chosen.
  */
 export function getActorCombinations(selections: ActorSelections): ActorCombination[] {
-  const chosen = getSelectedCandidates(selections);
-  return chosen.length > 0 ? [toActorCombination(chosen)] : [];
+  const requirements = getFilledRequirements(selections);
+  if (requirements.length === 0) {
+    return [];
+  }
+
+  const combinations: ActorCombination[] = [];
+  const seen = new Set<string>();
+  const picks = requirements.map(() => 0);
+
+  do {
+    const chosen = requirements.map((requirement, index) => requirement.candidates[picks[index]]);
+    const combination = toActorCombination(chosen);
+    // Two rows may offer the same person — "A or B" and then "B or C" — and one
+    // person cannot fill both halves of a visit. The key is order-independent, so
+    // it also collapses the pair {A,B} that {A,B} × {A,B} reaches twice.
+    if (!hasRepeatedActor(chosen) && !seen.has(combination.key)) {
+      seen.add(combination.key);
+      combinations.push(combination);
+    }
+  } while (advancePicks(picks, requirements));
+
+  return combinations;
+}
+
+/**
+ * Moves the odometer on by one, the last row turning fastest.
+ * @param picks - Which alternative each row is currently taking. Mutated.
+ * @param requirements - The rows being picked from.
+ * @returns Whether there was another combination to move on to.
+ */
+function advancePicks(picks: number[], requirements: readonly ActorRequirement[]): boolean {
+  for (let index = picks.length - 1; index >= 0; index--) {
+    picks[index]++;
+    if (picks[index] < requirements[index].candidates.length) {
+      return true;
+    }
+    picks[index] = 0;
+  }
+  return false;
+}
+
+/**
+ * Reports whether one actor was picked for more than one row.
+ * @param candidates - One pick per row.
+ * @returns Whether any actor appears twice.
+ */
+function hasRepeatedActor(candidates: readonly ScheduleCandidate[]): boolean {
+  // Always set: a candidate only exists for a schedule whose actor is referenced.
+  const actors = candidates.map((candidate) => getCandidateActor(candidate).reference);
+  return new Set(actors).size !== actors.length;
 }
 
 function toActorCombination(candidates: readonly ScheduleCandidate[]): ActorCombination {
