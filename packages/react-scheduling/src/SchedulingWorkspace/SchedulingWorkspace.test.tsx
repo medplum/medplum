@@ -17,13 +17,23 @@ async function setupClient(resources: readonly Resource[] = SchedulingFixtures):
   return medplum;
 }
 
+/**
+ * The sidebar row toggling the named calendar. Queried by role rather than by text,
+ * because an appointment's chips carry the same calendar names as the sidebar rows.
+ * @param label - The name of the calendar.
+ * @returns Its row in the sidebar.
+ */
+function getCalendarRow(label: string): HTMLElement {
+  return screen.getByRole('button', { name: (name) => name.includes(label) });
+}
+
 describe('SchedulingWorkspace', () => {
   test('deselecting a provider marks its row inactive', async () => {
     const medplum = await setupClient();
     renderWithMedplum(<SchedulingWorkspace />, medplum);
 
     await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
-    const providerRow = screen.getByText('Dr. Maya Rivera').closest('button') as HTMLElement;
+    const providerRow = getCalendarRow('Dr. Maya Rivera');
     expect(providerRow).toHaveAttribute('aria-pressed', 'true');
 
     await userEvent.click(providerRow);
@@ -36,7 +46,7 @@ describe('SchedulingWorkspace', () => {
     renderWithMedplum(<SchedulingWorkspace />, medplum);
 
     await waitFor(() => expect(screen.getByText('Ultrasound 1 (Main Campus)')).toBeInTheDocument());
-    const deviceRow = screen.getByText('Ultrasound 1 (Main Campus)').closest('button') as HTMLElement;
+    const deviceRow = getCalendarRow('Ultrasound 1 (Main Campus)');
     expect(deviceRow).toHaveAttribute('aria-pressed', 'true');
 
     await userEvent.click(deviceRow);
@@ -49,7 +59,7 @@ describe('SchedulingWorkspace', () => {
     renderWithMedplum(<SchedulingWorkspace />, medplum);
 
     await waitFor(() => expect(screen.getByText('Exam Room A')).toBeInTheDocument());
-    const roomRow = screen.getByText('Exam Room A').closest('button') as HTMLElement;
+    const roomRow = getCalendarRow('Exam Room A');
     expect(roomRow).toHaveAttribute('aria-pressed', 'true');
 
     await userEvent.click(roomRow);
@@ -124,7 +134,7 @@ describe('SchedulingWorkspace', () => {
       // Okafor's source would *also* drop a Miles Cooper copy, since that source
       // would incorrectly be carrying one. An unrelated toggle changing an
       // unrelated appointment's count is exactly the bug this guards against.
-      await userEvent.click(screen.getByText('Dr. Tunde Okafor').closest('button') as HTMLElement);
+      await userEvent.click(getCalendarRow('Dr. Tunde Okafor'));
       await waitFor(() => expect(screen.getAllByText('Renee Alvarez').length).toBeGreaterThan(0));
       expect(screen.getAllByText('Miles Cooper').length).toBe(milesCountBefore);
 
@@ -133,7 +143,7 @@ describe('SchedulingWorkspace', () => {
       // partly-selected Okafor/Renee appointment (device + room still selected)
       // stays visible.
       for (const label of ['Dr. Maya Rivera', 'Ultrasound 1 (Main Campus)', 'Exam Room A']) {
-        await userEvent.click(screen.getByText(label).closest('button') as HTMLElement);
+        await userEvent.click(getCalendarRow(label));
       }
 
       await waitFor(() => expect(screen.queryByText('Miles Cooper')).not.toBeInTheDocument());
@@ -160,8 +170,8 @@ describe('SchedulingWorkspace', () => {
       await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
       await waitFor(() => expect(screen.getByText('Dr. Tunde Okafor')).toBeInTheDocument());
 
-      await userEvent.click(screen.getByText('Dr. Maya Rivera').closest('button') as HTMLElement);
-      await userEvent.click(screen.getByText('Dr. Tunde Okafor').closest('button') as HTMLElement);
+      await userEvent.click(getCalendarRow('Dr. Maya Rivera'));
+      await userEvent.click(getCalendarRow('Dr. Tunde Okafor'));
 
       // Neither calendar left on the grid is drawn on another clock, so there is nothing to warn about.
       await waitFor(() => expect(screen.queryByTestId('calendar-timezone-notice')).toBeNull());

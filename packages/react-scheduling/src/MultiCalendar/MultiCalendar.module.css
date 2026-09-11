@@ -34,3 +34,55 @@
 .eventTime {
   color: var(--mantine-color-gray-2);
 }
+
+/* Chips naming the calendars an appointment is on, below its title */
+.chips {
+  order: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 3px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Chips are tinted by their calendar but all print in one text color: a chip is
+ * read as a name first and a color second. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0 4px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-dark-9);
+  font-size: 8px;
+  line-height: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.chipLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* In a time grid an event is as tall as it is long, so a short appointment has no
+ * room for a line of text per chip. Below that height the chips become swatches,
+ * still named by their tooltip. */
+:global(.timeGridWeek) .eventInner,
+:global(.timeGridDay) .eventInner {
+  container-type: size;
+}
+
+@container (height < 50px) {
+  .chipLabel {
+    display: none;
+  }
+
+  .chip {
+    width: 10px;
+    height: 10px;
+    padding: 0;
+  }
+}

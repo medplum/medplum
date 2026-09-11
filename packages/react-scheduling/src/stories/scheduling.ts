@@ -585,7 +585,7 @@ export const OkaforImagingAppointment: WithId<Appointment> = {
   id: 'appt-okafor-imaging-wed',
   status: 'booked',
   start: '2020-05-06T18:00:00Z',
-  end: '2020-05-06T18:30:00Z',
+  end: '2020-05-06T19:00:00Z',
   participant: [
     { status: 'accepted', actor: { reference: 'Patient/pt-alvarez', display: 'Renee Alvarez' } },
     { status: 'accepted', actor: createReference(DrOkaforPractitioner) },
