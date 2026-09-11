@@ -3,7 +3,15 @@
 import { MantineProvider } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Bot, Organization, Parameters, Practitioner, PractitionerRole, Resource } from '@medplum/fhirtypes';
+import type {
+  Bot,
+  Contract,
+  Organization,
+  Parameters,
+  Practitioner,
+  PractitionerRole,
+  Resource,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor, within } from '@testing-library/react';
@@ -25,6 +33,7 @@ import {
   CANDID_BILLING_ORGANIZATION_PROFILE,
   CANDID_CREATE_PROVIDER_BOT_IDENTIFIER,
   CANDID_EDIT_PROVIDER_BOT_IDENTIFIER,
+  CANDID_GET_CONTRACTS_BOT_IDENTIFIER,
   CANDID_GET_PAYERS_BOT_IDENTIFIER,
   CANDID_IS_BILLING_PROVIDER_EXTENSION,
   CANDID_IS_RENDERING_PROVIDER_EXTENSION,
@@ -45,6 +54,7 @@ const createProviderBot: WithId<Bot> = {
 };
 const listProvidersBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-list-providers', name: 'Candid List Providers' };
 const editProviderBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-edit-provider', name: 'Candid Edit Provider' };
+const contractsBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-contracts', name: 'Candid Get Contracts' };
 
 /**
  * What candid-list-providers returns: the providers Candid holds for an NPI, as FHIR resources.
@@ -53,6 +63,34 @@ const editProviderBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-edit-provid
  */
 function makeProviderSearchResult(providers: (Organization | Practitioner)[]): Parameters {
   return { resourceType: 'Parameters', parameter: providers.map((resource) => ({ name: 'provider', resource })) };
+}
+
+/**
+ * A payer contract as candid-get-contracts maps it: executed and open-ended unless told otherwise.
+ * @param payerName - The payer the contract stands under.
+ * @param overrides - Fields to change from an effective, open-ended contract that started this year.
+ * @returns The Contract resource.
+ */
+function makeContract(payerName: string, overrides: Partial<Contract> = {}): Contract {
+  return {
+    resourceType: 'Contract',
+    status: 'executed',
+    applies: { start: '2026-01-01' },
+    subject: [{ identifier: { system: CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM, value: 'cand-org-1' } }],
+    authority: [
+      { type: 'Organization', identifier: { system: CANDID_PAYER_UUID_SYSTEM, value: 'uuid' }, display: payerName },
+    ],
+    ...overrides,
+  };
+}
+
+/**
+ * What candid-get-contracts returns for a contract search.
+ * @param contracts - The contracts Candid holds for the query.
+ * @returns The bot's Parameters response.
+ */
+function makeContractsResult(contracts: Contract[]): Parameters {
+  return { resourceType: 'Parameters', parameter: contracts.map((resource) => ({ name: 'contract', resource })) };
 }
 
 // A payer Organization as the candid-get-payers bot builds it from Candid's payers.v4 API.
@@ -210,6 +248,7 @@ describe('BillingSetupPage', () => {
       createProvider?: boolean;
       editProvider?: boolean;
       listProviders?: boolean;
+      getContracts?: boolean;
     } = {}
   ): ReturnType<typeof vi.spyOn> =>
     vi.spyOn(medplum, 'searchOne').mockImplementation((async (resourceType: string, query: any) => {
@@ -225,6 +264,9 @@ describe('BillingSetupPage', () => {
       }
       if (identifier === CANDID_LIST_PROVIDERS_BOT_IDENTIFIER.value) {
         return bots.listProviders ? listProvidersBot : undefined;
+      }
+      if (identifier === CANDID_GET_CONTRACTS_BOT_IDENTIFIER.value) {
+        return bots.getContracts ? contractsBot : undefined;
       }
       return bots.payers ? payersBot : undefined;
     }) as any);
@@ -1492,6 +1534,184 @@ describe('BillingSetupPage', () => {
       const dialog = await screen.findByRole('dialog');
       expect(within(dialog).queryByText(/Candid/)).not.toBeInTheDocument();
       expect(executeSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Candid contract lookup', () => {
+    const candidOrg: Organization = {
+      resourceType: 'Organization',
+      identifier: [
+        { system: CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM, value: 'cand-org-1' },
+        { system: NPI_SYSTEM, value: '3564119220' },
+      ],
+    };
+    const candidPractitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      identifier: [
+        { system: CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM, value: 'cand-prac-1' },
+        { system: NPI_SYSTEM, value: '1987654321' },
+      ],
+    };
+    /** The billing organization after a registration stamped Candid's provider ID on it. */
+    const stampedOrg: WithId<Organization> = {
+      ...billingOrg,
+      identifier: [
+        ...(billingOrg.identifier ?? []),
+        { system: CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM, value: 'cand-org-1' },
+      ],
+    };
+    const contractsCall = (contractingProviderId: string): unknown[] => [
+      'bot-contracts',
+      { contractingProviderId, contractStatus: 'effective', limit: 100 },
+      'application/json',
+    ];
+
+    /**
+     * Routes bot executions by bot: the provider lookup answers with `providers`, the contract lookup with
+     * `contracts` (or rejects with it when given an Error).
+     * @param providers - What candid-list-providers holds for any NPI.
+     * @param contracts - What candid-get-contracts returns, or the error it fails with.
+     * @returns The spy on executeBot.
+     */
+    const mockCandid = (
+      providers: (Organization | Practitioner)[],
+      contracts: Contract[] | Error
+    ): ReturnType<typeof vi.spyOn> =>
+      vi.spyOn(medplum, 'executeBot').mockImplementation((async (botId: string) => {
+        if (botId !== 'bot-contracts') {
+          return makeProviderSearchResult(providers);
+        }
+        if (contracts instanceof Error) {
+          throw contracts;
+        }
+        return makeContractsResult(contracts);
+      }) as any);
+
+    test('lists the payers a registered organization holds effective contracts with', async () => {
+      const user = userEvent.setup();
+      mockSearches({ organizations: [billingOrg] });
+      mockBots({ createProvider: true, listProviders: true, getContracts: true });
+      const executeSpy = mockCandid([candidOrg], [makeContract('AETNA'), makeContract('CIGNA'), makeContract('AETNA')]);
+
+      setup();
+
+      await user.click(await screen.findByText('Test Medical Practice LLC'));
+
+      expect(
+        await screen.findByText(/Active Candid contracts for this organization: AETNA, CIGNA/)
+      ).toBeInTheDocument();
+      expect(executeSpy).toHaveBeenCalledWith(...contractsCall('cand-org-1'));
+    });
+
+    test('warns when a registered organization has no contract', async () => {
+      const user = userEvent.setup();
+      mockSearches({ organizations: [billingOrg] });
+      mockBots({ createProvider: true, listProviders: true, getContracts: true });
+      mockCandid([candidOrg], []);
+
+      setup();
+
+      await user.click(await screen.findByText('Test Medical Practice LLC'));
+
+      expect(await screen.findByText(/No active Candid contract for this organization/)).toBeInTheDocument();
+    });
+
+    test('treats a contract outside its dates as no contract', async () => {
+      const user = userEvent.setup();
+      mockSearches({ organizations: [billingOrg] });
+      mockBots({ createProvider: true, listProviders: true, getContracts: true });
+      mockCandid(
+        [candidOrg],
+        [
+          makeContract('EXPIRED', { applies: { start: '2020-01-01', end: '2020-12-31' } }),
+          makeContract('FUTURE', { applies: { start: '2999-01-01' } }),
+          makeContract('PENDING', { status: 'offered' }),
+        ]
+      );
+
+      setup();
+
+      await user.click(await screen.findByText('Test Medical Practice LLC'));
+
+      expect(await screen.findByText(/No active Candid contract for this organization/)).toBeInTheDocument();
+    });
+
+    test('says so when the contract lookup fails', async () => {
+      const user = userEvent.setup();
+      mockSearches({ organizations: [billingOrg] });
+      mockBots({ createProvider: true, listProviders: true, getContracts: true });
+      mockCandid([candidOrg], new Error('Candid credentials missing'));
+
+      setup();
+
+      await user.click(await screen.findByText('Test Medical Practice LLC'));
+
+      expect(
+        await screen.findByText(/Could not check Candid contracts: Candid credentials missing/)
+      ).toBeInTheDocument();
+    });
+
+    test('shows nothing about contracts when the contracts bot is not deployed', async () => {
+      const user = userEvent.setup();
+      mockSearches({ organizations: [billingOrg] });
+      mockBots({ createProvider: true, listProviders: true });
+      const executeSpy = mockCandid([candidOrg], [makeContract('AETNA')]);
+
+      setup();
+
+      await user.click(await screen.findByText('Test Medical Practice LLC'));
+
+      const dialog = await screen.findByRole('dialog');
+      await within(dialog).findByText(/Registered with Candid/);
+      expect(within(dialog).queryByText(/contract/)).not.toBeInTheDocument();
+      expect(executeSpy).not.toHaveBeenCalledWith('bot-contracts', expect.anything(), expect.anything());
+    });
+
+    test('looks up no contracts for a provider Candid does not know', async () => {
+      const user = userEvent.setup();
+      mockSearches({ organizations: [billingOrg] });
+      mockBots({ createProvider: true, listProviders: true, getContracts: true });
+      const executeSpy = mockCandid([], [makeContract('AETNA')]);
+
+      setup();
+
+      await user.click(await screen.findByText('Test Medical Practice LLC'));
+
+      const dialog = await screen.findByRole('dialog');
+      await within(dialog).findByText(/Not registered with Candid/);
+      expect(within(dialog).queryByText(/contract/)).not.toBeInTheDocument();
+      expect(executeSpy).not.toHaveBeenCalledWith('bot-contracts', expect.anything(), expect.anything());
+    });
+
+    test("checks the billing organization's contracts for a practitioner billing under it", async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drSmith], organizations: [stampedOrg], roles: [smithBillsUnderPractice] });
+      mockBots({ createProvider: true, listProviders: true, getContracts: true });
+      vi.spyOn(medplum, 'readReference').mockResolvedValue(stampedOrg);
+      const executeSpy = mockCandid([candidOrg], [makeContract('AETNA')]);
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Alice Smith'));
+
+      expect(
+        await screen.findByText(/Active Candid contracts for Test Medical Practice LLC: AETNA/)
+      ).toBeInTheDocument();
+      expect(executeSpy).toHaveBeenCalledWith(...contractsCall('cand-org-1'));
+    });
+
+    test('checks their own contracts for a practitioner billing individually', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drDiaz] });
+      mockBots({ createProvider: true, listProviders: true, getContracts: true });
+      const executeSpy = mockCandid([candidPractitioner], []);
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Cara Diaz'));
+
+      expect(await screen.findByText(/No active Candid contract for this practitioner/)).toBeInTheDocument();
+      expect(executeSpy).toHaveBeenCalledWith(...contractsCall('cand-prac-1'));
     });
   });
 });
