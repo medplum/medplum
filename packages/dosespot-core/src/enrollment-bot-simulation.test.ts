@@ -30,6 +30,9 @@ interface SimulatedBotOutput {
 /** How the bot tags an enrolled clinician's ProjectMembership. */
 const DOSESPOT_CLINICIAN_ID_SYSTEM = 'https://dosespot.com/clinician-id';
 
+/** Fake project id used for test memberships (MockClient accepts unresolved references). */
+const TEST_PROJECT_ID = 'test-project';
+
 async function simulatedSelfEnrollBot(
   medplum: MockClient,
   project: Pick<Project, 'systemSetting'>,
@@ -41,10 +44,8 @@ async function simulatedSelfEnrollBot(
 
   // The real bot re-resolves the provider's membership from auth/me on every run,
   // so it always sees fresh data (including identifiers added by previous runs).
-  const membership = await medplum.readResource<ProjectMembership>(
-    'ProjectMembership',
-    input.membership.id as string
-  );
+  // Note: readResource takes the resource type name as a string literal (not the interface type).
+  const membership = await medplum.readResource('ProjectMembership', input.membership.id as string);
 
   // Already enrolled? The bot advances the existing clinician -- the limit only applies to new clinicians.
   if (membership.identifier?.some((i) => i.system?.includes('dosespot'))) {
@@ -79,6 +80,9 @@ function getNextClinicianId(membership: ProjectMembership): number {
 function createMembership(i: number): ProjectMembership {
   return {
     resourceType: 'ProjectMembership',
+    project: { reference: `Project/${TEST_PROJECT_ID}` },
+    user: { reference: `User/test-user-${i}` },
+    profile: { reference: `Practitioner/test-practitioner-${i}` },
     identifier: [{ system: 'https://example.com/provider-id', value: `provider-${i}` }],
   };
 }
