@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { Filter, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -12,7 +12,9 @@ import {
   isOperationOutcome,
   isResource,
   normalizeErrorString,
+  notFound,
   OperationOutcomeError,
+  Operator,
   resolveId,
   serverError,
 } from '@medplum/core';
@@ -32,7 +34,7 @@ import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import type { AuthenticatedRequestContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
-import type { SystemRepository } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
@@ -40,6 +42,33 @@ import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
 import { findProjectMembership } from '../workers/utils';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
+
+/**
+ * Finds a Bot by identifier.
+ * This is the resolution logic behind "Bot/$execute?identifier=..." for both the
+ * REST operation and Subscription rest-hook endpoints.
+ * The identifier can be a bare value or a "system|value" token.
+ * @param repo - The repository to search with.
+ * @param identifier - The bot identifier to search for.
+ * @param projectId - Optional project ID to scope the search. Required when using a
+ * system repository, which is not scoped to a project.
+ * @returns The bot.
+ */
+export async function findBotByIdentifier(
+  repo: Repository,
+  identifier: string,
+  projectId?: string
+): Promise<WithId<Bot>> {
+  const filters: Filter[] = [{ code: 'identifier', operator: Operator.EXACT, value: identifier }];
+  if (projectId) {
+    filters.push({ code: '_project', operator: Operator.EQUALS, value: projectId });
+  }
+  const bot = await repo.searchOne<Bot>({ resourceType: 'Bot', filters });
+  if (!bot) {
+    throw new OperationOutcomeError(notFound);
+  }
+  return bot;
+}
 
 /**
  * Returns the bot's project membership.
