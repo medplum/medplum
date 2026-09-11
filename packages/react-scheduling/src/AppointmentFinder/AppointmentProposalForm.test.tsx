@@ -1,13 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { SchedulingRequirement } from '@medplum/core';
+import {
+  CPT,
+  extractServiceTypeReferences,
+  getExtensionValue,
+  REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_MEDICAL_NECESSITY_CODE,
+  REQUIRES_PROCEDURE_CODE,
+  SCHEDULING_ELIGIBILITY_SYSTEM,
+  SchedulingMedicalNecessityURI,
+} from '@medplum/core';
 import type { Appointment, Device } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
 import { installFindStub } from '../stories/mockFind';
+import { installValueSetStub } from '../stories/mockValueSet';
 import {
+  AuthorizationValueSets,
+  DIAGNOSIS_VALUE_SET,
+  DiagnosisCodes,
   ElderJordanPatient,
+  InfusionService,
   MainClinic,
   MRN_SYSTEM,
+  PROCEDURE_VALUE_SET,
+  ProcedureCodes,
   SatelliteClinic,
   SurgeryService,
   TelehealthService,
@@ -25,6 +43,7 @@ import {
 import {
   bookButton,
   chooseActor,
+  chooseAuthorizedService,
   chooseDay,
   chooseFirstOfferedTime,
   chooseImagingService,
@@ -33,9 +52,14 @@ import {
   chooseSite,
   chosenTimeField,
   clickBook,
+  codePill,
+  confirmMedicalNecessity,
   dayCell,
   dragDays,
+  enterAuthorizationDetails,
+  enterCode,
   field,
+  fillAuthorizedBooking,
   fillBooking,
   finderButton,
   findRequests,
@@ -44,6 +68,7 @@ import {
   lastFindEnd,
   lastFindParams,
   lastFindStart,
+  medicalNecessityBox,
   MONDAY_MORNING,
   openRoleField,
   openTimeFinder,
@@ -84,6 +109,7 @@ function proposedAppointment(): Appointment {
 describe('AppointmentProposalForm', () => {
   let medplum: MockClient;
   let restoreFind: () => void;
+  let restoreValueSets: () => void;
 
   beforeEach(async () => {
     vi.setSystemTime(MONDAY_MORNING);
@@ -91,9 +117,11 @@ describe('AppointmentProposalForm', () => {
     onBook.mockResolvedValue(undefined);
     medplum = await setupBookingClient();
     restoreFind = installFindStub(medplum);
+    restoreValueSets = installValueSetStub(medplum, AuthorizationValueSets);
   });
 
   afterEach(() => {
+    restoreValueSets();
     restoreFind();
   });
 
@@ -1180,6 +1208,357 @@ describe('AppointmentProposalForm', () => {
       expect(chosenTimeField()?.value).toBe(time);
       expect(screen.getByText('Jordan Reyes')).toBeInTheDocument();
       expect(bookButton()).toBeEnabled();
+    });
+  });
+
+  /**
+   * A form wired the way a project that imported its code value sets wires one.
+   * @param props - Anything to set beyond the two bindings.
+   */
+  function setupWithCodeValueSets(props?: Partial<AppointmentProposalFormProps>): void {
+    setup(medplum, { procedureBinding: PROCEDURE_VALUE_SET, diagnosisBinding: DIAGNOSIS_VALUE_SET, ...props });
+  }
+
+  /**
+   * Opens a booking of the designated visit type narrowed to the requirements named, with
+   * everything but the required fields answered.
+   *
+   * The same visit type throughout, so the schedules and the times it is offered at do not
+   * change with what it asks for.
+   * @param requirements - The eligibility codes the visit type is to carry.
+   */
+  async function fillBookingRequiring(...requirements: SchedulingRequirement[]): Promise<void> {
+    const eligibility = requirements.map((code) => ({
+      code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code }] },
+    }));
+    setupWithCodeValueSets({ defaultService: { ...InfusionService, eligibility } });
+    await chooseActor(/provider/i, 'chen', 'Dr. Wei Chen');
+    await openTimeFinder();
+    await chooseFirstOfferedTime();
+    await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+  }
+
+  describe('Values a designated visit type cannot be booked without', () => {
+    test('Asks for nothing extra for a visit type the practice did not designate', async () => {
+      setupWithCodeValueSets();
+      await chooseImagingService();
+
+      expect(screen.queryByRole('searchbox', { name: /procedure code/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('searchbox', { name: /diagnosis code/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: /medical necessity/i })).not.toBeInTheDocument();
+    });
+
+    test('Asks for the codes once a designated visit type is chosen', async () => {
+      setupWithCodeValueSets();
+      await chooseAuthorizedService();
+
+      expect(field(/procedure code/i)).toBeInTheDocument();
+      expect(field(/diagnosis code/i)).toBeInTheDocument();
+
+      // Required like the two code fields, since nothing here is optional once a practice
+      // designated the visit type.
+      expect(medicalNecessityBox()).toBeRequired();
+    });
+
+    test('Asks only for what the visit type names, so a requirement can be dropped on its own', async () => {
+      await fillBookingRequiring(REQUIRES_PROCEDURE_CODE);
+
+      expect(field(/procedure code/i)).toBeInTheDocument();
+      expect(screen.queryByRole('searchbox', { name: /diagnosis code/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: /medical necessity/i })).not.toBeInTheDocument();
+    });
+
+    test('Books on the one field it asked for, without waiting on the ones it did not', async () => {
+      await fillBookingRequiring(REQUIRES_PROCEDURE_CODE);
+      expect(bookButton()).toBeDisabled();
+
+      await enterCode(/procedure code/i, ProcedureCodes[0]);
+      expect(bookButton()).toBeEnabled();
+
+      await clickBook();
+      const proposal = proposedAppointment();
+      expect(proposal.serviceType?.slice(1)).toEqual([{ coding: [ProcedureCodes[0]] }]);
+      // Nothing was asked, so nothing is recorded: an unasked field is not an answered one.
+      expect(proposal.reasonCode).toBeUndefined();
+      expect(getExtensionValue(proposal, SchedulingMedicalNecessityURI)).toBeUndefined();
+    });
+
+    test('Asks for medical necessity alone where that is all the visit type names', async () => {
+      await fillBookingRequiring(REQUIRES_MEDICAL_NECESSITY_CODE);
+      expect(screen.queryByRole('searchbox', { name: /procedure code/i })).not.toBeInTheDocument();
+      expect(bookButton()).toBeDisabled();
+
+      await confirmMedicalNecessity();
+      await clickBook();
+
+      const proposal = proposedAppointment();
+      expect(getExtensionValue(proposal, SchedulingMedicalNecessityURI)).toBe(true);
+      expect(proposal.serviceType).toHaveLength(1);
+    });
+
+    test('Asks for the two codes without the attestation where that is what the visit type names', async () => {
+      await fillBookingRequiring(REQUIRES_PROCEDURE_CODE, REQUIRES_DIAGNOSIS_CODE);
+      expect(screen.queryByRole('checkbox', { name: /medical necessity/i })).not.toBeInTheDocument();
+
+      await enterCode(/procedure code/i, ProcedureCodes[0]);
+      expect(bookButton()).toBeDisabled();
+
+      await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+      expect(bookButton()).toBeEnabled();
+    });
+
+    test('Books a visit type that names one requirement, chosen from the visit type field', async () => {
+      // Walks the fixture the PartialAuthRequired story uses, so the story shows a bookable
+      // visit type rather than one whose schedules never answer.
+      setupWithCodeValueSets();
+      await typeInAutocomplete(field(/visit type/i), 'Iron');
+      await clickAutocompleteOption('Iron Infusion');
+      await settleAutocomplete();
+
+      expect(field(/diagnosis code/i)).toBeInTheDocument();
+      expect(screen.queryByRole('searchbox', { name: /procedure code/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: /medical necessity/i })).not.toBeInTheDocument();
+
+      await chooseActor(/provider/i, 'chen', 'Dr. Wei Chen');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      expect(bookButton()).toBeDisabled();
+
+      await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+      await clickBook();
+
+      const proposal = proposedAppointment();
+      expect(proposal.reasonCode).toEqual([{ coding: [DiagnosisCodes[0]] }]);
+      // Just the concept `$find` put there naming the visit type.
+      expect(proposal.serviceType).toHaveLength(1);
+      expect(getExtensionValue(proposal, SchedulingMedicalNecessityURI)).toBeUndefined();
+    });
+
+    test('Asks for them after the patient, as the last of the visit details', async () => {
+      setupWithCodeValueSets();
+      await chooseAuthorizedService();
+
+      expect(isBefore(field(/patient/i), field(/procedure code/i))).toBe(true);
+      expect(isBefore(field(/procedure code/i), field(/diagnosis code/i))).toBe(true);
+    });
+
+    test('Will not book until both codes are given and medical necessity is confirmed', async () => {
+      setupWithCodeValueSets();
+      await fillAuthorizedBooking();
+
+      // Everything else a booking needs has been answered, so these fields are what is left.
+      expect(bookButton()).toBeDisabled();
+
+      await enterCode(/procedure code/i, ProcedureCodes[0]);
+      expect(bookButton()).toBeDisabled();
+
+      await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+      expect(bookButton()).toBeDisabled();
+
+      await confirmMedicalNecessity();
+      expect(bookButton()).toBeEnabled();
+    });
+
+    test('Does not book when the action is clicked while a required field is unanswered', async () => {
+      setupWithCodeValueSets();
+      await fillAuthorizedBooking();
+      await clickBook();
+
+      expect(onBook).not.toHaveBeenCalled();
+    });
+
+    test('Writes the diagnosis as a reason and the procedure as a service type', async () => {
+      setupWithCodeValueSets();
+      await fillAuthorizedBooking();
+      await enterAuthorizationDetails();
+      await clickBook();
+
+      const proposal = proposedAppointment();
+      expect(proposal.reasonCode).toEqual([{ coding: [DiagnosisCodes[0]] }]);
+
+      // Appended after the concept `$find` put there naming the visit type, which booking leaves alone.
+      expect(proposal.serviceType?.slice(1)).toEqual([{ coding: [ProcedureCodes[0]] }]);
+
+      // A procedure concept carries no service reference, so the appointment still names exactly one
+      // visit type. That is what `serviceTypeIncludesService` reads to match a schedule to a service,
+      // and a procedure code answering to it would be read as a visit type of its own.
+      expect(extractServiceTypeReferences(proposal.serviceType)).toEqual([
+        { reference: `HealthcareService/${InfusionService.id}` },
+      ]);
+    });
+
+    test("Records each code under the value set's own system rather than a guessed one", async () => {
+      setupWithCodeValueSets();
+      await fillAuthorizedBooking();
+      await enterAuthorizationDetails();
+      await clickBook();
+
+      // The fixture's diagnoses are ICD-10-CM, which is what a US practice bills under, and not the
+      // plain ICD-10 that a field guessing at its own system would have written. What the value set
+      // said is the only thing that knows.
+      const proposal = proposedAppointment();
+      expect(proposal.reasonCode?.[0]?.coding?.[0]?.system).toBe('http://hl7.org/fhir/sid/icd-10-cm');
+      expect(proposal.serviceType?.at(-1)?.coding?.[0]?.system).toBe(CPT);
+    });
+
+    test('Records that medical necessity was confirmed', async () => {
+      setupWithCodeValueSets();
+      await fillAuthorizedBooking();
+      await enterAuthorizationDetails();
+      await clickBook();
+
+      expect(getExtensionValue(proposedAppointment(), SchedulingMedicalNecessityURI)).toBe(true);
+    });
+
+    test('Blocks booking again when medical necessity is unticked', async () => {
+      setupWithCodeValueSets();
+      await fillAuthorizedBooking();
+      await enterAuthorizationDetails();
+      expect(bookButton()).toBeEnabled();
+
+      await confirmMedicalNecessity();
+
+      expect(bookButton()).toBeDisabled();
+    });
+
+    test('Writes no codes for a visit type that was never asked for any', async () => {
+      setupWithCodeValueSets();
+      await fillBooking();
+      await clickBook();
+
+      const proposal = proposedAppointment();
+      expect(proposal.reasonCode).toBeUndefined();
+      // Just the concept `$find` put there naming the visit type: nothing was appended to it.
+      expect(proposal.serviceType).toHaveLength(1);
+      expect(getExtensionValue(proposal, SchedulingMedicalNecessityURI)).toBeUndefined();
+    });
+
+    test('Shows each code alongside its description, not the description alone', async () => {
+      setupWithCodeValueSets();
+      await chooseAuthorizedService();
+
+      const listbox = await searchField(/procedure code/i, '96365');
+
+      // The code is the part a scheduler and a biller work in, and two infusion codes can share
+      // most of a description, so offering the description alone would not tell them apart.
+      expect(within(listbox).getByText('96365')).toBeInTheDocument();
+      expect(within(listbox).getByText(ProcedureCodes[0].display as string)).toBeInTheDocument();
+
+      // The system is the same for every row, so it is a url repeated down the list and nothing more.
+      expect(within(listbox).queryByText(new RegExp(CPT))).not.toBeInTheDocument();
+    });
+
+    test('Takes only codes its value set offered, never one typed over the top', async () => {
+      setupWithCodeValueSets();
+      await chooseAuthorizedService();
+
+      await typeInAutocomplete(field(/procedure code/i), '43644');
+
+      // No "+ Create" option: a code nobody's value set carries is not a code this can book against,
+      // and free text would defeat capturing these discretely in the first place.
+      expect(screen.queryByText(/\+ Create/)).not.toBeInTheDocument();
+    });
+
+    test('Cannot book a designated visit type when its value sets were never imported', async () => {
+      // The cost of taking only what a value set offers: there is nothing to fall back to, so a
+      // project that imported neither cannot book the visit types that need them at all. Loud, and
+      // deliberately so, since the quiet alternative is booking prior-authorization-gated visits on free text.
+      restoreValueSets();
+      restoreValueSets = installValueSetStub(medplum, {});
+      setupWithCodeValueSets();
+      await fillAuthorizedBooking();
+
+      // Both code fields take themselves out of use and say why, rather than sitting there uncompletable.
+      expect(screen.getAllByText('This field is unavailable.')).toHaveLength(2);
+      expect(screen.queryByRole('searchbox', { name: /procedure code/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('searchbox', { name: /diagnosis code/i })).not.toBeInTheDocument();
+      expect(bookButton()).toBeDisabled();
+    });
+
+    test('Drops the answers when the visit type changes, and asks again', async () => {
+      setupWithCodeValueSets();
+      await chooseAuthorizedService();
+      await enterAuthorizationDetails();
+
+      // Asserted before the change too, so this cannot pass by looking for a code nothing offers.
+      expect(hasPill(codePill(ProcedureCodes[0]))).toBe(true);
+      expect(hasPill(codePill(DiagnosisCodes[0]))).toBe(true);
+      expect(medicalNecessityBox()).toBeChecked();
+
+      await removePill('Infusion Therapy');
+      await chooseAuthorizedService();
+
+      // The code fields keep their own value once mounted, so this is what proves they were
+      // remounted rather than merely cleared behind the scenes.
+      expect(hasPill(codePill(ProcedureCodes[0]))).toBe(false);
+      expect(hasPill(codePill(DiagnosisCodes[0]))).toBe(false);
+      expect(medicalNecessityBox()).not.toBeChecked();
+    });
+
+    test('Takes the codes away when the visit type no longer needs them', async () => {
+      setupWithCodeValueSets();
+      await chooseAuthorizedService();
+      await removePill('Infusion Therapy');
+      await chooseImagingService();
+
+      expect(screen.queryByRole('searchbox', { name: /procedure code/i })).not.toBeInTheDocument();
+    });
+
+    test('Offers to book again after a code changes, since that changes what is written', async () => {
+      setupWithCodeValueSets();
+      await fillAuthorizedBooking();
+      await enterAuthorizationDetails();
+      await clickBook();
+      expect(bookButton()).toBeDisabled();
+
+      await enterCode(/procedure code/i, ProcedureCodes[1]);
+
+      expect(bookButton()).toBeEnabled();
+    });
+
+    test('Blocks booking again when the last code in a field is taken back out', async () => {
+      setupWithCodeValueSets();
+      await fillAuthorizedBooking();
+      await enterAuthorizationDetails();
+      expect(bookButton()).toBeEnabled();
+
+      await removePill(codePill(ProcedureCodes[0]));
+
+      expect(bookButton()).toBeDisabled();
+    });
+
+    test('Takes more than one of each code', async () => {
+      setupWithCodeValueSets();
+      await fillAuthorizedBooking();
+      await enterAuthorizationDetails();
+
+      await enterCode(/procedure code/i, ProcedureCodes[1]);
+      await enterCode(/diagnosis code/i, DiagnosisCodes[1]);
+      await clickBook();
+
+      // One entry of `reasonCode` per diagnosis: an element there is one reason, and codings inside
+      // one element would be that same reason said again in another system.
+      const proposal = proposedAppointment();
+      expect(proposal.reasonCode).toEqual([{ coding: [DiagnosisCodes[0]] }, { coding: [DiagnosisCodes[1]] }]);
+
+      // One `serviceType` concept per procedure, for the same reason: two codings inside one concept
+      // would be one procedure encoded twice rather than two procedures.
+      expect(proposal.serviceType?.slice(1)).toEqual([
+        { coding: [ProcedureCodes[0]] },
+        { coding: [ProcedureCodes[1]] },
+      ]);
+    });
+
+    test('Still books on one of each, so the second code is never owed', async () => {
+      setupWithCodeValueSets();
+      await fillAuthorizedBooking();
+      await enterAuthorizationDetails();
+
+      expect(bookButton()).toBeEnabled();
+      await clickBook();
+
+      expect(proposedAppointment().reasonCode).toHaveLength(1);
     });
   });
 });

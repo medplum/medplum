@@ -1,22 +1,27 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Loader, Stack, Text, TextInput } from '@mantine/core';
-import type { WithId } from '@medplum/core';
+import { Alert, Button, Checkbox, Group, Loader, Pill, Stack, Text, TextInput } from '@mantine/core';
+import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   createReference,
   formatDate,
   getIdentifier,
   getIdentifierByType,
   getReferenceString,
+  getSchedulingRequirements,
   getSchedulingTimezone,
   isDefined,
   MRN_IDENTIFIER_TYPE,
   normalizeErrorString,
+  REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_MEDICAL_NECESSITY_CODE,
+  REQUIRES_PROCEDURE_CODE,
+  SchedulingMedicalNecessityURI,
 } from '@medplum/core';
-import type { Appointment, HealthcareService, Location, Patient } from '@medplum/fhirtypes';
+import type { Appointment, HealthcareService, Location, Patient, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
-import { CalendarDateInput, ReferenceDisplay, ResourceInput } from '@medplum/react';
-import { IconCalendarSearch } from '@tabler/icons-react';
+import { CalendarDateInput, ReferenceDisplay, ResourceInput, ValueSetAutocomplete } from '@medplum/react';
+import { IconCalendarSearch, IconCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
@@ -25,6 +30,14 @@ import type { DateTimeRange } from '../types';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
+import type { BookingRequirementValues } from './AppointmentFinder.requirements';
+import {
+  DEFAULT_DIAGNOSIS_VALUE_SET,
+  DEFAULT_PROCEDURE_VALUE_SET,
+  EMPTY_REQUIREMENT_VALUES,
+  hasRequiredValues,
+  toCodings,
+} from './AppointmentFinder.requirements';
 import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
 import { getDurationMinutes, isViewerTimezone } from './AppointmentFinder.times';
@@ -83,6 +96,10 @@ export interface AppointmentProposalFormProps {
    * rather than leaving it on a time nobody chose.
    */
   readonly onChangeTime?: (time: DateTimeRange | undefined) => void;
+  /** The ValueSet the procedure code field binds to. Defaults to the full CPT value set. */
+  readonly procedureBinding?: string;
+  /** The ValueSet the diagnosis code field binds to. Defaults to the full ICD-10-CM value set. */
+  readonly diagnosisBinding?: string;
   /**
    * Performs the booking with the proposal the form assembled.
    *
@@ -121,6 +138,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     onToggleTimeFinder,
     onChangeService,
     onChangeTime,
+    procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
+    diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
     onBook,
   } = props;
 
@@ -135,11 +154,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [actorFieldsKey, setActorFieldsKey] = useState(0);
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
   const [patient, setPatient] = useState<WithId<Patient> | undefined>(defaultPatient);
+  const [requirementValues, setRequirementValues] = useState<BookingRequirementValues>(EMPTY_REQUIREMENT_VALUES);
   const [booking, setBooking] = useState(false);
   const [booked, setBooked] = useState(false);
   const [bookError, setBookError] = useState<unknown>(undefined);
 
   const selectionError = getSelectionError(selections);
+
+  // Each field is asked for on its own, by a visit type whose eligibility names it.
+  const requirements = useMemo(() => getSchedulingRequirements(service), [service]);
+  const requirementsOutstanding = !hasRequiredValues(requirementValues, requirements);
 
   // Derived, not a flag: closing is never its own rule, so losing the last provider
   // closes the search however it was lost.
@@ -214,6 +238,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   function chooseService(next: WithId<HealthcareService> | undefined): void {
     setService(next);
     onChangeService?.(next);
+    setRequirementValues(EMPTY_REQUIREMENT_VALUES);
     clearResources();
   }
 
@@ -240,9 +265,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     resetDaySearch();
   }
 
-  // The two answers a written booking can still be changed by. Everything else
-  // above clears the chosen time, which disables the button on its own; these
-  // are what re-enable it, because changing either makes it a different visit.
   function chooseTime(next: Appointment): void {
     setChosen(next);
     setBooked(false);
@@ -253,15 +275,20 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setBooked(false);
   }
 
+  function chooseRequirementValues(next: BookingRequirementValues): void {
+    setRequirementValues(next);
+    setBooked(false);
+  }
+
   async function bookAppointment(): Promise<void> {
-    if (!chosen || !patient) {
+    if (!chosen || !patient || requirementsOutstanding) {
       return;
     }
 
     setBooking(true);
     setBookError(undefined);
     try {
-      await onBook(buildBooking(chosen, patient));
+      await onBook(buildBooking(chosen, patient, requirementValues, requirements));
       setBooked(true);
     } catch (error) {
       // Left on screen with every answer still filled in: a refusal is usually
@@ -274,8 +301,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   return (
     <div className={classes.layout}>
-      {/* Not a `form` element: this mounts inside a host's own surface, which may
-          already be one, and a form cannot be nested in a form. */}
       <Stack className={classes.form} gap="sm">
         <ResourceInput<WithId<Location>>
           resourceType="Location"
@@ -342,13 +367,61 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           onChange={choosePatient}
         />
 
+        {/* Each field is shown only for a visit type whose eligibility asks for it. */}
+        {service && requirements.size > 0 && (
+          <Fragment key={service.id}>
+            {requirements.has(REQUIRES_PROCEDURE_CODE) && (
+              <ValueSetAutocomplete
+                name="procedure-code"
+                label="Procedure codes"
+                required
+                creatable={false}
+                itemComponent={RequirementCodeItem}
+                pillComponent={RequirementCodePill}
+                binding={procedureBinding}
+                onChange={(elements) =>
+                  chooseRequirementValues({
+                    ...requirementValues,
+                    procedure: toCodings(elements),
+                  })
+                }
+              />
+            )}
+            {requirements.has(REQUIRES_DIAGNOSIS_CODE) && (
+              <ValueSetAutocomplete
+                name="diagnosis-code"
+                label="Diagnosis codes"
+                required
+                creatable={false}
+                itemComponent={RequirementCodeItem}
+                pillComponent={RequirementCodePill}
+                binding={diagnosisBinding}
+                onChange={(elements) =>
+                  chooseRequirementValues({
+                    ...requirementValues,
+                    diagnosis: toCodings(elements),
+                  })
+                }
+              />
+            )}
+            {requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE) && (
+              <Checkbox
+                classNames={{ label: classes.requiredLabel }}
+                label="Medical necessity confirmed"
+                required
+                checked={requirementValues.medicalNecessity}
+                onChange={(event) =>
+                  chooseRequirementValues({ ...requirementValues, medicalNecessity: event.currentTarget.checked })
+                }
+              />
+            )}
+          </Fragment>
+        )}
+
         {bookError !== undefined && <Alert color="red">{normalizeErrorString(bookError)}</Alert>}
         <Button
           fullWidth
-          // A booking that was written is not written again: every answer is
-          // still on screen, and clicking through a second time would book the
-          // same time twice. Changing one of them makes it a new request.
-          disabled={!chosen || !patient || booked}
+          disabled={!chosen || !patient || booked || requirementsOutstanding}
           loading={booking}
           onClick={bookAppointment}
         >
@@ -494,6 +567,59 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
   return chosen ? 'Change time' : 'Find a time';
 }
 
+/**
+ * One code on offer, led by the code itself.
+ *
+ * The code is what a scheduler searches on and what a biller reads, and two infusion codes can
+ * share sixty characters of description before they differ, so the description alone does not tell
+ * them apart. The system is left out: both fields are bound to one value set each, so naming it on
+ * every row is a url repeated down the list and nothing more.
+ *
+ * @param props - The option to render.
+ * @returns The row.
+ */
+function RequirementCodeItem(props: AsyncAutocompleteOption<ValueSetExpansionContains>): JSX.Element {
+  const { label, resource, active } = props;
+  return (
+    <Group wrap="nowrap" gap="xs">
+      {active && <IconCheck size={12} />}
+      <Text size="sm">
+        <Text span fw={600}>
+          {resource.code}
+        </Text>{' '}
+        <Text span>{label}</Text>
+      </Text>
+    </Group>
+  );
+}
+
+interface RequirementCodePillProps {
+  readonly item: AsyncAutocompleteOption<ValueSetExpansionContains>;
+  readonly disabled?: boolean;
+  readonly onRemove: () => void;
+}
+
+/**
+ * A code that has been given, led by the code.
+ *
+ * What a scheduler checks a filled-in form against, and what a biller reads off it, is the code, so
+ * it comes first and stays readable however narrow the pill gets. The description follows and is
+ * clipped, since a dozen words times three pills would bury the rest of the form. The full text is
+ * on the pill's `title`.
+ *
+ * @param props - The chosen option, and how to take it back out.
+ * @returns The pill.
+ */
+function RequirementCodePill(props: RequirementCodePillProps): JSX.Element {
+  const { item, disabled, onRemove } = props;
+  const code = item.resource.code;
+  return (
+    <Pill className={classes.codePill} withRemoveButton={!disabled} onRemove={onRemove} title={item.label}>
+      {code ? `${code} · ${item.label}` : item.label}
+    </Pill>
+  );
+}
+
 interface ActorFieldProps {
   readonly actorType: BookableActorType;
   readonly service: WithId<HealthcareService> | undefined;
@@ -533,14 +659,36 @@ function ActorField(props: ActorFieldProps): JSX.Element {
 }
 
 /**
- * Puts the patient onto the proposal that will be booked.
+ * Puts the patient, and anything the visit type required, onto the proposal that will be booked.
+ *
+ * Records a value only where the visit type asked for one: a field nobody was shown holds
+ * whatever it was left at, and writing that would put an answer on the booking that was
+ * never given.
  *
  * @param proposal - The time that was chosen, as `$find` offered it.
  * @param patient - Who the visit is for.
+ * @param values - The codes and attestation given.
+ * @param requirements - What the visit type requires, from its eligibility codes.
  * @returns The appointment to book.
  */
-function buildBooking(proposal: Appointment, patient: WithId<Patient>): Appointment {
+function buildBooking(
+  proposal: Appointment,
+  patient: WithId<Patient>,
+  values: BookingRequirementValues,
+  requirements: ReadonlySet<SchedulingRequirement>
+): Appointment {
   const patientReference = getReferenceString(patient);
+  const procedure = requirements.has(REQUIRES_PROCEDURE_CODE) ? values.procedure : [];
+  const diagnosis = requirements.has(REQUIRES_DIAGNOSIS_CODE) ? values.diagnosis : [];
+  const serviceType = [...(proposal.serviceType ?? []), ...procedure.map((coding) => ({ coding: [coding] }))];
+  const reasonCode = [...(proposal.reasonCode ?? []), ...diagnosis.map((coding) => ({ coding: [coding] }))];
+  const extension = [
+    ...(proposal.extension ?? []),
+    ...(requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE)
+      ? [{ url: SchedulingMedicalNecessityURI, valueBoolean: values.medicalNecessity }]
+      : []),
+  ];
+
   return {
     ...proposal,
     participant: [
@@ -549,6 +697,9 @@ function buildBooking(proposal: Appointment, patient: WithId<Patient>): Appointm
       ...proposal.participant.filter((participant) => participant.actor?.reference !== patientReference),
       { actor: createReference(patient), required: 'required', status: 'needs-action' },
     ],
+    ...(serviceType.length > 0 && { serviceType }),
+    ...(reasonCode.length > 0 && { reasonCode }),
+    ...(extension.length > 0 && { extension }),
   };
 }
 

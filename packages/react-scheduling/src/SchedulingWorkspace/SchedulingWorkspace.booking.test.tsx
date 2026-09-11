@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { getExtensionValue, SchedulingMedicalNecessityURI } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
@@ -7,7 +8,15 @@ import type { MockInstance } from 'vitest';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
 import { installBookStub } from '../stories/mockBook';
 import { installFindStub } from '../stories/mockFind';
-import { ElderJordanPatient } from '../stories/scheduling';
+import { installValueSetStub } from '../stories/mockValueSet';
+import {
+  AuthorizationValueSets,
+  DIAGNOSIS_VALUE_SET,
+  DiagnosisCodes,
+  ElderJordanPatient,
+  PROCEDURE_VALUE_SET,
+  ProcedureCodes,
+} from '../stories/scheduling';
 import { installAutocompleteTimers } from '../test-utils/asyncAutocomplete';
 import {
   chooseActor,
@@ -16,6 +25,8 @@ import {
   choosePatient,
   chooseSecondOfferedTime,
   clickBook,
+  enterAuthorizationDetails,
+  fillAuthorizedBooking,
   fillBooking,
   hasPill,
   lastFindStart,
@@ -115,21 +126,31 @@ describe('SchedulingWorkspace booking', () => {
   let medplum: MockClient;
   let restoreFind: () => void;
   let restoreBook: () => void;
+  let restoreValueSets: () => void;
 
   beforeEach(async () => {
     vi.setSystemTime(MONDAY_MORNING);
     medplum = await setupBookingClient();
     restoreFind = installFindStub(medplum);
     restoreBook = installBookStub(medplum);
+    restoreValueSets = installValueSetStub(medplum, AuthorizationValueSets);
   });
 
   afterEach(() => {
+    restoreValueSets();
     restoreBook();
     restoreFind();
   });
 
   function setup(onBooked?: (booking: AppointmentBooking) => void): void {
-    renderWithMedplum(<SchedulingWorkspace onBooked={onBooked} />, medplum);
+    renderWithMedplum(
+      <SchedulingWorkspace
+        procedureBinding={PROCEDURE_VALUE_SET}
+        diagnosisBinding={DIAGNOSIS_VALUE_SET}
+        onBooked={onBooked}
+      />,
+      medplum
+    );
   }
 
   test('Offers no booking form until the calendar is clicked', () => {
@@ -277,6 +298,54 @@ describe('SchedulingWorkspace booking', () => {
       await chooseDay('19');
 
       expect(markedTime()).toBe('none');
+    });
+  });
+
+  describe('Visit types that require prior authorization', () => {
+    test('Will not book one until its codes are given', async () => {
+      const post = vi.spyOn(medplum, 'post');
+      setup();
+      await clickCalendar();
+
+      await fillAuthorizedBooking();
+      await clickBook();
+
+      expect(post.mock.calls.some(([url]) => String(url).includes('Appointment/$book'))).toBe(false);
+      // Still open, with every other answer kept, so the codes are one field away.
+      expect(bookingPaneHeading()).toBeInTheDocument();
+    });
+
+    test('Sends the codes to the server on the appointment itself', async () => {
+      const post = vi.spyOn(medplum, 'post');
+      setup();
+      await clickCalendar();
+
+      await fillAuthorizedBooking();
+      await enterAuthorizationDetails();
+      await clickBook();
+
+      // On the appointment rather than beside it, so that the write that books the visit is the
+      // same write that records what it was authorized for.
+      const proposal = bookedProposal(post);
+      expect(proposal.reasonCode).toEqual([{ coding: [DiagnosisCodes[0]] }]);
+      expect(proposal.serviceType?.slice(1)).toEqual([{ coding: [ProcedureCodes[0]] }]);
+      expect(getExtensionValue(proposal, SchedulingMedicalNecessityURI)).toBe(true);
+    });
+
+    test('Reports what was booked with the codes on it', async () => {
+      const onBooked = vi.fn();
+      setup(onBooked);
+      await clickCalendar();
+
+      await fillAuthorizedBooking();
+      await enterAuthorizationDetails();
+      await clickBook();
+
+      // The host reads the codes off the appointment it is handed, so nothing extra is threaded
+      // through the components between here and the form to carry them.
+      const [booking] = onBooked.mock.calls[0] as [AppointmentBooking];
+      expect(booking.appointment.reasonCode?.[0]?.coding?.[0]?.code).toBe(DiagnosisCodes[0].code);
+      expect(booking.appointment.serviceType?.at(-1)?.coding?.[0]?.code).toBe(ProcedureCodes[0].code);
     });
   });
 });

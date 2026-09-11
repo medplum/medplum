@@ -43,6 +43,10 @@ const NONE_DESELECTED: DeselectedIdsByActorType = {
 
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
+  /** The ValueSet the procedure code field binds to. Defaults to full CPT valueset. */
+  readonly procedureBinding?: string;
+  /** The ValueSet the diagnosis code field binds to. Defaults to full ICD-10-CM valueset. */
+  readonly diagnosisBinding?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
 }
 
@@ -65,7 +69,7 @@ export interface SchedulingWorkspaceProps {
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
  */
 export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Element {
-  const { onBooked } = props;
+  const { procedureBinding, diagnosisBinding, onBooked } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
 
@@ -239,6 +243,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           <AppointmentBookingForm
             key={bookingSelection.start.toDateString()}
             defaultStart={bookingSelection.start}
+            procedureBinding={procedureBinding}
+            diagnosisBinding={diagnosisBinding}
             onToggleTimeFinder={setTimeFinderOpen}
             onChangeTime={setHighlight}
             onBooked={finishBooking}

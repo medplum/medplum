@@ -7,6 +7,7 @@ export type * from './types';
 export * from './AppointmentFinder/AppointmentActorSelect';
 export * from './AppointmentFinder/AppointmentBookingForm';
 export * from './AppointmentFinder/AppointmentDayTimes';
+export * from './AppointmentFinder/AppointmentFinder.requirements';
 export * from './AppointmentFinder/AppointmentFinder.schedules';
 export * from './AppointmentFinder/AppointmentFinder.times';
 export * from './AppointmentFinder/AppointmentOptionRow';
