@@ -23,6 +23,7 @@ import {
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
 import {
+  addActorRow,
   bookButton,
   chooseActor,
   chooseDay,
@@ -160,20 +161,96 @@ describe('AppointmentProposalForm', () => {
       expect(await screen.findByText('No devices found')).toBeInTheDocument();
     });
 
-    test('Naming two providers narrows the times to the ones both are free for', async () => {
+    test('Two providers in one row are alternatives, each searched on its own', async () => {
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
       await openTimeFinder();
 
-      // One set of actors, not two: `$find` intersects the schedules it is given. Now
-      // that each day gets its own card, distinct groups are counted by testid, not length.
+      // Either of them will do, so each is a `$find` of its own and the times they
+      // offer are listed apart rather than intersected. Now that each day gets its
+      // own card, distinct groups are counted by testid, not length.
+      const groups = await screen.findAllByTestId(/^slot-group-/);
+      const distinct = new Map(groups.map((group) => [group.dataset.testid as string, group]));
+      expect(distinct.size).toBe(2);
+
+      // Each set holds one of them, and neither holds both.
+      for (const group of distinct.values()) {
+        const holdsRivera = within(group).queryByText('Dr. Maya Rivera') !== null;
+        const holdsOkafor = within(group).queryByText('Dr. Tunde Okafor') !== null;
+        expect(holdsRivera).not.toBe(holdsOkafor);
+      }
+    });
+
+    test('A second provider row names a provider who also attends', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await addActorRow('provider');
+      await chooseActor(/^and provider 2$/i, 'oka', 'Dr. Tunde Okafor');
+      await openTimeFinder();
+
+      // One set of actors, not two: a row each is a second provider the visit needs,
+      // so `$find` intersects their schedules in a single request.
       const groups = await screen.findAllByTestId(/^slot-group-/);
       expect(new Set(groups.map((group) => group.dataset.testid)).size).toBe(1);
       expect(within(groups[0]).getByText('Dr. Maya Rivera')).toBeInTheDocument();
       expect(within(groups[0]).getByText('Dr. Tunde Okafor')).toBeInTheDocument();
     });
+
+    test('Searches a round of the alternatives at a time, and offers the rest', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      // Two providers, two rooms and two devices is eight ways of holding the visit,
+      // which is more than one round.
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+      await chooseActor(/room/i, 'exam room a', 'Exam Room A');
+      await chooseActor(/room/i, 'exam room b', 'Exam Room B');
+      await chooseActor(/device/i, 'ultrasound 1', 'Ultrasound 1 (Main Campus)');
+      await chooseActor(/device/i, 'ultrasound 2', 'Ultrasound 2 (Main Campus)');
+      await openTimeFinder();
+
+      expect(await screen.findByText('Showing times for 6 of 8 ways of holding this visit.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Search more options' })).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Search more options' }));
+      });
+      await settleAutocomplete();
+
+      expect(screen.queryByRole('button', { name: 'Search more options' })).not.toBeInTheDocument();
+    });
+
+    test('Reports nothing found as "not yet" while rounds are still unsearched', async () => {
+      // Nothing on offer for anybody, so the empty state is what is on screen for
+      // the whole of both rounds.
+      restoreFind();
+      restoreFind = installFindStub(medplum, { empty: true });
+
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+      await chooseActor(/room/i, 'exam room a', 'Exam Room A');
+      await chooseActor(/room/i, 'exam room b', 'Exam Room B');
+      await chooseActor(/device/i, 'ultrasound 1', 'Ultrasound 1 (Main Campus)');
+      await chooseActor(/device/i, 'ultrasound 2', 'Ultrasound 2 (Main Campus)');
+      await openTimeFinder();
+
+      // "None available" would report an answer to a question two of the eight ways
+      // of holding this visit have not been asked yet.
+      expect(await screen.findByText('No times yet for the options searched so far.')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Search more options' }));
+      });
+      await settleAutocomplete();
+
+      expect(await screen.findByText('No times are available for this selection.')).toBeInTheDocument();
+    });
+
   });
 
   describe('Narrowing resources to the chosen site', () => {

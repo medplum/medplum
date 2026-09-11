@@ -6,11 +6,29 @@ import type { Meta } from '@storybook/react';
 import { IconCalendarCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { withBookStub, withFindStub, withFixtures, withMockedDate } from '../stories/decorators';
-import { CalendarWeekFixtures, inViewerTimezone, PatientFixtures, SchedulingFixtures } from '../stories/scheduling';
+import {
+  CalendarWeekFixtures,
+  ImagingBenchFixtures,
+  inViewerTimezone,
+  PatientFixtures,
+  SchedulingFixtures,
+} from '../stories/scheduling';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
-/** The clinic as the fixtures keep it: Dr. Rivera in Eastern time, Dr. Okafor in Central. */
-const ELSEWHERE_FIXTURES = [...SchedulingFixtures, ...CalendarWeekFixtures, ...PatientFixtures];
+/**
+ * The clinic as the fixtures keep it: Dr. Rivera in Eastern time, Dr. Okafor in Central.
+ *
+ * `ImagingBenchFixtures` adds four more providers who declare no zone and hold no
+ * appointments. They are here to be *named* rather than watched — a booking form
+ * asking for "either of these, and any of those" needs a pool to draw from, and two
+ * providers is not one. Their calendars come up empty, which is what deselecting is for.
+ */
+const ELSEWHERE_FIXTURES = [
+  ...SchedulingFixtures,
+  ...ImagingBenchFixtures,
+  ...CalendarWeekFixtures,
+  ...PatientFixtures,
+];
 
 /** The same clinic, moved onto whatever clock the reader is on. */
 const LOCAL_FIXTURES = inViewerTimezone(ELSEWHERE_FIXTURES);

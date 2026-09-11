@@ -6,6 +6,7 @@ import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { withBookStub, withFindStub, withFixtures, withMockedDate } from '../stories/decorators';
 import {
+  ImagingBenchFixtures,
   MainClinic,
   MRN_SYSTEM,
   PatientFixtures,
@@ -18,7 +19,13 @@ import {
 import type { AppointmentBooking } from './AppointmentBookingForm';
 import { AppointmentBookingForm } from './AppointmentBookingForm';
 
-const STORY_FIXTURES = [...SchedulingFixtures, ...SurgicalFixtures, ...SubClinicProviderFixtures, ...PatientFixtures];
+const STORY_FIXTURES = [
+  ...SchedulingFixtures,
+  ...ImagingBenchFixtures,
+  ...SurgicalFixtures,
+  ...SubClinicProviderFixtures,
+  ...PatientFixtures,
+];
 
 /**
  * Stands in for the host, which is the only thing a story has to supply.
@@ -80,8 +87,10 @@ UntypedMedicalRecordNumbers.decorators = [withFindStub()];
  * A visit that needs a whole team free at once: a surgeon, an anesthesiologist
  * and an operating room.
  *
- * Everything named attends — `$find` intersects their schedules — so naming a
- * second surgeon narrows the times rather than widening them.
+ * The two directions read differently. A second name in the *same* row is an
+ * alternative, so either surgeon will do and the times widen; a second *row* is
+ * another person the visit needs, and `$find` intersects their schedules, so the
+ * times narrow.
  * @returns The story.
  */
 export const SurgicalTeam = (): JSX.Element => (
