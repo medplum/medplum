@@ -74,7 +74,7 @@ describe('resolveShardId', () => {
         expect.any(Number),
         expect.stringContaining('Operation cannot be routed to a project shard from global-only'),
         expect.objectContaining({
-          project: 'Patient',
+          projectTypes: 'Patient',
           source: 'shard-project',
         })
       );
@@ -92,7 +92,7 @@ describe('resolveShardId', () => {
         expect.any(Number),
         expect.stringContaining('Operation cannot be routed to a project shard from global-only'),
         expect.objectContaining({
-          project: 'Practitioner',
+          projectTypes: 'Practitioner',
           source: 'shard-span',
         })
       );
