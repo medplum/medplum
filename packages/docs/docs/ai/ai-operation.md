@@ -43,7 +43,7 @@ POST [baseUrl]/fhir/R4/$ai
 | `messages`         | string | Yes      | JSON string containing the conversation messages array. Each message should have `role` (`user`, `assistant`, or `system`) and `content` properties. |
 | `model`            | string | Yes      | OpenAI model to use (e.g., `gpt-4`, `gpt-3.5-turbo`, `gpt-4-turbo`)                                                                                  |
 | `tools`            | string | No       | JSON string containing the tools array for function calling (optional)                                                                               |
-| `reasoning_effort` | string | No       | Reasoning effort for reasoning models (`none`, `low`, `medium`, `high`, `xhigh`).                                                                    |
+| `reasoning_effort` | string | No       | Reasoning effort for reasoning models: `none`, `minimal`, `low`, `medium`, `high` or `xhigh`.                                                        |
 | `api`              | code   | No       | OpenAI endpoint to call: `chat` or `responses`. Defaults to `chat`, except that `tools` with a `reasoning_effort` other than `none` use `responses`. |
 
 ### Output Parameters

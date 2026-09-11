@@ -663,6 +663,27 @@ describe('AI Operation', () => {
     expect((res.body as Parameters).parameter?.find((p) => p.name === 'content')?.valueString).toBe('ok');
   });
 
+  test('Rejects an unknown reasoning_effort', async () => {
+    global.fetch = vi.fn();
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'messages', valueString: JSON.stringify([{ role: 'user', content: 'hi' }]) },
+          { name: 'model', valueString: 'gpt-6-astra' },
+          { name: 'reasoning_effort', valueString: 'maximum' },
+        ],
+      });
+
+    expect(res).toHaveStatus(400);
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain('Unsupported reasoning_effort');
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   test('Rejects an unknown api parameter', async () => {
     global.fetch = vi.fn();
 

@@ -45,7 +45,7 @@ const operation = makeOperationDefinition(
         'in',
         'reasoning_effort',
         'string',
-        'Reasoning effort for reasoning models, e.g. none, low, medium, high, xhigh (optional). Sent as reasoning_effort on chat completions and as reasoning.effort on the Responses API.'
+        'Reasoning effort for reasoning models: none, minimal, low, medium, high or xhigh (optional). Sent as reasoning_effort on chat completions and as reasoning.effort on the Responses API.'
       ),
       param(
         'in',
@@ -76,6 +76,8 @@ type AIOperationParameters = {
 };
 
 const AI_APIS: readonly AiApi[] = ['chat', 'responses'];
+
+const REASONING_EFFORTS: readonly string[] = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh'];
 
 function isAiApi(value: string): value is AiApi {
   return (AI_APIS as readonly string[]).includes(value);
@@ -163,6 +165,14 @@ export async function aiOperation(
 
   if (params.api !== undefined && !isAiApi(params.api)) {
     return [badRequest(`Unsupported api: ${params.api}. Expected one of ${AI_APIS.join(', ')}`)];
+  }
+
+  if (params.reasoning_effort !== undefined && !REASONING_EFFORTS.includes(params.reasoning_effort)) {
+    return [
+      badRequest(
+        `Unsupported reasoning_effort: ${params.reasoning_effort}. Expected one of ${REASONING_EFFORTS.join(', ')}`
+      ),
+    ];
   }
 
   const context: AiContext = {

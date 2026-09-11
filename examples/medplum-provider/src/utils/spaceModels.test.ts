@@ -82,7 +82,8 @@ describe('REASONING_EFFORTS', () => {
     expect(REASONING_EFFORTS.map((e) => e.value)).toEqual(['low', 'medium', 'high', 'xhigh']);
   });
 
-  test('default is one of the options', () => {
+  test('defaults to high', () => {
+    expect(DEFAULT_REASONING_EFFORT).toBe('high');
     expect(REASONING_EFFORTS.some((e) => e.value === DEFAULT_REASONING_EFFORT)).toBe(true);
   });
 });

@@ -58,7 +58,7 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Parameters/$ai' \
 | `apiKey`           | `string` | OpenAI API key                                                                                                                  | Yes      |
 | `model`            | `string` | OpenAI model to use (e.g., `gpt-4`, `gpt-3.5-turbo`)                                                                            | Yes      |
 | `tools`            | `string` | JSON string containing the tools array for function calling                                                                     | No       |
-| `reasoning_effort` | `string` | Reasoning effort for reasoning models (`none`, `low`, `medium`, `high`, `xhigh`)                                                | No       |
+| `reasoning_effort` | `string` | Reasoning effort for reasoning models: `none`, `minimal`, `low`, `medium`, `high` or `xhigh`                                    | No       |
 | `api`              | `code`   | OpenAI endpoint: `chat` or `responses`. Defaults to `chat`; `tools` with a `reasoning_effort` other than `none` use `responses` | No       |
 
 ### Messages Format

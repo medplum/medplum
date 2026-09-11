@@ -34,7 +34,7 @@ export const REASONING_EFFORTS: ReasoningEffortOption[] = [
 ];
 
 /** Reasoning effort preselected for a new conversation. */
-export const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'medium';
+export const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'high';
 
 /** Built-in fallback used when the project has not configured `aiModels`. */
 export const DEFAULT_MODELS: SpaceModelOption[] = [
