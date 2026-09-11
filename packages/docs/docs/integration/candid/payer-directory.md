@@ -126,11 +126,13 @@ The bot reports the best state across Candid's clearinghouses for each capabilit
 The directory bot does not persist Organizations in Medplum. Save the selected payer before referencing it from other resources. For example, after fetching a single payer above, use a conditional create keyed by its Candid UUID to reuse an existing Organization:
 
 ```ts
+import { createReference } from '@medplum/core';
+
 const query = new URLSearchParams({
   identifier: `https://www.joincandidhealth.com/payer-uuid|${payerUuid}`,
 });
 const savedPayer = await medplum.createResourceIfNoneExist(payer, query.toString());
-const payerReference = { reference: `Organization/${savedPayer.id}` };
+const payerReference = createReference(savedPayer);
 ```
 
 Conditional create returns the existing Organization if one matches; it does not refresh that resource's directory data.
