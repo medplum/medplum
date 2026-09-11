@@ -14,6 +14,7 @@ import {
   getPreDeployMigration,
 } from './migrations/migration-utils';
 import { getPreDeployMigrationVersions, MigrationVersion } from './migrations/migration-versions';
+import { runS3TablesWarehouseMigrationsIfNeeded } from './migrations/s3-tables-warehouse/run-s3-tables-warehouse-migrations';
 import { getServerVersion } from './util/version';
 
 export const DatabaseMode = {
@@ -47,6 +48,7 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
 
   if (serverConfig.database.runMigrations !== false) {
     await runMigrations(pool);
+    await runS3TablesWarehouseMigrationsIfNeeded(serverConfig);
   }
 
   if (serverConfig.readonlyDatabase) {
