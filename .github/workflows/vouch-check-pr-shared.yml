@@ -50,9 +50,9 @@ jobs:
         run: |
           set -euo pipefail
           gh pr view "$PR_NUMBER" --repo "$REPO" --json number,author,title,labels > "$RUNNER_TEMP/pr.json"
-          jq -r --arg label "$VOUCHED_PR_LABEL" '
+          jq -r --arg vouched_pr_label "$VOUCHED_PR_LABEL" '
             "author=" + .author.login,
-            "has-vouched-label=" + ([.labels[].name] | any(. == $label) | tostring)
+            "has-vouched-label=" + ([.labels[].name] | any(. == $vouched_pr_label) | tostring)
           ' "$RUNNER_TEMP/pr.json" >> "$GITHUB_OUTPUT"
 
       # A maintainer can exempt a PR from all automatic closing by applying
