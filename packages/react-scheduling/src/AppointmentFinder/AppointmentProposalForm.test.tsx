@@ -41,6 +41,7 @@ import {
   findRequests,
   hasPill,
   isBefore,
+  lastFindEnd,
   lastFindParams,
   lastFindStart,
   MONDAY_MORNING,
@@ -279,15 +280,12 @@ describe('AppointmentProposalForm', () => {
       expect(within(listbox).getByText('Uro Associates - Satellite')).toBeInTheDocument();
     });
 
-    test('Narrows the visit types to the chosen site, and says which site', async () => {
+    test('Narrows the visit types to the chosen site', async () => {
       setup(medplum);
       await chooseSite('Satellite', 'Uro Associates - Satellite');
 
       await typeInAutocomplete(field(/visit type/i), 'Ultrasound');
 
-      expect(
-        screen.getByText('Showing visit types offered at Uro Associates - Satellite, plus those not tied to a site.')
-      ).toBeInTheDocument();
       // Imaging names the main clinic, and only a visit type naming this site exactly
       // is offered at it.
       expect(await screen.findByText('Nothing found')).toBeInTheDocument();
@@ -383,7 +381,9 @@ describe('AppointmentProposalForm', () => {
 
       expect(await screen.findByText(/Thursday, August 20/)).toBeInTheDocument();
       expect(screen.queryByText(/Friday, August 21/)).not.toBeInTheDocument();
-      expect(new Date(lastFindParams(get)?.get('end') as string).getDate()).toBe(20);
+      // The window closes on the 21st because that is the site's next midnight; no time on
+      // the 21st itself fits inside it.
+      expect(new Date(lastFindParams(get)?.get('end') as string).getDate()).toBe(21);
     });
 
     test('Asks about the one day picked, with a page wide enough for it', async () => {
@@ -394,7 +394,9 @@ describe('AppointmentProposalForm', () => {
       await openTimeFinder();
 
       const params = lastFindParams(get) as URLSearchParams;
-      expect(new Date(params.get('end') as string).getDate()).toBe(17);
+      // `$find` only offers a time that fits inside the window, so one day is asked about
+      // up to the following midnight rather than to the last instant of the day itself.
+      expect(new Date(params.get('end') as string).getDate()).toBe(18);
       expect(Number(params.get('_count'))).toBe(50);
     });
 
@@ -423,10 +425,10 @@ describe('AppointmentProposalForm', () => {
 
       await showMoreDays();
 
-      // Not the days already answered: re-asking would waste a request per click.
-      const start = new Date(lastFindStart(get) as string);
-      expect(start.getDate()).toBe(18);
-      expect(start.getHours()).toBe(0);
+      // Not the days already answered: re-asking would waste a request per click. It opens
+      // on the midnight the first window closed on, which is the site's rather than the
+      // viewer's: midnight in Eastern time is 04:00 UTC, the clock the runner keeps.
+      expect(lastFindStart(get)).toBe('2026-08-18T04:00:00.000Z');
       expect(Number(lastFindParams(get)?.get('_count'))).toBe(100);
     });
 
@@ -519,7 +521,7 @@ describe('AppointmentProposalForm', () => {
       // `$find` pages a window at once: one request for all five days, wide enough to hold them.
       expect(findRequests(get)).toHaveLength(1);
       const params = lastFindParams(get) as URLSearchParams;
-      expect(new Date(params.get('end') as string).getDate()).toBe(21);
+      expect(new Date(params.get('end') as string).getDate()).toBe(22);
       expect(Number(params.get('_count'))).toBe(250);
     });
 
@@ -549,7 +551,7 @@ describe('AppointmentProposalForm', () => {
       expect(await screen.findByText(/Friday, August 21/)).toBeInTheDocument();
       // Grew from the day picked, rather than starting over at the day shift-clicked.
       expect(screen.getByText(/Tuesday, August 18/)).toBeInTheDocument();
-      expect(new Date(lastFindParams(get)?.get('end') as string).getDate()).toBe(21);
+      expect(new Date(lastFindParams(get)?.get('end') as string).getDate()).toBe(22);
     });
 
     test('Searches a stretch reaching back over today from now rather than from midnight', async () => {
@@ -621,17 +623,6 @@ describe('AppointmentProposalForm', () => {
       // A proposal carries the Slots it was found for, and the search has moved on.
       expect(chosenTimeField()).toBeNull();
     });
-
-    test('Names the days being searched, without the weekdays their headings carry', async () => {
-      setup(medplum);
-      await openFinder();
-
-      expect(screen.getByText(/^August 17 · drag or shift-click/)).toBeInTheDocument();
-
-      await dragDays('17', '21');
-
-      expect(await screen.findByText(/August 17 – August 21 · drag or shift-click/)).toBeInTheDocument();
-    });
   });
 
   describe('Reading times in the site’s timezone', () => {
@@ -652,8 +643,40 @@ describe('AppointmentProposalForm', () => {
           timeZone: SITE_TIMEZONE,
           hour: 'numeric',
           minute: '2-digit',
+          // The viewer under the test runner does not share the site's timezone, so the zone is
+          // named beside the time.
+          timeZoneName: 'shortGeneric',
         }).format(start)
       );
+    });
+
+    test('Names the zone on the time that is about to be booked', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      // The last time read before booking says which clock it is on, like the times offered.
+      expect(chosenTimeField()?.value).toMatch(/\bET$/);
+    });
+
+    test('Asks for the day as the site keeps it, not as the booker does', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      await chooseDay('18');
+
+      // Bounded on the runner's clock this would run 00:00Z to 23:59Z, which is 8pm on the
+      // 17th to 8pm on the 18th at the site: the clinic's morning missed, and its evening
+      // fetched under the following day's heading.
+      expect(lastFindStart(get)).toBe('2026-08-18T04:00:00.000Z');
+      // `$find` only offers a time that fits inside the window, so it runs to the site's
+      // next midnight: stopping short would drop the last hours the clinic is open.
+      expect(lastFindEnd(get)).toBe('2026-08-19T04:00:00.000Z');
     });
 
     test('Records the instant the site-local time stands for', async () => {

@@ -19,15 +19,15 @@ import { CalendarDateInput, ReferenceDisplay, ResourceInput } from '@medplum/rea
 import { IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { BookableActorType } from '../actors';
+import { BOOKABLE_ACTOR_TYPES, getActorType, getActorTypeLabel } from '../actors';
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
-import type { SchedulingRole } from './AppointmentFinder.roles';
-import { getActorRoleLabel, SCHEDULING_ROLES } from './AppointmentFinder.roles';
 import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
-import { formatDateRange, formatDayLabel, getDurationMinutes } from './AppointmentFinder.times';
+import { getDurationMinutes, isViewerTimezone } from './AppointmentFinder.times';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
@@ -44,11 +44,6 @@ const PATIENT_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
 
 // No month-wide scan exists, so every day is offered and the search answers.
 const NO_MARKED_DATES: Date[] = [];
-
-// Shown beneath the calendar, since dragging or shift-clicking leaves no visible mark.
-const DAY_GESTURE_HINT = 'drag or shift-click to search more days';
-
-const HINT_SEPARATOR = ' · ';
 
 export interface AppointmentProposalFormProps {
   /** Pre-fills where the visit is, for a host that already knows. */
@@ -137,7 +132,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [chosen, setChosen] = useState<Appointment | undefined>(undefined);
   // The fields ignore `defaultValue` after mount, so remounting is the only way to
   // clear their pills. Counters, so a field is never remounted out from under a pick.
-  const [roleFieldsKey, setRoleFieldsKey] = useState(0);
+  const [actorFieldsKey, setActorFieldsKey] = useState(0);
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
   const [patient, setPatient] = useState<WithId<Patient> | undefined>(defaultPatient);
   const [booking, setBooking] = useState(false);
@@ -154,8 +149,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // request per keystroke.
   const combinations = useMemo(() => (searching ? getActorCombinations(selections) : []), [searching, selections]);
 
-  // The first actor's schedule answers for all of them: every actor in one search
-  // shares the scheduling parameters, or `$find` rejects the request.
+  // `$find` applies each Schedule's own parameters, so the actors in one search need not
+  // agree on a timezone. The first one is taken as the exemplar for what to display:
+  // the times themselves are real instants either way, only their labelling is at stake.
   const timezone = useMemo(() => {
     const [first] = getSelectedCandidates(selections);
     return service ? getSchedulingTimezone(service, first?.schedule, first?.actorResource) : undefined;
@@ -240,7 +236,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   function clearResources(): void {
     setSelections({});
     setChosen(undefined);
-    setRoleFieldsKey((key) => key + 1);
+    setActorFieldsKey((key) => key + 1);
     resetDaySearch();
   }
 
@@ -299,10 +295,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           onChange={chooseService}
         />
 
-        {SCHEDULING_ROLES.map((role) => (
-          <RoleField
-            key={`${role}-${roleFieldsKey}`}
-            role={role}
+        {BOOKABLE_ACTOR_TYPES.map((actorType) => (
+          <ActorField
+            key={`${actorType}-${actorFieldsKey}`}
+            actorType={actorType}
             service={service}
             location={location}
             disabled={!service}
@@ -330,9 +326,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               onClick={daySearch.chooseDayRange}
               onSelectRange={daySearch.chooseDayRange}
             />
-            <Text size="xs" c="dimmed">
-              {getSearchedDaysHint(daySearch.selectedDayRange)}
-            </Text>
             {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
           </Stack>
         )}
@@ -476,12 +469,11 @@ function ChosenTimeCommitment(props: ChosenTimeCommitmentProps): JSX.Element {
     <>
       {durationMinutes > 0 && `${durationMinutes} min visit`}
       {actors.map((actor, index) => {
-        const roleLabel = getActorRoleLabel(actor);
+        const actorLabel = getActorTypeLabel(getActorType(actor));
         return (
           <Fragment key={getReferenceString(actor) ?? actor.display}>
             {(index > 0 || durationMinutes > 0) && ' · '}
-            {roleLabel && `${roleLabel}: `}
-            <ReferenceDisplay value={actor} link={false} />
+            {actorLabel}: <ReferenceDisplay value={actor} link={false} />
           </Fragment>
         );
       })}
@@ -502,8 +494,8 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
   return chosen ? 'Change time' : 'Find a time';
 }
 
-interface RoleFieldProps {
-  readonly role: SchedulingRole;
+interface ActorFieldProps {
+  readonly actorType: BookableActorType;
   readonly service: WithId<HealthcareService> | undefined;
   readonly location: WithId<Location> | undefined;
   readonly disabled?: boolean;
@@ -520,17 +512,18 @@ interface RoleFieldProps {
  * @param props - The React props.
  * @returns The field for that role.
  */
-function RoleField(props: RoleFieldProps): JSX.Element {
-  const { role, service, location, disabled, onChange } = props;
+function ActorField(props: ActorFieldProps): JSX.Element {
+  const { actorType, service, location, disabled, onChange } = props;
 
   const handleChange = useCallback(
-    (candidates: readonly ScheduleCandidate[]) => onChange((selections) => ({ ...selections, [role]: candidates })),
-    [onChange, role]
+    (candidates: readonly ScheduleCandidate[]) =>
+      onChange((selections) => ({ ...selections, [actorType]: candidates })),
+    [onChange, actorType]
   );
 
   return (
     <AppointmentActorSelect
-      role={role}
+      actorType={actorType}
       service={service}
       location={location}
       disabled={disabled}
@@ -601,15 +594,6 @@ function toRange(appointment: Appointment | undefined): DateTimeRange | undefine
 }
 
 /**
- * The line under the calendar: which days are being searched, and how to ask for others.
- * @param range - The days being searched.
- * @returns The line to show beneath the calendar.
- */
-function getSearchedDaysHint(range: DateTimeRange): string {
-  return [formatDateRange(range, formatDayLabel), DAY_GESTURE_HINT].filter(isDefined).join(HINT_SEPARATOR);
-}
-
-/**
  * Writes an instant as the day and time it falls on at the site, not on the
  * booker's own clock.
  *
@@ -625,5 +609,6 @@ function formatZonedDateTime(value: Date, timezone: string | undefined): string 
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    timeZoneName: isViewerTimezone(timezone) ? undefined : 'shortGeneric',
   }).format(value);
 }

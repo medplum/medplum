@@ -9,7 +9,13 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getCacheRedis } from '../../redis';
-import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
+import {
+  createTestProject,
+  getSuperAdminAccessToken,
+  initTestAuth,
+  waitForAsyncJob,
+  withTestContext,
+} from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
 import { SelectQuery } from '../sql';
 import { Expunger } from './expunge';
@@ -24,7 +30,7 @@ describe('Expunge', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    superAdminAccessToken = await getSuperAdminAccessToken();
   });
 
   afterAll(async () => {

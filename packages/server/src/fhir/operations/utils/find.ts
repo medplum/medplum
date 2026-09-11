@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Interval } from '../../../util/date';
-import { addMinutes, clamp } from '../../../util/date';
+import { addMinutes, areIntervalsOverlapping, clamp } from '../../../util/date';
 import type { AlignmentOptions } from './scheduling';
 import { eachDayOfInterval, minutesSinceMidnight, mod, normalizeIntervals, pairWithOverlaps } from './scheduling';
 
@@ -26,6 +26,8 @@ function advanceToMinuteMark(date: Date): Date {
  * @param options.alignment - Parameters defining the alignment grid
  * @param options.durationMinutes - How long each slot should last
  * @param options.maxCount - Maximum number of intervals to find
+ * @param options.filter - Only return slots this accepts. Rejected slots do not count
+ *   towards `maxCount`.
  * @returns An array of aligned slot intervals
  */
 export function findAlignedSlotTimes(
@@ -34,6 +36,7 @@ export function findAlignedSlotTimes(
     alignment: AlignmentOptions;
     durationMinutes: number;
     maxCount?: number;
+    filter?: (interval: Interval) => boolean;
   }
 ): Interval[] {
   if (options.alignment.interval < 1) {
@@ -65,9 +68,11 @@ export function findAlignedSlotTimes(
     // `end` values are allowed to match up to (and including) the end of the
     // search interval, but may not go beyond.
     while (start < dayInterval.end && end <= interval.end) {
-      results.push({ start, end });
-      if (options.maxCount && results.length >= options.maxCount) {
-        return results;
+      if (!options.filter || options.filter({ start, end })) {
+        results.push({ start, end });
+        if (options.maxCount && results.length >= options.maxCount) {
+          return results;
+        }
       }
       start = addMinutes(start, options.alignment.interval);
       end = addMinutes(start, options.durationMinutes);
@@ -75,6 +80,35 @@ export function findAlignedSlotTimes(
   }
 
   return results;
+}
+
+/**
+ * Returns true when a prospective appointment's buffer time would land on `blocked` time.
+ *
+ * Buffer time cannot be overbooked, so `blocked` should be the time occupied by any
+ * existing booking, regardless of the capacity that booking was made under. Intervals
+ * are half-open, so buffer time abutting a booking does not conflict with it.
+ *
+ * @param interval - The prospective appointment, excluding its buffers
+ * @param blocked - Intervals of exclusively occupied time
+ * @param options - The buffers configured for the appointment
+ * @param options.bufferBefore - Minutes of buffer preceding the appointment
+ * @param options.bufferAfter - Minutes of buffer following the appointment
+ * @returns True when the appointment cannot be buffered
+ */
+export function bufferTimeConflicts(
+  interval: Interval,
+  blocked: Interval[],
+  options: { bufferBefore: number; bufferAfter: number }
+): boolean {
+  const buffers: Interval[] = [];
+  if (options.bufferBefore > 0) {
+    buffers.push({ start: addMinutes(interval.start, -1 * options.bufferBefore), end: interval.start });
+  }
+  if (options.bufferAfter > 0) {
+    buffers.push({ start: interval.end, end: addMinutes(interval.end, options.bufferAfter) });
+  }
+  return buffers.some((buffer) => blocked.some((block) => areIntervalsOverlapping(buffer, block)));
 }
 
 /**

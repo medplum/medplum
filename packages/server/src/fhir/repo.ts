@@ -89,11 +89,11 @@ import {
   HistoryInteraction,
   isReadOnlyAction,
   logAuditEvent,
-  numResultsDetail,
   PatchInteraction,
   ReadInteraction,
   RestfulOperationType,
   SearchInteraction,
+  searchResultsDetail,
   UpdateInteraction,
   VreadInteraction,
 } from '../util/auditevent';
@@ -189,16 +189,14 @@ export interface RepositoryContext {
 
   /**
    * Projects that the Repository is allowed to access.
-   * This should include the ID/UUID of the current project, but may also include other accessory Projects.
-   * If this is undefined, the current user is a server user (e.g. Super Admin)
-   * The usual case has two elements: the user's Project and the base R4 Project
-   * The user's "primary" Project will be the first element in the array (i.e. projects[0])
-   * This value will be included in every resource as meta.project.
+   * If undefined, the repository acts on behalf of the server
+   * instead of a particular user.
+   * If not undefined, must have at least one element, and the first element
+   * is considered the "current project". The repository sets meta.project to
+   * the current project in edited resources. The R4 Project is appended if not already present
+   * by the Repository constructor.
    */
   projects?: WithId<Project>[];
-
-  /** Current Project of the authenticated user, or none for the system repository. */
-  currentProject?: WithId<Project>;
 
   /**
    * Optional compartment restriction.
@@ -286,6 +284,44 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
 }
 
 /**
+ * Returns the project IDs a caller may read for the given resource type.
+ *
+ * Linked projects are readable only when they export the resource type, and project admin
+ * resource types never cross a link at all.
+ * @param projects - Projects the caller may access; the first is the caller's own.
+ * @param resourceType - The resource type being read.
+ * @returns The permitted project IDs, or undefined if all projects are permitted.
+ */
+export function getPermittedProjectIds(
+  projects: WithId<Project>[] | undefined,
+  resourceType: string
+): string[] | undefined {
+  if (!projects?.length) {
+    // The caller is system-level, so all projects are permitted.
+    return undefined;
+  }
+
+  const projectIds = [projects[0].id]; // Always include the first project
+
+  if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType)) {
+    // If the resource type is a project admin resource, only include the current project (the first project)
+    return projectIds;
+  }
+
+  for (let i = 1; i < projects.length; i++) {
+    const project = projects[i];
+    if (
+      resourceType === 'Project' || // When searching for projects, include all projects
+      !project.exportedResourceType?.length || // Include projects that do not specify exported resource types
+      project.exportedResourceType?.includes(resourceType as ResourceType) // Include projects that export resourceType
+    ) {
+      projectIds.push(project.id);
+    }
+  }
+  return projectIds;
+}
+
+/**
  * The Repository class manages reading and writing to the FHIR repository.
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
@@ -354,6 +390,9 @@ export class Repository extends FhirRepository implements Disposable {
   constructor(context: RepositoryContext, connections?: RepositoryConnections, transaction?: TransactionBinding) {
     super();
 
+    if (context.projects?.length === 0) {
+      throw new Error('Repository context.projects must be undefined or have at least one project');
+    }
     addSyntheticR4ProjectIfMissing(context);
     this.context = context;
     this._normalizedShardId = normalizeShardId(context.shardId);
@@ -578,7 +617,7 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   currentProject(): WithId<Project> | undefined {
-    return this.context.currentProject;
+    return this.context.projects?.[0];
   }
 
   effectiveAccessPolicy(): Readonly<AccessPolicy> | undefined {
@@ -596,8 +635,8 @@ export class Repository extends FhirRepository implements Disposable {
     if (!projectId) {
       return undefined;
     }
-    if (projectId === this.context.currentProject?.id) {
-      return this.context.currentProject;
+    if (projectId === this.currentProject()?.id) {
+      return this.currentProject();
     }
     return this.getSystemRepo().readResource<Project>('Project', projectId);
   }
@@ -1611,7 +1650,7 @@ export class Repository extends FhirRepository implements Disposable {
       throw new OperationOutcomeError(badRequest('Expunge request contains too many IDs'));
     }
 
-    const projectId = this.isSuperAdmin() ? undefined : this.context.currentProject?.id;
+    const projectId = this.isSuperAdmin() ? undefined : this.currentProject()?.id;
     const deletedIds = await this.withTransaction<string[]>(
       async (txRepo) => {
         const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id');
@@ -1702,7 +1741,7 @@ export class Repository extends FhirRepository implements Disposable {
       const durationMs = Date.now() - startTime;
       this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, {
         searchRequest,
-        entityDetail: numResultsDetail(result.entry?.length ?? 0),
+        entityDetail: searchResultsDetail(result.entry?.map((e) => e.resource as WithId<Resource>)),
         durationMs,
       });
       return result;
@@ -1760,7 +1799,7 @@ export class Repository extends FhirRepository implements Disposable {
         };
         this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, {
           searchRequest: refSearch,
-          entityDetail: numResultsDetail(result[ref]?.length ?? 0),
+          entityDetail: searchResultsDetail(result[ref]),
           durationMs,
         });
       }
@@ -1800,30 +1839,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @returns The permitted project IDs or undefined if all projects are permitted
    */
   private getPermittedProjectIds(resourceType: string): string[] | undefined {
-    if (!this.context.projects?.length) {
-      // The repository is system-level, so all projects are permitted.
-      return undefined;
-    }
-
-    const projectIds = [this.context.projects[0].id]; // Always include the first project
-
-    if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType)) {
-      // If the resource type is a project admin resource, only include the current project (the first project)
-      return projectIds;
-    }
-
-    for (let i = 1; i < this.context.projects.length; i++) {
-      const project = this.context.projects[i];
-      if (
-        resourceType === 'Project' || // When searching for projects, include all projects
-        project.id === this.context.currentProject?.id || // Always include the current project (usually the same as the first project)
-        !project.exportedResourceType?.length || // Include projects that do not specify exported resource types
-        project.exportedResourceType?.includes(resourceType as ResourceType) // Include projects that export resourceType
-      ) {
-        projectIds.push(project.id);
-      }
-    }
-    return projectIds;
+    return getPermittedProjectIds(this.context.projects, resourceType);
   }
 
   /**
@@ -2016,7 +2032,7 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   supportsRangeSearch(): boolean {
-    return Boolean(getConfig().rangeSearch || this.context.currentProject?.features?.includes('range-search'));
+    return Boolean(getConfig().rangeSearch || this.currentProject()?.features?.includes('range-search'));
   }
 
   /**
