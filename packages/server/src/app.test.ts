@@ -347,6 +347,99 @@ describe('App', () => {
         .send();
       expect(res1).toHaveStatus(400);
     });
+
+    test('X-Medplum-Log-Tag on unauthenticated request', async () => {
+      const res = await request(app).get('/').set('X-Medplum-Log-Tag', 'my-end-user-1234');
+      expect(res).toHaveStatus(200);
+
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
+      expect(logObj.logTag).toBe('my-end-user-1234');
+    });
+
+    test('X-Medplum-Log-Tag on authenticated request', async () => {
+      const accessToken = await initTestAuth();
+      (process.stdout.write as Mock).mockClear();
+
+      const res = await request(app)
+        .get('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum-Log-Tag', 'my-end-user-1234');
+      expect(res).toHaveStatus(200);
+
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
+      expect(logObj.logTag).toBe('my-end-user-1234');
+    });
+
+    test('X-Medplum-Log-Tag rejects an unusable value', async () => {
+      const res = await request(app).get('/').set('X-Medplum-Log-Tag', 'a'.repeat(129));
+      expect(res).toHaveStatus(400);
+      expect((res.body as OperationOutcome).issue[0].details?.text).toStrictEqual(
+        'Invalid X-Medplum-Log-Tag header: expected 1 to 128 characters of printable ASCII'
+      );
+
+      // The request is still logged, so an operator can see the rejection
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
+      expect(logObj).toMatchObject({ status: 400 });
+      expect(logObj.logTag).toBeUndefined();
+    });
+
+    test('X-Medplum-Log-Tag is rejected before authentication', async () => {
+      // The header is a request shape error, so it does not depend on a valid token
+      const res = await request(app)
+        .get('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer invalid')
+        .set('X-Medplum-Log-Tag', 'a'.repeat(129));
+      expect(res).toHaveStatus(400);
+      expect((res.body as OperationOutcome).issue[0].details?.text).toStrictEqual(
+        'Invalid X-Medplum-Log-Tag header: expected 1 to 128 characters of printable ASCII'
+      );
+    });
+
+    test('X-Medplum-Log-Tag does not reach AuditEvent log lines', async () => {
+      // AuditEvents are serialized FHIR resources written straight to stdout, not log lines built
+      // from the request logger's metadata, so they carry no logTag. Correlate them with the
+      // requestId and traceId in the tracing extension instead.
+      getConfig().logAuditEvents = true;
+      const accessToken = await initTestAuth();
+      (process.stdout.write as Mock).mockClear();
+
+      const res = await request(app)
+        .get('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum-Log-Tag', 'my-end-user-1234');
+      expect(res).toHaveStatus(200);
+
+      const auditLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('"resourceType":"AuditEvent"'));
+      expect(auditLines.length).toBeGreaterThan(0);
+      for (const line of auditLines) {
+        expect(JSON.parse(line[0]).logTag).toBeUndefined();
+      }
+    });
+
+    test('X-Medplum-Log-Tag on authentication error', async () => {
+      const { accessToken, membership, project } = await createTestProject({ withAccessToken: true, withClient: true });
+
+      // Delete ProjectMembership to cause a 410 Gone error in the authentication middleware
+      await (await getProjectSystemRepo(project)).deleteResource(membership.resourceType, membership.id);
+      (process.stdout.write as Mock).mockClear();
+
+      const res = await request(app)
+        .get('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum-Log-Tag', 'my-end-user-1234');
+      expect(res).toHaveStatus(400);
+
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
+      expect(logObj.logTag).toBe('my-end-user-1234');
+    });
   });
 
   test('Internal Server Error', async () => {
