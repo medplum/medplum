@@ -16,6 +16,7 @@ import {
   logAuditEvent,
   ReadInteraction,
   RestfulOperationType,
+  SearchInteraction,
 } from './auditevent';
 
 describe('AuditEvent utils', () => {
@@ -80,6 +81,63 @@ describe('AuditEvent utils', () => {
     expect(auditLog).not.toContain('HIV');
     expect(auditLog).not.toContain('Test');
     expect(auditLog).not.toContain('User');
+  });
+
+  test('Includes entityDetail on the search entity', async () => {
+    await loadTestConfig();
+
+    const auditEvent = createAuditEvent(
+      RestfulOperationType,
+      SearchInteraction,
+      randomUUID(),
+      { reference: 'Practitioner/123', display: 'Test User' },
+      undefined,
+      AuditEventOutcome.Success,
+      { searchQuery: 'Patient?name=foo', entityDetail: [{ type: 'numResults', valueString: '42' }] }
+    );
+
+    expect(auditEvent.entity).toStrictEqual([
+      { query: 'Patient?name=foo', detail: [{ type: 'numResults', valueString: '42' }] },
+    ]);
+  });
+
+  test('Includes entityDetail on a resource entity', async () => {
+    await loadTestConfig();
+
+    const resource: Observation = { resourceType: 'Observation', id: randomUUID(), status: 'final', code: {} };
+
+    const auditEvent = createAuditEvent(
+      RestfulOperationType,
+      CreateInteraction,
+      randomUUID(),
+      { reference: 'Practitioner/123', display: 'Test User' },
+      undefined,
+      AuditEventOutcome.Success,
+      { resource, entityDetail: [{ type: 'reason', valueString: 'backfill' }] }
+    );
+
+    expect(auditEvent.entity).toStrictEqual([
+      {
+        what: { reference: `Observation/${resource.id}` },
+        detail: [{ type: 'reason', valueString: 'backfill' }],
+      },
+    ]);
+  });
+
+  test('Omits detail when entityDetail is not provided', async () => {
+    await loadTestConfig();
+
+    const auditEvent = createAuditEvent(
+      RestfulOperationType,
+      SearchInteraction,
+      randomUUID(),
+      { reference: 'Practitioner/123', display: 'Test User' },
+      undefined,
+      AuditEventOutcome.Success,
+      { searchQuery: 'Patient?name=foo' }
+    );
+
+    expect(auditEvent.entity).toStrictEqual([{ query: 'Patient?name=foo' }]);
   });
 
   test('Appends authenticating client as a non-requestor agent', async () => {

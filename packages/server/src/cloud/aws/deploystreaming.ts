@@ -19,13 +19,15 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
 
 const WRAPPER_CODE =
   `
-  const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, streaming } = event;
+  const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, traceparent, headers, streaming } = event;
   const medplum = new MedplumClient({
     baseUrl,
     fetch: function (url, options = {}) {
       options.headers ||= {};
       options.headers['X-Trace-Id'] = traceId;
-      options.headers['traceparent'] = traceId;
+      if (traceparent) {
+        options.headers['traceparent'] = traceparent;
+      }
       return fetch(url, options);
     },
     createPdf,

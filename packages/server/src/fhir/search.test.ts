@@ -83,7 +83,6 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
     repo = new Repository({
       strictMode: true,
       projects: [project],
-      currentProject: project,
       author: { reference: 'User/' + randomUUID() },
     });
     systemRepo = repo.getSystemRepo();
@@ -5553,7 +5552,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
   describe('discourage sequential scans', () => {
     let querySpy: MockInstance;
     beforeEach(() => {
-      querySpy = vi.spyOn(repo.getDatabaseClient(repoAccess.sqlReadConfig()), 'query');
+      querySpy = vi.spyOn(repo.getDatabaseClient(repoAccess.sqlReadConfig('Patient')), 'query');
     });
 
     afterEach(() => {

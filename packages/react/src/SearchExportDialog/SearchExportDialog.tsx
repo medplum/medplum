@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Modal, Text } from '@mantine/core';
+import { Button, Text } from '@mantine/core';
 import type { JSX } from 'react';
+import { Modal } from '../Modal/Modal';
 
 interface SearchExportDialogProps {
   readonly visible: boolean;
@@ -11,9 +12,11 @@ interface SearchExportDialogProps {
 }
 
 export function SearchExportDialog(props: SearchExportDialogProps): JSX.Element | null {
-  return (
-    <Modal title="Export" closeButtonProps={{ 'aria-label': 'Close' }} opened={props.visible} onClose={props.onCancel}>
-      <Box display="flex" style={{ justifyContent: 'space-between' }}>
+  // Left undefined when neither format is offered, so the modal renders no footer and no
+  // footer border rather than an empty bordered strip.
+  const actions =
+    props.exportCsv || props.exportTransactionBundle ? (
+      <>
         {props.exportCsv && <ExportButton text="CSV" exportLogic={props.exportCsv} onCancel={props.onCancel} />}
         {props.exportTransactionBundle && (
           <ExportButton
@@ -22,8 +25,12 @@ export function SearchExportDialog(props: SearchExportDialogProps): JSX.Element 
             onCancel={props.onCancel}
           />
         )}
-      </Box>
-      <Text style={{ marginTop: '10px', marginLeft: '2px' }}>Limited to 1000 records</Text>
+      </>
+    ) : undefined;
+
+  return (
+    <Modal title="Export" opened={props.visible} onClose={props.onCancel} actions={actions}>
+      <Text>Limited to 1000 records</Text>
     </Modal>
   );
 }

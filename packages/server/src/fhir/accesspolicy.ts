@@ -39,9 +39,15 @@ export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResou
  * This method ensures that the repository is setup correctly.
  * @param authState - The authentication state.
  * @param extendedMode - Optional flag to enable extended mode for custom Medplum properties.
+ * @param remoteAddress - Optional current request IP, used for AuditEvents instead of `login.remoteAddress`
+ *   (which is only as fresh as the last token issuance/refresh).
  * @returns A repository configured for the login details.
  */
-export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
+export async function getRepoForLogin(
+  authState: AuthState,
+  extendedMode?: boolean,
+  remoteAddress?: string
+): Promise<Repository> {
   const { login, membership: realMembership, onBehalfOfMembership } = authState;
   const membership = onBehalfOfMembership ?? realMembership;
   const accessPolicy = await getAccessPolicyForLogin(authState);
@@ -63,6 +69,30 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     project = await globalSystemRepo.readReference<Project>(membership.project);
   }
 
+  const allowedProjects = await getAllowedProjects(project);
+
+  return new Repository({
+    projects: allowedProjects,
+    author: profile ? createReference(profile) : realMembership.profile,
+    remoteAddress: remoteAddress ?? login.remoteAddress,
+    superAdmin: project.superAdmin,
+    projectAdmin: membership.admin,
+    accessPolicy,
+    strictMode: project.strictMode,
+    extendedMode,
+    checkReferencesOnWrite: project.checkReferencesOnWrite,
+    validateTerminology: project.features?.includes('validate-terminology'),
+    onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
+    client: login.client,
+  });
+}
+
+/**
+ * Resolves a project and the projects it links to, which its members may read from.
+ * @param project - The project whose links to resolve.
+ * @returns The project followed by each linked project that could be read.
+ */
+export async function getAllowedProjects(project: WithId<Project>): Promise<WithId<Project>[]> {
   const allowedProjects: WithId<Project>[] = [project];
   if (project.link) {
     const linkedProjectRefs: Reference<Project>[] = [];
@@ -85,22 +115,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
       }
     }
   }
-
-  return new Repository({
-    projects: allowedProjects,
-    currentProject: project,
-    author: profile ? createReference(profile) : realMembership.profile,
-    remoteAddress: login.remoteAddress,
-    superAdmin: project.superAdmin,
-    projectAdmin: membership.admin,
-    accessPolicy,
-    strictMode: project.strictMode,
-    extendedMode,
-    checkReferencesOnWrite: project.checkReferencesOnWrite,
-    validateTerminology: project.features?.includes('validate-terminology'),
-    onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
-    client: login.client,
-  });
+  return allowedProjects;
 }
 
 /**
@@ -348,6 +363,10 @@ function applyProjectAdminAccessPolicy(
         criteria: `User?_project=${resolveId(membership.project)}`,
         hiddenFields: ['passwordHash', 'mfaSecret'],
         readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
+      },
+      {
+        resourceType: 'Cron',
+        criteria: `Cron?_project=${resolveId(membership.project)}`,
       },
       {
         resourceType: 'Package',

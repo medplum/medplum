@@ -7,6 +7,7 @@ import {
   isDayOfWeek,
   isDefined,
   OperationOutcomeError,
+  schedulingDurationToMinutes,
   SchedulingParametersURI,
 } from '@medplum/core';
 import type {
@@ -24,6 +25,7 @@ import {
   assertExtensionBoolean,
   assertExtensionCode,
   assertExtensionDuration,
+  assertExtensionPositiveInt,
   assertExtensionTime,
   getExtensions,
 } from '../../../util/extension';
@@ -74,6 +76,7 @@ export type SchedulingParametersExtensionExtension =
   | { url: 'alignmentInterval'; valueDuration: HardDuration }
   | { url: 'alignmentOffset'; valueDuration: HardDuration }
   | { url: 'duration'; valueDuration: HardDuration }
+  | { url: 'slotCapacity'; valuePositiveInt: number }
   | { url: 'service'; valueReference: Reference<HealthcareService> & { reference: string } }
   | { url: 'timezone'; valueCode: string }
   | { url: 'alignmentTimezone'; valueCode: string }
@@ -99,6 +102,7 @@ type BaseSchedulingParameters = {
   bufferAfter: number; // minutes
   alignmentInterval: number; // minutes
   alignmentOffset: number; // minutes
+  slotCapacity: number; // max concurrent bookings per time (1 = no overbooking)
   service: Reference<HealthcareService> & { reference: string };
   timezone?: string;
   alignmentTimezone: string;
@@ -131,6 +135,7 @@ const SERVICE_DEFAULTS = Object.freeze({
   bufferAfter: 0,
   alignmentOffset: 0,
   alignmentTimezone: 'Etc/UTC',
+  slotCapacity: 1,
 });
 
 // This is a `Temporal.Instant` singleton that we instantiate once for
@@ -145,7 +150,7 @@ function isReferenceTo<T extends Resource>(reference: Reference<T> | undefined, 
   return refType === resource.resourceType && id === resource.id;
 }
 
-function durationToMinutes(extension: WithPath<Extension>): number {
+function extensionDurationToMinutes(extension: WithPath<Extension>): number {
   assertExtensionDuration(extension);
 
   const { value, unit } = extension.valueDuration;
@@ -157,18 +162,11 @@ function durationToMinutes(extension: WithPath<Extension>): number {
     throw new OperationOutcomeError(badRequest('Got duration with negative value', getPath(extension)));
   }
 
-  switch (unit) {
-    case 'wk':
-      return value * 60 * 24 * 7;
-    case 'd':
-      return value * 60 * 24;
-    case 'h':
-      return value * 60;
-    case 'min':
-      return value;
-    default:
-      throw new OperationOutcomeError(badRequest(`Got unhandled duration unit "${unit}"`, getPath(extension)));
+  const minutes = schedulingDurationToMinutes(extension.valueDuration);
+  if (minutes === undefined) {
+    throw new OperationOutcomeError(badRequest(`Got unhandled duration unit "${unit}"`, getPath(extension)));
   }
+  return minutes;
 }
 
 function assertValidTimezone(ext: WithPath<Extension>): void {
@@ -346,7 +344,7 @@ function extractAvailability(
 // ("align to the hour") and rejects values > 1440 min (one day), since the
 // per-day grid anchoring in findAlignedSlotTimes makes longer intervals meaningless.
 function extractAlignmentInterval(ext: WithPath<Extension>): number {
-  const value = durationToMinutes(ext);
+  const value = extensionDurationToMinutes(ext);
   if (value === 0) {
     return 60;
   }
@@ -354,6 +352,11 @@ function extractAlignmentInterval(ext: WithPath<Extension>): number {
     throw new OperationOutcomeError(badRequest('alignmentInterval cannot exceed 1440 minutes (1 day)', getPath(ext)));
   }
   return value;
+}
+
+function extractSlotCapacity(ext: WithPath<Extension>): number {
+  assertExtensionPositiveInt(ext);
+  return ext.valuePositiveInt;
 }
 
 // Get SchedulingParameters from a HealthcareService or throw
@@ -406,6 +409,7 @@ export function getHealthcareServiceSchedulingParameters(
   const alignmentIntervalExt = atMostOne(getExtensions(extension, 'alignmentInterval'), 'alignmentInterval');
   const alignmentTimezoneExt = atMostOne(getExtensions(extension, 'alignmentTimezone'), 'alignmentTimezone');
   const timezoneExt = atMostOne(getExtensions(extension, 'timezone'), 'timezone');
+  const slotCapacityExt = atMostOne(getExtensions(extension, 'slotCapacity'), 'slotCapacity');
 
   // `service` sub-extension not allowed in HealthcareService; implied by resource
   exactlyZero(getExtensions(extension, 'service'), 'service', healthcareService.resourceType);
@@ -424,13 +428,14 @@ export function getHealthcareServiceSchedulingParameters(
   return result.patchLayer(
     withPath(
       {
-        ...(durationExt && { duration: durationToMinutes(durationExt) }),
-        ...(bufferBeforeExt && { bufferBefore: durationToMinutes(bufferBeforeExt) }),
-        ...(bufferAfterExt && { bufferAfter: durationToMinutes(bufferAfterExt) }),
-        ...(alignmentOffsetExt && { alignmentOffset: durationToMinutes(alignmentOffsetExt) }),
+        ...(durationExt && { duration: extensionDurationToMinutes(durationExt) }),
+        ...(bufferBeforeExt && { bufferBefore: extensionDurationToMinutes(bufferBeforeExt) }),
+        ...(bufferAfterExt && { bufferAfter: extensionDurationToMinutes(bufferAfterExt) }),
+        ...(alignmentOffsetExt && { alignmentOffset: extensionDurationToMinutes(alignmentOffsetExt) }),
         ...(alignmentIntervalExt && { alignmentInterval: extractAlignmentInterval(alignmentIntervalExt) }),
         ...(alignmentTimezoneExt && { alignmentTimezone: alignmentTimezoneExt.valueCode }),
         ...(timezoneExt && { timezone: timezoneExt.valueCode }),
+        ...(slotCapacityExt && { slotCapacity: extractSlotCapacity(slotCapacityExt) }),
       },
       getPath(extension)
     )
@@ -484,6 +489,7 @@ export function getScheduleSchedulingParameters(
   const alignmentIntervalExt = atMostOne(getExtensions(extension, 'alignmentInterval'), 'alignmentInterval');
   const alignmentTimezoneExt = atMostOne(getExtensions(extension, 'alignmentTimezone'), 'alignmentTimezone');
   const timezoneExt = atMostOne(getExtensions(extension, 'timezone'), 'timezone');
+  const slotCapacityExt = atMostOne(getExtensions(extension, 'slotCapacity'), 'slotCapacity');
 
   if (timezoneExt) {
     assertValidTimezone(timezoneExt);
@@ -501,13 +507,14 @@ export function getScheduleSchedulingParameters(
   const layer = withPath(
     {
       ...(availabilityExt.length && { availability: availabilityExt.flatMap(extractAvailabilityR4) }),
-      ...(durationExt && { duration: durationToMinutes(durationExt) }),
-      ...(bufferBeforeExt && { bufferBefore: durationToMinutes(bufferBeforeExt) }),
-      ...(bufferAfterExt && { bufferAfter: durationToMinutes(bufferAfterExt) }),
-      ...(alignmentOffsetExt && { alignmentOffset: durationToMinutes(alignmentOffsetExt) }),
+      ...(durationExt && { duration: extensionDurationToMinutes(durationExt) }),
+      ...(bufferBeforeExt && { bufferBefore: extensionDurationToMinutes(bufferBeforeExt) }),
+      ...(bufferAfterExt && { bufferAfter: extensionDurationToMinutes(bufferAfterExt) }),
+      ...(alignmentOffsetExt && { alignmentOffset: extensionDurationToMinutes(alignmentOffsetExt) }),
       ...(alignmentIntervalExt && { alignmentInterval: extractAlignmentInterval(alignmentIntervalExt) }),
       ...(alignmentTimezoneExt && { alignmentTimezone: alignmentTimezoneExt.valueCode }),
       ...(timezoneExt && { timezone: timezoneExt.valueCode }),
+      ...(slotCapacityExt && { slotCapacity: extractSlotCapacity(slotCapacityExt) }),
     },
     getPath(extension)
   );

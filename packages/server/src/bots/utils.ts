@@ -145,33 +145,16 @@ export function normalizeBotExecutionResult(result: BotExecutionResult): BotExec
 }
 
 /**
- * Returns true if the bot is enabled and bots are enabled for the project.
+ * Returns whether bots are enabled for a project.
  *
- * When `runAs` belongs to a different project than the bot — a `runAsUser: true`
- * bot reached across a `Project.link`, as marketplace packages do — *both*
- * projects must have the feature. Checking only the bot's project would let a
- * project that has bots disabled execute a linked project's bots, since the
- * feature would be evaluated against the publisher's project rather than the
- * caller's.
- * @param bot - The bot resource.
- * @param runAs - The membership the bot will execute as, when known.
- * @returns True if the bot is enabled.
+ * Takes the project rather than the bot, because the two differ: a bot shared from a linked project
+ * runs in the caller's project, and it is the caller who has to be entitled to run bots. Deploying
+ * that same bot is a write to the project that owns it, so callers name the project they mean.
+ * @param projectId - The project to check.
+ * @returns True if the project has the `bots` feature.
  */
-export async function isBotEnabled(bot: Bot, runAs?: ProjectMembership): Promise<boolean> {
+export async function isBotEnabledForProject(projectId: string): Promise<boolean> {
   const systemRepo = getGlobalSystemRepo();
-  const botProjectId = bot.meta?.project as string;
-  if (!(await projectHasBotsEnabled(systemRepo, botProjectId))) {
-    return false;
-  }
-
-  const runAsProjectId = runAs ? resolveId(runAs.project) : undefined;
-  if (!runAsProjectId || runAsProjectId === botProjectId) {
-    return true;
-  }
-  return projectHasBotsEnabled(systemRepo, runAsProjectId);
-}
-
-async function projectHasBotsEnabled(systemRepo: SystemRepository, projectId: string): Promise<boolean> {
   const project = await systemRepo.readResource<Project>('Project', projectId);
   return !!project.features?.includes('bots');
 }
@@ -192,16 +175,22 @@ async function projectHasBotsEnabled(systemRepo: SystemRepository, projectId: st
  * @param request - The bot request.
  */
 export async function writeBotInputToStorage(request: BotExecutionRequest): Promise<void> {
-  const { bot, contentType, input } = request;
+  const { bot, contentType, input, runAs } = request;
   const now = new Date();
   const today = now.toISOString().substring(0, 10).replaceAll('-', '/');
-  const key = `bot/${bot.meta?.project}/${today}/${now.getTime()}-${randomUUID()}.json`;
+  // Partition by the project the run executed in, not the one that owns the bot: the input is the
+  // caller's data, so a bot shared from a linked project must not deposit it in the publisher's
+  // partition. Its account compartments stay behind for the same reason -- they name another project.
+  const projectId = resolveId(runAs.project) as string;
+  const sameProject = bot.meta?.project === projectId;
+  const key = `bot/${projectId}/${today}/${now.getTime()}-${randomUUID()}.json`;
   const row: Record<string, unknown> = {
     contentType,
     input,
     botId: bot.id,
-    projectId: bot.meta?.project,
-    accountId: bot.meta?.account,
+    projectId,
+    botProjectId: sameProject ? undefined : bot.meta?.project,
+    accountId: sameProject ? bot.meta?.account : undefined,
     subscriptionId: request.subscription?.id,
     agentId: request.agent?.id,
     deviceId: request.device?.id,

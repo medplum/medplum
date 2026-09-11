@@ -1,0 +1,235 @@
+---
+slug: medimind-case-study
+title: 'MediMind: An AI-Native Hospital System'
+authors: lasha
+tags: [case-study, ai, self-hosting, integration, migration]
+---
+
+{/*
+DRAFT - not ready to publish. Narrative is Lasha Khoshtaria's, edited by Reshma (Aug 6 2026).
+Bylined to Lasha (Co-founder & CEO, MediMind), not to Medplum. First-person "we" means MediMind throughout.
+Screenshots and the architecture diagram are MediMind's own assets ("MediMind Case Study Assets", Aug 5 2026).
+Video: https://youtu.be/v7lRW_ZYDmc, "MediMind / Medplum Case Study" on the Medplum YouTube channel.
+
+OPEN ITEMS - see the full list at the bottom of this file. Six facts to confirm and four things
+only MediMind can supply (pharmacy paragraph, two named same-day lab fixes, how AI-generated content
+is represented in the data model, at least one measured outcome). Inline "Q:" comments mark where
+each one lands.
+*/}
+
+[MediMind](https://medimind.md/) is a **proactive, AI-native hospital system** built from the ground up on FHIR R4, now under contract with a **25-hospital network** in the Republic of Georgia. Here is why we rebuilt what a hospital runs on instead of adding features to what was already there, and why we built it on Medplum.
+
+![MediMind](/img/blog/medimind-logo.svg)
+
+{/* truncate */}
+
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/v7lRW_ZYDmc" title="MediMind / Medplum Case Study" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+</div>
+
+## The bet
+
+I am a physician, and I think that within a few years, practicing medicine without AI assistance will look like malpractice. The timeline is a guess and I may be wrong about it by years. I am not hedging on the direction at all.
+
+If AI assistance is going to be the standard of care, you cannot get there by adding AI to existing hospital software. You have to build the thing AI runs on. That is what MediMind is: a hospital system designed from the data layer up to be reasoned over by a model, covering [clinical workflows](/docs/ai) end to end, from the moment an analyzer produces a result to the moment the ministry receives the report, with AI inside the flow instead of beside it.
+
+## Why Georgia
+
+We chose Georgia deliberately, for velocity: how fast an idea becomes something running in a real clinical workflow with real patients. It had to practice Western, evidence-based medicine so that whatever we learned would transfer everywhere, and it had to let us move.
+
+The clinical culture here is Western-oriented and evidence-based, and the hospitals are close to greenfield: no thirty-year installed base, no integration debt between forty systems that all half-talk to each other, no five-year procurement cycle between a decision and a deployment. A network here can decide to change everything at once and mean it. Some of the same conditions have made Georgia a destination for early-phase clinical trials.
+
+{/* Q: source for Georgia's early-phase clinical trial reputation? Will link it if you have one. */}
+
+None of that is about lighter rules. We are treating patients across a 25-hospital network, we carry the obligations any hospital system carries for accuracy and availability, and we handle personal health data under Georgian data protection law, which is aligned with GDPR. What we do not carry is thirty years of software sediment.
+
+The catch is that effectively nobody here builds on FHIR. The software on the market is dated across the board: international systems that do not fit this market, and local systems designed long before FHIR existed and never meant to be read by anything except themselves. No standard is shared even between two hospitals in the same city. Georgian is also a low-resource language for today's models, and unstructured clinical data on top of that makes already-hard medical AI tasks harder still. None of this is specific to Georgia; it is the reality across the region.
+
+Georgia is a spectacular place to prove out AI-native healthcare and a difficult place to build the substrate one runs on. We wanted the first badly enough to go do the second.
+
+## Why FHIR from the beginning
+
+The standard advice was to sit on top of the incumbent systems and ship features. We solved the substrate instead, and not by building another system of record that would age into the same legacy everyone else is stuck with. AI is only ever as good as what it can see, and a hospital storing its data across forty proprietary schemas can never hand a model a whole patient. It can only hand it fragments.
+
+So [FHIR R4](/docs/fhir-basics) became our operational data model, not an interoperability layer bolted to the edge of the system. A lab result is an [Observation](/docs/api/fhir/resources/observation) when the analyzer produces it, when the ward reads it, when our models reason over it, and when the insurer receives it. There is no separate internal representation we translate out of on the way to an API.
+
+Nobody made us do this, and that is unusual enough to say out loud. In the US, FHIR mostly arrives as a compliance requirement, which is why so many engineers there treat it as a tax. There is no Georgian FHIR mandate, and no regulator here was ever going to ask us for it. We adopted it because it was the best available data model for the product we wanted to build.
+
+FHIR also solved the language problem in a way we did not anticipate. When the structure is standard, the model already knows what an Observation is, what a [MedicationRequest](/docs/api/fhir/resources/medicationrequest) is, where to look and what to expect. The structure carries the meaning and Georgian only has to carry the free text. A low-resource language stopped being a compounding penalty. Medplum's [multilingual support](/docs/fhir-datastore/multilingual-support) means the same record serves our Georgian, Russian and English interfaces without a separate translation layer.
+
+![MediMind patient overview: allergies, active problems, vitals and risk scores on one FHIR-backed chart, rendered in Georgian](/img/blog/medimind-patient-overview.jpg)
+
+## Why Medplum
+
+We did not want to spend two years writing a FHIR server. We wanted to spend them writing the hospital.
+
+That is most of the reason, and the list of what we skipped is long: [FHIR search](/docs/search/basic-search) and [chained search](/docs/search/chained-search), [transactions](/docs/fhir-datastore/fhir-batch-requests), version history and [AuditEvent](/docs/api/fhir/resources/auditevent), [SMART on FHIR authorization](/docs/access/smart-scopes), [role-based access control](/docs/access/access-policies), [subscriptions](/docs/subscriptions), [binary storage](/docs/api/fhir/resources/binary), [terminology](/docs/terminology), [bulk export](/docs/api/fhir/operations/bulk-fhir). Every one of those is real engineering that no clinician ever sees, and all of it stood between us and the first useful thing we could put in front of a technician.
+
+What we did not appreciate at the time is how much the deployment flexibility would matter. Medplum [self-hosts](/docs/self-hosting) as naturally as it runs in the cloud, so when our anchor customer needed the entire stack on their own hardware, that was a configuration choice and not a second architecture.
+
+We now have [80+] FHIR resource types in production. Every department we have added since (lab, pharmacy, imaging, beds, [billing](/docs/billing), HR, ministry reporting) has been a vocabulary, not an architecture. That is why a team this small can cover a hospital.
+
+![Figure 1: MediMind production architecture. Medplum at the storage and API layer, MediMind's departments above it.](/img/blog/medimind-architecture.png)
+
+_Figure 1: MediMind production architecture. Medplum at the storage and API layer, MediMind's departments above it._
+
+{/*
+Q for Irakli: one concrete example here would carry more weight than the whole section. Pharmacy is
+probably the clearest, something in the shape of "pharmacy was MedicationRequest, MedicationDispense,
+and inventory on top of resources that already existed; we wrote the UI and the vendor integration,
+no new persistence layer, N weeks." Also useful: anywhere you had to extend rather than adopt, so
+custom resources, extensions, bots. Engineers trust a story more when it includes the parts that did
+not fit cleanly.
+*/}
+
+## Where we are
+
+Thirteen months from idea to a counter-signed contract with a 25-hospital network. Most healthcare startups spend thirteen months getting a pilot scheduled.
+
+- A 25-hospital network under contract, with the first modules live in production
+- AI tools in daily clinical use since May 2025
+- About 1.1 million patients [migrated into FHIR](/docs/migration/convert-to-fhir)
+- Roughly 3.1 million visits and 3.7 million clinical observations behind them
+- [80+] FHIR resource types in production, ~2,200 files, 70+ shipped features
+- A 150,000 GEL grant from GITA, Georgia's Innovation and Technology Agency
+- Among the first companies in the country granted innovative startup status, with the associated tax exemptions. We were the fifth.
+- Two founders and an AI code factory
+
+![MediMind administrative modules: 65 modules across clinic operations, warehouse, financial, command center and analytics, one codebase](/img/blog/medimind-admin-modules.jpg)
+
+## Modernizing a hospital that never stops
+
+A hospital laboratory does not stop. There is no maintenance window for a blood count, so we never asked for one. Every analyzer reported to two places at once, to us and to the incumbent, in the exact shape the old system already expected. The incumbent never noticed it had company, not one technician changed a habit, and for the entire migration rolling back was a decision we could execute in well under a minute.
+
+The hospital handed us a virtual machine and an SSH key on a Friday and the stack was live the next day. Fifteen analyzer lines were live within three weeks of a standing start, over [HL7 v2 interfacing](/docs/integration/hl7-interfacing) and ASTM. That is work that gets quoted in quarters here. One junior engineer on site was enough for the on-premise wiring; the rest was done over SSH from a desk in Tbilisi. [Imaging](/docs/labs-imaging) went in the same way, and a CT study now moves from scanner to archive to FHIR to viewer without a step where somebody retypes anything.
+
+Then we spent a week standing in that laboratory, writing down every complaint and every wish. Several of them went from a sentence said out loud to running in production the same day. By the third time that happened, the technicians stopped asking carefully.
+
+{/* Q: two named same-day lab fixes. What did a technician say out loud, and what shipped that afternoon? */}
+
+![Figure 2: Laboratory task board. Analyzer results arriving as Observation and DiagnosticReport.](/img/blog/medimind-lab-queue.jpg)
+
+_Figure 2: Laboratory task board. Analyzer results arriving as Observation and DiagnosticReport._
+
+![Figure 3: Imaging viewer, CT study.](/img/blog/medimind-pacs-3d.jpg)
+
+_Figure 3: Imaging viewer, CT study._
+
+{/* Figure 4: Clinical operations dashboard (beds, admissions, department workload across the network). Asset not received yet. */}
+
+## Open source is a procurement argument
+
+The objection we meet in this market is not technical. Hospitals here have watched their own data become hostage to vendors they do not even hold a contract with. Being able to say "you can see the server you are running, and your data is yours in a standard format", and then prove it at the storage layer, closes conversations that a feature list does not. Building on a recognized FHIR platform also shortens the "are these people serious" conversation with hospital IT by about a meeting and a half.
+
+There is a real trade here and we would make it again. Self-hosting means we own upgrades, patching, and backups, and we take new Medplum releases after a soak instead of on day zero. For a regulated on-premise hospital deployment, that is the right side of it.
+
+## Why the AI works
+
+It never reads a lab result on its own. It reads the patient. The result sits beside the medication, the imaging, the admission, and the entire history, all in one place and one format. A patient handed to you in fragments can only be reasoned about in fragments, and that is the ceiling every AI layer stacked on top of a stitched-together hospital eventually hits. No amount of model quality raises it.
+
+Structure is also what makes proactive possible. Healthcare AI today is mostly reactive: you ask it something and it answers. We are building the opposite, a system that notices deterioration before any single department would see the pattern and then coordinates the hospital around it: surfacing the right labs, alerting the right specialist, checking the drug is in stock, flagging the bed, and catching the billing requirement while care is still happening. [Subscriptions](/docs/subscriptions) and [bots](/docs/bots) let that run as events instead of as a nightly batch.
+
+Structure is also what lets us do it safely. Anything our AI produces goes into its own report, permanently marked preliminary and permanently coded as AI-generated, and never merged into the clinical conclusion. The AI flags and clinicians decide, and the data model does not let the two blur. The same [access policies](/docs/access/access-policies) and audit trail that govern a clinician govern the AI.
+
+{/*
+Q: how is the AI-generated marking actually represented? A Composition with a status, a provenance
+trail, a tag or extension? One sentence of specifics. This is the paragraph clinical informaticists
+will judge us on, and the concrete answer is what earns their trust.
+*/}
+
+![Figure 5: Patient hub with AI-generated preliminary findings and CDS alerts.](/img/blog/medimind-clinical-dashboard.jpg)
+
+_Figure 5: Patient hub with AI-generated preliminary findings and CDS alerts._
+
+## Where MediMind is headed
+
+Near-term, network-wide go-live. Georgia is the first step because it accumulates evidence quickly, and that evidence is what we intend to take global.
+
+A hospital today runs on something like forty systems. One will run them tomorrow, and it will not be forty systems with AI bolted on top.
+
+{/*
+Q: the strongest possible close is one number about the hospital rather than about us. Documentation
+time, lab turnaround, IT headcount, cost per deployment, anything clinicians said in a survey. One
+measured outcome and this goes from a very good story to the best customer story on the Medplum blog.
+*/}
+
+## References
+
+- [MediMind](https://medimind.md/)
+- [MediMind / Medplum case study video](https://youtu.be/v7lRW_ZYDmc)
+- [Medplum FHIR Datastore](/docs/fhir-datastore)
+- [Medplum Self-Hosting](/docs/self-hosting)
+- [Medplum HL7 Interfacing](/docs/integration/hl7-interfacing)
+- [Medplum Bots](/docs/bots) and [Subscriptions](/docs/subscriptions)
+- [Medplum Migration Guide](/docs/migration)
+- [Medplum AI](/docs/ai)
+
+{/*
+==========================================================================================
+NOT FOR PUBLICATION - OPEN ITEMS (Reshma to Lasha, Aug 6 2026). Delete this block before merge.
+==========================================================================================
+
+Six things to confirm, all of them about making the claims harder to attack rather than smaller.
+The reason I am asking is that this will sit in front of Medplum's readership, which includes
+people who will check.
+
+1. Patient count. Your draft said 1,147,535 with "zero gaps, zero duplicates." I have it as
+   "about 1.1 million" and dropped the zero-gaps claim for now. If there is a reconciliation or
+   validation report, describe it in a sentence and the exact figure and the claim both go back
+   in. That version is stronger than either.
+2. Timeline. Thirteen months to counter-signed contract, "most of our first two years" with two
+   founders, and "less than two years" total do not quite reconcile across drafts. Three dates
+   fixes it: founded, first module live in production, contract counter-signed.
+3. Resource types. "80+" is a placeholder. Paste the query output. The actual list is more
+   persuasive than the count, and I would like to name a few.
+4. Analyzer lines and rollback. Confirm fifteen in three weeks, and makes/models if you are
+   willing to name them. I wrote "well under a minute" rather than "thirty seconds"; if thirty
+   seconds is measured, say so and I will use it.
+5. Early-phase clinical trials. If you have a source for Georgia's reputation here, I will link it.
+6. Figures. Six placeholders. Send what you have and I will fit the prose to the images rather
+   than the reverse. (Figure 4, the clinical operations dashboard, is the one I do not have.)
+
+Four things I need from you rather than facts: the pharmacy paragraph, two named same-day lab
+fixes, how AI-generated content is represented in the data model, and at least one measured
+clinical or operational outcome. All four are marked inline.
+
+Voice memos are ideal for those, in English or Georgian, a few minutes each, one per question.
+Do not write prose and do not polish. What I need is what happened, and I will handle the English.
+
+--- Edits I made to your draft, so nothing surprises you ---
+
+The malpractice line stays, with the timeline softened to "a few years" and an explicit note that
+the timeline is a guess and the direction is not. Conviction reads better than prediction on an
+infrastructure company's blog, and conceding the timeline costs you nothing.
+
+"No internal schema underneath, no translation layer on top" is now "FHIR R4 is our operational
+data model." The original was slightly inaccurate about Medplum specifically (we store resources
+as JSONB with derived lookup tables for search) and a knowledgeable reader would have flagged it.
+
+The Georgia section now turns on legacy constraint rather than light regulation, plus one clause
+on data protection law. Your point survives whole; the difference is that a US health system reads
+it as "greenfield," which is enviable, instead of "unregulated," which invites a different
+conversation. I also made the deliberateness explicit in two places, because the original could be
+read as luck.
+
+"Legacy Russian-era database foundations" is now "designed long before FHIR existed and never meant
+to be read by anything except themselves." Same information, more precise, and nobody local has to
+be annoyed about it.
+
+Added the point that nobody mandated FHIR for you. It is one of the most interesting things in the
+whole story for our audience.
+
+Your video is embedded at the top of the post and linked again from References.
+
+I shortened the title to "MediMind: An AI-Native Hospital System" to match the format of our recent
+case studies. The 25-hospital number and the timeline are both in the first paragraph, so the
+headline does not need to carry them. Happy to put your version back if you prefer it.
+
+The malpractice line is now in your voice as a physician ("I am a physician, and I think that..."),
+since that conviction is yours personally and reads stronger that way than as a company position.
+
+I tightened the whole piece by about a fifth without dropping a single fact. The two Georgia
+sections are now one, because the greenfield point was landing three times, and "we did what
+everyone advised against" folded into "Why FHIR from the beginning," which was already making that
+argument. If the merged Georgia section lost anything you care about, say so and it goes back in.
+*/}

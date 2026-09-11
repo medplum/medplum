@@ -28,6 +28,9 @@ export async function handleRetrieveSeriesMetadata(req: Request, res: Response):
   const instances = await repo.searchResources<DicomInstance>({
     resourceType: 'DicomInstance',
     filters: [{ code: 'series', operator: Operator.EQUALS, value: `DicomSeries/${series.id}` }],
+    // Use the server max page size. A CT/MR series commonly has hundreds of instances;
+    // the default page size of 20 would silently truncate the series in the viewer.
+    count: 1000,
   });
   res
     .status(200)

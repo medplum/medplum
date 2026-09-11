@@ -7,6 +7,7 @@ import { URL } from 'node:url';
 import { getConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
+import { getProjectScopedUrl } from '../util/url';
 import { getClientRedirectUri } from './clients';
 import type { MedplumIdTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
@@ -194,8 +195,7 @@ async function isValidLaunch(launch: string): Promise<boolean> {
  * @returns Existing login if found; undefined otherwise.
  */
 async function getExistingLogin(req: Request, client: ClientApplication): Promise<Login | undefined> {
-  const login = (await getExistingLoginFromIdTokenHint(req)) || (await getExistingLoginFromCookie(req, client));
-
+  const login = (await getExistingLoginFromIdTokenHint(req, client)) ?? (await getExistingLoginFromCookie(req, client));
   if (!login) {
     return undefined;
   }
@@ -213,9 +213,10 @@ async function getExistingLogin(req: Request, client: ClientApplication): Promis
 /**
  * Tries to get an existing login based on the "id_token_hint" query string parameter.
  * @param req - The HTTP request.
+ * @param client - The current client application.
  * @returns Existing login if found; undefined otherwise.
  */
-async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | undefined> {
+async function getExistingLoginFromIdTokenHint(req: Request, client: ClientApplication): Promise<Login | undefined> {
   const idTokenHint = req.query.id_token_hint as string | undefined;
   if (!idTokenHint) {
     return undefined;
@@ -223,20 +224,32 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
 
   let verifyResult;
   try {
-    verifyResult = await verifyJwt(idTokenHint);
+    verifyResult = await verifyJwt(idTokenHint, getProjectScopedUrl(req.originalUrl, getConfig().issuer));
   } catch (err: any) {
     getLogger().debug('Error verifying id_token_hint', err);
     return undefined;
   }
 
   const claims = verifyResult.payload as MedplumIdTokenClaims;
+
+  // Limit to only ID tokens, which are audienced to the client (not the issuer);
+  // also guard against forged `aud` by checking that `refresh_secret` is absent
+  if (claims.aud !== client.id || claims.refresh_secret !== undefined) {
+    return undefined;
+  }
+
   const existingLoginId = claims.login_id as string | undefined;
   if (!existingLoginId) {
     return undefined;
   }
 
   const systemRepo = getGlobalSystemRepo();
-  return systemRepo.readResource<Login>('Login', existingLoginId);
+  try {
+    const login = await systemRepo.readResource<Login>('Login', existingLoginId);
+    return !login.revoked ? login : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**

@@ -81,4 +81,22 @@ describe('CommunicationTab', () => {
       expect(screen.getByText('In Progress')).toBeInTheDocument();
     });
   });
+
+  // Regression test for https://github.com/medplum/medplum/pull/10191
+  test('Does not duplicate patient search param when already present in URL', async () => {
+    const navigateMock = vi.fn();
+    useNavigateSpy.mockReturnValue(navigateMock);
+
+    setup(`/Patient/${HomerSimpson.id}/Communication?patient=Patient%2F${HomerSimpson.id}`);
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalled();
+    });
+
+    for (const [redirectUrl] of navigateMock.mock.calls) {
+      const redirectQuery = redirectUrl.split('?')[1] ?? '';
+      const patientParams = new URLSearchParams(redirectQuery).getAll('patient');
+      expect(patientParams).toEqual([`Patient/${HomerSimpson.id}`]);
+    }
+  });
 });

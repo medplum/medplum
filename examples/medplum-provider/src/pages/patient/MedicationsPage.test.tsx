@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
+import { cleanNotifications, Notifications } from '@mantine/notifications';
 import type {
   MedicationCartManageResponse,
   MedicationCheckoutRequest,
@@ -143,6 +143,9 @@ function draftMr(id: string, text: string): WithId<MedicationRequest> {
 
 describe('MedicationsPage', () => {
   beforeEach(async () => {
+    // Mantine notifications use a module-level store that outlives each render,
+    // so reset it between tests to avoid one test's toasts leaking into the next.
+    cleanNotifications();
     vi.clearAllMocks();
     checkoutMock.mockReset();
     removeFromCartMock.mockReset();
@@ -331,6 +334,41 @@ describe('MedicationsPage', () => {
 
     await waitFor(() => {
       expect(executeBotSpy).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  test('Dismisses the DoseSpot sync toast when navigating away before sync finishes', async () => {
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(0));
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createDoseSpotMembership());
+    // Keep the first sync bot pending so the loading toast stays open while we unmount.
+    vi.spyOn(medplum, 'executeBot').mockReturnValue(new Promise<Record<string, never>>(() => {}));
+
+    let unmount: () => void = () => {};
+    await act(async () => {
+      const view = render(
+        <MedplumProvider medplum={medplum}>
+          <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]} initialIndex={0}>
+            <MantineProvider>
+              <Notifications />
+              <Routes>
+                <Route path="/Patient/:patientId/MedicationRequest" element={<MedicationsPage />} />
+              </Routes>
+            </MantineProvider>
+          </MemoryRouter>
+        </MedplumProvider>
+      );
+      unmount = view.unmount;
+    });
+
+    expect(await screen.findByText('Syncing with DoseSpot')).toBeInTheDocument();
+
+    await act(async () => {
+      unmount();
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Syncing with DoseSpot')).not.toBeInTheDocument();
     });
   });
 

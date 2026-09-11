@@ -106,7 +106,7 @@ describe('EncounterChart', () => {
 
   test('updates chart note on change', async () => {
     const user = userEvent.setup();
-    vi.spyOn(medplum, 'updateResource').mockResolvedValue(mockClinicalImpression as any);
+    vi.spyOn(medplum, 'patchResource').mockResolvedValue(mockClinicalImpression as any);
 
     setup();
 
@@ -118,9 +118,12 @@ describe('EncounterChart', () => {
     await user.clear(textarea);
     await user.type(textarea, 'Updated note');
 
+    // The debounced save patches only the note, never the whole impression.
     await waitFor(
       () => {
-        expect(medplum.updateResource).toHaveBeenCalled();
+        expect(medplum.patchResource).toHaveBeenCalledWith('ClinicalImpression', 'clinical-123', [
+          { op: 'add', path: '/note', value: [{ text: 'Updated note' }] },
+        ]);
       },
       { timeout: 3000 }
     );
@@ -247,7 +250,7 @@ describe('EncounterChart', () => {
 
   test('handles encounter status change', async () => {
     const user = userEvent.setup();
-    vi.spyOn(medplum, 'updateResource').mockResolvedValue({ ...mockEncounter, status: 'finished' } as any);
+    vi.spyOn(medplum, 'patchResource').mockResolvedValue({ ...mockEncounter, status: 'finished' } as any);
 
     setup();
 
@@ -511,7 +514,9 @@ describe('EncounterChart', () => {
 
       await medplum.createResource(incompleteTask);
       let provenanceReturned = false;
-      vi.spyOn(medplum, 'updateResource').mockResolvedValue(completedTask as any);
+      vi.spyOn(medplum, 'patchResource').mockImplementation(async (resourceType: string) =>
+        resourceType === 'Task' ? (completedTask as any) : (completedClinicalImpression as any)
+      );
       vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
         if (resource.resourceType === 'Provenance') {
           provenanceReturned = true;
@@ -558,13 +563,9 @@ describe('EncounterChart', () => {
       // Verify that incomplete tasks are updated to completed
       await waitFor(
         () => {
-          expect(medplum.updateResource).toHaveBeenCalledWith(
-            expect.objectContaining({
-              resourceType: 'Task',
-              id: 'task-incomplete',
-              status: 'completed',
-            })
-          );
+          expect(medplum.patchResource).toHaveBeenCalledWith('Task', 'task-incomplete', [
+            { op: 'replace', path: '/status', value: 'completed' },
+          ]);
         },
         { timeout: 3000 }
       );
@@ -596,7 +597,7 @@ describe('EncounterChart', () => {
 
       await medplum.createResource(completedTask);
       let provenanceReturned = false;
-      vi.spyOn(medplum, 'updateResource');
+      vi.spyOn(medplum, 'patchResource');
       vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
         if (resource.resourceType === 'Provenance') {
           provenanceReturned = true;
@@ -648,9 +649,9 @@ describe('EncounterChart', () => {
       );
 
       // Verify that completed tasks are not updated
-      const updateCalls = vi.mocked(medplum.updateResource).mock.calls;
-      const taskUpdateCalls = updateCalls.filter((call) => call[0]?.resourceType === 'Task');
-      expect(taskUpdateCalls).toHaveLength(0);
+      const patchCalls = vi.mocked(medplum.patchResource).mock.calls;
+      const taskPatchCalls = patchCalls.filter((call) => call[0] === 'Task');
+      expect(taskPatchCalls).toHaveLength(0);
     });
 
     test('chart note is disabled when signed and locked', async () => {

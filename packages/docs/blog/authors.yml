@@ -142,3 +142,14 @@ mandi:
   url: https://www.linkedin.com/in/mandibateman/
   image_url: /img/avatars/mandi-bateman.jpg
 
+lasha:
+  name: Lasha Khoshtaria
+  title: Co-founder & CEO, MediMind
+  url: https://www.linkedin.com/in/dr-lasha-khoshtaria-551135305/
+  image_url: /img/avatars/lasha-khoshtaria.jpg
+
+thomas:
+  name: Thomas Vande Casteele
+  title: Co-Founder and CEO, Awell
+  url: https://www.linkedin.com/in/thomasvdc/
+  image_url: /img/people/thomas-vande-casteele.jpg

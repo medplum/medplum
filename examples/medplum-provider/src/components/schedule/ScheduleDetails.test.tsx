@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Schedule } from '@medplum/fhirtypes';
+import type { Appointment, ResourceType, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -14,6 +14,33 @@ import { ScheduleDetails } from './ScheduleDetails';
 describe('ScheduleDetails', () => {
   let medplum: MockClient;
   let mockSchedule: WithId<Schedule>;
+
+  // Use today's date to ensure slots/appointments show in the default (Week) view
+  const now = new Date();
+  const baseDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0, 0);
+
+  const createSlot = (overrides: Partial<WithId<Slot>> = {}): WithId<Slot> => ({
+    resourceType: 'Slot',
+    id: 'slot-1',
+    status: 'free',
+    schedule: { reference: 'Schedule/schedule-1' },
+    start: new Date(baseDate.getTime()).toISOString(),
+    end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+    ...overrides,
+  });
+
+  const createAppointment = (overrides: Partial<WithId<Appointment>> = {}): WithId<Appointment> => ({
+    resourceType: 'Appointment',
+    id: 'appointment-1',
+    status: 'booked',
+    start: new Date(baseDate.getTime()).toISOString(),
+    end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+    participant: [
+      { actor: { reference: 'Patient/123', display: 'John Doe' }, status: 'accepted' },
+      { actor: { reference: 'Practitioner/practitioner-1', display: 'Dr. Smith' }, status: 'accepted' },
+    ],
+    ...overrides,
+  });
 
   beforeEach(async () => {
     medplum = new MockClient();
@@ -33,7 +60,21 @@ describe('ScheduleDetails', () => {
     medplum.searchResources = vi.fn().mockResolvedValue([]);
   });
 
-  const setup = async (schedule: WithId<Schedule>): Promise<ReturnType<typeof render>> => {
+  const setup = async (
+    schedule: WithId<Schedule>,
+    resources: { slots?: WithId<Slot>[]; appointments?: WithId<Appointment>[] } = {}
+  ): Promise<ReturnType<typeof render>> => {
+    const { slots = [], appointments = [] } = resources;
+    medplum.searchResources = vi.fn().mockImplementation((resourceType: ResourceType) => {
+      if (resourceType === 'Slot') {
+        return Promise.resolve(slots);
+      }
+      if (resourceType === 'Appointment') {
+        return Promise.resolve(appointments);
+      }
+      return Promise.resolve([]);
+    });
+
     const result = render(<ScheduleDetails schedule={schedule} />, {
       wrapper: ({ children }) => (
         <MemoryRouter>
@@ -93,6 +134,39 @@ describe('ScheduleDetails', () => {
       expect(screen.getByText('Month')).toBeInTheDocument();
       expect(screen.getByText('Week')).toBeInTheDocument();
       expect(screen.getByText('Day')).toBeInTheDocument();
+    });
+  });
+
+  describe('Filtering', () => {
+    test('omits entered-in-error slots from the calendar', async () => {
+      const freeSlot = createSlot({ id: 'free-slot', status: 'free' });
+      const erroredSlot = createSlot({
+        id: 'errored-slot',
+        status: 'entered-in-error',
+        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
+      });
+
+      await setup(mockSchedule, { slots: [freeSlot, erroredSlot] });
+
+      expect(screen.getAllByText('Available')).toHaveLength(1);
+      expect(screen.queryAllByText('Entered in error')).toHaveLength(0);
+    });
+
+    test('omits cancelled appointments from the calendar', async () => {
+      const bookedAppointment = createAppointment();
+      const cancelledAppointment = createAppointment({
+        id: 'cancelled-appointment',
+        status: 'cancelled',
+        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
+        participant: [{ actor: { reference: 'Patient/999', display: 'Cancelled Patient' }, status: 'accepted' }],
+      });
+
+      await setup(mockSchedule, { appointments: [bookedAppointment, cancelledAppointment] });
+
+      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+      expect(screen.queryByText(/Cancelled Patient/)).not.toBeInTheDocument();
     });
   });
 });

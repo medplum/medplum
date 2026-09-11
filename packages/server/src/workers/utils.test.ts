@@ -202,9 +202,7 @@ describe('worker utils', () => {
       expect(worker2.close).not.toHaveBeenCalled();
 
       // closeAll should close all queues
-      let promises = queueRegistry.closeAll();
-      expect(promises.length).toBe(2);
-      await Promise.all(promises);
+      await queueRegistry.closeAll();
       expect(queue.close).toHaveBeenCalledTimes(1);
       expect(worker.close).toHaveBeenCalledTimes(1);
       expect(queue2.close).toHaveBeenCalledTimes(1);
@@ -217,8 +215,12 @@ describe('worker utils', () => {
       expect(queueRegistry.isClosing(queueName + '2')).toBeUndefined();
 
       // nothing to close
-      promises = queueRegistry.closeAll();
-      expect(promises.length).toBe(0);
+      vi.clearAllMocks();
+      await queueRegistry.closeAll();
+      expect(queue.close).not.toHaveBeenCalled();
+      expect(worker.close).not.toHaveBeenCalled();
+      expect(queue2.close).not.toHaveBeenCalled();
+      expect(worker2.close).not.toHaveBeenCalled();
 
       // attempting to emit the closing event after closing shouldn't fail or throw
       worker.emit('closing', 'artificially emitting');
@@ -238,9 +240,7 @@ describe('worker utils', () => {
       expect(queueRegistry.isClosing(queueName)).toBe(false);
 
       // closeAll should close only the queue (no worker to close)
-      const promises = queueRegistry.closeAll();
-      expect(promises.length).toBe(1);
-      await Promise.all(promises);
+      await queueRegistry.closeAll();
       expect(queue.close).toHaveBeenCalledTimes(1);
 
       // queue should be removed from registry after closeAll

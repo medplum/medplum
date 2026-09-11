@@ -982,6 +982,13 @@ describe('MockClient', () => {
     expect(medplum.getProfile()).toBe(profile);
   });
 
+  test('mock.setProject()', () => {
+    const medplum = new MockClient();
+    const project = { resourceType: 'Project' } as const;
+    medplum.mock.setProject(project);
+    expect(medplum.getProject()).toBe(project);
+  });
+
   test('mock.setAgentAvailable()', () => {
     const medplum = new MockClient();
     expect(() => medplum.mock.setAgentAvailable(true)).not.toThrow();

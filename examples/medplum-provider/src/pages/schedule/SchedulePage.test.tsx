@@ -311,13 +311,18 @@ describe('SchedulePage', () => {
 
   describe('Settings gear icon', () => {
     test('when the scheduling feature is disabled the gear icon is hidden', async () => {
+      medplum.mock.setProject({
+        resourceType: 'Project',
+        id: 'project-123',
+        features: [],
+      });
       await act(async () => setup());
       await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
       expect(screen.queryByRole('button', { name: 'Schedule settings' })).not.toBeInTheDocument();
     });
 
     test('when the scheduling feature is enabled the gear icon is visible', async () => {
-      medplum.getProject = vi.fn().mockReturnValue({
+      medplum.mock.setProject({
         resourceType: 'Project',
         id: 'project-123',
         features: ['scheduling'],
@@ -500,11 +505,11 @@ describe('$find/$book component integration tests', () => {
       setup('/Calendar/Schedule/alice-smith-schedule');
     });
 
-    // Pane header shows selected service type
-    expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
+    // Select the service type to trigger the $find search
+    await user.click(screen.getByText('Annual Checkup'));
 
     // Click on an appointment button from the find pane
-    const slotButtons = screen.getAllByText(/1\/16\/2024/);
+    const slotButtons = await screen.findAllByText(/1\/16\/2024/);
     expect(slotButtons.length).toEqual(1);
     await user.click(slotButtons[0]);
 

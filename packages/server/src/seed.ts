@@ -60,7 +60,7 @@ export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
 }
 
 async function createSuperAdmin(systemRepo: SystemRepository, config: MedplumServerConfig): Promise<void> {
-  const email = config.defaultSuperAdminEmail ?? 'admin@example.com';
+  const email = (config.defaultSuperAdminEmail ?? 'admin@example.com').toLowerCase();
   const password = config.defaultSuperAdminPassword ?? 'medplum_admin';
   const [firstName, lastName] = ['Medplum', 'Admin'];
   const passwordHash = await bcryptHashPassword(password);

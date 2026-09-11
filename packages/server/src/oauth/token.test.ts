@@ -24,7 +24,13 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo, Repository } from '../fhir/repo';
-import { addTestUser, createTestProject, generateSelfSignedCert, withTestContext } from '../test.setup';
+import {
+  addTestUser,
+  createTestProject,
+  generateSelfSignedCert,
+  getSuperAdminTestProject,
+  withTestContext,
+} from '../test.setup';
 import { mockFetchJson, mockFetchStatus, mockFetchText } from '../test.setup.fetch';
 import { validateClientCert } from './cert';
 import { generateSecret, verifyJwt } from './keys';
@@ -2152,6 +2158,29 @@ describe('OAuth2 Token', () => {
     expect(fetchMock).toHaveBeenCalledWith('https://server-config.example.com/oauth2/userinfo', expect.anything());
   });
 
+  test('Token exchange rejects identity provider without user info URL', async () => {
+    const noUserInfoClient = await createClient(systemRepo, {
+      project,
+      name: 'No User Info Client',
+      redirectUri,
+      identityProvider: {
+        issuer: externalAuthIssuer,
+        jwksUrl: 'https://example.com/.well-known/jwks.json',
+      },
+    });
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: noUserInfoClient.id,
+      subject_token: 'opaque-token',
+    });
+    expect(res).toHaveStatus(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Missing user info URL');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   test('Token exchange rejects unknown client ID', async () => {
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
@@ -2494,7 +2523,7 @@ describe('OAuth2 Token', () => {
 
   test('Refresh tokens disabled for super admins', async () => {
     // Create a super admin project
-    const { project: superAdminProject } = await createTestProject({ project: { superAdmin: true } });
+    const { project: superAdminProject } = await getSuperAdminTestProject();
 
     // Create a test user
     const email = `test-${randomUUID()}@example.com`;

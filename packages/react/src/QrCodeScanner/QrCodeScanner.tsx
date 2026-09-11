@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Loader, Stack, Text } from '@mantine/core';
+import { Alert, Box, Center, Loader, Stack, Text } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
+import { useStabilizedCallback } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -25,18 +26,10 @@ export interface QrCodeScannerProps {
 export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScannerProps): JSX.Element {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const onScanRef = useRef(onScan);
-  const onErrorRef = useRef(onError);
+  const emitScan = useStabilizedCallback(onScan);
+  const emitError = useStabilizedCallback(onError);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
-
-  useEffect(() => {
-    onScanRef.current = onScan;
-  }, [onScan]);
-
-  useEffect(() => {
-    onErrorRef.current = onError;
-  }, [onError]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -65,7 +58,7 @@ export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScanne
       if (!cancelled) {
         setLoading(false);
         setError(normalizeErrorString(normalized));
-        onErrorRef.current?.(normalized);
+        emitError(normalized);
       }
     }
 
@@ -84,7 +77,7 @@ export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScanne
           const code = jsQr(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
           if (code?.data) {
             scanned = scanOnce;
-            onScanRef.current(code.data);
+            emitScan(code.data);
             if (scanOnce) {
               stopStream();
               return;
@@ -128,32 +121,47 @@ export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScanne
       cancelAnimationFrame(rafId);
       stopStream();
     };
-  }, [scanOnce]);
+  }, [scanOnce, emitScan, emitError]);
 
   return (
     <Stack gap="sm">
       {error && <Alert color="red">{error}</Alert>}
-      <video
-        ref={videoRef}
-        width={640}
-        height={480}
-        muted
+      <Box
+        pos="relative"
         style={{
           aspectRatio: '4 / 3',
           display: error ? 'none' : 'block',
           width: '100%',
-          height: 'auto',
           maxHeight: '70vh',
+          overflow: 'hidden',
+          borderRadius: 'var(--mantine-radius-default)',
           background: 'black',
         }}
-      />
+      >
+        <video
+          ref={videoRef}
+          width={640}
+          height={480}
+          muted
+          style={{
+            display: 'block',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+        {loading && !error && (
+          <Center pos="absolute" top={0} left={0} right={0} bottom={0} style={{ pointerEvents: 'none' }}>
+            <Stack gap="xs" align="center">
+              <Loader size="sm" color="gray.3" />
+              <Text c="gray.3" size="sm">
+                Loading camera...
+              </Text>
+            </Stack>
+          </Center>
+        )}
+      </Box>
       <canvas ref={canvasRef} hidden />
-      {loading && !error && (
-        <Text c="dimmed" size="sm">
-          <Loader size="xs" mr="xs" />
-          Loading camera...
-        </Text>
-      )}
     </Stack>
   );
 }

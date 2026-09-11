@@ -12,9 +12,10 @@ import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { getProjectSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
+import { generateAccessToken } from './oauth/keys';
 import { getRateLimitRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
-import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
+import { createTestProject, deleteRedisKeys, getSuperAdminAccessToken, initTestAuth } from './test.setup';
 
 describe('App', () => {
   let stdOutSpy: MockInstance;
@@ -48,6 +49,52 @@ describe('App', () => {
     expect(res.headers['cache-control']).toBeDefined();
     expect(res.headers['content-security-policy']).toBeDefined();
     expect(res.headers['referrer-policy']).toBeDefined();
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test.each(['/projects/00000000-0000-0000-0000-000000000000/', '/api/projects/00000000-0000-0000-0000-000000000000/'])(
+    'Use project-scoped mount %s',
+    async (path) => {
+      const app = express();
+      const config = await loadTestConfig();
+      await initApp(app, config);
+      const res = await request(app).get(path);
+      expect(res).toHaveStatus(200);
+      expect(await shutdownApp()).toBeUndefined();
+    }
+  );
+
+  test('Enforce project scope on authenticated requests', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const { client, login, project } = await createTestProject({ withAccessToken: true, withClient: true });
+    const getAccessToken = (issuer: string): Promise<string> =>
+      generateAccessToken(
+        {
+          login_id: login.id,
+          sub: client.id,
+          username: client.id,
+          client_id: client.id,
+          profile: `${client.resourceType}/${client.id}`,
+          scope: login.scope as string,
+        },
+        { issuer }
+      );
+
+    const accessToken = await getAccessToken(`${config.issuer}projects/${project.id}/`);
+
+    const matching = await request(app)
+      .get(`/projects/${project.id}/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(matching).toHaveStatus(200);
+
+    const otherProjectId = '00000000-0000-0000-0000-000000000000';
+    const mismatchedAccessToken = await getAccessToken(`${config.issuer}projects/${otherProjectId}/`);
+    const mismatched = await request(app)
+      .get(`/projects/${otherProjectId}/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + mismatchedAccessToken);
+    expect(mismatched).toHaveStatus(403);
     expect(await shutdownApp()).toBeUndefined();
   });
 
@@ -115,6 +162,58 @@ describe('App', () => {
     expect(res).toHaveStatus(200);
     expect(res.headers['origin']).toBeUndefined();
     expect(await shutdownApp()).toBeUndefined();
+  });
+
+  describe('request correlation', () => {
+    let app: express.Express;
+
+    beforeEach(async () => {
+      app = express();
+      const config = await loadTestConfig();
+      await initApp(app, config);
+    });
+
+    afterEach(async () => {
+      await shutdownApp();
+    });
+
+    test('Echoes a server-minted X-Request-Id', async () => {
+      const res = await request(app).get('/');
+      expect(res).toHaveStatus(200);
+      expect(res.headers['x-request-id']).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+      expect(res.headers['x-trace-id']).toMatch(/^[0-9a-f]{32}$/);
+    });
+
+    test('Mints a distinct request ID per request', async () => {
+      const res1 = await request(app).get('/');
+      const res2 = await request(app).get('/');
+      expect(res1.headers['x-request-id']).not.toBe(res2.headers['x-request-id']);
+    });
+
+    test('Does not adopt a caller-supplied X-Request-Id', async () => {
+      const res = await request(app).get('/').set('X-Request-Id', 'caller-supplied-id');
+      expect(res).toHaveStatus(200);
+      expect(res.headers['x-request-id']).not.toBe('caller-supplied-id');
+    });
+
+    test('Echoes the trace ID from traceparent', async () => {
+      const traceId = '4bf92f3577b34da6a3ce929d0e0e4736';
+      const res = await request(app).get('/').set('traceparent', `00-${traceId}-3456789012345678-01`);
+      expect(res).toHaveStatus(200);
+      expect(res.headers['x-trace-id']).toBe(traceId);
+    });
+
+    test('Normalizes a UUID x-trace-id', async () => {
+      const res = await request(app).get('/').set('X-Trace-Id', '4bf92f35-77b3-4da6-a3ce-929d0e0e4736');
+      expect(res).toHaveStatus(200);
+      expect(res.headers['x-trace-id']).toBe('4bf92f3577b34da6a3ce929d0e0e4736');
+    });
+
+    test('Ignores an unsafe x-trace-id', async () => {
+      const res = await request(app).get('/').set('X-Trace-Id', 'a'.repeat(65));
+      expect(res).toHaveStatus(200);
+      expect(res.headers['x-trace-id']).toMatch(/^[0-9a-f]{32}$/);
+    });
   });
 
   describe('loggingMiddleware', () => {
@@ -294,7 +393,7 @@ describe('App', () => {
     const app = express();
     const config = await loadTestConfig();
     await initApp(app, config);
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    const accessToken = await getSuperAdminAccessToken();
 
     config.database.queryTimeout = 1;
     await initApp(app, config);
@@ -334,6 +433,10 @@ describe('App', () => {
     expect(res).toHaveStatus(200);
     const res2 = await request(app).get('/api/');
     expect(res2).toHaveStatus(429);
+    expect(res2.body.extension).toContainEqual({
+      url: 'https://medplum.com/fhir/StructureDefinition/rate-limit-reset',
+      valueUnsignedInt: 60,
+    });
     await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });

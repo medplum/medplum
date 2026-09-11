@@ -3,7 +3,7 @@
 import { AppShell as MantineAppShell } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Communication, UserConfiguration } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
+import { MockClient, TestProject } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { IconMail, IconStar } from '@tabler/icons-react';
 import 'vitest-websocket-mock';
@@ -82,6 +82,7 @@ describe('Navbar', () => {
     vi.useFakeTimers();
     navigateMock.mockClear();
     closeMock.mockClear();
+    localStorage.clear();
   });
 
   afterEach(async () => {
@@ -89,6 +90,7 @@ describe('Navbar', () => {
       vi.runOnlyPendingTimers();
     });
     vi.useRealTimers();
+    localStorage.clear();
   });
 
   test('Renders', async () => {
@@ -96,7 +98,11 @@ describe('Navbar', () => {
     expect(screen.getByText('Menu 1')).toBeInTheDocument();
   });
 
-  test('Renders user name and active project name', async () => {
+  test('Renders active project name', async () => {
+    // Simulate state where `auth/me` has not finished and so the explicit
+    // project resource has not loaded. In that case, we read the active project
+    // name from localStorage via `getActiveLogin()`
+    const client = new MockClient({ project: null });
     window.localStorage.setItem(
       'activeLogin',
       JSON.stringify({
@@ -116,6 +122,35 @@ describe('Navbar', () => {
     const initialUrl = new URL('/', 'http://localhost');
     await act(async () => {
       render(
+        <MedplumProvider medplum={client} navigate={navigateMock}>
+          <MantineAppShell>
+            <Navbar
+              logo={<div>Logo</div>}
+              pathname={initialUrl.pathname}
+              searchParams={initialUrl.searchParams}
+              navbarToggle={toggleMock}
+              closeNavbar={closeMock}
+              userMenuEnabled={true}
+            />
+          </MantineAppShell>
+        </MedplumProvider>
+      );
+    });
+
+    expect(screen.getByText('My Project')).toBeInTheDocument();
+
+    // Simulate auth loading completing. The displayed active project name
+    // should now use the value from that result. These will usually match,
+    // but could differ if the project has been renamed since the local
+    // storage was last written to.
+    await act(() => client.mock.setProject(TestProject));
+    expect(screen.getByText(TestProject.name)).toBeInTheDocument();
+  });
+
+  test('Renders user name', async () => {
+    const initialUrl = new URL('/', 'http://localhost');
+    await act(async () => {
+      render(
         <MedplumProvider medplum={medplum} navigate={navigateMock}>
           <MantineAppShell>
             <Navbar
@@ -132,9 +167,6 @@ describe('Navbar', () => {
     });
 
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
-    expect(screen.getByText('My Project')).toBeInTheDocument();
-
-    window.localStorage.removeItem('activeLogin');
   });
 
   test('Highlighted link', async () => {

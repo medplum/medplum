@@ -43,7 +43,49 @@ export type RewriteMode = (typeof RewriteMode)[keyof typeof RewriteMode];
  * @returns The rewritten value.
  */
 export async function rewriteAttachments<T>(mode: RewriteMode, repo: Repository, input: T): Promise<T> {
+  // Rewriting rebuilds the whole object graph and awaits once per property, which most resources
+  // do not need. The result may therefore be the input itself: callers that mutate it must copy.
+  if (!containsBinaryUrl(input)) {
+    return input;
+  }
   return new Rewriter(mode, repo).rewriteValue(input);
+}
+
+/**
+ * Determines whether a value contains any attachment URL that {@link Rewriter} would rewrite.
+ *
+ * Must mirror the property and `Binary` handling in `Rewriter.rewriteValue`: a false negative
+ * here silently skips a rewrite.
+ * @param input - The input value (object, array, or primitive).
+ * @returns True if the value contains at least one binary URL.
+ */
+function containsBinaryUrl(input: unknown): boolean {
+  if (input === null || typeof input !== 'object') {
+    return false;
+  }
+
+  if (Array.isArray(input)) {
+    return input.some(containsBinaryUrl);
+  }
+
+  if ((input as Resource).resourceType === 'Binary') {
+    return false;
+  }
+
+  for (const key of Object.keys(input)) {
+    const value = (input as Record<string, unknown>)[key];
+    if ((key === 'url' || key === 'path') && typeof value === 'string') {
+      // Extensions put a canonical URL on every element, so test for an actual binary
+      // rather than for the presence of a `url` property.
+      if (normalizeBinaryUrl(value).id) {
+        return true;
+      }
+    } else if (containsBinaryUrl(value)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**

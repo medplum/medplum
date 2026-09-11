@@ -107,13 +107,18 @@ describe('PatientPage.utils', () => {
     });
 
     test('handles complex query string with patient.id placeholder', () => {
-      const tab = PatientPageTabs.find((t) => t.id === 'encounter');
+      const tab = PatientPageTabs.find((t) => t.id === 'meds');
       if (tab) {
         const result = formatPatientPageTabUrl('patient-123', tab);
-        expect(result).toContain('/Patient/patient-123/Encounter');
+        expect(result).toContain('/Patient/patient-123/MedicationRequest');
         expect(result).toContain('patient=patient-123');
         expect(result).not.toContain('%patient.id');
       }
+    });
+
+    test('encounter tab links to the visits board without a query string', () => {
+      const tab = getPatientPageTabOrThrow('encounter');
+      expect(formatPatientPageTabUrl('patient-123', tab)).toBe('/Patient/patient-123/Encounter');
     });
   });
 

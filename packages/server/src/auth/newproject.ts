@@ -10,6 +10,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { sendVerificationEmail } from './newuser';
 import { sendLoginResult } from './utils';
 import { sendWelcomeEmail } from './welcomeemail';
 
@@ -31,6 +32,13 @@ export const newProjectValidator = makeValidationMiddleware([
  * @param res - The HTTP response.
  */
 export async function newProjectHandler(req: Request, res: Response): Promise<void> {
+  const config = getConfig();
+  if (config.registerEnabled === false) {
+    // Explicitly check for "false" because the config value may be undefined
+    sendOutcome(res, badRequest('Registration is disabled'));
+    return;
+  }
+
   const systemRepo = getGlobalSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
@@ -41,8 +49,16 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
 
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
-  if (getConfig().requireVerifiedEmailForProjectCreation && !user.emailVerified) {
-    sendOutcome(res, badRequest('Email verification is required to create a project'));
+  if (config.requireVerifiedEmailForProjectCreation && !user.emailVerified) {
+    // This is the only gate on `emailVerified`, and users reach it by paths that never
+    // offer a verification link: an existing member creating a second project arrives
+    // via the login status endpoint, not registration. Send the link here so the
+    // requirement is actionable rather than a dead end.
+    await sendVerificationEmail(user, login);
+    sendOutcome(
+      res,
+      badRequest('Email verification is required to create a project. Check your email for a verification link.')
+    );
     return;
   }
 

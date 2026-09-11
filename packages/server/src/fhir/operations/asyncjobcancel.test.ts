@@ -7,7 +7,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth, withTestContext } from '../../test.setup';
+import { getSuperAdminAccessToken, withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
 import { asyncJobCancelHandler } from './asyncjobcancel';
 
@@ -22,7 +22,7 @@ describe('AsyncJob/$cancel', () => {
   });
 
   beforeEach(async () => {
-    accessToken = await initTestAuth({ superAdmin: true });
+    accessToken = await getSuperAdminAccessToken();
     expect(accessToken).toBeDefined();
   });
 

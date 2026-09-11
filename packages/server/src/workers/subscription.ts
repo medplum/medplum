@@ -7,7 +7,6 @@ import {
   EMPTY,
   Operator,
   createReference,
-  deepClone,
   getExtension,
   getExtensionValue,
   getReferenceString,
@@ -54,8 +53,8 @@ import { recordHistogramValue } from '../otel/otel';
 import type { ActiveSubscriptionEntry } from '../pubsub';
 import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
 import { getCacheRedis } from '../redis';
-import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import {
@@ -655,7 +654,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     const versionedResource = await systemRepo.readVersion(resourceType, id, versionId);
     // We use the resource with rewritten attachments here since we want subscribers to get the resource with the same attachment URLs
     // They would get if they did a search
-    rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, deepClone(versionedResource));
+    rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, versionedResource);
   } catch (err) {
     if (job.attemptsMade < MAX_PREAMBLE_ATTEMPTS) {
       throw err;
@@ -863,8 +862,9 @@ function buildRestHookHeaders(
   const traceId = job.data.traceId;
   if (traceId) {
     headers['x-trace-id'] = traceId;
-    if (parseTraceparent(traceId)) {
-      headers['traceparent'] = traceId;
+    const traceparent = buildTraceparent(traceId);
+    if (traceparent) {
+      headers['traceparent'] = traceparent;
     }
   }
 

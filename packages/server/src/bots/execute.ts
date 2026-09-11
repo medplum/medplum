@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { resolveId } from '@medplum/core';
 import { runInLambda } from '../cloud/aws/execute';
 import { runInLambdaStreaming } from '../cloud/aws/executestreaming';
 import { executeFissionBot } from '../cloud/fission/execute';
@@ -9,7 +10,7 @@ import type { BotExecutionContext, BotExecutionRequest, BotExecutionResult } fro
 import {
   getBotAccessToken,
   getBotSecrets,
-  isBotEnabled,
+  isBotEnabledForProject,
   normalizeBotExecutionResult,
   writeBotInputToStorage,
 } from './utils';
@@ -29,7 +30,9 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   let result: BotExecutionResult;
 
   const execStart = process.hrtime.bigint();
-  if (await isBotEnabled(bot, runAs)) {
+  // The bot runs with runAs's identity in runAs's project, so that is the project entitled to
+  // run bots -- not the one that happens to own the bot.
+  if (await isBotEnabledForProject(resolveId(runAs.project) as string)) {
     await writeBotInputToStorage(request);
 
     const context: BotExecutionContext = {

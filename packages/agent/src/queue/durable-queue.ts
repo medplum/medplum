@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { ILogger } from '@medplum/core';
-import { normalizeErrorString } from '@medplum/core';
+import { normalizeErrorString, sleep } from '@medplum/core';
 import { randomUUID } from 'node:crypto';
 import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync, SQLInputValue, StatementSync } from 'node:sqlite';
@@ -18,22 +18,30 @@ import {
   FIND_BY_CALLBACK,
   FIND_BY_ID,
   FIND_SEEN_BY_CONTROL_ID,
+  FLIP_DELAYED_FOR_CHANNEL,
   GET_LEASE,
   HEARTBEAT_LEASE,
+  IS_PARTITION_BLOCKED,
   LIST_QUEUED_IDS_FOR_CHANNEL,
   MARK_BOT_FAILED,
+  MARK_DELAYED,
   MARK_PROCESSED,
   MARK_SENT,
   PEEK_LAST_SEQ_NO,
+  RECOMPUTE_SET_KEY,
   RECORD_SERVER_RESPONSE,
   RECOVER_CLAIMED,
+  RECOVER_DELAYED,
   RECOVER_INFLIGHT,
   RECOVER_INFLIGHT_GUARANTEED,
   RELEASE_LEASE,
   REQUEUE,
   SCHEDULE_RETRY,
+  SELECT_QUEUED_OR_DELAYED_FOR_RECOMPUTE,
   SET_ACK_OUTCOME,
+  SET_LOGICAL_CHANNEL_KEY,
   TRY_ACQUIRE_LEASE,
+  WAKE_PARTITION,
 } from './queries';
 import { runMigrations } from './schema';
 import type {
@@ -107,6 +115,8 @@ export type StateCounts = Record<MessageState, number>;
 /** Per-channel queue depth snapshot returned by {@link DurableQueue.getChannelDepths}. */
 export interface ChannelDepth {
   queued: number;
+  /** Parked behind an earlier message in the same logical channel. */
+  delayed: number;
   /** Claimed by a worker but not yet written to the socket. */
   claimed: number;
   /** Written to the socket, awaiting the server response. */
@@ -169,6 +179,15 @@ export class DurableQueue {
   // because open() itself writes (pragmas, migrations, lease).
   private walDirty = true;
 
+  // Claim mutex, held per channel for the duration of a logicalChannelKey rewrite
+  // (recomputeLogicalChannelKeys). Held in memory rather than in the DB because it
+  // guards against this process's own workers, which are the only claimants — a
+  // peer that takes the lease mid-rewrite is stopped by assertNotDemoted instead.
+  // Refcounted, not a flag: back-to-back spec changes can overlap two rewrites on one
+  // channel, and the first to finish must not release the mutex out from under the
+  // second. See isClaimPaused.
+  private readonly repartitioning = new Map<string, number>();
+
   // WAL-checkpoint loop. Runs while the queue is open, INDEPENDENT of the
   // dispatch lease: a follower still accepts intake writes (enqueue runs on any
   // process with the file open), so WAL draining can't be gated on leadership the
@@ -192,10 +211,18 @@ export class DurableQueue {
   private readonly markBotFailedStmt: StatementSync;
   private readonly setAckOutcomeStmt: StatementSync;
   private readonly scheduleRetryStmt: StatementSync;
+  private readonly setLogicalChannelKeyStmt: StatementSync;
+  private readonly isPartitionBlockedStmt: StatementSync;
+  private readonly markDelayedStmt: StatementSync;
+  private readonly wakePartitionStmt: StatementSync;
+  private readonly flipDelayedForChannelStmt: StatementSync;
+  private readonly selectQueuedOrDelayedForRecomputeStmt: StatementSync;
+  private readonly recomputeSetKeyStmt: StatementSync;
   private readonly requeueStmt: StatementSync;
   private readonly recoverInflightStmt: StatementSync;
   private readonly recoverInflightGuaranteedStmt: StatementSync;
   private readonly recoverClaimedStmt: StatementSync;
+  private readonly recoverDelayedStmt: StatementSync;
   private readonly listQueuedIdsForChannelStmt: StatementSync;
   private readonly countByStateStmt: StatementSync;
   private readonly channelDepthStmt: StatementSync;
@@ -277,6 +304,15 @@ export class DurableQueue {
     // not re-claimed) until the backoff elapses. See SCHEDULE_RETRY.
     this.scheduleRetryStmt = this.db.prepare(SCHEDULE_RETRY);
 
+    // Logical channels (claim-time partitioning) — see the like-named methods below.
+    this.setLogicalChannelKeyStmt = this.db.prepare(SET_LOGICAL_CHANNEL_KEY);
+    this.isPartitionBlockedStmt = this.db.prepare(IS_PARTITION_BLOCKED);
+    this.markDelayedStmt = this.db.prepare(MARK_DELAYED);
+    this.wakePartitionStmt = this.db.prepare(WAKE_PARTITION);
+    this.flipDelayedForChannelStmt = this.db.prepare(FLIP_DELAYED_FOR_CHANNEL);
+    this.selectQueuedOrDelayedForRecomputeStmt = this.db.prepare(SELECT_QUEUED_OR_DELAYED_FOR_RECOMPUTE);
+    this.recomputeSetKeyStmt = this.db.prepare(RECOMPUTE_SET_KEY);
+
     this.requeueStmt = this.db.prepare(REQUEUE);
 
     // Crash recovery splits three ways on whether the request reached the wire
@@ -294,6 +330,7 @@ export class DurableQueue {
     this.recoverInflightStmt = this.db.prepare(RECOVER_INFLIGHT);
     this.recoverInflightGuaranteedStmt = this.db.prepare(RECOVER_INFLIGHT_GUARANTEED);
     this.recoverClaimedStmt = this.db.prepare(RECOVER_CLAIMED);
+    this.recoverDelayedStmt = this.db.prepare(RECOVER_DELAYED);
 
     this.listQueuedIdsForChannelStmt = this.db.prepare(LIST_QUEUED_IDS_FOR_CHANNEL);
 
@@ -868,15 +905,21 @@ export class DurableQueue {
    * - `inflight` rows on a GUARANTEED-delivery channel → returned to `queued`
    *   (duplication risk accepted) so the channel keeps trying until upstream gives
    *   a definitive answer (§4.1).
+   * - `delayed` rows were only parked behind an earlier same-partition message and
+   *   never dispatched → returned to `queued` to re-evaluate their partition at the
+   *   next claim (see {@link RECOVER_DELAYED}).
    * @param now - Override for `errored_at` (for tests).
    * @returns Counts of rows promoted to `failed` and returned to `queued`, respectively.
    */
   recoverOnStartup(now: number = Date.now()): { failed: number; requeued: number } {
     const failed = Number(this.recoverInflightStmt.run(now).changes);
-    // Both legs return a row to `queued`: provably-unsent `claimed` rows (always
-    // safe) and guaranteed-delivery `inflight` rows (duplication risk accepted).
+    // Every leg here returns a row to `queued`: provably-unsent `claimed` rows
+    // (always safe), guaranteed-delivery `inflight` rows (duplication risk
+    // accepted), and `delayed` rows (never dispatched, just waiting on a peer).
     const requeued =
-      Number(this.recoverClaimedStmt.run().changes) + Number(this.recoverInflightGuaranteedStmt.run().changes);
+      Number(this.recoverClaimedStmt.run().changes) +
+      Number(this.recoverInflightGuaranteedStmt.run().changes) +
+      Number(this.recoverDelayedStmt.run().changes);
     if (failed > 0 || requeued > 0) {
       this.walDirty = true;
     }
@@ -898,6 +941,7 @@ export class DurableQueue {
   countByState(): StateCounts {
     const counts: StateCounts = {
       queued: 0,
+      delayed: 0,
       claimed: 0,
       inflight: 0,
       processed: 0,
@@ -915,14 +959,21 @@ export class DurableQueue {
   /**
    * @param channelName - The channel to query.
    * @param now - Override for the "now" timestamp used in `oldestQueuedAgeMs`.
-   * @returns Depth snapshot for `channelName` (queued/claimed/inflight counts + oldest queued age).
+   * @returns Depth snapshot for `channelName` (queued/delayed/claimed/inflight counts + oldest queued age).
    */
   getChannelDepth(channelName: string, now: number = Date.now()): ChannelDepth {
     const row = this.channelDepthStmt.get(channelName) as
-      | { queued: number | null; claimed: number | null; inflight: number | null; oldest_queued_at: number | null }
+      | {
+          queued: number | null;
+          delayed: number | null;
+          claimed: number | null;
+          inflight: number | null;
+          oldest_queued_at: number | null;
+        }
       | undefined;
     return {
       queued: row?.queued ?? 0,
+      delayed: row?.delayed ?? 0,
       claimed: row?.claimed ?? 0,
       inflight: row?.inflight ?? 0,
       oldestQueuedAgeMs: row?.oldest_queued_at ? now - row.oldest_queued_at : null,
@@ -1232,6 +1283,201 @@ export class DurableQueue {
     this.commitSeqNoStmt.run(channelName, seqNo);
     this.walDirty = true;
   }
+
+  /**
+   * Records the freshly-computed logical-channel key on a just-claimed row,
+   * immediately before dispatch. The worker computes the key synchronously right
+   * after {@link claimNext} (no `await` in between, so the row is provably still
+   * `claimed` and owned by this process), then calls this so later same-partition
+   * rows see the partition as occupied. Lease-gated like every dispatch write.
+   * @param id - The claimed row's id.
+   * @param key - The partition key computed from the channel's current spec.
+   */
+  setLogicalChannelKey(id: number, key: string): void {
+    this.assertNotDemoted();
+    if (Number(this.setLogicalChannelKeyStmt.run(key, id).changes) > 0) {
+      this.walDirty = true;
+    }
+  }
+
+  /**
+   * Whether a worker must hold off claiming from `channelName` because its stored
+   * partition keys are mid-rewrite ({@link recomputeLogicalChannelKeys}).
+   *
+   * Claim-time keying compares a row's freshly-computed key against the keys STORED
+   * on earlier rows, so it is only correct while those stored keys all reflect one
+   * spec. Rather than make the rewrite uninterruptible — it has to parse every
+   * queued/delayed message, far too much for one macrotask — it pauses claims for
+   * its duration. Rows simply stay `queued`; the rewrite wakes the pool when it
+   * finishes.
+   * @param channelName - The channel a worker is about to claim from.
+   * @returns True while that channel's partition keys are being rewritten.
+   */
+  isClaimPaused(channelName: string): boolean {
+    return (this.repartitioning.get(channelName) ?? 0) > 0;
+  }
+
+  /**
+   * Whether the logical channel `key` is occupied by a message EARLIER than `id` —
+   * a lower-id row of the same partition still `queued` (backing off), `delayed`,
+   * `claimed`, or `inflight`. The worker calls this right after claiming a row to
+   * decide whether to dispatch it or park it `delayed`. Because the claim always
+   * takes the lowest-id `queued` row, checking only earlier rows is sufficient to
+   * preserve per-partition FIFO. A pure read — not lease-gated.
+   * @param channelName - The physical channel.
+   * @param key - The partition key computed for the claimed row.
+   * @param id - The claimed row's id; only earlier rows can block it.
+   * @returns True if an earlier same-partition message is still in play.
+   */
+  isPartitionBlocked(channelName: string, key: string, id: number): boolean {
+    return this.isPartitionBlockedStmt.get(channelName, key, id) !== undefined;
+  }
+
+  /**
+   * Parks a just-claimed row that lost the partition race: `claimed` → `delayed`,
+   * storing `key` so {@link wakePartition} can promote it later, and undoing the
+   * claim's attempt increment (the row never dispatched, so the attempt doesn't
+   * count). Attempt-scoped and `claimed`-guarded, so a superseded claim no-ops.
+   * Lease-gated like every dispatch write.
+   * @param id - The claimed row's id.
+   * @param attemptCount - The row's `attempt_count` as claimed (post-increment).
+   * @param key - The partition key computed for the row.
+   * @returns True if the row was parked (false if the write was superseded).
+   */
+  markDelayed(id: number, attemptCount: number, key: string): boolean {
+    this.assertNotDemoted();
+    if (Number(this.markDelayedStmt.run(key, id, attemptCount).changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Wakes a partition when its in-flight head settles terminally: promotes the
+   * single lowest-id `delayed` row of `key` back to `queued`, so exactly the next
+   * message in that partition becomes claimable.
+   *
+   * Deliberately NOT lease-gated: a wake is self-correcting (the promoted row
+   * re-checks its partition at its next claim and re-parks if a newer head
+   * appeared), so it must never fail and strand its followers, and running it from
+   * a non-leader is harmless because only the leader claims. No-op when nothing is
+   * parked for `key`.
+   * @param channelName - The physical channel.
+   * @param key - The partition whose next message to release.
+   * @returns True if a delayed row was promoted.
+   */
+  wakePartition(channelName: string, key: string): boolean {
+    if (Number(this.wakePartitionStmt.run(channelName, key).changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Returns every `delayed` row for a channel to `queued`, so parked followers
+   * re-evaluate their partition at the next claim. A cheap state flip with no
+   * message re-parsing and no stored-key rewrite, used as the fallback when
+   * {@link recomputeLogicalChannelKeys} fails partway through a spec change — no
+   * row is left waiting on a wake that now targets a re-keyed partition.
+   * Self-correcting like {@link wakePartition}, so not lease-gated.
+   * @param channelName - The channel whose parked rows to re-queue.
+   * @returns The number of rows returned to `queued`.
+   */
+  flipDelayedToQueued(channelName: string): number {
+    const changed = Number(this.flipDelayedForChannelStmt.run(channelName).changes);
+    if (changed > 0) {
+      this.walDirty = true;
+    }
+    return changed;
+  }
+
+  /**
+   * Recomputes the stored `logical_channel_key` of every `queued` and `delayed`
+   * row for a channel under the current spec, and un-parks `delayed` → `queued`.
+   * Called ONLY on a `logicalChannelKey` spec change — the one path claim-time
+   * keying can't cover on its own, because rows not actively being claimed keep
+   * their last-stamped key and {@link isPartitionBlocked} trusts stored keys (a
+   * stale key would let a same-new-partition message skip ahead of an older
+   * not-yet-re-claimed one). `claimed`/`inflight` rows are deliberately left alone;
+   * they finish under their current partition.
+   *
+   * Lease-gated (only the dispatching leader needs the refresh) and chunked
+   * (paginated by id, one transaction per batch) so a large backlog doesn't
+   * materialize every `original_message` blob at once. Rows claimed between a
+   * batch's read and write are skipped by the `state IN ('queued','delayed')`
+   * guard on the update.
+   *
+   * Yields the event loop between batches — parsing a whole backlog is far too much
+   * to do in one macrotask — and holds the channel's claim mutex ({@link isClaimPaused})
+   * across those yields. The mutex is what a claim would otherwise violate: a worker
+   * that keyed a row under the new spec and compared it against a half-rewritten set
+   * of stored keys could miss an older same-partition row and dispatch ahead of it.
+   * It is raised before the first `await`, so a caller that fires this off without
+   * awaiting still pauses claims from the moment it calls.
+   *
+   * New intake during the rewrite is safe without any gating: ids are monotonic, so a
+   * row inserted now always lands ahead of the pagination cursor and is keyed under
+   * the new spec when its batch is reached.
+   * @param channelName - The channel whose queued/delayed rows to repartition.
+   * @param compute - Maps a row's original message bytes to its key under the current spec.
+   * @returns The number of rows whose partition was rewritten.
+   */
+  async recomputeLogicalChannelKeys(
+    channelName: string,
+    compute: (originalMessage: Buffer) => string
+  ): Promise<number> {
+    this.assertNotDemoted();
+    const BATCH = 500;
+    let lastId = 0;
+    let changed = 0;
+    this.repartitioning.set(channelName, (this.repartitioning.get(channelName) ?? 0) + 1);
+    try {
+      for (;;) {
+        // Re-checked every batch, not just at entry: the yield below is a window for
+        // a peer to take the lease or for the queue to close under us, and a demoted
+        // process must stop rewriting dispatch state it no longer owns. Whatever is
+        // left keeps its old key and is re-derived at claim time by the new leader.
+        this.assertNotDemoted();
+        if (this.closed) {
+          break;
+        }
+        const rows = this.selectQueuedOrDelayedForRecomputeStmt.all(channelName, lastId, BATCH) as {
+          id: number;
+          original_message: SQLInputValue;
+        }[];
+        if (rows.length === 0) {
+          break;
+        }
+        this.runInTransaction(() => {
+          for (const row of rows) {
+            lastId = row.id;
+            const newKey = compute(toBuffer(row.original_message));
+            changed += Number(this.recomputeSetKeyStmt.run(newKey, row.id).changes);
+          }
+        });
+        if (rows.length < BATCH) {
+          break;
+        }
+        // A whole batch came back, so there is more to do — yield before the next
+        // one. `sleep(0)` rather than the worker's `setImmediate`: this runs once per
+        // 500 rows on a rare path, where a clamped timer's ~1ms is irrelevant.
+        await sleep(0);
+      }
+    } finally {
+      const held = (this.repartitioning.get(channelName) ?? 1) - 1;
+      if (held > 0) {
+        this.repartitioning.set(channelName, held);
+      } else {
+        this.repartitioning.delete(channelName);
+      }
+    }
+    if (changed > 0) {
+      this.walDirty = true;
+    }
+    return changed;
+  }
 }
 
 /**
@@ -1258,6 +1504,7 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     encoding: (raw.encoding as string | null) ?? null,
     enhancedMode: (raw.enhanced_mode as 'standard' | 'aaMode' | null) ?? null,
     attemptCount: raw.attempt_count as number,
+    logicalChannelKey: (raw.logical_channel_key as string | null) ?? '',
     guaranteedDelivery: Boolean(raw.guaranteed_delivery),
     callbackId: raw.callback_id as string,
     seqNo: (raw.seq_no as number | null) ?? null,
@@ -1279,6 +1526,8 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
   switch (state) {
     case MessageStateValues.QUEUED:
       return { ...base, state, nextAttemptAt: (raw.next_attempt_at as number | null) ?? null };
+    case MessageStateValues.DELAYED:
+      return { ...base, state };
     case MessageStateValues.CLAIMED:
       return { ...base, state, processingStartedAt };
     case MessageStateValues.INFLIGHT:

@@ -319,6 +319,131 @@ export const HealthGorillaQuestDiagnosticReport: DiagnosticReport = {
   ],
 };
 
+// Modeled on a Health Gorilla lipid panel: the report results are `hg-observaton-group`
+// observations that carry no value of their own. The panel group nests its analytes, while the
+// "Clinical PDF Report" group wraps a single result that repeats its code.
+const lipidPanelEffective = '2026-08-06T01:05:00+00:00';
+
+export const HealthGorillaCholesterolObservation: Observation = {
+  resourceType: 'Observation',
+  id: 'hg-lipid-obs-cholesterol',
+  status: 'final',
+  code: {
+    coding: [{ system: 'http://loinc.org', code: '2093-3', display: 'CHOLESTEROL, TOTAL' }],
+    text: 'CHOLESTEROL, TOTAL',
+  },
+  effectiveDateTime: lipidPanelEffective,
+  subject: createReference(HomerSimpson),
+  performer: [createReference(HealthGorillaQuestLabSacramento)],
+  valueQuantity: { value: 333, unit: 'mg/dL' },
+  interpretation: [
+    {
+      coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0078', code: 'H', display: 'Above high normal' }],
+      text: 'Above high normal',
+    },
+  ],
+  referenceRange: [{ high: { value: 200 }, text: '<200' }],
+};
+
+export const HealthGorillaHdlObservation: Observation = {
+  resourceType: 'Observation',
+  id: 'hg-lipid-obs-hdl',
+  status: 'final',
+  code: {
+    coding: [{ system: 'http://loinc.org', code: '2085-9', display: 'HDL CHOLESTEROL' }],
+    text: 'HDL CHOLESTEROL',
+  },
+  effectiveDateTime: lipidPanelEffective,
+  subject: createReference(HomerSimpson),
+  performer: [createReference(HealthGorillaQuestLabSacramento)],
+  valueQuantity: { value: 53, unit: 'mg/dL' },
+  interpretation: [
+    {
+      coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0078', code: 'N', display: 'Normal' }],
+      text: 'Normal',
+    },
+  ],
+  referenceRange: [{ low: { value: 40 }, text: '>40' }],
+};
+
+export const HealthGorillaTriglyceridesObservation: Observation = {
+  resourceType: 'Observation',
+  id: 'hg-lipid-obs-triglycerides',
+  status: 'final',
+  code: {
+    coding: [{ system: 'http://loinc.org', code: '2571-8', display: 'TRIGLYCERIDES' }],
+    text: 'TRIGLYCERIDES',
+  },
+  effectiveDateTime: lipidPanelEffective,
+  subject: createReference(HomerSimpson),
+  performer: [createReference(HealthGorillaQuestLabSacramento)],
+  valueQuantity: { value: 163.4, unit: 'mg/dL' },
+  interpretation: [
+    {
+      coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0078', code: 'H', display: 'Above high normal' }],
+      text: 'Above high normal',
+    },
+  ],
+  referenceRange: [{ high: { value: 150 }, text: '<150' }],
+};
+
+export const HealthGorillaLipidPanelGroup: Observation = {
+  resourceType: 'Observation',
+  id: 'hg-lipid-panel-group',
+  meta: { profile: ['https://healthgorilla.com/fhir/StructureDefinition/hg-observaton-group'] },
+  status: 'final',
+  code: { coding: [{ code: '7600', display: 'LIPID PANEL, STANDARD' }], text: 'LIPID PANEL, STANDARD' },
+  effectiveDateTime: lipidPanelEffective,
+  subject: createReference(HomerSimpson),
+  performer: [createReference(HealthGorillaQuestParentLab)],
+  hasMember: [
+    createReference(HealthGorillaCholesterolObservation),
+    createReference(HealthGorillaHdlObservation),
+    createReference(HealthGorillaTriglyceridesObservation),
+  ],
+};
+
+export const HealthGorillaClinicalPdfObservation: Observation = {
+  resourceType: 'Observation',
+  id: 'hg-lipid-obs-clinical-pdf',
+  status: 'final',
+  code: { text: 'Clinical PDF Report' },
+  effectiveDateTime: lipidPanelEffective,
+  subject: createReference(HomerSimpson),
+  performer: [createReference(HealthGorillaQuestParentLab)],
+  valueString: 'QUEST',
+};
+
+export const HealthGorillaClinicalPdfGroup: Observation = {
+  resourceType: 'Observation',
+  id: 'hg-lipid-clinical-pdf-group',
+  meta: { profile: ['https://healthgorilla.com/fhir/StructureDefinition/hg-observaton-group'] },
+  status: 'final',
+  code: { coding: [{ code: 'ClinicalPDFReport1', display: 'Clinical PDF Report' }], text: 'Clinical PDF Report' },
+  effectiveDateTime: lipidPanelEffective,
+  subject: createReference(HomerSimpson),
+  performer: [createReference(HealthGorillaQuestParentLab)],
+  hasMember: [createReference(HealthGorillaClinicalPdfObservation)],
+};
+
+export const HealthGorillaLipidPanelDiagnosticReport: DiagnosticReport = {
+  resourceType: 'DiagnosticReport',
+  id: 'hg-lipid-panel-report',
+  status: 'final',
+  category: [
+    {
+      coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0074', code: 'LAB', display: 'Laboratory' }],
+      text: 'Laboratory',
+    },
+  ],
+  code: { text: 'LIPID PANEL, STANDARD, Clinical PDF Report' },
+  subject: createReference(HomerSimpson),
+  effectiveDateTime: lipidPanelEffective,
+  issued: lipidPanelEffective,
+  performer: [createReference(HealthGorillaQuestParentLab)],
+  result: [createReference(HealthGorillaLipidPanelGroup), createReference(HealthGorillaClinicalPdfGroup)],
+};
+
 export const HealthGorillaDiagnosticReport: DiagnosticReport = {
   resourceType: 'DiagnosticReport',
   id: 'hg-report-1',

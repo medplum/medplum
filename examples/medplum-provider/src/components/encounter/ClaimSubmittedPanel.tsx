@@ -1,24 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Box, Button, Card, Divider, Flex, Group, Loader, Stack, Text } from '@mantine/core';
+import { Badge, Box, Button, Card, Divider, Flex, Group, Loader, Stack, Text, Tooltip } from '@mantine/core';
 import { formatDateTime } from '@medplum/core';
 import type { ClaimResponse, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource, useSearchOne } from '@medplum/react';
 import { IconExternalLink } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+import { CANDID_CLAIM_URL_BOT_IDENTIFIER, getCandidClaimStatus, isCandidClaimResponse } from '../../utils/candid';
 import { showErrorNotification } from '../../utils/notifications';
-
-// Identifier of the deployed bot that resolves a Candid Health claim portal URL.
-// The URL itself lives in the bot's secrets, so it is never hardcoded here.
-const CANDID_CLAIM_URL_BOT_IDENTIFIER = {
-  system: 'https://medplum.com/integrations/candid-health',
-  value: 'get-candid-claim-portal-url',
-};
-
-// Identifier the send-to-candid bot writes onto the ClaimResponse; its presence marks the
-// claim as a Candid claim and is what the URL bot reads to build the portal link.
-const CANDID_ENCOUNTER_ID_SYSTEM = 'https://candidhealth.com/encounter-id';
+import { formatStediClaimStatus, getStediClaimStatus } from '../../utils/stedi';
 
 interface GetCandidClaimUrlOutput {
   encounterId: string;
@@ -42,14 +33,12 @@ export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Elemen
   const [candidUrlLoading, setCandidUrlLoading] = useState(false);
 
   const botId = candidUrlBot?.id;
-  const isCandidClaimResponse = claimResponseResource?.identifier?.some(
-    (id) => id.system === CANDID_ENCOUNTER_ID_SYSTEM
-  );
+  const isCandidClaim = claimResponseResource && isCandidClaimResponse(claimResponseResource);
 
   useEffect(() => {
     let active = true;
 
-    if (!botId || !claimResponseResource || !isCandidClaimResponse) {
+    if (!botId || !claimResponseResource || !isCandidClaim) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCandidClaimUrl(undefined);
       setCandidUrlLoading(false);
@@ -86,13 +75,14 @@ export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Elemen
     return () => {
       active = false;
     };
-  }, [botId, claimResponseResource, isCandidClaimResponse, medplum]);
+  }, [botId, claimResponseResource, isCandidClaim, medplum]);
 
   if (!claimResponseResource) {
     return null;
   }
 
-  const status = 'Submitted';
+  const candidStatus = getCandidClaimStatus(claimResponseResource);
+  const stediStatus = candidStatus ? undefined : getStediClaimStatus(claimResponseResource);
   const createdAt = claimResponseResource.created;
   const claimAmount = claimResponseResource.total?.reduce((sum, total) => sum + (total.amount?.value ?? 0), 0) ?? 0;
 
@@ -104,10 +94,17 @@ export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Elemen
             <Text size="xs" c="dimmed">
               Claim Status:
             </Text>
-            {status && (
-              <Badge color={getStatusColor(status)} radius="xl" variant="filled">
-                {formatCandidStatus(status)}
+            {candidStatus && (
+              <Badge color={getStatusColor(candidStatus)} radius="xl" variant="filled">
+                {formatCandidStatus(candidStatus)}
               </Badge>
+            )}
+            {stediStatus && (
+              <Tooltip label={stediStatus.display} disabled={!stediStatus.display} multiline maw={360}>
+                <Badge color={getStediStatusColor(stediStatus.code)} radius="xl" variant="filled">
+                  {formatStediClaimStatus(stediStatus)}
+                </Badge>
+              </Tooltip>
             )}
           </Stack>
           <Box style={{ flex: 1 }}>
@@ -143,6 +140,20 @@ export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Elemen
       </Stack>
     </Card>
   );
+};
+
+// X12 507 category codes group by first letter; see formatStediClaimStatus.
+const getStediStatusColor = (code: string | undefined): string => {
+  switch (code?.charAt(0)) {
+    case 'F':
+      return 'green';
+    case 'P':
+      return 'yellow';
+    case 'E':
+      return 'red';
+    default:
+      return 'violet';
+  }
 };
 
 const getStatusColor = (status: string): string => {
