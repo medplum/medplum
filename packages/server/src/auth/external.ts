@@ -321,10 +321,12 @@ async function verifyExternalCode(
  * Parses the id_token returned by the external identity provider, verifying its signature when a
  * JWKS is available.
  *
- * When the identity provider publishes a JWKS (`jwksUrl`), the id_token signature, issuer, and
- * audience are checked before the claims are read. Providers without a configured `jwksUrl` retain
- * the existing behavior of relying on the server-to-server token endpoint response; configuring
- * `jwksUrl` (and `issuer`) is recommended so that claims are cryptographically verified.
+ * When the identity provider publishes a JWKS (`jwksUrl`), the id_token signature and issuer are
+ * checked before the claims are read. The audience is checked against `idp.audience` when set,
+ * otherwise against `idp.clientId`, since an OIDC id_token is audienced to the client it was issued
+ * for. Providers without a configured `jwksUrl` retain the existing behavior of relying on the
+ * server-to-server token endpoint response; configuring `jwksUrl` (and `issuer`) is recommended so
+ * that claims are cryptographically verified.
  * @param idp - The identity provider configuration.
  * @param idToken - The raw id_token from the token endpoint response.
  * @returns The id_token claims.
@@ -339,7 +341,11 @@ async function verifyExternalIdToken(idp: IdentityProvider, idToken: unknown): P
       throw new OperationOutcomeError(badRequest('Missing issuer for external identity provider'));
     }
     const jwks = createRemoteJWKSet(new URL(idp.jwksUrl), { [customFetch]: safeFetch });
-    await jwtVerify(idToken, jwks, { issuer: idp.issuer, audience: idp.audience });
+    const { payload } = await jwtVerify(idToken, jwks, {
+      issuer: idp.issuer,
+      audience: idp.audience ?? idp.clientId,
+    });
+    return payload;
   }
 
   return parseJWTPayload(idToken);

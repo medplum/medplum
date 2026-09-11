@@ -386,25 +386,36 @@ describe('External', () => {
       })
     );
 
-    const jwt = await new SignJWT({ email })
-      .setProtectedHeader({ alg: 'ES256' })
-      .setIssuer(issuer)
-      .setExpirationTime('2h')
-      .sign(keyPair.privateKey);
+    const signIdToken = (audience: string): Promise<string> =>
+      new SignJWT({ email })
+        .setProtectedHeader({ alg: 'ES256' })
+        .setIssuer(issuer)
+        .setAudience(audience)
+        .setExpirationTime('2h')
+        .sign(keyPair.privateKey);
 
     // The token endpoint returns the signed token; the JWKS endpoint returns the public key.
-    fetchMock.mockImplementation((input: any) =>
-      String(input).includes('verified-jwks') ? mockFetchJson({ keys: [publicJwk] }) : mockFetchJson({ id_token: jwt })
-    );
+    const mockIdToken = (jwt: string): void => {
+      fetchMock.mockImplementation((input: any) =>
+        String(input).includes('verified-jwks') ? mockFetchJson({ keys: [publicJwk] }) : mockFetchJson({ id_token: jwt })
+      );
+    };
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: jwksClient.id }),
+    });
 
-    const res = await request(app).get(
-      appendQueryParams('/auth/external', {
-        code: randomUUID(),
-        state: JSON.stringify({ redirectUri, clientId: jwksClient.id }),
-      })
-    );
+    // Audience defaults to the IdP client ID, so a token audienced to it is accepted.
+    mockIdToken(await signIdToken(identityProvider.clientId));
+    let res = await request(app).get(url);
     expect(res).toHaveStatus(302);
     expect(new URL(res.header.location).searchParams.get('code')).toBeTruthy();
+
+    // A token audienced to a different relying party is rejected.
+    mockIdToken(await signIdToken('some-other-client'));
+    res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Failed to verify code - check your identity provider configuration');
   });
 
   test('Invalid client', async () => {
