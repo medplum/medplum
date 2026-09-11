@@ -508,6 +508,14 @@ export async function exchangeExternalAuthToken(
     membershipId,
   });
 
+  // Token exchange carries the same proof as the external auth callback: the identity
+  // provider authenticated the user. Mark the address verified on the same terms, so the
+  // two external paths do not disagree. Only ever upgrades.
+  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+  if (!user.emailVerified) {
+    await systemRepo.updateResource<User>({ ...user, emailVerified: true });
+  }
+
   await sendTokenResponse(req, res, login, client);
 }
 
