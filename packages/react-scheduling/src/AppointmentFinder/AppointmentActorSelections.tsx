@@ -88,7 +88,7 @@ function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
   const required = isActorTypeRequired(actorType);
   const rows = props.requirements?.length ? props.requirements : [getBlankRequirement(actorType)];
   const several = rows.length > 1;
-  const canAddAnother = rows[rows.length - 1].candidates.length > 0;
+  const canAddAnother = (rows.at(-1)?.candidates.length ?? 0) > 0;
 
   function change(next: readonly ActorRequirement[]): void {
     onChange(actorType, next);

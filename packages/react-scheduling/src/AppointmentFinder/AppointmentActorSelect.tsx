@@ -9,7 +9,7 @@ import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { useCallback } from 'react';
 import type { BookableActorType } from '../actors';
-import { getActorTypeLabel, isActorTypeRequired } from '../actors';
+import { BOOKABLE_ACTOR_TYPES, getActorTypeLabel, isActorTypeRequired } from '../actors';
 import type { ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from './AppointmentFinder.schedules';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
@@ -91,11 +91,25 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
       toOption={toOption}
       loadOptions={search}
       itemComponent={CandidateItem}
-      emptyComponent={() => <>No {lowercaseLabel}s found</>}
+      emptyComponent={EMPTY_COMPONENTS[actorType]}
       onChange={handleChange}
     />
   );
 }
+
+/**
+ * What the list says when a name is searched for and nothing comes back, per actor type.
+ *
+ * One per type, held here rather than written inline: `AsyncAutocomplete` mounts this as
+ * a component, so an arrow closed over the label during a render would be a new
+ * component on every keystroke.
+ */
+const EMPTY_COMPONENTS = Object.fromEntries(
+  BOOKABLE_ACTOR_TYPES.map((actorType) => {
+    const noun = getActorTypeLabel(actorType).toLowerCase();
+    return [actorType, () => <>No {noun}s found</>];
+  })
+) as Record<BookableActorType, () => JSX.Element>;
 
 function toOption(candidate: ScheduleCandidate): AsyncAutocompleteOption<ScheduleCandidate> {
   // Keyed by schedule id, not actor id: a schedule is what `$find` is asked for,
