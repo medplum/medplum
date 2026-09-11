@@ -348,7 +348,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       tableDefinition.columns.push(column);
     }
 
-    for (const index of getSearchParameterIndexes(searchParam, impl)) {
+    for (const index of getSearchParameterIndexes(resourceType, searchParam, impl)) {
       const existing = tableDefinition.indexes.find((i) => indexDefinitionsEqual(i, index));
       if (existing) {
         continue;
@@ -421,47 +421,112 @@ function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnD
   }
 }
 
+/**
+ * Extra columns wrapped around the columns a search parameter contributes to its own indexes, e.g.
+ * `{ prefix: ['projectId'], suffix: ['lastUpdated'] }` turns an index on `(status)` into an additional
+ * index on `("projectId", status, "lastUpdated")`.
+ */
+type IndexAugmentation = {
+  /** Columns prepended to the search parameter's own index columns */
+  prefix?: string[];
+  /** Columns appended to the search parameter's own index columns */
+  suffix?: string[];
+};
+
+const PROJECT_ID_PREFIX = { prefix: ['projectId'] };
+
+/** Augmentations applied to a search parameter code on every resource type that defines it. */
+export const GlobalIndexAugmentations: Record<string, IndexAugmentation | undefined> = {
+  date: PROJECT_ID_PREFIX,
+};
+
+/**
+ * Augmentations applied to specific resourceType/search parameter code pairs.
+ * An entry here takes precedence over {@link GlobalIndexAugmentations} for the same code.
+ */
+export const ResourceIndexAugmentations: Partial<Record<ResourceType, Record<string, IndexAugmentation | undefined>>> =
+  {
+    Task: {
+      'authored-on': PROJECT_ID_PREFIX,
+      code: PROJECT_ID_PREFIX,
+      'due-date': PROJECT_ID_PREFIX,
+      priority: PROJECT_ID_PREFIX,
+      status: { ...PROJECT_ID_PREFIX, suffix: ['lastUpdated'] },
+      _tag: PROJECT_ID_PREFIX,
+    },
+    Communication: {
+      sent: PROJECT_ID_PREFIX,
+    },
+  };
+
+function getIndexAugmentation(resourceType: string, code: string): IndexAugmentation | undefined {
+  return ResourceIndexAugmentations[resourceType as ResourceType]?.[code] ?? GlobalIndexAugmentations[code];
+}
+
+/**
+ * Replaces the standard single-column index with an augmented form more suitable for real queries.
+ * @param indexes - The indexes generated for a search parameter.
+ * @param augmentation - The augmentation to apply, if any.
+ * @returns The original indexes, plus an augmented copy of each when an augmentation is specified.
+ */
+function withAugmentedIndexes(
+  indexes: IndexDefinition[],
+  augmentation: IndexAugmentation | undefined
+): IndexDefinition[] {
+  if (!augmentation) {
+    return indexes;
+  }
+
+  const { prefix, suffix } = augmentation;
+  return indexes.map((index) => ({
+    ...index,
+    columns: [...(prefix ?? EMPTY), ...index.columns, ...(suffix ?? EMPTY)],
+  }));
+}
+
 function getSearchParameterIndexes(
+  resourceType: string,
   searchParam: SearchParameter,
   impl: SearchParameterImplementation
 ): IndexDefinition[] {
+  const augmentation = getIndexAugmentation(resourceType, searchParam.code);
   switch (impl.searchStrategy) {
     case 'token-column':
-      return [
-        { columns: [impl.tokenColumnName], indexType: 'gin' },
-        {
-          columns: [
-            {
-              expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.textSearchColumnName)}) gin_trgm_ops`,
-              name: impl.textSearchColumnName + 'Trgm',
-            },
-          ],
-          indexType: 'gin',
-        },
-      ];
-    case 'range-column': {
-      const indexes: IndexDefinition[] = [
-        // legacy index prior to range-column search strategy
-        { columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' },
-        {
-          columns: [impl.rangeColumnName, impl.sortColumnName],
-          indexType: 'gist',
-        },
-      ];
-      // legacy index prior to range-column search strategy
-      if (!impl.array && (searchParam.code === 'date' || searchParam.code === 'sent')) {
-        indexes.push({ columns: ['projectId', impl.columnName], indexType: 'btree' });
-      }
-      return indexes;
-    }
-    case 'column': {
-      const indexes: IndexDefinition[] = [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
-      if (!impl.array && (searchParam.code === 'date' || searchParam.code === 'sent')) {
-        indexes.push({ columns: ['projectId', impl.columnName], indexType: 'btree' });
-      }
-      return indexes;
-    }
+      return withAugmentedIndexes(
+        [
+          { columns: [impl.tokenColumnName], indexType: 'gin' },
+          {
+            columns: [
+              {
+                expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.textSearchColumnName)}) gin_trgm_ops`,
+                name: impl.textSearchColumnName + 'Trgm',
+              },
+            ],
+            indexType: 'gin',
+          },
+        ],
+        augmentation
+      );
+    case 'range-column':
+      return withAugmentedIndexes(
+        [
+          // legacy index prior to range-column search strategy
+          { columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' },
+          { columns: [impl.rangeColumnName, impl.sortColumnName], indexType: 'gist' },
+        ],
+        augmentation
+      );
+    case 'column':
+      return withAugmentedIndexes(
+        [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }],
+        augmentation
+      );
     case 'lookup-table':
+      // A lookup table parameter has no column on the resource table to wrap
+      assert(
+        !augmentation,
+        `Index augmentation is not supported for lookup-table search parameter ${resourceType}.${searchParam.code}`
+      );
       return impl.sortColumnName ? [{ columns: [impl.sortColumnName], indexType: 'btree' }] : [];
     default:
       throw new Error('Unexpected searchStrategy: ' + (impl as SearchParameterImplementation).searchStrategy);
