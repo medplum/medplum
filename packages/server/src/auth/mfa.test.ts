@@ -572,11 +572,14 @@ describe('MFA', () => {
     // ...meanwhile the access token refreshes, rotating the refresh secret from
     // the stale snapshot. The rotation must not clobber the freshly-set code.
     const rotated = await withTestContext(() =>
-      rotateLoginRefreshSecret(staleLogin, { remoteAddress: '5.5.5.5', userAgent: 'vitest' })
+      rotateLoginRefreshSecret(staleLogin, staleLogin.refreshSecret as string, {
+        remoteAddress: '5.5.5.5',
+        userAgent: 'vitest',
+      })
     );
-    expect(rotated.refreshSecret).toBeDefined();
-    expect(rotated.refreshSecret).not.toBe(staleLogin.refreshSecret);
-    expect(rotated.emailMfa).toBeDefined();
+    expect(rotated?.refreshSecret).toBeDefined();
+    expect(rotated?.refreshSecret).not.toBe(staleLogin.refreshSecret);
+    expect(rotated?.emailMfa).toBeDefined();
 
     // The user submits the emailed code and enrollment completes.
     const enrollRes = await request(app)
