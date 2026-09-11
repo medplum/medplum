@@ -10,8 +10,9 @@ export type UseScriptSureCartReturn = UseMedicationCartReturn;
  * React hook for the ScriptSure **medication cart** lifecycle: add a draft
  * `MedicationRequest` line (`createResource`), check out drafts into the
  * patient's ScriptSure MedCart (`$checkout-medications` →
- * `/widgets/medcart/{patientId}`), and remove/clear cart lines
- * (`$remove-cart-medication` / `$clear-cart`).
+ * `/widgets/medcart/{patientId}`), remove/clear cart lines
+ * (`$remove-cart-medication` / `$clear-cart`), and read the MedCart as
+ * ScriptSure holds it, reconciled against the local drafts (`$get-cart`).
  *
  * A near-empty re-export of `useMedicationCart` from `@medplum/react-hooks`: the
  * vendor binding for the custom operations lives entirely on the server, where
@@ -29,7 +30,7 @@ export type UseScriptSureCartReturn = UseMedicationCartReturn;
  * the MedCart widget).
  *
  * @returns The same API as `useMedicationCart` (`addToCart`, `adding`,
- * `checkout`, `removeFromCart`, `clearCart`).
+ * `checkout`, `removeFromCart`, `clearCart`, `getCart`).
  */
 export function useScriptSureCart(): UseScriptSureCartReturn {
   return useMedicationCart();
