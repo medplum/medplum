@@ -112,9 +112,10 @@ function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
               disabled={disabled}
               label={several ? <RowLabel index={index} label={label} /> : label}
               placeholder={row.candidates.length > 0 ? 'or…' : `Search ${lowercaseLabel}s`}
+              required={required}
               // With several rows the asterisk belongs to the heading above them,
               // since it is the type that has to be answered and not this row.
-              required={!several && required}
+              withAsterisk={!several && required}
               defaultValue={row.candidates}
               onChange={(candidates: readonly ScheduleCandidate[]) =>
                 change(rows.map((held) => (held.id === row.id ? { ...held, candidates } : held)))
