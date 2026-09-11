@@ -47,6 +47,30 @@ describe('FHIRcast', () => {
       expect(subRequest.endpoint?.startsWith('ws')).toBeTruthy();
     });
 
+    test('Valid subscription request with subscriber name', async () => {
+      const fetch = mockFetch(200, { 'hub.channel.endpoint': 'wss://api.medplum.com/ws/fhircast/def456' });
+      const client = new MedplumClient({ fetch });
+
+      const topic = 'abc123';
+      const events = ['Patient-open'] as FhircastEventName[];
+      const expectedSubRequest = {
+        mode: 'subscribe',
+        channelType: 'websocket',
+        topic,
+        events,
+        subscriberName: 'Acme Viewer',
+      } satisfies PendingSubscriptionRequest;
+
+      const subRequest = await client.fhircastSubscribe(topic, events, 'Acme Viewer');
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhircast/STU3',
+        expect.objectContaining<RequestInit>({
+          body: serializeFhircastSubscriptionRequest(expectedSubRequest),
+        })
+      );
+      expect(subRequest).toStrictEqual(expect.objectContaining<PendingSubscriptionRequest>(expectedSubRequest));
+    });
+
     test('Invalid subscription request', async () => {
       const fetch = mockFetch(500, { error: 'how did we make it here?' });
       const client = new MedplumClient({ fetch });

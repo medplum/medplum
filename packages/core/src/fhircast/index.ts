@@ -153,6 +153,12 @@ export type SubscriptionRequest = {
   events: FhircastEventName[];
   topic: string;
   endpoint: string;
+  /**
+   * An optional description of this subscriber, sent as `subscriber.name`. The Hub names a
+   * subscriber that leaves this unset after the identity it subscribed with.
+   * Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-4-Subscribing.html
+   */
+  subscriberName?: string;
 };
 
 export type FhircastPatientContext = { key: 'patient'; resource: Patient };
@@ -293,7 +299,7 @@ export function serializeFhircastSubscriptionRequest(
     );
   }
 
-  const { channelType, mode, topic, events } = subscriptionRequest;
+  const { channelType, mode, topic, events, subscriberName } = subscriptionRequest;
 
   const formattedSubRequest = {
     'hub.channel.type': channelType,
@@ -302,8 +308,13 @@ export function serializeFhircastSubscriptionRequest(
   } as Record<string, string>;
 
   if (mode === 'subscribe') {
-    // An unsubscribe cancels an endpoint, and the Hub already holds the events it was issued for
+    // An unsubscribe cancels an endpoint, and the Hub already holds the events and name it was
+    // issued for
     formattedSubRequest['hub.events'] = events.join(',');
+    if (subscriberName) {
+      // The one subscribe parameter the spec does not prefix with `hub.`
+      formattedSubRequest['subscriber.name'] = subscriberName;
+    }
   }
 
   if (isCompletedSubscriptionRequest(subscriptionRequest)) {
@@ -326,8 +337,11 @@ export function validateFhircastSubscriptionRequest(
   if (typeof subscriptionRequest !== 'object') {
     return false;
   }
-  const { channelType, mode, topic, events } = subscriptionRequest;
+  const { channelType, mode, topic, events, subscriberName } = subscriptionRequest;
   if (!(channelType && mode && topic && events)) {
+    return false;
+  }
+  if (subscriberName !== undefined && typeof subscriberName !== 'string') {
     return false;
   }
   if (typeof topic !== 'string') {

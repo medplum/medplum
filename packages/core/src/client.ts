@@ -4484,9 +4484,15 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category FHIRcast
    * @param topic - The topic to publish to. Usually a UUID.
    * @param events - An array of event names to listen for.
+   * @param subscriberName - An optional description of this subscriber. The Hub names a subscriber
+   * that leaves this unset after the identity it subscribed with.
    * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
    */
-  async fhircastSubscribe(topic: string, events: FhircastEventName[]): Promise<SubscriptionRequest> {
+  async fhircastSubscribe(
+    topic: string,
+    events: FhircastEventName[],
+    subscriberName?: string
+  ): Promise<SubscriptionRequest> {
     if (!(typeof topic === 'string' && topic !== '')) {
       throw new OperationOutcomeError(validationError('Invalid topic provided. Topic must be a valid string.'));
     }
@@ -4503,6 +4509,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       mode: 'subscribe',
       topic,
       events,
+      subscriberName,
     } as PendingSubscriptionRequest;
 
     const body = await this.post<{ 'hub.channel.endpoint': string }>(

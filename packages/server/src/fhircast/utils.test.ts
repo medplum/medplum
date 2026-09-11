@@ -171,6 +171,7 @@ describe('FHIRcast Utils', () => {
         topic: generateId(),
         events: ['Patient-open'],
         version: 'STU3',
+        subscriberName: 'Acme Viewer',
       };
 
       await expect(getEndpointSubscription(endpoint)).resolves.toBeUndefined();
@@ -192,10 +193,27 @@ describe('FHIRcast Utils', () => {
       [JSON.stringify({ projectId: generateId() })],
       [JSON.stringify({ projectId: generateId(), topic: generateId(), events: [42], version: 'STU3' })],
       [JSON.stringify({ projectId: generateId(), topic: generateId(), events: [], version: 'STU4' })],
+      [
+        JSON.stringify({
+          projectId: generateId(),
+          topic: generateId(),
+          events: [],
+          version: 'STU3',
+          subscriberName: 42,
+        }),
+      ],
     ])('A cached subscription of %j reads as no subscription', async (cached) => {
       const endpoint = generateId();
       await getCacheRedis().set(getEndpointSubscriptionKey(endpoint), cached);
       await expect(getEndpointSubscription(endpoint)).resolves.toBeUndefined();
+    });
+
+    // A subscription stored before the Hub recorded subscriber names is still a subscription
+    test('A cached subscription that names no subscriber still reads back', async () => {
+      const endpoint = generateId();
+      const subscription = { projectId: generateId(), topic: generateId(), events: ['Patient-open'], version: 'STU3' };
+      await getCacheRedis().set(getEndpointSubscriptionKey(endpoint), JSON.stringify(subscription));
+      await expect(getEndpointSubscription(endpoint)).resolves.toStrictEqual(subscription);
     });
   });
 

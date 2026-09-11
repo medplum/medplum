@@ -39,6 +39,11 @@ export type FhircastSubscription = {
   topic: string;
   events: string[];
   version: FhircastVersion;
+  /**
+   * A description of the subscriber, from `subscriber.name` or else the identity it subscribed
+   * with. Optional because a subscription stored before the Hub recorded names has none.
+   */
+  subscriberName?: string;
 };
 
 export function getEndpointSubscriptionKey(endpoint: string): string {
@@ -85,7 +90,8 @@ function isFhircastSubscription(subscription: unknown): subscription is Fhircast
     typeof candidate.topic === 'string' &&
     Array.isArray(candidate.events) &&
     candidate.events.every((event) => typeof event === 'string') &&
-    Object.values(FhircastVersion).includes(candidate.version)
+    Object.values(FhircastVersion).includes(candidate.version) &&
+    (candidate.subscriberName === undefined || typeof candidate.subscriberName === 'string')
   );
 }
 
