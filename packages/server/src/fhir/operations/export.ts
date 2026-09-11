@@ -107,6 +107,26 @@ export async function exportResourceType<T extends Resource>(
 
   // Close writer and free memory for this resource type immediately
   await exporter.closeWriter(resourceType);
+
+  // Per the Bulk Data Access IG, when `_since` is supplied, also report resources of this
+  // type that were deleted on or after that timestamp, as transaction Bundles under `deleted`.
+  // Deleted resources are never also present in `output` above, since a deleted resource
+  // cannot match the `_lastUpdated` search performed there (its content is a tombstone).
+  if (since) {
+    const deletedSearchRequest: SearchRequest<T> = {
+      resourceType,
+      count,
+      filters: [
+        { code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since },
+        { code: '_deleted', operator: Operator.EQUALS, value: 'true' },
+      ],
+      sortRules: [{ code: '_lastUpdated', descending: false }],
+    };
+    await repo.processAllResources(deletedSearchRequest, async (resource) => {
+      await exporter.writeDeletedResource(resourceType, resource.id);
+    });
+    await exporter.closeDeletedWriter(resourceType);
+  }
 }
 
 function getResourceTypesByExportLevel(exportLevel: string): ResourceType[] {

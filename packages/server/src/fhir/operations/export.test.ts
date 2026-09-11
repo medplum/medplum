@@ -165,6 +165,82 @@ describe('Export', () => {
       expect(exportWriteResourceSpy).toHaveBeenCalled();
     }));
 
+  test('exportResourceType reports deleted resources when since is provided', async () =>
+    withTestContext(async () => {
+      const accessToken = await initTestAuth({ membership: { admin: true } });
+
+      const createRes = await request(app)
+        .post('/fhir/R4/Observation')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'Observation', status: 'final', code: { text: 'to be deleted' } });
+      expect(createRes).toHaveStatus(201);
+      const observationId = createRes.body.id;
+
+      // `_since` must be strictly before the delete, and the delete's `_lastUpdated` must be
+      // strictly >= `_since` for the deletion search filter to pick it up.
+      const since = new Date().toISOString();
+
+      const deleteRes = await request(app)
+        .delete(`/fhir/R4/Observation/${observationId}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(deleteRes).toHaveStatus(200);
+
+      const initRes = await request(app)
+        .get(`/fhir/R4/$export?_since=${encodeURIComponent(since)}&_type=Observation`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Accept', ContentType.FHIR_JSON)
+        .set('Prefer', 'respond-async');
+      expect(initRes).toHaveStatus(202);
+      expect(initRes.headers['content-location']).toBeDefined();
+
+      const contentLocation = new URL(initRes.headers['content-location']);
+      await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
+
+      const statusRes = await request(app)
+        .get(contentLocation.pathname)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(statusRes).toHaveStatus(200);
+
+      // The deleted resource must not also appear in `output`.
+      const output = (statusRes.body.output ?? []) as BulkDataExportOutput[];
+      expect(output.some((o) => o.type === 'Observation')).toBe(false);
+
+      const deleted = statusRes.body.deleted as BulkDataExportOutput[] | undefined;
+      expect(deleted).toBeDefined();
+      expect(deleted?.length).toBe(1);
+      expect(deleted?.[0].type).toBe('Observation');
+
+      const deletedLocation = new URL(deleted?.[0].url as string);
+      const deletedContent = (getBinaryStorage() as FileSystemStorage).readFileByUrlForTests(deletedLocation);
+      const bundles = deletedContent
+        .trim()
+        .split('\n')
+        .map((line) => JSON.parse(line));
+      expect(bundles).toHaveLength(1);
+      expect(bundles[0].resourceType).toBe('Bundle');
+      expect(bundles[0].type).toBe('transaction');
+      expect(bundles[0].entry[0].request).toEqual({
+        method: 'DELETE',
+        url: `Observation/${observationId}`,
+      });
+    }));
+
+  test('exportResourceType does not query for deletions when since is not provided', async () =>
+    withTestContext(async () => {
+      const exporter = new BulkExporter(systemRepo);
+      const writeDeletedResourceSpy = vi.spyOn(exporter, 'writeDeletedResource');
+      await exporter.start('http://example.com');
+
+      const { project } = await createTestProject();
+      await exportResourceType(exporter, 'Observation', 100, undefined);
+      const bulkDataExport = await exporter.close(project);
+
+      expect(writeDeletedResourceSpy).not.toHaveBeenCalled();
+      const deletedParams = bulkDataExport.output?.parameter?.filter((p) => p.name === 'deleted');
+      expect(deletedParams?.length ?? 0).toBe(0);
+    }));
+
   test('closeWriter removes only specified resource type from tracking', async () =>
     withTestContext(async () => {
       const exporter = new BulkExporter(systemRepo);

@@ -44,13 +44,18 @@ bulkDataRouter.get('/export/:id', async (req: Request, res: Response) => {
     return;
   }
 
+  // Per the Bulk Data Access IG, `deleted` MAY be omitted when there is nothing to report
+  // (e.g. no resources were deleted). Only include the key when it is non-empty so clients
+  // can distinguish "nothing deleted" from "this field was never populated".
+  const deleted = extractOutputParameters(bulkDataExport, 'deleted');
+
   const json = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, {
     transactionTime: bulkDataExport.transactionTime,
     request: bulkDataExport.request,
     requiresAccessToken: false, // Rewritten attachments use presigned S3 URLs and do not require the access token
     output: extractOutputParameters(bulkDataExport, 'output'),
     error: extractOutputParameters(bulkDataExport, 'error'),
-    deleted: extractOutputParameters(bulkDataExport, 'deleted'),
+    ...(deleted.length > 0 ? { deleted } : undefined),
   });
   res.status(200).type(ContentType.JSON).json(json);
 });

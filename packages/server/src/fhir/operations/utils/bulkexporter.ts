@@ -43,6 +43,7 @@ export class BulkExporter {
   readonly repo: Repository;
   private resource: WithId<AsyncJob> | undefined;
   readonly writers: Record<string, BulkFileWriter> = {};
+  readonly deletedWriters: Record<string, BulkFileWriter> = {};
   readonly resourceSets = new Map<string, Set<string>>();
 
   constructor(repo: Repository) {
@@ -91,6 +92,24 @@ export class BulkExporter {
     return writer;
   }
 
+  async getDeletedWriter(resourceType: string): Promise<BulkFileWriter> {
+    let writer = this.deletedWriters[resourceType];
+    if (!writer) {
+      const accountCompartment = this.repo.effectiveAccessPolicy()?.compartment;
+      const binary = await this.repo.getSystemRepo().createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: NDJSON_CONTENT_TYPE,
+        meta: {
+          project: this.repo.currentProject()?.id,
+          accounts: accountCompartment ? [accountCompartment] : undefined,
+        },
+      });
+      writer = new BulkFileWriter(binary);
+      this.deletedWriters[resourceType] = writer;
+    }
+    return writer;
+  }
+
   async closeWriter(resourceType: string): Promise<void> {
     const writer = this.writers[resourceType];
     if (writer) {
@@ -100,6 +119,14 @@ export class BulkExporter {
 
     // Clear tracking for this resource type to free memory
     this.resourceSets.delete(resourceType);
+  }
+
+  async closeDeletedWriter(resourceType: string): Promise<void> {
+    const writer = this.deletedWriters[resourceType];
+    if (writer) {
+      await writer.close();
+      // Keep reference for formatOutput(), but free the stream resources
+    }
   }
 
   async writeBundle(bundle: Bundle<WithId<Resource>>): Promise<void> {
@@ -129,12 +156,33 @@ export class BulkExporter {
     }
   }
 
+  /**
+   * Records a resource that was deleted after the export's `_since` timestamp.
+   * Per the Bulk Data Access IG, deleted resources are reported as FHIR transaction
+   * Bundles (one DELETE entry per Bundle) in a separate NDJSON file from `output`,
+   * and must not also appear in `output`.
+   * @param resourceType - The resource type that was deleted.
+   * @param id - The id of the deleted resource.
+   */
+  async writeDeletedResource(resourceType: string, id: string): Promise<void> {
+    const deleteBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [{ request: { method: 'DELETE', url: `${resourceType}/${id}` } }],
+    };
+    const writer = await this.getDeletedWriter(resourceType);
+    await writer.write(deleteBundle);
+  }
+
   async close(project: Project): Promise<AsyncJob> {
     if (!this.resource) {
       throw new Error('Export must be started before calling close()');
     }
 
     for (const writer of Object.values(this.writers)) {
+      await writer.close();
+    }
+    for (const writer of Object.values(this.deletedWriters)) {
       await writer.close();
     }
 
@@ -164,13 +212,22 @@ export class BulkExporter {
   formatOutput(): Parameters {
     return {
       resourceType: 'Parameters',
-      parameter: Object.entries(this.writers).map(([resourceType, writer]) => ({
-        name: 'output',
-        part: [
-          { name: 'type', valueCode: resourceType },
-          { name: 'url', valueUri: getReferenceString(writer.binary) },
-        ],
-      })),
+      parameter: [
+        ...Object.entries(this.writers).map(([resourceType, writer]) => ({
+          name: 'output',
+          part: [
+            { name: 'type', valueCode: resourceType },
+            { name: 'url', valueUri: getReferenceString(writer.binary) },
+          ],
+        })),
+        ...Object.entries(this.deletedWriters).map(([resourceType, writer]) => ({
+          name: 'deleted',
+          part: [
+            { name: 'type', valueCode: resourceType },
+            { name: 'url', valueUri: getReferenceString(writer.binary) },
+          ],
+        })),
+      ],
     };
   }
 }
