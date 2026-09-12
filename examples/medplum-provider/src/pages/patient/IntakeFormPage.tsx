@@ -143,6 +143,17 @@ function extractValueSets(items: QuestionnaireItem[] | undefined, result: ValueS
   return result;
 }
 
+const phoneItemExtensions = [
+  {
+    url: 'http://hl7.org/fhir/StructureDefinition/regex',
+    valueString: '^\\+?[0-9\\(\\)\\-.\\s]{7,20}$',
+  },
+  {
+    url: 'http://hl7.org/fhir/StructureDefinition/entryFormat',
+    valueString: '(xxx) xxx-xxxx',
+  },
+];
+
 const defaultQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
   status: 'active',
@@ -202,6 +213,7 @@ const defaultQuestionnaire: Questionnaire = {
           linkId: 'phone',
           text: 'Phone',
           type: 'string',
+          extension: phoneItemExtensions,
         },
         {
           linkId: 'ssn',
@@ -261,6 +273,7 @@ const defaultQuestionnaire: Questionnaire = {
           linkId: 'emergency-contact-phone',
           text: 'Phone',
           type: 'string',
+          extension: phoneItemExtensions,
         },
       ],
     },
