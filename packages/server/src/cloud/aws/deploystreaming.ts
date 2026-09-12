@@ -19,7 +19,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
 
 const WRAPPER_CODE =
   `
-  const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, traceparent, headers, streaming } = event;
+  const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, traceparent, rawBody, headers, streaming } = event;
   const medplum = new MedplumClient({
     baseUrl,
     fetch: function (url, options = {}) {
@@ -44,7 +44,7 @@ const WRAPPER_CODE =
     if (contentType === ContentType.HL7_V2 && input) {
       input = Hl7Message.parse(input);
     }
-    let result = await userCode.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers, responseStream: botResponseStream });
+    let result = await userCode.handler(medplum, { bot, requester, input, contentType, secrets, traceId, rawBody, headers, responseStream: botResponseStream });
     if (contentType === ContentType.HL7_V2 && result) {
       result = result.toString();
     }

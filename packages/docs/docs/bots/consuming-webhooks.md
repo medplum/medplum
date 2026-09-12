@@ -98,6 +98,14 @@ Using unauthenticated webhooks inherently carries security risks. Medplum provid
 5.  **Rate Limiting (Recommended):** Implement rate limiting to prevent abuse or denial-of-service attacks against your webhook endpoint. Medplum offers platform-level rate limiting, but consider additional application-specific rate limiting within your Bot if appropriate.
 6.  **Payload Validation (Essential):** Always validate the structure and content of incoming webhook payloads before processing them. Do not trust external input.
 
+### Verifying JSON signatures
+
+For UTF-8 JSON requests to `/webhook/{ProjectMembership.id}`, `event.rawBody` contains the original JSON text before parsing. Pass this text and the provider's signature header from `event.headers` to the provider's verification library. Do not use `JSON.stringify(event.input)`: parsing and reserializing can change whitespace, escaping, and number formatting, invalidating the signature. `event.input` remains the parsed object.
+
+The normal server JSON size limit still applies. Body-parser decompresses compressed requests before capturing this text; use uncompressed UTF-8 JSON for providers that sign the transmitted bytes. The property is absent for other content types, encodings, and execution endpoints. Reject a missing `rawBody` when your integration requires JSON signature verification, and verify before writing resources or processing the event.
+
+Raw body forwarding is supported in VM, AWS Lambda (including streaming wrappers), and Fission runtimes. Redeploy existing Lambda and Fission Bots after upgrading the server so their generated wrappers forward the new property. The Bot layer contains dependencies; the server generates these wrappers during Bot deployment.
+
 ### How to Set Up an Unauthenticated Webhook
 
 To set up an unauthenticated webhook, follow these steps:
