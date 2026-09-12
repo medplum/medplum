@@ -133,4 +133,31 @@ describe('Mock Repo', () => {
     expect(result1).toBeDefined();
     expect(result1.length).toBeGreaterThanOrEqual(1);
   });
+
+  test('Search by _project', async () => {
+    // Regression test for https://github.com/medplum/medplum/issues/8831
+    // `_project` is a Medplum-specific search parameter widely used in production bots.
+    // MemoryRepository/MockClient previously returned zero results whenever it was
+    // included in a search, because `_project` was not registered as a built-in
+    // search parameter in `globalSchema.types[resourceType].searchParams`.
+    const client = new MockClient();
+    const projectId = randomUUID();
+    const otherProjectId = randomUUID();
+
+    const patient = await client.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: { project: projectId },
+    });
+    await client.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: { project: otherProjectId },
+    });
+
+    const result = await client.searchResources('Patient', { _project: projectId });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe(patient.id);
+
+    const noMatch = await client.searchResources('Patient', { _project: randomUUID() });
+    expect(noMatch).toHaveLength(0);
+  });
 });
