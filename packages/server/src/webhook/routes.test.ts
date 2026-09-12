@@ -13,7 +13,7 @@ import { createTestProject } from '../test.setup';
 const cjsCode = `
 exports.handler = async function (medplum, event) {
   console.log(JSON.stringify(event));
-  return event.input;
+  return event.headers["x-test-return-event"] ? { input: event.input, rawBody: event.rawBody } : event.input;
 };
 `;
 
@@ -157,6 +157,41 @@ describe('Anonymous webhooks', () => {
 
   afterAll(async () => {
     await shutdownApp();
+  });
+
+  test.each(['/webhook/', '/api/webhook/', '/projects/{projectId}/webhook/', '/api/projects/{projectId}/webhook/'])(
+    'Preserves original JSON through VM execution at %s',
+    async (prefix) => {
+      const rawBody = '{ "greeting" : "café 🌍", "escaped": "\\u0061" }\n';
+      const res = await request(app)
+        .post(prefix.replace('{projectId}', project.id) + botMembership.id)
+        .set('Content-Type', ContentType.JSON)
+        .set('x-test-return-event', 'true')
+        .send(rawBody);
+      expect(res).toHaveStatus(200);
+      expect(res.body).toEqual({ input: JSON.parse(rawBody), rawBody });
+    }
+  );
+
+  test('Does not capture raw body for non-JSON webhooks', async () => {
+    const res = await request(app)
+      .post(`/webhook/${botMembership.id}`)
+      .set('Content-Type', ContentType.TEXT)
+      .set('x-test-return-event', 'true')
+      .send('hello');
+    expect(res).toHaveStatus(200);
+    expect(res.body).toEqual({ input: 'hello' });
+  });
+
+  test('Does not capture raw body for authenticated execute', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .set('x-test-return-event', 'true')
+      .send('{ "greeting" : "hello" }');
+    expect(res).toHaveStatus(200);
+    expect(res.body).toEqual({ input: { greeting: 'hello' } });
   });
 
   test('Missing invalid ID', async () => {

@@ -603,6 +603,8 @@ export interface BotEvent<T = unknown> {
   readonly secrets: Record<string, ProjectSetting>;
   readonly traceId?: string;
   readonly requester?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
+  /** Original UTF-8 JSON body for public webhooks, before parsing. Use for signature verification. */
+  readonly rawBody?: string;
   /** Headers from the original request, when invoked by HTTP request */
   readonly headers?: Record<string, string | string[] | undefined>;
   /** Optional response stream when invoked with SSE (Server Side Events) */
