@@ -2564,24 +2564,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     requestOptions?: MedplumRequestOptions
   ): Promise<WithId<Binary>>;
 
-  /**
-   * @category Create
-   * @param data - The binary data to upload.
-   * @param filename - Optional filename for the binary.
-   * @param contentType - Content type for the binary.
-   * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
-   * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
-   * @returns The result of the create operation.
-   * @deprecated Use `createBinary` with `CreateBinaryOptions` instead. To be removed in a future version.
-   */
-  createBinary(
-    data: BinarySource,
-    filename: string | undefined,
-    contentType: string,
-    onProgress?: (e: ProgressEvent) => void,
-    options?: MedplumRequestOptions
-  ): Promise<WithId<Binary>>;
-
   createBinary(
     arg1: BinarySource | CreateBinaryOptions,
     arg2: string | undefined | MedplumRequestOptions,
