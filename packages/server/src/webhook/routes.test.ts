@@ -180,7 +180,8 @@ describe('Anonymous webhooks', () => {
       .set('x-test-return-event', 'true')
       .send('hello');
     expect(res).toHaveStatus(200);
-    expect(res.body).toEqual({ input: 'hello' });
+    expect(res.type).toBe(ContentType.TEXT);
+    expect(JSON.parse(res.text)).toEqual({ input: 'hello' });
   });
 
   test('Does not capture raw body for authenticated execute', async () => {

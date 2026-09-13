@@ -14,7 +14,6 @@ import { Readable } from 'node:stream';
 import vm from 'node:vm';
 import { vi } from 'vitest';
 import { deployLambda } from '../cloud/aws/deploy';
-import { deployLambdaStreaming } from '../cloud/aws/deploystreaming';
 import { buildLambdaPayload } from '../cloud/aws/execute';
 import { executeFissionBot } from '../cloud/fission/execute';
 import * as fissionUtils from '../cloud/fission/utils';
@@ -63,7 +62,6 @@ function createSandbox(): Record<string, any> {
       }
       throw new Error('Unexpected dependency: ' + name);
     },
-    awslambda: { streamifyResponse: (handler: unknown) => handler },
   };
 }
 
@@ -89,14 +87,14 @@ test.each([rawBody, undefined])('Forwards original JSON through VM: %s', async (
   expect(result.returnValue).toEqual({ input: JSON.parse(rawBody), rawBody: body });
 });
 
-test.each([false, true])('Forwards original JSON through deployed Lambda wrapper (streaming=%s)', async (streaming) => {
+test('Forwards original JSON through deployed Lambda wrapper', async () => {
   const client = mockClient(LambdaClient);
   try {
     client.on(GetFunctionCommand).resolves({});
     client.on(ListLayerVersionsCommand).resolves({ LayerVersions: [{ LayerVersionArn: 'test-layer' }] });
     client.on(CreateFunctionCommand).resolves({});
     const context = createContext(rawBody);
-    await (streaming ? deployLambdaStreaming : deployLambda)(context.bot, userCode);
+    await deployLambda(context.bot, userCode);
     const zipBytes = client.commandCalls(CreateFunctionCommand)[0].args[0].input.Code?.ZipFile;
     const zip = await JSZip.loadAsync(zipBytes as Uint8Array);
     const code = await zip.file('index.cjs')?.async('string');
@@ -105,25 +103,11 @@ test.each([false, true])('Forwards original JSON through deployed Lambda wrapper
     vm.runInNewContext(code as string, sandbox);
 
     for (const body of [rawBody, undefined]) {
-      // Both normal and streaming invocations use this payload builder.
       const payload = JSON.parse(JSON.stringify(buildLambdaPayload(createContext(body))));
       if (!body) {
         expect(payload).not.toHaveProperty('rawBody');
       }
-      let result;
-      if (streaming) {
-        const chunks: string[] = [];
-        await sandbox.exports.handler(
-          { ...payload, streaming: true },
-          {
-            write: (chunk: string) => chunks.push(chunk),
-            end() {},
-          }
-        );
-        result = JSON.parse(chunks.slice(1).join(''));
-      } else {
-        result = await sandbox.exports.handler(payload);
-      }
+      const result = await sandbox.exports.handler(payload);
       expect(result.input).toEqual(JSON.parse(rawBody));
       expect(result.rawBody).toBe(body);
     }

@@ -104,7 +104,7 @@ For UTF-8 JSON requests to `/webhook/{ProjectMembership.id}`, `event.rawBody` co
 
 The normal server JSON size limit still applies. Body-parser decompresses compressed requests before capturing this text; use uncompressed UTF-8 JSON for providers that sign the transmitted bytes. The property is absent for other content types, encodings, and execution endpoints. Reject a missing `rawBody` when your integration requires JSON signature verification, and verify before writing resources or processing the event.
 
-Raw body forwarding is supported in VM, AWS Lambda (including streaming wrappers), and Fission runtimes. Redeploy existing Lambda and Fission Bots after upgrading the server so their generated wrappers forward the new property. The Bot layer contains dependencies; the server generates these wrappers during Bot deployment.
+Raw body forwarding is supported in VM, standard AWS Lambda, and Fission runtimes. Redeploy existing Lambda and Fission Bots after upgrading the server so their generated wrappers forward the new property. The Bot layer contains dependencies; the server generates these wrappers during Bot deployment.
 
 ### How to Set Up an Unauthenticated Webhook
 
