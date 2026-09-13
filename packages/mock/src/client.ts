@@ -240,18 +240,6 @@ export class MockClient extends MedplumClient {
     this.activeLoginOverride = undefined;
   }
 
-  /**
-   * Run a function in "seeding" mode, allowing it to set metadata like
-   * `versionId` that normally would be dropped.
-   *
-   * @deprecated - Use `.mock.withSeeding()` instead
-   * @param fn - The callback to run in "seeding" mode
-   * @returns The return value from `fn`
-   */
-  withSeeding<T>(fn: () => T | Promise<T>): Promise<T> {
-    return this.mock.withSeeding(fn);
-  }
-
   getProfile(): ProfileResource | undefined {
     return this.profile;
   }
@@ -286,15 +274,6 @@ export class MockClient extends MedplumClient {
 
   setActiveLoginOverride(activeLoginOverride: LoginState): void {
     this.activeLoginOverride = activeLoginOverride;
-  }
-
-  /**
-   * Overrides the active profile.
-   * @deprecated - Use `.mock.setProfile()` instead
-   * @param profile - The profile to set as active for this client
-   */
-  setProfile(profile: ProfileResource | undefined): void {
-    this.mock.setProfile(profile);
   }
 
   getActiveLogin(): LoginState | undefined {
@@ -338,24 +317,6 @@ export class MockClient extends MedplumClient {
   createBinary(
     createBinaryOptions: CreateBinaryOptions,
     requestOptions?: MedplumRequestOptions
-  ): Promise<WithId<Binary>>;
-
-  /**
-   * @category Create
-   * @param data - The binary data to upload.
-   * @param filename - Optional filename for the binary.
-   * @param contentType - Content type for the binary.
-   * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
-   * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
-   * @returns The result of the create operation.
-   * @deprecated Use `createBinary` with `CreateBinaryOptions` instead. To be removed in a future version.
-   */
-  createBinary(
-    data: BinarySource,
-    filename: string | undefined,
-    contentType: string,
-    onProgress?: (e: ProgressEvent) => void,
-    options?: MedplumRequestOptions
   ): Promise<WithId<Binary>>;
 
   async createBinary(
@@ -431,16 +392,6 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
     return undefined;
   }
 
-  /**
-   * Updates internal test state used by `pushToAgent` mocking.
-   *
-   * @deprecated - Use `.mock.setAgentAvailable()` instead
-   * @param value - boolean
-   */
-  setAgentAvailable(value: boolean): void {
-    this.mock.setAgentAvailable(value);
-  }
-
   getSubscriptionManager(): MockSubscriptionManager {
     if (!this.subManager) {
       this.subManager = new MockSubscriptionManager(this, 'wss://example.com/ws/subscriptions-r4', {
@@ -448,16 +399,6 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
       });
     }
     return this.subManager;
-  }
-
-  /**
-   * Sets a MockSubscriptionManager that this MockClient should use.
-   *
-   * @deprecated - Use `.mock.setSubscriptionManager()` instead
-   * @param subManager - A MockSubscriptionManager to attach to this MockClient
-   */
-  setSubscriptionManager(subManager: MockSubscriptionManager): void {
-    this.mock.setSubscriptionManager(subManager);
   }
 
   subscribeToCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): SubscriptionEmitter {

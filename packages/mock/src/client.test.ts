@@ -394,7 +394,7 @@ describe('MockClient', () => {
 
   test('Create binary success', async () => {
     const client = new MockClient();
-    const result = await client.createBinary('test', 'test.txt', ContentType.TEXT);
+    const result = await client.createBinary({ data: 'test', filename: 'test.txt', contentType: ContentType.TEXT });
     expect(result).toMatchObject({
       resourceType: 'Binary',
       contentType: ContentType.TEXT,
@@ -419,7 +419,7 @@ describe('MockClient', () => {
   test('Create binary with progress listener', async () => {
     const client = new MockClient();
     const onProgress = vi.fn();
-    const result = await client.createBinary('test', 'test.txt', ContentType.TEXT, onProgress);
+    const result = await client.createBinary({ data: 'test', filename: 'test.txt', contentType: ContentType.TEXT, onProgress });
     expect(result).toMatchObject({
       resourceType: 'Binary',
       contentType: ContentType.TEXT,
@@ -430,7 +430,7 @@ describe('MockClient', () => {
   test('Create binary with error', async () => {
     const client = new MockClient();
     try {
-      await client.createBinary('test', 'test.exe', 'application/exe');
+      await client.createBinary({ data: 'test', filename: 'test.exe', contentType: 'application/exe' });
       fail('Should have failed');
     } catch (err) {
       expect(err).toBeDefined();
@@ -993,44 +993,6 @@ describe('MockClient', () => {
     const medplum = new MockClient();
     expect(() => medplum.mock.setAgentAvailable(true)).not.toThrow();
     expect(() => medplum.mock.setAgentAvailable(false)).not.toThrow();
-  });
-
-  // To be removed in Medlpum v6; https://github.com/medplum/medplum/issues/9945
-  describe('deprecated methods', () => {
-    test('withSeeding()', async () => {
-      const medplum = new MockClient();
-      const lastUpdated = '2020-01-01T14:00:00Z';
-      const result = await medplum.withSeeding(() =>
-        medplum.createResource({
-          resourceType: 'Patient',
-          meta: { lastUpdated },
-        })
-      );
-      expect(result.meta).toHaveProperty('lastUpdated', lastUpdated);
-    });
-
-    test('setSubscriptionManager()', () => {
-      const medplum = new MockClient();
-      const manager = new MockSubscriptionManager(
-        medplum,
-        getWebSocketUrl(medplum.getBaseUrl(), '/ws/subscriptions-r4')
-      );
-      medplum.setSubscriptionManager(manager);
-      expect(medplum.getSubscriptionManager()).toBe(manager);
-    });
-
-    test('setProfile()', () => {
-      const medplum = new MockClient();
-      const profile = { resourceType: 'Practitioner' } as const;
-      medplum.setProfile(profile);
-      expect(medplum.getProfile()).toBe(profile);
-    });
-
-    test('setAgentAvailable()', () => {
-      const medplum = new MockClient();
-      expect(() => medplum.setAgentAvailable(true)).not.toThrow();
-      expect(() => medplum.setAgentAvailable(false)).not.toThrow();
-    });
   });
 });
 
