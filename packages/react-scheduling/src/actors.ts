@@ -2,17 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Dereference, WithId } from '@medplum/core';
 import { assertNever, isResource, parseReference } from '@medplum/core';
-import type { ExtractResource, Schedule } from '@medplum/fhirtypes';
+import type { Schedule } from '@medplum/fhirtypes';
 
 /**
  * A reference to something a Schedule belongs to. The same union an Appointment
  * accepts as a participant, so an actor can be carried straight across.
  */
 export type SchedulingActor = Schedule['actor'][number];
-export type SchedulingActorType = Dereference<SchedulingActor>['resourceType'];
 
-/** A loaded actor resource. Tied to the types `Schedule.actor` admits. */
-export type SchedulingActorResource = WithId<ExtractResource<SchedulingActorType>>;
+/** A loaded actor resource. */
+export type SchedulingActorResource = WithId<Dereference<SchedulingActor>>;
+
+export type SchedulingActorType = SchedulingActorResource['resourceType'];
 
 /**
  * An actor as a reference, or as the resource when it has already been read.
