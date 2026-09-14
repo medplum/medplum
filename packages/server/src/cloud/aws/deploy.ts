@@ -77,13 +77,15 @@ function createPdf(docDefinition, tableLayouts, fonts) {
 
 const WRAPPER_CODE =
   `
-  const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers } = event;
+  const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, traceparent, headers } = event;
   const medplum = new MedplumClient({
     baseUrl,
     fetch: function(url, options = {}) {
       options.headers ||= {};
       options.headers['X-Trace-Id'] = traceId;
-      options.headers['traceparent'] = traceId;
+      if (traceparent) {
+        options.headers['traceparent'] = traceparent;
+      }
       return fetch(url, options);
     },
     createPdf,

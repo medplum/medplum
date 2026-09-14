@@ -664,6 +664,7 @@ describe('Execute', () => {
       });
     expect(res5).toHaveStatus(200);
 
+    // A UUID is a 128 bit value, so it is normalized to canonical W3C trace ID form.
     const traceId = randomUUID();
 
     // Execute the bot as self
@@ -673,7 +674,45 @@ describe('Execute', () => {
       .set('X-Trace-Id', traceId)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send();
-    expect(res6.text).toBe(traceId);
+    expect(res6.text).toBe(traceId.replaceAll('-', ''));
+  });
+
+  test('Propagates trace ID from traceparent', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'vmcontext',
+      });
+    expect(res1).toHaveStatus(201);
+    const bot = res1.body as Bot;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({
+        code: `
+          exports.handler = async function (medplum, event) {
+            return event.traceId;
+          };
+      `,
+      });
+    expect(res2).toHaveStatus(200);
+
+    const traceId = '4bf92f3577b34da6a3ce929d0e0e4736';
+
+    // The bot receives the trace ID field, not the whole traceparent header.
+    const res3 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.TEXT)
+      .set('traceparent', `00-${traceId}-3456789012345678-01`)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send();
+    expect(res3.text).toBe(traceId);
   });
 
   describe('linked project', () => {

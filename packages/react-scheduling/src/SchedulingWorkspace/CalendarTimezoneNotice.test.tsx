@@ -31,6 +31,20 @@ describe('CalendarTimezoneNotice', () => {
     expect(screen.getByTestId('calendar-timezone-notice')).toHaveTextContent('Calendar shown in your local time (PT).');
   });
 
+  test('Warns when a calendar’s own zone could not be read', () => {
+    // The actor carrying the zone may be one the caller has no access to. An unread zone
+    // is warned about like one known to differ, so the times are never quietly read as local.
+    render(<CalendarTimezoneNotice timezones={[]} anyUnknown viewerTimezone={PACIFIC} />);
+
+    expect(screen.getByTestId('calendar-timezone-notice')).toHaveTextContent('Calendar shown in your local time (PT).');
+  });
+
+  test('Warns when one calendar is on the viewer’s clock and another’s zone is unread', () => {
+    render(<CalendarTimezoneNotice timezones={[PACIFIC]} anyUnknown viewerTimezone={PACIFIC} />);
+
+    expect(screen.getByTestId('calendar-timezone-notice')).toHaveTextContent('Calendar shown in your local time (PT).');
+  });
+
   test('Warns for a zone that shares the viewer’s clock for part of the year', () => {
     // Arizona reads as Pacific all summer, but the notice still warns, so what it says does not
     // change under the reader twice a year.

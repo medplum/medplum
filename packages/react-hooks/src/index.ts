@@ -17,6 +17,7 @@ export * from './useResource/useResource';
 export * from './useResourceBoard/useResourceBoard';
 export * from './useResourceModified/useResourceModified';
 export * from './useSearch/useSearch';
+export * from './useStabilizedCallback/useStabilizedCallback';
 export * from './useSubscription/useSubscription';
 export * from './useSyncOrderSet/useSyncOrderSet';
 export * from './useThreadInbox/useThreadInbox';

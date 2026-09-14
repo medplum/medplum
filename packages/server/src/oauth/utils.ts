@@ -43,7 +43,8 @@ import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import type { Repository, SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { SmartScope } from '../fhir/smart';
 import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
@@ -487,7 +488,9 @@ export async function setLoginMembership(
   // Or could this be done closer to call site?
   // This method is used internally in a bunch of places that do not need to check IP access rules
   const userConfig = await getUserConfiguration(projectSystemRepo, project, membership);
-  const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig });
+  // Include the SMART App Launch context, which patient scopes in the login require to build a policy
+  const smartAppLaunch = login.launch ? await projectSystemRepo.readReference<SmartAppLaunch>(login.launch) : undefined;
+  const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig, smartAppLaunch });
   await checkIpAccessRules(login, accessPolicy);
 
   const auditEvent = createAuditEvent(
@@ -1122,7 +1125,7 @@ export async function getLoginForBasicAuth(req: Request, token: string): Promise
 }
 
 async function makeAuthResult(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   req: Request | IncomingMessage | undefined,
   login: Login,
   project: WithId<Project>,
@@ -1148,22 +1151,23 @@ async function makeAuthResult(
     accessToken: opts?.accessToken,
     profile: opts?.profile,
   };
-  let repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
-  await tryAddOnBehalfOf(repo, req, authState);
-  if (authState.onBehalfOf) {
-    repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
-  }
+  // Resolve "on behalf of" before building the repository, so that the access policy is built from
+  // the effective membership.  Resolving it afterwards would require a repository to already exist,
+  // which cannot be built for a login whose scopes depend on the on-behalf-of membership.
+  await tryAddOnBehalfOf(systemRepo, req, authState);
+  const repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
   return { authState, repo };
 }
 
 /**
  * Tries to add the "on behalf of" user to the auth state.
- * @param repo - The user's FHIR repository.
+ * @param systemRepo - The system repository.  Project isolation is enforced explicitly below,
+ *   since the system repository does not apply the caller's access policy.
  * @param req - The incoming HTTP request.
  * @param authState - The existing auth state.
  */
 async function tryAddOnBehalfOf(
-  repo: Repository,
+  systemRepo: Repository,
   req: IncomingMessage | undefined,
   authState: AuthState
 ): Promise<void> {
@@ -1179,9 +1183,19 @@ async function tryAddOnBehalfOf(
   let onBehalfOfMembership: WithId<ProjectMembership> | undefined = undefined;
 
   if (onBehalfOfHeader.startsWith('ProjectMembership/')) {
-    onBehalfOfMembership = await repo.readReference<ProjectMembership>({ reference: onBehalfOfHeader });
+    try {
+      onBehalfOfMembership = await systemRepo.readReference<ProjectMembership>({ reference: onBehalfOfHeader });
+    } catch {
+      throw new OperationOutcomeError(forbidden);
+    }
+    if (
+      !authState.project.superAdmin &&
+      onBehalfOfMembership.project.reference !== getReferenceString(authState.project)
+    ) {
+      throw new OperationOutcomeError(forbidden);
+    }
   } else {
-    onBehalfOfMembership = await repo.searchOne({
+    onBehalfOfMembership = await systemRepo.searchOne({
       resourceType: 'ProjectMembership',
       filters: [
         { code: 'profile', operator: Operator.EQUALS, value: onBehalfOfHeader },
@@ -1193,7 +1207,7 @@ async function tryAddOnBehalfOf(
     }
   }
 
-  const onBehalfOf = await repo.readReference(onBehalfOfMembership.profile as Reference<ProfileResource>);
+  const onBehalfOf = await systemRepo.readReference(onBehalfOfMembership.profile as Reference<ProfileResource>);
   authState.onBehalfOf = onBehalfOf;
   authState.onBehalfOfMembership = onBehalfOfMembership;
 }
@@ -1222,7 +1236,10 @@ async function tryExternalAuth(
   }
 
   const claims = parseJWTPayload(accessToken);
-  const issuer = claims.iss as string;
+  if (!hasIssuer(claims)) {
+    return undefined;
+  }
+  const issuer = claims.iss;
   const projectId = req ? getProjectIdFromUrl(req.originalUrl) : undefined;
   const externalAuthConfig = externalAuthProviders?.find(
     (provider) => (provider.identityProvider?.issuer ?? provider.issuer) === issuer
@@ -1273,7 +1290,7 @@ async function tryExternalAuthLogin(
   systemRepo: SystemRepository,
   req: Request | undefined,
   accessToken: string,
-  claims: JWTPayload,
+  claims: JWTPayload & { iss: string },
   idp: IdentityProvider,
   client: WithId<ClientApplication> | undefined
 ): Promise<Pick<AuthState, 'login' | 'project' | 'membership'> | undefined> {
@@ -1315,7 +1332,10 @@ async function tryExternalAuthLogin(
     }
 
     // Search for the profile
-    const profile = await systemRepo.searchOne<ProfileResource>(searchRequest);
+    // SHARDING there's no project context here and feels like a legitimate gap in
+    // the current external auth flow. Will need to require projectId be in the request path
+    const projectSystemRepo = getShardSystemRepo(TODO_SHARD_ID);
+    const profile = await projectSystemRepo.searchOne<ProfileResource>(searchRequest);
     if (!profile) {
       return undefined;
     }
@@ -1326,7 +1346,10 @@ async function tryExternalAuthLogin(
       filters: [{ code: 'profile', operator: Operator.EQUALS, value: getReferenceString(profile) }],
     });
   } else if (!isString(claims.sub)) {
-    client = await getExternalBearerClient(projectId as string, claims.iss as string);
+    if (!projectId) {
+      return undefined;
+    }
+    client = await getExternalBearerClient(projectId, claims.iss);
     membership = client ? await getClientApplicationMembership(systemRepo, client) : undefined;
   } else {
     // Path B: sub claim fallback - look up ProjectMembership by externalId
@@ -1436,4 +1459,8 @@ export function hashCode(code: string): string {
     .replaceAll('+', '-')
     .replaceAll('/', '_')
     .replaceAll('=', '');
+}
+
+function hasIssuer(claims: JWTPayload): claims is JWTPayload & { iss: string } {
+  return isString(claims.iss);
 }

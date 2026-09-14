@@ -57,14 +57,22 @@ without needing to clone the repository.
 
 #### Fixing a bug or implementing a new feature
 
-If you find a bug and open a Pull Request that fixes it, we'll review it as soon as possible to ensure it meets our engineering standards.
+To keep new contributors focused on work we're ready to accept, code contributions go through an approval system: your
+Pull Request must be linked to an issue labeled `open-to-community` before we'll review it. This signals that a
+maintainer has explicitly invited community help on that issue. You can link a PR to an issue with a closing keyword
+in the PR description (e.g. `Fixes #123`) or via GitHub's Development panel. PRs that aren't linked to an
+`open-to-community` issue are automatically closed, but can be reopened once the link is added. Established
+contributors and Medplum team members are exempt from this requirement.
+
+If you find a bug, look for an existing issue labeled `open-to-community`, or open a new issue and ask us to label it,
+before starting work on a fix.
 
 If you want to implement a new feature, open an issue first to discuss with us how the feature might work, and to ensure
 it fits into our roadmap and plans for the app.
 
 If you want to contribute but are unsure how to start, we have [a "good first issue" label](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) which is applied to newcomer-friendly issues. Take a look at [the full list of good first issues](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and pick something you like!
 
-**Ready to get started writing code?** Follow the [local setup instructions](https://www.medplum.com/docs/contributing/local-dev-setup) and jump in!
+**Ready to get started writing code?** Follow the [local setup instructions](https://www.medplum.com/docs/contributing/local-dev-setup) and jump in! See our [full contributing guide](https://www.medplum.com/docs/contributing#making-a-contribution) for more details on this process.
 
 ### Codebase
 

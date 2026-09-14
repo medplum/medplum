@@ -13,7 +13,8 @@ import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { SystemRepository } from './fhir/repo';
-import { getGlobalSystemRepo } from './fhir/repo';
+import { getShardSystemRepo } from './fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import type { PgQueryable } from './fhir/sql';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
@@ -34,7 +35,7 @@ import * as migrationVersions from './migrations/migration-versions';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import type { MigrationAction } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
-import { createTestProject, withTestContext } from './test.setup';
+import { getSuperAdminTestProject, withTestContext } from './test.setup';
 import * as version from './util/version';
 import * as workers from './workers';
 import type * as PostDeployMigration from './workers/post-deploy-migration';
@@ -175,7 +176,7 @@ describe('Database migrations', () => {
       restoreWorkerQueueMocks();
     });
 
-    systemRepo = getGlobalSystemRepo();
+    systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
     await loadTestConfig();
     // We want a clean history of post-deploy migration AsyncJob. init and shutdown the app
     // to facilitate expunging all relevant AsyncJob
@@ -625,7 +626,7 @@ describe('Database migrations', () => {
       await initApp(app, config);
       await expungePostDeployMigrationAsyncJob(systemRepo);
 
-      ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
+      ({ project } = await getSuperAdminTestProject());
 
       const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 

@@ -47,6 +47,15 @@ export const Basic = (): JSX.Element => {
       schedule: createReference(DrAliceSmithSchedule),
       comment: 'Coming in early on wednesday morning',
     },
+
+    {
+      resourceType: 'Slot',
+      id: 'slot-4',
+      start: '2020-05-08T15:15:00Z',
+      end: '2020-05-08T16:15:00Z',
+      status: 'entered-in-error',
+      schedule: createReference(DrAliceSmithSchedule),
+    },
   ] satisfies Slot[];
 
   const appointments: Appointment[] = [
@@ -69,7 +78,6 @@ export const Basic = (): JSX.Element => {
         },
       ],
     },
-
     // A "pending" appointment is shown as an outlined block
     {
       resourceType: 'Appointment',
@@ -106,6 +114,42 @@ export const Basic = (): JSX.Element => {
         {
           status: 'accepted',
           actor: createReference(HomerSimpson),
+        },
+      ],
+    },
+
+    // A "cancelled" appointment gets some loud coloring and a status annotation
+    {
+      resourceType: 'Appointment',
+      id: 'appt-4',
+      status: 'cancelled',
+      start: '2020-05-05T16:00:00Z',
+      end: '2020-05-05T16:45:00Z',
+      slot: [],
+      participant: [
+        {
+          status: 'accepted',
+          actor: createReference(DrAliceSmith),
+        },
+        {
+          status: 'accepted',
+          actor: createReference(HomerSimpson),
+        },
+      ],
+    },
+
+    // An appointment with no Patient participent shows "No Patient" as the title
+    {
+      resourceType: 'Appointment',
+      id: 'appt-5',
+      status: 'booked',
+      start: '2020-05-06T15:30:00Z',
+      end: '2020-05-05T16:30:00Z',
+      slot: [],
+      participant: [
+        {
+          status: 'accepted',
+          actor: createReference(DrAliceSmith),
         },
       ],
     },

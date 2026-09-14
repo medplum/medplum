@@ -5,6 +5,7 @@ import { deepEquals } from '@medplum/core';
 import type { Bundle, Subscription } from '@medplum/fhirtypes';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMedplum, useMedplumProfile } from '../MedplumProvider/MedplumProvider.context';
+import { useStabilizedCallback } from '../useStabilizedCallback/useStabilizedCallback';
 
 const SUBSCRIPTION_DEBOUNCE_MS = 3000;
 
@@ -65,24 +66,6 @@ export function useSubscription(
   const prevCriteriaRef = useRef<string | undefined>(undefined);
   const prevMemoizedSubPropsRef = useRef<UseSubscriptionOptions['subscriptionProps']>(undefined);
 
-  const callbackRef = useRef(callback);
-  callbackRef.current = callback;
-
-  const onWebSocketOpenRef = useRef(options?.onWebSocketOpen);
-  onWebSocketOpenRef.current = options?.onWebSocketOpen;
-
-  const onWebSocketCloseRef = useRef(options?.onWebSocketClose);
-  onWebSocketCloseRef.current = options?.onWebSocketClose;
-
-  const onSubscriptionConnectRef = useRef(options?.onSubscriptionConnect);
-  onSubscriptionConnectRef.current = options?.onSubscriptionConnect;
-
-  const onSubscriptionDisconnectRef = useRef(options?.onSubscriptionDisconnect);
-  onSubscriptionDisconnectRef.current = options?.onSubscriptionDisconnect;
-
-  const onErrorRef = useRef(options?.onError);
-  onErrorRef.current = options?.onError;
-
   useEffect(() => {
     // Deep equals checks referential equality first
     if (!deepEquals(options?.subscriptionProps, memoizedSubProps)) {
@@ -128,36 +111,48 @@ export function useSubscription(
     };
   }, [medplum, effectiveCriteria, memoizedSubProps]);
 
-  const emitterCallback = useCallback((event: SubscriptionEventMap['message']) => {
-    callbackRef.current?.(event.payload);
-  }, []);
+  // Stabilize input callbacks
+  const handleMessage = useStabilizedCallback(callback);
+  const handleWebSocketOpen = useStabilizedCallback(options?.onWebSocketOpen);
+  const handleWebSocketClose = useStabilizedCallback(options?.onWebSocketClose);
+  const handleSubscriptionConnect = useStabilizedCallback(options?.onSubscriptionConnect);
+  const handleSubscriptionDisconnect = useStabilizedCallback(options?.onSubscriptionDisconnect);
+  const handleError = useStabilizedCallback(options?.onError);
 
-  const onWebSocketOpen = useCallback(() => {
-    onWebSocketOpenRef.current?.();
-  }, []);
+  // Explicitly choose parameters forwarded to event callbacks
+  const onMessage = useCallback(
+    (event: SubscriptionEventMap['message']) => handleMessage(event.payload),
+    [handleMessage]
+  );
 
-  const onWebSocketClose = useCallback(() => {
-    onWebSocketCloseRef.current?.();
-  }, []);
+  const onWebSocketOpen = useCallback(
+    (_event: SubscriptionEventMap['open']) => handleWebSocketOpen(),
+    [handleWebSocketOpen]
+  );
 
-  const onSubscriptionConnect = useCallback((event: SubscriptionEventMap['connect']) => {
-    onSubscriptionConnectRef.current?.(event.payload.subscriptionId);
-  }, []);
+  const onWebSocketClose = useCallback(
+    (_event: SubscriptionEventMap['close']) => handleWebSocketClose(),
+    [handleWebSocketClose]
+  );
 
-  const onSubscriptionDisconnect = useCallback((event: SubscriptionEventMap['disconnect']) => {
-    onSubscriptionDisconnectRef.current?.(event.payload.subscriptionId);
-  }, []);
+  const onSubscriptionConnect = useCallback(
+    (event: SubscriptionEventMap['connect']) => handleSubscriptionConnect(event.payload.subscriptionId),
+    [handleSubscriptionConnect]
+  );
 
-  const onError = useCallback((event: SubscriptionEventMap['error']) => {
-    onErrorRef.current?.(event.payload);
-  }, []);
+  const onSubscriptionDisconnect = useCallback(
+    (event: SubscriptionEventMap['disconnect']) => handleSubscriptionDisconnect(event.payload.subscriptionId),
+    [handleSubscriptionDisconnect]
+  );
+
+  const onError = useCallback((event: SubscriptionEventMap['error']) => handleError(event.payload), [handleError]);
 
   useEffect(() => {
     if (!emitter) {
       return () => undefined;
     }
     if (!listeningRef.current) {
-      emitter.addEventListener('message', emitterCallback);
+      emitter.addEventListener('message', onMessage);
       emitter.addEventListener('open', onWebSocketOpen);
       emitter.addEventListener('close', onWebSocketClose);
       emitter.addEventListener('connect', onSubscriptionConnect);
@@ -167,20 +162,12 @@ export function useSubscription(
     }
     return () => {
       listeningRef.current = false;
-      emitter.removeEventListener('message', emitterCallback);
+      emitter.removeEventListener('message', onMessage);
       emitter.removeEventListener('open', onWebSocketOpen);
       emitter.removeEventListener('close', onWebSocketClose);
       emitter.removeEventListener('connect', onSubscriptionConnect);
       emitter.removeEventListener('disconnect', onSubscriptionDisconnect);
       emitter.removeEventListener('error', onError);
     };
-  }, [
-    emitter,
-    emitterCallback,
-    onWebSocketOpen,
-    onWebSocketClose,
-    onSubscriptionConnect,
-    onSubscriptionDisconnect,
-    onError,
-  ]);
+  }, [emitter, onMessage, onWebSocketOpen, onWebSocketClose, onSubscriptionConnect, onSubscriptionDisconnect, onError]);
 }

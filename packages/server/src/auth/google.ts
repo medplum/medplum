@@ -15,6 +15,7 @@ import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
+import { sendVerificationEmail } from './newuser';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
 
 /*
@@ -100,8 +101,8 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const existingUser = await getUserByEmail(email, projectId);
-  if (!existingUser) {
+  let user = await getUserByEmail(email, projectId);
+  if (!user) {
     if (!req.body.createUser) {
       sendOutcome(res, badRequest('User not found'));
       return;
@@ -112,13 +113,22 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       return;
     }
     const systemRepo = getGlobalSystemRepo();
-    await systemRepo.createResource<User>({
+    user = await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName: claims.given_name,
       lastName: claims.family_name,
       email,
+      // Google has already established that the user owns this address, so accept its
+      // assertion rather than asking for a second proof. Anything but a verified claim
+      // is falsy here and falls through to the email verification below.
+      emailVerified: claims.email_verified,
       project: projectId && projectId !== 'new' ? { reference: 'Project/' + projectId } : undefined,
     });
+  } else if (claims.email_verified && !user.emailVerified) {
+    // Accept Google's assertion for accounts that predate it too, so a user invited or
+    // provisioned before this is not left permanently unverified. Only ever upgrades: a
+    // user who verified with Medplum is never downgraded by a false or missing claim.
+    user = await getGlobalSystemRepo().updateResource<User>({ ...user, emailVerified: true });
   }
 
   const login = await tryLogin({
@@ -138,6 +148,18 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     allowNoMembership: req.body.createUser || projectId === 'new',
     pictureUrl: claims.picture,
   });
+
+  if (
+    getConfig().requireVerifiedEmailForProjectCreation &&
+    req.body.createUser &&
+    projectId === 'new' &&
+    !user.emailVerified
+  ) {
+    await sendVerificationEmail(user, login);
+    res.status(200).json({ login: login.id, emailVerificationRequired: true });
+    return;
+  }
+
   await sendLoginResult(res, login);
 }
 

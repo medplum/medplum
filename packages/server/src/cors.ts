@@ -5,7 +5,15 @@ import type { Request } from 'express';
 import { getConfig } from './config/loader';
 import { getNormalizedPath } from './util/url';
 
-const exposedHeaders = ['Content-Location', 'ETag', 'Last-Modified', 'Location', 'RateLimit'];
+const exposedHeaders = [
+  'Content-Location',
+  'ETag',
+  'Last-Modified',
+  'Location',
+  'RateLimit',
+  'X-Request-Id',
+  'X-Trace-Id',
+];
 
 /**
  * CORS configuration.
