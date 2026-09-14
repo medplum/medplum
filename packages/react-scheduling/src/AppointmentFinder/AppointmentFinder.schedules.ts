@@ -504,24 +504,70 @@ function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> 
 export const MAX_ACTOR_COMBINATIONS = 100;
 
 /**
+ * Whether a blocker is a form that is not finished yet, or answers that cannot work.
+ *
+ * Only `invalid` is the user's to undo, so only it is worth showing as an error.
+ */
+export type SelectionBlockerSeverity = 'incomplete' | 'invalid';
+
+/** Why the current selections cannot be searched. */
+export interface SelectionBlocker {
+  /** A whole sentence to show the user. */
+  readonly message: string;
+  readonly severity: SelectionBlockerSeverity;
+}
+
+/** Joins labels the way a sentence offering a choice between them would. */
+const listAlternatives = new Intl.ListFormat('en', { type: 'disjunction' });
+
+/**
  * Reports why the current selections cannot be searched, if they cannot.
  * @param selections - What has been chosen.
- * @returns A whole sentence to show the user, or undefined when the search can run.
+ * @returns The blocker to show the user, or undefined when the search can run.
  */
-export function getSelectionError(selections: ActorSelections): string | undefined {
+export function getSelectionError(selections: ActorSelections): SelectionBlocker | undefined {
   const missing = [...REQUIRED_ACTOR_TYPES].find(
     (actorType) => !(selections[actorType] ?? []).some((requirement) => requirement.candidates.length > 0)
   );
   if (missing) {
-    return `Choose at least one ${getActorTypeLabel(missing).toLowerCase()} first.`;
+    return {
+      message: `Choose at least one ${getActorTypeLabel(missing).toLowerCase()} first.`,
+      severity: 'incomplete',
+    };
   }
   if (countActorCombinations(selections) > MAX_ACTOR_COMBINATIONS) {
-    return 'Too many alternatives to search. Remove some names.';
+    // Naming only the types in play keeps the advice actionable: there is nothing
+    // to remove from a row nobody has named anyone in.
+    const crowded = listAlternatives.format(getSelectedActorTypes(selections).map(getActorTypePluralLabel));
+    return {
+      message: `Too many combinations to search at once. Remove a few ${crowded} to find a time.`,
+      severity: 'invalid',
+    };
   }
   if (getActorCombinations(selections).length === 0) {
-    return 'Nobody can fill every row at once.';
+    return { message: 'Nobody can fill every row at once.', severity: 'invalid' };
   }
   return undefined;
+}
+
+/**
+ * Returns the actor types someone has actually been named under.
+ * @param selections - What has been chosen.
+ * @returns The types holding at least one candidate, in `BOOKABLE_ACTOR_TYPES` order.
+ */
+function getSelectedActorTypes(selections: ActorSelections): BookableActorType[] {
+  return BOOKABLE_ACTOR_TYPES.filter((actorType) =>
+    (selections[actorType] ?? []).some((requirement) => requirement.candidates.length > 0)
+  );
+}
+
+/**
+ * Names an actor type the way a sentence about several of them would.
+ * @param actorType - The type being named.
+ * @returns Its label, lowercased and pluralized.
+ */
+function getActorTypePluralLabel(actorType: BookableActorType): string {
+  return `${getActorTypeLabel(actorType).toLowerCase()}s`;
 }
 
 /** Rows that cannot all be filled at once, and where to say so. */

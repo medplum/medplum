@@ -21,7 +21,7 @@ import {
 import type { Appointment, HealthcareService, Location, Patient, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { CalendarDateInput, ReferenceDisplay, ResourceInput, ValueSetAutocomplete } from '@medplum/react';
-import { IconCalendarSearch, IconCheck } from '@tabler/icons-react';
+import { IconAlertCircle, IconCalendarSearch, IconCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getActorType, getActorTypeLabel } from '../actors';
@@ -37,7 +37,7 @@ import {
   hasRequiredValues,
   toCodings,
 } from './AppointmentFinder.requirements';
-import type { ActorSelections } from './AppointmentFinder.schedules';
+import type { ActorSelections, SelectionBlocker } from './AppointmentFinder.schedules';
 import {
   getActorCombinations,
   getSelectedCandidates,
@@ -53,6 +53,10 @@ import { useDaySearch } from './useDaySearch';
 // Excludes what a room is rather than admitting what a site is: `physicalType` is
 // optional, so `physical-type=si,bu` would hide a Location that never declared one.
 const LOCATION_SEARCH_CRITERIA = { _count: '25', _sort: 'name', 'physical-type:not': 'ro,bd' };
+
+// The visit type decides which actors can be asked for at all, so nothing below it
+// is answerable yet. Unanswered, not answered wrongly, so it reads as a prompt.
+const NO_SERVICE_BLOCKER: SelectionBlocker = { message: 'Choose a visit type first.', severity: 'incomplete' };
 
 // Alphabetical, then by birth date: a short prefix — or the first click, before
 // anything is typed — leaves a list only a name orders usefully, and the birth
@@ -337,7 +341,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           appointment={chosen}
           timezone={timezone}
           searching={searching}
-          blockedBy={service ? selectionError : 'Choose a visit type first.'}
+          blockedBy={service ? selectionError : NO_SERVICE_BLOCKER}
           onToggleFinder={toggleFinder}
         />
 
@@ -484,7 +488,7 @@ interface ChosenTimeProps {
   readonly timezone: string | undefined;
   readonly searching: boolean;
   /** What is still owed before a time can be searched for, if anything. */
-  readonly blockedBy: string | undefined;
+  readonly blockedBy: SelectionBlocker | undefined;
   readonly onToggleFinder: () => void;
 }
 
@@ -523,13 +527,43 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
         >
           {getFinderLabel(searching, !!appointment)}
         </Button>
-        {blockedBy && (
-          <Text size="xs" c="dimmed">
-            {blockedBy}
-          </Text>
-        )}
+        {blockedBy && <BlockerMessage blocker={blockedBy} />}
       </Stack>
     </>
+  );
+}
+
+interface BlockerMessageProps {
+  readonly blocker: SelectionBlocker;
+}
+
+/**
+ * Why the finder cannot run, under the button that would have run it.
+ *
+ * Selections that cannot work are the user's to undo, so they are called out as
+ * errors. A form that is merely unfinished is a prompt, and stays quiet.
+ *
+ * @param props - The React props.
+ * @returns The blocker, styled by what it asks of the user.
+ */
+function BlockerMessage(props: BlockerMessageProps): JSX.Element {
+  const { message, severity } = props.blocker;
+
+  if (severity === 'incomplete') {
+    return (
+      <Text size="xs" c="dimmed">
+        {message}
+      </Text>
+    );
+  }
+
+  return (
+    <Group gap={6} wrap="nowrap">
+      <IconAlertCircle size={16} stroke={1.8} color="var(--mantine-color-error)" style={{ flexShrink: 0 }} />
+      <Text size="xs" c="var(--mantine-color-error)">
+        {message}
+      </Text>
+    </Group>
   );
 }
 

@@ -706,11 +706,17 @@ describe('selections', () => {
 
     // The combination is still buildable — it is the caller that must not run it.
     expect(schedulesOf(getActorCombinations(selections))).toStrictEqual([['Schedule/schedule-ultrasound-1']]);
-    expect(getSelectionError(selections)).toBe('Choose at least one provider first.');
+    expect(getSelectionError(selections)).toStrictEqual({
+      message: 'Choose at least one provider first.',
+      severity: 'incomplete',
+    });
   });
 
   test('A required role whose only row is empty is a role left empty', () => {
-    expect(getSelectionError({ Practitioner: [row()] })).toBe('Choose at least one provider first.');
+    expect(getSelectionError({ Practitioner: [row()] })).toStrictEqual({
+      message: 'Choose at least one provider first.',
+      severity: 'incomplete',
+    });
   });
 
   test('Refuses a product too large to be worth expanding', () => {
@@ -723,9 +729,35 @@ describe('selections', () => {
     ];
 
     expect(getSelectionError({ Practitioner: many(MAX_ACTOR_COMBINATIONS) })).toBeUndefined();
-    expect(getSelectionError({ Practitioner: many(MAX_ACTOR_COMBINATIONS + 1) })).toBe(
-      'Too many alternatives to search. Remove some names.'
-    );
+    expect(getSelectionError({ Practitioner: many(MAX_ACTOR_COMBINATIONS + 1) })).toStrictEqual({
+      message: 'Too many combinations to search at once. Remove a few providers to find a time.',
+      severity: 'invalid',
+    });
+  });
+
+  test('Names only the roles someone has been named under as worth thinning', () => {
+    // Nothing to remove from a row nobody has named anyone in, so an untouched
+    // room row stays out of the advice.
+    const crowd = (type: 'Practitioner' | 'Location' | 'Device', count: number): ActorRequirement[] => [
+      row(
+        ...Array.from({ length: count }, (_, index) =>
+          candidateOf({ ...DrRiveraSchedule, id: `${type}-${index}` }, type, `${type} ${index}`)
+        )
+      ),
+    ];
+
+    expect(
+      getSelectionError({ Practitioner: crowd('Practitioner', 11), Device: crowd('Device', 11), Location: [row()] })
+        ?.message
+    ).toBe('Too many combinations to search at once. Remove a few providers or devices to find a time.');
+
+    expect(
+      getSelectionError({
+        Practitioner: crowd('Practitioner', 5),
+        Location: crowd('Location', 5),
+        Device: crowd('Device', 5),
+      })?.message
+    ).toBe('Too many combinations to search at once. Remove a few providers, rooms, or devices to find a time.');
   });
 
   test('Collects what was chosen across roles, in the order they are asked about', () => {
@@ -738,7 +770,10 @@ describe('selections', () => {
 
   test('Accepts a search once a provider is chosen', () => {
     expect(getSelectionError({ Practitioner: [row(RIVERA)] })).toBeUndefined();
-    expect(getSelectionError({})).toBe('Choose at least one provider first.');
+    expect(getSelectionError({})).toStrictEqual({
+      message: 'Choose at least one provider first.',
+      severity: 'incomplete',
+    });
   });
 
   test('Refuses rows that no one set of actors can satisfy', () => {
@@ -748,7 +783,10 @@ describe('selections', () => {
     const selections: ActorSelections = { Practitioner: [row(RIVERA), row(RIVERA)] };
 
     expect(getActorCombinations(selections)).toStrictEqual([]);
-    expect(getSelectionError(selections)).toBe('Nobody can fill every row at once.');
+    expect(getSelectionError(selections)).toStrictEqual({
+      message: 'Nobody can fill every row at once.',
+      severity: 'invalid',
+    });
 
     // The rest of the sentence goes against the rows that caused it, so say which.
     expect(getUnsatisfiableRows(selections)).toStrictEqual({
