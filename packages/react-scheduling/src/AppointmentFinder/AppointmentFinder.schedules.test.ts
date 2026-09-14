@@ -786,6 +786,10 @@ describe('selections', () => {
       ['Schedule/schedule-dr-okafor', 'Schedule/schedule-dr-rivera'],
     ]);
     expect(getSelectionError(selections)).toBeUndefined();
+
+    // The two spellings of the pair share a key, which ignores order, but they read
+    // differently. The one reached first is the one kept.
+    expect(getActorCombinations(selections)[0].label).toBe('Dr. Maya Rivera · Dr. Tunde Okafor');
   });
 
   test('Names everyone the appointment would be held on', () => {

@@ -601,40 +601,29 @@ export function getActorCombinations(selections: ActorSelections): ActorCombinat
     return [];
   }
 
-  const combinations: ActorCombination[] = [];
-  const seen = new Set<string>();
-  const picks = requirements.map(() => 0);
+  const combinations = cartesianProduct(requirements.map((requirement) => requirement.candidates))
+    // Two rows may offer the same person, and nobody fills both halves of a visit.
+    .filter((chosen) => !hasRepeatedActor(chosen))
+    .map(toActorCombination);
 
-  do {
-    const chosen = requirements.map((requirement, index) => requirement.candidates[picks[index]]);
-    const combination = toActorCombination(chosen);
-    // Two rows may offer the same person — "A or B" and then "B or C" — and one
-    // person cannot fill both halves of a visit. The key is order-independent, so
-    // it also collapses the pair {A,B} that {A,B} × {A,B} reaches twice.
-    if (!hasRepeatedActor(chosen) && !seen.has(combination.key)) {
-      seen.add(combination.key);
-      combinations.push(combination);
+  // The key ignores order, so this also collapses the pair {A,B} × {A,B} reaches twice.
+  // First wins: `new Map(entries)` would keep the last, and `label` does read in order.
+  const byKey = new Map<string, ActorCombination>();
+  for (const combination of combinations) {
+    if (!byKey.has(combination.key)) {
+      byKey.set(combination.key, combination);
     }
-  } while (advancePicks(picks, requirements));
-
-  return combinations;
+  }
+  return [...byKey.values()];
 }
 
 /**
- * Moves the odometer on by one, the last row turning fastest.
- * @param picks - Which alternative each row is currently taking. Mutated.
- * @param requirements - The rows being picked from.
- * @returns Whether there was another combination to move on to.
+ * Every way of taking one element from each list, the last list turning fastest.
+ * @param lists - The lists to take from. One empty list empties the product.
+ * @returns One tuple per combination; one empty tuple when given no lists at all.
  */
-function advancePicks(picks: number[], requirements: readonly ActorRequirement[]): boolean {
-  for (let index = picks.length - 1; index >= 0; index--) {
-    picks[index]++;
-    if (picks[index] < requirements[index].candidates.length) {
-      return true;
-    }
-    picks[index] = 0;
-  }
-  return false;
+function cartesianProduct<T>(lists: readonly (readonly T[])[]): T[][] {
+  return lists.reduce<T[][]>((tuples, list) => tuples.flatMap((tuple) => list.map((item) => [...tuple, item])), [[]]);
 }
 
 /**
