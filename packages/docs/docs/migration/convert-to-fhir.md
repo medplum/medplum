@@ -121,6 +121,23 @@ The use of the `patient_condition_id` as an identifier provides a clear link bac
 
 This approach allows you to migrate your data quickly while still maintaining the ability to add standardized coding later, improving the overall quality and interoperability of your data over time.
 
+## Mapping Source Values to FHIR ValueSets
+
+In addition to `CodeableConcepts`, FHIR uses ValueSets to constrain elements whose values are plain codes. Status fields are a common migration problem: a legacy `is_active` boolean may collapse several workflow states that FHIR represents separately.
+
+Check the binding on the target element before writing the transformation. A **required** binding means the code must come from the bound ValueSet. An **extensible** binding uses a code from the ValueSet when it represents the concept, a **preferred** binding encourages those codes, and an **example** binding only illustrates possible values. Whatever the binding strength, the selected value must preserve the source meaning. The allowed values and their meanings can differ between resources.
+
+For example, consider a legacy care-plan status:
+
+| Source value | Documented source meaning                 | `CarePlan.status` mapping |
+| :----------- | :---------------------------------------- | :------------------------ |
+| `true`       | The care plan is currently being followed | `active`                  |
+| `false`      | The care plan is not active                | No direct mapping         |
+
+The `false` value does not say whether the plan is `on-hold`, `revoked`, `completed`, or `entered-in-error`. Use additional source fields or business rules to distinguish those states. If the source cannot support that distinction, route the record for an approved fallback or review instead of guessing.
+
+Review the target resource's element definitions, such as [`CarePlan.status`](/docs/api/fhir/resources/careplan), and record the source-to-code relationship in [Governing Data Mappings](/docs/migration/mapping-governance#record-terminology-decisions). Test every observed source value, including blanks and unexpected values.
+
 ## Linking Data Using Conditional References
 
 When migrating data to FHIR, it's crucial to maintain relationships between resources. Conditional references are particularly helpful in this process.

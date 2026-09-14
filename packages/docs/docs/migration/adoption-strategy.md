@@ -9,7 +9,7 @@ pagination_next: null
 
 This guide covers write authority, integration behavior, phased adoption, cutover controls, rollback, and legacy-system retirement.
 
-Apply only the phases required by the approved cutover pattern. You can phase by domain, site, tenant, or cohort rather than forcing the entire dataset through one sequence.
+We recommend using only the phases required by your approved cutover pattern. You can phase by domain, site, tenant, or cohort rather than forcing the entire dataset through one sequence.
 
 A common phased sequence is:
 
@@ -29,7 +29,7 @@ Start with the [authority matrix](/docs/migration/migration-planning#authority-a
 - Which team owns reconciliation
 - The criteria for advancing to the next phase
 
-Avoid bidirectional synchronization unless there is no simpler way to meet the operational requirement. Two systems accepting independent writes to the same domain create conflicts that cannot be resolved safely with last-write-wins logic alone.
+In most migrations, we recommend avoiding bidirectional synchronization unless there is no simpler way to meet the operational requirement. Two systems accepting independent writes to the same domain create conflicts that cannot be resolved safely with last-write-wins logic alone.
 
 ## Plan Subscription and Integration Behavior
 
@@ -61,9 +61,7 @@ Existing API-->>Client: Response
 
 ### Rationale
 
-- Starts populating Medplum before applications read from it.
-- Supports comparison and reconciliation before user-facing cutover.
-- Adds delivery, latency, and consistency risks that must be measured when dual writes are enabled.
+This phase starts populating Medplum before applications depend on it, giving the team time to compare both systems and reconcile differences before a user-facing cutover. That safety comes with a cost: dual writes introduce delivery, latency, and consistency risks that need to be measured and actively managed.
 
 ### Best Practices
 
@@ -87,12 +85,11 @@ graph LR
 
 ### Rationale
 
-- Ensures historical data is available in Medplum.
-- Allows for data validation and reconciliation before switching reads to Medplum.
+Backfilling makes historical data available in Medplum while the existing system still serves production reads. It creates a realistic dataset for validation and reconciliation before users depend on the new store.
 
 ### Best Practices
 
-- Set up regular sync infrastructure. This could be as simple as running a script on your local machine or in a serverless function. Many Medplum users also use tools like Apache Airflow to orchestrate their ETL
+- Set up regular sync infrastructure. This could be as simple as running a script on your local machine or in a serverless function. Many Medplum users also use tools like Apache Airflow to orchestrate their ETL.
 - Implement idempotent operations to allow for safe re-runs of the backfill process.
 - Start with a small subset of data to validate your migration scripts before running on the entire dataset.
 - Implement data validation checks to ensure the integrity of migrated data.
@@ -122,8 +119,7 @@ sequenceDiagram
 
 ### Rationale
 
-- This is the first user-facing change and can be used for data verification and user acceptance testing.
-- Allows you to start benefiting from Medplum's capabilities while still maintaining write operations through your existing system.
+Moving reads is usually the first user-facing change. It lets people verify migrated data in real workflows and begin using Medplum's capabilities while writes continue through the existing system.
 
 ### Best Practices
 
@@ -152,8 +148,7 @@ sequenceDiagram
 
 ### Rationale
 
-- Completes the transition to Medplum for both read and write operations.
-- Allows you to take full advantage of Medplum's features and performance benefits.
+Once reads are stable, moving writes makes Medplum the operational system of record for the selected domain or cohort. This is the point where rollback becomes more complicated because new production data may exist only in Medplum or in a downstream projection.
 
 ### Best Practices
 
@@ -169,8 +164,7 @@ Phase out the old data store once you're confident in the Medplum implementation
 
 ### Rationale
 
-- Reduces maintenance overhead and potential for data inconsistencies.
-- Completes the migration process.
+Retiring the old system removes the cost and ambiguity of maintaining two stores, but it should be the result of a completed migration rather than a deadline-driven cleanup step. Keep the legacy data available until retention, audit, rollback, and support obligations are satisfied.
 
 ### Best Practices
 

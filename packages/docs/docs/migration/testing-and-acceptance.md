@@ -9,7 +9,7 @@ Use this guide after [validating and reconciling migrated data](/docs/migration/
 
 ## Review Complete Patient Charts
 
-Field-level checks do not expose every cross-resource error. Review complete charts using three complementary sample types:
+Field-level checks do not expose every cross-resource error. We recommend reviewing complete charts with three complementary sample types:
 
 1. **Repeatable:** Keep stable records in every rehearsal to expose regressions.
 2. **Random:** Use a recorded seed to reduce selection bias.
@@ -21,7 +21,7 @@ Record the selection method, seed or source keys, reviewer, findings, and outcom
 
 ## Validate Documents and Binary Content
 
-Metadata alone does not prove that a migrated document is usable.
+Metadata alone does not prove that a migrated document is usable. A `DocumentReference` can look correct while its file is truncated, unreadable, linked to the wrong encounter, or inaccessible to the clinician who needs it.
 
 For representative and risk-based samples:
 
@@ -36,7 +36,7 @@ Use `createBinary`, `createMedia`, or `createAttachment` patterns and reference 
 
 ## Test Production Behavior
 
-Reconciliation often uses elevated migration credentials. It does not prove that production users can use the data.
+Reconciliation often uses elevated migration credentials. It does not prove that production users can find and use the data through their normal applications, roles, and workflows. Test the migrated records from the same paths people and integrations will use after cutover.
 
 Test representative production roles and policies:
 
@@ -66,7 +66,7 @@ Use the same credential type and equivalent permissions, but use environment-spe
 
 ## Review Exceptions and Obtain Sign-off
 
-Review the [validation exception record](/docs/migration/validation-and-reconciliation#manage-validation-exceptions). Confirm that each open issue has an owner, impact assessment, due date, and tested outcome. Require an explicit approver and supporting evidence for every accepted exception.
+An exception does not have to block go-live, but accepting one is a risk decision rather than a way to close a ticket. Review the [validation exception record](/docs/migration/validation-and-reconciliation#manage-validation-exceptions), and confirm that each open issue has an owner, impact assessment, due date, and tested outcome. Require an explicit approver and supporting evidence for every accepted exception.
 
 ## Readiness Checks
 

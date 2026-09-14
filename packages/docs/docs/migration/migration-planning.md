@@ -15,7 +15,9 @@ Use the [Data Migration Decision Guide](/docs/decision-guides/data-migration) to
 
 ## Planning outputs
 
-Complete these artifacts before finalizing the migration design:
+A migration plan should make the important tradeoffs visible before they become assumptions in code. The artifacts below give technical, clinical, and operational reviewers a shared description of what will move, who owns it, and how the team will know that it moved safely.
+
+Complete them before finalizing the migration design:
 
 - A [source-system inventory](#source-and-domain-inventory) with owners, access methods, formats, volume estimates, and known data-quality issues
 - Explicit inclusion and exclusion rules for each data domain
@@ -29,6 +31,8 @@ Complete these artifacts before finalizing the migration design:
 Do not estimate migration scope from the total size of a legacy database alone. Define the business rules for what qualifies, implement the extraction queries, and run those queries against representative source data. Use the resulting resource mix and file volume to size the pipeline, dress rehearsals, and validation samples.
 
 ## Source and Domain Inventory
+
+Start with the systems that supply the data, then break their contents into domains that can be scoped and approved. This keeps a request such as "migrate the EHR" from concealing different retention rules, owners, dependencies, and quality problems across patients, encounters, documents, and billing records.
 
 For each source system, record:
 
@@ -47,6 +51,8 @@ For each data domain, record:
 - Mapping and acceptance owners
 
 ## Authority and Coexistence Matrix
+
+Most cutover problems are ownership problems rather than copy problems. During every phase, each domain needs one clear authority for writes and an explicit path for detecting and repairing anything that fails to reach the other system.
 
 For each domain and migration phase, decide:
 

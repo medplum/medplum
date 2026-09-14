@@ -147,6 +147,23 @@ A production migration should be resumable from a checkpoint without recreating 
 
 Conditional updates make retries idempotent while the source remains authoritative, but they do not replace result tracking. Inspect every `entry.response`; see [Inspect Every Write Result](/docs/migration/validation-and-reconciliation#inspect-every-write-result).
 
+## Authenticating a Long-Running Pipeline
+
+Run migrations with a dedicated [`ClientApplication`](/docs/auth/client-credentials) rather than a personal access token. Give its `ProjectMembership` a narrowly scoped `AccessPolicy`, and manage its credentials and quota independently from interactive users.
+
+For a long-running process, we recommend using [`setBasicAuth`](/docs/sdk/core.medplumclient.setbasicauth). The Medplum SDK will send the client ID and secret directly with HTTP Basic authentication on each API request:
+
+```ts
+import { MedplumClient } from '@medplum/core';
+
+const medplum = new MedplumClient();
+medplum.setBasicAuth(process.env.MEDPLUM_CLIENT_ID as string, process.env.MEDPLUM_CLIENT_SECRET as string);
+```
+
+This avoids managing an expiring bearer token during a backfill. OAuth2 client credentials also support machine-to-machine workloads, and `MedplumClient.startClientLogin` can authenticate again using the stored client ID and secret. If you manage OAuth tokens outside the SDK, however, you must renew them rather than relying on a single one-hour access token.
+
+Keep the secret in your deployment's secret manager or environment. Never place it in source code, migration manifests, FHIR resources, logs, or command history. Use HTTPS, rotate the credential after the migration, and verify that the migration identity can perform only the required operations.
+
 ## Controlling Throughput
 
 Benchmark the real resource mix before choosing concurrency. Patient count alone is not a useful throughput estimate because one patient may expand into many resources and trigger downstream automation.

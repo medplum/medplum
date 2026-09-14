@@ -11,11 +11,11 @@ Consider the following common scenario:
 - You decided to adopt a standards based architecture, such as Medplum
 - You want to migrate operations without service interruption or degradation
 
-While there is some engineering work required to migrate non-FHIR data into Medplum, there are well-known best-practices to manage this process. This series of guides outlines the process of migrating data from an existing platform into Medplum.
+Migrating non-FHIR data into Medplum requires engineering work, but the hardest problems are usually decisions about meaning, ownership, and cutover rather than converting file formats. We have seen migrations go most smoothly when teams make those decisions explicitly and test them against representative data. This series of guides walks through that process.
 
 :::tip[Planning this migration?]
 
-Use the [Data Migration Decision Guide](/docs/decision-guides/data-migration) to inventory sources, define ownership, choose a cutover strategy, and agree on acceptance criteria.
+The [Data Migration Decision Guide](/docs/decision-guides/data-migration) can help you inventory sources, define ownership, choose a cutover strategy, and agree on acceptance criteria.
 
 :::
 

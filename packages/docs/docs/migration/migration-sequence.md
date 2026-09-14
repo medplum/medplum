@@ -11,9 +11,11 @@ sidebar_position: 2
 
 When migrating data to Medplum, maintain the relationships between data types. FHIR splits data across multiple [Resources][resources] that contain [References][references] to each other.
 
+The order below is a practical starting point, not a rule that applies to every migration. Walk through the references produced by your approved mappings and adjust the sequence when your data model differs. Loading a record early is not useful if doing so requires dropping the context that makes it meaningful.
+
 ## Recommended Migration Order
 
-Start with shared records, then load the resources that refer to them. This sequence also prioritizes current clinical information before lower-priority history.
+We generally recommend starting with shared records, then loading the resources that refer to them. This sequence also prioritizes current clinical information before lower-priority history.
 
 | Order | Data element                        | Common FHIR resources                                                                                                                                                                     | Why it comes here                                                                      |
 | :---- | :---------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------- |

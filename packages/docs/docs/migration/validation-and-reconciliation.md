@@ -17,6 +17,8 @@ Complete [Governing Data Mappings](/docs/migration/mapping-governance) and desig
 
 ## Define Acceptance Before Loading
 
+Decide what a successful migration looks like while there is still time to change the design. If acceptance begins only after loading, every discrepancy becomes a debate about whether the data, the mapping, or the expectation was wrong.
+
 Before the first production load, document:
 
 - Source systems, extracts, files, time ranges, and business rules in scope
@@ -50,7 +52,7 @@ flowchart TD
 
 ### What to record in a manifest
 
-The manifest must distinguish:
+Think of the manifest as the audit trail for the migration rather than a simple success log. It must distinguish:
 
 - Source units, including those that intentionally produce no resource
 - Zero or more intended target resources for each source unit
@@ -212,6 +214,8 @@ Preserving an identifier does not prove that two source patients are the same pe
 - Do not choose a convenient status or default only to satisfy a required field.
 
 ## Manage Validation Exceptions
+
+Real source data will produce exceptions. The goal is not to make the exception count disappear, but to prevent unresolved records from becoming invisible or being accepted without the right review.
 
 Every unresolved discrepancy needs:
 

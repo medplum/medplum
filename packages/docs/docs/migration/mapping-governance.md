@@ -5,7 +5,7 @@ sidebar_position: 3
 
 # Governing Data Mappings
 
-A data mapping defines how source data becomes FHIR R4 resources in Medplum. Treat mappings as reviewed, versioned specifications, not implementation details hidden inside migration code.
+A data mapping defines how source data becomes FHIR R4 resources in Medplum. We recommend treating mappings as reviewed, versioned specifications, not implementation details hidden inside migration code. This gives everyone who understands the source data or depends on the result a place to review the decisions before they are buried in transformation logic.
 
 This page covers:
 
@@ -73,9 +73,24 @@ For each rule, record:
 
 Do not place data in a convenient field with different semantics, convert free text into a code without an approved mapping, invent fields, or overload identifiers and extensions with unrelated data. Consult [FHIR Basics](/docs/fhir-basics), the [FHIR R4 resource documentation](/docs/api/fhir/resources), and [Profiles](/docs/fhir-datastore/profiles).
 
+### Do Not Use Extensions as a Catch-All
+
+Extensions let FHIR represent concepts that the base specification does not cover, but they are not a place to store every source field left over after mapping. That approach may make the first import easier, but it leaves applications with an undocumented secondary schema that is difficult to search, validate, and exchange.
+
+Before defining a custom extension:
+
+1. Check whether a standard resource element already represents the concept.
+2. Look for an established extension or profile that fits the same meaning.
+3. If a custom extension is still necessary, give that single concept a stable canonical URL and a governed `StructureDefinition`.
+4. Record its source meaning, cardinality, value type, applicability, validation, and owner in the mapping register.
+
+Do not combine unrelated source fields under one generic extension URL. If a field has no approved FHIR representation, mark it as unsupported or out of scope rather than hiding it in an extension. Changing an extension URL or meaning after applications depend on it can require both a data migration and an application migration.
+
+See [Profiles](/docs/fhir-datastore/profiles) and [Mapping and Terminology Governance](/docs/decision-guides/data-migration#33-mapping--terminology-governance) for the design and approval process.
+
 ## Choose How Profiles Apply
 
-Medplum can apply profiles in two ways:
+Profiles turn mapping decisions into constraints that Medplum can validate. Decide up front whether a profile applies to every resource of a type or only to records selected by a mapping rule. Medplum supports both approaches:
 
 - Set `meta.profile` on a resource when the applicable profile is determined by the source record, workflow, or mapping rule.
 - Configure [`Project.defaultProfile`](/docs/access/projects#default-profiles) when every resource of a type should use the same profile unless the resource specifies one explicitly.
