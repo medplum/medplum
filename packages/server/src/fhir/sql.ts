@@ -29,6 +29,8 @@ let DEBUG: string | undefined = env['SQL_DEBUG'];
  */
 export type PgQueryable = Pick<Pool, 'query'> & Pick<PoolClient, 'query'>;
 
+export const PUBLIC_SCHEMA = 'public';
+
 export function setSqlDebug(value: string | undefined): void {
   DEBUG = value;
 }
@@ -81,6 +83,13 @@ export const Operator = {
     sql.appendColumn(column);
     sql.append(' ILIKE ');
     sql.param(parameter as string);
+  },
+  UNACCENT_ILIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append(`${MedplumUnaccentFn.name}(`);
+    sql.appendColumn(column);
+    sql.append(`) ILIKE ${MedplumUnaccentFn.name}(`);
+    sql.param(parameter as string);
+    sql.append(')');
   },
   '<': simpleBinaryOperator('<'),
   '<=': simpleBinaryOperator('<='),
@@ -826,6 +835,11 @@ export class SelectQuery extends BaseQuery {
     return this;
   }
 
+  clearColumns(): this {
+    this.columns.length = 0;
+    return this;
+  }
+
   addColumns(columns: Column[]): this {
     for (const col of columns) {
       this.columns.push(new Column(this.effectiveTableName, col.effectiveColumnName));
@@ -1376,12 +1390,15 @@ export const TokenArrayToTextFn: SqlFunctionDefinition = {
     AS $function$SELECT e'\x03'||array_to_string($1, e'\x03')||e'\x03'$function$`,
 };
 
-export function isValidTableName(tableName: string): boolean {
-  return /^\w+$/.test(tableName);
-}
+export const MedplumUnaccentFn: SqlFunctionDefinition = {
+  name: 'medplum_unaccent',
+  createQuery: `CREATE FUNCTION medplum_unaccent(text)
+    RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT
+    AS $function$SELECT public.unaccent('public.unaccent', normalize($1, NFC))$function$`,
+};
 
-export function isValidColumnName(columnName: string): boolean {
-  return /^\w+$/.test(columnName);
+export function isValidPostgresIdentifier(identifier: string): boolean {
+  return /^\w+$/.test(identifier);
 }
 
 export function replaceNullWithUndefinedInRows(rows: any[]): void {

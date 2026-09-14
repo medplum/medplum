@@ -1,21 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type { AccessPolicy } from '@medplum/fhirtypes';
+import type { AccessPolicy, Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { addTestUser, withTestContext } from '../test.setup';
 
 describe('SCIM Routes', () => {
   const app = express();
   let accessToken: string;
   let systemRepo: SystemRepository;
+  let project: WithId<Project>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -30,6 +33,7 @@ describe('SCIM Routes', () => {
       password: 'password!@#',
     });
     accessToken = registration.accessToken;
+    project = registration.project;
     systemRepo = await getProjectSystemRepo(registration.project);
 
     // Create default access policy
@@ -180,6 +184,146 @@ describe('SCIM Routes', () => {
       });
     expect(res).toHaveStatus(201);
     expect(res.body.userType).toBe('Practitioner');
+  });
+
+  test('Reject update of server-scoped user', async () => {
+    // Bob registers his own project, which creates a server-scoped (global) User
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const bob = await withTestContext(() =>
+      registerNew({
+        firstName: 'Bob',
+        lastName: 'Jones',
+        projectName: 'Bob Project',
+        email: bobEmail,
+        password: 'password!@#',
+      })
+    );
+    expect(bob.user.project).toBeUndefined();
+
+    // Alice invites Bob by email, which reuses Bob's existing global User
+    const { membership, user } = await withTestContext(() =>
+      inviteUser({
+        project,
+        email: bobEmail,
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        sendEmail: false,
+      })
+    );
+    expect(user.id).toBe(bob.user.id);
+    expect(user.project).toBeUndefined();
+    expect(membership.project?.reference).toBe(`Project/${project.id}`);
+
+    // The membership is in Alice's project, but the User is not, so Alice cannot write to it
+    const newEmail = `attacker${randomUUID()}@example.com`;
+    const updateResponse = await request(app)
+      .put(`/scim/v2/Users/${membership.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.SCIM_JSON)
+      .send({
+        schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
+        id: membership.id,
+        userType: 'Practitioner',
+        name: { givenName: 'Bob', familyName: 'Jones' },
+        emails: [{ value: newEmail }],
+      });
+    expect(updateResponse).toHaveStatus(403);
+
+    const patchResponse = await request(app)
+      .patch(`/scim/v2/Users/${membership.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.SCIM_JSON)
+      .send({
+        schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
+        Operations: [{ op: 'replace', value: { emails: [{ value: newEmail }] } }],
+      });
+    expect(patchResponse).toHaveStatus(403);
+
+    // Bob's login email is unchanged
+    const bobUser = await getGlobalSystemRepo().readResource<User>('User', bob.user.id);
+    expect(bobUser.email).toBe(bobEmail);
+  });
+
+  test('Reject update of user from another project', async () => {
+    // Bob is a project-scoped user in his own project
+    const bob = await withTestContext(() =>
+      registerNew({
+        firstName: 'Bob',
+        lastName: 'Jones',
+        projectName: 'Bob Project',
+        email: `bob${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const bobPatient = await withTestContext(() =>
+      addTestUser(bob.project, { resourceType: 'Patient', accessPolicy: { resourceType: 'AccessPolicy' } })
+    );
+    expect(bobPatient.user.project?.reference).toBe(`Project/${bob.project.id}`);
+
+    // Alice references Bob's project membership, which is not in her project
+    const updateResponse = await request(app)
+      .put(`/scim/v2/Users/${bobPatient.membership.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.SCIM_JSON)
+      .send({
+        schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
+        id: bobPatient.membership.id,
+        userType: 'Patient',
+        name: { givenName: 'Bob', familyName: 'Jones' },
+        emails: [{ value: `attacker${randomUUID()}@example.com` }],
+      });
+    expect(updateResponse).toHaveStatus(403);
+
+    const bobUser = await getGlobalSystemRepo().readResource<User>('User', bobPatient.user.id);
+    expect(bobUser.email).toBe(bobPatient.user.email);
+  });
+
+  test('Deactivate server-scoped user', async () => {
+    // Bob registers his own project, which creates a server-scoped (global) User
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const bob = await withTestContext(() =>
+      registerNew({
+        firstName: 'Bob',
+        lastName: 'Jones',
+        projectName: 'Bob Project',
+        email: bobEmail,
+        password: 'password!@#',
+      })
+    );
+
+    // Alice invites Bob by email, which reuses Bob's existing global User
+    const { membership, user } = await withTestContext(() =>
+      inviteUser({
+        project,
+        email: bobEmail,
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        sendEmail: false,
+      })
+    );
+    expect(user.id).toBe(bob.user.id);
+    expect(user.project).toBeUndefined();
+
+    const before = await getGlobalSystemRepo().readResource<User>('User', user.id);
+
+    // Alice owns the membership, so she can still deactivate Bob within her own project
+    const patchResponse = await request(app)
+      .patch(`/scim/v2/Users/${membership.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.SCIM_JSON)
+      .send({
+        schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
+        Operations: [{ op: 'replace', value: { active: false } }],
+      });
+    expect(patchResponse).toHaveStatus(200);
+    expect(patchResponse.body.active).toBe(false);
+
+    // Bob's global User was not written at all
+    const after = await getGlobalSystemRepo().readResource<User>('User', user.id);
+    expect(after.email).toBe(bobEmail);
+    expect(after.meta?.versionId).toBe(before.meta?.versionId);
   });
 
   test('Search users as super admin', async () => {

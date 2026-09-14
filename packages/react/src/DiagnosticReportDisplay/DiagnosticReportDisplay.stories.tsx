@@ -72,27 +72,28 @@ export const Simple = (): JSX.Element => (
 
 export const WithCategories = (): JSX.Element => {
   const medplum = useMedplum();
-  const [loaded, setLoaded] = useState(false);
+  const [report, setReport] = useState<DiagnosticReport>();
 
   useEffect(() => {
-    (async (): Promise<boolean> => {
+    (async (): Promise<DiagnosticReport> => {
       const obs = await medplum.createResource(CreatinineObservation);
-      ExampleReport.result = [createReference(obs)];
+      // Clone to avoid mutating the shared fixture across story renders.
+      const report = deepClone(ExampleReport);
+      report.result = [createReference(obs)];
 
-      await medplum.updateResource(ExampleReport);
-      return true;
+      return medplum.updateResource(report);
     })()
-      .then(setLoaded)
+      .then(setReport)
       .catch(console.log);
   }, [medplum]);
 
-  if (!loaded) {
+  if (!report) {
     return <></>;
   }
 
   return (
     <Document>
-      <DiagnosticReportDisplay value={ExampleReport} />
+      <DiagnosticReportDisplay value={report} />
     </Document>
   );
 };
@@ -118,27 +119,28 @@ export const HideSpecimenInfo = (): JSX.Element => {
 
 export const HideNotes = (): JSX.Element => {
   const medplum = useMedplum();
-  const [loaded, setLoaded] = useState(false);
+  const [report, setReport] = useState<DiagnosticReport>();
 
   useEffect(() => {
-    (async (): Promise<boolean> => {
+    (async (): Promise<DiagnosticReport> => {
       const obs = await medplum.createResource({ ...CreatinineObservation, category: undefined });
-      (HomerDiagnosticReport.result as Reference<Observation>[]).push(createReference(obs));
+      // Clone to avoid mutating the shared fixture across story renders.
+      const report = deepClone(HomerDiagnosticReport);
+      (report.result as Reference<Observation>[]).push(createReference(obs));
 
-      await medplum.updateResource(HomerDiagnosticReport);
-      return true;
+      return medplum.updateResource(report);
     })()
-      .then(setLoaded)
+      .then(setReport)
       .catch(console.log);
   }, [medplum]);
 
-  if (!loaded) {
+  if (!report) {
     return <></>;
   }
 
   return (
     <Document>
-      <DiagnosticReportDisplay hideObservationNotes value={HomerDiagnosticReport} />
+      <DiagnosticReportDisplay hideObservationNotes value={report} />
     </Document>
   );
 };

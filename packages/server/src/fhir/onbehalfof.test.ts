@@ -332,6 +332,100 @@ describe('On Behalf Of', () => {
       });
     }));
 
+  test('Allowed by ProjectMembership reference', () =>
+    withTestContext(async () => {
+      const adminAccount = await createTestProject({
+        withClient: true,
+        withAccessToken: true,
+        membership: { admin: true },
+      });
+
+      const { client, project } = adminAccount;
+      const basicAuth = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
+      const testAccount = await addTestUser(project);
+
+      const res1 = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', basicAuth)
+        .set('X-Medplum', 'extended')
+        .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.membership))
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'Patient' });
+      expect(res1).toHaveStatus(201);
+      expect(res1.body.meta.onBehalfOf.reference).toStrictEqual(getReferenceString(testAccount.profile));
+    }));
+
+  test('Forbidden for cross project by ProjectMembership reference', () =>
+    withTestContext(async () => {
+      const adminAccount1 = await createTestProject({
+        withClient: true,
+        withAccessToken: true,
+        membership: { admin: true },
+      });
+
+      const adminAccount2 = await createTestProject({
+        withClient: true,
+        withAccessToken: true,
+        membership: { admin: true },
+      });
+
+      const { client } = adminAccount1;
+      const basicAuth = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
+
+      // The membership exists, but belongs to another project
+      const res1 = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', basicAuth)
+        .set('X-Medplum', 'extended')
+        .set('X-Medplum-On-Behalf-Of', getReferenceString(adminAccount2.membership))
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'Patient' });
+      expect(res1).toHaveStatus(400);
+      expect(res1.body).toMatchObject<OperationOutcome>({
+        resourceType: 'OperationOutcome',
+        issue: [
+          expect.objectContaining<OperationOutcomeIssue>({
+            severity: 'error',
+            code: 'invalid',
+            details: { text: 'Authentication error' },
+            diagnostics: expect.stringContaining('Forbidden'),
+          }),
+        ],
+      });
+    }));
+
+  test('Forbidden for unknown ProjectMembership reference', () =>
+    withTestContext(async () => {
+      const adminAccount = await createTestProject({
+        withClient: true,
+        withAccessToken: true,
+        membership: { admin: true },
+      });
+
+      const { client } = adminAccount;
+      const basicAuth = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
+
+      const res1 = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', basicAuth)
+        .set('X-Medplum', 'extended')
+        .set('X-Medplum-On-Behalf-Of', `ProjectMembership/${randomUUID()}`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'Patient' });
+      expect(res1).toHaveStatus(400);
+      expect(res1.body).toMatchObject<OperationOutcome>({
+        resourceType: 'OperationOutcome',
+        issue: [
+          expect.objectContaining<OperationOutcomeIssue>({
+            severity: 'error',
+            code: 'invalid',
+            details: { text: 'Authentication error' },
+            diagnostics: expect.stringContaining('Forbidden'),
+          }),
+        ],
+      });
+    }));
+
   test('Consistent meta.account behavior', () =>
     withTestContext(async () => {
       // Create a single project and single admin client

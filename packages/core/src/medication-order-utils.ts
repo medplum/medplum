@@ -86,20 +86,20 @@ export interface MedicationOrderDrugInput {
   readonly rxNorm?: string;
   readonly routedMedId?: number;
   /**
-   * Vendor formulation key, paired with {@link routedMedId} to order a drug that
+   * Vendor formulation key, paired with {@link MedicationOrderDrugInput.routedMedId} to order a drug that
    * has no dose-level product to resolve an NDC from — OTC / topical /
    * wide-multi-strength generics for which the vendor's dose-format lookup
-   * returns nothing. Supply {@link drugName} alongside it, since there is no
+   * returns nothing. Supply {@link MedicationOrderDrugInput.drugName} alongside it, since there is no
    * catalog row to derive a name from.
    */
   readonly gcnSeqno?: number;
-  /** Drug name, required for a {@link gcnSeqno}-keyed line (no catalog row to name it). */
+  /** Drug name, required for a {@link MedicationOrderDrugInput.gcnSeqno}-keyed line (no catalog row to name it). */
   readonly drugName?: string;
   /**
-   * Dose text for a {@link gcnSeqno}-keyed line, e.g. `"solution"`.
+   * Dose text for a {@link MedicationOrderDrugInput.gcnSeqno}-keyed line, e.g. `"solution"`.
    *
    * Optional, and only worth sending when the caller holds dose text *separate*
-   * from {@link drugName} — a hand-entered form, say. Passing a full product
+   * from {@link MedicationOrderDrugInput.drugName} — a hand-entered form, say. Passing a full product
    * label duplicates it in the description the vendor renders. When omitted, the
    * vendor derives the dose from the formulation key or falls back to the sig.
    */
@@ -205,7 +205,7 @@ export interface MedicationSearchParams {
   readonly rxNorm?: string;
   readonly routedMedId?: number;
   /**
-   * Vendor formulation keys under {@link routedMedId}, from the name-search hit.
+   * Vendor formulation keys under {@link MedicationSearchParams.routedMedId}, from the name-search hit.
    * Only used when the drug has no dose-level products: each key is resolved to
    * its marketed strength so the caller still gets selectable formulations
    * instead of an empty result. Ignored otherwise.

@@ -8,12 +8,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const config: StorybookConfig = {
   stories: [
-    '../src/stories/Introduction.mdx',
+    '../src/stories/Introduction.mdx', // redundant, but ensure Intro goes first
     '../src/**/*.mdx',
-    '../src/**/*.stories.@(js|jsx|ts|tsx)',
-    '../../react/src/**/*.stories.@(js|jsx|ts|tsx)',
+    '../src/**/*.stories.@(ts|tsx)',
+    '../../react/src/**/*.stories.@(ts|tsx)',
     '../../react-scheduling/src/**/*.mdx',
-    '../../react-scheduling/src/**/*.stories.@(js|jsx|ts|tsx)',
+    '../../react-scheduling/src/**/*.stories.@(ts|tsx)',
   ],
   addons: ['@storybook/addon-links', '@storybook/addon-docs', '@vueless/storybook-dark-mode'],
   staticDirs: ['../public'],
@@ -22,7 +22,22 @@ const config: StorybookConfig = {
     options: {},
   },
   async viteFinal(inputConfig, { configType }) {
-    let config = inputConfig;
+    // Stories and docs are pulled in from sibling packages, so bare specifiers such as
+    // "@storybook/addon-docs/blocks" resolve against those packages' own node_modules.
+    // Without deduping, the docs blocks and their emotion theme context get bundled twice,
+    // and blocks imported from a sibling package render with an empty theme.
+    let config = mergeConfig(inputConfig, {
+      resolve: {
+        dedupe: [
+          'storybook',
+          '@storybook/addon-docs',
+          '@storybook/react',
+          '@storybook/react-dom-shim',
+          'react',
+          'react-dom',
+        ],
+      },
+    });
     if (configType === 'PRODUCTION') {
       config = mergeConfig(config, {
         // plugins: [turbosnap({ rootDir: config.root ?? process.cwd() })],

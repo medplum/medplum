@@ -1,0 +1,150 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* Vertical sidebar nav that tracks the section in view as the page scrolls. */
+.nav {
+  position: sticky;
+  top: calc(var(--ifm-navbar-height) + 2rem);
+  align-self: start;
+  padding-top: 4rem;
+}
+
+.label {
+  font-size: var(--landing-label-size);
+  font-weight: var(--landing-label-weight);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--landing-color-muted);
+  margin: 0 0 0.75rem 0.875rem;
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+}
+
+.pill,
+.subPill {
+  font-weight: 500;
+  border-radius: var(--landing-radius-media);
+  text-decoration: none;
+  transition: all var(--landing-transition);
+}
+
+.pill:hover,
+.subPill:hover {
+  text-decoration: none;
+}
+
+.pill {
+  font-size: 0.9375rem;
+  padding: 0.5rem 0.875rem;
+  color: var(--landing-color-body);
+}
+
+.pill:hover {
+  background: var(--landing-surface-muted);
+  color: var(--landing-color-heading);
+}
+
+.pillActive,
+.pillActive:hover {
+  background: var(--oc-grape-0);
+  color: var(--oc-grape-9);
+  font-weight: 600;
+}
+
+[data-theme='dark'] .pillActive,
+[data-theme='dark'] .pillActive:hover {
+  background: var(--oc-grape-1);
+}
+
+.subList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+  margin: 0.125rem 0 0.375rem 1rem;
+}
+
+.subPill {
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.75rem;
+  color: var(--landing-color-muted);
+  border-left: 2px solid var(--landing-divider);
+}
+
+.subPill:hover {
+  color: var(--landing-color-heading);
+}
+
+.subPillActive {
+  color: var(--oc-grape-8);
+  font-weight: 600;
+  border-left-color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .subPillActive {
+  color: var(--oc-grape-4);
+}
+
+/* On narrow screens the sidebar collapses into a horizontal sticky bar. Its height is
+   pinned to --solutions-mobile-nav-height (see solutions.module.css) rather than left to
+   its contents, because the page's anchor offsets subtract that same value — measuring
+   one and declaring the other is how the two drift apart. */
+@media screen and (max-width: 996px) {
+  .nav {
+    top: var(--ifm-navbar-height);
+    z-index: 10;
+    height: var(--solutions-mobile-nav-height);
+    box-sizing: border-box;
+    padding-top: 0;
+    background: var(--landing-surface);
+    border-top: 1px solid var(--landing-divider);
+    border-bottom: 1px solid var(--landing-divider);
+  }
+
+  .label {
+    display: none;
+  }
+
+  /* Matches the content column's width and gutter (composes: can't be used inside a
+     media query, and at desktop widths .inner is a plain vertical list). */
+  .inner {
+    max-width: var(--layout-max-width);
+    margin-inline: auto;
+    padding-inline: var(--layout-gutter);
+    box-sizing: border-box;
+    flex-direction: row;
+    align-items: center;
+    height: 100%;
+    gap: 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .inner::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pill {
+    white-space: nowrap;
+    padding: 0.375rem 1rem;
+    border-radius: var(--landing-radius-chip);
+  }
+
+  .item {
+    flex-direction: row;
+  }
+
+  /* The two-level table of contents is a desktop-only treatment; the mobile bar
+     stays a flat, horizontally-scrolling list of category pills. */
+  .subList {
+    display: none;
+  }
+}

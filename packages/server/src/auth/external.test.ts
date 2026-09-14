@@ -297,6 +297,48 @@ describe('External', () => {
     expect(res.body.issue[0].details.text).toBe('Identity provider not found');
   });
 
+  test('Missing token URL', async () => {
+    const client = await createClient(systemRepo, {
+      project,
+      name: 'Missing Token URL',
+      redirectUri,
+      identityProvider: {
+        ...identityProvider,
+        tokenUrl: undefined,
+      },
+    });
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: client.id }),
+    });
+
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Missing token URL for external identity provider');
+  });
+
+  test('Client secret post requires client credentials', async () => {
+    const client = await createClient(systemRepo, {
+      project,
+      name: 'Missing Client Credentials',
+      redirectUri,
+      identityProvider: {
+        ...identityProvider,
+        tokenAuthMethod: OAuthTokenAuthMethod.ClientSecretPost,
+        clientId: undefined,
+        clientSecret: undefined,
+      },
+    });
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: client.id }),
+    });
+
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Missing client ID or client secret for external identity provider');
+  });
+
   test('Invalid project', async () => {
     const url = appendQueryParams('/auth/external', {
       code: randomUUID(),

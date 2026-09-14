@@ -17,7 +17,9 @@ const theme = {};
 export function render(ui: ReactNode, wrapper?: ({ children }: { children: ReactNode }) => JSX.Element): RenderResult {
   return testingLibraryRender(ui, {
     wrapper: ({ children }: { children: ReactNode }) => (
-      <MantineProvider theme={theme}>{wrapper ? wrapper({ children }) : children}</MantineProvider>
+      <MantineProvider theme={theme} env="test">
+        {wrapper ? wrapper({ children }) : children}
+      </MantineProvider>
     ),
   });
 }

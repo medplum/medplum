@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
 import { HTTP_HL7_ORG } from '@medplum/core';
 import type {
   Appointment,
@@ -14,7 +13,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { createAppointment, createEncounter, updateEncounterStatus } from './encounter';
+import { addDiagnosesToEncounter, createAppointment, createEncounter, updateEncounterStatus } from './encounter';
 
 describe('encounter utils', () => {
   let medplum: MockClient;
@@ -311,15 +310,13 @@ describe('encounter utils', () => {
 
   describe('updateEncounterStatus', () => {
     test('updates encounter period and appointment status', async () => {
-      const encounter: WithId<Encounter> = {
+      const encounter = await medplum.createResource<Encounter>({
         resourceType: 'Encounter',
-        id: 'enc-1',
         status: 'planned',
         class: classification,
-      };
-      const appointment: WithId<Appointment> = {
+      });
+      const appointment = await medplum.createResource<Appointment>({
         resourceType: 'Appointment',
-        id: 'appt-1',
         status: 'booked',
         participant: [
           {
@@ -327,34 +324,121 @@ describe('encounter utils', () => {
             status: 'accepted',
           },
         ],
-      };
-      const updateSpy = vi.spyOn(medplum, 'updateResource').mockImplementation(async (resource) => resource as any);
+      });
+      const patchSpy = vi.spyOn(medplum, 'patchResource');
 
       const updatedEncounter = await updateEncounterStatus(medplum, encounter, appointment, 'in-progress');
 
-      expect(updateSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ resourceType: 'Appointment', status: 'checked-in' })
-      );
-      expect(updateSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ resourceType: 'Encounter', status: 'in-progress' })
-      );
+      expect(patchSpy).toHaveBeenCalledWith('Appointment', appointment.id, [
+        { op: 'replace', path: '/status', value: 'checked-in' },
+      ]);
+      expect(updatedEncounter.status).toBe('in-progress');
       expect(updatedEncounter.period?.start).toBeDefined();
 
       // Move to finished state
-      await updateEncounterStatus(medplum, updatedEncounter, appointment, 'finished');
-      expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ status: 'fulfilled' }));
+      const finishedEncounter = await updateEncounterStatus(medplum, updatedEncounter, appointment, 'finished');
+      expect(patchSpy).toHaveBeenCalledWith('Appointment', appointment.id, [
+        { op: 'replace', path: '/status', value: 'fulfilled' },
+      ]);
+      expect(finishedEncounter.status).toBe('finished');
+      expect(finishedEncounter.period?.start).toBe(updatedEncounter.period?.start);
+      expect(finishedEncounter.period?.end).toBeDefined();
+    });
+
+    test('adds new diagnoses as Conditions on the encounter', async () => {
+      const createdPatient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
+      const encounter = await medplum.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: classification,
+        subject: { reference: `Patient/${createdPatient.id}` },
+      });
+
+      const updated = await addDiagnosesToEncounter(medplum, encounter, [
+        { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9', display: 'Type 2 diabetes' }] },
+        { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'I10', display: 'Hypertension' }] },
+      ]);
+
+      expect(updated?.diagnosis).toHaveLength(2);
+      expect(updated?.diagnosis?.map((d) => d.rank)).toEqual([1, 2]);
+
+      const conditions = await Promise.all(
+        (updated?.diagnosis ?? []).map((d) => medplum.readReference(d.condition as any))
+      );
+      expect(conditions.map((c: any) => c.code?.coding?.[0]?.code)).toEqual(['E11.9', 'I10']);
+      expect(conditions[0]).toMatchObject({
+        resourceType: 'Condition',
+        subject: { reference: `Patient/${createdPatient.id}` },
+        encounter: { reference: `Encounter/${encounter.id}` },
+      });
+    });
+
+    test('reuses an existing patient Condition with the same code', async () => {
+      const createdPatient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
+      const existingCondition = await medplum.createResource({
+        resourceType: 'Condition',
+        subject: { reference: `Patient/${createdPatient.id}` },
+        code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9' }] },
+      });
+      const encounter = await medplum.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: classification,
+        subject: { reference: `Patient/${createdPatient.id}` },
+      });
+      const createResourceSpy = vi.spyOn(medplum, 'createResource');
+
+      const updated = await addDiagnosesToEncounter(medplum, encounter, [
+        { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9' }] },
+      ]);
+
+      expect(updated?.diagnosis).toEqual([
+        { condition: expect.objectContaining({ reference: `Condition/${existingCondition.id}` }), rank: 1 },
+      ]);
+      expect(createResourceSpy).not.toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Condition' }));
+    });
+
+    test('skips diagnoses already present on the encounter', async () => {
+      const createdPatient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
+      const existingCondition = await medplum.createResource({
+        resourceType: 'Condition',
+        subject: { reference: `Patient/${createdPatient.id}` },
+        code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9' }] },
+      });
+      const encounter = await medplum.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: classification,
+        subject: { reference: `Patient/${createdPatient.id}` },
+        diagnosis: [{ condition: { reference: `Condition/${existingCondition.id}` }, rank: 1 }],
+      });
+
+      // All duplicates: no patch, returns undefined
+      const noChange = await addDiagnosesToEncounter(medplum, encounter, [
+        { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9' }] },
+      ]);
+      expect(noChange).toBeUndefined();
+
+      // Mixed: only the new code is appended, ranks continue after existing entries
+      const updated = await addDiagnosesToEncounter(medplum, encounter, [
+        { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9' }] },
+        { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'I10' }] },
+      ]);
+      expect(updated?.diagnosis).toHaveLength(2);
+      expect(updated?.diagnosis?.[0].condition?.reference).toBe(`Condition/${existingCondition.id}`);
+      expect(updated?.diagnosis?.[1].rank).toBe(2);
+      const newCondition: any = await medplum.readReference(updated?.diagnosis?.[1].condition as any);
+      expect(newCondition.code?.coding?.[0]?.code).toBe('I10');
     });
 
     test('updates appointment status for cancellation', async () => {
-      const encounter: WithId<Encounter> = {
+      const encounter = await medplum.createResource<Encounter>({
         resourceType: 'Encounter',
-        id: 'enc-2',
         status: 'in-progress',
         class: classification,
-      };
-      const appointment: WithId<Appointment> = {
+      });
+      const appointment = await medplum.createResource<Appointment>({
         resourceType: 'Appointment',
-        id: 'appt-2',
         status: 'booked',
         participant: [
           {
@@ -362,12 +446,15 @@ describe('encounter utils', () => {
             status: 'accepted',
           },
         ],
-      };
-      const updateSpy = vi.spyOn(medplum, 'updateResource').mockImplementation(async (resource) => resource as any);
+      });
+      const patchSpy = vi.spyOn(medplum, 'patchResource');
 
-      await updateEncounterStatus(medplum, encounter, appointment, 'cancelled');
+      const updatedEncounter = await updateEncounterStatus(medplum, encounter, appointment, 'cancelled');
 
-      expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
+      expect(patchSpy).toHaveBeenCalledWith('Appointment', appointment.id, [
+        { op: 'replace', path: '/status', value: 'cancelled' },
+      ]);
+      expect(updatedEncounter.status).toBe('cancelled');
     });
   });
 });

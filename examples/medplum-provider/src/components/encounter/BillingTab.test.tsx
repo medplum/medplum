@@ -22,7 +22,6 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
-import * as useDebouncedUpdateResourceModule from '../../hooks/useDebouncedUpdateResource';
 import { ChartNoteStatus } from '../../types/encounter';
 import * as chargeItemsUtils from '../../utils/chargeitems';
 import { BillingTab } from './BillingTab';
@@ -104,22 +103,12 @@ const mockClaim: WithId<Claim> = {
   provider: { reference: 'Practitioner/practitioner-123' },
 };
 
-const mockDebouncedUpdate = (): ReturnType<typeof useDebouncedUpdateResourceModule.useDebouncedUpdateResource> => {
-  const fn = vi.fn().mockResolvedValue(undefined) as unknown as ReturnType<
-    typeof useDebouncedUpdateResourceModule.useDebouncedUpdateResource
-  >;
-  fn.cancel = vi.fn();
-  return fn;
-};
-
 describe('BillingTab', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    // Mock useDebouncedUpdateResource to return a function that resolves immediately
-    vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(mockDebouncedUpdate());
     // BillingTab fetches its own charge items; default to a single CPT charge item.
     vi.spyOn(chargeItemsUtils, 'getChargeItemsForEncounter').mockResolvedValue([mockChargeItem]);
   });
@@ -606,6 +595,7 @@ describe('BillingTab', () => {
   test('updates the encounter and resolves the practitioner when the practitioner is changed', async () => {
     const setEncounter = vi.fn();
     const setPractitioner = vi.fn();
+    const onEncounterSaved = vi.fn();
 
     const mockPractitioner1: Practitioner = {
       resourceType: 'Practitioner',
@@ -652,13 +642,14 @@ describe('BillingTab', () => {
     // Coverage on mount, Practitioner for the practitioner search, and no existing Claim.
     mockSearchResources({ Coverage: [mockCoverage], Practitioner: [mockPractitioner1, mockPractitioner2] });
     mockChargeItems([appliedChargeItem]); // Charge items already present
-    vi.spyOn(medplum, 'updateResource').mockResolvedValue(updatedEncounter as any);
+    vi.spyOn(medplum, 'patchResource').mockResolvedValue(updatedEncounter as any);
     vi.spyOn(medplum, 'readReference').mockResolvedValue(mockPractitioner2 as any);
 
     // Setup with charge items but no claim initially
     await setup({
       setEncounter,
       setPractitioner,
+      onEncounterSaved,
       encounter: {
         resourceType: 'Encounter',
         id: 'encounter-123',
@@ -693,9 +684,25 @@ describe('BillingTab', () => {
       fireEvent.click(smithOption);
     });
 
+    // Also change the check-in time inside the same debounce window; both field edits must
+    // survive into the persisted patch ops (the debounce must not drop the earlier one).
+    const checkinInput = screen.getByLabelText(/Check in/i);
+    await act(async () => {
+      fireEvent.change(checkinInput, { target: { value: '2024-01-02T09:30' } });
+    });
+
     await waitFor(
       () => {
-        expect(medplum.updateResource).toHaveBeenCalled();
+        const encounterPatchOps = vi
+          .mocked(medplum.patchResource)
+          .mock.calls.filter((call) => call[0] === 'Encounter')
+          .flatMap((call) => call[2]);
+        expect(encounterPatchOps).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ op: 'add', path: '/participant' }),
+            expect.objectContaining({ op: 'add', path: '/period/start' }),
+          ])
+        );
       },
       { timeout: SAVE_TIMEOUT_MS + 2000 }
     );
@@ -714,6 +721,9 @@ describe('BillingTab', () => {
       },
       { timeout: 5000 }
     );
+
+    // The persisted-save notification fires with the saved encounter.
+    expect(onEncounterSaved).toHaveBeenCalledWith(updatedEncounter);
   }, 15000);
 
   test('creates the claim before exporting when none is persisted yet', async () => {
@@ -746,6 +756,53 @@ describe('BillingTab', () => {
       const exportCall = postSpy.mock.calls.find((c) => c[0]?.toString().includes('$export'));
       expect(exportCall).toBeDefined();
       expect(windowOpenSpy).toHaveBeenCalledWith('https://example.com/claim.pdf', '_blank');
+    });
+
+    windowOpenSpy.mockRestore();
+  });
+
+  test('defaults the claim billing provider from the practitioner PractitionerRole organization', async () => {
+    const user = userEvent.setup();
+
+    mockSearchResources({ Coverage: [mockCoverage] });
+
+    // No persisted Claim; the practitioner bills under an organization via PractitionerRole.
+    vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string) => {
+      if (resourceType === 'PractitionerRole') {
+        return Promise.resolve({
+          resourceType: 'PractitionerRole',
+          id: 'role-1',
+          practitioner: { reference: 'Practitioner/practitioner-123' },
+          organization: { reference: 'Organization/billing-org-123', display: 'Test Medical Practice' },
+        });
+      }
+      return Promise.resolve(undefined);
+    }) as any);
+
+    const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({ ...mockClaim, id: 'created-claim' });
+    vi.spyOn(medplum, 'post').mockResolvedValue({
+      resourceType: 'Media',
+      content: { url: 'https://example.com/claim.pdf' },
+    });
+    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    await setup();
+
+    await waitFor(() => {
+      expect(medplum.searchOne).toHaveBeenCalledWith('PractitionerRole', expect.anything());
+    });
+
+    await user.click(screen.getByText('Export Claim'));
+    await user.click(await screen.findByText('CMS 1500 Form'));
+
+    // The generated claim bills through the role's organization instead of the practitioner.
+    await waitFor(() => {
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceType: 'Claim',
+          provider: expect.objectContaining({ reference: 'Organization/billing-org-123' }),
+        })
+      );
     });
 
     windowOpenSpy.mockRestore();
@@ -856,10 +913,8 @@ describe('BillingTab', () => {
 
   test('handles error in encounter change', async () => {
     const setEncounter = vi.fn();
-    const debouncedUpdateResource = mockDebouncedUpdate();
 
-    vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(debouncedUpdateResource);
-    vi.spyOn(medplum, 'updateResource').mockRejectedValue(new Error('Update failed'));
+    vi.spyOn(medplum, 'patchResource').mockRejectedValue(new Error('Update failed'));
 
     await setup({
       setEncounter,

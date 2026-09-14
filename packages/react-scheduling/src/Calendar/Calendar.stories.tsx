@@ -47,9 +47,19 @@ export const Basic = (): JSX.Element => {
       schedule: createReference(DrAliceSmithSchedule),
       comment: 'Coming in early on wednesday morning',
     },
+
+    {
+      resourceType: 'Slot',
+      id: 'slot-4',
+      start: '2020-05-08T15:15:00Z',
+      end: '2020-05-08T16:15:00Z',
+      status: 'entered-in-error',
+      schedule: createReference(DrAliceSmithSchedule),
+    },
   ] satisfies Slot[];
 
   const appointments: Appointment[] = [
+    // A "booked" appointment renders as a blue block
     {
       resourceType: 'Appointment',
       id: 'appt-1',
@@ -65,6 +75,81 @@ export const Basic = (): JSX.Element => {
         {
           status: 'accepted',
           actor: createReference(HomerSimpson),
+        },
+      ],
+    },
+    // A "pending" appointment is shown as an outlined block
+    {
+      resourceType: 'Appointment',
+      id: 'appt-2',
+      status: 'pending',
+      start: '2020-05-08T16:00:00Z',
+      end: '2020-05-08T17:00:00Z',
+      slot: [],
+      participant: [
+        {
+          status: 'tentative',
+          actor: createReference(DrAliceSmith),
+        },
+        {
+          status: 'tentative',
+          actor: createReference(HomerSimpson),
+        },
+      ],
+    },
+
+    // A "noshow" appointment has the status displayed after the title
+    {
+      resourceType: 'Appointment',
+      id: 'appt-3',
+      status: 'noshow',
+      start: '2020-05-04T16:30:00Z',
+      end: '2020-05-04T17:15:00Z',
+      slot: [],
+      participant: [
+        {
+          status: 'tentative',
+          actor: createReference(DrAliceSmith),
+        },
+        {
+          status: 'accepted',
+          actor: createReference(HomerSimpson),
+        },
+      ],
+    },
+
+    // A "cancelled" appointment gets some loud coloring and a status annotation
+    {
+      resourceType: 'Appointment',
+      id: 'appt-4',
+      status: 'cancelled',
+      start: '2020-05-05T16:00:00Z',
+      end: '2020-05-05T16:45:00Z',
+      slot: [],
+      participant: [
+        {
+          status: 'accepted',
+          actor: createReference(DrAliceSmith),
+        },
+        {
+          status: 'accepted',
+          actor: createReference(HomerSimpson),
+        },
+      ],
+    },
+
+    // An appointment with no Patient participent shows "No Patient" as the title
+    {
+      resourceType: 'Appointment',
+      id: 'appt-5',
+      status: 'booked',
+      start: '2020-05-06T15:30:00Z',
+      end: '2020-05-05T16:30:00Z',
+      slot: [],
+      participant: [
+        {
+          status: 'accepted',
+          actor: createReference(DrAliceSmith),
         },
       ],
     },

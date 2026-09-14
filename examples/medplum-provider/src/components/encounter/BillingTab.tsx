@@ -3,8 +3,8 @@
 import { Button, Card, Flex, Group, Menu, Skeleton, Stack, Tooltip } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
-import type { WithId } from '@medplum/core';
-import { CPT, getReferenceString } from '@medplum/core';
+import type { PatchOperation, WithId } from '@medplum/core';
+import { CPT, createReference, getReferenceString } from '@medplum/core';
 import type {
   ChargeItem,
   Claim,
@@ -14,6 +14,7 @@ import type {
   Encounter,
   EncounterDiagnosis,
   Media,
+  Organization,
   Patient,
   Practitioner,
   Reference,
@@ -21,9 +22,8 @@ import type {
 import { useMedplum } from '@medplum/react';
 import { IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
-import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { ChartNoteStatus } from '../../types/encounter';
 import { refreshCandidClaimResponse } from '../../utils/candid';
 import { getChargeItemsForEncounter } from '../../utils/chargeitems';
@@ -40,13 +40,15 @@ export interface BillingTabProps {
   patient: WithId<Patient>;
   encounter: WithId<Encounter>;
   setEncounter: (encounter: WithId<Encounter>) => void;
+  /** Fired only after an encounter change is persisted (unlike setEncounter, which may be optimistic). */
+  onEncounterSaved?: (encounter: WithId<Encounter>) => void;
   practitioner: WithId<Practitioner> | undefined;
   setPractitioner: (practitioner: WithId<Practitioner>) => void;
   chartNoteStatus: ChartNoteStatus;
 }
 
 export const BillingTab = (props: BillingTabProps): JSX.Element => {
-  const { encounter, setEncounter, patient, practitioner, setPractitioner, chartNoteStatus } = props;
+  const { encounter, setEncounter, onEncounterSaved, patient, practitioner, setPractitioner, chartNoteStatus } = props;
   const medplum = useMedplum();
   const [claim, setClaim] = useState<WithId<Claim> | undefined>();
   const [chargeItems, setChargeItems] = useState<WithId<ChargeItem>[]>([]);
@@ -57,8 +59,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [claimResponse, setClaimResponse] = useState<WithId<ClaimResponse> | null | undefined>(undefined);
   const [claimResponseLoading, setClaimResponseLoading] = useState(false);
-
-  const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
+  const [billingOrganization, setBillingOrganization] = useState<Reference<Organization> | undefined>();
 
   useEffect(() => {
     const fetchClaim = async (): Promise<void> => {
@@ -107,6 +108,32 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     fetchCoverage().catch((err) => showErrorNotification(err));
   }, [medplum, patient]);
 
+  // Default the billing organization: an existing draft claim records the previous choice;
+  // otherwise use the organization the practitioner bills under (PractitionerRole).
+  useEffect(() => {
+    const resolveBillingOrganization = async (): Promise<Reference<Organization> | undefined> => {
+      if (claim?.provider?.reference?.startsWith('Organization/')) {
+        return claim.provider as Reference<Organization>;
+      }
+      if (!practitioner) {
+        return undefined;
+      }
+      const role = await medplum.searchOne('PractitionerRole', {
+        practitioner: getReferenceString(practitioner),
+        active: 'true',
+      });
+      return role?.organization;
+    };
+
+    resolveBillingOrganization()
+      .then((organization) => {
+        if (organization) {
+          setBillingOrganization(organization);
+        }
+      })
+      .catch((err) => showErrorNotification(err));
+  }, [claim, practitioner, medplum]);
+
   const fetchClaimResponse = useCallback(async (): Promise<void> => {
     if (!claim?.id) {
       setClaimResponse(null);
@@ -139,13 +166,23 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     fetchClaimResponse().catch((err) => showErrorNotification(err));
   }, [fetchClaimResponse]);
 
+  const debouncedPatchDiagnosis = useDebouncedCallback(async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
+    try {
+      const savedEncounter = await medplum.patchResource('Encounter', encounter.id, [
+        { op: 'add', path: '/diagnosis', value: diagnosis },
+      ]);
+      onEncounterSaved?.(savedEncounter);
+    } catch (err) {
+      showErrorNotification(err);
+    }
+  }, SAVE_TIMEOUT_MS);
+
   const handleDiagnosisChange = useCallback(
     async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
-      const updatedEncounter = { ...encounter, diagnosis };
-      setEncounter(updatedEncounter);
-      await debouncedUpdateResource(updatedEncounter);
+      setEncounter({ ...encounter, diagnosis });
+      debouncedPatchDiagnosis(diagnosis);
     },
-    [encounter, setEncounter, debouncedUpdateResource]
+    [encounter, setEncounter, debouncedPatchDiagnosis]
   );
 
   const generateClaim = useCallback(
@@ -161,6 +198,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         chargeItems,
         conditions,
         insurance,
+        billingOrganization,
       });
 
       const existingClaim = await medplum.searchOne(
@@ -180,13 +218,28 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       setClaim(saved);
       return saved;
     },
-    [patient, encounter, practitioner, chargeItems, conditions, coverage, medplum, setClaim]
+    [patient, encounter, practitioner, chargeItems, conditions, coverage, billingOrganization, medplum, setClaim]
   );
 
-  const handleEncounterChange = useDebouncedCallback(async (updatedEncounter: Encounter): Promise<void> => {
+  // Visit-details edits accumulate here (keyed by path, latest edit per field wins) so rapid
+  // multi-field changes merge into one patch instead of the debounce dropping all but the last.
+  const pendingEncounterOpsRef = useRef(new Map<string, PatchOperation>());
+
+  const flushEncounterOps = useDebouncedCallback(async (): Promise<void> => {
+    const ops = [...pendingEncounterOpsRef.current.values()];
+    pendingEncounterOpsRef.current.clear();
+    if (ops.length === 0) {
+      return;
+    }
+    // Nested period ops can only apply once the period object exists on the resource.
+    if (!encounter.period && ops.some((op) => op.path.startsWith('/period/'))) {
+      ops.unshift({ op: 'add', path: '/period', value: {} });
+    }
+
     try {
-      const savedEncounter = await medplum.updateResource(updatedEncounter);
+      const savedEncounter = await medplum.patchResource('Encounter', encounter.id, ops);
       setEncounter(savedEncounter);
+      onEncounterSaved?.(savedEncounter);
 
       if (savedEncounter?.participant?.[0]?.individual) {
         const practitionerResult = await medplum.readReference(savedEncounter.participant[0].individual);
@@ -196,6 +249,16 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       showErrorNotification(err);
     }
   }, SAVE_TIMEOUT_MS);
+
+  const handleEncounterChange = useCallback(
+    (ops: PatchOperation[]): void => {
+      for (const op of ops) {
+        pendingEncounterOpsRef.current.set(op.path, op);
+      }
+      flushEncounterOps();
+    },
+    [flushEncounterOps]
+  );
 
   const exportClaimAsCMS1500 = useCallback(async (): Promise<void> => {
     try {
@@ -420,7 +483,11 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         <VisitDetailsPanel
           practitioner={practitioner}
           encounter={encounter}
+          billingOrganization={billingOrganization}
           onEncounterChange={handleEncounterChange}
+          onBillingOrganizationChange={(organization) =>
+            setBillingOrganization(organization ? createReference(organization) : undefined)
+          }
         />
       </Group>
 

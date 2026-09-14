@@ -7,7 +7,9 @@ import {
   OAuthGrantType,
   OAuthSigningAlgorithm,
   OAuthTokenType,
+  OperationOutcomeError,
   Operator,
+  badRequest,
   createReference,
   getStatus,
   isJwt,
@@ -149,6 +151,10 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
 
   const project = await systemRepo.readReference(membership.project);
   const scope = (req.body.scope || 'openid') as string;
+
+  if (scope.includes('patient/')) {
+    throw new OperationOutcomeError(badRequest('Cannot use client credentials with patient scope'));
+  }
 
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
@@ -545,6 +551,10 @@ async function tryGetExternalUserInfo(
   idp: IdentityProvider,
   subjectToken: string
 ): Promise<JWTPayload | undefined> {
+  if (!idp.userInfoUrl) {
+    sendTokenError(res, 'invalid_request', 'Missing user info URL', 400);
+    return undefined;
+  }
   try {
     return await getExternalUserInfo(idp.userInfoUrl, subjectToken, idp);
   } catch (err: any) {
@@ -576,7 +586,7 @@ function resolveExternalAuthProvider(clientId: string, client?: ClientApplicatio
 
     const userInfoUrl = externalAuthConfig.userInfoUrl;
     if (userInfoUrl) {
-      return { userInfoUrl } as IdentityProvider;
+      return { userInfoUrl };
     }
   }
 

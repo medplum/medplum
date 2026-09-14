@@ -12,6 +12,7 @@ import {
   created,
   forbidden,
   getOutcomeRedirectUrl,
+  getRateLimitReset,
   getStatus,
   gone,
   isAccepted,
@@ -32,6 +33,7 @@ import {
   redirectOk,
   serverError,
   serverTimeout,
+  setRateLimitReset,
   tooManyRequests,
   unauthorized,
   unsupportedMediaType,
@@ -88,6 +90,18 @@ describe('Outcomes', () => {
       coding: [{ code: 'errcode' }],
       text: 'bad',
     });
+  });
+
+  test('Rate limit reset', () => {
+    const outcome = structuredClone(tooManyRequests);
+    setRateLimitReset(outcome, 1500);
+    expect(getRateLimitReset(outcome)).toBe(2000);
+  });
+
+  test('Legacy rate limit reset from diagnostics', () => {
+    const outcome = structuredClone(tooManyRequests);
+    outcome.issue[0].diagnostics = JSON.stringify({ remainingPoints: 0, msBeforeNext: 1500 });
+    expect(getRateLimitReset(outcome)).toBe(1500);
   });
 
   test('Bad Request', () => {

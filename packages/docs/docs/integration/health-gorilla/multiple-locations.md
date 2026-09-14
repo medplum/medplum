@@ -69,75 +69,44 @@ Each individual practice location is represented by an `Organization` resource t
 
 Bots are invoked via `POST /fhir/R4/Bot/$execute?identifier={system}|{value}`. Alternatively, you can use the corresponding OperationDefinition.
 
-### Syncing Locations
+### Creating a Practice Location
 
-To sync a practice location to Health Gorilla, you call the `sync-locations` bot. This creates the location in Health Gorilla and writes the `tl-...` ID back to the Medplum `Organization`.
+To create a practice location in Health Gorilla, execute the `health-gorilla-sync-location` OperationDefinition on the `Organization` resource. This also writes the `tl-...` ID back to the Medplum `Organization`.
 
 ```bash
-curl -X POST "https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://www.medplum.com/integrations/bot-identifier|health-gorilla-labs/sync-locations" \
+curl -X POST "https://api.medplum.com/fhir/R4/Organization/\$health-gorilla-sync-location" \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/fhir+json" \
-  -d '{
-    "resourceType": "Parameters",
-    "parameter": [
-      {
-        "name": "location",
-        "valueReference": {
-          "reference": "Organization/{medplum-org-id}" // Reference to the practice location organization
-        }
-      }
-    ]
-  }'
+  -d '{ "reference": "Organization/{medplum-org-id}" }'
 ```
 
-### Enrolling Practitioners to a Location
+### Linking Practitioners to Locations
 
-Once the location is synced, you can enroll a practitioner into that specific location by providing the location reference to the `sync-practitioner` bot.
+Link a practitioner to one or more practice locations by adding a repeatable extension to their Medplum `Practitioner` resource — one entry per linked location:
 
-You can execute the `sync-practitioner` OperationDefinition on the `Practitioner` resource:
+```js
+{
+  "resourceType": "Practitioner",
+  "extension": [
+    {
+      "url": "https://medplum.com/integrations/health-gorilla/practitioner-location",
+      "valueReference": { "reference": "Organization/{practice-location-id-1}" } // First linked location
+    },
+    {
+      "url": "https://medplum.com/integrations/health-gorilla/practitioner-location",
+      "valueReference": { "reference": "Organization/{practice-location-id-2}" } // Second linked location
+    }
+  ]
+}
+```
 
-```bash {10-13}
-curl -X POST "https://api.medplum.com/fhir/R4/Practitioner/{id}/\$sync-practitioner" \
+Each extension entry references a Medplum practice-location `Organization` (the same kind described above). This is a one-time setup step, not something to redo per order: once the extension is in place, the `sync-practitioner` bot reads it automatically on every sync—for initial enrollment, for manual re-sync, and for the automatic sync that runs on every lab order submission—so a practitioner's location is a durable fact you set once, not something you specify with each order. If a practitioner's locations change later, update the extension entries; the next sync (or the next order they place) reconciles Health Gorilla to match.
+
+To trigger a sync immediately after setting up the extension, rather than waiting for the practitioner's next order, execute the `sync-practitioner` OperationDefinition on the `Practitioner` resource:
+
+```bash
+curl -X POST "https://api.medplum.com/fhir/R4/Practitioner/{id}/\$health-gorilla-sync-practitioner" \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/fhir+json" \
-  -d '{
-    "resourceType": "Parameters",
-    "parameter": [
-      {
-        "name": "location",
-        "valueReference": {
-          "reference": "Organization/{practice-location-id}" // Reference to the practice location organization
-        }
-      }
-    ]
-  }'
+  -d '{}'
 ```
-
-Alternatively, you can execute the bot directly:
-
-```bash {10-13}
-curl -X POST "https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://www.medplum.com/integrations/bot-identifier|health-gorilla-labs/sync-practitioner" \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/fhir+json" \
-  -d '{
-    "resourceType": "Parameters",
-    "parameter": [
-      {
-        "name": "practitioner",
-        "valueReference": {
-          "reference": "Practitioner/{id}" // Reference to the practitioner
-        }
-      },
-      {
-        "name": "location",
-        "valueReference": {
-          "reference": "Organization/{practice-location-id}" // Reference to the practice location organization
-        }
-      }
-    ]
-  }'
-```
-
-:::caution[Known Limitation]
-Health Gorilla only supports location assignment at `PractitionerRole` creation time. Updates via `PUT` or `PATCH` are silently ignored for the location field. Re-assigning a practitioner to a different location requires re-enrollment.
-:::

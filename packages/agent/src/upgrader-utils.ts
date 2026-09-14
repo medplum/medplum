@@ -10,11 +10,20 @@ import { pipeline } from 'node:stream/promises';
 import type streamWeb from 'node:stream/web';
 
 export const UPGRADE_MANIFEST_PATH = resolve(__dirname, 'upgrade.json');
-export const UPGRADER_LOG_PATH = resolve(
-  __dirname,
-  `upgrader-logs-${new Date().toISOString().replaceAll(/:\s*/g, '-')}.txt`
-);
 export const RELEASES_PATH = resolve(__dirname);
+
+/**
+ * Builds the log file path for an upgrader process, timestamped at call time.
+ *
+ * Deliberately a function, not a module-level constant: an agent process can live for days between
+ * upgrades, so a load-time timestamp names the file after the agent's start rather than the upgrade,
+ * and every attempt by that agent truncates the same file.
+ *
+ * @returns The absolute path to the log file for this upgrade attempt.
+ */
+export function getUpgraderLogPath(): string {
+  return resolve(__dirname, `upgrader-logs-${new Date().toISOString().replaceAll(/:\s*/g, '-')}.txt`);
+}
 
 export async function downloadRelease(version: string, path: string): Promise<void> {
   const release = await fetchVersionManifest('agent-upgrader', version);

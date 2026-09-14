@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { deepClone, LRUCache, tooManyRequests } from '@medplum/core';
+import { deepClone, LRUCache, setRateLimitReset, tooManyRequests } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import type { Handler, Request, Response } from 'express';
 import type { RateLimiterRes } from 'rate-limiter-flexible';
@@ -100,6 +100,7 @@ function blockRequest(res: Response, result: RateLimiterRes, limiter: RateLimite
   addRateLimitHeader(result, res);
   const outcome: OperationOutcome = deepClone(tooManyRequests);
   outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: limiter.points });
+  setRateLimitReset(outcome, result.msBeforeNext);
   res.status(429).json(outcome).end();
 }
 

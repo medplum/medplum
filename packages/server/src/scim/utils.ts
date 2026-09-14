@@ -127,6 +127,36 @@ export async function readScimUser(systemRepo: SystemRepository, project: Projec
 }
 
 /**
+ * Reads the ProjectMembership and User for a SCIM write operation.
+ *
+ * The membership check alone is not sufficient. A User is a global record that can be a member of
+ * many projects, so a membership in the caller's project does not establish that the caller owns
+ * the User it points at. Membership fields are always writable, but User fields are only writable
+ * by the project that owns the User. Server-scoped Users belong to no project and are therefore
+ * never owned by a SCIM caller.
+ *
+ * @param systemRepo - The system repository.
+ * @param project - The project.
+ * @param id - The ProjectMembership ID.
+ * @returns The membership, the User it references, and whether the User is writable.
+ */
+async function readMembershipAndUserForWrite(
+  systemRepo: SystemRepository,
+  project: Project,
+  id: string
+): Promise<{ membership: WithId<ProjectMembership>; user: WithId<User>; userWritable: boolean }> {
+  const projectReference = getReferenceString(project);
+
+  const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', id);
+  if (membership.project?.reference !== projectReference) {
+    throw new OperationOutcomeError(forbidden);
+  }
+
+  const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+  return { membership, user, userWritable: user.project?.reference === projectReference };
+}
+
+/**
  * Updates an existing user.
  *
  * See SCIM 3.5.1 - Replace a Resource
@@ -141,21 +171,20 @@ export async function updateScimUser(
   project: Project,
   scimUser: ScimUser
 ): Promise<ScimUser> {
-  let membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', scimUser.id as string);
-  if (membership.project?.reference !== getReferenceString(project)) {
-    throw new OperationOutcomeError(forbidden);
-  }
-
-  let user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+  const { membership, user, userWritable } = await readMembershipAndUserForWrite(
+    systemRepo,
+    project,
+    scimUser.id as string
+  );
 
   // Copy the updated properties from the SCIM user to the Medplum user and membership
-  scimUserToUserAndMembership(scimUser, user, membership);
+  scimUserToUserAndMembership(scimUser, user, membership, userWritable);
 
   // Save the updated user and membership
-  user = await systemRepo.updateResource(user);
-  membership = await systemRepo.updateResource(membership);
+  const updatedUser = userWritable ? await systemRepo.updateResource(user) : user;
+  const updatedMembership = await systemRepo.updateResource(membership);
 
-  return convertToScimUser(user, membership);
+  return convertToScimUser(updatedUser, updatedMembership);
 }
 
 /**
@@ -176,12 +205,7 @@ export async function patchScimUser(
   id: string,
   request: ScimPatchRequest
 ): Promise<ScimUser> {
-  let membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', id);
-  if (membership.project?.reference !== getReferenceString(project)) {
-    throw new OperationOutcomeError(forbidden);
-  }
-
-  let user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+  const { membership, user, userWritable } = await readMembershipAndUserForWrite(systemRepo, project, id);
 
   // Convert the user and membership to a SCIM user
   const scimUser = convertToScimUser(user, membership);
@@ -190,13 +214,13 @@ export async function patchScimUser(
   patchObject(scimUser, convertScimToJsonPatch(request));
 
   // Copy the updated properties from the SCIM user to the Medplum user and membership
-  scimUserToUserAndMembership(scimUser, user, membership);
+  scimUserToUserAndMembership(scimUser, user, membership, userWritable);
 
   // Save the updated user and membership
-  user = await systemRepo.updateResource(user);
-  membership = await systemRepo.updateResource(membership);
+  const updatedUser = userWritable ? await systemRepo.updateResource(user) : user;
+  const updatedMembership = await systemRepo.updateResource(membership);
 
-  return convertToScimUser(user, membership);
+  return convertToScimUser(updatedUser, updatedMembership);
 }
 
 /**
@@ -271,14 +295,26 @@ export function convertToScimUser(user: User, membership: ProjectMembership): Sc
  * @param scimUser - The input SCIM user.
  * @param user - The output Medplum user.
  * @param membership - The output Medplum project membership.
+ * @param userWritable - Whether the caller's project owns the User.
  */
-function scimUserToUserAndMembership(scimUser: ScimUser, user: User, membership: ProjectMembership): void {
-  user.firstName = scimUser.name?.givenName as string;
-  user.lastName = scimUser.name?.familyName as string;
-  user.externalId = scimUser.externalId;
+function scimUserToUserAndMembership(
+  scimUser: ScimUser,
+  user: User,
+  membership: ProjectMembership,
+  userWritable: boolean
+): void {
+  if (userWritable) {
+    user.firstName = scimUser.name?.givenName as string;
+    user.lastName = scimUser.name?.familyName as string;
+    user.externalId = scimUser.externalId;
 
-  if (scimUser.emails?.[0]?.value) {
-    user.email = scimUser.emails[0]?.value;
+    if (scimUser.emails?.[0]?.value) {
+      user.email = scimUser.emails[0]?.value;
+    }
+  } else if (scimUser.emails?.[0]?.value && scimUser.emails[0].value !== user.email) {
+    // The login email of a User owned by another project is not the caller's to change.
+    // The other User fields are treated as read-only and ignored.
+    throw new OperationOutcomeError(forbidden);
   }
 
   if (scimUser.active !== undefined) {

@@ -6,6 +6,16 @@ import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
+// MockClient answers searches from memory by evaluating each search parameter
+// against the stored resources, so a parameter it has not indexed matches
+// nothing — silently, with an empty bundle rather than an error. Tests that
+// search need the bundles indexed up front. `searchScheduleCandidates` finds
+// schedules by `Schedule.service-type`, so without this it would appear to find
+// no schedules configured for any service.
+for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+  indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+}
+
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({

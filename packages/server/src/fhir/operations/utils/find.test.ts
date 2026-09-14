@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { findAlignedSlotTimes } from './find';
+import { bufferTimeConflicts, findAlignedSlotTimes } from './find';
 
 describe('findAlignedSlotTimes', () => {
   test('can find a slot that exactly coincides with the interval', () => {
@@ -293,5 +293,91 @@ describe('findAlignedSlotTimes', () => {
       { start: new Date('2025-12-01T00:45:00Z'), end: new Date('2025-12-01T00:55:00Z') },
       { start: new Date('2025-12-01T01:00:00Z'), end: new Date('2025-12-01T01:10:00Z') },
     ]);
+  });
+});
+
+describe('findAlignedSlotTimes filtering', () => {
+  const alignment = { interval: 60, offset: 0, timezone: 'Etc/UTC' };
+  const dayInterval = { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T06:00:00Z') };
+
+  test('omits slots the filter rejects', () => {
+    const slots = findAlignedSlotTimes(dayInterval, {
+      alignment,
+      durationMinutes: 60,
+      filter: (interval) => interval.start.getUTCHours() % 2 === 0,
+    });
+    expect(slots.map((slot) => slot.start.toISOString())).toEqual([
+      '2025-12-01T00:00:00.000Z',
+      '2025-12-01T02:00:00.000Z',
+      '2025-12-01T04:00:00.000Z',
+    ]);
+  });
+
+  test('rejected slots do not count towards maxCount', () => {
+    const slots = findAlignedSlotTimes(dayInterval, {
+      alignment,
+      durationMinutes: 60,
+      maxCount: 2,
+      filter: (interval) => interval.start.getUTCHours() % 2 === 0,
+    });
+    // Without the filter, a maxCount of 2 would stop at 1am and return an unusable value
+    expect(slots.map((slot) => slot.start.toISOString())).toEqual([
+      '2025-12-01T00:00:00.000Z',
+      '2025-12-01T02:00:00.000Z',
+    ]);
+  });
+
+  test('returns empty when the filter rejects everything', () => {
+    const slots = findAlignedSlotTimes(dayInterval, {
+      alignment,
+      durationMinutes: 60,
+      maxCount: 2,
+      filter: () => false,
+    });
+    expect(slots).toEqual([]);
+  });
+});
+
+describe('bufferTimeConflicts', () => {
+  const interval = { start: new Date('2025-12-01T10:00:00Z'), end: new Date('2025-12-01T11:00:00Z') };
+  const buffers = { bufferBefore: 20, bufferAfter: 20 };
+
+  test('returns false without any blocked time', () => {
+    expect(bufferTimeConflicts(interval, [], buffers)).toBe(false);
+  });
+
+  test('returns false when the appointment has no buffers', () => {
+    const blocked = [{ start: new Date('2025-12-01T09:50:00Z'), end: new Date('2025-12-01T10:00:00Z') }];
+    expect(bufferTimeConflicts(interval, blocked, { bufferBefore: 0, bufferAfter: 0 })).toBe(false);
+  });
+
+  test('returns false for blocked time abutting the buffers', () => {
+    const blocked = [
+      { start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T09:40:00Z') },
+      { start: new Date('2025-12-01T11:20:00Z'), end: new Date('2025-12-01T12:00:00Z') },
+    ];
+    expect(bufferTimeConflicts(interval, blocked, buffers)).toBe(false);
+  });
+
+  test('returns false for blocked time overlapping only the appointment itself', () => {
+    const blocked = [{ start: new Date('2025-12-01T10:00:00Z'), end: new Date('2025-12-01T11:00:00Z') }];
+    expect(bufferTimeConflicts(interval, blocked, buffers)).toBe(false);
+  });
+
+  test('returns true when blocked time overlaps the buffer before', () => {
+    const blocked = [{ start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T09:50:00Z') }];
+    expect(bufferTimeConflicts(interval, blocked, buffers)).toBe(true);
+    expect(bufferTimeConflicts(interval, blocked, { bufferBefore: 0, bufferAfter: 20 })).toBe(false);
+  });
+
+  test('returns true when blocked time overlaps the buffer after', () => {
+    const blocked = [{ start: new Date('2025-12-01T11:10:00Z'), end: new Date('2025-12-01T12:00:00Z') }];
+    expect(bufferTimeConflicts(interval, blocked, buffers)).toBe(true);
+    expect(bufferTimeConflicts(interval, blocked, { bufferBefore: 20, bufferAfter: 0 })).toBe(false);
+  });
+
+  test('returns true when blocked time falls entirely inside a buffer', () => {
+    const blocked = [{ start: new Date('2025-12-01T09:45:00Z'), end: new Date('2025-12-01T09:50:00Z') }];
+    expect(bufferTimeConflicts(interval, blocked, buffers)).toBe(true);
   });
 });

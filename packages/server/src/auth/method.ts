@@ -47,7 +47,7 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
   }
 
   const idp = domainConfig.identityProvider;
-  if (!idp) {
+  if (!idp?.authorizeUrl || !idp.clientId) {
     return undefined;
   }
 
