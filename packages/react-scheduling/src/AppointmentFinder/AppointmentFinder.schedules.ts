@@ -10,12 +10,7 @@ import {
   serviceTypeIncludesService,
 } from '@medplum/core';
 import type { HealthcareService, Location, PractitionerRole, Reference, Schedule } from '@medplum/fhirtypes';
-import type {
-  BookableActorType,
-  SchedulingActor,
-  SchedulingActorResource,
-  SchedulingActorType,
-} from '../actors';
+import type { BookableActorType, SchedulingActor, SchedulingActorResource, SchedulingActorType } from '../actors';
 import {
   BOOKABLE_ACTOR_TYPES,
   getActorType,
