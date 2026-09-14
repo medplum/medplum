@@ -59,8 +59,8 @@
   "devDependencies": {
     "@medplum/definitions": "5.1.37",
     "@medplum/fhirtypes": "5.1.37",
-    "fast-check": "4.9.0",
-    "@fast-check/vitest": "0.4.1"
+    "fast-check": "4.10.0",
+    "@fast-check/vitest": "0.5.0"
   },
   "peerDependencies": {
     "pdfmake": "^0.2.5"

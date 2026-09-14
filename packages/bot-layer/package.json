@@ -28,12 +28,12 @@
     "fast-xml-parser": "5.11.1",
     "form-data": "4.0.6",
     "jose": "6.2.12",
-    "jszip": "3.10.1",
+    "jszip": "3.10.2",
     "node-fetch": "2.7.0",
     "pdfmake": "0.2.21",
     "ssh2": "1.17.0",
     "ssh2-sftp-client": "12.1.1",
-    "twilio": "6.1.0",
+    "twilio": "6.1.1",
     "undici": "7.29.1"
   },
   "devDependencies": {
