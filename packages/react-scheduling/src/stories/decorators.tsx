@@ -4,8 +4,10 @@ import type { Resource } from '@medplum/fhirtypes';
 import type { Decorator } from '@storybook/react';
 import { MockDateWrapper } from './MockDateWrapper';
 import { WithBookStub } from './WithBookStub';
+import { WithCancelStub } from './WithCancelStub';
 import { WithFindStub } from './WithFindStub';
 import { WithFixtures } from './WithFixtures';
+import { WithValueSetStub } from './WithValueSetStub';
 
 // Freezes the system clock so date/time-dependent stories are deterministic.
 export const withMockedDate: Decorator = (Story) => (
@@ -51,4 +53,26 @@ export const withBookStub = (): Decorator => (Story) => (
   <WithBookStub>
     <Story />
   </WithBookStub>
+);
+
+/**
+ * Answers `Appointment/[id]/$cancel` by cancelling what it names, which MockClient
+ * cannot.
+ * @returns The decorator.
+ */
+export const withCancelStub = (): Decorator => (Story) => (
+  <WithCancelStub>
+    <Story />
+  </WithCancelStub>
+);
+
+/**
+ * Expands the value sets these components bind to, which MockClient answers with
+ * example codes.
+ * @returns The decorator.
+ */
+export const withValueSetStub = (): Decorator => (Story) => (
+  <WithValueSetStub>
+    <Story />
+  </WithValueSetStub>
 );

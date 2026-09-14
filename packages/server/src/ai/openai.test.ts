@@ -3,7 +3,7 @@
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import type { AiContext } from './openai';
-import { callOpenAi, streamOpenAi } from './openai';
+import { callOpenAi, selectApi, streamOpenAi } from './openai';
 
 /** The event `streamOpenAi` reports, derived so the provider need not export the type. */
 type StreamEvent = Parameters<Parameters<typeof streamOpenAi>[1]>[0];
@@ -106,7 +106,7 @@ describe('OpenAI provider', () => {
         }),
       });
 
-      const result = await callOpenAi({ ...baseContext, tools: fhirTools, temperature: 0.3 });
+      const result = await callOpenAi({ ...baseContext, tools: fhirTools, temperature: 0.3, reasoningEffort: 'none' });
 
       expect(result.content).toBe('Here you go');
       expect(result.toolCalls).toStrictEqual([
@@ -122,6 +122,7 @@ describe('OpenAI provider', () => {
       const body = JSON.parse(init.body);
       expect(body.model).toBe('gpt-4');
       expect(body.temperature).toBe(0.3);
+      expect(body.reasoning_effort).toBe('none');
       expect(body.tools).toStrictEqual(fhirTools);
       expect(body.tool_choice).toBe('auto');
       expect(body.stream).toBeUndefined();
@@ -353,6 +354,200 @@ describe('OpenAI provider', () => {
       await expect(streamOpenAi(baseContext, () => undefined)).rejects.toThrow(
         'No response body available for streaming'
       );
+    });
+  });
+
+  describe('selectApi', () => {
+    test('Defaults to chat completions', () => {
+      expect(selectApi(baseContext)).toBe('chat');
+      expect(selectApi({ ...baseContext, tools: fhirTools })).toBe('chat');
+      expect(selectApi({ ...baseContext, reasoningEffort: 'high' })).toBe('chat');
+      expect(selectApi({ ...baseContext, tools: fhirTools, reasoningEffort: 'none' })).toBe('chat');
+    });
+
+    test('Routes tools with a reasoning effort to the Responses API', () => {
+      expect(selectApi({ ...baseContext, tools: fhirTools, reasoningEffort: 'xhigh' })).toBe('responses');
+    });
+
+    test('An explicit api wins', () => {
+      expect(selectApi({ ...baseContext, api: 'responses' })).toBe('responses');
+      expect(selectApi({ ...baseContext, tools: fhirTools, reasoningEffort: 'high', api: 'chat' })).toBe('chat');
+    });
+  });
+
+  describe('Responses API', () => {
+    const responsesContext: AiContext = {
+      ...baseContext,
+      model: 'gpt-6-astra',
+      tools: fhirTools,
+      reasoningEffort: 'high',
+      messages: [
+        { role: 'system', content: 'Translate requests' },
+        { role: 'user', content: 'Find Frodo' },
+        {
+          role: 'assistant',
+          content: null,
+          tool_calls: [
+            {
+              id: 'call_1',
+              type: 'function',
+              function: { name: 'fhir_request', arguments: { method: 'GET', path: 'Patient' } },
+            },
+          ],
+        },
+        { role: 'tool', tool_call_id: 'call_1', content: '{"resourceType":"Bundle"}' },
+      ],
+    };
+
+    test('Translates the request into Responses API form', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({ output: [] }),
+      });
+
+      await callOpenAi({ ...responsesContext, temperature: 0.2 });
+
+      const [url, init] = (global.fetch as Mock).mock.calls[0];
+      expect(url).toBe('https://api.openai.com/v1/responses');
+      const body = JSON.parse(init.body);
+      expect(body.messages).toBeUndefined();
+      expect(body.reasoning_effort).toBeUndefined();
+      expect(body.model).toBe('gpt-6-astra');
+      expect(body.store).toBe(false);
+      expect(body.temperature).toBe(0.2);
+      expect(body.reasoning).toStrictEqual({ effort: 'high' });
+      expect(body.tool_choice).toBe('auto');
+      expect(body.tools).toStrictEqual([
+        {
+          type: 'function',
+          name: 'fhir_request',
+          parameters: fhirTools[0].function.parameters,
+        },
+      ]);
+      expect(body.input).toStrictEqual([
+        { role: 'system', content: 'Translate requests' },
+        { role: 'user', content: 'Find Frodo' },
+        {
+          type: 'function_call',
+          call_id: 'call_1',
+          name: 'fhir_request',
+          arguments: '{"method":"GET","path":"Patient"}',
+        },
+        { type: 'function_call_output', call_id: 'call_1', output: '{"resourceType":"Bundle"}' },
+      ]);
+    });
+
+    test('Reads content and tool calls out of output items', async () => {
+      const payload = {
+        output: [
+          { type: 'reasoning', summary: [] },
+          {
+            type: 'message',
+            content: [
+              { type: 'output_text', text: 'Looking' },
+              { type: 'output_text', text: ' it up' },
+            ],
+          },
+          {
+            type: 'function_call',
+            call_id: 'call_9',
+            name: 'fhir_request',
+            arguments: '{"method":"GET","path":"Patient?name=Frodo"}',
+          },
+        ],
+      };
+      global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: vi.fn().mockResolvedValue(payload) });
+
+      const result = await callOpenAi(responsesContext);
+
+      expect(result.provider).toBe('openai-responses');
+      expect(result.raw).toBe(payload);
+      expect(result.content).toBe('Looking it up');
+      expect(result.toolCalls).toStrictEqual([
+        {
+          id: 'call_9',
+          type: 'function',
+          function: { name: 'fhir_request', arguments: { method: 'GET', path: 'Patient?name=Frodo' } },
+        },
+      ]);
+    });
+
+    test('Returns null content when the model only called tools', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({
+          output: [{ type: 'function_call', call_id: 'call_2', name: 'fhir_request', arguments: '' }],
+        }),
+      });
+
+      const result = await callOpenAi(responsesContext);
+      expect(result.content).toBeNull();
+      expect(result.toolCalls[0].function.arguments).toStrictEqual({});
+    });
+
+    test('Throws when the response contains no output', async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue({ ok: true, status: 200, json: vi.fn().mockResolvedValue({ id: 'resp_1' }) });
+      await expect(callOpenAi(responsesContext)).rejects.toThrow('OpenAI response contained no output');
+    });
+
+    test('Streams text deltas and emits whole tool calls last', async () => {
+      const events = await collectNormalized(
+        [
+          'event: response.created\ndata: {"type":"response.created","response":{"id":"resp_1"}}\n\n',
+          'data: {"type":"response.output_text.delta","delta":"Hello"}\n\n',
+          'data: {"type":"response.output_item.done","item":{"type":"function_call","call_id":"call_3","name":"fhir_request","arguments":"{\\"method\\":\\"GET\\",\\"path\\":\\"Patient\\"}"}}\n\n',
+          'data: {"type":"response.output_text.delta","delta":" there"}\n\n',
+          'data: {"type":"response.completed","response":{"usage":{"total_tokens":12}}}\n\n',
+        ],
+        responsesContext
+      );
+
+      expect((global.fetch as Mock).mock.calls[0][0]).toBe('https://api.openai.com/v1/responses');
+      expect(JSON.parse((global.fetch as Mock).mock.calls[0][1].body).stream).toBe(true);
+      expect(events).toStrictEqual([
+        { type: 'content', text: 'Hello' },
+        { type: 'content', text: ' there' },
+        {
+          type: 'tool_calls',
+          toolCalls: [
+            {
+              id: 'call_3',
+              type: 'function',
+              function: { name: 'fhir_request', arguments: { method: 'GET', path: 'Patient' } },
+            },
+          ],
+        },
+      ]);
+    });
+
+    test('Reports every parsed frame verbatim', async () => {
+      const events = await collectEvents(
+        ['data: {"type":"response.output_text.delta","delta":"Hi"}\n\ndata: {"type":"response.completed"}\n\n'],
+        responsesContext
+      );
+
+      expect(events).toStrictEqual([
+        { type: 'content', text: 'Hi' },
+        { type: 'raw', chunk: { type: 'response.output_text.delta', delta: 'Hi' } },
+        { type: 'raw', chunk: { type: 'response.completed' } },
+      ]);
+    });
+
+    test('Throws when the stream reports a failure', async () => {
+      await expect(
+        collectEvents(
+          ['data: {"type":"response.failed","response":{"error":{"message":"Rate limited"}}}\n\n'],
+          responsesContext
+        )
+      ).rejects.toThrow('OpenAI API error: Rate limited');
+
+      await expect(
+        collectEvents(['data: {"type":"error","message":"Bad frame"}\n\n'], responsesContext)
+      ).rejects.toThrow('OpenAI API error: Bad frame');
     });
   });
 });

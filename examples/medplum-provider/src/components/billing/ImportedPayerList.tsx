@@ -14,7 +14,6 @@ import { CANDID_PAYER_UUID_SYSTEM, CHC_PAYER_ID_SYSTEM, CMS_PAYER_ID_SYSTEM } fr
 
 const DEFAULT_SEARCH: SearchRequest = {
   resourceType: 'Organization',
-  // An imported payer is any Organization carrying a Candid payer UUID, whatever its value.
   filters: [{ code: 'identifier', operator: Operator.EQUALS, value: `${CANDID_PAYER_UUID_SYSTEM}|` }],
   fields: ['name'],
   sortRules: [{ code: 'name' }],
@@ -40,7 +39,6 @@ export function ImportedPayerList(props: ImportedPayerListProps): JSX.Element {
   return (
     <Stack gap="sm">
       <SearchControl
-        // Remounting refetches, so the list picks up an import or a refresh from the directory.
         key={directory.payersVersion}
         search={search}
         additionalColumns={additionalColumns}
@@ -71,7 +69,7 @@ function renderStatus(resource: Resource): JSX.Element | undefined {
   }
   return (
     <Badge color="gray" variant="light">
-      Inactive — not in payer directory
+      Inactive
     </Badge>
   );
 }

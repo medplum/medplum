@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, CloseButton, Group, Title, useMantineTheme } from '@mantine/core';
+import { Alert, CloseButton, Drawer, Group, Title, useMantineTheme } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import {
   getExtensionValue,
   getReferenceString,
@@ -24,6 +25,7 @@ import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
 import type { DateTimeRange } from '../types';
+import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
@@ -44,6 +46,12 @@ const NONE_DESELECTED: DeselectedIdsByActorType = {
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
+  readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
+  /**
+   * Overrides the value set the appointment detail view offers cancellation reasons
+   * from, for a host coding them against its own terminology.
+   */
+  readonly appointmentCancellationReasonValueSet?: string;
 }
 
 /**
@@ -56,6 +64,9 @@ export interface SchedulingWorkspaceProps {
  *   The form writes the booking and announces what it wrote, which is what puts the
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
+ * - Shows what is booked: clicking an appointment opens {@link AppointmentDetails} in a
+ *   drawer over the calendar, describing the visit and offering to cancel it. Cancelling
+ *   is what takes the time back off the calendar, again without a host supplying anything.
  * - Highlights the time last chosen, wherever it was chosen: the click that opened the
  *   pane, then whatever the form's time search settles on, and nothing while the form
  *   holds no time. The calendar is never moved to reach it — a highlight off the week
@@ -65,7 +76,7 @@ export interface SchedulingWorkspaceProps {
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
  */
 export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Element {
-  const { onBooked } = props;
+  const { onBooked, appointmentCancellationReasonValueSet } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
 
@@ -78,8 +89,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const [range, setRange] = useState<DateTimeRange>();
 
-  // What was clicked
+  // What was selected
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>();
+
   // What the calendar highlights
   const [highlight, setHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
@@ -187,6 +200,21 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     [closeBooking, onBooked]
   );
 
+  const selectAppointment = useCallback((appointment: Appointment): void => {
+    if (appointment.id) {
+      setSelectedAppointmentId(appointment.id);
+    }
+  }, []);
+
+  const closeAppointment = useCallback((): void => setSelectedAppointmentId(undefined), []);
+
+  const openAppointment = useMemo((): WithId<Appointment> | undefined => {
+    if (selectedAppointmentId) {
+      return (appointments ?? []).find((a) => a.id === selectedAppointmentId);
+    }
+    return undefined;
+  }, [appointments, selectedAppointmentId]);
+
   const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => {
     const color = colorByScheduleId.get(candidate.schedule.id);
     if (!color) {
@@ -226,10 +254,26 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onRangeChange={setRange}
           loading={resourcesLoading}
           onSelectInterval={startBooking}
+          onSelectAppointment={selectAppointment}
           selection={highlight}
         />
         <CalendarTimezoneNotice className={classes.timezoneNotice} timezones={timezones} anyUnknown={anyUnknown} />
       </div>
+      <Drawer
+        opened={openAppointment !== undefined}
+        onClose={closeAppointment}
+        position="right"
+        title="Appointment details"
+        closeButtonProps={{ 'aria-label': 'Close appointment details' }}
+      >
+        {openAppointment && (
+          <AppointmentDetails
+            appointment={openAppointment}
+            cancellationReasonValueSet={appointmentCancellationReasonValueSet}
+            onCancelled={props.onCancelled}
+          />
+        )}
+      </Drawer>
       {bookingSelection && (
         <div className={cx(classes.bookingPane, { [classes.bookingPaneWide]: timeFinderOpen })}>
           <Group justify="space-between" wrap="nowrap" mb="sm">

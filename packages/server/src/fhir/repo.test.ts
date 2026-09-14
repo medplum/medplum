@@ -447,8 +447,8 @@ describe('FHIR Repo', () => {
 
       try {
         const family = randomUUID();
-        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
-        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+        const p1 = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+        const p2 = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
 
         writeSpy.mockClear();
         await repo.search({
@@ -459,7 +459,10 @@ describe('FHIR Repo', () => {
         const auditEventLog = writeSpy.mock.calls.map((call) => call[0] as string).find((s) => s.includes('search'));
         expect(auditEventLog).toBeDefined();
         const auditEvent = JSON.parse(auditEventLog as string) as AuditEvent;
-        expect(auditEvent.entity?.[0].detail).toStrictEqual([{ type: 'numResults', valueString: '2' }]);
+        expect(auditEvent.entity?.[0].detail).toContainExactly([
+          { type: 'result', valueString: getReferenceString(p1) },
+          { type: 'result', valueString: getReferenceString(p2) },
+        ]);
       } finally {
         getConfig().logAuditEvents = prevLogAuditEvents;
         writeSpy.mockRestore();

@@ -89,11 +89,11 @@ import {
   HistoryInteraction,
   isReadOnlyAction,
   logAuditEvent,
-  numResultsDetail,
   PatchInteraction,
   ReadInteraction,
   RestfulOperationType,
   SearchInteraction,
+  searchResultsDetail,
   UpdateInteraction,
   VreadInteraction,
 } from '../util/auditevent';
@@ -1741,7 +1741,7 @@ export class Repository extends FhirRepository implements Disposable {
       const durationMs = Date.now() - startTime;
       this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, {
         searchRequest,
-        entityDetail: numResultsDetail(result.entry?.length ?? 0),
+        entityDetail: searchResultsDetail(result.entry?.map((e) => e.resource as WithId<Resource>)),
         durationMs,
       });
       return result;
@@ -1799,7 +1799,7 @@ export class Repository extends FhirRepository implements Disposable {
         };
         this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, {
           searchRequest: refSearch,
-          entityDetail: numResultsDetail(result[ref]?.length ?? 0),
+          entityDetail: searchResultsDetail(result[ref]),
           durationMs,
         });
       }
