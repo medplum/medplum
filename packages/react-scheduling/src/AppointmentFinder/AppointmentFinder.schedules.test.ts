@@ -312,7 +312,7 @@ describe('searchScheduleCandidates', () => {
     // (ultrasound imaging, surgery) are offered side by side.
     expect(querySentTo(medplum)).not.toHaveProperty('service-type');
     expect(providersOf(candidates)).toStrictEqual([
-      'Dr. Alice Smith',
+      'Alice Smith',
       'Dr. James Kim',
       'Dr. Maria Martinez',
       'Dr. Maya Rivera',
