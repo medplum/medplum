@@ -27,6 +27,7 @@ import * as executeModule from '../bots/execute';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getBinaryStorage } from '../storage/loader';
 import type { TestProjectResult } from '../test.setup';
 import { createTestProject, withTestContext } from '../test.setup';
@@ -44,13 +45,9 @@ describe('Cron Worker', () => {
     await initAppServices(config);
 
     // Create a project
-    const botProjectDetails = await createTestProject({ withClient: true });
+    const botProjectDetails = await createTestProject({ withClient: true, withRepo: true });
     botProject = botProjectDetails.project;
-    botRepo = new Repository({
-      extendedMode: true,
-      projects: [botProjectDetails.project],
-      author: createReference(botProjectDetails.client),
-    });
+    botRepo = botProjectDetails.repo;
     systemRepo = botRepo.getSystemRepo();
   });
 
@@ -69,6 +66,7 @@ describe('Cron Worker', () => {
         cronTiming: {
           repeat: {
             period: 30,
+            periodUnit: 'd',
             dayOfWeek: ['mon', 'wed', 'fri'],
           },
         },
@@ -138,6 +136,7 @@ describe('Cron Worker', () => {
         cronTiming: {
           repeat: {
             period: 30,
+            periodUnit: 'd',
             dayOfWeek: ['mon', 'wed', 'fri'],
           },
         },
@@ -150,6 +149,7 @@ describe('Cron Worker', () => {
         cronTiming: {
           repeat: {
             period: 10,
+            periodUnit: 'd',
             dayOfWeek: ['mon'],
           },
         },
@@ -179,6 +179,7 @@ describe('Cron Worker', () => {
         cronTiming: {
           repeat: {
             period: 10,
+            periodUnit: 'd',
             dayOfWeek: ['mon'],
           },
         },
@@ -198,17 +199,14 @@ describe('Cron Worker', () => {
       const testProject = await systemRepo.createResource<Project>({
         resourceType: 'Project',
         name: 'Test Project',
-        owner: {
-          reference: 'User/' + randomUUID(),
-        },
+        owner: { reference: 'User/' + randomUUID() },
       });
 
       const repo = new Repository({
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
         extendedMode: true,
         projects: [testProject],
-        author: {
-          reference: 'ClientApplication/' + randomUUID(),
-        },
+        author: { reference: 'ClientApplication/' + randomUUID() },
       });
 
       const bot = await repo.createResource<Bot>({
@@ -217,6 +215,7 @@ describe('Cron Worker', () => {
         cronTiming: {
           repeat: {
             period: 30,
+            periodUnit: 'd',
             dayOfWeek: ['mon', 'wed', 'fri'],
           },
         },
@@ -237,6 +236,7 @@ describe('Cron Worker', () => {
         cronTiming: {
           repeat: {
             period: 30,
+            periodUnit: 'd',
             dayOfWeek: ['mon', 'wed', 'fri'],
           },
         },
@@ -285,20 +285,20 @@ describe('Cron resource', () => {
   let systemRepo: SystemRepository;
   let bot: Bot;
   let botMembership: ProjectMembership;
+  let projectAdminRepo: Repository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    const details = await createTestProject({ withClient: true, project: { features: ['cron'] } });
-    project = details.project;
-    repo = new Repository({
-      extendedMode: true,
-      // Constraints are only enforced in strict mode; the loose path logs them and moves on
-      strictMode: true,
-      projects: [details.project],
-      author: createReference(details.client),
+    const details = await createTestProject({
+      withClient: true,
+      withRepo: true,
+      project: { features: ['cron'] },
+      membership: { admin: true },
     });
+    project = details.project;
+    repo = details.repo;
     systemRepo = repo.getSystemRepo();
 
     bot = await withTestContext(() => repo.createResource<Bot>({ resourceType: 'Bot', name: 'cron-target' }));
@@ -310,6 +310,16 @@ describe('Cron resource', () => {
         profile: createReference(bot),
       })
     );
+
+    // meta.account is a project admin write, which is also who may author a Cron
+    projectAdminRepo = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+      extendedMode: true,
+      strictMode: true,
+      projectAdmin: true,
+      projects: [project],
+      author: createReference(bot),
+    });
   });
 
   afterAll(async () => {
@@ -493,12 +503,13 @@ describe('Cron resource', () => {
       const queue = getCronQueue() as any;
       queue.upsertJobScheduler.mockClear();
 
-      const plain = await createTestProject({ withClient: true, project: { features: [] } });
-      const plainRepo = new Repository({
-        extendedMode: true,
-        projects: [plain.project],
-        author: createReference(plain.client),
+      const plain = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: { features: [] },
+        membership: { admin: true },
       });
+      const plainRepo = plain.repo;
 
       const plainBot = await plainRepo.createResource<Bot>({ resourceType: 'Bot', name: 'ungated-target' });
       const plainMembership = await systemRepo.createResource<ProjectMembership>({
@@ -519,29 +530,17 @@ describe('Cron resource', () => {
       expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
     }));
 
-  // meta.account is a project admin write, which is also who may author a Cron
-  function projectAdminRepo(): Repository {
-    return new Repository({
-      extendedMode: true,
-      strictMode: true,
-      projectAdmin: true,
-      projects: [project],
-      author: createReference(bot),
-    });
-  }
-
   test('The AuditEvent takes its compartments from the Cron, not from the target bot', () =>
     withTestContext(async () => {
-      const adminRepo = projectAdminRepo();
       const botAccount = { reference: 'Organization/' + randomUUID() };
       const cronAccount = { reference: 'Organization/' + randomUUID() };
 
-      const accountedBot = await adminRepo.createResource<Bot>({
+      const accountedBot = await projectAdminRepo.createResource<Bot>({
         resourceType: 'Bot',
         name: 'accounted-target',
         meta: { account: botAccount },
       });
-      const cron = await adminRepo.createResource<Cron>({
+      const cron = await projectAdminRepo.createResource<Cron>({
         ...validCron(),
         targetReference: createReference(accountedBot),
         meta: { account: cronAccount },
@@ -563,14 +562,13 @@ describe('Cron resource', () => {
 
   test('A Cron without compartments does not fall back to the bot', () =>
     withTestContext(async () => {
-      const adminRepo = projectAdminRepo();
       const botAccount = { reference: 'Organization/' + randomUUID() };
-      const accountedBot = await adminRepo.createResource<Bot>({
+      const accountedBot = await projectAdminRepo.createResource<Bot>({
         resourceType: 'Bot',
         name: 'accounted-target-2',
         meta: { account: botAccount },
       });
-      const cron = await adminRepo.createResource<Cron>({
+      const cron = await projectAdminRepo.createResource<Cron>({
         ...validCron(),
         targetReference: createReference(accountedBot),
       });
@@ -646,12 +644,8 @@ describe('Cron resource', () => {
 
   test('Rejects a target bot in an unlinked project', () =>
     withTestContext(async () => {
-      const other = await createTestProject({ withClient: true, project: { features: ['cron'] } });
-      const otherRepo = new Repository({
-        extendedMode: true,
-        projects: [other.project],
-        author: createReference(other.client),
-      });
+      const other = await createTestProject({ withClient: true, withRepo: true, project: { features: ['cron'] } });
+      const otherRepo = other.repo;
       const otherBot = await otherRepo.createResource<Bot>({ resourceType: 'Bot', name: 'other-project-bot' });
 
       await expect(
@@ -675,12 +669,8 @@ describe('Cron resource', () => {
       const queue = getCronQueue() as any;
       queue.upsertJobScheduler.mockClear();
 
-      const other = await createTestProject({ withClient: true });
-      const otherRepo = new Repository({
-        extendedMode: true,
-        projects: [other.project],
-        author: createReference(other.client),
-      });
+      const other = await createTestProject({ withClient: true, withRepo: true });
+      const otherRepo = other.repo;
       const otherBot = await otherRepo.createResource<Bot>({ resourceType: 'Bot', name: 'never-scheduled' });
 
       await expect(
@@ -766,13 +756,13 @@ describe('Cron resource', () => {
   test('execBot skips a job whose project lost the cron feature, but keeps its schedule', () =>
     withTestContext(async () => {
       // A project of its own, so turning the feature off does not disturb the shared one
-      const gated = await createTestProject({ withClient: true, project: { features: ['cron'] } });
-      const gatedRepo = new Repository({
-        extendedMode: true,
-        strictMode: true,
-        projects: [gated.project],
-        author: createReference(gated.client),
+      const gated = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: { features: ['cron'] },
+        membership: { admin: true },
       });
+      const gatedRepo = gated.repo;
       const gatedBot = await gatedRepo.createResource<Bot>({ resourceType: 'Bot', name: 'gated-target' });
       const gatedMembership = await systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
@@ -818,6 +808,7 @@ describe('Cron across linked projects', () => {
   // Mirrors the repo `getRepoForLogin` builds for a project that links another
   function customerRepoFor(customer: TestProjectResult<{ withClient: true }>, linked: WithId<Project>): Repository {
     return new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
       extendedMode: true,
       strictMode: true,
       projects: [customer.project, linked],
@@ -848,13 +839,9 @@ describe('Cron across linked projects', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    const shared = await createTestProject({ withClient: true });
+    const shared = await createTestProject({ withClient: true, withRepo: true });
     sharedProject = shared.project;
-    const sharedRepo = new Repository({
-      extendedMode: true,
-      projects: [shared.project],
-      author: createReference(shared.client),
-    });
+    const sharedRepo = shared.repo;
     systemRepo = sharedRepo.getSystemRepo();
     sharedBot = await withTestContext(() =>
       sharedRepo.createResource<Bot>({ resourceType: 'Bot', name: 'marketplace-bot' })
@@ -940,12 +927,12 @@ describe('Cron across linked projects', () => {
 
   test('Rejects a linked bot when the project does not export Bot', () =>
     withTestContext(async () => {
-      const closed = await createTestProject({ withClient: true, project: { exportedResourceType: ['Patient'] } });
-      const closedRepo = new Repository({
-        extendedMode: true,
-        projects: [closed.project],
-        author: createReference(closed.client),
+      const closed = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: { exportedResourceType: ['Patient'] },
       });
+      const closedRepo = closed.repo;
       const closedBot = await closedRepo.createResource<Bot>({ resourceType: 'Bot', name: 'unexported-bot' });
 
       const customer = await createTestProject({
@@ -980,12 +967,12 @@ describe('Cron across linked projects', () => {
     [['bots'], ['cron'], true],
   ])('Publisher features %j, customer features %j -> blocked=%s', (sharedFeatures, customerFeatures, blocked) =>
     withTestContext(async () => {
-      const shared = await createTestProject({ withClient: true, project: { features: sharedFeatures as [] } });
-      const publisherRepo = new Repository({
-        extendedMode: true,
-        projects: [shared.project],
-        author: createReference(shared.client),
+      const shared = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: { features: sharedFeatures as [] },
       });
+      const publisherRepo = shared.repo;
       const bot = await publisherRepo.createResource<Bot>({ resourceType: 'Bot', name: 'published-bot' });
 
       const customer = await createTestProject({

@@ -25,15 +25,14 @@ import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getGlobalSystemRepo } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
+import type { SystemRepository } from '../repo';
 import type {
   SchedulingParametersExtension,
   SchedulingParametersExtensionExtension,
 } from './utils/scheduling-parameters';
 
-const systemRepo = getGlobalSystemRepo();
 const app = express();
 const request = supertest(app);
 
@@ -62,7 +61,8 @@ const threeDayAvailability: SchedulingParametersExtensionExtension = {
 };
 
 describe('Appointment/$hold', () => {
-  let project: TestProjectResult<{ withAccessToken: true }>;
+  let project: TestProjectResult<{ withAccessToken: true; withRepo: true }>;
+  let systemRepo: SystemRepository;
   let practitioner1: WithId<Practitioner>;
   let practitioner2: WithId<Practitioner>;
   let patient: WithId<Patient>;
@@ -75,7 +75,8 @@ describe('Appointment/$hold', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    project = await createTestProject({ withAccessToken: true });
+    project = await createTestProject({ withAccessToken: true, withRepo: true });
+    systemRepo = project.repo.getSystemRepo();
     patient = await makePatient();
     practitioner1 = await makePractitioner({ timezone: 'America/New_York' });
     practitioner2 = await makePractitioner({ timezone: 'America/New_York' });
@@ -1329,12 +1330,14 @@ describe('Appointment/$hold', () => {
 });
 
 describe('scheduling flow integration test', () => {
-  let project: TestProjectResult<{ withAccessToken: true }>;
+  let project: TestProjectResult<{ withAccessToken: true; withRepo: true }>;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    project = await createTestProject({ withAccessToken: true });
+    project = await createTestProject({ withAccessToken: true, withRepo: true });
+    systemRepo = project.repo.getSystemRepo();
   });
 
   afterAll(async () => {

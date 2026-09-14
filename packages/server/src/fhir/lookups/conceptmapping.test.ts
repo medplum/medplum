@@ -6,10 +6,10 @@ import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { withTestContext } from '../../test.setup';
-import { getGlobalSystemRepo } from '../repo';
+import { getTestProjectSystemRepo } from '../repository/test-utils';
 
 describe('ConceptMapping lookup table', () => {
-  const systemRepo = getGlobalSystemRepo();
+  const systemRepo = getTestProjectSystemRepo();
 
   const conceptMap: ConceptMap = {
     resourceType: 'ConceptMap',
