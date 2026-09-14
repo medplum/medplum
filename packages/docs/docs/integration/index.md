@@ -1,6 +1,6 @@
 # Integration
 
-Medplum's integrations the most commonly used features of the platform, and the tools can be used to build effective robust integrations. Medplum supports three types of integrations:
+Use this directory to find an integration for the systems your care team works with. Each guide explains the supported workflow and any access requirements. Medplum provides three ways to connect systems:
 
 - **First party** integrations with common medical systems
 - **Common medical integrations** like FHIR, HL7 V2, SMART-on-FHIR and SFTP
@@ -128,8 +128,14 @@ Medplum supports the following first party integrations.
     <tr>
       <td><a href="https://www.joincandidhealth.com/">Candid Health</a></td>
       <td>Billing</td>
-      <td>Revenue cycle and insurance eligibility check</td>
-      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/candid-health">Candid bot</a></td>
+      <td>Claims, eligibility, remittance, and patient billing; contact Medplum for access</td>
+      <td><a href="/docs/integration/candid">Candid Health integration</a>; <a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/candid-health">Candid demo bot</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://stripe.com/">Stripe</a></td>
+      <td>Billing</td>
+      <td>Patient Checkout and payment reconciliation; contact Medplum for access</td>
+      <td><a href="/docs/integration/stripe">Stripe integration</a></td>
     </tr>
     <tr>
       <td><a href="https://www.stedi.com/">Stedi</a></td>
@@ -310,7 +316,7 @@ Medplum provides building blocks for custom integrations. **Any system that expo
       <td><a href="https://stripe.com/">Stripe</a></td>
       <td>Bot Webhooks</td>
       <td>Synchronize payments data</td>
-      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/stripe-bots">Stripe bot</a></td>
+      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/stripe-bots">Stripe demo bot</a></td>
     </tr>
     <tr>
       <td><a href="https://www.acuityscheduling.com/">Acuity Scheduling</a></td>

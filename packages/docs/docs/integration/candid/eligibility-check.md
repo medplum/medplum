@@ -1,13 +1,19 @@
+---
+sidebar_position: 2
+---
+
 # Eligibility Check
 
-This guide explains how to verify a patient's insurance coverage before an encounter using the Candid Health pre-encounter eligibility API.
+Before a visit, your team needs to know whether the patient's coverage is active and which benefits the payer reports. This guide shows you how to request an eligibility check through Candid Health and read the response in Medplum.
+
+[Contact Medplum](mailto:support@medplum.com) for integration access. You need customer Candid credentials, the pre-encounter API base URL, and the Patient, Coverage, and Organization resources described below.
 
 ## Overview
 
 The eligibility check integration exposes a `$candid-check-eligibility` [custom operation](/docs/api/fhir/operations/custom-operations) on the [CoverageEligibilityRequest](/docs/api/fhir/resources/coverageeligibilityrequest) resource. It performs a **real-time, pre-encounter** eligibility check routed through Stedi, and returns a [CoverageEligibilityResponse](/docs/api/fhir/resources/coverageeligibilityresponse) with the patient's benefit details mapped to FHIR.
 
 :::note[Pre-encounter timing]
-Running eligibility checks before the visit lets you catch lapsed coverage or incorrect plan information before care is delivered — when you can still address it with the patient, collect the correct co-pay at the door, or avoid a claim denial entirely. Candid also runs an automatic post-encounter check (free) as part of its rules engine, but pre-encounter checks give you the earliest possible signal.
+Run the check before the visit so your team has time to review inactive coverage or correct plan information with the patient. Use the returned benefits as payer-reported information; this check does not determine the final patient balance collected by the billing bots.
 :::
 
 ## Required Resources
@@ -49,7 +55,7 @@ flowchart TD
 | `insurance[0].coverage` | Reference to the Coverage resource | Yes |
 | `servicedDate` | Date of service for the eligibility check | No |
 | `servicedPeriod.start` | Alternative to `servicedDate` | No |
-| `item[].category` | X12 service type code to check (system: `https://x12.org/codes/service-type-codes`, e.g. `55` for Medical Nutrition Therapy). Defaults to `30` (Health Benefit Plan Coverage) when omitted. | No |
+| `item[].category` | X12 service type code to check (system: `https://x12.org/codes/service-type-codes`). Defaults to `30` (Health Benefit Plan Coverage) when omitted. | No |
 
 ### Coverage
 
@@ -80,7 +86,7 @@ The payer identifier system for eligibility checks differs from claim submission
 
 ## Running a Check
 
-Invoke the operation against a stored `CoverageEligibilityRequest`:
+The following TypeScript fragment assumes an authenticated `MedplumClient` from `@medplum/core` named `medplum`, authorized to invoke the operation. `request` is your stored `CoverageEligibilityRequest` with an ID. Invoke the operation against that resource:
 
 ```ts
 const response = await medplum.post(
@@ -88,7 +94,7 @@ const response = await medplum.post(
 );
 ```
 
-Or at the type level with a `CoverageEligibilityRequest` in the request body:
+Or call the type-level operation with a `CoverageEligibilityRequest` in the request body. Replace `{base}` with your Medplum server URL:
 
 ```http
 POST {base}/fhir/R4/CoverageEligibilityRequest/$candid-check-eligibility
@@ -97,6 +103,8 @@ POST {base}/fhir/R4/CoverageEligibilityRequest/$candid-check-eligibility
 ## Response
 
 On success the operation returns a `CoverageEligibilityResponse` saved to Medplum with coverage status, benefit details, and plan information mapped from the Stedi 271 response. A raw snapshot of the full Candid response is also stored as a `DocumentReference` (identifier system: `https://candidhealth.com/eligibility-check`) for debugging.
+
+The abbreviated response below illustrates benefit fields; it is not a complete FHIR resource to submit. Replace brace-delimited IDs with the IDs of your stored resources.
 
 ```json
 {

@@ -1,6 +1,6 @@
 # Billing and Payments
 
-Send data to your billing provider of choice. Easily connect to physician groups or bill through multiple professional corporations. Capture financial data and drive automated data transfer to other systems, such as a clearinghouse, revenue-cycle-management tool, payment processor, eligibility checker or medical biller.
+When your care team bills for a visit, patient coverage, claim details, and payments need to stay connected. Medplum lets you represent those records in FHIR and exchange them with your clearinghouse, billing provider, or payment processor. Use the resources and integration guides below to plan your workflow.
 
 ## Features
 
@@ -37,6 +37,15 @@ The Medplum billing and payments implementation is a standards compliant impleme
 - [Billing Documentation](/docs/billing) - including creating CMS 1500 and Superbills
 - [Foo Medical Billing Page](https://foomedical.com/account/membership-and-billing) sample patient portal with financial data.
 - [Provider Demo](https://provider.medplum.com) includes credential management.
+
+## Billing Integrations
+
+For claim submission through patient payment, start with these guides:
+
+- [Candid Health](/docs/integration/candid): claim submission, remittance polling, and patient balance synchronization.
+- [Stripe](/docs/integration/stripe): patient Checkout and payment reconciliation against an existing Invoice.
+
+[Contact Medplum](mailto:support@medplum.com) for access and availability. See the [patient billing flow](/docs/integration/candid/patient-billing#billing-flow) for how source balances and confirmed payments are reconciled.
 
 ## Integration Reference
 
