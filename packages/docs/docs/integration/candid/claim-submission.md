@@ -1,10 +1,14 @@
+---
+sidebar_position: 1
+---
+
 # Claim Submission
 
-This guide explains how to model your FHIR resources for the Candid Health integration to submit professional medical claims.
+To submit a professional claim, your application needs to connect the patient, coverage, providers, and services in FHIR. This guide shows you how to prepare those resources, save the Claim, and submit it to Candid Health.
 
 ## Overview
 
-The Candid Health integration allows you to submit professional medical claims via the `$candid-submit-claim` [custom operation](/docs/api/fhir/operations/custom-operations) on the [Claim](/docs/api/fhir/resources/claim) resource. On success, the operation returns a [ClaimResponse](/docs/api/fhir/resources/claimresponse) saved to Medplum with Candid's encounter and claim identifiers written back for recordkeeping. Please [contact the Medplum team](mailto:support@medplum.com) to get access to this integration.
+The Candid Health integration allows you to submit professional medical claims via the `$candid-submit-claim` [custom operation](/docs/api/fhir/operations/custom-operations) on the [Claim](/docs/api/fhir/resources/claim) resource. The underlying bot is `send-to-candid`. On success, the operation returns a [ClaimResponse](/docs/api/fhir/resources/claimresponse) saved to Medplum with Candid's encounter and claim identifiers written back for recordkeeping. Please [contact the Medplum team](mailto:support@medplum.com) to get access to this integration.
 
 ## Creating the Claim
 
@@ -97,7 +101,7 @@ The rendering provider is referenced from `Claim.careTeam` (role `primary`).
 |-------|-------------|----------|
 | `identifier` | System must be `http://hl7.org/fhir/sid/us-npi` | Yes |
 | `name` | Provider name | Yes |
-| `qualification[0].code` | NUCC taxonomy code (system: `http://nucc.org/provider-taxonomy`, e.g. `207Q00000X` for Family Medicine) | Yes |
+| `qualification[0].code` | NUCC taxonomy code (system: `http://nucc.org/provider-taxonomy`; use the rendering provider's verified taxonomy) | Yes |
 
 ### Organization (Billing Provider)
 
@@ -156,21 +160,31 @@ The bot detects self-pay when `payor` references a `Patient` or `RelatedPerson`,
 
 | Field | Description | Required |
 |-------|-------------|----------|
-| `identifier` | Unique encounter identifier (used as Candid's `externalId`) | Yes |
+| `id` | ID of the persisted Encounter, used as Candid's `externalId` | Yes |
 | `status` | Encounter status (e.g. `finished`) | Yes |
 | `subject` | Reference to the Patient | Yes |
 | `participant[0].individual` | Reference to the rendering Practitioner | Yes |
 | `period.start` | Encounter start date/time | Yes |
 | `period.end` | Encounter end date/time | No |
 
-## Submitting the Claim
+## send-to-candid
+
+### Purpose
+
+Submit a persisted professional Claim to Candid and save its submission response.
+
+### Trigger and input
 
 The `$candid-submit-claim` [custom operation](/docs/api/fhir/operations/custom-operations) on `Claim` submits the claim to Candid Health's API and returns a `ClaimResponse`. Invoke it in either of these ways:
 
 - **Instance level** — on a stored Claim: `POST {base}/fhir/R4/Claim/{id}/$candid-submit-claim`
-- **Type level** — with a `Claim` in the request body: `POST {base}/fhir/R4/Claim/$candid-submit-claim`
+- **Type level** — with a previously persisted `Claim`, including its `id`, in the request body: `POST {base}/fhir/R4/Claim/$candid-submit-claim`
+
+Both forms require a persisted Claim. The bot reads the current stored contents using its ID; edits supplied only in the request body are not submitted. Save changes to the Claim before invoking the operation.
 
 **Instance level** (after the `Claim` has been created and stored):
+
+This TypeScript fragment assumes `medplum` is an authenticated `MedplumClient` from `@medplum/core`, authorized to run the operation, and `claim` is the saved Claim with an ID. Replace `{base}` and IDs in the HTTP and JSON examples with your server URL and stored resource IDs.
 
 ```ts
 const claimResponse = await medplum.post(
@@ -184,7 +198,9 @@ Or via the FHIR REST API:
 POST {base}/fhir/R4/Claim/{id}/$candid-submit-claim
 ```
 
-On success, the operation returns a `ClaimResponse` resource saved to Medplum. The Candid encounter and claim IDs are written back onto both the `ClaimResponse` and the original `Claim` as identifiers:
+### Result and resource changes
+
+On success, the operation returns a `ClaimResponse` resource saved to Medplum. The Candid encounter and claim IDs are written back onto both the `ClaimResponse` and the original `Claim` as identifiers. This abbreviated response highlights those fields; it is not a complete resource to submit:
 
 ```json
 {
@@ -206,12 +222,18 @@ On success, the operation returns a `ClaimResponse` resource saved to Medplum. T
 }
 ```
 
-:::note[]
-The operation is idempotent. If an active `ClaimResponse` already exists for the `Claim`, the bot returns it immediately without re-submitting to Candid.
-:::
+### Failure and retry behavior
+
+The bot reuses a successful, correlated submission response: an active `ClaimResponse` with `outcome: complete`, a `request` referencing this Claim, and a Candid claim identifier matching the Claim's identifier when present (otherwise a response carrying a Candid claim identifier). An arbitrary active ClaimResponse does not prevent submission. Submission completion means Candid accepted the submission, not that the payer paid it.
+
+Correct validation errors in the stored resources before retrying. If Candid reports a duplicate encounter external ID, the bot attempts to recover the existing encounter and claim before saving their correlation in Medplum. Failed submissions also attempt to mark the Claim's processor status as `submission-failed` and return an error. Follow [remittance polling](/docs/integration/candid/remittance-polling) for subsequent claim status and [patient billing](/docs/integration/candid/patient-billing) for collectible patient responsibility.
 
 <details>
-<summary>Example transaction Bundle</summary>
+<summary>Transaction Bundle template: replace identifiers and verify terminology before use</summary>
+
+This incomplete template shows how the resources reference each other in one transaction. Replace synthetic patient details, provider and payer identifiers, and dates with your test data. Replace every `REPLACE_WITH_VERIFIED_*` value with a code and display checked against your approved terminology source. Clinical codes are deliberately left unspecified. Do not submit this template unchanged.
+
+The `urn:uuid` values link entries within this Bundle. Confirm that your project supports [transaction Bundles](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions). Submit the transaction first, then use the persisted Claim ID from its response to invoke the submission operation.
 
 ```json
 {
@@ -219,7 +241,7 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
   "type": "transaction",
   "entry": [
     {
-      "fullUrl": "urn:uuid:billing-org",
+      "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000001",
       "resource": {
         "resourceType": "Organization",
         "meta": {
@@ -236,7 +258,7 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
       "request": { "method": "POST", "url": "Organization", "ifNoneExist": "identifier=http://hl7.org/fhir/sid/us-npi|1234567890" }
     },
     {
-      "fullUrl": "urn:uuid:patient",
+      "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000002",
       "resource": {
         "resourceType": "Patient",
         "meta": {
@@ -251,7 +273,7 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
       "request": { "method": "POST", "url": "Patient" }
     },
     {
-      "fullUrl": "urn:uuid:practitioner",
+      "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000003",
       "resource": {
         "resourceType": "Practitioner",
         "meta": {
@@ -262,7 +284,7 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
         "qualification": [
           {
             "code": {
-              "coding": [{ "system": "http://nucc.org/provider-taxonomy", "code": "207Q00000X", "display": "Family Medicine" }]
+              "coding": [{ "system": "http://nucc.org/provider-taxonomy", "code": "REPLACE_WITH_VERIFIED_TAXONOMY", "display": "REPLACE_WITH_VERIFIED_DISPLAY" }]
             }
           }
         ]
@@ -270,7 +292,7 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
       "request": { "method": "POST", "url": "Practitioner", "ifNoneExist": "identifier=http://hl7.org/fhir/sid/us-npi|1234567890" }
     },
     {
-      "fullUrl": "urn:uuid:payer-org",
+      "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000004",
       "resource": {
         "resourceType": "Organization",
         "meta": {
@@ -283,7 +305,7 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
       "request": { "method": "POST", "url": "Organization", "ifNoneExist": "identifier=https://www.cms.gov/payer-id|13162" }
     },
     {
-      "fullUrl": "urn:uuid:coverage",
+      "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000005",
       "resource": {
         "resourceType": "Coverage",
         "meta": {
@@ -291,17 +313,17 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
         },
         "status": "active",
         "type": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "HIP", "display": "Health Insurance Plan Policy" }] },
-        "subscriber": { "reference": "urn:uuid:patient" },
+        "subscriber": { "reference": "urn:uuid:00000000-0000-4000-8000-000000000002" },
         "subscriberId": "MEM-TEST-001",
-        "beneficiary": { "reference": "urn:uuid:patient" },
+        "beneficiary": { "reference": "urn:uuid:00000000-0000-4000-8000-000000000002" },
         "relationship": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship", "code": "self", "display": "Self" }] },
-        "payor": [{ "reference": "urn:uuid:payer-org" }],
+        "payor": [{ "reference": "urn:uuid:00000000-0000-4000-8000-000000000004" }],
         "class": [{ "type": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/coverage-class", "code": "group" }] }, "value": "GRP-TEST-123", "name": "Test Employer Group" }]
       },
       "request": { "method": "POST", "url": "Coverage" }
     },
     {
-      "fullUrl": "urn:uuid:encounter",
+      "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000006",
       "resource": {
         "resourceType": "Encounter",
         "meta": {
@@ -310,15 +332,14 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
         "identifier": [{ "system": "http://hospital.example.org/encounters", "value": "ENC-TEST-001" }],
         "status": "finished",
         "class": { "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "AMB", "display": "ambulatory" },
-        "type": [{ "coding": [{ "system": "http://snomed.info/sct", "code": "185349003", "display": "Office visit" }] }],
-        "subject": { "reference": "urn:uuid:patient" },
-        "participant": [{ "individual": { "reference": "urn:uuid:practitioner" } }],
+        "subject": { "reference": "urn:uuid:00000000-0000-4000-8000-000000000002" },
+        "participant": [{ "individual": { "reference": "urn:uuid:00000000-0000-4000-8000-000000000003" } }],
         "period": { "start": "2025-01-15", "end": "2025-01-15" }
       },
       "request": { "method": "POST", "url": "Encounter" }
     },
     {
-      "fullUrl": "urn:uuid:claim",
+      "fullUrl": "urn:uuid:00000000-0000-4000-8000-000000000007",
       "resource": {
         "resourceType": "Claim",
         "meta": {
@@ -327,40 +348,40 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
         "status": "active",
         "use": "claim",
         "type": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "professional", "display": "Professional" }] },
-        "patient": { "reference": "urn:uuid:patient" },
+        "patient": { "reference": "urn:uuid:00000000-0000-4000-8000-000000000002" },
         "created": "2025-01-15T10:00:00Z",
-        "provider": { "reference": "urn:uuid:billing-org" },
+        "provider": { "reference": "urn:uuid:00000000-0000-4000-8000-000000000001" },
         "careTeam": [
           {
             "sequence": 1,
-            "provider": { "reference": "urn:uuid:practitioner" },
+            "provider": { "reference": "urn:uuid:00000000-0000-4000-8000-000000000003" },
             "role": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/claimcareteamrole", "code": "primary" }] }
           }
         ],
         "priority": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/processpriority", "code": "normal" }] },
-        "insurance": [{ "sequence": 1, "focal": true, "coverage": { "reference": "urn:uuid:coverage" } }],
+        "insurance": [{ "sequence": 1, "focal": true, "coverage": { "reference": "urn:uuid:00000000-0000-4000-8000-000000000005" } }],
         "diagnosis": [
           {
             "sequence": 1,
-            "diagnosisCodeableConcept": { "coding": [{ "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "J06.9", "display": "Acute upper respiratory infection, unspecified" }] },
+            "diagnosisCodeableConcept": { "coding": [{ "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "REPLACE_WITH_VERIFIED_CODE", "display": "REPLACE_WITH_VERIFIED_DISPLAY" }] },
             "type": [{ "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/ex-diagnosistype", "code": "principal" }] }]
           },
           {
             "sequence": 2,
-            "diagnosisCodeableConcept": { "coding": [{ "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "R05.9", "display": "Cough, unspecified" }] }
+            "diagnosisCodeableConcept": { "coding": [{ "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "REPLACE_WITH_VERIFIED_CODE", "display": "REPLACE_WITH_VERIFIED_DISPLAY" }] }
           }
         ],
         "item": [
           {
             "sequence": 1,
             "diagnosisSequence": [1, 2],
-            "productOrService": { "coding": [{ "system": "http://www.ama-assn.org/go/cpt", "code": "99213", "display": "Office visit, established patient, low complexity" }] },
+            "productOrService": { "coding": [{ "system": "http://www.ama-assn.org/go/cpt", "code": "REPLACE_WITH_VERIFIED_CODE", "display": "REPLACE_WITH_VERIFIED_DISPLAY" }] },
             "servicedDate": "2025-01-15",
             "locationCodeableConcept": { "coding": [{ "system": "https://www.cms.gov/Medicare/Coding/place-of-service-codes", "code": "11", "display": "Office" }] },
             "quantity": { "value": 1 },
             "unitPrice": { "value": 125.00, "currency": "USD" },
             "net": { "value": 125.00, "currency": "USD" },
-            "encounter": [{ "reference": "urn:uuid:encounter" }]
+            "encounter": [{ "reference": "urn:uuid:00000000-0000-4000-8000-000000000006" }]
           }
         ],
         "total": { "value": 125.00, "currency": "USD" }
@@ -378,7 +399,7 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
 Once the operation is invoked, the bot runs the following steps:
 
 1. **Encounter Creation** — The bot creates a Candid encounter with patient demographics, provider info, and all diagnoses. Candid returns an `encounterId` and `claimId`. On transient failures the bot retries up to 3 times; if the encounter already exists in Candid (identified by the FHIR `Encounter.id` as the external ID) it is fetched instead of re-created.
-2. **Service Line Creation** — For each `Claim.item`, the bot creates a Candid service line with the CPT code, charge amount, and diagnosis pointers. This step is skipped if the encounter was recovered rather than freshly created to avoid duplicating service lines.
+2. **Service Lines** — Each `Claim.item` is mapped to a service line with its CPT code, charge amount, and diagnosis pointers in the encounter creation request. Recovery reuses the existing encounter rather than adding duplicate service lines.
 3. **ClaimResponse Creation** — The bot saves a `ClaimResponse` to Medplum with `outcome: complete` and writes the Candid `claim-id` and `encounter-id` back onto both the `ClaimResponse` and the original `Claim` as identifiers.
 4. **Debug Documents** — The bot stores the outgoing Candid encounter request and the raw Candid response as `DocumentReference` resources for troubleshooting. Each document is linked to the originating Claim (via `context.related`) and Patient (via `subject`). Query them with:
    ```
