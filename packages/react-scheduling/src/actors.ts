@@ -20,21 +20,6 @@ export type SchedulingActorType = SchedulingActorResource['resourceType'];
  */
 export type SchedulingActorValue = SchedulingActor | SchedulingActorResource;
 
-/** The resource types `Schedule.actor` admits, as values rather than a type. */
-const SCHEDULING_ACTOR_TYPES = [
-  'Device',
-  'HealthcareService',
-  'Location',
-  'Patient',
-  'Practitioner',
-  'PractitionerRole',
-  'RelatedPerson',
-] as const satisfies SchedulingActorType[];
-
-export function isSchedulingActorType(value: string | undefined): value is SchedulingActorType {
-  return SCHEDULING_ACTOR_TYPES.includes(value as SchedulingActorType);
-}
-
 /**
  * Actor types whose schedules may be offered for booking, in the order they are
  * asked about.

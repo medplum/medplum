@@ -9,7 +9,7 @@ import {
   lazy,
   serviceTypeIncludesService,
 } from '@medplum/core';
-import type { HealthcareService, Location, PractitionerRole, Reference, Resource, Schedule } from '@medplum/fhirtypes';
+import type { HealthcareService, Location, PractitionerRole, Reference, Schedule } from '@medplum/fhirtypes';
 import type {
   BookableActorType,
   SchedulingActor,
@@ -21,7 +21,6 @@ import {
   getActorType,
   getActorTypeLabel,
   isBookableActorType,
-  isSchedulingActorType,
   REQUIRED_ACTOR_TYPES,
 } from '../actors';
 import { getActorsKey } from './AppointmentFinder.times';
@@ -188,16 +187,14 @@ export async function searchScheduleCandidates(
   const schedules: WithId<Schedule>[] = [];
 
   for (const entry of bundle.entry ?? []) {
-    const resource = entry.resource as WithId<Resource> | undefined;
+    const resource = entry.resource as WithId<Schedule> | SchedulingActorResource | undefined;
     if (!resource?.id) {
       continue;
     }
-    if (entry.search?.mode === 'include') {
-      if (isActorResource(resource)) {
-        actorsByReference.set(`${resource.resourceType}/${resource.id}`, resource);
-      }
-    } else if (resource.resourceType === 'Schedule') {
+    if (resource.resourceType === 'Schedule') {
       schedules.push(resource);
+    } else {
+      actorsByReference.set(`${resource.resourceType}/${resource.id}`, resource);
     }
   }
 
@@ -418,10 +415,6 @@ async function isPractitionerAtLocation(
     return true;
   }
   return practiceLocations.some((roleLocation) => roleLocation.reference === locationReference);
-}
-
-function isActorResource(resource: WithId<Resource>): resource is SchedulingActorResource {
-  return isSchedulingActorType(resource.resourceType);
 }
 
 /**
