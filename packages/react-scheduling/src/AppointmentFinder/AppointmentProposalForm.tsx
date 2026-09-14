@@ -35,6 +35,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
+import { LOCATION_SEARCH_CRITERIA } from '../constants';
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
@@ -70,10 +71,6 @@ import { buildElevatedBooking } from './buildElevatedBooking';
 import type { BookingConflict } from './findConflicts';
 import { describeConflict, findBookingConflicts } from './findConflicts';
 import { useDaySearch } from './useDaySearch';
-
-// Excludes what a room is rather than admitting what a site is: `physicalType` is
-// optional, so `physical-type=si,bu` would hide a Location that never declared one.
-const LOCATION_SEARCH_CRITERIA = { _count: '25', _sort: 'name', 'physical-type:not': 'ro,bd' };
 
 // The visit type decides which actors can be asked for at all, so nothing below it
 // is answerable yet. Unanswered, not answered wrongly, so it reads as a prompt.
@@ -486,6 +483,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           // the visit type the remount was clearing.
           defaultValue={service}
           onChange={chooseService}
+          required
         />
 
         <AppointmentActorSelections

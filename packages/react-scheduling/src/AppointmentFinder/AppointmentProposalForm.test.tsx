@@ -39,6 +39,7 @@ import {
 import {
   clickAutocompleteOption,
   installAutocompleteTimers,
+  removePill,
   settleAutocomplete,
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
@@ -77,7 +78,6 @@ import {
   openRoleField,
   openTimeFinder,
   patientDetail,
-  removePill,
   searchField,
   setupBookingClient,
   shiftChooseDay,
