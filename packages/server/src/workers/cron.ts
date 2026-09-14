@@ -8,18 +8,13 @@ import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
 import { getAllowedProjects } from '../fhir/accesspolicy';
+import { findProjectMembership } from '../fhir/projectmembership';
 import type { Repository } from '../fhir/repo';
 import { getPermittedProjectIds, getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import {
-  defaultQueueOptions,
-  findProjectMembership,
-  getWorkerBullmqConfig,
-  queueRegistry,
-  trackJobMetrics,
-} from './utils';
+import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 const MAX_BOTS_PER_PAGE = 500;

@@ -43,6 +43,7 @@ import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInAuthenticatedContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
+import { findProjectMembership } from '../fhir/projectmembership';
 import type { ResendSubscriptionsOptions, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
@@ -66,7 +67,6 @@ import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
   defaultQueueOptions,
-  findProjectMembership,
   getWorkerBullmqConfig,
   isJobSuccessful,
   queueRegistry,
