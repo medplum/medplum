@@ -579,7 +579,7 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
  * @param props - The option to render.
  * @returns The row.
  */
-function RequirementCodeItem(props: AsyncAutocompleteOption<ValueSetExpansionContains>): JSX.Element {
+function RequirementCodeItem(props: Readonly<AsyncAutocompleteOption<ValueSetExpansionContains>>): JSX.Element {
   const { label, resource, active } = props;
   return (
     <Group wrap="nowrap" gap="xs">

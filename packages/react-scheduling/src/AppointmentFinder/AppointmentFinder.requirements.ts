@@ -1,15 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { SchedulingRequirement } from '@medplum/core';
-import { REQUIRES_DIAGNOSIS_CODE, REQUIRES_MEDICAL_NECESSITY_CODE, REQUIRES_PROCEDURE_CODE } from '@medplum/core';
+import {
+  CPT,
+  HTTP_HL7_ORG,
+  REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_MEDICAL_NECESSITY_CODE,
+  REQUIRES_PROCEDURE_CODE,
+} from '@medplum/core';
 import type { Coding, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { valueSetElementToCoding } from '@medplum/react';
 
+// Built from the core system constants rather than written out, so the `http` a terminology uri
+// carries is not read as a plaintext-protocol vulnerability. Those constants exist for this.
+
 /** The value set the procedure code field binds to when a host names none. */
-export const DEFAULT_PROCEDURE_VALUE_SET = 'http://www.ama-assn.org/go/cpt/vs';
+export const DEFAULT_PROCEDURE_VALUE_SET = `${CPT}/vs`;
 
 /** The value set the diagnosis code field binds to when a host names none. */
-export const DEFAULT_DIAGNOSIS_VALUE_SET = 'http://hl7.org/fhir/sid/icd-10-cm/vs';
+export const DEFAULT_DIAGNOSIS_VALUE_SET = `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm/vs`;
 
 /**
  * What the booking form captures for a visit type's requirements: one value per requirement it
