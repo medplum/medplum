@@ -570,10 +570,11 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
 /**
  * One code on offer, led by the code itself.
  *
- * The code is what a scheduler searches on and what a biller reads, and two infusion codes can
- * share sixty characters of description before they differ, so the description alone does not tell
- * them apart. The system is left out: both fields are bound to one value set each, so naming it on
- * every row is a url repeated down the list and nothing more.
+ * The code is what a scheduler searches on and what a biller reads, and descriptions run long
+ * before they diverge: the CPT descriptions for infusion procedures, to take one example, agree
+ * for sixty characters. Led by its description, a row does not tell itself apart from the next.
+ * The system is left out because a field's value set draws from a single code system in practice,
+ * which makes printing it one url repeated down the list and nothing more.
  *
  * @param props - The option to render.
  * @returns The row.
