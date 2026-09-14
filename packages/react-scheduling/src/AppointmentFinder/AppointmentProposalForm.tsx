@@ -38,7 +38,12 @@ import {
   toCodings,
 } from './AppointmentFinder.requirements';
 import type { ActorSelections } from './AppointmentFinder.schedules';
-import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
+import {
+  getActorCombinations,
+  getSelectedCandidates,
+  getSelectionError,
+  getUnsatisfiableRows,
+} from './AppointmentFinder.schedules';
 import { getDurationMinutes, isViewerTimezone } from './AppointmentFinder.times';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
@@ -156,6 +161,12 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // Each field is asked for on its own, by a visit type whose eligibility names it.
   const requirements = useMemo(() => getSchedulingRequirements(service), [service]);
   const requirementsOutstanding = !hasRequiredValues(requirementValues, requirements);
+
+  // The button above says the search is blocked; this says which rows blocked it.
+  const actorErrors = useMemo(() => {
+    const unsatisfiable = getUnsatisfiableRows(selections);
+    return unsatisfiable && { [unsatisfiable.actorType]: unsatisfiable.message };
+  }, [selections]);
 
   // Derived, not a flag: closing is never its own rule, so losing the last provider
   // closes the search however it was lost.
@@ -318,6 +329,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           service={service}
           location={location}
           disabled={!service}
+          errors={actorErrors}
           onChange={chooseResources}
         />
 

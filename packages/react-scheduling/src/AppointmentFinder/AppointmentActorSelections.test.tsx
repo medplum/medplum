@@ -3,6 +3,7 @@
 import { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
 import { useState } from 'react';
+import type { BookableActorType } from '../actors';
 import { SchedulingFixtures, UltrasoundImagingService } from '../stories/scheduling';
 import {
   clickAutocompleteOption,
@@ -10,7 +11,7 @@ import {
   settleAutocomplete,
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
-import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen, within } from '../test-utils/render';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
 import type { ActorSelections } from './AppointmentFinder.schedules';
 
@@ -37,14 +38,17 @@ function latest(): ActorSelections {
 
 /**
  * Renders the rows as a host would: selection held outside, handed back in.
+ * @param props - The React props.
+ * @param props.errors - What is wrong with a type's rows, if anything.
  * @returns The element.
  */
-function Host(): JSX.Element {
+function Host(props: { readonly errors?: Partial<Record<BookableActorType, string>> }): JSX.Element {
   const [value, setValue] = useState<ActorSelections>({});
   return (
     <AppointmentActorSelections
       value={value}
       service={UltrasoundImagingService}
+      errors={props.errors}
       onChange={(next) => {
         written(next);
         setValue(next);
@@ -53,9 +57,9 @@ function Host(): JSX.Element {
   );
 }
 
-async function setup(medplum: MockClient): Promise<void> {
+async function setup(medplum: MockClient, errors?: Partial<Record<BookableActorType, string>>): Promise<void> {
   written.mockClear();
-  renderWithMedplum(<Host />, medplum);
+  renderWithMedplum(<Host errors={errors} />, medplum);
   await settleAutocomplete();
 }
 
@@ -224,6 +228,18 @@ describe('AppointmentActorSelections', () => {
     // what is marked, so suppressing the mark no longer costs the field its state.
     expect(asteriskedLabels()).toStrictEqual(['Provider']);
     expect(requiredFieldCount()).toBe(2);
+  });
+
+  test('A problem with one type is shown against that type, not the whole form', async () => {
+    const medplum = await setupClient();
+    await setup(medplum, { Practitioner: 'Name someone else in one of them.' });
+
+    // Inside the provider group, so the rows that caused it are the rows it sits under.
+    const providers = screen.getByRole('group', { name: 'Provider' });
+    expect(within(providers).getByRole('alert')).toHaveTextContent('Name someone else in one of them.');
+
+    // And nowhere else: the room and the device were not what went wrong.
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
   });
 
   test('Answering one actor type leaves the others as they were', async () => {

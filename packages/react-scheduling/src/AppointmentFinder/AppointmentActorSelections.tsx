@@ -23,6 +23,8 @@ export interface AppointmentActorSelectionsProps {
   /** The site being booked at. Actors sited elsewhere are left out. */
   readonly location?: Reference<Location> | WithId<Location>;
   readonly disabled?: boolean;
+  /** What is wrong with a type's rows, shown under them. None by default. */
+  readonly errors?: Partial<Record<BookableActorType, string>>;
   readonly onChange: (selections: ActorSelections) => void;
 }
 
@@ -41,7 +43,7 @@ export interface AppointmentActorSelectionsProps {
  * @returns One group of rows per bookable actor type.
  */
 export function AppointmentActorSelections(props: AppointmentActorSelectionsProps): JSX.Element {
-  const { value, service, location, disabled, onChange } = props;
+  const { value, service, location, disabled, errors, onChange } = props;
 
   const changeRequirements = useCallback(
     (actorType: BookableActorType, requirements: readonly ActorRequirement[]): void => {
@@ -60,6 +62,7 @@ export function AppointmentActorSelections(props: AppointmentActorSelectionsProp
           service={service}
           location={location}
           disabled={disabled}
+          error={errors?.[actorType]}
           onChange={changeRequirements}
         />
       ))}
@@ -73,6 +76,7 @@ interface ActorTypeRowsProps {
   readonly service: Reference<HealthcareService> | WithId<HealthcareService> | undefined;
   readonly location?: Reference<Location> | WithId<Location>;
   readonly disabled?: boolean;
+  readonly error?: string;
   readonly onChange: (actorType: BookableActorType, requirements: readonly ActorRequirement[]) => void;
 }
 
@@ -82,7 +86,7 @@ interface ActorTypeRowsProps {
  * @returns The group of rows.
  */
 function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
-  const { actorType, service, location, disabled, onChange } = props;
+  const { actorType, service, location, disabled, error, onChange } = props;
   const label = getActorTypeLabel(actorType);
   const lowercaseLabel = label.toLowerCase();
   const required = isActorTypeRequired(actorType);
@@ -150,6 +154,12 @@ function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
         >
           Add another {lowercaseLabel}
         </Button>
+      )}
+
+      {error && (
+        <Text size="xs" c="red" role="alert">
+          {error}
+        </Text>
       )}
     </Stack>
   );

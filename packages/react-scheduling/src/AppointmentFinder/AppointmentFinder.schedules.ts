@@ -10,7 +10,7 @@ import {
   serviceTypeIncludesService,
 } from '@medplum/core';
 import type { HealthcareService, Location, PractitionerRole, Reference, Resource, Schedule } from '@medplum/fhirtypes';
-import type { SchedulingActor, SchedulingActorType } from '../actors';
+import type { BookableActorType, SchedulingActor, SchedulingActorType } from '../actors';
 import {
   BOOKABLE_ACTOR_TYPES,
   getActorType,
@@ -519,9 +519,32 @@ export function getSelectionError(selections: ActorSelections): string | undefin
     return 'Too many alternatives to search. Remove some names.';
   }
   if (getActorCombinations(selections).length === 0) {
-    return 'Nobody can fill every row at once. Name someone else in one of them.';
+    return 'Nobody can fill every row at once.';
   }
   return undefined;
+}
+
+/** Rows that cannot all be filled at once, and where to say so. */
+export interface UnsatisfiableRows {
+  /** The actor type whose rows have no answer between them. */
+  readonly actorType: BookableActorType;
+  /** What to do about it, to show against those rows. */
+  readonly message: string;
+}
+
+/**
+ * Finds the rows that cannot all be filled at once, when there are any. Specifically happens
+ * when two rows offer the same resource, so one resource cannot fill both halves of a visit.
+ * @param selections - What has been chosen.
+ * @returns The first type whose rows have no answer between them, or undefined when
+ *   every type can be satisfied.
+ */
+export function getUnsatisfiableRows(selections: ActorSelections): UnsatisfiableRows | undefined {
+  const actorType = BOOKABLE_ACTOR_TYPES.find((candidateType) => {
+    const alone: ActorSelections = { [candidateType]: selections[candidateType] };
+    return getFilledRequirements(alone).length > 0 && getActorCombinations(alone).length === 0;
+  });
+  return actorType && { actorType, message: 'Name someone else in one of them.' };
 }
 
 /**

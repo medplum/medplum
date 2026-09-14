@@ -29,6 +29,7 @@ import {
   getCandidateDisplay,
   getSelectedCandidates,
   getSelectionError,
+  getUnsatisfiableRows,
   MAX_ACTOR_COMBINATIONS,
   searchScheduleCandidates,
 } from './AppointmentFinder.schedules';
@@ -747,7 +748,32 @@ describe('selections', () => {
     const selections: ActorSelections = { Practitioner: [row(RIVERA), row(RIVERA)] };
 
     expect(getActorCombinations(selections)).toStrictEqual([]);
-    expect(getSelectionError(selections)).toBe('Nobody can fill every row at once. Name someone else in one of them.');
+    expect(getSelectionError(selections)).toBe('Nobody can fill every row at once.');
+
+    // The rest of the sentence goes against the rows that caused it, so say which.
+    expect(getUnsatisfiableRows(selections)).toStrictEqual({
+      actorType: 'Practitioner',
+      message: 'Name someone else in one of them.',
+    });
+  });
+
+  test('Blames the one actor type whose rows conflict, not the form', () => {
+    // A provider is never also a room, so rows only ever conflict within their own
+    // type. The device asked for alongside them is answerable and not at fault.
+    const selections: ActorSelections = {
+      Practitioner: [row(RIVERA), row(RIVERA)],
+      Device: [row(ULTRASOUND)],
+    };
+
+    expect(getUnsatisfiableRows(selections)?.actorType).toBe('Practitioner');
+  });
+
+  test('Blames nobody while every type can still be answered', () => {
+    // Overlapping rows that can be told apart, and a required type left empty: neither
+    // is a conflict, and the second is `getSelectionError`'s to report.
+    expect(getUnsatisfiableRows({ Practitioner: [row(RIVERA, OKAFOR), row(RIVERA, OKAFOR)] })).toBeUndefined();
+    expect(getUnsatisfiableRows({})).toBeUndefined();
+    expect(getUnsatisfiableRows({ Practitioner: [row()] })).toBeUndefined();
   });
 
   test('Accepts rows that overlap but can still be told apart', () => {

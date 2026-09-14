@@ -227,6 +227,25 @@ describe('AppointmentProposalForm', () => {
       expect(within(groups[0]).getByText('Dr. Tunde Okafor')).toBeInTheDocument();
     });
 
+    test('Rows that cannot all be filled are said so under the rows themselves', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await addActorRow('provider');
+      await chooseActor(/^and provider 2$/i, 'riv', 'Dr. Maya Rivera');
+
+      // Nobody attends their own appointment twice. The button says the search is
+      // blocked, and the provider rows say which rows blocked it, so the two halves
+      // of the answer sit where each is of use.
+      expect(screen.getByText('Nobody can fill every row at once.')).toBeInTheDocument();
+      const providers = screen.getByRole('group', { name: 'Provider' });
+      expect(within(providers).getByRole('alert')).toHaveTextContent('Name someone else in one of them.');
+
+      // The rooms and devices were answerable, so nothing is said against them.
+      expect(screen.getAllByRole('alert')).toHaveLength(1);
+      expect(screen.getByRole('button', { name: /find a time/i })).toBeDisabled();
+    });
+
     test('Searches a round of the alternatives at a time, and offers the rest', async () => {
       setup(medplum);
       await chooseImagingService();
