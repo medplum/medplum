@@ -872,7 +872,7 @@ describe('selections', () => {
       name: [{ given: ['Maya'], family: 'Rivera', prefix: ['Dr.'] }],
     };
     const resources = getSelectedActorResources({
-      Practitioner: [{ ...RIVERA, actorResource: riveraResource }, OKAFOR],
+      Practitioner: [row({ ...RIVERA, actorResource: riveraResource }), row(OKAFOR)],
     });
 
     expect(resources.get('Practitioner/schedule-dr-rivera')).toStrictEqual(riveraResource);
