@@ -62,7 +62,7 @@ This operation takes no input parameters. The appointment to confirm is identifi
 
 ### Constraints
 
-- The Appointment must have `status: pending` or `status: proposed`. All other statuses are rejected with HTTP 409 Conflict.
+- The Appointment must have `status: pending` or `status: proposed`. All other statuses are rejected with HTTP 400 Bad Request.
 - All `Slot` resources referenced by `Appointment.slot` must exist and be readable by the caller.
 
 ## Output
