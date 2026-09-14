@@ -245,6 +245,42 @@ describe('External', () => {
     expect(updated.emailVerified).toBe(true);
   });
 
+  test('Does not rewrite an already verified user', async () => {
+    const verifiedEmail = `verify-${randomUUID()}@${domain}`;
+    const { user } = await withTestContext(() =>
+      inviteUser({
+        project,
+        email: verifiedEmail,
+        resourceType: 'Practitioner',
+        firstName: 'Verify',
+        lastName: 'User',
+        sendEmail: false,
+      })
+    );
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(verifiedEmail)));
+
+    const signIn = async (): Promise<void> => {
+      const url = appendQueryParams('/auth/external', {
+        code: randomUUID(),
+        state: JSON.stringify({ domain }),
+      });
+      const res = await request(app).get(url);
+      expect(res).toHaveStatus(302);
+    };
+
+    // The first login verifies the user, which is a real write
+    await signIn();
+    const afterFirst = await systemRepo.readResource<User>('User', user.id);
+    expect(afterFirst.emailVerified).toBe(true);
+
+    // The second applies the same patch, but it changes nothing, so isNotModified
+    // short-circuits before writing and no new version is created
+    await signIn();
+    const afterSecond = await systemRepo.readResource<User>('User', user.id);
+    expect(afterSecond.emailVerified).toBe(true);
+    expect(afterSecond.meta?.versionId).toStrictEqual(afterFirst.meta?.versionId);
+  });
+
   test('Server config identity provider success', async () => {
     const issuer = `https://${randomUUID()}.example.com`;
     const config = getConfig();

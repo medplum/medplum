@@ -10,15 +10,9 @@ import {
   OAuthTokenAuthMethod,
   OperationOutcomeError,
   parseJWTPayload,
+  resolveId,
 } from '@medplum/core';
-import type {
-  ClientApplication,
-  DomainConfiguration,
-  IdentityProvider,
-  Project,
-  Reference,
-  User,
-} from '@medplum/fhirtypes';
+import type { ClientApplication, DomainConfiguration, IdentityProvider, Project, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
@@ -132,14 +126,10 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     userAgent: req.get('User-Agent'),
   });
 
-  // The identity provider authenticated the user against an account the project's admin
-  // configured as authoritative, which is the control this flag records. Only ever
-  // upgrades: a user is never downgraded here.
-  const systemRepo = getGlobalSystemRepo();
-  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
-  if (!user.emailVerified) {
-    await systemRepo.updateResource<User>({ ...user, emailVerified: true });
-  }
+  // The identity provider authenticated the user, which is the control this flag records.
+  await getGlobalSystemRepo().patchResource<User>('User', resolveId(login.user) as string, [
+    { op: 'add', path: '/emailVerified', value: true },
+  ]);
 
   if (login.membership && body.redirectUri && client) {
     // Get the redirect URI from the client application
