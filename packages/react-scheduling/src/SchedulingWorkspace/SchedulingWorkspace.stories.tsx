@@ -3,7 +3,7 @@
 import { showNotification } from '@mantine/notifications';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
-import { IconCalendarCheck } from '@tabler/icons-react';
+import { IconCalendarCancel, IconCalendarCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import {
   withBookStub,
@@ -110,6 +110,14 @@ function Workspace(): JSX.Element {
             color: 'green',
             icon: <IconCalendarCheck size={18} />,
             title: 'Appointment booked',
+            message: describeBooking(appointment),
+          });
+        }}
+        onCancelled={(appointment) => {
+          showNotification({
+            color: 'red',
+            icon: <IconCalendarCancel size={18} />,
+            title: 'Appointment cancelled',
             message: describeBooking(appointment),
           });
         }}

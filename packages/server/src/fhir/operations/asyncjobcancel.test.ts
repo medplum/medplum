@@ -7,14 +7,15 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getSuperAdminAccessToken, withTestContext } from '../../test.setup';
-import { getGlobalSystemRepo } from '../repo';
+import { getSuperAdminTestProject, withTestContext } from '../../test.setup';
+import type { Repository } from '../repo';
 import { asyncJobCancelHandler } from './asyncjobcancel';
 
 const app = express();
 
 describe('AsyncJob/$cancel', () => {
   let accessToken: string;
+  let repo: Repository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -22,8 +23,7 @@ describe('AsyncJob/$cancel', () => {
   });
 
   beforeEach(async () => {
-    accessToken = await getSuperAdminAccessToken();
-    expect(accessToken).toBeDefined();
+    ({ accessToken, repo } = await getSuperAdminTestProject());
   });
 
   afterAll(async () => {
@@ -149,7 +149,7 @@ describe('AsyncJob/$cancel', () => {
   test('Cancelled job does not get added to super admin project', () =>
     withTestContext(async () => {
       // We create the resource with system repo so that it is like how system AsyncJobs get created
-      const asyncJob = await getGlobalSystemRepo().createResource<AsyncJob>({
+      const asyncJob = await repo.getSystemRepo().createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),

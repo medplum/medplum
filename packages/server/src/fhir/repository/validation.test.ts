@@ -10,10 +10,8 @@ import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
-import { getGlobalSystemRepo } from '../repo';
 
 describe('Repository validation', () => {
-  const systemRepo = getGlobalSystemRepo();
   const rawUsCorePatientProfile = readFileSync(resolve(__dirname, '../__test__/us-core-patient.json'), 'utf8');
   const usCorePatientProfile = JSON.parse(rawUsCorePatientProfile) as StructureDefinition;
 
@@ -219,7 +217,7 @@ describe('Repository validation', () => {
         valueBoolean: true,
       };
 
-      await expect(systemRepo.createResource(observation)).resolves.toBeDefined();
+      await expect(repo.getSystemRepo().createResource(observation)).resolves.toBeDefined();
       await expect(repo.createResource(observation)).rejects.toThrow('Missing required property (Observation.subject)');
 
       observation.subject = { identifier: { value: randomUUID() } };
