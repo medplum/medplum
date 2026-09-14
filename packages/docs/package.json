@@ -62,9 +62,9 @@
     "open-color": "1.9.1",
     "prism-react-renderer": "2.4.1",
     "raw-loader": "4.0.2",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "marked": "18.0.11",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "marked": "18.0.12",
     "react-intersection-observer": "11.0.1",
     "typescript": "6.0.3",
     "url-loader": "4.1.1"
