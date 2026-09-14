@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Dereference } from '@medplum/core';
-import { assertNever, parseReference } from '@medplum/core';
+import type { Dereference, WithId } from '@medplum/core';
+import { assertNever, isResource, parseReference } from '@medplum/core';
 import type { Schedule } from '@medplum/fhirtypes';
 
 /**
@@ -9,7 +9,16 @@ import type { Schedule } from '@medplum/fhirtypes';
  * accepts as a participant, so an actor can be carried straight across.
  */
 export type SchedulingActor = Schedule['actor'][number];
-export type SchedulingActorType = Dereference<SchedulingActor>['resourceType'];
+
+/** A loaded actor resource. */
+export type SchedulingActorResource = WithId<Dereference<SchedulingActor>>;
+
+export type SchedulingActorType = SchedulingActorResource['resourceType'];
+
+/**
+ * An actor as a reference, or as the resource when it has already been read.
+ */
+export type SchedulingActorValue = SchedulingActor | SchedulingActorResource;
 
 /**
  * Actor types whose schedules may be offered for booking, in the order they are
@@ -35,17 +44,17 @@ export function isBookableActorType(value: string | undefined): value is Bookabl
 }
 
 /**
- * Extracts the resource type from a reference to an actor.
+ * Extracts the resource type of an actor, given as itself or as a reference.
  *
  * Only supports references that may be used for Scheduling operations, which are
  * those that have a qualified `reference` attribute. The attribute must be present,
  * and may not be a reference to a "contained" resource (eg. `{ reference: "#cid" }`)
  *
- * @param reference - A Reference to a schedulable resource
- * @returns The type that the reference refers to.
+ * @param actor - A schedulable resource, or a Reference to one
+ * @returns The type of the actor.
  */
-export function getActorType(reference: SchedulingActor): SchedulingActorType {
-  return parseReference(reference)[0];
+export function getActorType(actor: SchedulingActorValue): SchedulingActorType {
+  return isResource(actor) ? actor.resourceType : parseReference(actor)[0];
 }
 
 /**

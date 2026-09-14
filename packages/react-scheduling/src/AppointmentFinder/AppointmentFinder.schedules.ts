@@ -9,8 +9,8 @@ import {
   lazy,
   serviceTypeIncludesService,
 } from '@medplum/core';
-import type { HealthcareService, Location, PractitionerRole, Reference, Resource, Schedule } from '@medplum/fhirtypes';
-import type { BookableActorType, SchedulingActor, SchedulingActorType } from '../actors';
+import type { HealthcareService, Location, PractitionerRole, Reference, Schedule } from '@medplum/fhirtypes';
+import type { BookableActorType, SchedulingActor, SchedulingActorResource, SchedulingActorType } from '../actors';
 import {
   BOOKABLE_ACTOR_TYPES,
   getActorType,
@@ -27,7 +27,7 @@ import { getActorsKey } from './AppointmentFinder.times';
 export interface ScheduleCandidate {
   readonly schedule: WithId<Schedule>;
   /** The actor itself, when the search was able to include it. */
-  readonly actorResource: WithId<Resource> | undefined;
+  readonly actorResource: SchedulingActorResource | undefined;
 }
 
 /**
@@ -47,11 +47,24 @@ export function getCandidateActor(candidate: ScheduleCandidate): SchedulingActor
 export function getCandidateDisplay(candidate: ScheduleCandidate): string {
   const actor = getCandidateActor(candidate);
   return (
+    getActorResourceName(candidate.actorResource) ??
     actor.display ??
-    (candidate.actorResource && getDisplayString(candidate.actorResource)) ??
     actor.reference ??
     `Schedule/${candidate.schedule.id}`
   );
+}
+
+/**
+ * The name of an actor's resource, or undefined where it has none.
+ * @param resource - The actor's resource, or undefined where none was read.
+ * @returns The resource's name.
+ */
+function getActorResourceName(resource: SchedulingActorResource | undefined): string | undefined {
+  if (!resource) {
+    return undefined;
+  }
+  const display = getDisplayString(resource);
+  return display === getReferenceString(resource) ? undefined : display;
 }
 
 /**
@@ -165,18 +178,18 @@ export async function searchScheduleCandidates(
     { signal: options.signal }
   );
 
-  const actorsByReference = new Map<string, WithId<Resource>>();
+  const actorsByReference = new Map<string, SchedulingActorResource>();
   const schedules: WithId<Schedule>[] = [];
 
   for (const entry of bundle.entry ?? []) {
-    const resource = entry.resource as WithId<Resource> | undefined;
+    const resource = entry.resource as WithId<Schedule> | SchedulingActorResource | undefined;
     if (!resource?.id) {
       continue;
     }
-    if (entry.search?.mode === 'include') {
-      actorsByReference.set(`${resource.resourceType}/${resource.id}`, resource);
-    } else if (resource.resourceType === 'Schedule') {
+    if (resource.resourceType === 'Schedule') {
       schedules.push(resource);
+    } else {
+      actorsByReference.set(`${resource.resourceType}/${resource.id}`, resource);
     }
   }
 
@@ -200,7 +213,7 @@ function getServiceTypeTokens(service: HealthcareService): string[] {
 function toScheduleCandidate(
   schedule: WithId<Schedule>,
   service: WithId<HealthcareService> | undefined,
-  actors: Map<string, WithId<Resource>>
+  actors: Map<string, SchedulingActorResource>
 ): ScheduleCandidate | undefined {
   if (schedule.active === false || (service && !serviceTypeIncludesService(schedule.serviceType, service))) {
     return undefined;
@@ -488,6 +501,22 @@ export function getRequirements(selections: ActorSelections): ActorRequirement[]
  */
 function getFilledRequirements(selections: ActorSelections): ActorRequirement[] {
   return getRequirements(selections).filter((requirement) => requirement.candidates.length > 0);
+}
+
+/**
+ * Flattens the loaded actor resources into a map, keyed by their reference.
+ * @param selections - What has been chosen.
+ * @returns The resource behind each chosen actor the search was able to include.
+ */
+export function getSelectedActorResources(selections: ActorSelections): Map<string, SchedulingActorResource> {
+  const resources = new Map<string, SchedulingActorResource>();
+  for (const candidate of getSelectedCandidates(selections)) {
+    const reference = getReferenceString(getCandidateActor(candidate));
+    if (reference && candidate.actorResource) {
+      resources.set(reference, candidate.actorResource);
+    }
+  }
+  return resources;
 }
 
 function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> {
