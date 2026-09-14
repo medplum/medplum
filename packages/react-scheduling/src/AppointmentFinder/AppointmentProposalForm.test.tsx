@@ -1440,13 +1440,15 @@ describe('AppointmentProposalForm', () => {
 
       const listbox = await searchField(/procedure code/i, '96365');
 
-      // The code is the part a scheduler and a biller work in, and two infusion codes can share
-      // most of a description, so offering the description alone would not tell them apart.
+      // The code is the part a scheduler and a biller work in, and the CPT descriptions for
+      // infusion procedures agree for sixty characters, so the description alone would not tell
+      // one row from the next.
       expect(within(listbox).getByText('96365')).toBeInTheDocument();
       expect(within(listbox).getByText(ProcedureCodes[0].display as string)).toBeInTheDocument();
 
-      // The system is the same for every row, so it is a url repeated down the list and nothing more.
-      expect(within(listbox).queryByText(new RegExp(CPT))).not.toBeInTheDocument();
+      // The system is the same for every row, so it is a url repeated down the list and nothing
+      // more. Matched literally: a url read as a regex has unescaped dots and matches too much.
+      expect(within(listbox).queryByText((content) => content.includes(CPT))).not.toBeInTheDocument();
     });
 
     test('Takes only codes its value set offered, never one typed over the top', async () => {
