@@ -245,6 +245,15 @@ See [Defining Availability](/docs/scheduling/defining-availability) for full det
 }
 ```
 
+### HealthcareService is inactive
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "HealthcareService is inactive" } }]
+}
+```
+
 ## Beta Status
 
 The Scheduling API is under active development. This [beta](/docs/compliance/alpha-beta) release of the scheduling API is expected to gain additional capabilities.

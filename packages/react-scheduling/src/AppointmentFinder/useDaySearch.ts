@@ -21,7 +21,7 @@ import { useProposedAppointments } from './useProposedAppointments';
 const MORE_DAYS = 2;
 
 // Generous heuristic for how many time results might be returned for a given day.
-const TIMES_PER_DAY = 50;
+const TIMES_PER_DAY = 65;
 
 /**
  * How many actor combinations one round of the search covers.
