@@ -95,7 +95,7 @@ export function LabReportContent(props: LabReportContentProps): JSX.Element {
 
       {report.result && report.result.length > 0 && (
         <Stack pt="md">
-          <DiagnosticReportDisplay value={report} hideDNRObservations />
+          <DiagnosticReportDisplay value={report} />
         </Stack>
       )}
     </Stack>
