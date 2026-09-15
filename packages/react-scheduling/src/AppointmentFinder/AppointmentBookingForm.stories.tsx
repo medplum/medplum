@@ -118,10 +118,10 @@ SurgicalTeam.decorators = [withFindStub()];
  * Each is a requirement of its own, so a practice designates the ones it needs. See
  * {@link PartialAuthRequired} for a visit type that names a subset.
  *
- * Neither code field takes anything but a code its value set offered, so the codes on the
- * appointment are always ones a project published. Switch the visit type to "Ultrasound Imaging"
- * and the fields go, since only designated visit types are asked, which is what keeps a first visit
- * bookable for a patient with no diagnosis on file.
+ * Both code fields take a code typed over the top as well as one their value set offered, so a
+ * practice is never blocked on a code its terminology has not got. Switch the visit type to
+ * "Ultrasound Imaging" and the fields go, since only designated visit types are asked, which is
+ * what keeps a first visit bookable for a patient with no diagnosis on file.
  * @returns The story.
  */
 export const AuthRequired = (): JSX.Element => (
@@ -164,11 +164,10 @@ PartialAuthRequired.decorators = [withFindStub()];
 /**
  * The same visit type, pointed at value sets the project never imported.
  *
- * The cost of taking only what a value set offers. Both fields take themselves out of use, saying
- * "This field is unavailable", and the visit cannot be booked at all: there is no free text to fall
- * back to. Deliberate for fields gating a prior authorization, but it does mean a terminology gap stops
- * these visit types being booked rather than degrading quietly, so importing the two value sets is
- * part of what has to be in place before go-live.
+ * A terminology gap degrades rather than stopping the booking: both fields say "Suggestions
+ * unavailable" and go on taking what a scheduler types, so these visit types stay bookable. The
+ * codes captured are then whatever was typed, with no system on them, which is the argument for
+ * importing the two value sets before go-live rather than a reason the form waits for it.
  * @returns The story.
  */
 export const AuthRequiredMissingValueSets = (): JSX.Element => (

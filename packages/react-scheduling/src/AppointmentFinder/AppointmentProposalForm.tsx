@@ -395,7 +395,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                 name="procedure-code"
                 label="Procedure codes"
                 required
-                creatable={false}
                 itemComponent={RequirementCodeItem}
                 pillComponent={RequirementCodePill}
                 binding={procedureBinding}
@@ -412,7 +411,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                 name="diagnosis-code"
                 label="Diagnosis codes"
                 required
-                creatable={false}
                 itemComponent={RequirementCodeItem}
                 pillComponent={RequirementCodePill}
                 binding={diagnosisBinding}
@@ -671,7 +669,8 @@ interface RequirementCodePillProps {
  * What a scheduler checks a filled-in form against, and what a biller reads off it, is the code, so
  * it comes first and stays readable however narrow the pill gets. The description follows and is
  * clipped, since a dozen words times three pills would bury the rest of the form. The full text is
- * on the pill's `title`.
+ * on the pill's `title`. A code typed in rather than picked off the list is its own description, so
+ * it is printed once rather than twice.
  *
  * @param props - The chosen option, and how to take it back out.
  * @returns The pill.
@@ -681,7 +680,7 @@ function RequirementCodePill(props: RequirementCodePillProps): JSX.Element {
   const code = item.resource.code;
   return (
     <Pill className={classes.codePill} withRemoveButton={!disabled} onRemove={onRemove} title={item.label}>
-      {code ? `${code} · ${item.label}` : item.label}
+      {code && code !== item.label ? `${code} · ${item.label}` : item.label}
     </Pill>
   );
 }
