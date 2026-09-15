@@ -503,6 +503,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'self-hosting/project-settings' },
         { type: 'doc', id: 'self-hosting/setting-up-cors' },
         { type: 'doc', id: 'self-hosting/super-admin-guide' },
+        { type: 'doc', id: 'self-hosting/amazon-ses' },
         { type: 'doc', id: 'self-hosting/sendgrid' },
         { type: 'doc', id: 'self-hosting/mailtrapio' },
         { type: 'doc', id: 'self-hosting/branding' },
