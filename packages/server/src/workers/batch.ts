@@ -163,6 +163,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
         const { authState, requestId, traceId } = job.data;
         return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => {
           if (job.data.asyncJob) {
+            // PENDING{v5.3+} remove legacy batch job handling
             return execLegacyBatchJob(job as Job<LegacyBatchJobData>);
           } else if (job.data.tracking || job.data.asyncJobId) {
             return execBatchJob(job as Job<ReentrantBatchJobData>);
@@ -266,23 +267,6 @@ export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<Asyn
   // it on the first run to preprocess.
   await new BatchCheckpointStore(asyncJob.id, getBatchLogger(asyncJob.id)).saveInputBundle(bundle);
   return addBatchJobData({ tracking: getAsyncJobTracking(asyncJob), authState, requestId, traceId });
-}
-
-/**
- * Enqueues a batch for the legacy single-shot worker. Only reachable when a project opts out of
- * re-entrant processing via the `reentrantAsyncBatch` system setting. PENDING{v5.2}
- * @deprecated Can be removed in v5.2+ along with {@link execLegacyBatchJob}.
- * @param bundle - The batch bundle to process.
- * @param asyncJob - The AsyncJob tracking this batch.
- * @returns The enqueued job.
- */
-export async function queueLegacyBatchProcessing(
-  bundle: Bundle,
-  asyncJob: WithId<AsyncJob>
-): Promise<Job<BatchJobData>> {
-  const { authState, requestId, traceId } = getAuthenticatedContext();
-  const jobData: LegacyBatchJobData = { asyncJob, bundle, authState, requestId, traceId };
-  return addBatchJobData(jobData);
 }
 
 /**
@@ -601,7 +585,7 @@ function countBundleErrors(bundle: Bundle): number {
 }
 
 /**
- * @deprecated Processes legacy jobs. Can be removed in v5.2+
+ * @deprecated Processes legacy jobs. Can be removed in v5.3+
  * @param job - The BullMQ job instance.
  */
 export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<void> {
