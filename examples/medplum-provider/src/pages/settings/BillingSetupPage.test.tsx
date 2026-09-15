@@ -1035,9 +1035,9 @@ describe('BillingSetupPage', () => {
 
       expect(await screen.findByText('Second Practice')).toBeInTheDocument();
       expect(screen.getAllByText('Test Medical Practice LLC')).toHaveLength(1);
-      expect(screen.getByText('Individually')).toBeInTheDocument();
-      expect(screen.getByText('Missing Tax ID')).toBeInTheDocument();
-      expect(screen.getByText('Incomplete address')).toBeInTheDocument();
+      expect(await screen.findByText('Individually')).toBeInTheDocument();
+      expect(await screen.findByText('Missing Tax ID')).toBeInTheDocument();
+      expect(await screen.findByText('Incomplete address')).toBeInTheDocument();
       expect(screen.queryByText('Inactive Practice')).not.toBeInTheDocument();
       const roleQueries = (searchSpy.mock.calls as unknown[][])
         .filter((call) => call[0] === 'PractitionerRole')
@@ -1063,7 +1063,7 @@ describe('BillingSetupPage', () => {
       setup('Practitioners');
 
       await screen.findByText('Second Practice');
-      await user.click(screen.getByText('Alice Smith'));
+      await user.click(await screen.findByText('Alice Smith'));
       const dialog = await screen.findByRole('dialog');
       expect(within(dialog).queryByLabelText(/Practitioner role/)).not.toBeInTheDocument();
       expect(await within(dialog).findByText('Test Medical Practice LLC')).toBeInTheDocument();
@@ -1096,9 +1096,9 @@ describe('BillingSetupPage', () => {
       setup('Practitioners');
 
       expect(await screen.findByText('Alice Smith')).toBeInTheDocument();
-      expect(screen.getByText('Cara Diaz')).toBeInTheDocument();
-      expect(screen.getAllByText('Missing Tax ID')).toHaveLength(1);
-      expect(screen.getAllByText('Incomplete address')).toHaveLength(1);
+      expect(await screen.findByText('Cara Diaz')).toBeInTheDocument();
+      expect(await screen.findAllByText('Missing Tax ID')).toHaveLength(1);
+      expect(await screen.findAllByText('Incomplete address')).toHaveLength(1);
     });
 
     test('saves the billing details, and points a new role at the billing organization', async () => {
