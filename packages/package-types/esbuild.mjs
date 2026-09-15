@@ -12,31 +12,15 @@ const options = {
   bundle: true,
   platform: 'node',
   loader: { '.ts': 'ts' },
-  resolveExtensions: ['.ts', '.js'],
+  logLevel: 'info',
+  resolveExtensions: ['.ts'],
   target: 'es2021',
   tsconfig: 'tsconfig.json',
-  minify: true,
+  minifyWhitespace: true,
+  minifyIdentifiers: false,
+  minifySyntax: true,
   sourcemap: true,
-  external: [
-    '@aws-sdk/client-acm',
-    '@aws-sdk/client-cloudformation',
-    '@aws-sdk/client-cloudfront',
-    '@aws-sdk/client-ecs',
-    '@aws-sdk/client-s3',
-    '@aws-sdk/client-ssm',
-    '@aws-sdk/client-sts',
-    '@medplum/core',
-    // Pulls in `typescript` and `esbuild` for manifest validation and evaluation.
-    // Bundling those would bloat the CLI and break esbuild's own binary lookup,
-    // which resolves relative to its package directory.
-    '@medplum/package-types',
-    'commander',
-    'dotenv',
-    'fast-glob',
-    'iconv-lite',
-    'tar',
-  ],
-  banner: { js: '#!/usr/bin/env node' },
+  external: ['@medplum/fhirtypes', 'esbuild', 'typescript'],
 };
 
 esbuild
@@ -44,11 +28,10 @@ esbuild
     ...options,
     format: 'cjs',
     outfile: './dist/cjs/index.cjs',
-    define: { 'import.meta.main': 'true' },
   })
   .then(() => writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}'))
-  .catch((err) => {
-    console.error(err);
+  .catch((error) => {
+    console.error('Build failed:', JSON.stringify(error, null, 2));
     process.exit(1);
   });
 
@@ -59,7 +42,7 @@ esbuild
     outfile: './dist/esm/index.mjs',
   })
   .then(() => writeFileSync('./dist/esm/package.json', '{"type": "module"}'))
-  .catch((err) => {
-    console.error(err);
+  .catch((error) => {
+    console.error('Build failed:', JSON.stringify(error, null, 2));
     process.exit(1);
   });

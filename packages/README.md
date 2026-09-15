@@ -21,6 +21,7 @@ packages
 ├── graphiql     # Preconfigured GraphiQL
 ├── hl7          # HL7 client and server
 ├── mock         # Mock FHIR data for testing
+├── package-types # Marketplace package manifest types and compiler
 ├── react        # React component library
 └── server       # Backend API server
 ```

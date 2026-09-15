@@ -70,6 +70,7 @@
     "@aws-sdk/types": "3.974.5",
     "@medplum/core": "5.1.38",
     "@medplum/hl7": "5.1.38",
+    "@medplum/package-types": "5.1.38",
     "commander": "12.1.0",
     "dotenv": "17.4.2",
     "fast-glob": "3.3.3",
