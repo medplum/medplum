@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, MedplumRequestOptions, ValueSetExpandParams } from '@medplum/core';
-import type { ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { notFound, OperationOutcomeError } from '@medplum/core';
+import type { Coding, ValueSet } from '@medplum/fhirtypes';
 import { APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM, APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../constants';
 
 /** The FHIR R4 `appointment-cancellation-reason` CodeSystem, as a real server would expand it. */
-const CANCELLATION_REASONS: readonly ValueSetExpansionContains[] = [
+const CANCELLATION_REASONS: readonly Coding[] = [
   { code: 'pat', display: 'Patient' },
   { code: 'pat-crs', display: 'Patient: Canceled via automated reminder system' },
   { code: 'pat-cpp', display: 'Patient: Canceled via Patient Portal' },
@@ -40,32 +41,43 @@ const CANCELLATION_REASONS: readonly ValueSetExpansionContains[] = [
   { code: 'oth-weath', display: 'Other: Weather' },
 ].map((concept) => ({ ...concept, system: APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM }));
 
-/** The value sets this stub knows how to expand, by URL. */
-const EXPANSIONS: Record<string, readonly ValueSetExpansionContains[]> = {
+/** What the stub knows when the caller names nothing: the cancellation reasons, and no more. */
+const DEFAULT_EXPANSIONS: Record<string, readonly Coding[]> = {
   [APPOINTMENT_CANCELLATION_REASON_VALUE_SET]: CANCELLATION_REASONS,
 };
 
 /**
- * Expands the value sets the scheduling components are bound to.
+ * Answers `ValueSet/$expand` from a fixed set of value sets.
  *
- * `MockClient` answers every `ValueSet/$expand` with the same three example codes, so a
- * story or test driving a value-set-bound field would offer "Test Display" where a server
- * offers real terminology. This answers the ones the components ask for the way a server
- * with R4 terminology loaded does, honouring `filter` and `count` as an expansion must:
- * the field searches as the user types, and only shows what it asked for.
+ * `MockClient` answers every expansion with the same three placeholder concepts, which is enough to
+ * prove a field is wired up and not enough to prove anything about what it captured. This serves
+ * real-looking codes per url, honouring `filter` and `count` as an expansion must, so a field
+ * searches as the user types and shows only what it asked for.
  *
- * @param medplum - The client to patch. Other value sets are passed through.
+ * @param medplum - The client to patch.
+ * @param valueSets - Concepts to offer, keyed by the value set's canonical url. Given a map, this
+ * is the whole of what the client knows: an unknown url draws the 404 a server gives for a value
+ * set nobody imported, which is the verdict that takes a bound field out of use. Omitted, the
+ * cancellation reasons are served and every other url is left to the client's own expansion.
  * @returns A function restoring the client's own `valueSetExpand`.
  */
-export function installValueSetStub(medplum: MedplumClient): () => void {
+export function installValueSetStub(medplum: MedplumClient, valueSets?: Record<string, Coding[]>): () => void {
   const original = medplum.valueSetExpand.bind(medplum);
+  const expansions: Record<string, readonly Coding[]> = valueSets ?? DEFAULT_EXPANSIONS;
+  // Naming the value sets is a claim about what exists; omitting them is only a convenience.
+  const unknownUrlIsMissing = valueSets !== undefined;
 
   medplum.valueSetExpand = async function stubbedExpand(
     params: ValueSetExpandParams,
     options?: MedplumRequestOptions
   ): Promise<ValueSet> {
-    const concepts = params.url ? EXPANSIONS[params.url] : undefined;
+    const concepts = params.url === undefined ? undefined : expansions[params.url];
     if (!concepts) {
+      if (unknownUrlIsMissing) {
+        // What the availability probe reads as "nobody imported this", and the only verdict that
+        // takes a field out of use. A transient failure deliberately does not.
+        throw new OperationOutcomeError(notFound);
+      }
       return original(params, options);
     }
 
@@ -85,7 +97,7 @@ export function installValueSetStub(medplum: MedplumClient): () => void {
         // Fixed rather than "now": a story pinned to a mocked clock has no business
         // reading the wall clock, and nothing here depends on the value.
         timestamp: '2020-05-04T00:00:00.000Z',
-        contains: matches.slice(0, params.count ?? 10),
+        contains: matches.slice(0, params.count ?? matches.length),
       },
     };
   } as MedplumClient['valueSetExpand'];

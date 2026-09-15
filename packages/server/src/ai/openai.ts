@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { isObject } from '@medplum/core';
 import { getLogger } from '../logger';
+import { safeFetch } from '../util/url';
 
 /**
  * The OpenAI provider.
@@ -307,7 +308,7 @@ function buildResponsesRequestBody(context: AiContext, stream: boolean): Record<
 async function postRequest(context: AiContext, api: AiApi, stream: boolean): Promise<Response> {
   const path = api === 'responses' ? '/responses' : '/chat/completions';
   const body = api === 'responses' ? buildResponsesRequestBody(context, stream) : buildChatRequestBody(context, stream);
-  return fetch(`${context.baseUrl}${path}`, {
+  return safeFetch(`${context.baseUrl}${path}`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${context.apiKey}`,

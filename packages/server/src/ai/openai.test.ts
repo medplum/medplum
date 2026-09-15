@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
+import { loadTestConfig } from '../config/loader';
 import type { AiContext } from './openai';
 import { callOpenAi, selectApi, streamOpenAi } from './openai';
 
@@ -79,6 +80,10 @@ async function collectNormalized(chunks: string[], context?: Partial<AiContext>)
 }
 
 describe('OpenAI provider', () => {
+  beforeAll(async () => {
+    await loadTestConfig();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });

@@ -9,7 +9,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import { getTestProjectSystemRepo } from '../fhir/repository/test-utils';
 import { createTestProject, withTestContext } from '../test.setup';
 import { getBinaryStorage } from './loader';
 
@@ -18,7 +18,7 @@ let config: MedplumServerConfig;
 let binary: Binary;
 
 describe('Storage Routes', () => {
-  const systemRepo = getGlobalSystemRepo();
+  const systemRepo = getTestProjectSystemRepo();
   beforeAll(async () => {
     config = await loadTestConfig();
     await initApp(app, config);
@@ -167,10 +167,10 @@ describe('Storage Routes', () => {
     let projectBinary: Binary;
 
     beforeAll(async () => {
-      const { project } = await createTestProject();
+      const { project, repo } = await createTestProject({ withRepo: true });
       projectId = project.id;
       projectBinary = await withTestContext(async () => {
-        return systemRepo.createResource<Binary>({
+        return repo.createResource<Binary>({
           resourceType: 'Binary',
           contentType: ContentType.TEXT,
           meta: { project: projectId },

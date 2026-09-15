@@ -286,6 +286,15 @@ Because these steps run inside a `SERIALIZABLE` transaction, two requests racing
 }
 ```
 
+### HealthcareService is inactive
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "HealthcareService is inactive" } }]
+}
+```
+
 ## Beta Status
 
 The Scheduling API is under active development. This [beta](/docs/compliance/alpha-beta) release of the scheduling API is expected to gain additional capabilities.

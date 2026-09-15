@@ -25,15 +25,14 @@ import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getGlobalSystemRepo } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
+import type { SystemRepository } from '../repo';
 import type {
   SchedulingParametersExtension,
   SchedulingParametersExtensionExtension,
 } from './utils/scheduling-parameters';
 
-const systemRepo = getGlobalSystemRepo();
 const app = express();
 const request = supertest(app);
 
@@ -62,7 +61,8 @@ const threeDayAvailability: SchedulingParametersExtensionExtension = {
 };
 
 describe('Appointment/$hold', () => {
-  let project: TestProjectResult<{ withAccessToken: true }>;
+  let project: TestProjectResult<{ withAccessToken: true; withRepo: true }>;
+  let systemRepo: SystemRepository;
   let practitioner1: WithId<Practitioner>;
   let practitioner2: WithId<Practitioner>;
   let patient: WithId<Patient>;
@@ -75,7 +75,8 @@ describe('Appointment/$hold', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    project = await createTestProject({ withAccessToken: true });
+    project = await createTestProject({ withAccessToken: true, withRepo: true });
+    systemRepo = project.repo.getSystemRepo();
     patient = await makePatient();
     practitioner1 = await makePractitioner({ timezone: 'America/New_York' });
     practitioner2 = await makePractitioner({ timezone: 'America/New_York' });
@@ -1264,6 +1265,72 @@ describe('Appointment/$hold', () => {
     });
   });
 
+  test('fails when the HealthcareService is inactive', async () => {
+    const inactiveService = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Inactive Visit',
+      active: false,
+      type: [{ coding: [{ system: 'https://example.com/fhir', code: 'inactive-visit' }] }],
+      meta: { project: project.project.id },
+    });
+    const serviceType = toServiceTypeCodeableConcepts(inactiveService);
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner1)],
+      serviceType,
+      extension: [makeSchedulingExtension({ service: inactiveService })],
+    });
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$hold')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType,
+              participant: [{ actor: createReference(practitioner1), status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                  serviceType,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response.body).toHaveProperty('issue', [
+      {
+        severity: 'error',
+        code: 'invalid',
+        details: {
+          text: 'HealthcareService is inactive',
+        },
+        expression: ['HealthcareService'],
+      },
+    ]);
+    expect(response).toHaveStatus(400);
+
+    // Nothing was held
+    const slots = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
+    expect(slots).toHaveLength(0);
+  });
+
   test('fails when the schedule has more than one actor', async () => {
     const extraPractitioner = await makePractitioner({ timezone: 'America/New_York' });
     const schedule = await systemRepo.createResource<Schedule>({
@@ -1329,12 +1396,14 @@ describe('Appointment/$hold', () => {
 });
 
 describe('scheduling flow integration test', () => {
-  let project: TestProjectResult<{ withAccessToken: true }>;
+  let project: TestProjectResult<{ withAccessToken: true; withRepo: true }>;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    project = await createTestProject({ withAccessToken: true });
+    project = await createTestProject({ withAccessToken: true, withRepo: true });
+    systemRepo = project.repo.getSystemRepo();
   });
 
   afterAll(async () => {

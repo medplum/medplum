@@ -17,15 +17,21 @@ import {
   SurgeryService,
   SurgicalFixtures,
   Ultrasound1Schedule,
+  Ultrasound2Schedule,
   UltrasoundImagingService,
 } from '../stories/scheduling';
-import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
+import type { ActorRequirement, ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import {
+  countActorCombinations,
+  createActorRequirement,
   getActorCombinations,
   getCandidateActor,
   getCandidateDisplay,
+  getSelectedActorResources,
   getSelectedCandidates,
   getSelectionError,
+  getUnsatisfiableRows,
+  MAX_ACTOR_COMBINATIONS,
   searchScheduleCandidates,
 } from './AppointmentFinder.schedules';
 import { getActorsKey } from './AppointmentFinder.times';
@@ -91,14 +97,15 @@ async function setupSurgicalClient(): Promise<MockClient> {
  * practice.
  *
  * @param medplum - The client to create into.
- * @param display - The name the Schedule gives its actor.
+ * @param name - What the surgeon is called. On the Practitioner rather than on
+ *   the Schedule, since that is where a candidate is named from.
  * @param locations - Location references the role names, or undefined for a role
  *   that names none.
  */
-async function addSitedSurgeon(medplum: MockClient, display: string, locations?: string[]): Promise<void> {
+async function addSitedSurgeon(medplum: MockClient, name: string, locations?: string[]): Promise<void> {
   const practitioner = await medplum.createResource<Practitioner>({
     resourceType: 'Practitioner',
-    name: [{ given: ['Wei'], family: 'Chen', prefix: ['Dr.'] }],
+    name: [{ text: name }],
   });
   await medplum.createResource<PractitionerRole>({
     ...DrChenRole,
@@ -109,7 +116,7 @@ async function addSitedSurgeon(medplum: MockClient, display: string, locations?:
   await medplum.createResource<Schedule>({
     ...DrChenSchedule,
     id: undefined,
-    actor: [{ reference: `Practitioner/${practitioner.id}`, display }],
+    actor: [{ reference: `Practitioner/${practitioner.id}` }],
   });
 }
 
@@ -312,7 +319,7 @@ describe('searchScheduleCandidates', () => {
     // (ultrasound imaging, surgery) are offered side by side.
     expect(querySentTo(medplum)).not.toHaveProperty('service-type');
     expect(providersOf(candidates)).toStrictEqual([
-      'Dr. Alice Smith',
+      'Alice Smith',
       'Dr. James Kim',
       'Dr. Maria Martinez',
       'Dr. Maya Rivera',
@@ -323,10 +330,14 @@ describe('searchScheduleCandidates', () => {
 
   test('Lists actors by name, which is the order a field offers them in', async () => {
     const medplum = await setupClient();
+    const abbot = await medplum.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      name: [{ given: ['Aaron'], family: 'Abbot', prefix: ['Dr.'] }],
+    });
     await medplum.createResource<Schedule>({
       ...DrRiveraSchedule,
       id: undefined,
-      actor: [{ reference: 'Practitioner/dr-rivera', display: 'Dr. Aaron Abbot' }],
+      actor: [{ reference: `Practitioner/${abbot.id}` }],
     });
 
     expect(providersOf(await candidatesFor(medplum, UltrasoundImagingService, 'Practitioner'))).toStrictEqual([
@@ -398,23 +409,23 @@ describe('narrowing to a location', () => {
     // above but further up than that is unverifiable, not proven to be
     // elsewhere, so the same leniency applies as to one that cannot be read.
     const medplum = await setupClient();
-    for (const [id, parent] of [
-      ['wing-a', 'main-clinic'],
-      ['wing-b', 'wing-a'],
-      ['wing-c', 'wing-b'],
-      ['deep-room', 'wing-c'],
+    for (const [id, name, parent] of [
+      ['wing-a', 'Wing A', 'main-clinic'],
+      ['wing-b', 'Wing B', 'wing-a'],
+      ['wing-c', 'Wing C', 'wing-b'],
+      ['deep-room', 'Deep Room', 'wing-c'],
     ]) {
       await medplum.createResource<Location>({
         resourceType: 'Location',
         id,
-        name: id,
+        name,
         partOf: { reference: `Location/${parent}` },
       });
     }
     await medplum.createResource<Schedule>({
       ...DrRiveraSchedule,
       id: undefined,
-      actor: [{ reference: 'Location/deep-room', display: 'Deep Room' }],
+      actor: [{ reference: 'Location/deep-room' }],
     });
 
     const kept = await candidatesFor(medplum, UltrasoundImagingService, 'Location', { location: MainClinic });
@@ -507,7 +518,7 @@ describe('narrowing to a location', () => {
     const medplum = await setupSurgicalClient();
     const practitioner = await medplum.createResource<Practitioner>({
       resourceType: 'Practitioner',
-      name: [{ given: ['Wei'], family: 'Chen', prefix: ['Dr.'] }],
+      name: [{ text: 'Dr. Wei Chen (moved)' }],
     });
     await medplum.createResource<PractitionerRole>({
       ...DrChenRole,
@@ -525,7 +536,7 @@ describe('narrowing to a location', () => {
     await medplum.createResource<Schedule>({
       ...DrChenSchedule,
       id: undefined,
-      actor: [{ reference: `Practitioner/${practitioner.id}`, display: 'Dr. Wei Chen (moved)' }],
+      actor: [{ reference: `Practitioner/${practitioner.id}` }],
     });
 
     const kept = await candidatesFor(medplum, SurgeryService, 'Practitioner', { location: MainClinic });
@@ -616,6 +627,16 @@ describe('selections', () => {
   const RIVERA = candidateOf(DrRiveraSchedule, 'Practitioner', 'Dr. Maya Rivera');
   const OKAFOR = candidateOf(DrOkaforSchedule, 'Practitioner', 'Dr. Tunde Okafor');
   const ULTRASOUND = candidateOf(Ultrasound1Schedule, 'Device', 'Ultrasound 1');
+  const ULTRASOUND_2 = candidateOf(Ultrasound2Schedule, 'Device', 'Ultrasound 2');
+
+  /**
+   * One row of a selection, holding the candidates that would each do.
+   * @param candidates - The alternatives in the row.
+   * @returns The row.
+   */
+  function row(...candidates: ScheduleCandidate[]): ActorRequirement {
+    return createActorRequirement(candidates);
+  }
 
   /**
    * The schedules each combination would be searched with.
@@ -628,49 +649,198 @@ describe('selections', () => {
     );
   }
 
-  test('One chosen actor per role is one request', () => {
-    expect(schedulesOf(getActorCombinations({ Practitioner: [OKAFOR], Device: [ULTRASOUND] }))).toStrictEqual([
+  test('One name per row is one request', () => {
+    expect(schedulesOf(getActorCombinations({ Practitioner: [row(OKAFOR)], Device: [row(ULTRASOUND)] }))).toStrictEqual(
+      [['Schedule/schedule-dr-okafor', 'Schedule/schedule-ultrasound-1']]
+    );
+  });
+
+  test('A row each is a request holding both, since both attend', () => {
+    // Two provider rows ask for two providers, and `$find` intersects them into the
+    // times all of them are free.
+    expect(
+      schedulesOf(getActorCombinations({ Practitioner: [row(RIVERA), row(OKAFOR)], Device: [row(ULTRASOUND)] }))
+    ).toStrictEqual([['Schedule/schedule-dr-okafor', 'Schedule/schedule-dr-rivera', 'Schedule/schedule-ultrasound-1']]);
+  });
+
+  test('Two names in one row are a request each, since either will do', () => {
+    expect(
+      schedulesOf(getActorCombinations({ Practitioner: [row(RIVERA, OKAFOR)], Device: [row(ULTRASOUND)] }))
+    ).toStrictEqual([
+      ['Schedule/schedule-dr-rivera', 'Schedule/schedule-ultrasound-1'],
       ['Schedule/schedule-dr-okafor', 'Schedule/schedule-ultrasound-1'],
     ]);
   });
 
-  test('Several actors that all attend stay in the same request', () => {
-    // `$find` intersects them, so two providers and a device is one request for
-    // the times all three are free — not a choice between them.
-    expect(schedulesOf(getActorCombinations({ Practitioner: [RIVERA, OKAFOR], Device: [ULTRASOUND] }))).toStrictEqual([
-      ['Schedule/schedule-dr-okafor', 'Schedule/schedule-dr-rivera', 'Schedule/schedule-ultrasound-1'],
+  test('Alternatives in different rows multiply out, the last row turning fastest', () => {
+    // Either provider with either device is four ways of holding the visit, and the
+    // order is what the search asks in, a round at a time.
+    expect(
+      schedulesOf(
+        getActorCombinations({ Practitioner: [row(RIVERA, OKAFOR)], Device: [row(ULTRASOUND, ULTRASOUND_2)] })
+      )
+    ).toStrictEqual([
+      ['Schedule/schedule-dr-rivera', 'Schedule/schedule-ultrasound-1'],
+      ['Schedule/schedule-dr-rivera', 'Schedule/schedule-ultrasound-2'],
+      ['Schedule/schedule-dr-okafor', 'Schedule/schedule-ultrasound-1'],
+      ['Schedule/schedule-dr-okafor', 'Schedule/schedule-ultrasound-2'],
     ]);
+    expect(
+      countActorCombinations({ Practitioner: [row(RIVERA, OKAFOR)], Device: [row(ULTRASOUND, ULTRASOUND_2)] })
+    ).toBe(4);
   });
 
-  test('An optional role left empty drops out of the search', () => {
-    // Holding a device nobody asked for would narrow the search to the times
-    // that device happens to be free.
-    expect(schedulesOf(getActorCombinations({ Practitioner: [RIVERA], Device: [] }))).toStrictEqual([
+  test('Nobody fills two rows at once, however the rows overlap', () => {
+    // "Rivera or Okafor" and then "Okafor or Rivera" is one visit held by both of
+    // them, reached two ways round. Neither of the pairings of somebody with
+    // themselves is a visit at all.
+    expect(
+      schedulesOf(getActorCombinations({ Practitioner: [row(RIVERA, OKAFOR), row(OKAFOR, RIVERA)] }))
+    ).toStrictEqual([['Schedule/schedule-dr-okafor', 'Schedule/schedule-dr-rivera']]);
+  });
+
+  test('An empty row drops out rather than emptying the search', () => {
+    // Holding a device nobody asked for would narrow the search to the times that
+    // device happens to be free.
+    expect(schedulesOf(getActorCombinations({ Practitioner: [row(RIVERA)], Device: [row()] }))).toStrictEqual([
       ['Schedule/schedule-dr-rivera'],
     ]);
   });
 
   test('A required role left empty stops the search', () => {
-    const selections: ActorSelections = { Device: [ULTRASOUND] };
+    const selections: ActorSelections = { Device: [row(ULTRASOUND)] };
 
     // The combination is still buildable — it is the caller that must not run it.
     expect(schedulesOf(getActorCombinations(selections))).toStrictEqual([['Schedule/schedule-ultrasound-1']]);
-    expect(getSelectionError(selections)).toBe('Choose at least one provider');
+    expect(getSelectionError(selections)).toStrictEqual({
+      message: 'Choose at least one provider first.',
+      severity: 'incomplete',
+    });
+  });
+
+  test('A required role whose only row is empty is a role left empty', () => {
+    expect(getSelectionError({ Practitioner: [row()] })).toStrictEqual({
+      message: 'Choose at least one provider first.',
+      severity: 'incomplete',
+    });
+  });
+
+  test('Refuses a product too large to be worth expanding', () => {
+    const many = (count: number): ActorRequirement[] => [
+      row(
+        ...Array.from({ length: count }, (_, index) =>
+          candidateOf({ ...DrRiveraSchedule, id: `p-${index}` }, 'Practitioner', `Provider ${index}`)
+        )
+      ),
+    ];
+
+    expect(getSelectionError({ Practitioner: many(MAX_ACTOR_COMBINATIONS) })).toBeUndefined();
+    expect(getSelectionError({ Practitioner: many(MAX_ACTOR_COMBINATIONS + 1) })).toStrictEqual({
+      message: 'Too many combinations to search at once. Remove a few providers to find a time.',
+      severity: 'invalid',
+    });
+  });
+
+  test('Names only the roles someone has been named under as worth thinning', () => {
+    // Nothing to remove from a row nobody has named anyone in, so an untouched
+    // room row stays out of the advice.
+    const crowd = (type: 'Practitioner' | 'Location' | 'Device', count: number): ActorRequirement[] => [
+      row(
+        ...Array.from({ length: count }, (_, index) =>
+          candidateOf({ ...DrRiveraSchedule, id: `${type}-${index}` }, type, `${type} ${index}`)
+        )
+      ),
+    ];
+
+    expect(
+      getSelectionError({ Practitioner: crowd('Practitioner', 11), Device: crowd('Device', 11), Location: [row()] })
+        ?.message
+    ).toBe('Too many combinations to search at once. Remove a few providers or devices to find a time.');
+
+    expect(
+      getSelectionError({
+        Practitioner: crowd('Practitioner', 5),
+        Location: crowd('Location', 5),
+        Device: crowd('Device', 5),
+      })?.message
+    ).toBe('Too many combinations to search at once. Remove a few providers, rooms, or devices to find a time.');
   });
 
   test('Collects what was chosen across roles, in the order they are asked about', () => {
     expect(
-      getSelectedCandidates({ Device: [ULTRASOUND], Practitioner: [RIVERA, OKAFOR] }).map(getCandidateDisplay)
+      getSelectedCandidates({ Device: [row(ULTRASOUND)], Practitioner: [row(RIVERA), row(OKAFOR)] }).map(
+        getCandidateDisplay
+      )
     ).toStrictEqual(['Dr. Maya Rivera', 'Dr. Tunde Okafor', 'Ultrasound 1']);
   });
 
   test('Accepts a search once a provider is chosen', () => {
-    expect(getSelectionError({ Practitioner: [RIVERA] })).toBeUndefined();
-    expect(getSelectionError({})).toBe('Choose at least one provider');
+    expect(getSelectionError({ Practitioner: [row(RIVERA)] })).toBeUndefined();
+    expect(getSelectionError({})).toStrictEqual({
+      message: 'Choose at least one provider first.',
+      severity: 'incomplete',
+    });
+  });
+
+  test('Refuses rows that no one set of actors can satisfy', () => {
+    // Nobody attends their own appointment twice, so there is no way to fill both
+    // rows. Left to the search this would come back as "no times available", which
+    // reads as the diary being full rather than as the request being impossible.
+    const selections: ActorSelections = { Practitioner: [row(RIVERA), row(RIVERA)] };
+
+    expect(getActorCombinations(selections)).toStrictEqual([]);
+    expect(getSelectionError(selections)).toStrictEqual({
+      message: 'Nobody can fill every row at once.',
+      severity: 'invalid',
+    });
+
+    // The rest of the sentence goes against the rows that caused it, so say which.
+    expect(getUnsatisfiableRows(selections)).toStrictEqual({
+      actorType: 'Practitioner',
+      message: 'Name someone else in one of them.',
+    });
+  });
+
+  test('Blames the one actor type whose rows conflict, not the form', () => {
+    // A provider is never also a room, so rows only ever conflict within their own
+    // type. The device asked for alongside them is answerable and not at fault.
+    const selections: ActorSelections = {
+      Practitioner: [row(RIVERA), row(RIVERA)],
+      Device: [row(ULTRASOUND)],
+    };
+
+    expect(getUnsatisfiableRows(selections)?.actorType).toBe('Practitioner');
+  });
+
+  test('Blames nobody while every type can still be answered', () => {
+    // Overlapping rows that can be told apart, and a required type left empty: neither
+    // is a conflict, and the second is `getSelectionError`'s to report.
+    expect(getUnsatisfiableRows({ Practitioner: [row(RIVERA, OKAFOR), row(RIVERA, OKAFOR)] })).toBeUndefined();
+    expect(getUnsatisfiableRows({})).toBeUndefined();
+    expect(getUnsatisfiableRows({ Practitioner: [row()] })).toBeUndefined();
+  });
+
+  test('Accepts rows that overlap but can still be told apart', () => {
+    // "Either of these two, twice" is one pair rather than none: the rows overlap,
+    // but there is a way of filling both.
+    const selections: ActorSelections = { Practitioner: [row(RIVERA, OKAFOR), row(RIVERA, OKAFOR)] };
+
+    expect(schedulesOf(getActorCombinations(selections))).toStrictEqual([
+      // `schedulesOf` sorts within a combination; the pair is what matters here.
+      ['Schedule/schedule-dr-okafor', 'Schedule/schedule-dr-rivera'],
+    ]);
+    expect(getSelectionError(selections)).toBeUndefined();
+
+    // The two spellings of the pair share a key, which ignores order, but they read
+    // differently. The one reached first is the one kept.
+    expect(getActorCombinations(selections)[0].label).toBe('Dr. Maya Rivera · Dr. Tunde Okafor');
   });
 
   test('Names everyone the appointment would be held on', () => {
-    const [combination] = getActorCombinations({ Practitioner: [RIVERA, OKAFOR], Device: [ULTRASOUND] });
+    const [combination] = getActorCombinations({
+      Practitioner: [row(RIVERA), row(OKAFOR)],
+      Device: [row(ULTRASOUND)],
+    });
 
     expect(combination.label).toBe('Dr. Maya Rivera · Dr. Tunde Okafor · Ultrasound 1');
     expect(combination.actors.map((actor) => actor.reference)).toStrictEqual([
@@ -692,21 +862,54 @@ describe('selections', () => {
 
   test('Nothing chosen is nothing to hold a requested time on', () => {
     expect(getActorCombinations({})).toStrictEqual([]);
+    expect(countActorCombinations({})).toBe(0);
+  });
+
+  test('Hands over the chosen actors themselves, keyed as a proposal names them', () => {
+    const riveraResource: WithId<Practitioner> = {
+      resourceType: 'Practitioner',
+      id: 'dr-rivera',
+      name: [{ given: ['Maya'], family: 'Rivera', prefix: ['Dr.'] }],
+    };
+    const resources = getSelectedActorResources({
+      Practitioner: [row({ ...RIVERA, actorResource: riveraResource }), row(OKAFOR)],
+    });
+
+    expect(resources.get('Practitioner/schedule-dr-rivera')).toStrictEqual(riveraResource);
+    // A candidate the search could not include contributes nothing, rather than
+    // an entry that would have to be checked for emptiness downstream.
+    expect(resources.size).toBe(1);
   });
 });
 
 describe('candidate fields', () => {
-  test('Names an actor by the Schedule display, then the resource, then the reference', () => {
+  test('Names an actor by the resource, then the Schedule display, then the reference', () => {
     const named = candidateOf(DrRiveraSchedule, 'Practitioner', 'Dr. Maya Rivera');
     expect(getCandidateDisplay(named)).toBe('Dr. Maya Rivera');
 
+    // The actor answers over the Schedule's copy of its name, which was written
+    // once and is not kept in step with the resource it was copied from.
+    const renamed: ScheduleCandidate = {
+      ...named,
+      actorResource: { resourceType: 'Practitioner', id: 'dr-rivera', name: [{ given: ['Maya'], family: 'Ross' }] },
+    };
+    expect(getCandidateDisplay(renamed)).toBe('Maya Ross');
+
+    // A resource with no name of its own leaves the Schedule's copy to do the
+    // naming. `getDisplayString` would answer with the bare reference, which is
+    // the ugliness reading the resource at all is meant to avoid.
+    const nameless: ScheduleCandidate = { ...named, actorResource: { resourceType: 'Practitioner', id: 'dr-rivera' } };
+    expect(getCandidateDisplay(nameless)).toBe('Dr. Maya Rivera');
+
     // A Schedule that does not name its actor falls back to the resource the
-    // search included, and to the bare reference when it included none.
+    // search included, and to the bare reference when it included none or the
+    // one it included cannot name itself either.
     const bare: ScheduleCandidate = {
       schedule: { ...DrRiveraSchedule, actor: [{ reference: 'Practitioner/dr-rivera' }] },
       actorResource: { resourceType: 'Practitioner', id: 'dr-rivera', name: [{ given: ['Maya'], family: 'Rivera' }] },
     };
     expect(getCandidateDisplay(bare)).toBe('Maya Rivera');
     expect(getCandidateDisplay({ ...bare, actorResource: undefined })).toBe('Practitioner/dr-rivera');
+    expect(getCandidateDisplay({ ...bare, actorResource: nameless.actorResource })).toBe('Practitioner/dr-rivera');
   });
 });
