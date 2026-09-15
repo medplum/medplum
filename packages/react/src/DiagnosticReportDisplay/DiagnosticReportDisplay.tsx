@@ -47,15 +47,12 @@ export interface DiagnosticReportDisplayProps {
   readonly hideObservationNotes?: boolean;
   readonly hideSpecimenInfo?: boolean;
   readonly hideSubject?: boolean;
-  /** Hides observations whose reported value is "DNR" (Do Not Report), e.g. a skipped reflex sub-result. */
-  readonly hideDNRObservations?: boolean;
 }
 
 DiagnosticReportDisplay.defaultProps = {
   hideObservationNotes: false,
   hideSpecimenInfo: false,
   hideSubject: false,
-  hideDNRObservations: false,
 } as DiagnosticReportDisplayProps;
 
 export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JSX.Element | null {
@@ -95,11 +92,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
       <DiagnosticReportHeader value={diagnosticReport} hideSubject={props.hideSubject} />
       {specimens && !props.hideSpecimenInfo && SpecimenInfo(specimens)}
       {diagnosticReport.result && (
-        <ObservationTable
-          hideObservationNotes={props.hideObservationNotes}
-          hideDNRObservations={props.hideDNRObservations}
-          value={diagnosticReport.result}
-        />
+        <ObservationTable hideObservationNotes={props.hideObservationNotes} value={diagnosticReport.result} />
       )}
       {specimenNotes.length > 0 && <NoteDisplay value={specimenNotes} />}
       {diagnosticReport.conclusion && (
@@ -235,7 +228,6 @@ export interface ObservationTableProps {
   readonly value?: Observation[] | Reference<Observation>[];
   readonly ancestorIds?: string[];
   readonly hideObservationNotes?: boolean;
-  readonly hideDNRObservations?: boolean;
 }
 
 export function ObservationTable(props: ObservationTableProps): JSX.Element {
@@ -253,12 +245,7 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
         </tr>
       </thead>
       <tbody>
-        <ObservationRowGroup
-          value={props.value}
-          ancestorIds={props.ancestorIds}
-          hideObservationNotes={props.hideObservationNotes}
-          hideDNRObservations={props.hideDNRObservations}
-        />
+        <ObservationRowGroup value={props.value} ancestorIds={props.ancestorIds} hideObservationNotes={props.hideObservationNotes} />
       </tbody>
     </table>
   );
@@ -268,7 +255,6 @@ interface ObservationRowGroupProps {
   readonly value?: Observation[] | Reference<Observation>[];
   readonly ancestorIds?: string[];
   readonly hideObservationNotes?: boolean;
-  readonly hideDNRObservations?: boolean;
 }
 
 function ObservationRowGroup(props: ObservationRowGroupProps): JSX.Element {
@@ -280,7 +266,6 @@ function ObservationRowGroup(props: ObservationRowGroupProps): JSX.Element {
           value={observation}
           ancestorIds={props.ancestorIds}
           hideObservationNotes={props.hideObservationNotes}
-          hideDNRObservations={props.hideDNRObservations}
         />
       ))}
     </>
@@ -291,7 +276,6 @@ interface ObservationRowProps {
   readonly value: Observation | Reference<Observation>;
   readonly ancestorIds?: string[];
   readonly hideObservationNotes?: boolean;
-  readonly hideDNRObservations?: boolean;
 }
 
 function ObservationRow(props: ObservationRowProps): JSX.Element | null {
@@ -301,7 +285,10 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
     return null;
   }
 
-  if (props.hideDNRObservations && !observation.hasMember?.length && formatObservationValue(observation) === 'DNR') {
+  // Quest Diagnostics reports "DNR" (Do Not Report) as a literal value for a sub-result that
+  // was intentionally not reported (e.g. a skipped reflex microscopy panel). Health Gorilla's
+  // own report suppresses these rows, so we always do too - not configurable.
+  if (!observation.hasMember?.length && formatObservationValue(observation) === 'DNR') {
     return null;
   }
 
@@ -316,7 +303,6 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
       value={observation.hasMember as Reference<Observation>[]}
       ancestorIds={props.ancestorIds ? [...props.ancestorIds, observation.id] : [observation.id]}
       hideObservationNotes={props.hideObservationNotes}
-      hideDNRObservations={props.hideDNRObservations}
     />
   );
 
