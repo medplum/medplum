@@ -254,9 +254,7 @@ describe('TaskInputNote', () => {
       fireEvent.click(completeButton);
     });
 
-    expect(showSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Error', message: 'Completion rejected' })
-    );
+    expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ title: 'Error', message: 'Completion rejected' }));
   });
 
   test('persists the completed status through the debounced update', async () => {
@@ -393,9 +391,7 @@ describe('TaskInputNote', () => {
 
     await waitFor(
       () => {
-        expect(showSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ title: 'Error', message: 'Response rejected' })
-        );
+        expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ title: 'Error', message: 'Response rejected' }));
       },
       { timeout: SAVE_TIMEOUT_MS + 2000 }
     );

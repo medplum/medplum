@@ -38,9 +38,7 @@ vi.mock('./LabOrderDetails', () => ({
 }));
 
 vi.mock('./LabResultDetails', () => ({
-  LabResultDetails: (props: { result: DiagnosticReport }): JSX.Element => (
-    <div>Result details: {props.result.id}</div>
-  ),
+  LabResultDetails: (props: { result: DiagnosticReport }): JSX.Element => <div>Result details: {props.result.id}</div>,
 }));
 
 const serviceRequest: WithId<ServiceRequest> = {
