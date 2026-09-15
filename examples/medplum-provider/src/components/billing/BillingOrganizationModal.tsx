@@ -7,6 +7,7 @@ import type { Address, Organization } from '@medplum/fhirtypes';
 import { AddressInput, Modal, useMedplum } from '@medplum/react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
+import { useCandidProviderContracts } from '../../hooks/useCandidProviderContracts';
 import type { CandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import {
@@ -19,6 +20,7 @@ import {
 } from '../../utils/billing';
 import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
+import { CandidContractAlert } from './CandidContractAlert';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
 /**
@@ -117,6 +119,9 @@ function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Eleme
   const [errors, setErrors] = useState<FormErrors>({});
 
   const registration = useCandidProviderRegistration('Organization', npi);
+  const contracts = useCandidProviderContracts(
+    registration.status === 'registered' ? registration.candidProviderId : undefined
+  );
 
   useEffect(() => {
     onRegistrationStatusChange(registration.status);
@@ -203,6 +208,7 @@ function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Eleme
             candidBotId ? 'this organization as an organization provider, billing under its own NPI' : undefined
           }
         />
+        <CandidContractAlert contracts={contracts} subject="this organization" />
         <TextInput label="Name" required value={name} onChange={(event) => setName(event.currentTarget.value)} />
         <TextInput
           label="NPI"

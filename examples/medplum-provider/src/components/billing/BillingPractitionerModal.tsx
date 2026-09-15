@@ -5,9 +5,10 @@ import type { WithId } from '@medplum/core';
 import { createReference, formatAddress, getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Address, Organization, Practitioner, PractitionerRole, Reference } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
-import { AddressInput, Modal, ResourceAvatar, ResourceInput, useMedplum } from '@medplum/react';
+import { AddressInput, Modal, ResourceAvatar, ResourceInput, useMedplum, useResource } from '@medplum/react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
+import { useCandidProviderContracts } from '../../hooks/useCandidProviderContracts';
 import type { CandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import type { BillingPractitionerFormValues } from '../../utils/billing';
@@ -24,6 +25,7 @@ import {
 } from '../../utils/billing';
 import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
+import { CandidContractAlert } from './CandidContractAlert';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
 const FORM_ID = 'billing-practitioner-form';
@@ -186,6 +188,14 @@ function BillingPractitionerForm(props: BillingPractitionerFormProps): JSX.Eleme
   const billsIndividually = !organization || roles.some((role) => role.id !== selectedRole?.id && !role.organization);
 
   const registration = useCandidProviderRegistration('Practitioner', npi);
+  const billingOrg = useResource<Organization>(
+    organization && 'resourceType' in organization ? createReference(organization) : organization
+  );
+  const registeredProviderId = registration.status === 'registered' ? registration.candidProviderId : undefined;
+  const contractingProviderId = billsIndividually
+    ? registeredProviderId
+    : billingOrg && getIdentifier(billingOrg, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
+  const contracts = useCandidProviderContracts(contractingProviderId);
 
   useEffect(() => {
     onRegistrationStatusChange(registration.status);
@@ -231,6 +241,10 @@ function BillingPractitionerForm(props: BillingPractitionerFormProps): JSX.Eleme
         <CandidRegistrationAlert
           registration={registration}
           registersAs={candidBotId ? 'this practitioner as a rendering provider' : undefined}
+        />
+        <CandidContractAlert
+          contracts={contracts}
+          subject={billsIndividually ? 'this practitioner' : (billingOrg?.name ?? 'the billing organization')}
         />
         <TextInput
           label="NPI"
