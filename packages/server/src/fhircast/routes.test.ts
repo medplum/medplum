@@ -25,7 +25,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { getCacheRedis } from '../redis';
-import { createTestProject, withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import type { EventCategory } from './routes';
 import { getEventCategory } from './routes';
 import {
@@ -267,12 +267,82 @@ describe('FHIRcast routes', () => {
       topic,
       events: ['Patient-open'],
       version: 'STU3',
+      subscriberName: 'Test Client Application',
     });
     await expect(getEndpointSubscription(extractEndpoint(endpoint2) as string)).resolves.toStrictEqual({
       projectId: project.id,
       topic,
       events: ['ImagingStudy-open', 'ImagingStudy-close'],
       version: 'STU3',
+      subscriberName: 'Test Client Application',
+    });
+  });
+
+  describe('subscriber.name', () => {
+    // Returns the name the Hub recorded for a subscription made as the given identity
+    const subscribeAs = async (auth: string, body?: Record<string, string>): Promise<string | undefined> => {
+      const res = await request(server)
+        .post(STU3_BASE_ROUTE)
+        .set('Content-Type', ContentType.FORM_URL_ENCODED)
+        .set('Authorization', auth)
+        .send(
+          new URLSearchParams({
+            'hub.channel.type': 'websocket',
+            'hub.mode': 'subscribe',
+            'hub.topic': randomUUID(),
+            'hub.events': 'Patient-open',
+            ...body,
+          }).toString()
+        );
+      expect(res).toHaveStatus(202);
+      const endpoint = extractEndpoint(res.body['hub.channel.endpoint']) as string;
+      return (await getEndpointSubscription(endpoint))?.subscriberName;
+    };
+
+    test('A subscriber that names itself is remembered by that name', async () => {
+      await expect(subscribeAs('Bearer ' + accessToken, { 'subscriber.name': 'Acme Viewer' })).resolves.toStrictEqual(
+        'Acme Viewer'
+      );
+    });
+
+    // These tests authenticate as a `ClientApplication` named 'Test Client Application'
+    test('A subscriber that does not name itself takes the name of the client it subscribed with', async () => {
+      await expect(subscribeAs('Bearer ' + accessToken)).resolves.toStrictEqual('Test Client Application');
+    });
+
+    test('A name that is only whitespace names no subscriber', async () => {
+      await expect(subscribeAs('Bearer ' + accessToken, { 'subscriber.name': '   ' })).resolves.toStrictEqual(
+        'Test Client Application'
+      );
+    });
+
+    // Basic auth mints a login naming no client, so the name comes off the membership's profile
+    test('A subscriber using basic auth takes the name of its client', async () => {
+      const { client } = await withTestContext(() => createTestProject({ withClient: true }));
+      const basicAuth = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
+      await expect(subscribeAs(basicAuth)).resolves.toStrictEqual('Test Client Application');
+    });
+
+    // A user signing in directly went through no client, so the Hub falls back to their profile
+    test('A subscriber authenticated as a user takes the name on their profile', async () => {
+      const { accessToken: userAccessToken } = await addTestUser(project);
+      await expect(subscribeAs('Bearer ' + userAccessToken)).resolves.toStrictEqual('Bob Jones');
+    });
+
+    test.each([['a'.repeat(257)], [{ name: 'Acme Viewer' }]])('A name of %j is rejected', async (subscriberName) => {
+      const res = await request(server)
+        .post(STU3_BASE_ROUTE)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          'hub.channel.type': 'websocket',
+          'hub.mode': 'subscribe',
+          'hub.topic': randomUUID(),
+          'hub.events': 'Patient-open',
+          'subscriber.name': subscriberName,
+        });
+      expect(res).toHaveStatus(400);
+      expect(res.body.issue[0].details.text).toStrictEqual('Invalid subscriber.name');
     });
   });
 

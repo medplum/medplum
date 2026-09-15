@@ -156,6 +156,17 @@ describe('validateFhircastSubscriptionRequest', () => {
     ).toBe(false);
 
     expect(
+      validateFhircastSubscriptionRequest({
+        mode: 'subscribe',
+        topic: 'abc123',
+        channelType: 'websocket',
+        events: ['Patient-open'],
+        // @ts-expect-error subscriberName needs to be a string
+        subscriberName: 12,
+      })
+    ).toBe(false);
+
+    expect(
       // @ts-expect-error subscriptionRequest must be an object
       validateFhircastSubscriptionRequest(undefined)
     ).toBe(false);
@@ -211,6 +222,36 @@ describe('serializeFhircastSubscriptionRequest', () => {
         topic: 'abc123',
         events: ['Patient-open'],
         endpoint: 'wss://abc.com/hub',
+      })
+    ).toStrictEqual(
+      'hub.channel.type=websocket&hub.mode=unsubscribe&hub.topic=abc123&hub.channel.endpoint=wss%3A%2F%2Fabc.com%2Fhub'
+    );
+  });
+
+  test('Valid subscription request with subscriber name', () => {
+    expect(
+      serializeFhircastSubscriptionRequest({
+        mode: 'subscribe',
+        channelType: 'websocket',
+        topic: 'abc123',
+        events: ['Patient-open'],
+        subscriberName: 'Acme Viewer',
+      })
+    ).toStrictEqual(
+      'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open&subscriber.name=Acme+Viewer'
+    );
+  });
+
+  // The Hub named the subscription when it was created, so an unsubscribe has no reason to repeat it
+  test('Valid unsubscribe request omits the subscriber name', () => {
+    expect(
+      serializeFhircastSubscriptionRequest({
+        mode: 'unsubscribe',
+        channelType: 'websocket',
+        topic: 'abc123',
+        events: ['Patient-open'],
+        endpoint: 'wss://abc.com/hub',
+        subscriberName: 'Acme Viewer',
       })
     ).toStrictEqual(
       'hub.channel.type=websocket&hub.mode=unsubscribe&hub.topic=abc123&hub.channel.endpoint=wss%3A%2F%2Fabc.com%2Fhub'
