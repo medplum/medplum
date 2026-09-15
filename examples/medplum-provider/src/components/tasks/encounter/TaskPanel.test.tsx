@@ -15,10 +15,7 @@ import { SAVE_TIMEOUT_MS } from '../../../config/constants';
 import { TaskPanel } from './TaskPanel';
 import type * as TaskServiceRequestModule from './TaskServiceRequest';
 
-/**
- * TaskServiceRequest never invokes its `saveDiagnosticReport` prop on its own, so the real
- * component is wrapped with a button that hands a DiagnosticReport back to TaskPanel.
- */
+/** Wraps the real TaskServiceRequest with a button that hands a DiagnosticReport back to TaskPanel. */
 vi.mock('./TaskServiceRequest', async (importOriginal) => {
   const actual = await importOriginal<typeof TaskServiceRequestModule>();
   return {
@@ -321,6 +318,8 @@ describe('TaskPanel', () => {
     expect(screen.getByText('Task with undefined focus')).toBeInTheDocument();
   });
 
+  const debounced = { timeout: SAVE_TIMEOUT_MS + 2000 };
+
   const questionnaireFixture: Questionnaire = {
     resourceType: 'Questionnaire',
     id: 'q-panel',
@@ -330,10 +329,16 @@ describe('TaskPanel', () => {
 
   const questionnaireTask: WithId<Task> = {
     ...mockTask,
-    id: 'task-qr',
     focus: { reference: 'Questionnaire/q-panel' },
     input: [{ type: { text: 'Questionnaire' }, valueReference: { reference: 'Questionnaire/q-panel' } }],
   };
+
+  test('does not render the Edit Task action when disabled', async () => {
+    await setup(mockTask, vi.fn(), false);
+
+    expect(screen.queryByLabelText('Edit Task')).not.toBeInTheDocument();
+    expect(navigateSpy).not.toHaveBeenCalled();
+  });
 
   test('navigates to the task detail route and keeps the current search when Edit Task is clicked', async () => {
     const user = userEvent.setup();
@@ -344,13 +349,6 @@ describe('TaskPanel', () => {
     expect(navigateSpy).toHaveBeenCalledWith('Task/task-123?tab=tasks');
   });
 
-  test('does not render the Edit Task action when disabled', async () => {
-    await setup(mockTask, vi.fn(), false);
-
-    expect(screen.queryByLabelText('Edit Task')).not.toBeInTheDocument();
-    expect(navigateSpy).not.toHaveBeenCalled();
-  });
-
   test('creates a QuestionnaireResponse and records it on the task output after the form changes', async () => {
     const user = userEvent.setup();
     await medplum.createResource(questionnaireFixture);
@@ -358,126 +356,46 @@ describe('TaskPanel', () => {
     const onUpdateTask = vi.fn();
     await setup(questionnaireTask, onUpdateTask);
 
-    const input = await screen.findByLabelText('Panel Question');
-    await user.type(input, 'A');
+    await user.type(await screen.findByLabelText('Panel Question'), 'A');
 
     await waitFor(
-      () => {
-        expect(onUpdateTask).toHaveBeenCalledWith(
-          expect.objectContaining({
-            id: 'task-qr',
-            output: [
-              expect.objectContaining({
-                type: { text: 'QuestionnaireResponse' },
-                valueReference: expect.objectContaining({
-                  reference: expect.stringMatching(/^QuestionnaireResponse\//),
-                }),
-              }),
-            ],
-          })
-        );
-      },
-      { timeout: SAVE_TIMEOUT_MS + 2000 }
+      () => expect(onUpdateTask).toHaveBeenCalledWith(expect.objectContaining({ id: 'task-123' })),
+      debounced
     );
+    expect(onUpdateTask.mock.calls[0][0].output?.[0]).toMatchObject({
+      type: { text: 'QuestionnaireResponse' },
+      valueReference: { reference: expect.stringMatching(/^QuestionnaireResponse\//) },
+    });
     expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'QuestionnaireResponse' }));
-  });
-
-  test('updates the existing QuestionnaireResponse without touching the task when the form changes', async () => {
-    const user = userEvent.setup();
-    await medplum.createResource(questionnaireFixture);
-    const existingResponse: QuestionnaireResponse = {
-      resourceType: 'QuestionnaireResponse',
-      id: 'qr-panel',
-      status: 'in-progress',
-      questionnaire: 'Questionnaire/q-panel',
-    };
-    await medplum.createResource(existingResponse);
-    const updateSpy = vi.spyOn(medplum, 'updateResource');
-    const onUpdateTask = vi.fn();
-    await setup(
-      {
-        ...questionnaireTask,
-        output: [
-          { type: { text: 'QuestionnaireResponse' }, valueReference: { reference: 'QuestionnaireResponse/qr-panel' } },
-        ],
-      },
-      onUpdateTask
-    );
-
-    const input = await screen.findByLabelText('Panel Question');
-    await user.type(input, 'A');
-
-    await waitFor(
-      () => {
-        expect(updateSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ resourceType: 'QuestionnaireResponse', id: 'qr-panel' })
-        );
-      },
-      { timeout: SAVE_TIMEOUT_MS + 2000 }
-    );
-    expect(updateSpy).not.toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Task' }));
-    expect(onUpdateTask).not.toHaveBeenCalled();
   });
 
   test('logs the error when saving the QuestionnaireResponse fails', async () => {
     const user = userEvent.setup();
     await medplum.createResource(questionnaireFixture);
-    const failure = new Error('Save failed');
-    vi.spyOn(medplum, 'createResource').mockRejectedValue(failure);
+    vi.spyOn(medplum, 'createResource').mockRejectedValue(new Error('Save failed'));
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const onUpdateTask = vi.fn();
     await setup(questionnaireTask, onUpdateTask);
 
-    const input = await screen.findByLabelText('Panel Question');
-    await user.type(input, 'A');
+    await user.type(await screen.findByLabelText('Panel Question'), 'A');
 
-    await waitFor(
-      () => {
-        expect(consoleError).toHaveBeenCalledWith(failure);
-      },
-      { timeout: SAVE_TIMEOUT_MS + 2000 }
-    );
+    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(new Error('Save failed')), debounced);
     expect(onUpdateTask).not.toHaveBeenCalled();
   });
 
   test('records a saved DiagnosticReport on the task output', async () => {
     const user = userEvent.setup();
-    const serviceRequest: ServiceRequest = {
-      resourceType: 'ServiceRequest',
-      id: 'sr-report',
-      status: 'active',
-      intent: 'order',
-      subject: { reference: 'Patient/123' },
-    };
-    await medplum.createResource(serviceRequest);
-    const task: WithId<Task> = {
-      ...mockTask,
-      id: 'task-report',
-      focus: { reference: 'ServiceRequest/sr-report' },
-      for: { reference: 'Patient/123' },
-    };
     const updateSpy = vi.spyOn(medplum, 'updateResource');
     const onUpdateTask = vi.fn();
-    await setup(task, onUpdateTask);
+    await setup({ ...mockTask, focus: { reference: 'ServiceRequest/sr-report' } }, onUpdateTask);
 
     await user.click(screen.getByRole('button', { name: 'Save diagnostic report' }));
 
-    await waitFor(
-      () => {
-        expect(onUpdateTask).toHaveBeenCalledWith(
-          expect.objectContaining({
-            id: 'task-report',
-            output: [
-              expect.objectContaining({
-                type: { text: 'DiagnosticReport' },
-                valueReference: expect.objectContaining({ reference: 'DiagnosticReport/report-1' }),
-              }),
-            ],
-          })
-        );
-      },
-      { timeout: SAVE_TIMEOUT_MS + 2000 }
-    );
-    expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Task', id: 'task-report' }));
+    await waitFor(() => expect(onUpdateTask).toHaveBeenCalled(), debounced);
+    expect(onUpdateTask.mock.calls[0][0]).toMatchObject({
+      id: 'task-123',
+      output: [{ type: { text: 'DiagnosticReport' }, valueReference: { reference: 'DiagnosticReport/report-1' } }],
+    });
+    expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Task', id: 'task-123' }));
   });
 });

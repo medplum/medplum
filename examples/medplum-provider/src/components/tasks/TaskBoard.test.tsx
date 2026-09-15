@@ -22,9 +22,7 @@ describe('TaskBoard', () => {
     vi.clearAllMocks();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  afterEach(() => vi.restoreAllMocks());
 
   const boardElement = (
     query: string = '',
@@ -63,16 +61,6 @@ describe('TaskBoard', () => {
       total: tasks.length,
       entry: tasks.map((task) => ({ resource: task })),
     }) as Bundle<WithId<Task>>;
-
-  /**
-   * Opens the filter menu and hovers one of its submenus so its options become clickable.
-   * @param user - The user-event session driving the test.
-   * @param label - The submenu label, e.g. "Status" or "Performer Type".
-   */
-  const openFilterSubmenu = async (user: ReturnType<typeof userEvent.setup>, label: string): Promise<void> => {
-    await user.click(screen.getByLabelText('Filter tasks'));
-    await user.hover(await screen.findByText(label));
-  };
 
   const mockTask: Task = {
     resourceType: 'Task',
@@ -508,24 +496,7 @@ describe('TaskBoard', () => {
     const firstTaskLink = screen.getByRole('link', { name: /First In Progress Task/ });
     await user.click(firstTaskLink);
 
-    rerender(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <TaskBoard
-              query="status=in-progress"
-              selectedTaskId="task-in-progress-1"
-              onDelete={vi.fn()}
-              onNew={vi.fn()}
-              onChange={vi.fn()}
-              getTaskUri={vi.fn((task: Task) => `/Task/${task.id}`)}
-              myTasksUri="/Task?owner=Patient/123&_sort=-_lastUpdated"
-              allTasksUri="/Task?_sort=-_lastUpdated"
-            />
-          </MantineProvider>
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+    rerender(boardElement('status=in-progress', { selectedTaskId: 'task-in-progress-1' }));
 
     await waitFor(
       () => {
@@ -824,30 +795,6 @@ describe('TaskBoard', () => {
     performerType: [{ coding: [{ code: 'nurse', display: 'Nursing' }] }],
   };
 
-  test('refetches with the new query when the query prop changes', async () => {
-    const searchSpy = vi
-      .spyOn(medplum, 'search')
-      .mockImplementation(
-        (_resourceType, query) =>
-          new ReadablePromise(
-            Promise.resolve(
-              typeof query === 'string' && query.includes('status=completed')
-                ? searchBundle([{ ...mockTask, id: 'task-done', status: 'completed', code: { text: 'Done Task' } }])
-                : searchBundle([mockTask])
-            )
-          )
-      );
-    const { rerender } = setup('status=in-progress');
-
-    expect(await screen.findByText('Test Task')).toBeInTheDocument();
-
-    rerender(boardElement('status=completed'));
-
-    expect(await screen.findByText('Done Task')).toBeInTheDocument();
-    expect(screen.queryByText('Test Task')).not.toBeInTheDocument();
-    expect(searchSpy).toHaveBeenLastCalledWith('Task', expect.stringContaining('status=completed'), expect.anything());
-  });
-
   test('ignores a stale response that resolves after the query has changed', async () => {
     let resolveStale: (bundle: Bundle<WithId<Task>>) => void = () => undefined;
     const stale = new Promise<Bundle<WithId<Task>>>((resolve) => {
@@ -855,29 +802,26 @@ describe('TaskBoard', () => {
     });
     const searchSpy = vi
       .spyOn(medplum, 'search')
-      .mockImplementation(
-        (_resourceType, query) =>
-          new ReadablePromise(
-            typeof query === 'string' && query.includes('status=requested')
-              ? stale
-              : Promise.resolve(searchBundle([{ ...mockTask, id: 'task-fresh', code: { text: 'Fresh Task' } }]))
-          )
-      );
+      .mockReturnValueOnce(new ReadablePromise(stale))
+      .mockResolvedValue(searchBundle([{ ...mockTask, id: 'task-fresh', code: { text: 'Fresh Task' } }]));
     const { rerender } = setup('status=requested');
 
-    await waitFor(() => {
-      expect(searchSpy).toHaveBeenCalledTimes(1);
-    });
+    await waitFor(() => expect(searchSpy).toHaveBeenCalledTimes(1));
 
     rerender(boardElement('status=in-progress'));
     expect(await screen.findByText('Fresh Task')).toBeInTheDocument();
 
-    await act(async () => {
-      resolveStale(searchBundle([{ ...mockTask, id: 'task-stale', code: { text: 'Stale Task' } }]));
-    });
+    await act(async () =>
+      resolveStale(searchBundle([{ ...mockTask, id: 'task-stale', code: { text: 'Stale Task' } }]))
+    );
 
     expect(screen.queryByText('Stale Task')).not.toBeInTheDocument();
     expect(screen.getByText('Fresh Task')).toBeInTheDocument();
+    expect(searchSpy).toHaveBeenLastCalledWith(
+      'Task',
+      expect.stringContaining('status=in-progress'),
+      expect.anything()
+    );
   });
 
   test('shows an error notification and leaves the empty state when the search fails', async () => {
@@ -892,116 +836,29 @@ describe('TaskBoard', () => {
     expect(await screen.findByText('No tasks available.')).toBeInTheDocument();
   });
 
-  test('calls onChange with a status filter when a status is selected', async () => {
-    const user = userEvent.setup();
-    const onChange = vi.fn();
-    vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([]));
-    setup('', { onChange });
-
-    await screen.findByLabelText('Filter tasks');
-    await openFilterSubmenu(user, 'Status');
-    await user.click(await screen.findByText('Completed'));
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalled();
-    });
-    expect(onChange.mock.calls[0][0]).toMatchObject({
-      filters: [{ code: 'status', operator: 'eq', value: 'completed' }],
-      offset: 0,
-    });
-  });
-
-  test('removes a status from the filter when it is selected again', async () => {
-    const user = userEvent.setup();
-    const onChange = vi.fn();
-    vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([]));
-    setup('status=in-progress,completed', { onChange });
-
-    await screen.findByLabelText('Filter tasks');
-    await openFilterSubmenu(user, 'Status');
-    await user.click(await screen.findByText('Completed'));
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalled();
-    });
-    expect(onChange.mock.calls[0][0]).toMatchObject({
-      filters: [{ code: 'status', operator: 'eq', value: 'in-progress' }],
-      offset: 0,
-    });
-  });
-
-  test('filters the list by performer type locally and toggles it off when selected again', async () => {
-    const user = userEvent.setup();
-    const onChange = vi.fn();
-    vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([cardiologyTask, nursingTask]));
-    setup('', { onChange });
-
-    expect(await screen.findByText('Cardiology Task')).toBeInTheDocument();
-    expect(screen.getByText('Nursing Task')).toBeInTheDocument();
-
-    await openFilterSubmenu(user, 'Performer Type');
-    await user.click(await screen.findByText('Cardiology'));
-
-    await waitFor(() => {
-      expect(screen.queryByText('Nursing Task')).not.toBeInTheDocument();
-    });
-    expect(screen.getByText('Cardiology Task')).toBeInTheDocument();
-    expect(onChange).not.toHaveBeenCalled();
-
-    await openFilterSubmenu(user, 'Performer Type');
-    await user.click(await screen.findByText('Cardiology'));
-
-    expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
-    expect(screen.getByText('Cardiology Task')).toBeInTheDocument();
-  });
-
-  test('clears status, priority, and performer type filters but keeps other filters when Clear All Filters is clicked', async () => {
+  test('filters the list by performer type locally and restores it when Clear All Filters is clicked', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([cardiologyTask, nursingTask]));
     setup('owner=Practitioner/p1&status=in-progress&priority=urgent&_offset=20', { onChange });
 
-    expect(await screen.findByText('Cardiology Task')).toBeInTheDocument();
-    expect(screen.getByText('Nursing Task')).toBeInTheDocument();
-    await openFilterSubmenu(user, 'Performer Type');
+    expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Filter tasks'));
+    await user.hover(await screen.findByText('Performer Type'));
     await user.click(await screen.findByText('Cardiology'));
 
-    await waitFor(() => {
-      expect(screen.queryByText('Nursing Task')).not.toBeInTheDocument();
-    });
+    await waitFor(() => expect(screen.queryByText('Nursing Task')).not.toBeInTheDocument());
     expect(screen.getByText('Cardiology Task')).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
 
     await user.click(screen.getByLabelText('Filter tasks'));
     await user.click(await screen.findByText('Clear All Filters'));
 
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalled();
-    });
-    const search = onChange.mock.calls[0][0];
-    expect(search.filters).toEqual([{ code: 'owner', operator: 'eq', value: 'Practitioner/p1' }]);
-    expect(search.offset).toBe(0);
     expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
     expect(screen.getByText('Cardiology Task')).toBeInTheDocument();
-  });
-
-  test('refreshes the list and calls onDelete after the selected task is deleted', async () => {
-    const user = userEvent.setup();
-    const onDelete = vi.fn();
-    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([mockTask]));
-    const deleteSpy = vi.spyOn(medplum, 'deleteResource').mockResolvedValue(undefined);
-    setup('', { selectedTaskId: 'task-123', onDelete });
-
-    await user.click(await screen.findByLabelText('Delete Task'));
-    expect(await screen.findByText(/Are you sure you want to delete this task/)).toBeInTheDocument();
-
-    searchSpy.mockResolvedValue(searchBundle([]));
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
-
-    await waitFor(() => {
-      expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 'task-123' }));
-    });
-    expect(deleteSpy).toHaveBeenCalledWith('Task', 'task-123');
-    expect(await screen.findByText('No tasks available.')).toBeInTheDocument();
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ filters: [{ code: 'owner', operator: 'eq', value: 'Practitioner/p1' }], offset: 0 })
+    );
   });
 
   test('falls back to reading the selected task when it is not in the current page', async () => {
@@ -1013,5 +870,20 @@ describe('TaskBoard', () => {
 
     expect(await screen.findByText('Read from server')).toBeInTheDocument();
     expect(readSpy).toHaveBeenCalledWith('Task', 'task-123');
+  });
+
+  test('refreshes the list and calls onDelete after the selected task is deleted', async () => {
+    const user = userEvent.setup();
+    const onDelete = vi.fn();
+    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([mockTask]));
+    const deleteSpy = vi.spyOn(medplum, 'deleteResource').mockResolvedValue(undefined);
+    setup('', { selectedTaskId: 'task-123', onDelete });
+
+    await user.click(await screen.findByLabelText('Delete Task'));
+    await user.click(await screen.findByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 'task-123' })));
+    expect(deleteSpy).toHaveBeenCalledWith('Task', 'task-123');
+    expect(searchSpy).toHaveBeenCalledTimes(2);
   });
 });

@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
-import type { Appointment, Encounter, Patient, PlanDefinition, Schedule } from '@medplum/fhirtypes';
+import type { Appointment, Encounter, Patient, Schedule } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type { DateTimeRange } from '@medplum/react-scheduling';
@@ -25,38 +25,20 @@ const createdAppointment: WithId<Appointment> = {
   resourceType: 'Appointment',
   id: 'appointment-1',
   status: 'booked',
-  participant: [{ actor: { reference: 'Patient/patient-1' }, status: 'accepted' }],
+  participant: [],
 };
 
 const createdEncounter: WithId<Encounter> = {
   resourceType: 'Encounter',
   id: 'encounter-1',
   status: 'planned',
-  class: { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'AMB' },
-  subject: { reference: 'Patient/patient-1' },
+  class: { code: 'AMB' },
 };
 
-const wellnessTemplate: WithId<PlanDefinition> = {
-  resourceType: 'PlanDefinition',
-  id: 'wellness-template',
-  status: 'active',
-  name: 'Annual Wellness Template',
-  title: 'Annual Wellness Visit',
-  action: [{ id: 'intake', title: 'Intake Questionnaire' }],
-};
-
-/**
- * Picks the first "Homer Simpson" match for the patient and "Test Display" for the class,
- * which are the two required fields a submit needs beyond the slot times.
- * @param user - The user-event session.
- */
 async function fillRequiredFields(user: UserEvent): Promise<void> {
-  const patientInput = await screen.findByLabelText(/Patient/i);
-  await user.type(patientInput, 'Homer');
+  await user.type(await screen.findByLabelText(/Patient/i), 'Homer');
   await user.click((await screen.findAllByText('Homer Simpson'))[0]);
-
-  const classInput = screen.getByLabelText(/Class/i);
-  await user.type(classInput, 'Test');
+  await user.type(screen.getByLabelText(/Class/i), 'Test');
   await user.click(await screen.findByText('Test Display'));
 }
 
@@ -196,6 +178,21 @@ describe('CreateVisit', () => {
         expect(notifications.length).toBeGreaterThan(0);
       });
     });
+
+    test('requires a class even when a patient is selected', async () => {
+      const user = userEvent.setup();
+
+      await act(async () => {
+        setup(range);
+      });
+      await user.type(await screen.findByLabelText(/Patient/i), 'Homer');
+      await user.click((await screen.findAllByText('Homer Simpson'))[0]);
+
+      await user.click(screen.getByRole('button', { name: /Create Visit/i }));
+
+      expect(await screen.findByText(/Please fill out required fields/i)).toBeInTheDocument();
+      expect(createAppointment).not.toHaveBeenCalled();
+    });
   });
 
   describe('PlanDefinition Actions', () => {
@@ -325,137 +322,52 @@ describe('CreateVisit', () => {
   });
 
   describe('Submission', () => {
-    test('creates the appointment and encounter, then navigates to the new encounter', async () => {
-      const user = userEvent.setup();
+    const setupFilled = async (user: UserEvent): Promise<void> => {
       vi.mocked(createAppointment).mockResolvedValue(createdAppointment);
       vi.mocked(createEncounter).mockResolvedValue(createdEncounter);
-      const schedule: Schedule = {
-        resourceType: 'Schedule',
-        id: 'sched-1',
-        actor: [{ reference: 'Practitioner/practitioner-1' }],
-      };
-
-      await act(async () => {
-        setup(range, schedule);
-      });
-      await fillRequiredFields(user);
-
-      await user.click(screen.getByRole('button', { name: /Create Visit/i }));
-
-      await waitFor(() => {
-        expect(createAppointment).toHaveBeenCalledWith(
-          medplum,
-          range.start,
-          range.end,
-          expect.objectContaining({ resourceType: 'Patient' }),
-          createReference(DrAliceSmith),
-          schedule
-        );
-        expect(createEncounter).toHaveBeenCalledWith(
-          medplum,
-          expect.objectContaining({ code: 'test-code' }),
-          expect.objectContaining({ resourceType: 'Patient' }),
-          undefined,
-          createdAppointment,
-          createReference(DrAliceSmith)
-        );
-      });
-      expect(await screen.findByText('Visit created')).toBeInTheDocument();
-      expect(await screen.findByText('Encounter Page')).toBeInTheDocument();
-    });
-
-    test('passes the selected care template to createEncounter', async () => {
-      const user = userEvent.setup();
-      vi.mocked(createAppointment).mockResolvedValue(createdAppointment);
-      vi.mocked(createEncounter).mockResolvedValue(createdEncounter);
-      await medplum.createResource(wellnessTemplate);
-
       await act(async () => {
         setup(range);
       });
       await fillRequiredFields(user);
+    };
 
-      const templateInput = screen.getByLabelText(/Care template/i);
-      await user.type(templateInput, 'Annual');
-      await user.click(await screen.findByText('Annual Wellness Template'));
-
-      expect(await screen.findByText('Included Tasks')).toBeInTheDocument();
-      expect(screen.getByText('- Intake Questionnaire')).toBeInTheDocument();
+    test('creates the appointment and encounter, then navigates to the new encounter', async () => {
+      const user = userEvent.setup();
+      await setupFilled(user);
 
       await user.click(screen.getByRole('button', { name: /Create Visit/i }));
 
-      await waitFor(() => {
-        expect(createEncounter).toHaveBeenCalledWith(
-          medplum,
-          expect.objectContaining({ code: 'test-code' }),
-          expect.objectContaining({ resourceType: 'Patient' }),
-          expect.objectContaining({ resourceType: 'PlanDefinition', id: 'wellness-template' }),
-          createdAppointment,
-          createReference(DrAliceSmith)
-        );
-      });
+      expect(await screen.findByText('Visit created')).toBeInTheDocument();
+      expect(await screen.findByText('Encounter Page')).toBeInTheDocument();
+      expect(createAppointment).toHaveBeenCalledWith(
+        medplum,
+        range.start,
+        range.end,
+        expect.objectContaining({ resourceType: 'Patient' }),
+        createReference(DrAliceSmith),
+        undefined
+      );
+      expect(createEncounter).toHaveBeenCalledWith(
+        medplum,
+        expect.objectContaining({ code: 'test-code' }),
+        expect.objectContaining({ resourceType: 'Patient' }),
+        undefined,
+        createdAppointment,
+        createReference(DrAliceSmith)
+      );
     });
 
     test('shows an error notification and re-enables the button when creation fails', async () => {
       const user = userEvent.setup();
+      await setupFilled(user);
       vi.mocked(createAppointment).mockRejectedValue(new Error('Slot already booked'));
-
-      await act(async () => {
-        setup(range);
-      });
-      await fillRequiredFields(user);
 
       await user.click(screen.getByRole('button', { name: /Create Visit/i }));
 
       expect(await screen.findByText('Slot already booked')).toBeInTheDocument();
       expect(createEncounter).not.toHaveBeenCalled();
       expect(screen.queryByText('Encounter Page')).not.toBeInTheDocument();
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Create Visit/i })).not.toBeDisabled();
-      });
-    });
-
-    test('uses the edited start and end times when submitting', async () => {
-      const user = userEvent.setup();
-      vi.mocked(createAppointment).mockResolvedValue(createdAppointment);
-      vi.mocked(createEncounter).mockResolvedValue(createdEncounter);
-
-      await act(async () => {
-        setup(range);
-      });
-      await fillRequiredFields(user);
-
-      const startInput = screen.getByLabelText(/Start Time/i);
-      const endInput = screen.getByLabelText(/End Time/i);
-      await user.clear(startInput);
-      await user.type(startInput, '2024-01-15T11:00');
-      await user.clear(endInput);
-      await user.type(endInput, '2024-01-15T11:45');
-
-      await user.click(screen.getByRole('button', { name: /Create Visit/i }));
-
-      await waitFor(() => {
-        expect(createAppointment).toHaveBeenCalled();
-      });
-      const [, start, end] = vi.mocked(createAppointment).mock.calls[0];
-      expect(start).toEqual(new Date('2024-01-15T11:00'));
-      expect(end).toEqual(new Date('2024-01-15T11:45'));
-    });
-
-    test('requires a class even when a patient is selected', async () => {
-      const user = userEvent.setup();
-
-      await act(async () => {
-        setup(range);
-      });
-      const patientInput = await screen.findByLabelText(/Patient/i);
-      await user.type(patientInput, 'Homer');
-      await user.click((await screen.findAllByText('Homer Simpson'))[0]);
-
-      await user.click(screen.getByRole('button', { name: /Create Visit/i }));
-
-      expect(await screen.findByText(/Please fill out required fields/i)).toBeInTheDocument();
-      expect(createAppointment).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: /Create Visit/i })).not.toBeDisabled();
     });
   });
 

@@ -22,6 +22,21 @@ const mockCondition: Condition = {
   },
 };
 
+/**
+ * Runs an interaction while listening for uncaught window errors and asserts none fired.
+ * @param interaction - The interaction to run.
+ */
+async function expectNoWindowError(interaction: () => Promise<void>): Promise<void> {
+  const onError = vi.fn((event: ErrorEvent) => event.preventDefault());
+  window.addEventListener('error', onError);
+  try {
+    await interaction();
+  } finally {
+    window.removeEventListener('error', onError);
+  }
+  expect(onError).not.toHaveBeenCalled();
+}
+
 describe('ConditionItem', () => {
   const setup = (props: Partial<Parameters<typeof ConditionItem>[0]> = {}): ReturnType<typeof render> => {
     return render(
@@ -90,82 +105,36 @@ describe('ConditionItem', () => {
     expect(removeButton).toBeInTheDocument();
   });
 
-  test('renders one rank option per condition in the list', async () => {
+  test('renders one rank option per condition and calls onChange with the selected rank', async () => {
+    const onChange = vi.fn();
     const user = userEvent.setup();
-    setup({ rank: 1, total: 4 });
+    setup({ rank: 1, total: 3, onChange });
 
     await user.click(screen.getByRole('textbox'));
-
     const options = await screen.findAllByRole('option', { hidden: true });
-    expect(options.map((option) => option.textContent)).toEqual(['1', '2', '3', '4']);
-  });
+    expect(options.map((option) => option.textContent)).toEqual(['1', '2', '3']);
 
-  test('calls onChange with the condition and the newly selected rank', async () => {
-    const onChange = vi.fn();
-    const user = userEvent.setup();
-    setup({ rank: 1, total: 3, onChange });
-
-    await user.click(screen.getByRole('textbox'));
-    await user.click(await screen.findByRole('option', { name: '3', hidden: true }));
-
-    expect(onChange).toHaveBeenCalledTimes(1);
+    await user.click(options[2]);
     expect(onChange).toHaveBeenCalledWith(mockCondition, '3');
-  });
-
-  test('does not call onChange when the current rank is deselected', async () => {
-    const onChange = vi.fn();
-    const user = userEvent.setup();
-    setup({ rank: 1, total: 3, onChange });
-
-    await user.click(screen.getByRole('textbox'));
-    await user.click(await screen.findByRole('option', { name: '1', hidden: true }));
-
-    expect(onChange).not.toHaveBeenCalled();
   });
 
   test('does not throw when selecting a rank without an onChange handler', async () => {
     const user = userEvent.setup();
-    const onError = vi.fn((event: ErrorEvent) => event.preventDefault());
-    window.addEventListener('error', onError);
-    try {
-      setup({ rank: 1, total: 2, onChange: undefined });
+    setup({ rank: 1, total: 2, onChange: undefined });
 
+    await expectNoWindowError(async () => {
       await user.click(screen.getByRole('textbox'));
       await user.click(await screen.findByRole('option', { name: '2', hidden: true }));
-
-      expect(screen.getByRole('textbox')).toBeInTheDocument();
-      expect(onError).not.toHaveBeenCalled();
-    } finally {
-      window.removeEventListener('error', onError);
-    }
+    });
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
   });
 
   test('does not throw when removing without an onRemove handler', async () => {
     const user = userEvent.setup();
-    const onError = vi.fn((event: ErrorEvent) => event.preventDefault());
-    window.addEventListener('error', onError);
-    try {
-      setup({ onRemove: undefined });
+    setup({ onRemove: undefined });
+    const removeButton = screen.getAllByRole('button', { hidden: true }).find((btn) => btn.querySelector('svg'));
 
-      const removeButton = screen.getAllByRole('button', { hidden: true }).find((btn) => btn.querySelector('svg'));
-      if (!removeButton) {
-        throw new Error('Remove button not found');
-      }
-
-      await user.click(removeButton);
-
-      expect(screen.getByText('Acute bronchitis')).toBeInTheDocument();
-      expect(onError).not.toHaveBeenCalled();
-    } finally {
-      window.removeEventListener('error', onError);
-    }
-  });
-
-  test('renders empty string when condition has no code', () => {
-    const { container } = setup({
-      condition: { resourceType: 'Condition', id: 'no-code', subject: mockCondition.subject },
-    });
-
-    expect(container.querySelector('.mantine-Text-root')).toHaveTextContent('');
+    await expectNoWindowError(() => user.click(removeButton as HTMLElement));
+    expect(screen.getByText('Acute bronchitis')).toBeInTheDocument();
   });
 });

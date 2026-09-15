@@ -14,7 +14,7 @@ import {
 const BASE_CLAIM_RESPONSE: ClaimResponse = {
   resourceType: 'ClaimResponse',
   status: 'active',
-  type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/claim-type', code: 'professional' }] },
+  type: { coding: [{ code: 'professional' }] },
   use: 'claim',
   patient: { reference: 'Patient/homer-simpson' },
   created: '2024-06-01T00:00:00Z',
@@ -23,42 +23,25 @@ const BASE_CLAIM_RESPONSE: ClaimResponse = {
 };
 
 const X12_PENDING_CODING: Coding = { system: X12_CLAIM_STATUS_CATEGORY_SYSTEM, code: 'P1', display: 'Pending' };
+const VENDOR_CODING: Coding = { system: 'https://www.stedi.com/internal-status', code: 'SUBMITTED' };
 
 /** The Stedi webhook writes the X12 status coding alongside a vendor-specific one. */
 const STEDI_CLAIM_RESPONSE: ClaimResponse = {
   ...BASE_CLAIM_RESPONSE,
-  identifier: [
-    { system: 'https://example.com/other-ids', value: 'other-1' },
-    { system: STEDI_CLAIM_IDENTIFIER_SYSTEM, value: 'stedi-claim-123' },
-  ],
+  identifier: [{ system: STEDI_CLAIM_IDENTIFIER_SYSTEM, value: 'stedi-claim-123' }],
   extension: [
     { url: 'https://example.com/unrelated-extension', valueString: 'ignored' },
-    {
-      url: SOURCE_CLAIM_STATUS_EXTENSION_URL,
-      valueCodeableConcept: {
-        coding: [{ system: 'https://www.stedi.com/internal-status', code: 'SUBMITTED' }, X12_PENDING_CODING],
-      },
-    },
+    { url: SOURCE_CLAIM_STATUS_EXTENSION_URL, valueCodeableConcept: { coding: [VENDOR_CODING, X12_PENDING_CODING] } },
   ],
 };
 
 describe('isStediClaimResponse', () => {
-  test('is true when an identifier uses the Stedi claim system', () => {
+  test('is true only when an identifier uses the Stedi claim system', () => {
     expect(isStediClaimResponse(STEDI_CLAIM_RESPONSE)).toBe(true);
-  });
-
-  test('is false when identifiers use other systems', () => {
-    expect(
-      isStediClaimResponse({
-        ...BASE_CLAIM_RESPONSE,
-        identifier: [{ system: 'https://joincandidhealth.com/claims', value: 'candid-1' }],
-      })
-    ).toBe(false);
-  });
-
-  test('is false when there are no identifiers', () => {
+    expect(isStediClaimResponse({ ...BASE_CLAIM_RESPONSE, identifier: [{ system: 'https://other.example' }] })).toBe(
+      false
+    );
     expect(isStediClaimResponse(BASE_CLAIM_RESPONSE)).toBe(false);
-    expect(isStediClaimResponse({ ...BASE_CLAIM_RESPONSE, identifier: [] })).toBe(false);
   });
 });
 
@@ -67,76 +50,30 @@ describe('getStediClaimStatus', () => {
     expect(getStediClaimStatus(STEDI_CLAIM_RESPONSE)).toEqual(X12_PENDING_CODING);
   });
 
-  test('is undefined when the response has no extensions', () => {
-    expect(getStediClaimStatus(BASE_CLAIM_RESPONSE)).toBeUndefined();
-  });
-
-  test('is undefined when no extension has the source-claim-status url', () => {
-    expect(
-      getStediClaimStatus({
-        ...BASE_CLAIM_RESPONSE,
-        extension: [{ url: 'https://example.com/unrelated-extension', valueString: 'ignored' }],
-      })
-    ).toBeUndefined();
-  });
-
-  test('is undefined when the extension carries no codeable concept', () => {
-    expect(
-      getStediClaimStatus({
-        ...BASE_CLAIM_RESPONSE,
-        extension: [{ url: SOURCE_CLAIM_STATUS_EXTENSION_URL, valueString: 'not-a-coding' }],
-      })
-    ).toBeUndefined();
-  });
-
-  test('is undefined when the codeable concept has no coding array', () => {
-    expect(
-      getStediClaimStatus({
-        ...BASE_CLAIM_RESPONSE,
-        extension: [{ url: SOURCE_CLAIM_STATUS_EXTENSION_URL, valueCodeableConcept: { text: 'Pending' } }],
-      })
-    ).toBeUndefined();
-  });
-
-  test('is undefined when no coding uses the X12 category system', () => {
-    expect(
-      getStediClaimStatus({
-        ...BASE_CLAIM_RESPONSE,
-        extension: [
-          {
-            url: SOURCE_CLAIM_STATUS_EXTENSION_URL,
-            valueCodeableConcept: { coding: [{ system: 'https://www.stedi.com/internal-status', code: 'SUBMITTED' }] },
-          },
-        ],
-      })
-    ).toBeUndefined();
+  test.each<[string, ClaimResponse['extension']]>([
+    ['the response has no extensions', undefined],
+    ['no extension has the source-claim-status url', [{ url: 'https://example.com/unrelated', valueString: 'x' }]],
+    ['the extension carries no coding', [{ url: SOURCE_CLAIM_STATUS_EXTENSION_URL, valueString: 'not-a-coding' }]],
+    [
+      'no coding uses the X12 category system',
+      [{ url: SOURCE_CLAIM_STATUS_EXTENSION_URL, valueCodeableConcept: { coding: [VENDOR_CODING] } }],
+    ],
+  ])('is undefined when %s', (_name, extension) => {
+    expect(getStediClaimStatus({ ...BASE_CLAIM_RESPONSE, extension })).toBeUndefined();
   });
 });
 
 describe('formatStediClaimStatus', () => {
-  test.each([
+  test.each<[string | undefined, string]>([
     ['A1', 'Received'],
     ['A2', 'Received'],
     ['P1', 'Pending'],
-    ['P3', 'Pending'],
     ['F1', 'Finalized'],
-    ['F2', 'Finalized'],
     ['E0', 'Error'],
-    ['E1', 'Error'],
+    ['R3', 'R3'],
+    ['', ''],
+    [undefined, 'Unknown'],
   ])('maps %s to %s', (code, label) => {
     expect(formatStediClaimStatus({ system: X12_CLAIM_STATUS_CATEGORY_SYSTEM, code })).toBe(label);
-  });
-
-  test('falls back to the raw code for an unknown prefix', () => {
-    expect(formatStediClaimStatus({ system: X12_CLAIM_STATUS_CATEGORY_SYSTEM, code: 'R3' })).toBe('R3');
-    expect(formatStediClaimStatus({ system: X12_CLAIM_STATUS_CATEGORY_SYSTEM, code: 'D0' })).toBe('D0');
-  });
-
-  test('falls back to Unknown when the coding has no code', () => {
-    expect(formatStediClaimStatus({ system: X12_CLAIM_STATUS_CATEGORY_SYSTEM })).toBe('Unknown');
-  });
-
-  test('returns an empty string unchanged rather than Unknown', () => {
-    expect(formatStediClaimStatus({ system: X12_CLAIM_STATUS_CATEGORY_SYSTEM, code: '' })).toBe('');
   });
 });

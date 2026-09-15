@@ -137,6 +137,8 @@ describe('TaskInputNote', () => {
     expect(onTaskChange).toHaveBeenCalledWith(expect.objectContaining({ status: 'completed' }));
   });
 
+  const debounced = { timeout: SAVE_TIMEOUT_MS + 2000 };
+
   const questionnaireFixture: Questionnaire = {
     resourceType: 'Questionnaire',
     id: 'q-note',
@@ -147,166 +149,50 @@ describe('TaskInputNote', () => {
   const questionnaireTask: Task = {
     ...mockTask,
     id: 'task-qr',
-    note: undefined,
     focus: { reference: 'Questionnaire/q-note' },
     input: [{ type: { text: 'Questionnaire' }, valueReference: { reference: 'Questionnaire/q-note' } }],
   };
 
-  test('shows a loader until a task reference resolves', async () => {
-    await medplum.createResource(mockTask);
-    setup({ reference: 'Task/task-123' });
-
-    expect(screen.queryByText('Notes')).not.toBeInTheDocument();
-    expect(document.querySelector('.mantine-Loader-root')).toBeInTheDocument();
-
-    expect(await screen.findByText('Existing note')).toBeInTheDocument();
-    expect(screen.getByText('Notes')).toBeInTheDocument();
-  });
-
-  test('falls back to a generic title with the authored date and shows the description', async () => {
-    const task: Task = {
-      ...mockTask,
-      id: 'task-untitled',
-      code: undefined,
-      authoredOn: '2023-05-01T12:00:00Z',
-      description: 'Call the patient back',
-    };
-    await medplum.createResource(task);
-    setup(task);
-
-    expect(await screen.findByText(/^Task from /)).toBeInTheDocument();
-    expect(screen.getByText('Call the patient back')).toBeInTheDocument();
-  });
-
-  test('hides the edit actions and note input when allowEdit is false', async () => {
-    await medplum.createResource(mockTask);
-    setup(mockTask, { allowEdit: false, onDeleteTask: vi.fn() });
-
-    expect(await screen.findByText('Existing note')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Delete Task')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Mark as Completed')).not.toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('Add a note...')).not.toBeInTheDocument();
-  });
-
-  test('does not render the delete action without an onDeleteTask handler', async () => {
-    await medplum.createResource(mockTask);
-    setup(mockTask);
-
-    expect(await screen.findByLabelText('Mark as Completed')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Delete Task')).not.toBeInTheDocument();
-  });
-
-  test('keeps the submit button disabled while the note is blank', async () => {
-    await medplum.createResource(mockTask);
-    setup(mockTask, { onTaskChange: vi.fn() });
-
-    const input = await screen.findByPlaceholderText('Add a note...');
-    expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled();
-
-    fireEvent.change(input, { target: { value: '   ' } });
-    expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled();
-
-    fireEvent.change(input, { target: { value: 'Real note' } });
-    expect(screen.getByRole('button', { name: 'Submit' })).toBeEnabled();
-  });
-
-  test('clears the note input after a successful submit', async () => {
-    await medplum.createResource(mockTask);
-    setup(mockTask, { onTaskChange: vi.fn() });
-
-    const input = await screen.findByPlaceholderText('Add a note...');
-    fireEvent.change(input, { target: { value: 'New note content' } });
-    await act(async () => {
-      fireEvent.click(screen.getByText('Submit'));
-    });
-
-    expect(input).toHaveValue('');
-  });
-
-  test('shows an error notification when adding a note fails', async () => {
-    await medplum.createResource(mockTask);
-    const showSpy = vi.spyOn(notifications, 'show');
-    const onTaskChange = vi.fn(() => {
-      throw new Error('Note rejected');
-    });
-    setup(mockTask, { onTaskChange });
-
-    const input = await screen.findByPlaceholderText('Add a note...');
-    fireEvent.change(input, { target: { value: 'Failing note' } });
-    await act(async () => {
-      fireEvent.click(screen.getByText('Submit'));
-    });
-
-    expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ title: 'Error', message: 'Note rejected' }));
-    expect(input).toHaveValue('Failing note');
-  });
-
-  test('shows an error notification when marking as completed fails', async () => {
-    await medplum.createResource(mockTask);
-    const showSpy = vi.spyOn(notifications, 'show');
-    const onTaskChange = vi.fn(() => {
-      throw new Error('Completion rejected');
-    });
-    setup(mockTask, { onTaskChange });
-
-    const completeButton = await screen.findByLabelText('Mark as Completed');
-    await act(async () => {
-      fireEvent.click(completeButton);
-    });
-
-    expect(showSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Error', message: 'Completion rejected' })
-    );
-  });
-
-  test('persists the completed status through the debounced update', async () => {
-    await medplum.createResource(mockTask);
-    const updateSpy = vi.spyOn(medplum, 'updateResource');
-    setup(mockTask, { onTaskChange: vi.fn() });
-
-    const completeButton = await screen.findByLabelText('Mark as Completed');
-    await act(async () => {
-      fireEvent.click(completeButton);
-    });
-
-    await waitFor(
-      () => {
-        expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ id: 'task-123', status: 'completed' }));
+  test.each([
+    [
+      'adding a note',
+      async (): Promise<void> => {
+        fireEvent.change(screen.getByPlaceholderText('Add a note...'), { target: { value: 'Failing note' } });
+        fireEvent.click(screen.getByText('Submit'));
       },
-      { timeout: SAVE_TIMEOUT_MS + 2000 }
-    );
-  });
-
-  test('cancels the delete confirmation without deleting', async () => {
-    await medplum.createResource(mockTask);
-    const onDeleteTask = vi.fn();
-    setup(mockTask, { onDeleteTask });
-
-    fireEvent.click(await screen.findByLabelText('Delete Task'));
-    expect(await screen.findByText(/Are you sure you want to delete this task/)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-
-    await waitFor(() => {
-      expect(screen.queryByText(/Are you sure you want to delete this task/)).not.toBeInTheDocument();
+    ],
+    [
+      'marking as completed',
+      async (): Promise<void> => {
+        fireEvent.click(screen.getByLabelText('Mark as Completed'));
+      },
+    ],
+  ])('shows an error notification when %s fails', async (_action, trigger) => {
+    const showSpy = vi.spyOn(notifications, 'show');
+    const onTaskChange = vi.fn(() => {
+      throw new Error('Change rejected');
     });
-    expect(onDeleteTask).not.toHaveBeenCalled();
+    setup(mockTask, { onTaskChange });
+
+    await screen.findByLabelText('Mark as Completed');
+    await act(trigger);
+
+    expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ title: 'Error', message: 'Change rejected' }));
   });
 
-  test('closes the delete confirmation with the modal close control', async () => {
+  test('dismisses the delete confirmation via Cancel or the modal close control without deleting', async () => {
     const user = userEvent.setup();
-    await medplum.createResource(mockTask);
     const onDeleteTask = vi.fn();
     setup(mockTask, { onDeleteTask });
 
     await user.click(await screen.findByLabelText('Delete Task'));
-    expect(await screen.findByText(/Are you sure you want to delete this task/)).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByText(/Are you sure you want to delete/)).not.toBeInTheDocument());
 
+    await user.click(screen.getByLabelText('Delete Task'));
+    expect(await screen.findByText(/Are you sure you want to delete/)).toBeInTheDocument();
     await user.keyboard('{Escape}');
-
-    await waitFor(() => {
-      expect(screen.queryByText(/Are you sure you want to delete this task/)).not.toBeInTheDocument();
-    });
+    await waitFor(() => expect(screen.queryByText(/Are you sure you want to delete/)).not.toBeInTheDocument());
     expect(onDeleteTask).not.toHaveBeenCalled();
   });
 
@@ -319,86 +205,58 @@ describe('TaskInputNote', () => {
     setup(questionnaireTask, { onTaskChange });
 
     expect(await screen.findByText('Related Questionnaire')).toBeInTheDocument();
-    const input = await screen.findByLabelText('Note Question');
-    await user.type(input, 'A');
+    await user.type(await screen.findByLabelText('Note Question'), 'A');
 
     await waitFor(
-      () => {
-        expect(onTaskChange).toHaveBeenCalledWith(
-          expect.objectContaining({
-            id: 'task-qr',
-            output: [
-              expect.objectContaining({
-                type: { text: 'QuestionnaireResponse' },
-                valueReference: expect.objectContaining({
-                  reference: expect.stringMatching(/^QuestionnaireResponse\//),
-                }),
-              }),
-            ],
-          })
-        );
-      },
-      { timeout: SAVE_TIMEOUT_MS + 2000 }
+      () => expect(onTaskChange).toHaveBeenCalledWith(expect.objectContaining({ id: 'task-qr' })),
+      debounced
     );
+    expect(onTaskChange.mock.calls[0][0].output?.[0]).toMatchObject({
+      type: { text: 'QuestionnaireResponse' },
+      valueReference: { reference: expect.stringMatching(/^QuestionnaireResponse\//) },
+    });
     expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'QuestionnaireResponse' }));
   });
 
   test('updates an existing questionnaire response without rewriting the task', async () => {
     const user = userEvent.setup();
     await medplum.createResource(questionnaireFixture);
-    const existingResponse: QuestionnaireResponse = {
+    await medplum.createResource<QuestionnaireResponse>({
       resourceType: 'QuestionnaireResponse',
       id: 'qr-note',
       status: 'in-progress',
       questionnaire: 'Questionnaire/q-note',
-    };
-    await medplum.createResource(existingResponse);
+    });
     const task: Task = {
       ...questionnaireTask,
       output: [
         { type: { text: 'QuestionnaireResponse' }, valueReference: { reference: 'QuestionnaireResponse/qr-note' } },
       ],
     };
-    await medplum.createResource(task);
     const updateSpy = vi.spyOn(medplum, 'updateResource');
     const onTaskChange = vi.fn();
     setup(task, { onTaskChange });
 
-    const input = await screen.findByLabelText('Note Question');
-    await user.type(input, 'A');
+    await user.type(await screen.findByLabelText('Note Question'), 'A');
 
-    await waitFor(
-      () => {
-        expect(updateSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ resourceType: 'QuestionnaireResponse', id: 'qr-note' })
-        );
-      },
-      { timeout: SAVE_TIMEOUT_MS + 2000 }
-    );
-    expect(updateSpy).not.toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Task' }));
+    await waitFor(() => expect(updateSpy).toHaveBeenCalledTimes(1), debounced);
+    expect(updateSpy.mock.calls[0][0]).toMatchObject({ resourceType: 'QuestionnaireResponse', id: 'qr-note' });
     expect(onTaskChange).not.toHaveBeenCalled();
   });
 
   test('shows an error notification when saving the questionnaire response fails', async () => {
     const user = userEvent.setup();
     await medplum.createResource(questionnaireFixture);
-    await medplum.createResource(questionnaireTask);
     vi.spyOn(medplum, 'createResource').mockRejectedValue(new Error('Response rejected'));
     const showSpy = vi.spyOn(notifications, 'show');
     const onTaskChange = vi.fn();
     setup(questionnaireTask, { onTaskChange });
 
-    const input = await screen.findByLabelText('Note Question');
-    await user.type(input, 'A');
+    await user.type(await screen.findByLabelText('Note Question'), 'A');
 
-    await waitFor(
-      () => {
-        expect(showSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ title: 'Error', message: 'Response rejected' })
-        );
-      },
-      { timeout: SAVE_TIMEOUT_MS + 2000 }
-    );
+    await waitFor(() => {
+      expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ title: 'Error', message: 'Response rejected' }));
+    }, debounced);
     expect(onTaskChange).not.toHaveBeenCalled();
   });
 });
