@@ -165,4 +165,109 @@ describe('UploadDocumentModal', () => {
     });
     expect(createResource).not.toHaveBeenCalled();
   });
+
+  test('shows an error and keeps the modal open when the attachment upload fails', async () => {
+    const user = userEvent.setup();
+    const onCreated = vi.fn();
+    const onClose = vi.fn();
+    const failure = new Error('Storage unavailable');
+    vi.spyOn(medplum, 'createAttachment').mockRejectedValue(failure);
+    const createResource = vi.spyOn(medplum, 'createResource');
+
+    setup({ onCreated, onClose });
+    selectFile(new File(['data'], 'report.pdf', { type: 'application/pdf' }));
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() => {
+      expect(showErrorNotification).toHaveBeenCalledWith(failure);
+    });
+    expect(createResource).not.toHaveBeenCalled();
+    expect(onCreated).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Upload' })).toBeEnabled();
+    expect(screen.getByText('report.pdf')).toBeInTheDocument();
+  });
+
+  test('shows an error when creating the DocumentReference fails', async () => {
+    const user = userEvent.setup();
+    const onCreated = vi.fn();
+    vi.spyOn(medplum, 'createAttachment').mockResolvedValue({ contentType: 'text/plain', url: 'Binary/err' });
+    vi.spyOn(medplum, 'createResource').mockRejectedValue(new Error('Forbidden'));
+
+    setup({ onCreated });
+    selectFile(new File(['data'], 'notes.txt', { type: 'text/plain' }));
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() => {
+      expect(showErrorNotification).toHaveBeenCalledWith(expect.objectContaining({ message: 'Forbidden' }));
+    });
+    expect(onCreated).not.toHaveBeenCalled();
+  });
+
+  test('clicking the dropzone opens the hidden file picker', async () => {
+    const user = userEvent.setup();
+    const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
+
+    try {
+      setup();
+      await user.click(screen.getByText('Drag a file here or click to browse'));
+
+      expect(click).toHaveBeenCalledTimes(1);
+    } finally {
+      click.mockRestore();
+    }
+  });
+
+  test('highlights the dropzone while dragging and clears it on drag leave', () => {
+    setup();
+    const dropzone = screen.getByText('Drag a file here or click to browse').closest('div[class*="dropzone"]');
+    expect(dropzone).not.toBeNull();
+    expect(dropzone?.className).not.toMatch(/dropzoneDragging/);
+
+    fireEvent.dragOver(dropzone as Element);
+    expect(dropzone?.className).toMatch(/dropzoneDragging/);
+
+    fireEvent.dragLeave(dropzone as Element);
+    expect(dropzone?.className).not.toMatch(/dropzoneDragging/);
+  });
+
+  test('accepts a dropped file and enables Upload', () => {
+    setup();
+    const dropzone = screen.getByText('Drag a file here or click to browse').closest('div[class*="dropzone"]');
+    const dropped = new File(['data'], 'scan.png', { type: 'image/png' });
+
+    fireEvent.dragOver(dropzone as Element);
+    fireEvent.drop(dropzone as Element, { dataTransfer: { files: [dropped] } });
+
+    expect(dropzone?.className).not.toMatch(/dropzoneDragging/);
+    expect(screen.getByText('scan.png')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Upload' })).toBeEnabled();
+  });
+
+  test('ignores a drop that carries no files', () => {
+    setup();
+    const dropzone = screen.getByText('Drag a file here or click to browse').closest('div[class*="dropzone"]');
+
+    fireEvent.drop(dropzone as Element, { dataTransfer: { files: [] } });
+
+    expect(screen.getByText('Drag a file here or click to browse')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Upload' })).toBeDisabled();
+  });
+
+  test('clears the selected file and description when the modal is closed', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+
+    setup({ onClose });
+    selectFile(new File(['data'], 'report.pdf', { type: 'application/pdf' }));
+    await user.type(screen.getByPlaceholderText('Enter a description (optional)'), 'Temporary');
+    expect(screen.getByText('report.pdf')).toBeInTheDocument();
+
+    await user.click(document.querySelector('.mantine-Modal-close') as Element);
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Drag a file here or click to browse')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Enter a description (optional)')).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'Upload' })).toBeDisabled();
+  });
 });

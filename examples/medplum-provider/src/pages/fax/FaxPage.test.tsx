@@ -6,9 +6,10 @@ import type { WithId } from '@medplum/core';
 import type { Bundle, Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import type { JSX } from 'react';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { FaxPage } from './FaxPage';
 
@@ -58,6 +59,30 @@ function bundleOf(...comms: WithId<Communication>[]): Bundle<WithId<Communicatio
   };
 }
 
+/**
+ * A full page of inbound faxes plus a larger total, so the board renders pagination.
+ * @param pageSize - Number of faxes on the page.
+ * @param total - Bundle total, larger than the page so more than one page exists.
+ * @returns A searchset bundle with `pageSize` faxes and `total` set.
+ */
+function pagedBundle(pageSize: number, total: number): Bundle<WithId<Communication>> {
+  const comms = Array.from({ length: pageSize }, (_, i) => ({
+    ...INBOX_FAX,
+    id: `fax-page-${i}`,
+    topic: { text: `Fax topic ${i}` },
+  }));
+  return { ...bundleOf(...comms), total };
+}
+
+/**
+ * Exposes the router location so navigation side effects can be asserted from the DOM.
+ * @returns A div carrying the current pathname and query string.
+ */
+function LocationDisplay(): JSX.Element {
+  const location = useLocation();
+  return <div data-testid="location">{`${location.pathname}${location.search}`}</div>;
+}
+
 describe('FaxPage', () => {
   let medplum: MockClient;
 
@@ -72,6 +97,7 @@ describe('FaxPage', () => {
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
+            <LocationDisplay />
             <Routes>
               <Route path="/Fax/Communication" element={<FaxPage />} />
               <Route path="/Fax/Communication/new" element={<FaxPage />} />
@@ -232,6 +258,131 @@ describe('FaxPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('No fax selected')).toBeInTheDocument();
+    });
+  });
+
+  test('writes the new offset to the URL when paginating', async () => {
+    const user = userEvent.setup();
+    medplum.search = vi.fn().mockResolvedValue(pagedBundle(20, 45));
+    vi.spyOn(medplum, 'post').mockResolvedValue({});
+
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location').textContent).toBe(
+        '/Fax/Communication/fax-page-0?_count=20&_sort=-_lastUpdated&category=inbound'
+      );
+    });
+
+    await user.click(screen.getByRole('button', { name: '2' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location').textContent).toBe(
+        '/Fax/Communication/fax-page-0?_count=20&_sort=-_lastUpdated&category=inbound&_offset=20'
+      );
+    });
+  });
+
+  test('drops the offset from the URL when returning to the first page', async () => {
+    const user = userEvent.setup();
+    medplum.search = vi.fn().mockResolvedValue(pagedBundle(20, 45));
+    vi.spyOn(medplum, 'post').mockResolvedValue({});
+
+    setup('/Fax/Communication?category=outbound&_offset=20');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location').textContent).toBe(
+        '/Fax/Communication/fax-page-0?_count=20&_sort=-_lastUpdated&category=outbound&_offset=20'
+      );
+    });
+
+    await user.click(screen.getByRole('button', { name: '1' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location').textContent).toBe(
+        '/Fax/Communication/fax-page-0?_count=20&_sort=-_lastUpdated&category=outbound'
+      );
+    });
+  });
+
+  test('keeps the selected fax in the path when paginating', async () => {
+    const user = userEvent.setup();
+    medplum.search = vi.fn().mockResolvedValue(pagedBundle(20, 45));
+    vi.spyOn(medplum, 'post').mockResolvedValue({});
+
+    setup('/Fax/Communication/fax-page-3');
+
+    await waitFor(() => {
+      expect(screen.getByText('Fax topic 3')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: '3' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location').textContent).toBe(
+        '/Fax/Communication/fax-page-3?_count=20&_sort=-_lastUpdated&category=inbound&_offset=40'
+      );
+    });
+  });
+
+  test('preserves the send fax modal and offset in fax links when opened over the list', async () => {
+    medplum.search = vi.fn().mockResolvedValue(pagedBundle(20, 45));
+    vi.spyOn(medplum, 'post').mockResolvedValue({});
+
+    setup('/Fax/Communication/new?_offset=20');
+
+    await waitFor(() => {
+      expect(screen.getByText('Fax topic 0')).toBeInTheDocument();
+    });
+
+    const link = screen.getByText('Fax topic 0').closest('a');
+    expect(link).toHaveAttribute(
+      'href',
+      '/Fax/Communication/fax-page-0/new?_count=20&_sort=-_lastUpdated&category=inbound&_offset=20'
+    );
+  });
+
+  test('navigates to the newly sent fax after sending from the modal', async () => {
+    const user = userEvent.setup();
+    medplum.search = vi.fn().mockResolvedValue(bundleOf());
+    vi.spyOn(medplum, 'createAttachment').mockResolvedValue({
+      contentType: 'application/pdf',
+      url: 'http://example.com/binary/referral.pdf',
+      title: 'referral.pdf',
+    });
+    const realPost = medplum.post.bind(medplum);
+    vi.spyOn(medplum, 'post').mockImplementation(async (url, ...rest) => {
+      if (String(url).includes('-efax')) {
+        return {};
+      }
+      return realPost(url, ...(rest as []));
+    });
+    const createResource = vi.spyOn(medplum, 'createResource');
+
+    setup('/Fax/Communication/new');
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Send Fax').length).toBeGreaterThan(0);
+    });
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, {
+      target: { files: [new File(['%PDF-1.7'], 'referral.pdf', { type: 'application/pdf' })] },
+    });
+    await user.type(screen.getByLabelText(/Fax Number/), '5551234567');
+    await user.click(screen.getByRole('button', { name: 'Send Fax' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Fax sent successfully')).toBeInTheDocument();
+    });
+
+    const communicationCall = createResource.mock.calls.findIndex(([r]) => r.resourceType === 'Communication');
+    expect(communicationCall).toBeGreaterThanOrEqual(0);
+    const sent = (await createResource.mock.results[communicationCall].value) as WithId<Communication>;
+    await waitFor(() => {
+      expect(screen.getByTestId('location').textContent).toBe(
+        `/Fax/Communication/${sent.id}?_count=20&_sort=-_lastUpdated&category=inbound`
+      );
     });
   });
 });
