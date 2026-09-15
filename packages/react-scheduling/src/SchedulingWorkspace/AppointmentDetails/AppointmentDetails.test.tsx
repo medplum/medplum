@@ -64,6 +64,10 @@ function cancelButton(): HTMLElement | null {
   return screen.queryByRole('button', { name: 'Cancel Appointment' });
 }
 
+function rescheduleButton(): HTMLElement | null {
+  return screen.queryByRole('button', { name: 'Reschedule' });
+}
+
 /**
  * The button on the cancellation page that posts `$cancel`.
  * @returns The button, or null while that page is not open.
@@ -271,5 +275,49 @@ describe('AppointmentDetails', () => {
 
     expect(cancelButton()).toHaveAttribute('disabled');
     expect(screen.getByText("An appointment in 'fulfilled' status cannot be cancelled.")).toBeInTheDocument();
+  });
+
+  test('offers to reschedule a visit $reschedule would accept', () => {
+    renderDetails(BOOKED_APPOINTMENT);
+
+    expect(rescheduleButton()).toBeInTheDocument();
+  });
+
+  test('offers no reschedule for a visit $reschedule would refuse', () => {
+    renderDetails({ ...BOOKED_APPOINTMENT, status: 'cancelled' });
+
+    expect(rescheduleButton()).not.toBeInTheDocument();
+  });
+
+  test('takes back the room the reschedule form was given when the view is left', async () => {
+    // A host widens itself to lay the times beside the form; leaving the view takes the
+    // form away, so the width goes back with it whether or not a search was open.
+    const onToggleTimeFinder = vi.fn();
+    renderWithMedplum(
+      <AppointmentDetails appointment={BOOKED_APPOINTMENT} onToggleTimeFinder={onToggleTimeFinder} />,
+      medplum
+    );
+
+    await userEvent.click(rescheduleButton() as HTMLElement);
+    await userEvent.click(await screen.findByRole('button', { name: 'Back' }));
+
+    expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
+  });
+
+  test('swaps the details for the form that moves the visit, and back again', async () => {
+    // The two are one view: the same visit, described and then moved. A host showing
+    // this in a panel of its own titles it for the details, so the form says what it is.
+    renderDetails(BOOKED_APPOINTMENT);
+
+    await userEvent.click(rescheduleButton() as HTMLElement);
+
+    expect(screen.getByRole('heading', { name: 'Reschedule appointment' })).toBeInTheDocument();
+    expect(await screen.findByRole('searchbox', { name: /visit type/i })).toBeInTheDocument();
+    expect(cancelButton()).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+    expect(screen.getByText('Bring prior films')).toBeInTheDocument();
+    expect(cancelButton()).toBeInTheDocument();
   });
 });

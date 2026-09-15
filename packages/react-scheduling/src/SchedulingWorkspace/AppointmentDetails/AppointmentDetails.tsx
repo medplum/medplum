@@ -1,19 +1,30 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Badge, Button, Divider, Stack, Text, Title } from '@mantine/core';
+import { Alert, Badge, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { formatCodeableConcept, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
 import type { Appointment, AppointmentParticipant, CodeableConcept, Parameters, Reference } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ReferenceDisplay } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
+import { IconArrowLeft, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { Fragment, useCallback, useState } from 'react';
 import { formatDayHeading, formatZonedTime } from '../../AppointmentFinder/AppointmentFinder.times';
+import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentRescheduleForm';
+import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 import classes from './AppointmentDetails.module.css';
 
 /** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
 const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
+
+/**
+ * The statuses `Appointment/:id/$reschedule` accepts. It refuses any other with a 400.
+ *
+ * The same statuses a cancellation accepts today, but a guard of its own: what can be
+ * called off and what can be moved are separate questions to the server.
+ */
+const RESCHEDULABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
 
 const STATUS_COLORS: Record<Appointment['status'], string> = {
   proposed: 'yellow',
@@ -31,6 +42,24 @@ const STATUS_COLORS: Record<Appointment['status'], string> = {
 export interface AppointmentDetailsProps {
   readonly appointment: WithId<Appointment>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
+  /**
+   * Called with what a move wrote, after the view has gone back to the details.
+   *
+   * The appointment shown is the one the host handed over, so a host keeping this
+   * mounted hands over the moved one — from its own data, or from this callback.
+   */
+  readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
+  /**
+   * Called when the reschedule form's time search opens or closes.
+   *
+   * The times render beside that form rather than under it, so a host showing this in a
+   * drawer or a panel has to widen it to fit them — under the width they need they wrap,
+   * and the times land below the form instead.
+   *
+   * Leaving the reschedule view reports the search closed whether or not it was open:
+   * the form goes with the view, and so does the room it asked for.
+   */
+  readonly onToggleTimeFinder?: (open: boolean) => void;
   /** Overrides the value set the cancellation reason is coded against. */
   readonly cancellationReasonValueSet?: string;
 }
@@ -121,31 +150,24 @@ export function AppointmentCancelForm(props: AppointmentDetailsProps): JSX.Eleme
 /**
  * Shows a detail view of a single appointment
  *
- * Cancelling posts `Appointment/:id/$cancel`, which sets the appointment status
- * and releases every time it was holding, then announces both so views reading
- * them refresh.
- *
- * It takes two steps. "Cancel Appointment" turns the view over to a page of its own
- * naming the visit and asking what it is being called off for, and nothing is posted
- * until that page is submitted; going back from it leaves the visit untouched. A reason
- * has to be chosen before anything can be cancelled: the operation takes one optionally,
- * and the moment someone is calling the visit off is the only moment it is known.
- *
- * The cancellation lands back on the details, which then describe a cancelled visit. A
- * refusal keeps the page open with what was chosen still on it, to try again.
+ * Has sub-views for rescheduling and cancelling the appointment.
  *
  * @param props - The React props
  * @param props.appointment - The Appointment resource to detail
- * @param props.onCancelled - A callback that can be invoked after a successful $cancel
  * @param props.cancellationReasonValueSet - The value set to offer cancellation reasons from,
  * in place of the default binding
+ * @param props.onCancelled - A callback that can be invoked after a successful $cancel
+ * @param props.onRescheduled - A callback that can be invoked after a successful $reschedule
+ * @param props.onToggleTimeFinder - A callback told when the reschedule form's time search
+ * opens or closes, for a host that has to widen to fit it
  * @returns The details component
  */
 export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element {
-  const { appointment, onCancelled } = props;
+  const { appointment, onCancelled, onToggleTimeFinder, onRescheduled } = props;
   const patient = getPatientParticipant(appointment)?.actor;
   const otherActors = getOtherActors(appointment);
   const [cancelling, setCancelling] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
 
   const patientLine = <Detail label="Patient" value={patient && <ReferenceDisplay link={false} value={patient} />} />;
   const whenLine = <Detail label="When" value={formatWhen(appointment)} />;
@@ -158,6 +180,19 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     [setCancelling, onCancelled]
   );
 
+  function stopRescheduling(): void {
+    setRescheduling(false);
+    // The form is going, and with it any times it had open beside itself.
+    onToggleTimeFinder?.(false);
+  }
+
+  function finishRescheduling(reschedule: AppointmentReschedule): void | Promise<void> {
+    // Back to the details, which are read off the appointment the host hands over: the
+    // one just written, once whatever is watching the appointment has caught up.
+    stopRescheduling();
+    return onRescheduled?.(reschedule);
+  }
+
   if (cancelling) {
     return (
       <Stack gap="sm" className={classes.details}>
@@ -169,6 +204,31 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
             Back to Appointment Details
           </Button>
         </Stack>
+      </Stack>
+    );
+  }
+
+  if (rescheduling) {
+    return (
+      <Stack gap="sm" className={classes.details}>
+        <Group justify="space-between" wrap="nowrap">
+          {/* Its own heading: a host showing this in a panel titled for the details has
+              no way of knowing the view underneath it changed. */}
+          <Title order={5}>Reschedule appointment</Title>
+          <Button
+            variant="subtle"
+            size="compact-sm"
+            leftSection={<IconArrowLeft size={14} stroke={1.8} />}
+            onClick={stopRescheduling}
+          >
+            Back
+          </Button>
+        </Group>
+        <AppointmentRescheduleForm
+          appointment={appointment}
+          onToggleTimeFinder={onToggleTimeFinder}
+          onRescheduled={finishRescheduling}
+        />
       </Stack>
     );
   }
@@ -197,9 +257,18 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
         }
       />
       <Detail label="Notes" value={appointment.comment ?? appointment.description} />
-      <Divider />
       <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
       <Stack gap="sm" className={classes.actions}>
+        <Divider />
+        {RESCHEDULABLE_STATUSES.has(appointment.status) && (
+          <Button
+            variant="outline"
+            leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
+            onClick={() => setRescheduling(true)}
+          >
+            Reschedule
+          </Button>
+        )}
         <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
           Cancel Appointment
         </Button>

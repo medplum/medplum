@@ -15,6 +15,7 @@ import {
   setScheduleParameter,
   SNOMED,
   TimezoneExtensionURI,
+  toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
   Appointment,
@@ -30,6 +31,7 @@ import type {
   Patient,
   Practitioner,
   PractitionerRole,
+  Reference,
   Resource,
   Schedule,
   Slot,
@@ -277,6 +279,7 @@ const IMAGING: ScheduledService = { id: 'ultrasound-imaging', name: 'Ultrasound 
 const SURGERY: ScheduledService = { id: 'bariatric-surgery', name: 'Bariatric Surgery' };
 const INFUSION: ScheduledService = { id: 'infusion-therapy', name: 'Infusion Therapy' };
 const IRON_INFUSION: ScheduledService = { id: 'iron-infusion', name: 'Iron Infusion' };
+const TELEHEALTH: ScheduledService = { id: 'telehealth-consult', name: 'Telehealth Consult' };
 
 function buildSchedule(
   id: string,
@@ -776,38 +779,42 @@ export const PatientFixtures = [ElderJordanPatient, YoungerJordanPatient, Untype
  */
 
 /**
+ * The times {@link RiveraImagingAppointment} holds, one per schedule it is held on.
+ *
+ * Slots link an appointment to every Schedule it is booked against and mark the time
+ * as unavailable on those schedules. These explicit links name the schedules, not
+ * `Appointment.participants`.
+ */
+export const RiveraImagingHeldSlots: WithId<Slot>[] = (
+  [
+    ['slot-rivera-imaging-tue', DrRiveraSchedule],
+    ['slot-ultrasound-1-imaging-tue', Ultrasound1Schedule],
+    ['slot-exam-room-a-imaging-tue', ExamRoomASchedule],
+  ] as const
+).map(([id, schedule]) => ({
+  resourceType: 'Slot',
+  id,
+  status: 'busy',
+  start: '2020-05-05T17:00:00Z',
+  end: '2020-05-05T17:30:00Z',
+  schedule: createReference(schedule),
+}));
+
+/**
  * A same-day imaging visit needing the provider, the device, and the room together.
  *
  * Carries a `Patient` participant even though nothing here books against one: the
  * calendar titles an appointment event with the patient's name, so without one it
  * would just read "No Patient".
  */
-/**
- * The time {@link RiveraImagingAppointment} holds on Dr. Rivera's calendar.
- *
- * A booked visit owes one: availability is worked out from Slots, never from
- * Appointments, so a visit without one leaves its time on offer to the next patient.
- *
- * Its bounds are the appointment's own strings, character for character: the calendar
- * hides the Slot behind the Appointment by comparing them as text, so two spellings of
- * one instant would draw a "Blocked" block over the visit.
- */
-export const RiveraImagingSlot: WithId<Slot> = {
-  resourceType: 'Slot',
-  id: 'slot-rivera-imaging-tue',
-  status: 'busy',
-  start: '2020-05-05T17:00:00Z',
-  end: '2020-05-05T17:30:00Z',
-  schedule: createReference(DrRiveraSchedule),
-};
-
 export const RiveraImagingAppointment: WithId<Appointment> = {
   resourceType: 'Appointment',
   id: 'appt-rivera-imaging-tue',
   status: 'booked',
   start: '2020-05-05T17:00:00Z',
   end: '2020-05-05T17:30:00Z',
-  slot: [{ reference: 'Slot/slot-rivera-imaging-tue' }],
+  serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
+  slot: RiveraImagingHeldSlots.map(createReference),
   participant: [
     { status: 'accepted', actor: { reference: 'Patient/pt-cooper', display: 'Miles Cooper' } },
     { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
@@ -816,18 +823,42 @@ export const RiveraImagingAppointment: WithId<Appointment> = {
   ],
 };
 
+/**
+ * The times {@link OkaforImagingAppointment} holds, one per schedule it is held on.
+ *
+ * A booked visit holds a Slot on every schedule it is booked against, and it is those
+ * Slots — not the appointment's participants — that say which of an actor's schedules
+ * the visit is on. Moving the visit reads them back.
+ */
+export const OkaforImagingHeldSlots: WithId<Slot>[] = (
+  [
+    ['slot-okafor-imaging-wed', DrOkaforSchedule],
+    ['slot-ultrasound-2-imaging-wed', Ultrasound2Schedule],
+    ['slot-exam-room-b-imaging-wed', ExamRoomBSchedule],
+  ] as const
+).map(([id, schedule]) => ({
+  resourceType: 'Slot',
+  id,
+  status: 'busy',
+  start: '2020-05-06T18:00:00Z',
+  end: '2020-05-06T18:30:00Z',
+  schedule: createReference(schedule),
+}));
+
 export const OkaforImagingAppointment: WithId<Appointment> = {
   resourceType: 'Appointment',
   id: 'appt-okafor-imaging-wed',
   status: 'booked',
   start: '2020-05-06T18:00:00Z',
   end: '2020-05-06T18:30:00Z',
+  serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
   participant: [
     { status: 'accepted', actor: { reference: 'Patient/pt-alvarez', display: 'Renee Alvarez' } },
     { status: 'accepted', actor: createReference(DrOkaforPractitioner) },
     { status: 'accepted', actor: createReference(Ultrasound2Device) },
     { status: 'accepted', actor: createReference(ExamRoomB) },
   ],
+  slot: OkaforImagingHeldSlots.map(createReference),
 };
 
 /** Open availability outside the booked visits, on the pinned "today." */
@@ -862,11 +893,74 @@ export const SatelliteRoomFreeSlot: WithId<Slot> = {
   schedule: createReference(SatelliteRoomSchedule),
 };
 
+/**
+ * Create a Practitioner performing a series of Telehealth visits with
+ * patients and no other resources
+ */
+
+function addMinutes(date: Date, minutes: number): Date {
+  return new Date(date.valueOf() + minutes * 60 * 1000);
+}
+
+// A Practitioner who performs Telehealth visits
+export const DrBrownPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-brown',
+  name: [{ given: ['Olivia'], family: 'Brown', prefix: ['Dr.'] }],
+};
+
+export const DrBrownSchedule = buildSchedule(
+  'schedule-dr-brown',
+  'Practitioner/dr-brown',
+  'Dr. Olivia Brown',
+  TELEHEALTH
+);
+
+const patientRefs: Reference<Patient>[] = [
+  { reference: 'Patient/pt-jones', display: 'Liam Jones' },
+  { reference: 'Patient/pt-garcia', display: 'Eliana Garcia' },
+  { reference: 'Patient/pt-miller', display: 'Elijah Miller' },
+];
+
+export const DrBrownSlots: WithId<Slot>[] = (
+  [
+    ['brown-1', '2020-05-05T20:00:00Z'],
+    ['brown-2', '2020-05-05T20:20:00Z'],
+    ['brown-3', '2020-05-05T20:40:00Z'],
+  ] as const
+).map(([id, start]) => ({
+  resourceType: 'Slot',
+  id,
+  status: 'busy',
+  schedule: createReference(DrBrownSchedule),
+  start,
+  end: addMinutes(new Date(start), 20).toISOString(),
+}));
+
+export const DrBrownAppointments: WithId<Appointment>[] = DrBrownSlots.map((slot, idx) => ({
+  resourceType: 'Appointment',
+  id: `appointment-${slot.id}`,
+  status: 'booked',
+  start: slot.start,
+  end: slot.end,
+  serviceType: toServiceTypeCodeableConcepts(TelehealthService),
+  slot: [createReference(slot)],
+  participant: [
+    { status: 'accepted', actor: createReference(DrBrownPractitioner) },
+    { status: 'accepted', actor: patientRefs[idx] },
+  ],
+}));
+
 export const CalendarWeekFixtures = [
-  RiveraImagingSlot,
   RiveraImagingAppointment,
+  ...RiveraImagingHeldSlots,
   OkaforImagingAppointment,
+  ...OkaforImagingHeldSlots,
   RiveraFreeSlot,
   ExamRoomABlockedSlot,
   SatelliteRoomFreeSlot,
+  DrBrownPractitioner,
+  DrBrownSchedule,
+  ...DrBrownSlots,
+  ...DrBrownAppointments,
 ];

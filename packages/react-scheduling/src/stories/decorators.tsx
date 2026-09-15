@@ -7,6 +7,7 @@ import { WithBookStub } from './WithBookStub';
 import { WithCancelStub } from './WithCancelStub';
 import { WithFindStub } from './WithFindStub';
 import { WithFixtures } from './WithFixtures';
+import { WithRescheduleStub } from './WithRescheduleStub';
 import { WithValueSets } from './WithValueSets';
 import { WithValueSetStub } from './WithValueSetStub';
 
@@ -65,6 +66,17 @@ export const withCancelStub = (): Decorator => (Story) => (
   <WithCancelStub>
     <Story />
   </WithCancelStub>
+);
+
+/**
+ * Answers `Appointment/[id]/$reschedule` by moving what it names, which MockClient
+ * cannot.
+ * @returns The decorator.
+ */
+export const withRescheduleStub = (): Decorator => (Story) => (
+  <WithRescheduleStub>
+    <Story />
+  </WithRescheduleStub>
 );
 
 /**

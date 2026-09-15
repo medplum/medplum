@@ -214,6 +214,12 @@ If validation of the new time fails, the whole transaction rolls back: the appoi
 }
 ```
 
+## Rescheduling from the UI
+
+The [`@medplum/react-scheduling`](https://www.npmjs.com/package/@medplum/react-scheduling) library provides an `AppointmentRescheduleForm` component that drives this whole flow. Given an Appointment, it reads back the visit type it was booked under and the Schedules its Slots are held on, shows the visit type fixed and the actors as editable selections, searches with `$find` — passing `ignore-appointment` so the visit does not block its own move — and posts `$reschedule` for the time chosen. It announces the Appointment, the released Slots and the new ones, so a calendar rendered beside it refreshes without the host fetching anything.
+
+The `AppointmentDetails` view mounts it behind a **Reschedule** button, which is how the `SchedulingWorkspace` offers rescheduling from the calendar.
+
 ## Related
 
 - [Appointment `$find`](/docs/scheduling/appointment-find) - Find available times, using `ignore-appointment` when reassigning
