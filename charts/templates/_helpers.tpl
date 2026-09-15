@@ -6,13 +6,6 @@ Expand the name of the chart.
 {{- end }}
 
 {{/*
-Return the namespace to be used for the resources.
-*/}}
-{{- define "medplum.namespace" -}}
-{{- default "medplum" .Values.namespace }}
-{{- end }}
-
-{{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
@@ -61,9 +54,78 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 Create the name of the service account to use
 */}}
 {{- define "medplum.serviceAccountName" -}}
-{{- if or (.Values.serviceAccount.create | default true) }}
+{{- if .Values.serviceAccount.create }}
 {{- default (include "medplum.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+=============================================================================
+DEPRECATED global.cloudProvider compatibility shim.
+
+Everything below translates the removed cloudProvider enum into the explicit
+values that replaced it, for one minor-version cycle. NOTES.txt prints a
+deprecation warning when it is in use. No template outside this shim may
+reference cloudProvider.
+=============================================================================
+*/}}
+
+{{/*
+Effective ingress enabled: honors the legacy ingress.deploy flag if present.
+*/}}
+{{- define "medplum.ingress.enabled" -}}
+{{- if hasKey .Values.ingress "deploy" }}
+{{- .Values.ingress.deploy }}
+{{- else }}
+{{- .Values.ingress.enabled }}
+{{- end }}
+{{- end }}
+
+{{/*
+Effective ingress host: ingress.host, falling back to legacy ingress.domain.
+*/}}
+{{- define "medplum.ingress.host" -}}
+{{- default (.Values.ingress.domain | default "") .Values.ingress.host }}
+{{- end }}
+
+{{/*
+Effective ingress class name: explicit ingress.className, else the class the
+legacy cloudProvider enum implied.
+*/}}
+{{- define "medplum.ingress.className" -}}
+{{- if .Values.ingress.className }}
+{{- .Values.ingress.className }}
+{{- else if eq .Values.global.cloudProvider "gcp" }}
+{{- "gce" }}
+{{- else if eq .Values.global.cloudProvider "azure" }}
+{{- "azure-application-gateway" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Effective ingress TLS list: ingress.tls, else synthesized from the legacy
+Azure tlsSecretName + domain pair.
+*/}}
+{{- define "medplum.ingress.tls" -}}
+{{- if .Values.ingress.tls }}
+{{- toYaml .Values.ingress.tls }}
+{{- else if and (eq .Values.global.cloudProvider "azure") (.Values.ingress.tlsSecretName | default "") }}
+- hosts:
+    - {{ include "medplum.ingress.host" . }}
+  secretName: {{ .Values.ingress.tlsSecretName }}
+{{- end }}
+{{- end }}
+
+{{/*
+Effective pod labels: podLabels, plus the label the legacy Azure enum implied.
+*/}}
+{{- define "medplum.podLabels" -}}
+{{- with .Values.podLabels }}
+{{- toYaml . }}
+{{- end }}
+{{- if eq .Values.global.cloudProvider "azure" }}
+azure.workload.identity/use: "true"
 {{- end }}
 {{- end }}

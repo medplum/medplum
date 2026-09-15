@@ -3,7 +3,6 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: {{ include "medplum.fullname" . }}
-  namespace: {{ include "medplum.namespace" . }}
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
 spec:
