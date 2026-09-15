@@ -289,6 +289,13 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
     return null;
   }
 
+  // Quest Diagnostics reports "DNR" (Do Not Report) as a literal value for a sub-result that
+  // was intentionally not reported (e.g. a skipped reflex microscopy panel). Health Gorilla's
+  // own report suppresses these rows, so we always do too - not configurable.
+  if (!observation.hasMember?.length && formatObservationValue(observation) === 'DNR') {
+    return null;
+  }
+
   const displayNotes = !props.hideObservationNotes && observation.note;
 
   const critical = isCritical(observation);
