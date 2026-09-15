@@ -62,8 +62,8 @@ export async function chooseAuthorizedService(): Promise<void> {
  * Gives one of the codes a prior authorization needs, by searching it and taking it off the list.
  *
  * Searching by code is what a scheduler does, and it is what tells two codes apart when their
- * descriptions share a long prefix. Only a code the value set offered can be given, so a test
- * cannot put a code onto an appointment that no project would have offered a scheduler.
+ * descriptions share a long prefix. See {@link createCode} for the other way in, the code typed
+ * over the top of a value set that never carried it.
  *
  * @param label - Matches the label above the field.
  * @param coding - The code to give, as the value set holds it.
@@ -73,6 +73,21 @@ export async function enterCode(label: RegExp, coding: Coding): Promise<void> {
   await act(async () => {
     fireEvent.click(within(listbox).getByText(coding.display as string));
   });
+  await settleAutocomplete();
+}
+
+/**
+ * Gives a code by typing it and taking the "+ Create" row, rather than picking one off the list.
+ *
+ * What a scheduler does for a code their terminology has not got: the value set is a starting
+ * point for these fields, not the bounds of what can be billed against.
+ *
+ * @param label - Matches the label above the field.
+ * @param code - The code to type.
+ */
+export async function createCode(label: RegExp, code: string): Promise<void> {
+  await typeInAutocomplete(field(label), code);
+  await clickAutocompleteOption(`+ Create ${code}`);
   await settleAutocomplete();
 }
 
@@ -135,6 +150,18 @@ export async function searchField(label: RegExp, query: string): Promise<HTMLEle
     throw new Error(`No dropdown found for ${label.source}`);
   }
   return listbox;
+}
+
+/**
+ * Adds another row to one actor type, for a second one the visit needs.
+ * @param lowercaseLabel - The actor type as the form writes it, e.g. `provider`.
+ */
+export async function addActorRow(lowercaseLabel: string): Promise<void> {
+  const button = screen.getByRole('button', { name: `Add another ${lowercaseLabel}` });
+  await act(async () => {
+    fireEvent.click(button);
+  });
+  await settleAutocomplete();
 }
 
 export async function chooseActor(role: RegExp, query: string, name: string): Promise<void> {
