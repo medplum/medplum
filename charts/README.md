@@ -40,7 +40,7 @@ Full reference: `values.yaml` (annotated) and `values.schema.json`
 
 - **GKE, cloud-native ingress** (GCE class, Google-managed certificate,
   Cloud Armor, CDN, HTTPS redirect): `examples/gke-cloud-native.values.yaml`.
-  These objects were rendered by chart 5.x from `global.cloudProvider=gcp`
+  These objects were rendered by earlier charts from `global.cloudProvider=gcp`
   with hardcoded names; the example reproduces them with the same names so
   `helm upgrade` adopts them in place.
 - **Any cluster, ingress-nginx + cert-manager**: `ingress.className: nginx`,
@@ -48,9 +48,12 @@ Full reference: `values.yaml` (annotated) and `values.schema.json`
   `ingress.tls: [{secretName: medplum-api-tls, hosts: [<host>]}]`, and the
   ClusterIssuer in `extraObjects`.
 
-## Upgrading from 5.x
+## Upgrading from charts before the cloud-neutral release
 
-Chart 6.0 is a breaking release; the app is unchanged.
+This is a breaking chart change; the app is unchanged. (Chart versions track
+the app version, so it ships under the next release number rather than a
+major bump — check `global.cloudProvider` in your values to know whether it
+applies to you.)
 
 - **`global.cloudProvider` is deprecated.** A compatibility shim
   (`_helpers.tpl`) still honors it and the legacy `ingress.deploy` /

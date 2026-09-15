@@ -1,6 +1,6 @@
 # GKE cloud-native ingress: GCE ingress class, Google-managed certificate,
 # Cloud Armor policy and Cloud CDN via BackendConfig, HTTPS redirect via
-# FrontendConfig. This is exactly what chart 5.x rendered from
+# FrontendConfig. This is exactly what earlier charts rendered from
 # global.cloudProvider=gcp — now supplied as values so the chart stays
 # cloud-neutral. Object names match the 5.x hardcoded ones on purpose:
 # a `helm upgrade` adopts the existing objects in place.
