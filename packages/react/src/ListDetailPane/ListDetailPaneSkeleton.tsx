@@ -14,11 +14,11 @@ const SKELETON_WIDTHS = [
 ];
 
 /**
- * ListWithDetailPaneSkeleton is the default loading placeholder for the list sidebar.
+ * ListDetailPaneSkeleton is the default loading placeholder for the list sidebar.
  * It renders a few rows of varied-width skeleton lines separated by dividers.
- * @returns The ListWithDetailPaneSkeleton React node.
+ * @returns The ListDetailPaneSkeleton React node.
  */
-export function ListWithDetailPaneSkeleton(): JSX.Element {
+export function ListDetailPaneSkeleton(): JSX.Element {
   return (
     <Stack gap="md" p="md">
       {SKELETON_WIDTHS.map((widths, index) => (
