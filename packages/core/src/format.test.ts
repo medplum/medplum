@@ -445,6 +445,18 @@ test('Format Observation value', () => {
   expect(formatObservationValue({} as Observation)).toBe('');
   expect(formatObservationValue({ resourceType: 'Observation', valueString: 'foo' } as Observation)).toBe('foo');
   expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueString: '&lt;OBX.5.1&gt;&gt;=32&lt;/OBX.5.1&gt;&lt;OBX.5.1&gt;R&lt;/OBX.5.1&gt;',
+    } as Observation)
+  ).toBe('>=32 / R');
+  expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueString: '<OBX.5.1><1</OBX.5.1><OBX.5.1>S</OBX.5.1>',
+    } as Observation)
+  ).toBe('<1 / S');
+  expect(
     formatObservationValue({ resourceType: 'Observation', valueCodeableConcept: { text: 'foo' } } as Observation)
   ).toBe('foo');
   expect(
