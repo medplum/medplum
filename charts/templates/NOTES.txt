@@ -6,6 +6,19 @@ Server config sources: {{ .Values.global.configSource.type }}
 API endpoint: https://{{ $host }}/
 {{- end }}
 
+{{- if and (eq .Values.global.configSource.type "env") (not .Values.config.database.host) }}
+
+================================== WARNING ===================================
+global.configSource.type is "env" and config.database.host is empty.
+
+Chart 6.0 no longer defaults connection settings to localhost/medplum — the
+server will have no database or Redis. Set config.database.{host,port,
+dbname,username,password} and config.redis.{host,port,password}, or point
+global.configSource.type at a secret store ("azure:...,env", "gcp:...,env",
+"aws:...,env") that supplies them.
+===============================================================================
+{{- end }}
+
 Verify the deployment:
 
   helm test {{ .Release.Name }} -n {{ .Release.Namespace }}

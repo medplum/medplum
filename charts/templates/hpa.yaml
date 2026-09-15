@@ -10,7 +10,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ include "medplum.fullname" . }}
-  minReplicas: {{ .Values.deployment.autoscaling.minReplicas | default 2 }}
+  minReplicas: {{ .Values.deployment.autoscaling.minReplicas | default 1 }}
   maxReplicas: {{ .Values.deployment.autoscaling.maxReplicas | default 10 }}
   metrics:
     - type: Resource
