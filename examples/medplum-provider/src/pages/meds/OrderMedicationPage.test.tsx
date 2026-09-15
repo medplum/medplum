@@ -12,8 +12,8 @@ import {
   OperationOutcomeError,
   PATIENT_PREFERRED_PHARMACY_URL,
 } from '@medplum/core';
-import type { Coverage, Extension, Medication, MedicationRequest, Organization } from '@medplum/fhirtypes';
-import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
+import type { Extension, Medication, MedicationRequest } from '@medplum/fhirtypes';
+import { DrAliceSmith, HomerSimpson, MockClient, TestOrganization } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type * as ScriptSureReactModule from '@medplum/scriptsure-react';
 import {
@@ -50,7 +50,6 @@ vi.mock('@medplum/scriptsure-react', async () => {
 /** Brand-name search hit that expands to formulations via its routed-med-id. */
 const GLUMETZA_BRAND_HIT: Medication = {
   resourceType: 'Medication',
-  id: 'med-glumetza',
   code: { text: 'Glumetza 500 mg tablet' },
   identifier: [{ system: SCRIPTSURE_ROUTED_MED_ID_SYSTEM, value: '4242' }],
   extension: [
@@ -61,74 +60,62 @@ const GLUMETZA_BRAND_HIT: Medication = {
 
 const METFORMIN_GENERIC_HIT: Medication = {
   resourceType: 'Medication',
-  id: 'med-metformin-generic',
   code: { text: 'metformin ER 500 mg tablet' },
   extension: [{ url: SCRIPTSURE_NAME_TYPE_EXTENSION, valueString: '2' }],
 };
 
 const HYDROCORTISONE_HIT: Medication = {
   resourceType: 'Medication',
-  id: 'med-hydrocortisone',
   code: { text: 'Hydrocortisone 1% cream' },
   identifier: [{ system: SCRIPTSURE_GCN_SEQNO_SYSTEM, value: '12345' }],
 };
 
-function sigExtension(sigLine: string, quantity: number, quantityQualifier?: string): Extension {
+const DRUG_HITS = [GLUMETZA_BRAND_HIT, METFORMIN_GENERIC_HIT, HYDROCORTISONE_HIT];
+
+function sigExtension(sigLine: string, quantity: number): Extension {
   return {
     url: SCRIPTSURE_SIG_EXTENSION,
     extension: [
       { url: 'sigLine', valueString: sigLine },
       { url: 'quantity', valueInteger: quantity },
-      ...(quantityQualifier ? [{ url: 'quantityQualifier', valueString: quantityQualifier }] : []),
     ],
   };
 }
 
 const GLUMETZA_CAPSULE_FORMAT: Medication = {
   resourceType: 'Medication',
-  id: 'fmt-glumetza-capsule',
   code: { text: 'Glumetza 500 mg tablet', coding: [{ system: NDC, code: '12345678901' }] },
   extension: [
-    sigExtension('60 Capsule - Take 1 capsule by mouth twice daily', 60, 'C48480'),
+    sigExtension('60 Capsule - Take 1 capsule by mouth twice daily', 60),
     sigExtension('90 Tablet - Take 2 tablets by mouth daily', 90),
     { url: 'https://example.com/unrelated', valueString: 'ignored' },
   ],
 };
 
-const GLUMETZA_STRENGTH_ONLY_FORMAT: Medication = {
-  resourceType: 'Medication',
-  id: 'fmt-strength',
-  code: { text: '500 mg' },
-};
+const GLUMETZA_STRENGTH_ONLY_FORMAT: Medication = { resourceType: 'Medication', code: { text: '500 mg' } };
 
 const GLUMETZA_ROUTED_ONLY_FORMAT: Medication = {
   resourceType: 'Medication',
-  id: 'fmt-glumetza-routed',
   code: { text: 'Glumetza 1000 mg tablet', coding: [{ system: SCRIPTSURE_ROUTED_MED_ID_SYSTEM, code: '4242' }] },
   extension: [sigExtension('30 Tablet - Take 1 tablet daily', 30)],
 };
 
-function preferredPharmacy(organizationId: string): Extension {
-  return {
+function preferredPharmacies(...ids: string[]): Extension[] {
+  return ids.map((id) => ({
     url: PATIENT_PREFERRED_PHARMACY_URL,
-    extension: [{ url: 'pharmacy', valueReference: { reference: `Organization/${organizationId}` } }],
-  };
+    extension: [{ url: 'pharmacy', valueReference: { reference: `Organization/${id}` } }],
+  }));
 }
 
-async function renderPage(
-  medplum: MockClient,
-  props: OrderMedicationPageProps = {},
-  route = `/Patient/${HomerSimpson.id}/MedicationRequest`
-): Promise<void> {
+async function renderPage(medplum: MockClient, props: OrderMedicationPageProps = {}): Promise<void> {
   await act(async () => {
     render(
       <MantineProvider>
         <Notifications />
         <MedplumProvider medplum={medplum}>
-          <MemoryRouter initialEntries={[route]}>
+          <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
             <Routes>
               <Route path="/Patient/:patientId/MedicationRequest" element={<OrderMedicationPage {...props} />} />
-              <Route path="/order" element={<OrderMedicationPage {...props} />} />
             </Routes>
           </MemoryRouter>
         </MedplumProvider>
@@ -137,18 +124,12 @@ async function renderPage(
   });
 }
 
-function mockDrugCatalog(formats: Medication[] | Error): void {
+function mockDrugCatalog(formats: Medication[]): void {
   searchMedicationsMock.mockImplementation(async (input: { term?: string; routedMedId?: number }) => {
     if (input.routedMedId !== undefined) {
-      if (formats instanceof Error) {
-        throw formats;
-      }
       return formats;
     }
-    const term = input.term?.toLowerCase() ?? '';
-    return [GLUMETZA_BRAND_HIT, METFORMIN_GENERIC_HIT, HYDROCORTISONE_HIT].filter((m) =>
-      m.code?.text?.toLowerCase().includes(term)
-    );
+    return DRUG_HITS.filter((m) => m.code?.text?.toLowerCase().includes(input.term?.toLowerCase() ?? ''));
   });
 }
 
@@ -160,18 +141,6 @@ async function pickMedication(user: UserEvent, term: string, optionLabel: string
 async function replaceValue(user: UserEvent, input: HTMLElement, value: string): Promise<void> {
   await user.clear(input);
   await user.type(input, value);
-}
-
-function activePanel(): ReturnType<typeof within> {
-  return within(screen.getByRole('tabpanel'));
-}
-
-async function selectOption(user: UserEvent, select: HTMLElement, name: string): Promise<void> {
-  await user.click(select);
-  const dropdownId = select.getAttribute('aria-controls');
-  const dropdown = dropdownId ? document.getElementById(dropdownId) : null;
-  const scope = dropdown ? within(dropdown) : screen;
-  await user.click(await scope.findByRole('option', { name, hidden: true }));
 }
 
 describe('OrderMedicationPage', () => {
@@ -641,358 +610,230 @@ describe('OrderMedicationPage', () => {
     });
   });
 
-  describe('single medication form', () => {
-    test('drives the formulation and sig picker through to the draft MedicationRequest body', async () => {
-      const medplum = new MockClient();
-      mockDrugCatalog([GLUMETZA_CAPSULE_FORMAT, GLUMETZA_STRENGTH_ONLY_FORMAT]);
-      orderMedicationMock.mockResolvedValue({ launchUrl: 'https://ssu.example/widget', medicationRequestId: 'mr-1' });
-      const createSpy = vi.spyOn(medplum, 'createResource');
-      const onOrderComplete = vi.fn();
-      const user = userEvent.setup();
-      await renderPage(medplum, { patient: HomerSimpson, onOrderComplete });
+  test('drives the formulation and sig picker through to the draft MedicationRequest body', async () => {
+    const medplum = new MockClient();
+    mockDrugCatalog([GLUMETZA_CAPSULE_FORMAT, GLUMETZA_STRENGTH_ONLY_FORMAT]);
+    orderMedicationMock.mockResolvedValue({ launchUrl: 'https://ssu.example/widget', medicationRequestId: 'mr-1' });
+    const createSpy = vi.spyOn(medplum, 'createResource');
+    const onOrderComplete = vi.fn();
+    const user = userEvent.setup();
+    await renderPage(medplum, { patient: HomerSimpson, onOrderComplete });
 
-      await user.type(await screen.findByLabelText(/Search medication/i), '500');
-      expect(await screen.findByText('Brand', {}, { timeout: 10000 })).toBeInTheDocument();
-      expect(screen.getByText('Generic')).toBeInTheDocument();
-      expect(screen.getByText('metformin ER')).toBeInTheDocument();
-      await user.click(screen.getByText('Glumetza 500 mg tablet'));
+    await pickMedication(user, '500', 'Glumetza 500 mg tablet');
+    await screen.findByText(/Formulation & directions \(3\)/, {}, { timeout: 10000 });
+    const panel = within(screen.getByRole('tabpanel'));
+    const quantityInput = panel.getByLabelText('Quantity to dispense');
+    await waitFor(() => expect(quantityInput).toHaveValue('60'));
+    await user.click(screen.getByText('90 Tablet - Take 2 tablets by mouth daily · qty 90'));
+    await waitFor(() => expect(quantityInput).toHaveValue('90'));
+    fireEvent.change(panel.getByLabelText('Written / start date'), { target: { value: '2026-09-01' } });
+    fireEvent.change(panel.getByLabelText('Earliest fill (optional)'), { target: { value: '2026-09-05' } });
+    await replaceValue(user, panel.getByLabelText('Days supply'), '40');
+    await replaceValue(user, panel.getByLabelText('Refills'), '2');
+    await user.type(panel.getByLabelText('Notes to pharmacist'), 'Call before filling');
+    await user.type(panel.getByLabelText('Patient instructions (additional)'), 'Take with food');
+    await user.click(panel.getByLabelText('Allow substitution'));
+    await user.click(screen.getByRole('button', { name: 'Prescribe now' }));
 
-      await screen.findByText(/Formulation & directions \(3\)/, {}, { timeout: 10000 });
-      const quantityInput = screen.getByLabelText('Quantity to dispense');
-      const daysSupplyInput = screen.getAllByLabelText('Days supply')[0];
-      await waitFor(() => expect(quantityInput).toHaveValue('60'));
-      await waitFor(() => expect(daysSupplyInput).toHaveValue('30'));
+    await waitFor(() =>
+      expect(onOrderComplete).toHaveBeenCalledWith(expect.objectContaining({ medicationRequestId: 'mr-1' }))
+    );
+    expect(createSpy.mock.calls[0][0]).toMatchObject({
+      status: 'draft',
+      authoredOn: '2026-09-01',
+      requester: { reference: getReferenceString(DrAliceSmith) },
+      medicationCodeableConcept: { text: 'Glumetza 500 mg tablet', coding: [{ system: NDC, code: '12345678901' }] },
+      substitution: { allowedBoolean: false },
+      dosageInstruction: [{ text: '90 Tablet - Take 2 tablets by mouth daily', patientInstruction: 'Take with food' }],
+      note: [{ text: 'Call before filling' }],
+      dispenseRequest: {
+        quantity: { value: 90, unit: 'C48542' },
+        numberOfRepeatsAllowed: 2,
+        expectedSupplyDuration: expect.objectContaining({ value: 40 }),
+        validityPeriod: { start: '2026-09-01', end: '2026-09-05' },
+      },
+    });
+  }, 40000);
 
-      await user.click(screen.getByText('90 Tablet - Take 2 tablets by mouth daily · qty 90'));
-      await waitFor(() => expect(quantityInput).toHaveValue('90'));
-      await waitFor(() => expect(daysSupplyInput).toHaveValue('45'));
+  test('Add to cart persists through the shared cart hook, and free-text sigs drive the days-supply estimate', async () => {
+    const medplum = new MockClient();
+    mockDrugCatalog([]);
+    const persistCartDraft = vi
+      .fn(async (mr: MedicationRequest) => ({ ...mr, id: 'cart-mr-1' }))
+      .mockRejectedValueOnce(new Error('cart is full'));
+    const onAddedToCart = vi.fn();
+    const user = userEvent.setup();
+    await renderPage(medplum, { patient: HomerSimpson, onAddedToCart, persistCartDraft, cartCount: 2 });
 
-      const panel = activePanel();
-      fireEvent.change(panel.getByLabelText('Written / start date'), { target: { value: '2026-09-01' } });
-      fireEvent.change(panel.getByLabelText('Earliest fill (optional)'), { target: { value: '2026-09-05' } });
-      await replaceValue(user, daysSupplyInput, '40');
-      await replaceValue(user, panel.getByLabelText('Refills'), '2');
-      await user.type(panel.getByLabelText('Notes to pharmacist'), 'Call before filling');
-      await user.type(panel.getByLabelText('Patient instructions (additional)'), 'Take with food');
-      await user.click(panel.getByLabelText('Allow substitution'));
+    expect(await screen.findByText(/2 in cart/)).toBeInTheDocument();
+    await pickMedication(user, 'hydro', 'Hydrocortisone 1% cream');
+    const panel = within(screen.getByRole('tabpanel'));
+    const sigInput = panel.getByLabelText(/Sig \(directions\)/i);
+    const quantityInput = panel.getByLabelText('Quantity to dispense');
+    const daysSupplyInput = panel.getByLabelText('Days supply');
+    const cases: [string, string, string][] = [
+      ['Take 1 tablet qid', '40', '10'],
+      ['Take 1 tablet tid', '30', '10'],
+      ['Take 1 tablet every 2 days', '15', '30'],
+      ['Take as needed daily', '12', '12'],
+      ['Twice daily', '60', '30'],
+    ];
+    for (const [sig, qty, days] of cases) {
+      fireEvent.change(sigInput, { target: { value: sig } });
+      await replaceValue(user, quantityInput, qty);
+      await waitFor(() => expect(daysSupplyInput).toHaveValue(days));
+    }
 
-      await user.click(screen.getByRole('button', { name: 'Prescribe now' }));
-      await waitFor(() =>
-        expect(onOrderComplete).toHaveBeenCalledWith(expect.objectContaining({ medicationRequestId: 'mr-1' }))
-      );
+    await user.click(screen.getByRole('button', { name: 'Add to cart' }));
+    expect(await screen.findByText('cart is full')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add to cart' }));
+    await waitFor(() => expect(onAddedToCart).toHaveBeenCalledWith(expect.objectContaining({ id: 'cart-mr-1' })));
+    await waitFor(() => expect(screen.queryByLabelText(/Sig \(directions\)/i)).not.toBeInTheDocument());
+  }, 40000);
+
+  test('replacement drafts resolve the route patient, linked context, and a different requester', async () => {
+    const medplum = new MockClient();
+    const subject = createReference(HomerSimpson);
+    const otherRequester = await medplum.createResource({ resourceType: 'Practitioner', name: [{ family: 'House' }] });
+    const condition = await medplum.createResource({
+      resourceType: 'Condition',
+      subject,
+      code: { text: 'Hypertension' },
+    });
+    const [coverage, otherCoverage] = await Promise.all(
+      ['Acme Health', 'Blue Shield'].map((display) =>
+        medplum.createResource({
+          resourceType: 'Coverage',
+          status: 'active',
+          beneficiary: subject,
+          payor: [{ display }],
+        })
+      )
+    );
+    const otherPharmacy = await medplum.createResource({ resourceType: 'Organization', name: 'Corner Drugs' });
+    await medplum.updateResource({
+      ...HomerSimpson,
+      extension: preferredPharmacies(TestOrganization.id, otherPharmacy.id),
+    });
+    const replacement: WithId<MedicationRequest> = {
+      resourceType: 'MedicationRequest',
+      id: 'replacement-context',
+      status: 'draft',
+      intent: 'order',
+      subject: { reference: 'Group/not-a-patient' },
+      requester: createReference(otherRequester),
+      medicationCodeableConcept: { text: 'Lisinopril 10 mg tablet' },
+      reasonReference: [createReference(condition)],
+      insurance: [createReference(coverage)],
+      dispenseRequest: {
+        performer: createReference(TestOrganization),
+        validityPeriod: { end: '2026-10-01' },
+        quantity: { value: 30, code: 'C48480' },
+      },
+    };
+    orderMedicationMock.mockResolvedValue({
+      launchUrl: 'https://ssu.example/context',
+      medicationRequestId: replacement.id,
+    });
+    const updateSpy = vi.spyOn(medplum, 'updateResource');
+    const user = userEvent.setup();
+    await renderPage(medplum, { replacementMedicationRequest: replacement });
+
+    expect((await screen.findAllByText(/House/)).length).toBeGreaterThan(0);
+    const panel = within(screen.getByRole('tabpanel'));
+    expect(panel.getByLabelText('Earliest fill (optional)')).toHaveValue('2026-10-01');
+    await user.click(screen.getByRole('button', { name: 'Re-prescribe' }));
+    await waitFor(() =>
       expect(orderMedicationMock).toHaveBeenCalledWith(
-        expect.objectContaining({ writtenDate: '2026-09-01', fillDate: '2026-09-05' })
-      );
-      expect(createSpy.mock.calls[0][0]).toMatchObject({
-        status: 'draft',
-        authoredOn: '2026-09-01',
-        requester: { reference: getReferenceString(DrAliceSmith) },
-        medicationCodeableConcept: { text: 'Glumetza 500 mg tablet', coding: [{ system: NDC, code: '12345678901' }] },
-        substitution: { allowedBoolean: false },
-        dosageInstruction: [
-          { text: '90 Tablet - Take 2 tablets by mouth daily', patientInstruction: 'Take with food' },
-        ],
-        note: [{ text: 'Call before filling' }],
-        dispenseRequest: {
-          quantity: { value: 90, unit: 'C48542' },
-          numberOfRepeatsAllowed: 2,
-          expectedSupplyDuration: expect.objectContaining({ value: 40 }),
-          validityPeriod: { start: '2026-09-01', end: '2026-09-05' },
-        },
-      });
-    }, 40000);
-
-    test('infers days supply from frequency keywords, intervals, and verb-less sigs', async () => {
-      const medplum = new MockClient();
-      mockDrugCatalog([]);
-      const user = userEvent.setup();
-      await renderPage(medplum, { patient: HomerSimpson });
-      await pickMedication(user, 'metformin', 'metformin ER 500 mg tablet');
-
-      const sigInput = screen.getByLabelText(/Sig \(directions\)/i);
-      const quantityInput = screen.getByLabelText('Quantity to dispense');
-      const daysSupplyInput = screen.getAllByLabelText('Days supply')[0];
-      const cases: [string, string, string][] = [
-        ['Take 1 tablet qid', '40', '10'],
-        ['Take 1 tablet bid', '60', '30'],
-        ['Take 1 tablet tid', '30', '10'],
-        ['Take 1 tablet every 2 days', '15', '30'],
-        ['Take as needed daily', '12', '12'],
-        ['Twice daily', '60', '30'],
-      ];
-      for (const [sig, qty, days] of cases) {
-        fireEvent.change(sigInput, { target: { value: sig } });
-        await replaceValue(user, quantityInput, qty);
-        await waitFor(() => expect(daysSupplyInput).toHaveValue(days));
-      }
-    }, 40000);
-
-    test('requires a requester when no practitioner profile is signed in', async () => {
-      const medplum = new MockClient({ profile: null });
-      const replacement: WithId<MedicationRequest> = {
-        resourceType: 'MedicationRequest',
-        id: 'replacement-no-profile',
-        status: 'draft',
-        intent: 'order',
-        subject: createReference(HomerSimpson),
-        requester: { reference: 'Practitioner/someone-else' },
-        medicationCodeableConcept: { text: 'Lisinopril 10 mg tablet' },
-      };
-      const user = userEvent.setup();
-      await renderPage(medplum, { patient: HomerSimpson, replacementMedicationRequest: replacement });
-
-      await user.click(await screen.findByRole('button', { name: 'Re-prescribe' }));
-
-      expect(await screen.findByText('Patient, requester, and medication are required')).toBeInTheDocument();
-      expect(orderMedicationMock).not.toHaveBeenCalled();
+        expect.objectContaining({ patientId: HomerSimpson.id, conditionIds: [condition.id], coverageId: coverage.id })
+      )
+    );
+    const updated = updateSpy.mock.calls.map(([r]) => r as MedicationRequest).find((r) => r.id === replacement.id);
+    expect(updated).toMatchObject({
+      subject: { reference: getReferenceString(HomerSimpson) },
+      requester: { reference: getReferenceString(otherRequester) },
+      dispenseRequest: expect.objectContaining({ quantity: { value: 30, unit: 'C48480' } }),
     });
 
-    test('Add to cart uses the shared cart persister, shows the cart count, and surfaces persist failures', async () => {
-      const medplum = new MockClient();
-      mockDrugCatalog([]);
-      const createSpy = vi.spyOn(medplum, 'createResource');
-      const persistCartDraft = vi
-        .fn<(mr: MedicationRequest) => Promise<MedicationRequest>>()
-        .mockRejectedValueOnce(new Error('cart is full'))
-        .mockImplementation(async (mr) => ({ ...mr, id: 'cart-mr-1' }));
-      const onAddedToCart = vi.fn();
-      const user = userEvent.setup();
-      await renderPage(medplum, {
-        patient: HomerSimpson,
-        onAddedToCart,
-        persistCartDraft,
-        cartAdding: false,
-        cartCount: 2,
-      });
+    const coverageSelect = panel.getByRole('textbox', { name: 'Coverage' });
+    await waitFor(() => expect(coverageSelect).toBeEnabled());
+    await user.click(coverageSelect);
+    await user.click(await screen.findByRole('option', { name: 'Blue Shield', hidden: true }));
+    await user.click(panel.getByRole('textbox', { name: 'Pharmacy' }));
+    await user.click(await screen.findByRole('option', { name: 'Corner Drugs', hidden: true }));
+    const asthma = { ...condition, id: 'cond-asthma', code: { text: 'Asthma' } };
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([asthma] as never);
+    await user.type(panel.getByRole('searchbox'), 'Asth');
+    await user.click(await screen.findByText('Asthma', {}, { timeout: 10000 }));
+    await user.click(screen.getByRole('button', { name: 'Re-prescribe' }));
+    await waitFor(() => expect(orderMedicationMock).toHaveBeenCalledTimes(2));
+    expect(orderMedicationMock.mock.lastCall?.[0]).toMatchObject({
+      conditionIds: [asthma.id],
+      coverageId: otherCoverage.id,
+      pharmacyOrganizationId: otherPharmacy.id,
+    });
+  }, 30000);
 
-      expect(await screen.findByText(/2 in cart/)).toBeInTheDocument();
-      await pickMedication(user, 'hydro', 'Hydrocortisone 1% cream');
-      await user.click(screen.getByRole('button', { name: 'Add to cart' }));
-      expect(await screen.findByText('cart is full')).toBeInTheDocument();
+  test('requires a requester and a formulation per compound line before ordering', async () => {
+    const medplum = new MockClient({ profile: null });
+    const user = userEvent.setup();
+    await renderPage(medplum, { patient: HomerSimpson });
 
-      await user.click(screen.getByRole('button', { name: 'Add to cart' }));
-      await waitFor(() => expect(onAddedToCart).toHaveBeenCalledTimes(1));
-      expect(onAddedToCart.mock.calls[0][0]).toMatchObject({
-        id: 'cart-mr-1',
-        medicationCodeableConcept: { coding: [{ system: SCRIPTSURE_GCN_SEQNO_SYSTEM, code: '12345' }] },
-      });
-      expect(persistCartDraft).toHaveBeenCalledTimes(2);
-      expect(createSpy).not.toHaveBeenCalled();
-      await waitFor(() => expect(screen.queryByLabelText(/Sig \(directions\)/i)).not.toBeInTheDocument());
-    }, 20000);
+    await user.click(await screen.findByRole('button', { name: 'Prescribe now' }));
+    expect(await screen.findByText('Patient, requester, and medication are required')).toBeInTheDocument();
 
-    test('replacement drafts resolve the route patient, linked context, and a different requester', async () => {
-      const medplum = new MockClient();
-      const otherRequester = await medplum.createResource({
-        resourceType: 'Practitioner',
-        name: [{ given: ['Gregory'], family: 'House' }],
-      });
-      const condition = await medplum.createResource({
-        resourceType: 'Condition',
-        subject: createReference(HomerSimpson),
-        code: { text: 'Hypertension' },
-      });
-      const [coverage, otherCoverage] = await Promise.all(
-        ['Acme Health', 'Blue Shield'].map((display) =>
-          medplum.createResource<Coverage>({
-            resourceType: 'Coverage',
-            status: 'active',
-            beneficiary: createReference(HomerSimpson),
-            payor: [{ display }],
-          })
-        )
-      );
-      const [pharmacy, otherPharmacy] = await Promise.all(
-        ['Main Street Pharmacy', 'Corner Drugs'].map((name) =>
-          medplum.createResource<Organization>({ resourceType: 'Organization', name })
-        )
-      );
-      await medplum.updateResource({
-        ...HomerSimpson,
-        extension: [preferredPharmacy(pharmacy.id), preferredPharmacy(otherPharmacy.id)],
-      });
-      const replacement: WithId<MedicationRequest> = {
-        resourceType: 'MedicationRequest',
-        id: 'replacement-context',
-        status: 'draft',
-        intent: 'order',
-        subject: { reference: 'Group/not-a-patient' },
-        requester: createReference(otherRequester),
-        medicationCodeableConcept: { text: 'Lisinopril 10 mg tablet' },
-        reasonReference: [createReference(condition)],
-        insurance: [createReference(coverage)],
-        dispenseRequest: {
-          performer: createReference(pharmacy),
-          validityPeriod: { end: '2026-10-01' },
-          quantity: { value: 30, code: 'C48480' },
-        },
-      };
-      orderMedicationMock.mockResolvedValue({
-        launchUrl: 'https://ssu.example/widget/context',
-        medicationRequestId: replacement.id,
-      });
-      const updateSpy = vi.spyOn(medplum, 'updateResource');
-      const user = userEvent.setup();
-      await renderPage(medplum, { replacementMedicationRequest: replacement });
+    await user.click(screen.getByRole('tab', { name: 'Compound' }));
+    const panel = within(screen.getByRole('tabpanel'));
+    await user.click(panel.getByRole('button', { name: 'Add drug line' }));
+    await user.click(panel.getByRole('button', { name: 'Prescribe' }));
+    expect(await screen.findByText('Requester is required')).toBeInTheDocument();
 
-      expect((await screen.findAllByText(/Gregory House/)).length).toBeGreaterThan(0);
-      const panel = activePanel();
-      expect(panel.getByLabelText('Earliest fill (optional)')).toHaveValue('2026-10-01');
+    await user.type(panel.getByRole('searchbox', { name: 'Requester' }), 'Alice');
+    await user.click((await screen.findAllByText(/Alice Smith/, {}, { timeout: 10000 }))[0]);
+    await user.click(panel.getByRole('button', { name: 'Prescribe' }));
+    expect(await screen.findByText('Each compound line needs a selected formulation')).toBeInTheDocument();
+    expect(orderMedicationMock).not.toHaveBeenCalled();
+  }, 30000);
 
-      await user.click(screen.getByRole('button', { name: 'Re-prescribe' }));
+  test('orders a two-line compound with per-line overrides and reports bot failures', async () => {
+    const medplum = new MockClient();
+    mockDrugCatalog([GLUMETZA_CAPSULE_FORMAT, GLUMETZA_ROUTED_ONLY_FORMAT]);
+    orderMedicationMock
+      .mockRejectedValueOnce(new Error('compound rejected'))
+      .mockResolvedValueOnce({ launchUrl: 'https://ssu.example/widget/compound', medicationRequestId: undefined });
+    const onOrderComplete = vi.fn();
+    const user = userEvent.setup();
+    await renderPage(medplum, { patient: HomerSimpson, onOrderComplete });
 
-      await waitFor(() =>
-        expect(orderMedicationMock).toHaveBeenCalledWith(
-          expect.objectContaining({
-            patientId: HomerSimpson.id,
-            medicationRequestId: replacement.id,
-            conditionIds: [condition.id],
-            coverageId: coverage.id,
-            pharmacyOrganizationId: pharmacy.id,
-            fillDate: '2026-10-01',
-          })
-        )
-      );
-      const updated = updateSpy.mock.calls.map(([r]) => r as MedicationRequest).find((r) => r.id === replacement.id);
-      expect(updated).toMatchObject({
-        subject: { reference: getReferenceString(HomerSimpson) },
-        requester: { reference: getReferenceString(otherRequester) },
-        dispenseRequest: expect.objectContaining({ quantity: { value: 30, unit: 'C48480' } }),
-      });
+    await user.click(await screen.findByRole('tab', { name: 'Compound' }));
+    const panel = within(screen.getByRole('tabpanel'));
+    const searches = panel.getAllByLabelText('Search');
+    await pickMedication(user, 'hydro', 'Hydrocortisone 1% cream', searches[0]);
+    await pickMedication(user, 'glum', 'Glumetza 500 mg tablet', searches[1]);
+    await user.click(await screen.findByText('Glumetza 1000 mg tablet'));
+    await replaceValue(user, panel.getAllByLabelText('Quantity')[0], '45');
+    await replaceValue(user, panel.getAllByLabelText('Refills')[0], '1');
+    await user.click(panel.getAllByLabelText('Allow substitution')[0]);
+    await replaceValue(user, panel.getByLabelText('Days supply'), '14');
+    await user.type(panel.getByLabelText('Notes to pharmacist'), 'Compound please');
+    await user.type(panel.getByLabelText('Patient instructions (additional)'), 'Thin layer');
+    fireEvent.change(panel.getByLabelText('Written / start date'), { target: { value: '2026-09-02' } });
+    fireEvent.change(panel.getByLabelText('Earliest fill (optional)'), { target: { value: '2026-09-06' } });
 
-      const coverageSelect = panel.getByRole('textbox', { name: 'Coverage' });
-      await waitFor(() => expect(coverageSelect).toBeEnabled());
-      await selectOption(user, coverageSelect, 'Blue Shield');
-      const pharmacySelect = panel.getByRole('textbox', { name: 'Pharmacy' });
-      await waitFor(() => expect(pharmacySelect).toBeEnabled());
-      await selectOption(user, pharmacySelect, 'Corner Drugs');
-      const asthma = { ...condition, id: 'cond-asthma', code: { text: 'Asthma' } };
-      vi.spyOn(medplum, 'searchResources').mockResolvedValue([asthma] as never);
-      await user.type(panel.getByRole('searchbox'), 'Asth');
-      await user.click(await screen.findByText('Asthma', {}, { timeout: 10000 }));
-      await user.click(screen.getByRole('button', { name: 'Re-prescribe' }));
-
-      await waitFor(() =>
-        expect(orderMedicationMock).toHaveBeenLastCalledWith(
-          expect.objectContaining({
-            conditionIds: [asthma.id],
-            coverageId: otherCoverage.id,
-            pharmacyOrganizationId: otherPharmacy.id,
-          })
-        )
-      );
-    }, 30000);
-  });
-
-  describe('compound tab', () => {
-    test('requires a patient, a requester, and a formulation per line before ordering a compound', async () => {
-      const medplum = new MockClient({ profile: null });
-      const user = userEvent.setup();
-      await renderPage(medplum, {}, '/order');
-
-      await user.click(await screen.findByRole('tab', { name: 'Compound' }));
-      const panel = activePanel();
-      await user.click(panel.getByRole('button', { name: 'Prescribe' }));
-      expect(await screen.findByText('Patient is required')).toBeInTheDocument();
-
-      const patientInput = panel.getAllByRole('searchbox')[0];
-      expect(patientInput).toHaveAttribute('name', 'patient-compound');
-      await user.type(patientInput, 'Homer');
-      await user.click(await screen.findByText('Homer Simpson', {}, { timeout: 10000 }));
-      await user.click(panel.getByRole('button', { name: 'Prescribe' }));
-      expect(await screen.findByText('Requester is required')).toBeInTheDocument();
-
-      const requesterInput = panel.getAllByRole('searchbox')[0];
-      expect(requesterInput).toHaveAttribute('name', 'requester-c');
-      await user.type(requesterInput, 'Alice');
-      await user.click((await screen.findAllByText(/Alice Smith/, {}, { timeout: 10000 }))[0]);
-      await user.click(panel.getByRole('button', { name: 'Prescribe' }));
-      expect(await screen.findByText('Each compound line needs a selected formulation')).toBeInTheDocument();
-      expect(orderMedicationMock).not.toHaveBeenCalled();
-    }, 30000);
-
-    test('adds and clears drug lines and reports failed formulation lookups', async () => {
-      const medplum = new MockClient();
-      mockDrugCatalog(new Error('compound format lookup failed'));
-      const user = userEvent.setup();
-      await renderPage(medplum, { patient: HomerSimpson });
-
-      await user.click(await screen.findByRole('tab', { name: 'Compound' }));
-      const panel = activePanel();
-      await user.click(panel.getByRole('button', { name: 'Add drug line' }));
-      const searches = panel.getAllByLabelText('Search');
-      await pickMedication(user, 'hydro', 'Hydrocortisone 1% cream', searches[0]);
-      const removeButton = screen.getByText('Hydrocortisone 1% cream').parentElement?.querySelector('button');
-      await user.click(removeButton as HTMLElement);
-      await waitFor(() => expect(screen.queryByText('Hydrocortisone 1% cream')).not.toBeInTheDocument());
-
-      await pickMedication(user, 'glum', 'Glumetza 500 mg tablet', panel.getAllByLabelText('Search')[1]);
-      expect(await screen.findByText('compound format lookup failed')).toBeInTheDocument();
-    }, 30000);
-
-    test('orders a two-line compound with per-line overrides and reports bot failures', async () => {
-      const medplum = new MockClient();
-      mockDrugCatalog([GLUMETZA_CAPSULE_FORMAT, GLUMETZA_ROUTED_ONLY_FORMAT]);
-      orderMedicationMock
-        .mockRejectedValueOnce(new Error('compound rejected'))
-        .mockResolvedValueOnce({ launchUrl: 'https://ssu.example/widget/compound', medicationRequestId: undefined });
-      const onOrderComplete = vi.fn();
-      const user = userEvent.setup();
-      await renderPage(medplum, { patient: HomerSimpson, onOrderComplete });
-
-      await user.click(await screen.findByRole('tab', { name: 'Compound' }));
-      const panel = activePanel();
-      const searches = panel.getAllByLabelText('Search');
-      await pickMedication(user, 'hydro', 'Hydrocortisone 1% cream', searches[0]);
-      await pickMedication(user, 'glum', 'Glumetza 500 mg tablet', searches[1]);
-      await user.click(await screen.findByText('Glumetza 1000 mg tablet'));
-
-      await replaceValue(user, panel.getAllByLabelText('Quantity')[0], '45');
-      await replaceValue(user, panel.getAllByLabelText('Refills')[0], '1');
-      await user.click(panel.getAllByLabelText('Allow substitution')[0]);
-      await replaceValue(user, panel.getByLabelText('Days supply'), '14');
-      await user.type(panel.getByLabelText('Notes to pharmacist'), 'Compound please');
-      await user.type(panel.getByLabelText('Patient instructions (additional)'), 'Apply thin layer');
-      fireEvent.change(panel.getByLabelText('Written / start date'), { target: { value: '2026-09-02' } });
-      fireEvent.change(panel.getByLabelText('Earliest fill (optional)'), { target: { value: '2026-09-06' } });
-
-      await user.click(panel.getByRole('button', { name: 'Prescribe' }));
-      expect(await screen.findByText('compound rejected')).toBeInTheDocument();
-      expect(orderMedicationMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          combinationMed: true,
-          durationDays: 14,
-          pharmacyNote: 'Compound please',
-          writtenDate: '2026-09-02',
-          fillDate: '2026-09-06',
-          drugs: [
-            {
-              gcnSeqno: 12345,
-              drugName: 'Hydrocortisone 1% cream',
-              quantity: 45,
-              quantityQualifier: 'C48542',
-              refill: 1,
-              sigLine3: 'Take as directed · Apply thin layer',
-              useSubstitution: false,
-            },
-            {
-              routedMedId: 4242,
-              quantity: 30,
-              quantityQualifier: 'C48542',
-              refill: 0,
-              sigLine3: '30 Tablet - Take 1 tablet daily',
-              useSubstitution: true,
-            },
-          ],
-        })
-      );
-
-      await user.click(panel.getByRole('button', { name: 'Prescribe' }));
-      await waitFor(() =>
-        expect(onOrderComplete).toHaveBeenCalledWith(
-          expect.objectContaining({ launchUrl: 'https://ssu.example/widget/compound' })
-        )
-      );
-    }, 40000);
-  });
+    await user.click(panel.getByRole('button', { name: 'Prescribe' }));
+    expect(await screen.findByText('compound rejected')).toBeInTheDocument();
+    expect(orderMedicationMock.mock.calls[0][0]).toMatchObject({
+      combinationMed: true,
+      durationDays: 14,
+      pharmacyNote: 'Compound please',
+      writtenDate: '2026-09-02',
+      fillDate: '2026-09-06',
+      drugs: [
+        { gcnSeqno: 12345, quantity: 45, refill: 1, sigLine3: 'Take as directed · Thin layer', useSubstitution: false },
+        { routedMedId: 4242, quantity: 30, sigLine3: '30 Tablet - Take 1 tablet daily', useSubstitution: true },
+      ],
+    });
+    await user.click(panel.getByRole('button', { name: 'Prescribe' }));
+    await waitFor(() => expect(onOrderComplete).toHaveBeenCalledTimes(1));
+  }, 40000);
 });

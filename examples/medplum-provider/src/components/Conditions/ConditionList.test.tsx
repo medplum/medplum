@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { HTTP_HL7_ORG } from '@medplum/core';
+import { HTTP_HL7_ORG, sleep } from '@medplum/core';
 import type { Condition, Encounter, Patient, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -63,21 +63,11 @@ const diabetes: WithId<Condition> = {
   code: { coding: [{ code: 'E11.9', display: 'Type 2 diabetes mellitus' }] },
 };
 
-const choleraCodes: ValueSetExpansionContains[] = [
-  { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'A00.0', display: 'Cholera, classic' },
-  { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'A00.9', display: 'Cholera, unspecified' },
-];
-
 const expansions: Record<string, ValueSetExpansionContains[]> = {
-  'http://hl7.org/fhir/sid/icd-10-cm/vs/billable': choleraCodes,
+  'http://hl7.org/fhir/sid/icd-10-cm/vs/billable': [{ code: 'A00.9', display: 'Cholera, unspecified' }],
   [HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical']: [{ code: 'active', display: 'Active' }],
 };
 
-/**
- * Stands in for the terminology server: answers the ICD-10 billable and condition-clinical
- * bindings used by ConditionModal with a small fixed expansion.
- * @param medplum - The mock client whose valueSetExpand is replaced.
- */
 function mockValueSetExpand(medplum: MockClient): void {
   medplum.valueSetExpand = vi.fn().mockImplementation(async (params: { url: string }) => ({
     resourceType: 'ValueSet',
@@ -85,11 +75,6 @@ function mockValueSetExpand(medplum: MockClient): void {
   }));
 }
 
-/**
- * Drives the Add Diagnosis modal end to end: picks "Cholera, unspecified" as the ICD-10
- * code and "Active" as the clinical status, then presses Save.
- * @param user - The user-event session.
- */
 async function submitCholeraDiagnosis(user: UserEvent): Promise<void> {
   await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
   await user.type(await screen.findByRole('searchbox', { name: 'ICD-10 Code' }), 'cholera');
@@ -100,8 +85,7 @@ async function submitCholeraDiagnosis(user: UserEvent): Promise<void> {
 }
 
 /**
- * Opens one rank Select and picks an option from its own dropdown; every row renders a
- * dropdown into a portal, so options must be scoped to the one the input controls.
+ * Every rank Select portals its own dropdown, so the option is scoped to the one this input controls.
  * @param user - The user-event session.
  * @param select - The Select input to open.
  * @param rank - The option label to choose.
@@ -219,10 +203,8 @@ describe('ConditionList', () => {
     vi.spyOn(medplum, 'deleteResource').mockResolvedValue({});
     const conditions = [mockCondition, hypertension, diabetes];
     const diagnosis = conditions.map((c, i) => ({ condition: { reference: `Condition/${c.id}` }, rank: i + 1 }));
-
     setup({ encounter: { ...mockEncounter, diagnosis }, conditions, setConditions, onDiagnosisChange });
     await userEvent.setup().click(findRemoveButtons()[0]);
-
     await waitFor(() => expect(setConditions).toHaveBeenCalledWith([hypertension, diabetes]));
     expect(onDiagnosisChange).toHaveBeenCalledWith([diagnosis[1], diagnosis[2]].map((d, i) => ({ ...d, rank: i + 1 })));
   });
@@ -231,10 +213,8 @@ describe('ConditionList', () => {
     const setConditions = vi.fn();
     const onDiagnosisChange = vi.fn();
     vi.spyOn(medplum, 'deleteResource').mockRejectedValue(new Error('Delete failed'));
-
     setup({ conditions: [mockCondition], setConditions, onDiagnosisChange });
     await userEvent.setup().click(findRemoveButtons()[0]);
-
     expect(await screen.findByText('Delete failed')).toBeInTheDocument();
     expect(setConditions).not.toHaveBeenCalled();
     expect(onDiagnosisChange).not.toHaveBeenCalled();
@@ -270,9 +250,7 @@ describe('ConditionList', () => {
     const onDiagnosisChange = vi.fn();
     const encounter = undefined as unknown as Encounter;
     setup({ encounter, conditions: [mockCondition, hypertension], setConditions, onDiagnosisChange });
-
     await selectRank(userEvent.setup(), screen.getAllByRole('textbox')[0], '2');
-
     expect(setConditions).not.toHaveBeenCalled();
     expect(onDiagnosisChange).not.toHaveBeenCalled();
   });
@@ -296,15 +274,9 @@ describe('ConditionList', () => {
     const readReference = vi.spyOn(medplum, 'readReference');
     const show = vi.spyOn(notifications, 'show');
     const setConditions = vi.fn();
-
     setup({ encounter: undefined as unknown as Encounter, setConditions });
-
     expect(screen.getByText('Diagnosis')).toBeInTheDocument();
-    await act(async () => {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 0);
-      });
-    });
+    await act(() => sleep(0));
     expect(readReference).not.toHaveBeenCalled();
     expect(setConditions).not.toHaveBeenCalled();
     expect(show).not.toHaveBeenCalled();
@@ -318,7 +290,6 @@ describe('ConditionList', () => {
       { condition: { reference: 'Condition/condition-123' } },
       { condition: { display: 'Unlinked' } },
     ];
-
     setup({ encounter: { ...mockEncounter, diagnosis }, setConditions });
 
     await waitFor(() => {
@@ -342,12 +313,9 @@ describe('ConditionList', () => {
     const setConditions = vi.fn();
     const onDiagnosisChange = vi.fn();
     const newCondition: WithId<Condition> = { ...mockCondition, id: 'condition-new' };
-
     mockValueSetExpand(medplum);
     vi.spyOn(medplum, 'createResource').mockResolvedValue(newCondition);
-
     setup({ conditions: [mockCondition], setConditions, onDiagnosisChange });
-
     await submitCholeraDiagnosis(user);
 
     await waitFor(
@@ -375,19 +343,13 @@ describe('ConditionList', () => {
   test('shows an error notification and closes the modal when creating a condition fails', async () => {
     const setConditions = vi.fn();
     const onDiagnosisChange = vi.fn();
-
     mockValueSetExpand(medplum);
     vi.spyOn(medplum, 'createResource').mockRejectedValue(new Error('Create failed'));
-
     setup({ setConditions, onDiagnosisChange });
-
     await submitCholeraDiagnosis(userEvent.setup());
-
     expect(await screen.findByText('Create failed', {}, { timeout: 10000 })).toBeInTheDocument();
     expect(setConditions).not.toHaveBeenCalled();
     expect(onDiagnosisChange).not.toHaveBeenCalled();
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   }, 15000);
 });

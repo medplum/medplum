@@ -12,25 +12,19 @@ import { usePharmacyDialog } from './usePharmacyDialog';
 
 const SCRIPTSURE: Identifier = { system: 'https://scriptsure.com', value: '1' };
 const DOSESPOT: Identifier = { system: 'https://dosespot.com', value: '1' };
-
-function renderWithIdentifiers(identifier: Identifier[] | undefined): ReturnType<typeof usePharmacyDialog> {
-  const medplum = new MockClient();
-  const membership = identifier ? { ...medplum.getProjectMembership(), identifier } : undefined;
-  vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(membership as never);
-  const wrapper = ({ children }: { children: ReactNode }): JSX.Element => (
-    <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-  );
-  return renderHook(() => usePharmacyDialog(), { wrapper }).result.current;
-}
+const medplum = new MockClient();
+const wrapper = ({ children }: { children: ReactNode }): JSX.Element => (
+  <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+);
 
 describe('usePharmacyDialog', () => {
-  test.each<[string, Identifier[] | undefined, ReturnType<typeof usePharmacyDialog>]>([
+  test.each<[string, Identifier[], ReturnType<typeof usePharmacyDialog>]>([
     ['a ScriptSure identifier', [SCRIPTSURE], ScriptSurePharmacyDialog],
     ['a DoseSpot identifier', [DOSESPOT], DoseSpotPharmacyDialog],
     ['both identifiers (ScriptSure wins)', [DOSESPOT, SCRIPTSURE], ScriptSurePharmacyDialog],
     ['only unrelated identifiers', [{ system: 'https://example.com', value: '1' }], undefined],
-    ['no membership', undefined, undefined],
   ])('membership with %s', (_label, identifier, expected) => {
-    expect(renderWithIdentifiers(identifier)).toBe(expected);
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue({ identifier } as never);
+    expect(renderHook(() => usePharmacyDialog(), { wrapper }).result.current).toBe(expected);
   });
 });

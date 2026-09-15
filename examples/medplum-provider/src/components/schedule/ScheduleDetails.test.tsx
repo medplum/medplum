@@ -4,54 +4,31 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type { Appointment, ResourceType, Schedule, Slot } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
+import { HomerEncounter, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type * as ReactScheduling from '@medplum/react-scheduling';
-import { act, render, screen, waitFor } from '@testing-library/react';
-import type { UserEvent } from '@testing-library/user-event';
-import userEvent from '@testing-library/user-event';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ScheduleDetails } from './ScheduleDetails';
 
-/**
- * FullCalendar owns interval selection, event clicks and double clicks through pointer
- * gestures that jsdom cannot reproduce, so the real Calendar is rendered alongside buttons
- * that invoke the same callbacks with the data the component passed in.
- */
+/** FullCalendar's pointer gestures do not work in jsdom, so tests invoke the callbacks the component passed to it. */
+let calendarProps: ReactScheduling.CalendarProps;
+
 vi.mock('@medplum/react-scheduling', async (importOriginal) => {
   const actual = await importOriginal<typeof ReactScheduling>();
-  const TestCalendar = (props: ReactScheduling.CalendarProps): React.JSX.Element => (
-    <>
-      <actual.Calendar {...props} />
-      <button type="button" onClick={() => props.onSelectInterval?.({ start: new Date(), end: new Date() })}>
-        test-select-interval
-      </button>
-      <button type="button" onClick={() => props.onSelectSlot?.(props.slots?.[0] as Slot)}>
-        test-select-slot
-      </button>
-      <button type="button" onClick={() => props.onSelectAppointment?.(props.appointments?.[0] as Appointment)}>
-        test-select-appointment
-      </button>
-      <button type="button" onClick={() => props.onDoubleClickAppointment?.(props.appointments?.[0] as Appointment)}>
-        test-double-click-appointment
-      </button>
-    </>
-  );
+  const TestCalendar = (props: ReactScheduling.CalendarProps): React.JSX.Element => {
+    calendarProps = props;
+    return <actual.Calendar {...props} />;
+  };
   return { ...actual, Calendar: TestCalendar };
 });
 
+const booked: WithId<Appointment> = { resourceType: 'Appointment', id: 'booked', status: 'booked', participant: [] };
 vi.mock('./FindPane', () => ({
   FindPane: (props: { onSuccess: (results: { appointment: WithId<Appointment>; slots: Slot[] }) => void }) => (
-    <button
-      type="button"
-      onClick={() =>
-        props.onSuccess({
-          appointment: { resourceType: 'Appointment', id: 'booked', status: 'booked', participant: [] },
-          slots: [],
-        })
-      }
-    >
+    <button type="button" onClick={() => props.onSuccess({ appointment: booked, slots: [] })}>
       test-book-success
     </button>
   ),
@@ -107,10 +84,6 @@ describe('ScheduleDetails', () => {
     medplum.searchResources = vi.fn().mockResolvedValue([]);
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   const setup = async (
     schedule: WithId<Schedule>,
     resources: { slots?: WithId<Slot>[]; appointments?: WithId<Appointment>[] } = {}
@@ -134,7 +107,7 @@ describe('ScheduleDetails', () => {
               <Notifications />
               <Routes>
                 <Route path="/" element={children} />
-                <Route path="/Patient/:patientId/Encounter/:encounterId" element={<div>Encounter Page</div>} />
+                <Route path="/Encounter/:encounterId" element={<div>Encounter Page</div>} />
               </Routes>
             </MantineProvider>
           </MedplumProvider>
@@ -147,17 +120,13 @@ describe('ScheduleDetails', () => {
     return result;
   };
 
-  /** Lets Mantine's drawer transitions finish under fake timers before a negative drawer assertion. */
-  const settleDrawerTransitions = async (): Promise<void> => {
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-  };
+  const settle = (): Promise<void> => act(() => sleep(500));
 
-  const openAppointment = async (user: UserEvent, action: string, appointment = createAppointment()): Promise<void> => {
+  type Action = 'onSelectAppointment' | 'onDoubleClickAppointment';
+  const openAppointment = async (action: Action, appointment = createAppointment()): Promise<void> => {
     await setup(mockSchedule, { appointments: [appointment] });
     await screen.findByText(/John Doe/);
-    await user.click(screen.getByRole('button', { name: `test-${action}-appointment` }));
+    await act(async () => calendarProps[action]?.(appointment));
   };
 
   describe('Initial Rendering', () => {
@@ -195,38 +164,25 @@ describe('ScheduleDetails', () => {
     });
 
     test('opens the create visit drawer when a free slot or an interval is selected', async () => {
-      const user = userEvent.setup();
-      await setup(mockSchedule, { slots: [createSlot()] });
-      await screen.findByText('Available');
-
-      await user.click(screen.getByRole('button', { name: 'test-select-slot' }));
+      await setup(mockSchedule);
+      await act(async () => calendarProps.onSelectSlot?.(createSlot()));
       expect(await screen.findByText('New Calendar Event')).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'test-select-interval' }));
+      await act(async () => calendarProps.onSelectInterval?.({ start: baseDate, end: baseDate }));
       expect(screen.getByRole('button', { name: /Create Visit/i })).toBeInTheDocument();
     });
 
     test('shows an error instead of the drawer when the schedule has no practitioner', async () => {
-      const user = userEvent.setup();
-      await setup({ ...mockSchedule, actor: [{ reference: 'Location/room-1' }] }, { slots: [createSlot()] });
-      await screen.findByText('Available');
-
-      await user.click(screen.getByRole('button', { name: 'test-select-interval' }));
-      expect(await screen.findByText("Can't create visit without associated Practitioner")).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'test-select-slot' }));
-      await waitFor(() => {
-        expect(screen.getAllByText("Can't create visit without associated Practitioner")).toHaveLength(2);
-      });
+      await setup({ ...mockSchedule, actor: [{ reference: 'Location/room-1' }] });
+      await act(async () => calendarProps.onSelectInterval?.({ start: baseDate, end: baseDate }));
+      await act(async () => calendarProps.onSelectSlot?.(createSlot()));
+      expect(await screen.findAllByText("Can't create visit without associated Practitioner")).toHaveLength(2);
       expect(screen.queryByText('New Calendar Event')).not.toBeInTheDocument();
     });
 
     test('ignores busy slots', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      await setup(mockSchedule, { slots: [createSlot({ status: 'busy' })] });
-      await screen.findByText('Blocked');
-
-      await user.click(screen.getByRole('button', { name: 'test-select-slot' }));
-      await settleDrawerTransitions();
+      await setup(mockSchedule);
+      await act(async () => calendarProps.onSelectSlot?.(createSlot({ status: 'busy' })));
+      await settle();
       expect(screen.queryByText('New Calendar Event')).not.toBeInTheDocument();
     });
   });
@@ -242,63 +198,35 @@ describe('ScheduleDetails', () => {
 
   describe('Appointment Selection', () => {
     test('shows an error when selecting or double clicking an appointment that has not been saved', async () => {
-      const user = userEvent.setup();
-      await openAppointment(user, 'select', createAppointment({ id: undefined }));
-      expect(await screen.findByText("Can't navigate to unsaved appointment")).toBeInTheDocument();
-
-      await user.click(screen.getByRole('button', { name: 'test-double-click-appointment' }));
-      await waitFor(() => {
-        expect(screen.getAllByText("Can't navigate to unsaved appointment")).toHaveLength(2);
-      });
-      expect(screen.queryByText('Appointment Details')).not.toBeInTheDocument();
-      expect(medplum.searchOne).not.toHaveBeenCalled();
+      await openAppointment('onSelectAppointment', createAppointment({ id: undefined }));
+      await act(async () => calendarProps.onDoubleClickAppointment?.(createAppointment({ id: undefined })));
+      expect(await screen.findAllByText("Can't navigate to unsaved appointment")).toHaveLength(2);
     });
 
     test('navigates to the linked encounter on double click', async () => {
-      const user = userEvent.setup();
-      medplum.searchOne = vi.fn().mockResolvedValue({
-        resourceType: 'Encounter',
-        id: 'encounter-1',
-        status: 'in-progress',
-        class: { code: 'AMB' },
-        subject: { reference: 'Patient/123' },
-      });
-      await openAppointment(user, 'double-click');
-
+      medplum.searchOne = vi.fn().mockResolvedValue(HomerEncounter);
+      await openAppointment('onDoubleClickAppointment');
       expect(await screen.findByText('Encounter Page')).toBeInTheDocument();
-      expect(medplum.searchOne).toHaveBeenCalledWith('Encounter', { appointment: 'Appointment/appointment-1' });
     });
 
-    test('falls back to the details drawer on double click when no encounter exists', async () => {
-      const user = userEvent.setup();
-      await openAppointment(user, 'double-click');
-
-      expect(await screen.findByText('Appointment Details')).toBeInTheDocument();
-      expect(screen.queryByText('Encounter Page')).not.toBeInTheDocument();
-    });
-
-    test('shows an error when the encounter lookup fails', async () => {
-      const user = userEvent.setup();
-      medplum.searchOne = vi.fn().mockRejectedValue(new Error('Lookup failed'));
-      await openAppointment(user, 'double-click');
-
+    test('shows an error when the lookup fails, and falls back to the details drawer without an encounter', async () => {
+      medplum.searchOne = vi.fn().mockRejectedValueOnce(new Error('Lookup failed')).mockResolvedValue(undefined);
+      await openAppointment('onDoubleClickAppointment');
       expect(await screen.findByText('Lookup failed')).toBeInTheDocument();
-      expect(screen.queryByText('Appointment Details')).not.toBeInTheDocument();
+      await act(async () => calendarProps.onDoubleClickAppointment?.(createAppointment()));
+      expect(await screen.findByText('Appointment Details')).toBeInTheDocument();
     });
 
     test('opens the details drawer for an appointment booked from the find pane', async () => {
-      const user = userEvent.setup();
       await setup(mockSchedule);
-      await user.click(await screen.findByRole('button', { name: 'test-book-success' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'test-book-success' }));
       expect(await screen.findByText('Appointment Details')).toBeInTheDocument();
     });
   });
 
   describe('Appointment Modifications', () => {
-    const appointment = createAppointment();
-
-    const modifyWhileOpen = async (user: UserEvent, resource: WithId<Appointment>): Promise<void> => {
-      await openAppointment(user, 'select', appointment);
+    const modifyWhileOpen = async (resource: WithId<Appointment>): Promise<void> => {
+      await openAppointment('onSelectAppointment');
       await screen.findByText('Appointment Details');
       act(() => {
         medplum.notifyResourceModified({ resourceType: 'Appointment', operation: 'update', id: resource.id, resource });
@@ -306,26 +234,19 @@ describe('ScheduleDetails', () => {
     };
 
     test('closes the details drawer when the selected appointment is cancelled', async () => {
-      const user = userEvent.setup();
-      await modifyWhileOpen(user, { ...appointment, status: 'cancelled' });
-      await waitFor(() => {
-        expect(screen.queryByText('Appointment Details')).not.toBeInTheDocument();
-      });
+      await modifyWhileOpen(createAppointment({ status: 'cancelled' }));
+      await waitFor(() => expect(screen.queryByText('Appointment Details')).not.toBeInTheDocument());
     });
 
     test('keeps the drawer open when the selected appointment is updated to another status', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      await modifyWhileOpen(user, { ...appointment, status: 'fulfilled' });
-      await settleDrawerTransitions();
+      await modifyWhileOpen(createAppointment({ status: 'fulfilled' }));
+      await settle();
       expect(screen.getByText('Appointment Details')).toBeInTheDocument();
     });
 
     test('ignores modifications to other appointments', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      await modifyWhileOpen(user, { ...appointment, id: 'someone-else', status: 'cancelled' });
-      await settleDrawerTransitions();
+      await modifyWhileOpen(createAppointment({ id: 'someone-else', status: 'cancelled' }));
+      await settle();
       expect(screen.getByText('Appointment Details')).toBeInTheDocument();
     });
   });

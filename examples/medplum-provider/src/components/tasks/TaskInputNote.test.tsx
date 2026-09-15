@@ -19,9 +19,7 @@ describe('TaskInputNote', () => {
     vi.clearAllMocks();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  afterEach(() => vi.restoreAllMocks());
 
   const setup = (
     task: Task | Reference<Task>,
@@ -153,29 +151,15 @@ describe('TaskInputNote', () => {
     input: [{ type: { text: 'Questionnaire' }, valueReference: { reference: 'Questionnaire/q-note' } }],
   };
 
-  test.each([
-    [
-      'adding a note',
-      async (): Promise<void> => {
-        fireEvent.change(screen.getByPlaceholderText('Add a note...'), { target: { value: 'Failing note' } });
-        fireEvent.click(screen.getByText('Submit'));
-      },
-    ],
-    [
-      'marking as completed',
-      async (): Promise<void> => {
-        fireEvent.click(screen.getByLabelText('Mark as Completed'));
-      },
-    ],
-  ])('shows an error notification when %s fails', async (_action, trigger) => {
+  test.each(['Submit', 'Mark as Completed'])('shows an error notification when "%s" fails', async (control) => {
     const showSpy = vi.spyOn(notifications, 'show');
     const onTaskChange = vi.fn(() => {
       throw new Error('Change rejected');
     });
     setup(mockTask, { onTaskChange });
 
-    await screen.findByLabelText('Mark as Completed');
-    await act(trigger);
+    fireEvent.change(await screen.findByPlaceholderText('Add a note...'), { target: { value: 'Failing note' } });
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: control })));
 
     expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ title: 'Error', message: 'Change rejected' }));
   });

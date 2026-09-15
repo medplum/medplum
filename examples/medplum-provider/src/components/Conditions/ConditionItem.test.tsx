@@ -22,18 +22,11 @@ const mockCondition: Condition = {
   },
 };
 
-/**
- * Runs an interaction while listening for uncaught window errors and asserts none fired.
- * @param interaction - The interaction to run.
- */
 async function expectNoWindowError(interaction: () => Promise<void>): Promise<void> {
   const onError = vi.fn((event: ErrorEvent) => event.preventDefault());
   window.addEventListener('error', onError);
-  try {
-    await interaction();
-  } finally {
-    window.removeEventListener('error', onError);
-  }
+  await interaction();
+  window.removeEventListener('error', onError);
   expect(onError).not.toHaveBeenCalled();
 }
 
@@ -108,20 +101,17 @@ describe('ConditionItem', () => {
   test('renders one rank option per condition and calls onChange with the selected rank', async () => {
     const onChange = vi.fn();
     const user = userEvent.setup();
-    setup({ rank: 1, total: 3, onChange });
-
+    setup({ onChange });
     await user.click(screen.getByRole('textbox'));
     const options = await screen.findAllByRole('option', { hidden: true });
     expect(options.map((option) => option.textContent)).toEqual(['1', '2', '3']);
-
     await user.click(options[2]);
     expect(onChange).toHaveBeenCalledWith(mockCondition, '3');
   });
 
   test('does not throw when selecting a rank without an onChange handler', async () => {
     const user = userEvent.setup();
-    setup({ rank: 1, total: 2, onChange: undefined });
-
+    setup({ onChange: undefined });
     await expectNoWindowError(async () => {
       await user.click(screen.getByRole('textbox'));
       await user.click(await screen.findByRole('option', { name: '2', hidden: true }));
@@ -130,11 +120,9 @@ describe('ConditionItem', () => {
   });
 
   test('does not throw when removing without an onRemove handler', async () => {
-    const user = userEvent.setup();
     setup({ onRemove: undefined });
     const removeButton = screen.getAllByRole('button', { hidden: true }).find((btn) => btn.querySelector('svg'));
-
-    await expectNoWindowError(() => user.click(removeButton as HTMLElement));
+    await expectNoWindowError(() => userEvent.setup().click(removeButton as HTMLElement));
     expect(screen.getByText('Acute bronchitis')).toBeInTheDocument();
   });
 });

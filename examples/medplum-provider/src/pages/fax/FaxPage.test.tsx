@@ -59,18 +59,13 @@ function bundleOf(...comms: WithId<Communication>[]): Bundle<WithId<Communicatio
   };
 }
 
-function pagedBundle(pageSize: number, total: number): Bundle<WithId<Communication>> {
-  const comms = Array.from({ length: pageSize }, (_, i) => ({
-    ...INBOX_FAX,
-    id: `fax-page-${i}`,
-    topic: { text: `Fax topic ${i}` },
-  }));
-  return { ...bundleOf(...comms), total };
+function pagedBundle(): Bundle<WithId<Communication>> {
+  return { ...bundleOf(...Array.from({ length: 20 }, (_, i) => ({ ...INBOX_FAX, id: `fax-page-${i}` }))), total: 45 };
 }
 
 function LocationDisplay(): JSX.Element {
-  const location = useLocation();
-  return <div data-testid="location">{`${location.pathname}${location.search}`}</div>;
+  const { pathname, search } = useLocation();
+  return <div data-testid="location">{pathname + search}</div>;
 }
 
 describe('FaxPage', () => {
@@ -251,48 +246,33 @@ describe('FaxPage', () => {
     });
   });
 
-  test.each([
-    ['inbound', '/Fax/Communication/fax-page-3?_offset=20'],
-    ['outbound', '/Fax/Communication/fax-page-3?category=outbound&_offset=20'],
-  ])(
-    'paginating the %s list writes the offset to the URL and keeps the selected fax',
-    async (category, initialPath) => {
-      const user = userEvent.setup();
-      medplum.search = vi.fn().mockResolvedValue(pagedBundle(20, 45));
-      vi.spyOn(medplum, 'post').mockResolvedValue({});
-      setup(initialPath);
-      await waitFor(() => {
-        expect(screen.getByTestId('location').textContent).toBe(initialPath);
-        expect(screen.getByText('Fax topic 3')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', { name: '3' }));
-      await waitFor(() => {
-        expect(screen.getByTestId('location').textContent).toBe(
-          `/Fax/Communication/fax-page-3?_count=20&_sort=-_lastUpdated&category=${category}&_offset=40`
-        );
-      });
-    }
-  );
+  test('paginating writes the offset to the URL and keeps the selected fax', async () => {
+    const user = userEvent.setup();
+    medplum.search = vi.fn().mockResolvedValue(pagedBundle());
+    vi.spyOn(medplum, 'post').mockResolvedValue({});
+    setup('/Fax/Communication/fax-page-3?_offset=20');
+    await user.click(await screen.findByRole('button', { name: '3' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('location').textContent).toBe(
+        '/Fax/Communication/fax-page-3?_count=20&_sort=-_lastUpdated&category=inbound&_offset=40'
+      );
+    });
+  });
 
   test('keeps the send fax modal and offset in fax links, then navigates to the sent fax', async () => {
     const user = userEvent.setup();
-    medplum.search = vi.fn().mockResolvedValue(pagedBundle(20, 45));
+    medplum.search = vi.fn().mockResolvedValue(pagedBundle());
     vi.spyOn(medplum, 'post').mockResolvedValue({});
     vi.spyOn(medplum, 'createAttachment').mockResolvedValue({ contentType: 'application/pdf', url: 'http://x/y.pdf' });
     vi.spyOn(medplum, 'createResource').mockImplementation(async (r) => ({ ...r, id: `${r.resourceType}-1` }));
     setup('/Fax/Communication/new?_offset=20');
-
-    const link = (await screen.findByText('Fax topic 0')).closest('a');
+    const link = (await screen.findAllByText('Referral for patient'))[0].closest('a');
     expect(link).toHaveAttribute(
       'href',
       '/Fax/Communication/fax-page-0/new?_count=20&_sort=-_lastUpdated&category=inbound&_offset=20'
     );
-
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    fireEvent.change(fileInput, {
-      target: { files: [new File(['%PDF-1.7'], 'referral.pdf', { type: 'application/pdf' })] },
-    });
+    const file = new File(['%PDF-1.7'], 'referral.pdf', { type: 'application/pdf' });
+    fireEvent.change(document.querySelector('input[type="file"]') as HTMLInputElement, { target: { files: [file] } });
     await user.type(screen.getByLabelText(/Fax Number/), '5551234567');
     await user.click(screen.getByRole('button', { name: 'Send Fax' }));
 

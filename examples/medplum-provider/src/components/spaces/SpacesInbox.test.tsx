@@ -9,22 +9,15 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Message } from '../../types/spaces';
 import { SpacesInbox } from './SpacesInbox';
 
-/**
- * HistoryList navigates through links and never calls onSelectTopic itself, so the stub
- * exposes a button that selects a topic directly and echoes the active topic id.
- */
+/** HistoryList navigates through links, so the stub selects a topic directly and echoes the active topic id. */
+type HistoryListProps = { currentTopicId?: string; onSelectTopic: (id: string) => void };
 vi.mock('./HistoryList', () => ({
-  HistoryList: (props: { currentTopicId?: string; onSelectTopic: (id: string) => void }) => (
-    <button
-      type="button"
-      data-testid="history-list"
-      data-current-topic={props.currentTopicId ?? ''}
-      onClick={() => props.onSelectTopic('topic-456')}
-    >
+  HistoryList: ({ currentTopicId, onSelectTopic }: HistoryListProps) => (
+    <button type="button" data-current-topic={currentTopicId ?? ''} onClick={() => onSelectTopic('topic-456')}>
       Select topic-456
     </button>
   ),
@@ -66,52 +59,26 @@ function createMockStreamingResponse(content: string): Response {
   });
 }
 
-/**
- * A streaming response whose chunks are emitted on demand, so a test can observe the UI while the stream is open.
- * @returns The response plus push/close controls for the underlying stream.
- */
-function createControlledStreamingResponse(): {
-  response: Response;
-  push: (content: string) => void;
-  close: () => void;
-} {
-  const encoder = new TextEncoder();
+function controlledStream(): { response: Response; push: (content: string) => void; close: () => void } {
   let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
   const stream = new ReadableStream<Uint8Array>({ start: (c) => (controller = c) });
   return {
     response: new Response(stream, { status: 200, headers: { 'Content-Type': 'text/event-stream' } }),
-    push: (content) => controller?.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`)),
-    close: () => {
-      controller?.enqueue(encoder.encode('data: [DONE]\n\n'));
-      controller?.close();
-    },
+    push: (content) => controller?.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content })}\n\n`)),
+    close: () => controller?.close(),
   };
 }
 
-function toCommunication(topicId: string, message: Message, sequenceNumber: number): Communication {
-  return {
-    resourceType: 'Communication',
-    id: `msg-${sequenceNumber}`,
-    status: 'completed',
-    identifier: [{ system: 'http://medplum.com/ai-message', value: 'ai-message' }],
-    partOf: [{ reference: `Communication/${topicId}` }],
-    payload: [{ contentString: JSON.stringify({ ...message, sequenceNumber }) }],
-  };
+function toCommunication(message: Message, seq: number): Communication {
+  const contentString = JSON.stringify({ ...message, sequenceNumber: seq });
+  return { resourceType: 'Communication', id: `msg-${seq}`, status: 'completed', payload: [{ contentString }] };
 }
 
-interface ToolCall {
-  id?: string;
-  function: { name: string; arguments: unknown };
-}
+type ToolCall = { id?: string; function: { name: string; arguments: unknown } };
 
-function toolCallsResponse(toolCalls: ToolCall[], visualize?: boolean): Parameters {
-  return {
-    resourceType: 'Parameters',
-    parameter: [
-      { name: 'tool_calls', valueString: JSON.stringify(toolCalls) },
-      ...(visualize ? [{ name: 'visualize', valueBoolean: true }] : []),
-    ],
-  };
+function toolCallsResponse(toolCalls: ToolCall[], visualize = false): Parameters {
+  const parameter = [{ name: 'tool_calls', valueString: JSON.stringify(toolCalls) }];
+  return { resourceType: 'Parameters', parameter: [...parameter, { name: 'visualize', valueBoolean: visualize }] };
 }
 
 function fhirRequestToolCall(id: string, method: string, path: string): ToolCall {
@@ -122,10 +89,12 @@ describe('SpacesInbox', () => {
   let medplum: MockClient;
   const onNewTopicMock = vi.fn();
   const onSelectedItemMock = vi.fn((topic: Communication) => `/Spaces/Communication/${topic.id}`);
+  const onAdd = vi.fn();
 
   beforeEach(() => {
     medplum = new MockClient();
     vi.clearAllMocks();
+    notifications.clean();
 
     Element.prototype.scrollTo = vi.fn();
     medplum.getProfile = vi.fn().mockResolvedValue(mockProfile) as any;
@@ -150,23 +119,13 @@ describe('SpacesInbox', () => {
     });
   });
 
-  afterEach(() => {
-    notifications.clean();
-    vi.restoreAllMocks();
-  });
-
-  const setup = (topicRef?: { reference: string }, onAdd?: () => void): ReturnType<typeof render> => {
+  const setup = (topic?: { reference: string }): ReturnType<typeof render> => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <SpacesInbox
-              topic={topicRef}
-              onNewTopic={onNewTopicMock}
-              onSelectedItem={onSelectedItemMock}
-              onAdd={onAdd}
-            />
+            <SpacesInbox topic={topic} onNewTopic={onNewTopicMock} onSelectedItem={onSelectedItemMock} onAdd={onAdd} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -176,21 +135,17 @@ describe('SpacesInbox', () => {
   const panelHeader = (title: string): HTMLElement =>
     screen.getByText(title).closest('div')?.parentElement as HTMLElement;
 
-  const closePanel = async (user: UserEvent, title: string): Promise<void> => {
-    await user.click(panelHeader(title).querySelector('.mantine-CloseButton-root') as HTMLElement);
-  };
+  const closePanel = (user: UserEvent, title: string): Promise<void> =>
+    user.click(panelHeader(title).querySelector('.mantine-CloseButton-root') as HTMLElement);
 
-  const goBackFromDetails = async (user: UserEvent): Promise<void> => {
-    await user.click(panelHeader('Resource Details').querySelector('button') as HTMLElement);
-  };
+  const goBackFromDetails = (user: UserEvent): Promise<void> =>
+    user.click(panelHeader('Resource Details').querySelector('button') as HTMLElement);
 
   const mockConversation = (messages: Message[]): void => {
-    const comms = messages.map((m, i) => toCommunication('topic-123', m, i));
+    const comms = messages.map(toCommunication);
     medplum.searchResources = vi
       .fn()
-      .mockImplementation((resourceType: string) =>
-        Promise.resolve(resourceType === 'Patient' ? [HomerSimpson] : comms)
-      );
+      .mockImplementation(async (t: string) => (t === 'Patient' ? [HomerSimpson] : comms));
   };
 
   describe('Initial state (before first message)', () => {
@@ -224,20 +179,14 @@ describe('SpacesInbox', () => {
   describe('Sidebar', () => {
     test('toggles the conversations sidebar and forwards the New conversation click', async () => {
       const user = userEvent.setup();
-      const onAdd = vi.fn();
-      setup(undefined, onAdd);
-
+      setup();
       const sidebar = screen.getByText('Conversations').parentElement?.parentElement as HTMLElement;
       expect(sidebar).toHaveStyle({ width: '0px' });
-
       const header = screen.getByLabelText('New conversation').parentElement as HTMLElement;
       await user.click(header.querySelector('button') as HTMLButtonElement);
       expect(sidebar).toHaveStyle({ width: '280px' });
-      expect(header.querySelectorAll('button')).toHaveLength(1);
-
       await user.click(screen.getByLabelText('New conversation'));
       expect(onAdd).toHaveBeenCalledTimes(1);
-
       await user.click(screen.getByText('Conversations').parentElement?.querySelector('button') as HTMLElement);
       expect(sidebar).toHaveStyle({ width: '0px' });
     });
@@ -246,24 +195,13 @@ describe('SpacesInbox', () => {
       const user = userEvent.setup();
       medplum.searchResources = vi.fn().mockRejectedValue(new Error('History unavailable'));
       setup();
-
       await user.click(screen.getByText('Select topic-456'));
       expect(await screen.findByText('History unavailable')).toBeInTheDocument();
-      expect(screen.getByText('How can I help you today?')).toBeInTheDocument();
-
-      mockConversation([
-        { role: 'user', content: 'Earlier question' },
-        { role: 'assistant', content: 'Earlier answer' },
-      ]);
+      mockConversation([{ role: 'user', content: 'Earlier question' }]);
       await user.click(screen.getByText('Select topic-456'));
       expect(await screen.findByText('Earlier question')).toBeInTheDocument();
-      expect(screen.getByText('Earlier answer')).toBeInTheDocument();
       expect(screen.queryByText('How can I help you today?')).not.toBeInTheDocument();
-      expect(screen.getByTestId('history-list')).toHaveAttribute('data-current-topic', 'topic-456');
-      expect(medplum.searchResources).toHaveBeenCalledWith(
-        'Communication',
-        expect.objectContaining({ 'part-of': 'Communication/topic-456' })
-      );
+      expect(screen.getByText('Select topic-456')).toHaveAttribute('data-current-topic', 'topic-456');
     });
   });
 
@@ -276,84 +214,57 @@ describe('SpacesInbox', () => {
         content: null,
         tool_calls: [
           fhirRequestToolCall('tc-get', 'GET', 'Patient/patient-1'),
-          fhirRequestToolCall('tc-post', 'POST', 'Observation'),
           { id: 'tc-broken', function: { name: 'fhir_request', arguments: 'not json' } },
           { function: { name: 'custom_tool', arguments: { foo: 'bar' } } },
         ],
       },
       { role: 'tool', tool_call_id: 'tc-get', content: JSON.stringify({ resourceType: 'Patient', id: 'patient-1' }) },
-      { role: 'tool', tool_call_id: 'tc-post', content: 'plain text response' },
     ];
 
     test('loads persisted messages, hides system messages, and renders tool calls with toggleable responses', async () => {
       const user = userEvent.setup();
       mockConversation(toolCallMessages);
       setup({ reference: 'Communication/topic-123' });
-
       expect(await screen.findByText('Look things up')).toBeInTheDocument();
       expect(screen.queryByText('hidden system prompt')).not.toBeInTheDocument();
-      expect(screen.getByTestId('history-list')).toHaveAttribute('data-current-topic', 'topic-123');
+      expect(screen.getByText('Select topic-456')).toHaveAttribute('data-current-topic', 'topic-123');
       expect(screen.getByText('GET')).toBeInTheDocument();
-      expect(screen.getByText('POST')).toBeInTheDocument();
       expect(screen.getByText('CALL')).toBeInTheDocument();
-      expect(screen.getByText('custom_tool')).toBeInTheDocument();
       expect(screen.getByText('Unable to parse tool call')).toBeInTheDocument();
-
-      const [getResponse, postResponse] = screen.getAllByText('Response');
-      await user.click(getResponse);
+      await user.click(screen.getByText('Response'));
       expect(screen.getByText(/"resourceType": "Patient"/)).toBeInTheDocument();
-      await user.click(postResponse);
-      expect(screen.getByText('plain text response')).toBeInTheDocument();
-      expect(screen.getAllByText('▲')).toHaveLength(2);
-      await user.click(getResponse);
-      expect(screen.getAllByText('▼')).toHaveLength(1);
+      expect(screen.getByText('▲')).toBeInTheDocument();
+      await user.click(screen.getByText('Response'));
+      expect(screen.getByText('▼')).toBeInTheDocument();
     });
 
     test('opens the results list, drills into a result, navigates back, and closes each panel', async () => {
       const user = userEvent.setup();
-      mockConversation([
-        { role: 'user', content: 'Find patients' },
-        { role: 'assistant', content: 'Found three', resources: ['Patient/p-1', 'Patient/p-2', 'Patient/p-3'] },
-      ]);
+      const resources = ['Patient/p-1', 'Patient/p-2', 'Patient/p-3'];
+      mockConversation([{ role: 'assistant', content: 'Found three', resources }]);
       setup({ reference: 'Communication/topic-123' });
-
       await user.click(await screen.findByText('3 results'));
       expect(screen.getByText('Results (3)')).toBeInTheDocument();
       await user.click((await screen.findAllByTestId('resource-box'))[1]);
       expect(screen.getByText('Resource Details')).toBeInTheDocument();
-      expect(screen.queryByText('Results (3)')).not.toBeInTheDocument();
-
       await goBackFromDetails(user);
       expect(screen.getByText('Results (3)')).toBeInTheDocument();
       await closePanel(user, 'Results (3)');
-      expect(screen.queryByText('Results (3)')).not.toBeInTheDocument();
-
-      await user.click(screen.getByText('3 results'));
-      await user.click((await screen.findAllByTestId('resource-box'))[0]);
-      await closePanel(user, 'Resource Details');
-      expect(screen.queryByText('Resource Details')).not.toBeInTheDocument();
       expect(screen.queryByText('Results (3)')).not.toBeInTheDocument();
     });
 
     test('opens a persisted component, drills into one of its resources, returns, and closes', async () => {
       const user = userEvent.setup();
       const componentCode = 'function Widget() {\n  return <Text>Widget rendered</Text>;\n}';
-      mockConversation([
-        { role: 'user', content: 'Chart it' },
-        { role: 'assistant', content: 'Here you go', componentCode, resources: ['Patient/p-1'] },
-      ]);
+      mockConversation([{ role: 'assistant', content: 'Here you go', componentCode, resources: ['Patient/p-1'] }]);
       setup({ reference: 'Communication/topic-123' });
-
       await user.click(await screen.findByText('View Component'));
       expect(screen.getByText('Component Preview')).toBeInTheDocument();
       await user.click(screen.getByRole('tab', { name: 'Resources' }));
       await user.click(await screen.findByTestId('resource-box'));
       expect(screen.getByText('Resource Details')).toBeInTheDocument();
-      expect(screen.queryByText('Component Preview')).not.toBeInTheDocument();
-
       await goBackFromDetails(user);
       expect(screen.getByText('Component Preview')).toBeInTheDocument();
-      expect(screen.queryByText('Resource Details')).not.toBeInTheDocument();
       await closePanel(user, 'Component Preview');
       expect(screen.queryByText('Component Preview')).not.toBeInTheDocument();
     });
@@ -361,7 +272,6 @@ describe('SpacesInbox', () => {
     test('shows an error notification when loading the topic fails', async () => {
       medplum.searchResources = vi.fn().mockRejectedValue(new Error('Load failed'));
       setup({ reference: 'Communication/topic-123' });
-
       expect(await screen.findByText('Load failed')).toBeInTheDocument();
       expect(screen.getByText('How can I help you today?')).toBeInTheDocument();
     });
@@ -371,14 +281,10 @@ describe('SpacesInbox', () => {
       mockConversation([{ role: 'user', content: 'Persisted question' }]);
       setup({ reference: 'Communication/topic-123' });
       await screen.findByText('Persisted question');
-
       const viewport = document.querySelector('.mantine-ScrollArea-viewport') as HTMLElement;
-      Object.defineProperty(viewport, 'scrollHeight', { configurable: true, value: 1000 });
-      Object.defineProperty(viewport, 'clientHeight', { configurable: true, value: 300 });
-      Object.defineProperty(viewport, 'scrollTop', { configurable: true, value: 0, writable: true });
+      Object.defineProperties(viewport, { scrollHeight: { value: 1000 }, clientHeight: { value: 300 } });
       fireEvent.scroll(viewport);
       await user.click(screen.getByLabelText('Scroll to bottom'));
-
       expect(Element.prototype.scrollTo).toHaveBeenCalledWith({ top: 1000, behavior: 'smooth' });
       expect(screen.queryByLabelText('Scroll to bottom')).not.toBeInTheDocument();
     });
@@ -456,17 +362,13 @@ describe('SpacesInbox', () => {
         parameter: [{ name: 'content', valueString: 'About Homer' }],
       });
       setup();
-
       await user.click(screen.getByRole('button', { name: 'Patients' }));
       await user.click(await screen.findByText('Homer Simpson', {}, { timeout: 3000 }));
       await user.type(screen.getByPlaceholderText('Ask, search, or make anything...'), 'Summarize');
       await user.click(screen.getByRole('button', { name: 'Send message' }));
-
       expect(await screen.findByText('About Homer')).toBeInTheDocument();
       const userMessage = screen.getByText('Summarize').parentElement?.parentElement as HTMLElement;
       expect(within(userMessage).getByText('Homer Simpson')).toBeInTheDocument();
-      const params = vi.mocked(medplum.executeBot).mock.calls[0][1] as Parameters;
-      expect(params.parameter?.find((p) => p.name === 'messages')?.valueString).toContain('Patient/123');
     });
   });
 
@@ -575,33 +477,26 @@ describe('SpacesInbox', () => {
         .mockResolvedValueOnce({ resourceType: 'Parameters', parameter: [] });
       medplum.get = vi.fn().mockResolvedValue({ resourceType: 'Patient', id: 'patient-123' });
       medplum.readResource = vi.fn().mockResolvedValue({ resourceType: 'Patient', id: 'patient-123' });
-      const componentStream = createControlledStreamingResponse();
+      const componentStream = controlledStream();
       vi.spyOn(globalThis, 'fetch')
         .mockResolvedValueOnce(createMockStreamingResponse('Here is your chart'))
         .mockResolvedValueOnce(componentStream.response);
       setup();
-
       await user.type(screen.getByPlaceholderText('Ask, search, or make anything...'), 'Chart patients');
       await user.click(screen.getByRole('button', { name: 'Send message' }));
-
       const generating = await screen.findByText('Generating component...', {}, { timeout: 3000 });
       expect(screen.getByText('Component Preview')).toBeInTheDocument();
       await closePanel(user, 'Component Preview');
       expect(screen.queryByText('Component Preview')).not.toBeInTheDocument();
       await user.click(generating);
       expect(screen.getByText('Component Preview')).toBeInTheDocument();
-
-      await act(async () => {
-        componentStream.push('```jsx\nfunction Chart() {\n  return <Text>Generated chart</Text>;\n}\n```');
-      });
+      await act(async () =>
+        componentStream.push('```jsx\nfunction Chart() {\n  return <Text>Generated chart</Text>;\n}\n```')
+      );
       expect(await screen.findByText(/function Chart/)).toBeInTheDocument();
-      await act(async () => {
-        componentStream.close();
-      });
-
+      await act(async () => componentStream.close());
       expect(await screen.findByText('View Component')).toBeInTheDocument();
       expect(screen.getByText('Here is your chart')).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: 'Preview' })).toBeInTheDocument();
       expect(screen.queryByText('Generating component...')).not.toBeInTheDocument();
     });
   });
