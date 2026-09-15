@@ -13,7 +13,8 @@ import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { SystemRepository } from './fhir/repo';
-import { getGlobalSystemRepo } from './fhir/repo';
+import { getShardSystemRepo } from './fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import type { PgQueryable } from './fhir/sql';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
@@ -175,7 +176,7 @@ describe('Database migrations', () => {
       restoreWorkerQueueMocks();
     });
 
-    systemRepo = getGlobalSystemRepo();
+    systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
     await loadTestConfig();
     // We want a clean history of post-deploy migration AsyncJob. init and shutdown the app
     // to facilitate expunging all relevant AsyncJob

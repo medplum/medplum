@@ -42,6 +42,7 @@ import { tryGetRequestContext } from '../context';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
 import { setResourceCacheEntry } from '../fhir/repository/resource-cache';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
 import {
@@ -118,15 +119,16 @@ describe('Subscription Worker', () => {
 
     repo = _repo;
     systemRepo = repo.getSystemRepo();
-    superAdminRepo = new Repository({ extendedMode: true, superAdmin: true, author: createReference(client) });
+    superAdminRepo = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+      extendedMode: true,
+      superAdmin: true,
+      author: createReference(client),
+    });
 
     // Create another project, this one with bots enabled
-    const botProjectDetails = await createTestProject({ withClient: true });
-    botRepo = new Repository({
-      extendedMode: true,
-      projects: [botProjectDetails.project],
-      author: createReference(botProjectDetails.client),
-    });
+    const botProjectDetails = await createTestProject({ withClient: true, withRepo: true });
+    botRepo = botProjectDetails.repo;
 
     mockLambdaClient = mockClient(LambdaClient);
     mockLambdaClient.on(InvokeCommand).callsFake(({ Payload }) => {
@@ -3033,30 +3035,32 @@ describe('Subscription Worker', () => {
           resource: [{ resourceType: 'Patient', criteria: `Patient?_compartment=${allowedOrgId}` }],
         });
 
-        // Create the "no access" membership FIRST so that `findProjectMembership` returns
-        // it ahead of the "has access" membership -- this is what makes the
-        // `authorMembershipId` plumbing necessary in the first place.
-        const noAccessMembership = await superAdminRepo.createResource<ProjectMembership>({
+        // Two memberships for the same profile, created without policies: `findProjectMembership`
+        // returns them in no particular order, so which policy goes where is decided after the fact.
+        const membershipTemplate: ProjectMembership = {
           resourceType: 'ProjectMembership',
           user: createReference(client),
           profile: createReference(practitioner),
           project: createReference(wsProject),
+        };
+        const membershipA = await superAdminRepo.createResource<ProjectMembership>(membershipTemplate);
+        const membershipB = await superAdminRepo.createResource<ProjectMembership>(membershipTemplate);
+
+        // Whichever membership the unordered lookup returns first gets the denying policy, so a
+        // worker that fell back to `findProjectMembership` would deny the allowed subscription.
+        const firstFound = await workerUtils.findProjectMembership(wsProject.id, createReference(practitioner));
+        expect([membershipA.id, membershipB.id]).toContain(firstFound?.id);
+        const [noAccessMembership, hasAccessMembership] =
+          firstFound?.id === membershipA.id ? [membershipA, membershipB] : [membershipB, membershipA];
+
+        await superAdminRepo.updateResource<ProjectMembership>({
+          ...noAccessMembership,
           accessPolicy: createReference(noAccessPolicy),
         });
-
-        const hasAccessMembership = await superAdminRepo.createResource<ProjectMembership>({
-          resourceType: 'ProjectMembership',
-          user: createReference(client),
-          profile: createReference(practitioner),
-          project: createReference(wsProject),
+        await superAdminRepo.updateResource<ProjectMembership>({
+          ...hasAccessMembership,
           accessPolicy: createReference(hasAccessPolicy),
         });
-
-        // Sanity check: the unordered membership lookup returns the denying membership
-        // first.  If this ever changes, the rest of the test stops exercising what it
-        // intends to exercise.
-        const firstFound = await workerUtils.findProjectMembership(wsProject.id, createReference(practitioner));
-        expect(firstFound?.id).toStrictEqual(noAccessMembership.id);
 
         // Two WebSocket subscriptions, one bound with each membership.
         const noAccessSub = await wsRepo.createResource<Subscription>({

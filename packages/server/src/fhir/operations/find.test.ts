@@ -924,6 +924,69 @@ describe('Appointment/$find', () => {
     expect(response).toHaveStatus(400);
   });
 
+  test('errors when the requested HealthcareService is inactive', async () => {
+    const inactiveVisit = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      meta: { project: project.id },
+      active: false,
+      type: [{ coding: [{ system: 'http://example.com', code: 'inactive-visit' }] }],
+      name: 'Inactive Visit',
+    });
+
+    const schedule = await makeSchedule([
+      {
+        service: inactiveVisit,
+        duration: 30,
+        availability: monTueAvailability,
+      },
+    ]);
+
+    const response = await makeRequest({
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${inactiveVisit.id}`,
+      schedule: `Schedule/${schedule.id}`,
+    });
+    expect(response.body).toHaveProperty('issue', [
+      {
+        code: 'invalid',
+        severity: 'error',
+        details: {
+          text: 'HealthcareService is inactive',
+        },
+        expression: ['Parameters.service-type-reference'],
+      },
+    ]);
+    expect(response).toHaveStatus(400);
+  });
+
+  test('finds appointments when the requested HealthcareService is explicitly active', async () => {
+    const activeVisit = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      meta: { project: project.id },
+      active: true,
+      type: [{ coding: [{ system: 'http://example.com', code: 'active-visit' }] }],
+      name: 'Active Visit',
+    });
+
+    const schedule = await makeSchedule([
+      {
+        service: activeVisit,
+        duration: 30,
+        availability: monTueAvailability,
+      },
+    ]);
+
+    const response = await makeRequest({
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${activeVisit.id}`,
+      schedule: `Schedule/${schedule.id}`,
+    });
+    expect(response).toHaveStatus(200);
+    expect((response.body as Bundle<Appointment>).entry?.length).toBeGreaterThan(0);
+  });
+
   test('errors when `schedule` parameter is omitted', async () => {
     const response = await makeRequest({
       start: new Date('2026-03-16T00:00:00-04:00').toISOString(),

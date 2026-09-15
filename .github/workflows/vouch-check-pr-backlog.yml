@@ -183,6 +183,7 @@ jobs:
               {key: "close-unvouched", label: "Closed: unvouched author, no linked `open-to-community` issue"},
               {key: "would-close-unvouched", label: "Would close: unvouched author, no linked `open-to-community` issue"},
               {key: "error", label: "Errored (check the job logs)"},
+              {key: "vouched-label", label: "Left open: PR has the `vouched` label"},
               {key: "linked-issue", label: "Left open: linked issue has the `open-to-community` label"},
               {key: "vouched", label: "Left open: the action vouched the author itself (repo write access)"},
               {key: "bot", label: "Left open: author is a bot"}

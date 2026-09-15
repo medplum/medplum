@@ -122,6 +122,8 @@ The bot resolves the payer in Candid's directory using these identifiers in prio
 
 At least one identifier is required. `name` is also required (used in the name search for options 2 and 3). The bot hard-fails if no match is found in Candid's directory.
 
+Use the [Payer Directory](/docs/integration/candid/payer-directory) to look up payers and save them as Organizations with the Candid payer UUID already populated.
+
 ### Coverage (Insured)
 
 For insured claims, use the `CandidCoverage` profile. `Coverage.payor` must reference a payer Organization.
@@ -396,5 +398,7 @@ Once the operation is invoked, the bot runs the following steps:
 
 ## Related Resources
 
+- [Payer Directory](/docs/integration/candid/payer-directory)
+- [Eligibility Check](/docs/integration/candid/eligibility-check)
 - [Candid Health API Documentation](https://docs.joincandidhealth.com/introduction/overview)
 - [Billing Documentation](/docs/billing)

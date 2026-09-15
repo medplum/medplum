@@ -43,7 +43,8 @@ import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import type { Repository, SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { SmartScope } from '../fhir/smart';
 import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
@@ -1124,7 +1125,7 @@ export async function getLoginForBasicAuth(req: Request, token: string): Promise
 }
 
 async function makeAuthResult(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   req: Request | IncomingMessage | undefined,
   login: Login,
   project: WithId<Project>,
@@ -1331,7 +1332,10 @@ async function tryExternalAuthLogin(
     }
 
     // Search for the profile
-    const profile = await systemRepo.searchOne<ProfileResource>(searchRequest);
+    // SHARDING there's no project context here and feels like a legitimate gap in
+    // the current external auth flow. Will need to require projectId be in the request path
+    const projectSystemRepo = getShardSystemRepo(TODO_SHARD_ID);
+    const profile = await projectSystemRepo.searchOne<ProfileResource>(searchRequest);
     if (!profile) {
       return undefined;
     }
