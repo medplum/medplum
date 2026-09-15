@@ -27,7 +27,7 @@ export function getExecuteLambdaClient(): LambdaClient {
  * @returns The payload object to send to the Lambda function.
  */
 export function buildLambdaPayload(request: BotExecutionContext): Record<string, unknown> {
-  const { bot, accessToken, requester, secrets, input, contentType, traceId, headers } = request;
+  const { bot, accessToken, requester, secrets, input, contentType, traceId, headers, rawBody } = request;
   const config = getConfig();
   return {
     bot: createReference(bot),
@@ -40,6 +40,7 @@ export function buildLambdaPayload(request: BotExecutionContext): Record<string,
     traceId,
     traceparent: buildTraceparent(traceId),
     headers,
+    rawBody,
   };
 }
 

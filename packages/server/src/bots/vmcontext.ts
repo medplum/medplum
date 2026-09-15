@@ -53,7 +53,7 @@ export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
  * @returns The bot execution result.
  */
 export async function runInVmContext(request: BotExecutionContext): Promise<BotExecutionResult> {
-  const { bot, input, contentType, traceId, headers, runAs } = request;
+  const { bot, input, contentType, traceId, rawBody, headers, runAs } = request;
 
   const config = getConfig();
   if (!config.vmContextBotsEnabled) {
@@ -96,6 +96,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       secrets: request.secrets,
       traceId,
       traceparent: buildTraceparent(traceId),
+      rawBody,
       headers,
       defaultHeaders: request.defaultHeaders,
       responseStream: request.responseStream,
@@ -116,7 +117,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   // End user code
 
   (async () => {
-    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, traceparent, headers, defaultHeaders, responseStream } = event;
+    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, traceparent, rawBody, headers, defaultHeaders, responseStream } = event;
     const medplum = new MedplumClient({
       baseUrl,
       defaultHeaders,
@@ -135,7 +136,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       if (contentType === ContentType.HL7_V2 && input) {
         input = Hl7Message.parse(input);
       }
-      let result = await exports.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers, responseStream });
+      let result = await exports.handler(medplum, { bot, requester, input, contentType, secrets, traceId, rawBody, headers, responseStream });
       if (contentType === ContentType.HL7_V2 && result) {
         result = result.toString();
       }

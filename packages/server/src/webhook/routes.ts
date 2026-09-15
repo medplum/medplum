@@ -51,6 +51,7 @@ export const webhookHandler = async (req: Request, res: Response): Promise<void>
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
     headers,
+    rawBody: res.locals.webhookRawBody,
   });
 
   if (isOperationOutcome(result)) {
