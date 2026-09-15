@@ -245,7 +245,11 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
         </tr>
       </thead>
       <tbody>
-        <ObservationRowGroup value={props.value} ancestorIds={props.ancestorIds} hideObservationNotes={props.hideObservationNotes} />
+        <ObservationRowGroup
+          value={props.value}
+          ancestorIds={props.ancestorIds}
+          hideObservationNotes={props.hideObservationNotes}
+        />
       </tbody>
     </table>
   );
