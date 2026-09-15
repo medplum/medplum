@@ -7,11 +7,7 @@
       "properties": {
         "cloudProvider": {
           "type": "string",
-          "enum": [
-            "",
-            "gcp",
-            "azure"
-          ],
+          "enum": ["", "gcp", "azure"],
           "description": "DEPRECATED compatibility shim; use explicit ingress/serviceAccount/podLabels values."
         },
         "configSource": {
@@ -23,14 +19,10 @@
               "description": "Comma-separated server config sources, e.g. azure:vault:secret,env"
             }
           },
-          "required": [
-            "type"
-          ]
+          "required": ["type"]
         }
       },
-      "required": [
-        "configSource"
-      ]
+      "required": ["configSource"]
     },
     "config": {
       "type": "object",
@@ -59,28 +51,17 @@
             },
             "defaultBotRuntimeVersion": {
               "type": "string",
-              "enum": [
-                "vmcontext",
-                "awslambda",
-                "fission"
-              ]
+              "enum": ["vmcontext", "awslambda", "fission"]
             },
             "emailProvider": {
               "type": "string",
-              "enum": [
-                "",
-                "none",
-                "smtp",
-                "awsses"
-              ]
+              "enum": ["", "none", "smtp", "awsses"]
             },
             "introspectionEnabled": {
               "type": "boolean"
             }
           },
-          "required": [
-            "baseUrl"
-          ]
+          "required": ["baseUrl"]
         },
         "database": {
           "type": "object",
@@ -89,10 +70,7 @@
               "type": "string"
             },
             "port": {
-              "type": [
-                "integer",
-                "null"
-              ]
+              "type": ["integer", "null"]
             },
             "dbname": {
               "type": "string"
@@ -112,10 +90,7 @@
               "type": "string"
             },
             "port": {
-              "type": [
-                "integer",
-                "null"
-              ]
+              "type": ["integer", "null"]
             },
             "password": {
               "type": "string"
@@ -262,8 +237,5 @@
       }
     }
   },
-  "required": [
-    "global",
-    "config"
-  ]
+  "required": ["global", "config"]
 }
