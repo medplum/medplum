@@ -321,7 +321,7 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
     if (await bcrypt.compare(token, login.emailMfa.codeHash)) {
       // Entering the emailed code proves the user controls the email address.
       if (!user.emailVerified) {
-        await systemRepo.updateResource<User>({ ...user, emailVerified: true });
+        await systemRepo.patchResource<User>('User', user.id, [{ op: 'add', path: '/emailVerified', value: true }]);
       }
       return systemRepo.updateResource<Login>({
         ...login,
