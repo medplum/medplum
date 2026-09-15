@@ -9,4 +9,5 @@
 
 .noteRoot {
   padding: 5px;
+  white-space: pre-wrap;
 }
