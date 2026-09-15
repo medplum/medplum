@@ -12,6 +12,19 @@ import { generateId } from './crypto';
 import { isReference } from './types';
 import { deepClone, EMPTY } from './utils';
 
+const ATTACHMENT_KEYS = new Set([
+  'id',
+  'extension',
+  'contentType',
+  'language',
+  'data',
+  'url',
+  'size',
+  'hash',
+  'title',
+  'creation',
+]);
+
 /**
  * More on Bundles can be found here
  * http://hl7.org/fhir/R4/bundle.html
@@ -63,14 +76,16 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
         resource: entry.resource,
       })),
     },
-    (key, value) => referenceReplacer(key, value, idToUuid),
+    function (this: unknown, key, value) {
+      return referenceReplacer(this, key, value, idToUuid);
+    },
     2
   );
   return reorderBundle(JSON.parse(jsonString) as Bundle);
 }
 
-function referenceReplacer(key: string, value: string, idToUuid: Record<string, string>): string {
-  if ((key === 'reference' || key === 'url') && typeof value === 'string') {
+function referenceReplacer(parent: unknown, key: string, value: unknown, idToUuid: Record<string, string>): unknown {
+  if ((key === 'reference' || (key === 'url' && isAttachment(parent))) && typeof value === 'string') {
     let id;
     if (value.includes('/')) {
       id = value.split('/')[1];
@@ -89,6 +104,10 @@ function referenceReplacer(key: string, value: string, idToUuid: Record<string, 
     }
   }
   return value;
+}
+
+function isAttachment(value: unknown): boolean {
+  return !!value && typeof value === 'object' && Object.keys(value).every((key) => ATTACHMENT_KEYS.has(key));
 }
 
 /**
