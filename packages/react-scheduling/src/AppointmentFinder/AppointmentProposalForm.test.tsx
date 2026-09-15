@@ -57,6 +57,7 @@ import {
   clickBook,
   codePill,
   confirmMedicalNecessity,
+  createCode,
   dayCell,
   dragDays,
   enterAuthorizationDetails,
@@ -569,7 +570,7 @@ describe('AppointmentProposalForm', () => {
       // `$find` only offers a time that fits inside the window, so one day is asked about
       // up to the following midnight rather than to the last instant of the day itself.
       expect(new Date(params.get('end') as string).getDate()).toBe(18);
-      expect(Number(params.get('_count'))).toBe(50);
+      expect(Number(params.get('_count'))).toBe(65);
     });
 
     test('Adds the next two days under the ones already on screen', async () => {
@@ -601,7 +602,7 @@ describe('AppointmentProposalForm', () => {
       // on the midnight the first window closed on, which is the site's rather than the
       // viewer's: midnight in Eastern time is 04:00 UTC, the clock the runner keeps.
       expect(lastFindStart(get)).toBe('2026-08-18T04:00:00.000Z');
-      expect(Number(lastFindParams(get)?.get('_count'))).toBe(100);
+      expect(Number(lastFindParams(get)?.get('_count'))).toBe(130);
     });
 
     test('Names a day that offers nothing, so nothing is missing but the days nobody asked about', async () => {
@@ -694,7 +695,7 @@ describe('AppointmentProposalForm', () => {
       expect(findRequests(get)).toHaveLength(1);
       const params = lastFindParams(get) as URLSearchParams;
       expect(new Date(params.get('end') as string).getDate()).toBe(22);
-      expect(Number(params.get('_count'))).toBe(250);
+      expect(Number(params.get('_count'))).toBe(325);
     });
 
     test('Marks both ends of a stretch that was picked on purpose', async () => {
@@ -1595,31 +1596,38 @@ describe('AppointmentProposalForm', () => {
       expect(within(listbox).queryByText((content) => content.includes(CPT))).not.toBeInTheDocument();
     });
 
-    test('Takes only codes its value set offered, never one typed over the top', async () => {
+    test('Takes a code typed over the top, for one its value set never carried', async () => {
       setupWithCodeValueSets();
-      await chooseAuthorizedService();
+      await fillAuthorizedBooking();
 
-      await typeInAutocomplete(field(/procedure code/i), '43644');
+      await createCode(/procedure code/i, '43644');
+      await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+      await confirmMedicalNecessity();
 
-      // No "+ Create" option: a code nobody's value set carries is not a code this can book against,
-      // and free text would defeat capturing these discretely in the first place.
-      expect(screen.queryByText(/\+ Create/)).not.toBeInTheDocument();
+      // A typed code is its own description, so the pill prints it once rather than twice.
+      expect(hasPill('43644')).toBe(true);
+
+      await clickBook();
+
+      // No system: nothing published this code, and naming one would claim a provenance it has not got.
+      expect(proposedAppointment().serviceType?.slice(1)).toEqual([{ coding: [{ code: '43644', display: '43644' }] }]);
     });
 
-    test('Cannot book a designated visit type when its value sets were never imported', async () => {
-      // The cost of taking only what a value set offers: there is nothing to fall back to, so a
-      // project that imported neither cannot book the visit types that need them at all. Loud, and
-      // deliberately so, since the quiet alternative is booking prior-authorization-gated visits on free text.
+    test('Still books a designated visit type when its value sets were never imported', async () => {
+      // A project that imported neither is left typing both codes: the fields say their suggestions
+      // are gone and stay usable, rather than taking themselves out of use and stopping the booking.
       restoreValueSets();
       restoreValueSets = installValueSetStub(medplum, {});
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
 
-      // Both code fields take themselves out of use and say why, rather than sitting there uncompletable.
-      expect(screen.getAllByText('This field is unavailable.')).toHaveLength(2);
-      expect(screen.queryByRole('searchbox', { name: /procedure code/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('searchbox', { name: /diagnosis code/i })).not.toBeInTheDocument();
-      expect(bookButton()).toBeDisabled();
+      expect(screen.getAllByText('Suggestions unavailable')).toHaveLength(2);
+
+      await createCode(/procedure code/i, '96365');
+      await createCode(/diagnosis code/i, 'E11.9');
+      await confirmMedicalNecessity();
+
+      expect(bookButton()).toBeEnabled();
     });
 
     test('Drops the answers when the visit type changes, and asks again', async () => {
