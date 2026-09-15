@@ -543,7 +543,7 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
   } else {
     const valueString = ensureString(obs.valueString);
     if (valueString) {
-      result.push(valueString);
+      result.push(normalizeObxTemplateValue(valueString));
     }
   }
 
@@ -552,6 +552,32 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
   }
 
   return result.join(' / ').trim();
+}
+
+const OBX_TEMPLATE_TAG_RE = /<OBX\.[\d.]+>([\s\S]*?)<\/OBX\.[\d.]+>/g;
+
+/**
+ * Some Health Gorilla results carry a broken OBX-5 template substitution: instead of
+ * resolving to the real value, the literal placeholder tags are left in place, HTML-entity
+ * escaped, wrapping the real value/interpretation, e.g. `&lt;OBX.5.1&gt;&gt;=32&lt;/OBX.5.1&gt;
+ * &lt;OBX.5.1&gt;R&lt;/OBX.5.1&gt;` for a MIC of ">=32" interpreted as "R". Recovers the
+ * intended "value / interpretation" text from that broken template; returns the input
+ * unchanged when it doesn't match this pattern.
+ * @param value - A raw Observation.valueString.
+ * @returns The normalized display value.
+ */
+function normalizeObxTemplateValue(value: string): string {
+  const decoded = value
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&amp;', '&')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'");
+  const matches = [...decoded.matchAll(OBX_TEMPLATE_TAG_RE)];
+  if (matches.length === 0) {
+    return value;
+  }
+  return matches.map((m) => m[1]).join(' / ');
 }
 
 /**
