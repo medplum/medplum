@@ -21,15 +21,24 @@ const STORE_CONCURRENCY = 4;
  *
  * State is split into two kinds of objects, both keyed by the AsyncJob id:
  *
- * - `state.json` — the {@link BatchInitialState} produced by preprocessing. Written once, before
- *   any entry is processed, and never mutated.
+ * - `state.json` — the {@link BatchInitialState} produced by preprocessing (the preprocessed
+ *   bundle, ordering, and preprocess-time results). Written once, before any entry is processed,
+ *   and never mutated.
  * - `results/<seq>.json` — result entries produced since the previous checkpoint, keyed by their
  *   index in the original bundle. Written once per checkpoint (append-only); never rewritten. This
  *   avoids the O(n^2) write amplification of rewriting a single growing results object.
+ * - `identities/<seq>.json` — the resolved-identity map (placeholder URN to real reference),
+ *   append-only and keyed by an INDEPENDENT sequence. Chunk 0 is the preprocess-time seed (written
+ *   once on the first run, even when empty, so "chunk 0 is the seed" always holds); chunks 1..n are
+ *   reconciliation deltas produced when an entry resolves to an id other than the one assigned
+ *   during preprocessing (a conditional create matching a concurrently-created resource, or a
+ *   transaction retry). A delta chunk is written only when a checkpoint produced a non-empty delta
+ *   (divergences are rare), so the sequence stays dense and empty writes are avoided. On resume the
+ *   worker reads back the whole stream to reconstruct the current map.
  *
- * The small, mutable progress marker (the ordering position and the number of result chunks
- * written so far) is NOT stored here; it is persisted by the worker in the BullMQ job data. Given
- * `state.json` and the chunk sequence, all objects can be read back or deleted by exact key
+ * The small, mutable progress marker (the ordering position and the number of result and identity
+ * chunks written so far) is NOT stored here; it is persisted by the worker in the BullMQ job data.
+ * Given `state.json` and the chunk sequences, all objects can be read back or deleted by exact key
  * without needing a list operation.
  */
 export class BatchCheckpointStore {
@@ -51,6 +60,10 @@ export class BatchCheckpointStore {
 
   private chunkKey(seq: number): string {
     return `${this.keyPrefix}/results/${seq}.json`;
+  }
+
+  private identityKey(seq: number): string {
+    return `${this.keyPrefix}/identities/${seq}.json`;
   }
 
   private async writeFile(key: string, contentType: string, data: string): Promise<void> {
@@ -111,13 +124,27 @@ export class BatchCheckpointStore {
 
   /**
    * Loads the previously-persisted initial state so processing can resume.
-   * @returns The durable initial state.
+   *
+   * A single read also surfaces `legacyResolvedIdentities` for back-compat: jobs preprocessed
+   * before the resolved-identity map moved to its own chunk stream persisted it inside `state.json`
+   * and wrote no seed chunk. When present, the worker layers any newer identity delta chunks on top
+   * of it. (Reading it here rather than via a second method avoids re-reading `state.json`, which
+   * embeds the full bundle.)
+   * @returns The durable initial state, plus any legacy resolved-identity map from an older format.
    */
-  async loadInitialState(): Promise<BatchInitialState> {
+  async loadInitialState(): Promise<{
+    state: BatchInitialState;
+    // TODO{v5.x} remove legacyResolvedIdentities once no jobs preprocessed before identity chunks remain in flight
+    legacyResolvedIdentities?: Record<string, string>;
+  }> {
     const persisted = JSON.parse(await this.readFile(this.stateKey())) as PersistedInitialState;
+    const { resolvedIdentities, ...state } = persisted;
     return {
-      ...persisted,
-      bundleInfo: { ...persisted.bundleInfo, resourceTypes: new Set(persisted.bundleInfo.resourceTypes) },
+      state: {
+        ...state,
+        bundleInfo: { ...persisted.bundleInfo, resourceTypes: new Set(persisted.bundleInfo.resourceTypes) },
+      },
+      legacyResolvedIdentities: resolvedIdentities,
     };
   }
 
@@ -129,6 +156,18 @@ export class BatchCheckpointStore {
    */
   async saveResultChunk(seq: number, results: Record<number, BundleEntry>): Promise<void> {
     await this.writeFile(this.chunkKey(seq), ContentType.JSON, JSON.stringify(results));
+  }
+
+  /**
+   * Persists a chunk of the resolved-identity map (placeholder URN to real reference). Each chunk
+   * is written to its own object and never rewritten. Chunk 0 is the preprocess-time seed (written
+   * once on the first run); subsequent chunks are reconciliation deltas, and the worker writes one
+   * only when a checkpoint produced a non-empty delta, so the sequence stays dense.
+   * @param seq - The zero-based sequence number of this identity chunk (0 is the seed).
+   * @param updates - The seed map (seq 0) or the identity reconciliations since the last checkpoint.
+   */
+  async saveIdentityChunk(seq: number, updates: Record<string, string>): Promise<void> {
+    await this.writeFile(this.identityKey(seq), ContentType.JSON, JSON.stringify(updates));
   }
 
   /**
@@ -152,16 +191,43 @@ export class BatchCheckpointStore {
   }
 
   /**
+   * Reads back the first `identityChunkCount` identity chunks and merges them into the current
+   * resolved-identity map (placeholder URN to real reference): chunk 0 (the preprocess seed) plus
+   * any reconciliation deltas. Later chunks win on key collision, so a reconciliation correctly
+   * overrides the seed.
+   * @param identityChunkCount - The number of leading identity chunks to read (chunks `0` through
+   * `identityChunkCount - 1`).
+   * @returns The resolved-identity map reconstructed from those chunks, keyed by placeholder URN.
+   */
+  async loadAllIdentities(identityChunkCount: number): Promise<Record<string, string>> {
+    const all: Record<string, string> = Object.create(null);
+    const chunkSeqs = Array.from({ length: identityChunkCount }, (_, i) => i);
+    await this.runWithConcurrency(
+      chunkSeqs,
+      async (seq) => {
+        Object.assign(all, JSON.parse(await this.readFile(this.identityKey(seq))) as Record<string, string>);
+      },
+      { concurrency: STORE_CONCURRENCY, logMsg: 'BatchCheckpointStore loadAllIdentities' }
+    );
+    return all;
+  }
+
+  /**
    * Deletes all durable state for this batch. Best-effort: failures to delete individual objects
    * are logged but do not throw, since cleanup runs after the job has already reached a terminal
    * state and orphaned objects can be reclaimed by an object-storage lifecycle policy.
    * @param chunkCount - The number of result chunks written so far.
+   * @param identityChunkCount - The number of identity chunks written so far. Defaults to 0 for
+   * callers (and in-flight jobs from an older deploy) that never wrote any identity chunks.
    */
-  async cleanup(chunkCount: number): Promise<void> {
+  async cleanup(chunkCount: number, identityChunkCount = 0): Promise<void> {
     const storage = getBinaryStorage();
     const keys = [this.inputKey(), this.stateKey()];
     for (let seq = 0; seq < chunkCount; seq++) {
       keys.push(this.chunkKey(seq));
+    }
+    for (let seq = 0; seq < identityChunkCount; seq++) {
+      keys.push(this.identityKey(seq));
     }
     await this.runWithConcurrency(
       keys,
@@ -215,6 +281,9 @@ export class BatchCheckpointStore {
 interface PersistedInitialState extends Omit<BatchInitialState, 'bundleInfo'> {
   // TODO{v5.2} make resourceTypes required
   bundleInfo: Omit<BundlePreprocessInfo, 'resourceTypes'> & { resourceTypes?: ResourceType[] };
+  // TODO{v5.x} remove — jobs preprocessed before the resolved-identity map moved to its own chunk
+  // stream persisted it here instead; read back for back-compat by loadInitialState.
+  resolvedIdentities?: Record<string, string>;
 }
 
 interface RunWithConcurrencyOptions {
