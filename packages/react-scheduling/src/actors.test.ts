@@ -9,6 +9,8 @@ describe('getActorType', () => {
     expect(getActorType({ reference: 'Device/789', display: 'Ultrasound machine 1' })).toEqual('Device'));
   test('Reference without `reference`', () => expect(() => getActorType({ display: 'My Weird Reference' })).toThrow());
   test('Contained reference', () => expect(() => getActorType({ reference: '#contained-id' })).toThrow());
+  test('Actor handed over as itself', () =>
+    expect(getActorType({ resourceType: 'Practitioner', id: 'dr-rivera' })).toEqual('Practitioner'));
 });
 
 describe('getActorTypeLabel', () => {

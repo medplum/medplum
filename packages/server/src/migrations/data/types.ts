@@ -3,7 +3,7 @@
 import type { WithId } from '@medplum/core';
 import type { AsyncJob } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
-import type { Repository } from '../../fhir/repo';
+import type { SystemRepository } from '../../fhir/repo';
 import type { PhasalMigration } from '../types';
 
 export interface PostDeployJobData {
@@ -32,7 +32,7 @@ export interface PostDeployMigration<T extends PostDeployJobData = PostDeployJob
    * 'ineligible' if the processor decided it was not capable of running the job, typically
    *            due to being an outdated version of Medplum.
    */
-  run(repo: Repository, job: Job<T> | undefined, data: T): Promise<PostDeployJobRunResult>;
+  run(repo: SystemRepository, job: Job<T> | undefined, data: T): Promise<PostDeployJobRunResult>;
 }
 
 // Custom Jobs

@@ -9,8 +9,9 @@ import { DatabaseMode, getDatabasePool } from './database';
 import type { OutputAction } from './fhir/operations/db-configure-indexes';
 import { configureGinIndexes, vacuumTable } from './fhir/operations/db-configure-indexes';
 import type { SystemRepository } from './fhir/repo';
-import { getGlobalSystemRepo } from './fhir/repo';
+import { getShardSystemRepo } from './fhir/repo';
 import { repoAccess } from './fhir/repository/access-tracker';
+import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { SelectQuery } from './fhir/sql';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
@@ -79,7 +80,7 @@ describe('Seed', () => {
     globalLogger.write(`${new Date().toISOString()} - Initializing app services`);
     await initAppServices(config);
 
-    const repo = getGlobalSystemRepo();
+    const repo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
     // Run post-deploy migrations synchronously
     await synchronouslyRunAllPendingPostDeployMigrations(repo);
 

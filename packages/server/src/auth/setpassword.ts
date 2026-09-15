@@ -8,7 +8,7 @@ import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { sendOutcome } from '../fhir/outcomes';
-import type { SystemRepository } from '../fhir/repo';
+import type { SuperAdminRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -64,13 +64,13 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
  * It is consumed after the password has been validated and hashed, so a password that fails
  * validation does not burn the user's link, but before the password is applied, so the request
  * cannot be redeemed twice.
- * @param systemRepo - The system repository to use.
+ * @param repo - The system repository to use.
  * @param user - The user whose password is being set.
  * @param password - The new plaintext password.
  * @param securityRequest - Optional security request authorizing the change, consumed on success.
  */
 export async function setPassword(
-  systemRepo: SystemRepository,
+  repo: SuperAdminRepository,
   user: WithId<User>,
   password: string,
   securityRequest?: WithId<UserSecurityRequest>
@@ -89,12 +89,12 @@ export async function setPassword(
     patch.push({ op: 'add', path: '/emailVerified', value: true });
   }
 
-  await systemRepo.withTransaction(
+  await repo.withTransaction(
     async (txRepo) => {
       // Consume the request first, so that concurrent requests carrying the same token
       // cannot both get through
       if (securityRequest) {
-        await consumeSecurityRequest(txRepo, securityRequest);
+        await consumeSecurityRequest(txRepo.getSystemRepo(), securityRequest);
       }
       // Patch so that only these fields are written, leaving the rest of the User as
       // stored rather than reverting it to this snapshot.
@@ -103,12 +103,12 @@ export async function setPassword(
     { resourceTypes: ['User', 'UserSecurityRequest'], source: 'setPassword' }
   );
 
-  const activeSessions = await systemRepo.search<Login>({
+  const activeSessions = await repo.search<Login>({
     resourceType: 'Login',
     filters: [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) }],
   });
   for (const entry of activeSessions.entry ?? EMPTY) {
     const login = entry.resource as Login;
-    await systemRepo.updateResource({ ...login, revoked: true });
+    await repo.updateResource({ ...login, revoked: true });
   }
 }

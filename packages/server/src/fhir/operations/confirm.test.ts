@@ -7,16 +7,16 @@ import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getGlobalSystemRepo } from '../../fhir/repo';
+import type { SystemRepository } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
 
-const systemRepo = getGlobalSystemRepo();
 const app = express();
 const request = supertest(app);
 
 describe('Appointment/:id/$confirm', () => {
-  let project: TestProjectResult<{ withAccessToken: true }>;
+  let project: TestProjectResult<{ withAccessToken: true; withRepo: true }>;
+  let systemRepo: SystemRepository;
   let practitioner: WithId<Practitioner>;
   let schedule: WithId<Schedule>;
 
@@ -25,7 +25,8 @@ describe('Appointment/:id/$confirm', () => {
     // try to be more resilient to concurrent tests touching the same tables
     config.transactionAttempts = 5;
     await initApp(app, config);
-    project = await createTestProject({ withAccessToken: true });
+    project = await createTestProject({ withAccessToken: true, withRepo: true });
+    systemRepo = project.repo.getSystemRepo();
 
     practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',
