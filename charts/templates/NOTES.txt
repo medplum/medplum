@@ -1,0 +1,39 @@
+Medplum {{ .Values.deployment.image.tag | default .Chart.AppVersion }} has been installed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
+
+Server config sources: {{ .Values.global.configSource.type }}
+{{- $host := include "medplum.ingress.host" . | trim }}
+{{- if and (eq (include "medplum.ingress.enabled" . | trim) "true") $host }}
+API endpoint: https://{{ $host }}/
+{{- end }}
+
+Verify the deployment:
+
+  helm test {{ .Release.Name }} -n {{ .Release.Namespace }}
+  kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+{{- if .Values.global.cloudProvider }}
+
+================================ DEPRECATION =================================
+global.cloudProvider is set ("{{ .Values.global.cloudProvider }}"). The
+cloudProvider enum has been replaced by explicit values and this
+compatibility shim will be removed after one minor-version cycle.
+
+Replace it with the values it used to imply:
+
+  ingress.className:      "gce" (gcp) / "azure-application-gateway" (azure)
+  ingress.host:           your ingress.domain value
+  ingress.tls:            [{secretName: <ingress.tlsSecretName>, hosts: [<host>]}]  (azure)
+  podLabels:              {azure.workload.identity/use: "true"}  (azure)
+  serviceAccount.*:       unchanged — set annotations explicitly
+
+NOT shimmed (set explicitly if you used the old GCP cloud-native ingress):
+  service.annotations:    cloud.google.com/neg, cloud.google.com/backend-config
+  ingress.annotations:    kubernetes.io/ingress.global-static-ip-name,
+                          networking.gke.io/managed-certificates,
+                          networking.gke.io/v1beta1.FrontendConfig
+  extraObjects:           your BackendConfig / FrontendConfig /
+                          ManagedCertificate manifests (previously rendered
+                          by the chart with hardcoded names) — a ready-made
+                          set: charts/examples/gke-cloud-native.values.yaml
+===============================================================================
+{{- end }}

@@ -1,27 +1,35 @@
 # Default values for medplum.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+#
+# Cloud-specific settings (ingress class/annotations, service-account
+# annotations, configSource string, TLS) arrive as plain values — typically
+# from the Terraform-generated values-<cloud>.gen.yaml. No template branches
+# on a cloud provider.
 
 global:
-  cloudProvider: '' # Supported values: gcp, azure
+  # DEPRECATED: cloudProvider is a compatibility shim only and will be
+  # removed after one minor-version cycle. Set the explicit values it used
+  # to imply instead (see NOTES.txt on install for the mapping).
+  cloudProvider: ''
   configSource:
-    # Examples:
-    # type: "env"
-    # type: "aws:region:parameterName"
-    # type: "gcp:projectId:secretId"
-    # type: "azure:keyVaultURL:secretName"
-    type: 'env' # Default to env
+    # Comma-separated server config sources, loaded left to right with
+    # later sources overriding earlier ones. Examples:
+    #   type: "env"
+    #   type: "aws:region:parameterName,env"
+    #   type: "gcp:projectId:secretId,env"
+    #   type: "azure:vaultHost:secretName,env"
+    type: 'env'
 
 config:
   server:
-    # These are the default values for a local deployment
-    # You should change these values for your own environment
     # See: https://www.medplum.com/docs/self-hosting/config-settings
+    # String values left empty are NOT rendered into the ConfigMap/Secret —
+    # important when configSource layers env over a cloud secret store,
+    # where an empty env var would override the secret's value.
     port: 8103
     baseUrl: 'http://localhost:8103/'
-    appBaseUrl: 'http://localhost:3000/'
-    binaryStorage: 'file:./binary/'
-    storageBaseUrl: 'http://localhost:8103/storage/'
+    appBaseUrl: ''
+    binaryStorage: ''
+    storageBaseUrl: ''
     signingKeyId: ''
     signingKey: ''
     signingKeyPassphrase: ''
@@ -30,38 +38,57 @@ config:
     googleClientSecret: ''
     recaptchaSiteKey: ''
     recaptchaSecretKey: ''
+    # Explicit: the server's silent default bot runtime (awslambda) is
+    # AWS-centric and wrong on generic Kubernetes targets.
     vmContextBotsEnabled: true
     defaultBotRuntimeVersion: 'vmcontext'
+    # none | smtp | awsses. Empty = not rendered, so the server's own
+    # default applies (awsses, or smtp when an smtp block is configured).
+    emailProvider: ''
     allowedOrigins: ''
     introspectionEnabled: true
+  # Connection settings default to empty and are NOT rendered when unset.
+  # With a cloud configSource these come from the secret store (written by
+  # Terraform) — a chart default like "localhost" here would override them,
+  # because env is the last (winning) config source. For env-only installs,
+  # set them explicitly.
   database:
-    host: 'localhost'
-    port: 5432
-    dbname: 'medplum'
-    username: 'medplum'
-    password: 'medplum'
+    host: ''
+    port: null
+    dbname: ''
+    username: ''
+    password: ''
   redis:
-    host: 'localhost'
-    port: 6379
-    password: 'medplum'
+    host: ''
+    port: null
+    password: ''
+    # Set to enable TLS to Redis; rendered as JSON into MEDPLUM_REDIS_TLS.
+    # {} = TLS with a publicly-trusted CA (e.g. Azure Cache for Redis);
+    # { ca: "<pem>" } = TLS with a private CA (e.g. GCP Memorystore).
+    # tls: {}
 
 serviceAccount:
-  annotations:
-    # Set your Google Cloud Platform service account (e.g., medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com)
-    # iam.gke.io/gcp-service-account: ""
-    # Set your Azure Managed Identity Client ID for Azure workload identity
-    # azure.workload.identity/client-id: ""
+  create: true
+  # Defaults to the fullname template when empty.
+  name: ''
+  # Cloud workload-identity annotations, e.g.
+  #   iam.gke.io/gcp-service-account: medplum-server@<project>.iam.gserviceaccount.com
+  #   azure.workload.identity/client-id: <client-id>
+  #   eks.amazonaws.com/role-arn: <role-arn>
+  annotations: {}
+  automount: true
 
-namespace: medplum
+# Extra labels for server pods, e.g. azure.workload.identity/use: "true".
+podLabels: {}
+
+podAnnotations: {}
 
 deployment:
   replicaCount: 1
   image:
     repository: medplum/medplum-server
     tag: '5.1.38'
-  env:
-    # - name: SQL_DEBUG
-    #   value: '*'
+  env: []
   resources:
     requests:
       memory: '1Gi'
@@ -71,6 +98,10 @@ deployment:
       cpu: '1000m'
   autoscaling:
     enabled: true
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
   # Structure this deployment.sidecar value as if you were adding the container
   # to the Deployment's spec.template.spec.containers key.
   sidecars: []
@@ -102,11 +133,27 @@ podDisruptionBudget:
   minAvailable: 1
   # Alternative: maxUnavailable: 1
 
-service: {}
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8103
+  # Cloud LB/backend annotations, e.g. cloud.google.com/neg.
+  annotations: {}
 
 ingress:
-  deploy: true
-  # Set your domain name (e.g., medplum.example.com)
-  domain: ''
-  # Set your TLS secret name (Azure only)
-  tlsSecretName: ''
+  # Off by default: enabling requires a host. The Terraform-generated
+  # values file enables it with the API domain.
+  enabled: false
+  # e.g. nginx, gce, azure-application-gateway, alb
+  className: ''
+  annotations: {}
+  # The API hostname, e.g. api.medplum.example.com
+  host: ''
+  # Standard Kubernetes ingress TLS list:
+  #   - secretName: medplum-api-tls
+  #     hosts: [api.medplum.example.com]
+  tls: []
+
+# Arbitrary additional manifests rendered verbatim (through tpl), e.g. a GKE
+# BackendConfig/FrontendConfig when using cloud-native ingress.
+extraObjects: []
