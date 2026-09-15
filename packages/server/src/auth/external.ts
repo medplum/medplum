@@ -10,8 +10,9 @@ import {
   OAuthTokenAuthMethod,
   OperationOutcomeError,
   parseJWTPayload,
+  resolveId,
 } from '@medplum/core';
-import type { ClientApplication, DomainConfiguration, IdentityProvider, Project } from '@medplum/fhirtypes';
+import type { ClientApplication, DomainConfiguration, IdentityProvider, Project, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
@@ -124,6 +125,11 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
+
+  // The identity provider authenticated the user, which is the control this flag records.
+  await getGlobalSystemRepo().patchResource<User>('User', resolveId(login.user) as string, [
+    { op: 'add', path: '/emailVerified', value: true },
+  ]);
 
   if (login.membership && body.redirectUri && client) {
     // Get the redirect URI from the client application
