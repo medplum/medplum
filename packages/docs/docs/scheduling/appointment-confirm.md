@@ -113,10 +113,11 @@ Returns `200 OK` with a `Bundle` of all updated resources:
 
 1. Reads the Appointment identified by the URL `id`
 2. Validates that the Appointment's `status` is `pending` or `proposed`
-3. Loads all `Slot` resources listed in `Appointment.slot`
-4. Updates any `busy-tentative` Slots to `busy`
-5. Sets the Appointment's `status` to `booked` and saves it
-6. Returns the updated Appointment and Slots in a Bundle
+3. Loads any `HealthcareService` referenced by `Appointment.serviceType` and validates that it is not inactive
+4. Loads all `Slot` resources listed in `Appointment.slot`
+5. Updates any `busy-tentative` Slots to `busy`
+6. Sets the Appointment's `status` to `booked` and saves it
+7. Returns the updated Appointment and Slots in a Bundle
 
 ## Error Responses
 
@@ -141,6 +142,32 @@ HTTP status: `404`
 ```
 
 HTTP status: `409`
+
+### HealthcareService Inactive
+
+A `HealthcareService` with `active: false` cannot be scheduled against. Appointments already booked for the service can still be canceled.
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "HealthcareService is inactive" } }]
+}
+```
+
+HTTP status: `400`
+
+### Referenced HealthcareService Not Found
+
+Returned when a `HealthcareService` referenced by `Appointment.serviceType` has been deleted, or is not readable by the caller's access policy.
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Loading HealthcareService failed" } }]
+}
+```
+
+HTTP status: `400`
 
 ### Referenced Slot Not Found
 
