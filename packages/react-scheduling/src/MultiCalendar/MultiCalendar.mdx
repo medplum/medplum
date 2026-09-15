@@ -6,8 +6,8 @@ import * as MultiCalendarStories from './MultiCalendar.stories';
 # Viewing multiple Schedules in a single calendar UI
 
 Pass an array of objects as the `sources` prop. You may specify the name of a
-Mantine theme color to use for the appointments and slots of a source as its
-`color` attribute. You may also specify this on the Schedule included in a
+Mantine theme color to use for the slots of a source, and for the chips its
+appointments carry, as its `color` attribute. You may also specify this on the Schedule included in a
 source via a custom extension:
 
 ```
@@ -28,6 +28,20 @@ source via a custom extension:
  ignored. If no color is passed, an arbitrary color will be assigned.
 
 <Canvas of={MultiCalendarStories.Basic} />
+
+# Appointments on several calendars
+
+An appointment held on more than one of the schedules you pass is drawn once,
+carrying a color-coded chip for each calendar it is on rather than a block per
+calendar. A chip is named by its source's `label`, falling back to the name of
+its Schedule's actor, cut down to what fits inside an appointment block; hovering
+a chip names the calendar in full. Appointment blocks too short for a line of
+text per chip show the chips as dots instead.
+
+The schedule handed to `onSelectAppointment` and `onDoubleClickAppointment` is
+that of the first source in `sources` that the appointment is on.
+
+<Canvas of={MultiCalendarStories.SharedAppointments} />
 
 # Highlighting Availability
 
