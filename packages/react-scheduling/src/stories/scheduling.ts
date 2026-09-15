@@ -5,6 +5,7 @@ import {
   CPT,
   createReference,
   deepClone,
+  getReferenceString,
   HL7_V2_0203,
   REQUIRES_DIAGNOSIS_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
@@ -36,7 +37,7 @@ import type {
 import { getBrowserTimezone } from '../AppointmentFinder/AppointmentFinder.times';
 
 /** Who an appointment can be held on, as FHIR allows. */
-type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
+export type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
 
 /**
  * Fixtures for the scheduling components: one imaging service bookable against
@@ -212,6 +213,49 @@ export const DrOkaforPractitioner: WithId<Practitioner> = {
   extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/Chicago' }],
 };
 
+/**
+ * The rest of the ultrasound bench, as {@link ImagingBenchFixtures}.
+ *
+ * Rivera and Okafor each carry something that needs explaining — a zone
+ * override, an appointment already on the books — which is why they are written
+ * out above. These carry nothing, and exist so a field has a pool deep enough to
+ * pick alternatives from: "either of these two, and any of those four" needs
+ * more names than a case study does.
+ *
+ * **Kept out of `SchedulingFixtures` on purpose.** Several tests read the whole
+ * list of providers the imaging service offers, and that list is their subject;
+ * a story wanting the bench opts in, the way it opts into the surgical team.
+ *
+ * Deliberately without a PractitionerRole. Nothing then records where they
+ * practice, and the site filter keeps a provider it cannot place — so they are
+ * offered at every location rather than only at the one a role happens to name.
+ */
+const IMAGING_BENCH = [
+  { id: 'dr-abara', given: 'Grace', family: 'Abara' },
+  { id: 'dr-haddad', given: 'Noor', family: 'Haddad' },
+  { id: 'dr-moreau', given: 'Lucas', family: 'Moreau' },
+  { id: 'dr-raman', given: 'Priya', family: 'Raman' },
+] as const;
+
+/**
+ * Names one of the bench as a schedule's actor names them.
+ * @param member - The entry to name.
+ * @returns The display name.
+ */
+function benchDisplay(member: (typeof IMAGING_BENCH)[number]): string {
+  return `Dr. ${member.given} ${member.family}`;
+}
+
+export const ImagingBenchPractitioners: WithId<Practitioner>[] = IMAGING_BENCH.map((member) => ({
+  resourceType: 'Practitioner',
+  id: member.id,
+  name: [{ given: [member.given], family: member.family, prefix: ['Dr.'] }],
+  // No timezone extension, deliberately. The workspace raises its notice off the
+  // zones the selected actors declare, so a bench that declared one would keep the
+  // notice up after Rivera and Okafor are deselected — and those two are the whole
+  // point of `FromADifferentTimezone`. Silent here, like the rooms and devices.
+}));
+
 export const Ultrasound1Device: WithId<Device> = {
   resourceType: 'Device',
   id: 'ultrasound-1',
@@ -255,6 +299,17 @@ function buildSchedule(
   };
 }
 
+/**
+ * Keys resources by the reference a proposed appointment names them by, which is
+ * the shape `groupAppointmentsByDay` and `getAppointmentActors` read them from.
+ *
+ * @param resources - The resources a caller has already read.
+ * @returns The resources, keyed by reference.
+ */
+export function indexByReference<T extends WithId<Resource>>(resources: readonly T[]): Map<string, T> {
+  return new Map(resources.map((resource) => [getReferenceString(resource), resource]));
+}
+
 export const DrRiveraSchedule = buildSchedule('schedule-dr-rivera', 'Practitioner/dr-rivera', 'Dr. Maya Rivera');
 
 /*
@@ -267,6 +322,10 @@ export const DrOkaforSchedule = setScheduleParameter(
   UltrasoundImagingService,
   { url: 'timezone', valueCode: 'America/Chicago' }
 ) as WithId<Schedule>;
+export const ImagingBenchSchedules: WithId<Schedule>[] = IMAGING_BENCH.map((member) =>
+  buildSchedule(`schedule-${member.id}`, `Practitioner/${member.id}`, benchDisplay(member))
+);
+
 export const Ultrasound1Schedule = buildSchedule(
   'schedule-ultrasound-1',
   'Device/ultrasound-1',
@@ -277,6 +336,8 @@ export const Ultrasound2Schedule = buildSchedule(
   'Device/ultrasound-2',
   'Ultrasound 2 (Main Campus)'
 );
+export const ImagingBenchFixtures = [...ImagingBenchPractitioners, ...ImagingBenchSchedules];
+
 export const ExamRoomASchedule = buildSchedule('schedule-exam-room-a', 'Location/exam-room-a', 'Exam Room A');
 export const ExamRoomBSchedule = buildSchedule('schedule-exam-room-b', 'Location/exam-room-b', 'Exam Room B');
 export const SatelliteRoomSchedule = buildSchedule(

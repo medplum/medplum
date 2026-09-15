@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { SchedulingRequirement } from '@medplum/core';
+import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   CPT,
   extractServiceTypeReferences,
@@ -11,7 +11,7 @@ import {
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SchedulingMedicalNecessityURI,
 } from '@medplum/core';
-import type { Appointment, Device } from '@medplum/fhirtypes';
+import type { Appointment, Device, Schedule } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
 import { installFindStub } from '../stories/mockFind';
@@ -20,7 +20,9 @@ import {
   AuthorizationValueSets,
   DIAGNOSIS_VALUE_SET,
   DiagnosisCodes,
+  DrRiveraSchedule,
   ElderJordanPatient,
+  ExamRoomASchedule,
   InfusionService,
   MainClinic,
   MRN_SYSTEM,
@@ -41,6 +43,7 @@ import {
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
 import {
+  addActorRow,
   bookButton,
   chooseActor,
   chooseAuthorizedService,
@@ -54,6 +57,7 @@ import {
   clickBook,
   codePill,
   confirmMedicalNecessity,
+  createCode,
   dayCell,
   dragDays,
   enterAuthorizationDetails,
@@ -104,6 +108,19 @@ function setup(medplum: MockClient, props?: Partial<AppointmentProposalFormProps
 function proposedAppointment(): Appointment {
   const [proposal] = onBook.mock.calls[0] as [Appointment];
   return proposal;
+}
+
+/**
+ * Strips the name a Schedule copied onto its actor.
+ *
+ * `Schedule.actor.display` is optional, and plenty of real projects never write
+ * it — which is the case where the name has to come from the actor itself.
+ *
+ * @param schedule - The schedule to strip.
+ * @returns The same schedule, with no name on any of its actors.
+ */
+function withoutActorDisplay(schedule: WithId<Schedule>): WithId<Schedule> {
+  return { ...schedule, actor: schedule.actor.map(({ display: _display, ...actor }) => actor) };
 }
 
 describe('AppointmentProposalForm', () => {
@@ -188,19 +205,147 @@ describe('AppointmentProposalForm', () => {
       expect(await screen.findByText('No devices found')).toBeInTheDocument();
     });
 
-    test('Naming two providers narrows the times to the ones both are free for', async () => {
+    test('Two providers in one row are alternatives, each searched on its own', async () => {
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
       await openTimeFinder();
 
-      // One set of actors, not two: `$find` intersects the schedules it is given. Now
-      // that each day gets its own card, distinct groups are counted by testid, not length.
+      // Either of them will do, so each is a `$find` of its own and the times they
+      // offer are listed apart rather than intersected. Now that each day gets its
+      // own card, distinct groups are counted by testid, not length.
+      const groups = await screen.findAllByTestId(/^slot-group-/);
+      const distinct = new Map(groups.map((group) => [group.dataset.testid as string, group]));
+      expect(distinct.size).toBe(2);
+
+      // Each set holds one of them, and neither holds both.
+      for (const group of distinct.values()) {
+        const holdsRivera = within(group).queryByText('Dr. Maya Rivera') !== null;
+        const holdsOkafor = within(group).queryByText('Dr. Tunde Okafor') !== null;
+        expect(holdsRivera).not.toBe(holdsOkafor);
+      }
+    });
+
+    test('A second provider row names a provider who also attends', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await addActorRow('provider');
+      await chooseActor(/^and provider 2$/i, 'oka', 'Dr. Tunde Okafor');
+      await openTimeFinder();
+
+      // One set of actors, not two: a row each is a second provider the visit needs,
+      // so `$find` intersects their schedules in a single request.
       const groups = await screen.findAllByTestId(/^slot-group-/);
       expect(new Set(groups.map((group) => group.dataset.testid)).size).toBe(1);
       expect(within(groups[0]).getByText('Dr. Maya Rivera')).toBeInTheDocument();
       expect(within(groups[0]).getByText('Dr. Tunde Okafor')).toBeInTheDocument();
+    });
+
+    test('Rows that cannot all be filled are said so under the rows themselves', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await addActorRow('provider');
+      await chooseActor(/^and provider 2$/i, 'riv', 'Dr. Maya Rivera');
+
+      // Nobody attends their own appointment twice. The button says the search is
+      // blocked, and the provider rows say which rows blocked it, so the two halves
+      // of the answer sit where each is of use.
+      expect(screen.getByText('Nobody can fill every row at once.')).toBeInTheDocument();
+      const providers = screen.getByRole('group', { name: 'Provider' });
+      expect(within(providers).getByRole('alert')).toHaveTextContent('Name someone else in one of them.');
+
+      // The rooms and devices were answerable, so nothing is said against them.
+      expect(screen.getAllByRole('alert')).toHaveLength(1);
+      expect(screen.getByRole('button', { name: /find a time/i })).toBeDisabled();
+    });
+
+    test('Searches a round of the alternatives at a time, and offers the rest', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      // Two providers, two rooms and two devices is eight ways of holding the visit,
+      // which is more than one round.
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+      await chooseActor(/room/i, 'exam room a', 'Exam Room A');
+      await chooseActor(/room/i, 'exam room b', 'Exam Room B');
+      await chooseActor(/device/i, 'ultrasound 1', 'Ultrasound 1 (Main Campus)');
+      await chooseActor(/device/i, 'ultrasound 2', 'Ultrasound 2 (Main Campus)');
+      await openTimeFinder();
+
+      expect(await screen.findByText('Showing times for 6 of 8 ways of holding this visit.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Search more options' })).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Search more options' }));
+      });
+      await settleAutocomplete();
+
+      expect(screen.queryByRole('button', { name: 'Search more options' })).not.toBeInTheDocument();
+    });
+
+    test('Reports nothing found as "not yet" while rounds are still unsearched', async () => {
+      // Nothing on offer for anybody, so the empty state is what is on screen for
+      // the whole of both rounds.
+      restoreFind();
+      restoreFind = installFindStub(medplum, { empty: true });
+
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+      await chooseActor(/room/i, 'exam room a', 'Exam Room A');
+      await chooseActor(/room/i, 'exam room b', 'Exam Room B');
+      await chooseActor(/device/i, 'ultrasound 1', 'Ultrasound 1 (Main Campus)');
+      await chooseActor(/device/i, 'ultrasound 2', 'Ultrasound 2 (Main Campus)');
+      await openTimeFinder();
+
+      // "None available" would report an answer to a question two of the eight ways
+      // of holding this visit have not been asked yet.
+      expect(await screen.findByText('No times yet for the options searched so far.')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Search more options' }));
+      });
+      await settleAutocomplete();
+
+      expect(await screen.findByText('No times are available for this selection.')).toBeInTheDocument();
+    });
+  });
+
+  describe('Naming the actors a time is offered by', () => {
+    test('Names them from their own resources when the Schedules never did', async () => {
+      // `$find` copies `Schedule.actor` into the times it offers, so a project that
+      // never wrote a `display` gets proposals naming bare references. The resources
+      // behind them were already read to offer the actors in the first place.
+      await medplum.updateResource(withoutActorDisplay(DrRiveraSchedule));
+      await medplum.updateResource(withoutActorDisplay(ExamRoomASchedule));
+
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseActor(/room/i, 'exam', 'Exam Room A');
+      await openTimeFinder();
+
+      const [group] = await screen.findAllByTestId(/^slot-group-/);
+      expect(within(group).getByText('Dr. Maya Rivera')).toBeInTheDocument();
+      expect(within(group).getByText('Exam Room A')).toBeInTheDocument();
+      expect(within(group).queryByText(/^Practitioner\//)).not.toBeInTheDocument();
+      expect(within(group).queryByText(/^Location\//)).not.toBeInTheDocument();
+    });
+
+    test('Names them the same way under the chosen time', async () => {
+      await medplum.updateResource(withoutActorDisplay(DrRiveraSchedule));
+
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      expect(chosenTimeField()).toHaveAccessibleDescription('30 min visit · Provider: Dr. Maya Rivera');
     });
   });
 
@@ -425,7 +570,7 @@ describe('AppointmentProposalForm', () => {
       // `$find` only offers a time that fits inside the window, so one day is asked about
       // up to the following midnight rather than to the last instant of the day itself.
       expect(new Date(params.get('end') as string).getDate()).toBe(18);
-      expect(Number(params.get('_count'))).toBe(50);
+      expect(Number(params.get('_count'))).toBe(65);
     });
 
     test('Adds the next two days under the ones already on screen', async () => {
@@ -457,7 +602,7 @@ describe('AppointmentProposalForm', () => {
       // on the midnight the first window closed on, which is the site's rather than the
       // viewer's: midnight in Eastern time is 04:00 UTC, the clock the runner keeps.
       expect(lastFindStart(get)).toBe('2026-08-18T04:00:00.000Z');
-      expect(Number(lastFindParams(get)?.get('_count'))).toBe(100);
+      expect(Number(lastFindParams(get)?.get('_count'))).toBe(130);
     });
 
     test('Names a day that offers nothing, so nothing is missing but the days nobody asked about', async () => {
@@ -550,7 +695,7 @@ describe('AppointmentProposalForm', () => {
       expect(findRequests(get)).toHaveLength(1);
       const params = lastFindParams(get) as URLSearchParams;
       expect(new Date(params.get('end') as string).getDate()).toBe(22);
-      expect(Number(params.get('_count'))).toBe(250);
+      expect(Number(params.get('_count'))).toBe(325);
     });
 
     test('Marks both ends of a stretch that was picked on purpose', async () => {
@@ -1451,31 +1596,38 @@ describe('AppointmentProposalForm', () => {
       expect(within(listbox).queryByText((content) => content.includes(CPT))).not.toBeInTheDocument();
     });
 
-    test('Takes only codes its value set offered, never one typed over the top', async () => {
+    test('Takes a code typed over the top, for one its value set never carried', async () => {
       setupWithCodeValueSets();
-      await chooseAuthorizedService();
+      await fillAuthorizedBooking();
 
-      await typeInAutocomplete(field(/procedure code/i), '43644');
+      await createCode(/procedure code/i, '43644');
+      await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+      await confirmMedicalNecessity();
 
-      // No "+ Create" option: a code nobody's value set carries is not a code this can book against,
-      // and free text would defeat capturing these discretely in the first place.
-      expect(screen.queryByText(/\+ Create/)).not.toBeInTheDocument();
+      // A typed code is its own description, so the pill prints it once rather than twice.
+      expect(hasPill('43644')).toBe(true);
+
+      await clickBook();
+
+      // No system: nothing published this code, and naming one would claim a provenance it has not got.
+      expect(proposedAppointment().serviceType?.slice(1)).toEqual([{ coding: [{ code: '43644', display: '43644' }] }]);
     });
 
-    test('Cannot book a designated visit type when its value sets were never imported', async () => {
-      // The cost of taking only what a value set offers: there is nothing to fall back to, so a
-      // project that imported neither cannot book the visit types that need them at all. Loud, and
-      // deliberately so, since the quiet alternative is booking prior-authorization-gated visits on free text.
+    test('Still books a designated visit type when its value sets were never imported', async () => {
+      // A project that imported neither is left typing both codes: the fields say their suggestions
+      // are gone and stay usable, rather than taking themselves out of use and stopping the booking.
       restoreValueSets();
       restoreValueSets = installValueSetStub(medplum, {});
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
 
-      // Both code fields take themselves out of use and say why, rather than sitting there uncompletable.
-      expect(screen.getAllByText('This field is unavailable.')).toHaveLength(2);
-      expect(screen.queryByRole('searchbox', { name: /procedure code/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('searchbox', { name: /diagnosis code/i })).not.toBeInTheDocument();
-      expect(bookButton()).toBeDisabled();
+      expect(screen.getAllByText('Suggestions unavailable')).toHaveLength(2);
+
+      await createCode(/procedure code/i, '96365');
+      await createCode(/diagnosis code/i, 'E11.9');
+      await confirmMedicalNecessity();
+
+      expect(bookButton()).toBeEnabled();
     });
 
     test('Drops the answers when the visit type changes, and asks again', async () => {

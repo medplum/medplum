@@ -495,6 +495,10 @@ export async function getSchedulingParametersGroup(
   schedules: WithPath<WithId<Schedule>>[],
   healthcareService: WithPath<WithId<HealthcareService>>
 ): Promise<Map<WithPath<WithId<Schedule>>, LayeredDict<SchedulingParameters & { timezone: string }>>> {
+  if (healthcareService.active === false) {
+    throw new OperationOutcomeError(badRequest('HealthcareService is inactive', getPath(healthcareService)));
+  }
+
   schedules.forEach((schedule) => {
     if (schedule.actor.length !== 1) {
       throw new OperationOutcomeError(

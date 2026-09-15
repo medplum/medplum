@@ -1265,6 +1265,72 @@ describe('Appointment/$hold', () => {
     });
   });
 
+  test('fails when the HealthcareService is inactive', async () => {
+    const inactiveService = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Inactive Visit',
+      active: false,
+      type: [{ coding: [{ system: 'https://example.com/fhir', code: 'inactive-visit' }] }],
+      meta: { project: project.project.id },
+    });
+    const serviceType = toServiceTypeCodeableConcepts(inactiveService);
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner1)],
+      serviceType,
+      extension: [makeSchedulingExtension({ service: inactiveService })],
+    });
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$hold')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType,
+              participant: [{ actor: createReference(practitioner1), status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                  serviceType,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response.body).toHaveProperty('issue', [
+      {
+        severity: 'error',
+        code: 'invalid',
+        details: {
+          text: 'HealthcareService is inactive',
+        },
+        expression: ['HealthcareService'],
+      },
+    ]);
+    expect(response).toHaveStatus(400);
+
+    // Nothing was held
+    const slots = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
+    expect(slots).toHaveLength(0);
+  });
+
   test('fails when the schedule has more than one actor', async () => {
     const extraPractitioner = await makePractitioner({ timezone: 'America/New_York' });
     const schedule = await systemRepo.createResource<Schedule>({

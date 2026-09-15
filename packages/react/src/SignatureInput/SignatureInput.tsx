@@ -54,7 +54,7 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
 
     return () => {
       if (signaturePadRef.current) {
-        signaturePadRef.current.removeEventListener('beginStroke', handleEndStroke);
+        signaturePadRef.current.removeEventListener('endStroke', handleEndStroke);
       }
     };
   }, [medplum, defaultValue, who, emitChange]);
