@@ -289,10 +289,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
     return null;
   }
 
-  // Quest Diagnostics reports "DNR" (Do Not Report) as a literal value for a sub-result that
-  // was intentionally not reported (e.g. a skipped reflex microscopy panel). Health Gorilla's
-  // own report suppresses these rows, so we always do too - not configurable.
-  if (!observation.hasMember?.length && formatObservationValue(observation) === 'DNR') {
+  if (isDoNotReportObservation(observation)) {
     return null;
   }
 
@@ -431,6 +428,30 @@ function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
  */
 function indentStyle(depth: number): { paddingInlineStart: string } | undefined {
   return depth > 0 ? { paddingInlineStart: `calc(4px + ${depth} * var(--mantine-spacing-md))` } : undefined;
+}
+
+/**
+ * Sentinel value Quest Diagnostics uses for a sub-result that was intentionally not reported,
+ * such as a skipped reflex microscopy panel. Stands for "Do Not Report".
+ */
+const DO_NOT_REPORT_VALUE = 'DNR';
+
+/**
+ * Returns true if the observation is a leaf result whose value is the "Do Not Report" sentinel.
+ * DiagnosticReportDisplay always hides these rows, matching how such not-reported sub-results
+ * are conventionally omitted from a printed lab report.
+ *
+ * Grouping observations (those with `hasMember`) are excluded: `formatObservationValue` already
+ * returns an empty string for them (they carry members, not a value of their own), so this check
+ * would not match a well-formed group - but excluding them explicitly means a group can never be
+ * hidden by this check even if some future or malformed feed puts "DNR" on a group's own value,
+ * which would otherwise hide every result nested under it.
+ * @param observation - The FHIR observation.
+ * @returns True if the observation is a non-grouping result reported as "DNR".
+ */
+function isDoNotReportObservation(observation: Observation): boolean {
+  const isLeafResult = !observation.hasMember?.length;
+  return isLeafResult && formatObservationValue(observation) === DO_NOT_REPORT_VALUE;
 }
 
 /**
