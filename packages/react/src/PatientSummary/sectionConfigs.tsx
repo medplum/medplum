@@ -51,10 +51,10 @@ import { Vitals } from './Vitals';
 export const DemographicsSection: PatientSummarySectionConfig = {
   key: 'demographics',
   title: 'Demographics',
-  component: ({ patient, onClickResource }: SectionRenderContext) => {
+  component: ({ patient, onClickResource, onEditPatient }: SectionRenderContext) => {
     const languageDisplay = getPreferredLanguage(patient);
     return (
-      <Stack gap="xs" py={8}>
+      <Stack gap="xs" py="md">
         <PatientInfoItem
           patient={patient}
           value={patient.birthDate ? `${patient.birthDate} (${calculateAgeString(patient.birthDate)})` : undefined}
@@ -62,6 +62,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           placeholder="Add Birthdate"
           label="Birthdate & Age"
           onClickResource={onClickResource}
+          onClick={onEditPatient}
         />
         <PatientInfoItem
           patient={patient}
@@ -70,6 +71,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           placeholder="Add Gender & Identity"
           label="Gender & Identity"
           onClickResource={onClickResource}
+          onClick={onEditPatient}
         />
         <PatientInfoItem
           patient={patient}
@@ -78,6 +80,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           placeholder="Add Race & Ethnicity"
           label="Race & Ethnicity"
           onClickResource={onClickResource}
+          onClick={onEditPatient}
         />
         <PatientInfoItem
           patient={patient}
@@ -86,6 +89,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           placeholder="Add Location"
           label="Location"
           onClickResource={onClickResource}
+          onClick={onEditPatient}
         />
         <PatientInfoItem
           patient={patient}
@@ -94,6 +98,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           placeholder="Add Language"
           label="Language"
           onClickResource={onClickResource}
+          onClick={onEditPatient}
         />
         <PatientInfoItem
           patient={patient}
@@ -102,6 +107,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           placeholder="Add General Practitioner"
           label="General Practitioner"
           onClickResource={onClickResource}
+          onClick={onEditPatient}
         />
       </Stack>
     );

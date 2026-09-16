@@ -9,7 +9,7 @@ import { normalizeErrorString, Operator, parseSearchRequest } from '@medplum/cor
 import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useThreadInbox } from '@medplum/react-hooks';
 import { IconMessageCircle, IconPlus } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { ListWithDetailPaneTab } from '../../ListWithDetailPane/ListWithDetailPane';
 import { ListWithDetailPane } from '../../ListWithDetailPane/ListWithDetailPane';
@@ -45,6 +45,12 @@ export interface ThreadInboxProps {
   readonly subject?: Reference<Patient> | Patient;
   readonly showPatientSummary?: boolean;
   readonly sections?: PatientSummarySectionConfig[];
+  /** `<Menu.Item>` nodes for the patient summary header's "…" actions menu. */
+  readonly patientHeaderMenuItems?: ReactNode;
+  /** When provided, Demographics rows open this (the patient edit modal) instead of navigating. */
+  readonly onEditPatient?: () => void;
+  /** Fires with the selected thread's patient subject so the host can wire header actions/modals. */
+  readonly onPatientChange?: (patient: Reference<Patient> | undefined) => void;
   readonly onNew: (message: Communication) => void;
   readonly onSelectFirst?: (thread: Communication) => void;
   readonly getThreadUri: (topic: Communication) => string;
@@ -66,6 +72,9 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     subject,
     showPatientSummary = false,
     sections,
+    patientHeaderMenuItems,
+    onEditPatient,
+    onPatientChange,
     onNew,
     onSelectFirst,
     getThreadUri,
@@ -118,6 +127,11 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     query,
     threadId,
   });
+
+  const subjectReference = (selectedThread?.subject as Reference<Patient> | undefined)?.reference;
+  useEffect(() => {
+    onPatientChange?.(subjectReference ? { reference: subjectReference } : undefined);
+  }, [subjectReference, onPatientChange]);
 
   const handleParticipantsChange = useCallback(
     (participants: Reference<Patient | Practitioner>[]) => {
@@ -238,6 +252,8 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
               thread={thread}
               showPatientSummary={showPatientSummary}
               sections={sections}
+              patientHeaderMenuItems={patientHeaderMenuItems}
+              onEditPatient={onEditPatient}
               uploadEnabled={uploadEnabled}
               onViewInDocuments={onViewInDocuments}
               onStatusChange={handleTopicStatusChangeWithErrorHandling}
