@@ -15,6 +15,8 @@ export * from './AppointmentFinder/AppointmentOptionRow';
 export * from './AppointmentFinder/AppointmentProposalForm';
 export * from './AppointmentFinder/AppointmentServiceSelect';
 export * from './AppointmentFinder/AppointmentSlotGroupCard';
+export * from './AppointmentFinder/buildElevatedBooking';
+export * from './AppointmentFinder/findConflicts';
 export * from './Calendar/Calendar';
 export * from './MultiCalendar/MultiCalendar';
 export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor';
@@ -27,3 +29,4 @@ export * from './hooks/useSchedulingResources';
 // Helpers the components are built on, usable without them
 export * from './actors';
 export * from './availability';
+export * from './bookingGeometry';

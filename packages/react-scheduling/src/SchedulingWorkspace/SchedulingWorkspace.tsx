@@ -9,7 +9,7 @@ import {
   normalizeErrorString,
   SchedulingScheduleColorURI,
 } from '@medplum/core';
-import type { Appointment, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Extension, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -56,6 +56,19 @@ export interface SchedulingWorkspaceProps {
    * from, for a host coding them against its own terminology.
    */
   readonly appointmentCancellationReasonValueSet?: string;
+  /**
+   * Lets the booking form take a typed time and length, placing a visit the scheduling
+   * rules would refuse: over occupied or blocked time, past the configured capacity,
+   * or at a time or length the visit type does not offer.
+   *
+   * Passing it draws the fields; it enforces nothing. Which users get it is the host's.
+   */
+  readonly canBypassSchedulingRules?: boolean;
+  /**
+   * Extensions to put on every appointment booked from this workspace. See
+   * {@link AppointmentProposalFormProps.appointmentExtensions}.
+   */
+  readonly appointmentExtensions?: readonly Extension[];
 }
 
 /**
@@ -80,7 +93,14 @@ export interface SchedulingWorkspaceProps {
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
  */
 export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Element {
-  const { procedureBinding, diagnosisBinding, onBooked, appointmentCancellationReasonValueSet } = props;
+  const {
+    procedureBinding,
+    diagnosisBinding,
+    onBooked,
+    appointmentCancellationReasonValueSet,
+    canBypassSchedulingRules,
+    appointmentExtensions,
+  } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
 
@@ -289,6 +309,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             defaultStart={bookingSelection.start}
             procedureBinding={procedureBinding}
             diagnosisBinding={diagnosisBinding}
+            canBypassSchedulingRules={canBypassSchedulingRules}
+            appointmentExtensions={appointmentExtensions}
             onToggleTimeFinder={setTimeFinderOpen}
             onChangeTime={setHighlight}
             onBooked={finishBooking}

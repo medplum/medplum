@@ -113,16 +113,61 @@ export const FromADifferentTimezone = (): JSX.Element => <Workspace />;
 FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
 
 /**
+ * The workspace when the host lets a user enter a time of their own.
+ *
+ * Everything in `Basic` still works: a time picked from the search is booked through
+ * `$book`, which checks it. What this adds is a **Date & time** and a **Minutes** field
+ * above the times on offer, for placing a visit the rules would refuse. The read-only
+ * time on the left stays where it is; both ways of answering land in it.
+ *
+ * To see a clash: select **Providers → Dr. Maya Rivera**, and find her booked imaging
+ * visit for Miles Cooper on the Tuesday. Click any open time to open the form, choose
+ * **Ultrasound Imaging** and **Dr. Maya Rivera**, then **Find a time**. Above the times
+ * that come back, type that Tuesday and *the time the visit on the calendar starts* —
+ * read it off the event rather than copying a time from here, since the fixtures are
+ * kept on your own clock. A line appears under the fields:
+ *
+ * > Overlaps an existing appointment on Dr. Maya Rivera's schedule
+ *
+ * It names the calendar, not the patient on it. **It does not stop you booking**: the
+ * point is to show what you are sitting on top of, not to refuse. Book it and a second
+ * visit appears over the first.
+ *
+ * Blocked time reads differently. Select **Rooms → Exam Room A**, which is closed
+ * Thursday for equipment maintenance, and type a time inside it:
+ *
+ * > Overlaps blocked time on Exam Room A's schedule
+ *
+ * Nothing warns while the fields are incomplete, and the warning is taken down the
+ * moment any of them changes, because what was looked up was about a different time.
+ *
+ * Two things happen out of sight. A typed time is written directly as a transaction
+ * rather than through `$book`, which would refuse it, and the appointment it writes
+ * carries a `SchedulingUnvalidatedBooking` extension — the only durable record that
+ * the rules were not applied to it.
+ *
+ * @returns The story.
+ */
+export const BypassSchedulingRules = (): JSX.Element => <Workspace canBypassSchedulingRules />;
+BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
+
+interface WorkspaceProps {
+  readonly canBypassSchedulingRules?: boolean;
+}
+
+/**
  * Fills the viewport under the package banner, which is 72px.
+ * @param props - Whether the story lets a time be typed.
  * @returns The workspace as a host would mount it.
  */
-function Workspace(): JSX.Element {
+function Workspace(props: WorkspaceProps): JSX.Element {
   // The workspace fills whatever it is given, so the story hands it the rest of the
   // viewport rather than a fixed height: the calendar and the booking pane both scroll
   // inside it, and a short host makes each of them look cramped for reasons of its own.
   return (
     <div style={{ height: 'calc(100vh - 72px)', padding: '1em', boxSizing: 'border-box' }}>
       <SchedulingWorkspace
+        canBypassSchedulingRules={props.canBypassSchedulingRules}
         onBooked={({ appointment }) => {
           showNotification({
             color: 'green',
