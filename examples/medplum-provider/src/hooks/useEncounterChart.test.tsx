@@ -157,6 +157,43 @@ describe('useEncounterChart', () => {
     });
   });
 
+  test('creates a clinical impression when the encounter has none', async () => {
+    await medplum.createResource(mockEncounter);
+    await medplum.createResource(mockPractitioner);
+    const createResourceSpy = vi.spyOn(medplum, 'createResource');
+
+    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.clinicalImpression?.id).toBeDefined();
+    });
+
+    expect(createResourceSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceType: 'ClinicalImpression',
+        status: 'in-progress',
+        subject: { reference: 'Patient/patient-123' },
+        encounter: { reference: 'Encounter/encounter-123' },
+      })
+    );
+    expect(result.current.clinicalImpression?.status).toBe('in-progress');
+  });
+
+  test('does not create a clinical impression when one already exists', async () => {
+    await medplum.createResource(mockEncounter);
+    await medplum.createResource(mockPractitioner);
+    await medplum.createResource(mockClinicalImpression);
+    const createResourceSpy = vi.spyOn(medplum, 'createResource');
+
+    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.clinicalImpression?.id).toBe('clinical-impression-123');
+    });
+
+    expect(createResourceSpy).not.toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'ClinicalImpression' }));
+  });
+
   test('fetches practitioner from encounter participant', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);
