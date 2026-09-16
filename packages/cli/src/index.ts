@@ -10,10 +10,17 @@ import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from '.
 import { bulk } from './bulk';
 import { dicomweb } from './dicomweb';
 import { hl7 } from './hl7';
+import { packageCommand } from './package';
 import { profile } from './profiles';
 import { project } from './project';
 import { deleteObject, get, patch, post, put } from './rest';
 import { addSubcommand, MedplumCommand } from './utils';
+
+// Exposed for end-to-end harnesses that drive publish -> install -> execute and
+// assert on the result. They need the structured summary, which the `medplum
+// package publish` subcommand only prints.
+export { publishPackage } from './package-publish';
+export type { PublishOptions, PublishSummary } from './package-publish';
 
 export async function main(argv: string[]): Promise<void> {
   const index = new MedplumCommand('medplum')
@@ -72,6 +79,9 @@ export async function main(argv: string[]): Promise<void> {
 
   // Bot Commands
   addSubcommand(index, bot);
+
+  // Marketplace package commands
+  addSubcommand(index, packageCommand);
 
   // Agent Commands
   addSubcommand(index, agent);

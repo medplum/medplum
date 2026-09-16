@@ -14,6 +14,7 @@ export const medplumAliases = {
   '@medplum/health-gorilla-core': resolve(repoDir, 'packages/health-gorilla-core/src'),
   '@medplum/hl7': resolve(repoDir, 'packages/hl7/src'),
   '@medplum/mock': resolve(repoDir, 'packages/mock/src'),
+  '@medplum/package-types': resolve(repoDir, 'packages/package-types/src'),
   '@medplum/react': resolve(repoDir, 'packages/react/src'),
   '@medplum/react-hooks': resolve(repoDir, 'packages/react-hooks/src'),
 };
