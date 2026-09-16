@@ -194,9 +194,9 @@ describe('CLI Marketplace packages', () => {
     });
 
     test('rejects an unknown target', async () => {
-      await expect(
-        main(['node', 'index.js', 'package', 'build', packageDir, '--target', 'sandbox'])
-      ).rejects.toThrow('Process exited with exit code 1');
+      await expect(main(['node', 'index.js', 'package', 'build', packageDir, '--target', 'sandbox'])).rejects.toThrow(
+        'Process exited with exit code 1'
+      );
       expect(processError).toHaveBeenCalledWith(expect.stringContaining("'sandbox' is invalid"));
     });
 

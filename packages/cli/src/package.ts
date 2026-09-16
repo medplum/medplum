@@ -90,10 +90,7 @@ async function loadValidManifest(packageDir: string): Promise<PackageManifest> {
 packageValidateCommand
   .description('Validate a package manifest without contacting a server')
   .argument('[packageDir]', 'Package directory containing manifest.ts', '.')
-  .option(
-    '--existing-versions <versions>',
-    'Comma-separated versions already published, to reject a version collision'
-  )
+  .option('--existing-versions <versions>', 'Comma-separated versions already published, to reject a version collision')
   .action(async (packageDir, options) => {
     const manifestPath = manifestPathFor(packageDir);
     console.log(`Validating ${manifestPath}`);
