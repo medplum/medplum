@@ -9,11 +9,13 @@ import {
 import type { BotEvent } from '@medplum/core';
 import * as core from '@medplum/core';
 import { mockClient } from 'aws-sdk-client-mock';
+import { transformSync } from 'esbuild';
 import JSZip from 'jszip';
 import { Readable } from 'node:stream';
 import vm from 'node:vm';
 import { vi } from 'vitest';
 import { deployLambda } from '../cloud/aws/deploy';
+import { deployLambdaStreaming } from '../cloud/aws/deploystreaming';
 import { buildLambdaPayload } from '../cloud/aws/execute';
 import { executeFissionBot } from '../cloud/fission/execute';
 import * as fissionUtils from '../cloud/fission/utils';
@@ -46,9 +48,11 @@ function createContext(body: string | undefined): BotExecutionContext {
 }
 
 function createSandbox(): Record<string, any> {
+  const exports = {};
   return {
-    exports: {},
-    module: {},
+    exports,
+    module: { exports },
+    awslambda: { streamifyResponse: (handler: unknown) => handler },
     console: { log() {}, error() {}, warn() {}, info() {}, debug() {} },
     require: (name: string) => {
       if (name === '@medplum/core') {
@@ -87,27 +91,48 @@ test.each([rawBody, undefined])('Forwards original JSON through VM: %s', async (
   expect(result.returnValue).toEqual({ input: JSON.parse(rawBody), rawBody: body });
 });
 
-test('Forwards original JSON through deployed Lambda wrapper', async () => {
+test.each([
+  ['standard', 'cjs'],
+  ['standard', 'esm'],
+  ['streaming', 'cjs'],
+  ['streaming', 'esm'],
+])('Forwards original JSON through deployed %s Lambda %s wrapper', async (runtime, format) => {
   const client = mockClient(LambdaClient);
   try {
     client.on(GetFunctionCommand).resolves({});
     client.on(ListLayerVersionsCommand).resolves({ LayerVersions: [{ LayerVersionArn: 'test-layer' }] });
     client.on(CreateFunctionCommand).resolves({});
     const context = createContext(rawBody);
-    await deployLambda(context.bot, userCode);
+    const deploy = runtime === 'streaming' ? deployLambdaStreaming : deployLambda;
+    await deploy(
+      context.bot,
+      format === 'esm' ? userCode.replace('exports.handler =', 'export const handler =') : userCode
+    );
     const zipBytes = client.commandCalls(CreateFunctionCommand)[0].args[0].input.Code?.ZipFile;
     const zip = await JSZip.loadAsync(zipBytes as Uint8Array);
-    const code = await zip.file('index.cjs')?.async('string');
+    const code = await zip.file(format === 'esm' ? 'index.mjs' : 'index.cjs')?.async('string');
     expect(code).toBeDefined();
     const sandbox = createSandbox();
-    vm.runInNewContext(code as string, sandbox);
+    vm.runInNewContext(
+      format === 'esm' ? transformSync(code as string, { format: 'cjs' }).code : (code as string),
+      sandbox
+    );
 
     for (const body of [rawBody, undefined]) {
       const payload = JSON.parse(JSON.stringify(buildLambdaPayload(createContext(body))));
       if (!body) {
         expect(payload).not.toHaveProperty('rawBody');
       }
-      const result = await sandbox.exports.handler(payload);
+      const chunks: string[] = [];
+      const responseStream = { write: (chunk: string) => chunks.push(chunk), end() {} };
+      const handler = sandbox.module.exports.handler;
+      let result;
+      if (runtime === 'streaming') {
+        await handler({ ...payload, streaming: true }, responseStream);
+        result = JSON.parse(chunks.slice(1).join(''));
+      } else {
+        result = await handler(payload);
+      }
       expect(result.input).toEqual(JSON.parse(rawBody));
       expect(result.rawBody).toBe(body);
     }

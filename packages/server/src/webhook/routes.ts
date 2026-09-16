@@ -8,6 +8,7 @@ import { executeBot } from '../bots/execute';
 import { sendBotResponse } from '../bots/utils';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+import { parseWebhookBody } from './bodyparser';
 
 /**
  * Handles HTTP requests for anonymous webhooks.
@@ -15,6 +16,7 @@ import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
  * @param res - The response object
  */
 export const webhookHandler = async (req: Request, res: Response): Promise<void> => {
+  const { input, rawBody } = parseWebhookBody(req.body);
   const globalSystemRepo = getGlobalSystemRepo();
   const membershipId = singularize(req.params.id) ?? '';
   const runAs = await globalSystemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
@@ -48,10 +50,10 @@ export const webhookHandler = async (req: Request, res: Response): Promise<void>
   const result = await executeBot({
     bot,
     runAs,
-    input: req.method === 'POST' ? req.body : req.query,
+    input: req.method === 'POST' ? input : req.query,
     contentType: req.header('content-type') as string,
     headers,
-    rawBody: res.locals.webhookRawBody,
+    rawBody: bot.webhookRawBodyEnabled !== false ? rawBody : undefined,
   });
 
   if (isOperationOutcome(result)) {

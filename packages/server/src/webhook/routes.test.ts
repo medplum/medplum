@@ -173,6 +173,36 @@ describe('Anonymous webhooks', () => {
     }
   );
 
+  test('Persists the raw-body forwarding setting and preserves parsed input', async () => {
+    const rawBody = '{ "value": 1.00 }\n';
+    try {
+      for (const enabled of [false, true]) {
+        const update = await request(app)
+          .patch(`/fhir/R4/Bot/${bot.id}`)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .set('Content-Type', ContentType.JSON_PATCH)
+          .send([{ op: 'add', path: '/webhookRawBodyEnabled', value: enabled }]);
+        expect(update).toHaveStatus(200);
+        expect(update.body.webhookRawBodyEnabled).toBe(enabled);
+
+        const response = await request(app)
+          .post(`/webhook/${botMembership.id}`)
+          .set('Content-Type', ContentType.JSON)
+          .set('x-test-return-event', 'true')
+          .send(rawBody);
+        expect(response).toHaveStatus(200);
+        expect(response.body).toEqual(enabled ? { input: { value: 1 }, rawBody } : { input: { value: 1 } });
+      }
+    } finally {
+      const reset = await request(app)
+        .patch(`/fhir/R4/Bot/${bot.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON_PATCH)
+        .send([{ op: 'remove', path: '/webhookRawBodyEnabled' }]);
+      expect(reset).toHaveStatus(200);
+    }
+  });
+
   test('Does not capture raw body for non-JSON webhooks', async () => {
     const res = await request(app)
       .post(`/webhook/${botMembership.id}`)

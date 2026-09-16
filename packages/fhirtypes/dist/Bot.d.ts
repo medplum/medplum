@@ -162,6 +162,13 @@ export interface Bot {
   publicWebhook?: boolean;
 
   /**
+   * Whether to forward the original UTF-8 JSON body as BotEvent.rawBody
+   * for public webhooks. Defaults to true. Set to false to avoid the
+   * additional invocation payload size; parsed input is always provided.
+   */
+  webhookRawBodyEnabled?: boolean;
+
+  /**
    * Optional flag to indicate that the bot should be deployed in a
    * streaming-enabled context, allowing it to execute with streaming
    * responses.

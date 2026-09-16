@@ -100,11 +100,15 @@ Using unauthenticated webhooks inherently carries security risks. Medplum provid
 
 ### Verifying JSON signatures
 
-For UTF-8 JSON requests to `/webhook/{ProjectMembership.id}`, `event.rawBody` contains the original JSON text before parsing. Pass this text and the provider's signature header from `event.headers` to the provider's verification library. Do not use `JSON.stringify(event.input)`: parsing and reserializing can change whitespace, escaping, and number formatting, invalidating the signature. `event.input` remains the parsed object.
+For UTF-8 JSON requests to `/webhook/{ProjectMembership.id}`, `event.rawBody` contains the original JSON text before parsing. Pass this text and the provider's signature header from `event.headers` to the provider's verification library. Do not use `JSON.stringify(event.input)`: parsing and reserializing can change whitespace, escaping, and number formatting, invalidating the signature. `event.input` remains the parsed object, including when raw-body forwarding is disabled.
 
 The normal server JSON size limit still applies. Body-parser decompresses compressed requests before capturing this text; use uncompressed UTF-8 JSON for providers that sign the transmitted bytes. The property is absent for other content types, encodings, and execution endpoints. Reject a missing `rawBody` when your integration requires JSON signature verification, and verify before writing resources or processing the event.
 
-Raw body forwarding is supported in VM, standard AWS Lambda, and Fission runtimes. Redeploy existing Lambda and Fission Bots after upgrading the server so their generated wrappers forward the new property. The Bot layer contains dependencies; the server generates these wrappers during Bot deployment.
+Raw-body forwarding is enabled by default. Set `Bot.webhookRawBodyEnabled` to `false` to opt out; omitting the flag or setting it to `true` forwards the original text. This setting applies to all runtimes.
+
+Lambda and Fission invocation payloads include both parsed `input` and `rawBody` when forwarding is enabled. The additional text increases payload size and can cause previously successful large Lambda requests to exceed the invocation limit. For those integrations, pause webhook delivery during the server upgrade, set `webhookRawBodyEnabled` to `false`, and then resume delivery. The updated server definition is required to configure this field. Bots that require raw text for signature verification must keep forwarding enabled and keep their requests within the runtime's payload limit.
+
+Raw-body forwarding is supported in VM, standard and streaming AWS Lambda wrappers, and Fission runtimes. Public webhook routes do not provide a response stream; updating the streaming wrapper does not enable streaming responses on those routes. Redeploy existing Lambda and Fission Bots after upgrading the server so their generated wrappers forward the new property. Existing wrappers still receive parsed `input`. The Bot layer contains dependencies; the server generates these wrappers during Bot deployment.
 
 ### How to Set Up an Unauthenticated Webhook
 
