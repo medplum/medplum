@@ -23,7 +23,7 @@ export interface ListDetailPaneItemContext<T extends { id?: string } = Resource>
 }
 
 export interface ListDetailPaneDetailContext {
-  readonly refresh: () => Promise<void>;
+  readonly refresh?: () => Promise<void>;
 }
 
 /**
@@ -42,7 +42,7 @@ export interface ListDetailPaneDetailContext {
  * @param selected - The resolved selected item, or undefined when nothing is selected.
  * @param renderDetail - Renders the detail pane for the selected item.
  * @param emptyDetail - Shown when nothing is selected. Default: dimmed prompt.
- * @param refresh - Passed through to the detail render context.
+ * @param refresh - Optional. Passed through to the detail render context so the detail pane can refetch the list.
  * @param onSelectFirst - Auto-select escape hatch. Fired with the first item when the list has finished loading
  * (`loading` false) with items while nothing is selected (`selectedKey` undefined). The consumer decides how to
  * navigate (typically with history replace). Pass an id-driven `selectedKey` (e.g. the URL route param) so a
@@ -65,7 +65,7 @@ export interface ListDetailPanePropsBase<T extends { id?: string } = Resource> {
   readonly selected: T | undefined;
   readonly renderDetail: (selected: T, ctx: ListDetailPaneDetailContext) => ReactNode;
   readonly emptyDetail?: ReactNode;
-  readonly refresh: () => Promise<void>;
+  readonly refresh?: () => Promise<void>;
   readonly onSelectFirst?: (item: T) => void;
   readonly page?: number;
   readonly pageCount?: number;

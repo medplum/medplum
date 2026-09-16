@@ -344,7 +344,6 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           No conversations yet
         </Text>
       }
-      refresh={refreshTopics}
       renderItem={(item) => <TopicListItem topic={item} uri={onSelectedItem(item)} />}
       renderDetail={() => (
         <>
