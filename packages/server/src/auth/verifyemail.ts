@@ -47,14 +47,16 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
     return;
   }
 
-  const user = await systemRepo.readReference(securityRequest.user);
-
   await systemRepo.withTransaction(
     async (txRepo) => {
       // Consume the request first, so that concurrent requests carrying the same token
       // cannot both get through
       await consumeSecurityRequest(txRepo, securityRequest);
-      await txRepo.updateResource<User>({ ...user, emailVerified: true });
+      // Patch so that only this field is written: the User is read inside the transaction,
+      // so a concurrent change elsewhere on the resource is not reverted by a stale copy.
+      await txRepo.patchResource<User>('User', resolveId(securityRequest.user) as string, [
+        { op: 'add', path: '/emailVerified', value: true },
+      ]);
     },
     { resourceTypes: ['User', 'UserSecurityRequest'], source: 'verifyEmailHandler' }
   );
