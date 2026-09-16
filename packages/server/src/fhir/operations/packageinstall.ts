@@ -434,8 +434,23 @@ function planReconciliation(
 }
 
 // Reads and parses the FHIR Bundle stored in the PackageRelease's Binary content.
-async function readPackageBundle(repo: FhirRepository, packageRelease: PackageRelease): Promise<Bundle> {
-  const binary = await repo.readReference<Binary>({ reference: packageRelease.content.url });
+async function readPackageBundle(systemRepo: FhirRepository, packageRelease: WithId<PackageRelease>): Promise<Bundle> {
+  const binary = await systemRepo.readReference<Binary>({ reference: packageRelease.content.url });
+
+  // `content.url` is caller-influenced data read with system privilege, so it has
+  // to stay inside the project whose release the caller proved access to. Without
+  // this, a catalog row could name any Binary on the server and $install would
+  // fetch it — the caller's access check covers the PackageRelease, not its target.
+  //
+  // The release's own project has to come from a system read: `meta.project` is
+  // stripped from the caller-scoped copy for anyone but a super admin.
+  const release = await systemRepo.readResource<PackageRelease>('PackageRelease', packageRelease.id);
+  if (binary.meta?.project !== release.meta?.project) {
+    throw new OperationOutcomeError(
+      badRequest(`Package release content ${packageRelease.content.url} does not belong to the release's project`)
+    );
+  }
+
   const stream = await getBinaryStorage().readBinary(binary);
   const json = await readStreamToString(stream);
   return JSON.parse(json) as Bundle;
@@ -838,6 +853,22 @@ async function linkImplProject(
   if (current.link?.some((l) => l.project?.reference === implProjectRef.reference)) {
     return;
   }
+
+  // The link makes the impl project readable to everyone who installs the package,
+  // so refuse one that exports more than the bots the package needs. An unset or
+  // empty `exportedResourceType` exports *every* type, which would turn a catalog
+  // row pointing at a PHI-bearing project into a leak for every installer.
+  const implProject = await systemRepo.readReference<Project>(implProjectRef);
+  const exported = implProject.exportedResourceType ?? [];
+  if (exported.length === 0 || exported.some((resourceType) => resourceType !== 'Bot')) {
+    throw new OperationOutcomeError(
+      badRequest(
+        `Implementation project ${implProjectRef.reference} must export only Bot resources; ` +
+          `found ${exported.length === 0 ? 'all resource types' : exported.join(', ')}`
+      )
+    );
+  }
+
   await systemRepo.updateResource<Project>({
     ...current,
     link: [...(current.link ?? []), { project: { reference: implProjectRef.reference } }],

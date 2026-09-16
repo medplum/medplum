@@ -611,7 +611,7 @@ describe('PackageRelease $install', () => {
   // is how a real publisher ships a post-install hook.
   async function publishImplProjectWithSetupBot(
     setupBotIdentifier: string,
-    options?: { runAsUser?: boolean }
+    options?: { runAsUser?: boolean; exportedResourceType?: Project['exportedResourceType'] }
   ): Promise<{ implProject: WithId<Project>; setupBot: WithId<Bot> }> {
     const systemRepo = getGlobalSystemRepo();
     const implProject = await withTestContext(() =>
@@ -619,6 +619,9 @@ describe('PackageRelease $install', () => {
         resourceType: 'Project',
         name: 'impl-' + randomUUID(),
         features: ['bots'],
+        // What the publisher sets: a linked customer resolves impl bots across
+        // the link and nothing else.
+        exportedResourceType: options?.exportedResourceType ?? ['Bot'],
       })
     );
     const setupBot = await withTestContext(() =>
@@ -1361,6 +1364,88 @@ describe('PackageRelease $install', () => {
       // The retry resumed past the committed install bundle rather than replaying it.
       const success = events.find((e) => e.subtype?.[0]?.code === 'install-success');
       expect(success?.outcomeDesc).toContain('installBundle=resumed');
+    });
+  });
+
+  // $install reads the release with the caller's repo but its content and impl
+  // project with systemRepo. Both of those follow caller-influenced references,
+  // so each needs its own check or the operation is a confused deputy.
+  describe('Elevated reads stay inside what the caller proved access to', () => {
+    test('Refuses a release whose content Binary belongs to another project', async () => {
+      const systemRepo = getGlobalSystemRepo();
+      const otherProject = await withTestContext(() =>
+        systemRepo.createResource<Project>({ resourceType: 'Project', name: 'other-' + randomUUID() })
+      );
+      const foreignBinary = await withTestContext(() =>
+        systemRepo.createResource<Binary>({
+          resourceType: 'Binary',
+          meta: { project: otherProject.id },
+          contentType: ContentType.FHIR_JSON,
+        })
+      );
+
+      const release = await publishRelease(installBundle('test-proxy-foreign'), { version: '30.0.0' });
+      await withTestContext(() =>
+        systemRepo.updateResource<PackageRelease>({
+          ...release,
+          content: { contentType: ContentType.FHIR_JSON, url: `Binary/${foreignBinary.id}` },
+        })
+      );
+
+      const res = await request(app)
+        .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({});
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toContain("does not belong to the release's project");
+
+      // Nothing was applied: the check runs before the install bundle.
+      expect(await countBots('test-proxy-foreign')).toBe(0);
+    });
+
+    test('Refuses to link an impl project that exports more than Bot', async () => {
+      const { implProject } = await publishImplProjectWithSetupBot('test-setup-overbroad', {
+        exportedResourceType: ['Bot', 'Patient'],
+      });
+      const release = await publishRelease(installBundle('test-proxy-overbroad'), {
+        version: '31.0.0',
+        setupBot: 'test-setup-overbroad',
+        implProject: implProject.id,
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({});
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toContain('must export only Bot resources');
+      expect(res.body.issue[0].details.text).toContain('Bot, Patient');
+
+      const updatedProject = await getGlobalSystemRepo().readResource<Project>('Project', project.id);
+      expect(updatedProject.link?.some((l) => l.project?.reference === 'Project/' + implProject.id)).toBeFalsy();
+    });
+
+    test('Refuses to link an impl project that exports every resource type', async () => {
+      // An unset `exportedResourceType` is the dangerous default: it exports the
+      // whole project, so a catalog row naming a PHI project would leak it.
+      const { implProject } = await publishImplProjectWithSetupBot('test-setup-unset', {
+        exportedResourceType: [],
+      });
+      const release = await publishRelease(installBundle('test-proxy-unset'), {
+        version: '32.0.0',
+        setupBot: 'test-setup-unset',
+        implProject: implProject.id,
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({});
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toContain('all resource types');
     });
   });
 });
