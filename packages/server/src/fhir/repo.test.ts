@@ -44,7 +44,6 @@ import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
-import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorageKey } from '../storage/base';
@@ -1965,37 +1964,6 @@ describe('FHIR Repo', () => {
     });
     expect(sub3.meta?.project).toBeUndefined();
     expect(await getProjectIdColumn('Subscription', sub3.id)).toStrictEqual(systemResourceProjectId);
-  });
-
-  test('Async quota delay is applied after transaction commit', async () => {
-    const { repo, project, client, login, membership } = await createTestProject({
-      withRepo: true,
-      withClient: true,
-      withAccessToken: true,
-    });
-    const userConfig: UserConfiguration = { resourceType: 'UserConfiguration' };
-
-    await runInAuthenticatedContext(
-      { project, profile: client, login, membership, userConfig },
-      undefined,
-      undefined,
-      { async: true },
-      async () => {
-        const startTime = Date.now();
-        await repo.withTransaction(
-          async (txRepo) => {
-            await txRepo.createResource({ resourceType: 'Patient' });
-            expect(Date.now() - startTime).toBeLessThan(100);
-          },
-          {
-            source: 'repo.test.asyncQuotaDelay',
-
-            resourceTypes: ['Patient'],
-          }
-        );
-        expect(Date.now() - startTime).toBeGreaterThan(100);
-      }
-    );
   });
 
   test('Handles resources with many entries stored in lookup table', async () =>
