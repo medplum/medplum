@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Input, Stack, Text, TextInput, Tooltip } from '@mantine/core';
+import { Button, Group, Input, Skeleton, Stack, Text, TextInput, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference, formatAddress, getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Address, HumanName, Organization, Practitioner, PractitionerRole, Reference } from '@medplum/fhirtypes';
@@ -205,6 +205,7 @@ export function CandidBillingPractitionerModal(props: CandidBillingPractitionerM
         </Tooltip>
       }
     >
+      {practitioner && !roles && <CandidBillingPractitionerFormSkeleton />}
       {practitioner && roles && (
         <CandidBillingPractitionerForm
           key={practitioner.id}
@@ -216,6 +217,23 @@ export function CandidBillingPractitionerModal(props: CandidBillingPractitionerM
         />
       )}
     </Modal>
+  );
+}
+
+/**
+ * Placeholder for the form's five fields while the practitioner's roles load.
+ * @returns The skeleton React node.
+ */
+function CandidBillingPractitionerFormSkeleton(): JSX.Element {
+  return (
+    <Stack gap="md">
+      {['name', 'npi', 'organization', 'ein', 'address'].map((field) => (
+        <div key={field}>
+          <Skeleton height={14} width={120} mb={8} />
+          <Skeleton height={36} />
+        </div>
+      ))}
+    </Stack>
   );
 }
 

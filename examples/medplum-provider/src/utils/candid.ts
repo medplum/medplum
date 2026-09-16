@@ -172,7 +172,8 @@ export async function refreshCandidClaimResponse(
 
 /**
  * Whether a Contract mapped by candid-get-contracts is in force: Candid marked it effective (FHIR `executed`) and
- * today falls within its applies window. Candid sends plain dates, so the comparison is on the calendar date.
+ * today falls within its applies window. Candid sends plain dates, so the comparison is on the user's local
+ * calendar date rather than the UTC one.
  * @param contract - The Contract as returned by the candid-get-contracts bot.
  * @param today - The date to test against; defaults to now.
  * @returns True when the contract is executed and today is within its start/end dates.
@@ -185,9 +186,20 @@ export function isContractInForce(contract: Contract, today: Date = new Date()):
   if (!start) {
     return false;
   }
-  const date = today.toISOString().slice(0, 10);
+  const date = toLocalCalendarDate(today);
   const end = contract.applies?.end?.slice(0, 10);
   return start <= date && (!end || end >= date);
+}
+
+/**
+ * Formats a date as `YYYY-MM-DD` in the local time zone, matching the plain calendar dates Candid sends.
+ * @param date - The date to format.
+ * @returns The local calendar date.
+ */
+function toLocalCalendarDate(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 /**

@@ -33,6 +33,14 @@ describe('isContractInForce', () => {
   test('missing applies', () => {
     expect(isContractInForce(makeContract({ applies: undefined }), today)).toBe(false);
   });
+
+  test('compares on the local calendar date late in the evening', () => {
+    const lateEvening = new Date(2026, 8, 8, 23, 30);
+    expect(isContractInForce(makeContract({ applies: { start: '2026-01-01', end: '2026-09-08' } }), lateEvening)).toBe(
+      true
+    );
+    expect(isContractInForce(makeContract({ applies: { start: '2026-09-09' } }), lateEvening)).toBe(false);
+  });
 });
 
 describe('getContractPayerNames', () => {
