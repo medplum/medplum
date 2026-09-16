@@ -15,8 +15,10 @@ import type { ColumnValue } from './row-builder';
 import {
   buildDeletedResourceRow,
   buildDeleteHistoryContent,
+  buildExpungedHistoryContent,
   buildResourceRow,
   compareColumnValues,
+  ExpungedHistoryTag,
   parseHistoryContent,
 } from './row-builder';
 
@@ -443,6 +445,25 @@ describe('compareColumnValues', () => {
         author,
         project: patient.meta?.project,
         deleted: true,
+      },
+    });
+  });
+
+  test('buildExpungedHistoryContent stores a minimal lifecycle tombstone', () => {
+    const id = randomUUID();
+    const versionId = randomUUID();
+    const lastUpdated = new Date('2025-06-25T12:00:00.000Z');
+
+    const tombstone = JSON.parse(buildExpungedHistoryContent('Patient', id, versionId, lastUpdated));
+
+    expect(tombstone).toStrictEqual({
+      resourceType: 'Patient',
+      id,
+      meta: {
+        versionId,
+        lastUpdated: lastUpdated.toISOString(),
+        author: { reference: 'system' },
+        tag: [ExpungedHistoryTag],
       },
     });
   });

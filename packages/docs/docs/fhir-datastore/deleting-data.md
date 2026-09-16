@@ -37,7 +37,7 @@ Referential integrity is **not** supported for deletes at this time.
 
 ## Expunge Operation
 
-The Medplum `$expunge` operation performs a "hard" or "physical" delete. This means that the data is permanently removed from the database, including all resource history.
+The Medplum `$expunge` operation performs a "hard" or "physical" delete. The resource data and all prior history versions are permanently removed.
 
 ```
 POST [base]/[resourceType]/[id]/$expunge
@@ -45,11 +45,13 @@ POST [base]/[resourceType]/[id]/$expunge
 
 Subsequent requests for the resource will result in HTTP 404 Not Found, as if the resource never existed.
 
+A minimal tombstone remains in the resource's history table. It contains only the resource type, id, version metadata, the system author, and a `meta.tag` with the ISO 21089 lifecycle code [`destroy`](https://hl7.org/fhir/R4/valueset-audit-event-type.html), which means that the record content was permanently erased.
+
 The `$expunge` operation is only available to users with administrator access to the Project in which the resource belongs.
 
 ### Expunge Everything Option
 
-The Medplum `$expunge` operation supports an optional `everything` flag to systematically expunge everything in the resource [compartment](https://hl7.org/fhir/R4/compartmentdefinition.html). Currently, only the "Patient" and "Project" compartments are supported.
+The Medplum `$expunge` operation supports an optional `everything` flag to systematically expunge everything in the resource [compartment](https://hl7.org/fhir/R4/compartmentdefinition.html). Currently, only the "Patient" and "Project" compartments are supported. The job iterates every resource type in that compartment and hard-deletes matching rows in batches. Each deleted id still gets a history tombstone.
 
 ```
 POST [base]/[resourceType]/[id]/$expunge?everything=true

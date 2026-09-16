@@ -40,6 +40,12 @@ export interface DeleteHistoryContentOptions {
   author: Reference;
 }
 
+export const ExpungedHistoryTag = {
+  system: 'http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle',
+  code: 'destroy',
+  display: 'Destroy/Delete Record Lifecycle Event',
+} as const;
+
 export function parseHistoryContent(content: string | null | undefined): Resource {
   return content ? (JSON.parse(content) as Resource) : ({ meta: { deleted: true } } as Resource);
 }
@@ -59,6 +65,24 @@ export function buildDeleteHistoryContent(resource: Resource, options: DeleteHis
     resourceType: resource.resourceType,
     id: resource.id,
     meta,
+  });
+}
+
+export function buildExpungedHistoryContent(
+  resourceType: string,
+  id: string,
+  versionId: string,
+  lastUpdated: Date
+): string {
+  return stringify({
+    resourceType,
+    id,
+    meta: {
+      versionId,
+      lastUpdated: lastUpdated.toISOString(),
+      author: { reference: 'system' },
+      tag: [ExpungedHistoryTag],
+    },
   });
 }
 

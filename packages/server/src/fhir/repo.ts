@@ -47,6 +47,7 @@ import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  AuditEvent,
   AuditEventEntityDetail,
   Binary,
   Bundle,
@@ -133,6 +134,7 @@ import {
 import {
   buildDeletedResourceRow,
   buildDeleteHistoryContent,
+  buildExpungedHistoryContent,
   buildResourceRow,
   parseHistoryContent,
 } from './repository/row-builder';
@@ -1026,7 +1028,7 @@ export class Repository extends FhirRepository implements Disposable {
       lastUpdated: this.getLastUpdated(existing, validatedResource),
       author: this.getAuthor(),
       onBehalfOf: this.context.onBehalfOf,
-      deleted: undefined,
+      deleted: undefined, // Tombstones are written elsewhere; clients cannot set this.
     };
 
     const result = { ...updated, meta: resultMeta };
@@ -1575,6 +1577,24 @@ export class Repository extends FhirRepository implements Disposable {
           historyDelete.returning('id').returning('versionId');
         }
         const historyResult = await txRepo.sqlWrite<{ id: string; versionId?: string }>(historyDelete, resourceType);
+
+        const lastUpdated = new Date();
+        await txRepo.sqlWrite(
+          new InsertQuery(
+            resourceType + '_History',
+            deletedIds.map((id) => {
+              const versionId = txRepo.generateId();
+              return {
+                id,
+                versionId,
+                lastUpdated,
+                content: buildExpungedHistoryContent(resourceType, id, versionId, lastUpdated),
+              };
+            })
+          ),
+          resourceType,
+          { source: 'repo.expungeResources.tombstone' }
+        );
 
         await txRepo.postCommit(() => txRepo.deleteCacheEntries(resourceType, deletedIds));
 
@@ -2297,6 +2317,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param options.searchRequest - Optional search parameters to associate with the AuditEvent.
    * @param options.entityDetail - Optional tagged value pairs to record as detail on the AuditEvent's entity.
    * @param options.durationMs - Duration of the operation, used for generating metrics.
+   * @returns The AuditEvent when one was created; undefined when logging is skipped.
    */
   private logEvent(
     subtype: AuditEventSubtype,
@@ -2308,7 +2329,7 @@ export class Repository extends FhirRepository implements Disposable {
       entityDetail?: AuditEventEntityDetail[];
       durationMs?: number;
     }
-  ): void {
+  ): AuditEvent | undefined {
     const resource = options?.resource;
     const isSystem = this.context.author.reference === 'system';
     const resourceType = isResource(resource) ? resource?.resourceType : undefined;
@@ -2331,8 +2352,8 @@ export class Repository extends FhirRepository implements Disposable {
     });
 
     if (isSystem && (isReadOnlyAction(subtype) || resourceType === 'AuditEvent')) {
-      // Don't log system read or audit events
-      return;
+      // Don't log system reads or ordinary AuditEvent interactions
+      return undefined;
     }
     let outcomeDesc: string | undefined = undefined;
     if (description) {
@@ -2361,7 +2382,7 @@ export class Repository extends FhirRepository implements Disposable {
     );
     logAuditEvent(auditEvent);
 
-    if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
+    if (getConfig().saveAuditEvents && isResource(resource) && resource.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
       // Clone the repository to obtain a separate RepositoryConnection for two reasons:
       // 1. the un-awaited save must outlive the current repo's connection scope, which is marked 'ended'
@@ -2376,6 +2397,7 @@ export class Repository extends FhirRepository implements Disposable {
         .catch((err) => getLogger().error('Failed to save AuditEvent', err))
         .finally(() => saveRepo[Symbol.dispose]());
     }
+    return auditEvent;
   }
 
   /**

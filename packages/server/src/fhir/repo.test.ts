@@ -1467,7 +1467,24 @@ describe('FHIR Repo', () => {
     async function expectPatientExpunged(patient: WithId<Patient>): Promise<void> {
       await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow();
       expect(await countRows('Patient', patient.id)).toStrictEqual(0);
-      expect(await countRows('Patient_History', patient.id)).toStrictEqual(0);
+      const rows = await systemRepo.sqlRead<{ content: string }>(
+        new SelectQuery('Patient_History').column('content').where('id', '=', patient.id),
+        'Patient'
+      );
+      expect(rows).toHaveLength(1);
+      expect(JSON.parse(rows[0].content)).toMatchObject({
+        resourceType: 'Patient',
+        id: patient.id,
+        meta: {
+          author: { reference: 'system' },
+          tag: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle',
+              code: 'destroy',
+            },
+          ],
+        },
+      });
     }
 
     async function expectPatientPresent(patient: WithId<Patient>): Promise<void> {
@@ -1650,6 +1667,33 @@ describe('FHIR Repo', () => {
         } finally {
           deleteFile.mockRestore();
         }
+      }));
+
+    test('Super admin can expunge AuditEvent', () =>
+      withTestContext(async () => {
+        const target = await systemRepo.createResource<AuditEvent>({
+          resourceType: 'AuditEvent',
+          type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+          recorded: new Date().toISOString(),
+          agent: [{ requestor: true, who: { reference: 'Practitioner/' + randomUUID() } }],
+          source: { observer: { identifier: { value: 'test' } } },
+        });
+        await systemRepo.expungeResource('AuditEvent', target.id);
+        await expect(systemRepo.readResource('AuditEvent', target.id)).rejects.toThrow();
+      }));
+
+    test('Project admin can expunge AuditEvent', () =>
+      withTestContext(async () => {
+        const { repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
+        const target = await repo.createResource<AuditEvent>({
+          resourceType: 'AuditEvent',
+          type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+          recorded: new Date().toISOString(),
+          agent: [{ requestor: true, who: { reference: 'Practitioner/' + randomUUID() } }],
+          source: { observer: { identifier: { value: 'test' } } },
+        });
+        await repo.expungeResource('AuditEvent', target.id);
+        await expect(repo.readResource('AuditEvent', target.id)).rejects.toThrow();
       }));
   });
 
