@@ -570,9 +570,9 @@ function normalizeObxTemplateValue(value: string): string {
   const decoded = value
     .replaceAll('&lt;', '<')
     .replaceAll('&gt;', '>')
-    .replaceAll('&amp;', '&')
     .replaceAll('&quot;', '"')
-    .replaceAll('&#39;', "'");
+    .replaceAll('&#39;', "'")
+    .replaceAll('&amp;', '&');
   const matches = [...decoded.matchAll(OBX_TEMPLATE_TAG_RE)];
   if (matches.length === 0) {
     return value;
