@@ -4,6 +4,7 @@
 import { ReconnectingWebSocket, sleep } from '@medplum/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import { useStabilizedCallback } from '../useStabilizedCallback/useStabilizedCallback';
 
 export type WhisperStatus =
   | 'idle'
@@ -55,10 +56,7 @@ export function useWhisper({
   idleTimeoutMs = DEFAULT_IDLE_TIMEOUT_MS,
 }: UseWhisperOptions): UseWhisperResult {
   const medplum = useMedplum();
-  const onTranscriptRef = useRef(onTranscript);
-  useEffect(() => {
-    onTranscriptRef.current = onTranscript;
-  }, [onTranscript]);
+  const emitTranscript = useStabilizedCallback(onTranscript);
   const [status, setStatus] = useState<WhisperStatus>('idle');
   const [error, setError] = useState<unknown>(undefined);
   const [transcripts, setTranscripts] = useState<TranscriptItem[]>([]);
@@ -260,7 +258,7 @@ export function useWhisper({
             };
 
             setTranscripts((prev) => [...prev, item]);
-            onTranscriptRef.current?.(message.transcript);
+            emitTranscript(message.transcript);
           }
           break;
 
@@ -280,7 +278,7 @@ export function useWhisper({
           break;
       }
     },
-    [setupSession, maybeStartAudioCapture]
+    [setupSession, maybeStartAudioCapture, emitTranscript]
   );
 
   const acquireMicrophone = useCallback(async (): Promise<MediaStream> => {

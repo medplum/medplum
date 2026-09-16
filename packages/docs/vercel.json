@@ -148,6 +148,11 @@
     {
       "source": "/docs/communications/task-based-message-response-tracking-and-routing",
       "destination": "/docs/communications/message-response-tracking-and-routing"
+    },
+    {
+      "source": "/.well-known/api-catalog",
+      "destination": "https://api.medplum.com/.well-known/api-catalog",
+      "permanent": true
     }
   ]
 }

@@ -1,0 +1,225 @@
+---
+slug: terminology-2026
+title: 'Medplum Terminology Services Update - 2026'
+authors: mattwiller
+tags: [terminology]
+---
+
+We've been hard at work making updates to our Terminology Services to update them for 2026, and
+are excited to share all the new features and data sets available! The latest [UMLS 2026AA][umls-2026aa]
+data set has been imported into Medplum's hosted environment, and is available for customers to use in
+their self-hosted clusters as well. In addition, we've made a number of improvements across the core
+terminology API endpoints to make everything faster and serve multilingual users.
+
+[umls-2026aa]: https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/index.html
+
+{/* truncate */}
+
+## UMLS Release 2026AA
+
+The latest release of UMLS includes tens of thousands of new codes across the various code systems it covers,
+including many that may be clinically relevant for our users. Some of the highlights are shown below:
+
+**ICD-10-CM**
+
+| Code      | Description                                                                         |
+| --------- | ----------------------------------------------------------------------------------- |
+| E11.A     | Type 2 diabetes mellitus without complications, in remission                        |
+| G35.A–D   | New MS clinical-course subtypes: relapsing-remitting, primary/secondary progressive |
+| Q89.81    | Kabuki syndrome                                                                     |
+| R11.16    | Cannabis hyperemesis syndrome                                                       |
+| C50.A0–A2 | Malignant inflammatory neoplasm of breast (by laterality)                           |
+| Z59.861   | Financial insecurity, difficulty paying for utilities (SDOH)                        |
+
+**LOINC**
+
+| Code     | Description                                                        |
+| -------- | ------------------------------------------------------------------ |
+| 108097-7 | Monkeypox virus DNA [Presence] in Skin by NAA with probe detection |
+| 107547-2 | Comprehensive cardiomyopathy multigene analysis                    |
+| 107931-8 | Continuous glucose monitoring summary panel                        |
+| 112295-1 | Flu A/B + SARS-CoV-2 + RSV combo antigen panel (rapid)             |
+
+**RxNorm**
+
+| Drug                                        | Description                                                     |
+| ------------------------------------------- | --------------------------------------------------------------- |
+| Yeztugo (lenacapavir)                       | Twice-yearly injectable HIV PrEP                                |
+| Blujepa (gepotidacin)                       | First new oral antibiotic class for UTI in over 20 yrs          |
+| Enflonsia (clesrovimab)                     | New RSV preventive monoclonal antibody for infants              |
+| Retatrutide                                 | Investigational GIP/GLP-1/glucagon triple agonist (obesity/T2D) |
+| Comirnaty/Spikevax/Fluzone 2025-2026        | Annual reformulated COVID/flu vaccines                          |
+| Wyost, Jubbonti, Osenvelt, Conexxence, etc. | New denosumab biosimilars to treat bone loss and osteoporosis   |
+| Widaplik                                    | New triple-combination antihypertensive                         |
+
+**SNOMED CT**
+
+| Code               | Description                                                   |
+| ------------------ | ------------------------------------------------------------- |
+| 1366125001         | Monkeypox virus, subclade Ib                                  |
+| 235978601000119107 | Current use of chimeric antigen receptor T-cell immunotherapy |
+| 1359763002         | Genetic syndromic childhood obesity                           |
+| 1356892008         | Arthritis caused by passive antibody therapy                  |
+
+### New Scoped ValueSets
+
+To better serve clinical use cases, variants of the ValueSets for popular code systems are now available
+that are scoped to just the relevant codes a clinician might enter into a chart. For RxNorm, the
+[Prescribable Subset][prescribable] tracks medications that can be prescribed in the United States;
+it is available as `http://www.nlm.nih.gov/research/umls/rxnorm/vs/prescribable`. In ICD10, the hierarchical
+nature of the code system means it includes many codes that strictly represent abstract categories, and which
+are not useful in actual charting. The subset of ICD10 entry terms is available as
+`http://hl7.org/fhir/sid/icd-10-cm/vs/et`, and should return more relevant codes.
+
+[prescribable]: https://www.nlm.nih.gov/research/umls/rxnorm/docs/prescribe.html
+
+### SNOMED-to-ICD Map
+
+Medplum's [`ConceptMap/$translate`][translate] endpoint has been completely overhauled
+to support more complex mappings, such as the [SNOMED-to-ICD10 map][snomed2icd]. The full
+mapping is imported alongside the UMLS data above, and enables converting codes from one system
+to the other. For example, the SNOMED concept `10151000132103` (Viral fever) gives the following output:
+
+```json
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    { "name": "result", "valueBoolean": true },
+    {
+      "name": "match",
+      "part": [
+        { "name": "equivalence", "valueCode": "equivalent" },
+        {
+          "name": "concept",
+          "valueCoding": {
+            "system": "http://hl7.org/fhir/sid/icd-10-cm",
+            "code": "B34.9",
+            "display": "Viral infection, unspecified"
+          }
+        },
+        {
+          "name": "property",
+          "part": [
+            { "name": "uri", "valueUri": "mapGroup" },
+            { "name": "value", "valueInteger": 1 }
+          ]
+        },
+        {
+          "name": "property",
+          "part": [
+            { "name": "uri", "valueUri": "mapPriority" },
+            { "name": "value", "valueInteger": 1 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "match",
+      "part": [
+        { "name": "equivalence", "valueCode": "equivalent" },
+        {
+          "name": "concept",
+          "valueCoding": {
+            "system": "http://hl7.org/fhir/sid/icd-10-cm",
+            "code": "P81.9",
+            "display": "Disturbance of temperature regulation of newborn, unspecified"
+          }
+        },
+        {
+          "name": "property",
+          "part": [
+            { "name": "uri", "valueUri": "mapGroup" },
+            { "name": "value", "valueInteger": 2 }
+          ]
+        },
+        {
+          "name": "property",
+          "part": [
+            { "name": "uri", "valueUri": "mapPriority" },
+            { "name": "value", "valueInteger": 1 }
+          ]
+        },
+        {
+          "name": "dependsOn",
+          "part": [
+            { "name": "attribute", "valueUri": "445518008" },
+            {
+              "name": "value",
+              "valueQuantity": {
+                "comparator": "<",
+                "value": 29,
+                "unit": "days"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "match",
+      "part": [
+        { "name": "equivalence", "valueCode": "equivalent" },
+        {
+          "name": "concept",
+          "valueCoding": {
+            "system": "http://hl7.org/fhir/sid/icd-10-cm",
+            "code": "R50.9",
+            "display": "Fever, unspecified"
+          }
+        },
+        {
+          "name": "property",
+          "part": [
+            { "name": "uri", "valueUri": "mapGroup" },
+            { "name": "value", "valueInteger": 2 }
+          ]
+        },
+        {
+          "name": "property",
+          "part": [
+            { "name": "uri", "valueUri": "mapPriority" },
+            { "name": "value", "valueInteger": 2 }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+:::note[Map Priority]
+
+The SNOMED-to-ICD map maintains a grouping and priority order that is critically important to how
+the mapping functions. The mappings should be evaluated in priority order by group, with all matched mappings
+collected to form the final mapped code set.
+
+In the example above, SNOMED `10151000132103` maps to `B34.9 and (P81.9 or R50.9)`; depending on the age of the patient,
+it will produce either `B34.9 + P81.9` (for infants) or `B34.9 + R50.9`.
+
+:::
+
+[translate]: /docs/api/fhir/operations/conceptmap-translate
+[snomed2icd]: https://www.nlm.nih.gov/research/umls/mapping_projects/snomedct_to_icd10cm.html
+
+## Support for translated display strings
+
+To better support customers and their patients who speak multiple languages, we've added full support for
+translated display strings on codes — called "designations" in FHIR. Search for codes in a specific language
+using the `displayLanguage` parameter in [`ValueSet/$expand`][expand]:
+
+```
+curl 'https://api.medplum.com/fhir/R4/ValueSet/$expand?url=http://hl7.org/fhir/us/core/ValueSet/us-core-condition-code&filter=fiev&displayLanguage=fr' \
+  -H "Content-Type: application/fhir+json" \
+  -H "Authorization: Bearer MY_ACCESS_TOKEN"
+```
+
+[expand]: /docs/api/fhir/operations/valueset-expand
+
+## Database Improvements
+
+Behind the scenes, we've also made a [number][perf1] of [performance][perf2] [tweaks][perf3] to the database powering our terminology services
+to improve efficiency and speed up queries across the board.
+
+[perf1]: https://github.com/medplum/medplum/pull/9934
+[perf2]: https://github.com/medplum/medplum/pull/9939
+[perf3]: https://github.com/medplum/medplum/pull/10353

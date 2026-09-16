@@ -9,6 +9,7 @@ import type { JSX } from 'react';
 import { useMemo } from 'react';
 import type { FhirEventSource } from '../CalendarBase/CalendarBase';
 import { CalendarBase } from '../CalendarBase/CalendarBase';
+import { resolveThemeColor } from '../colors';
 import type { DateTimeRange } from '../types';
 import classes from './MultiCalendar.module.css';
 
@@ -26,23 +27,11 @@ export interface MultiCalendarProps {
   onSelectAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onDoubleClickAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onRangeChange?: (range: DateTimeRange) => void;
+  selection?: DateTimeRange;
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
+  loading?: boolean;
 }
-
-const colors = [
-  'indigo',
-  'teal',
-  'pink',
-  'violet',
-  'blue',
-  'cyan',
-  'lime',
-  'red',
-  'yellow',
-  'grape',
-  'orange',
-] satisfies (keyof MantineThemeColors)[];
 
 /**
  * A component that can display appointments and slots from several color-coded calendars.
@@ -62,14 +51,20 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
 
   const eventSources = useMemo((): FhirEventSource[] => {
     return sources.map((source, i) => {
-      const colorName = [
-        source.color,
-        getExtensionValue(source.schedule, SchedulingScheduleColorURI) as string | undefined,
-      ].find((name) => typeof name === 'string' && Object.hasOwn(theme.colors, name));
-      const color = theme.colors[colorName ?? colors[i % colors.length]][7];
+      let colorName = source.color && Object.hasOwn(theme.colors, source.color) ? source.color : undefined;
+
+      if (!colorName) {
+        const extColor = getExtensionValue(source.schedule, SchedulingScheduleColorURI);
+        if (typeof extColor === 'string') {
+          colorName = extColor;
+        }
+      }
+
+      // Convert color name into a concrete color value we can pass to FullCalendar
+      const color = theme.colors[resolveThemeColor(theme, colorName, i)][7];
       return { ...source, color };
     });
-  }, [sources, theme.colors]);
+  }, [sources, theme]);
 
   return (
     <CalendarBase

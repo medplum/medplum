@@ -9,16 +9,15 @@ import {
   lazy,
   serviceTypeIncludesService,
 } from '@medplum/core';
-import type { HealthcareService, Location, PractitionerRole, Reference, Resource, Schedule } from '@medplum/fhirtypes';
-import type { SchedulingActor, SchedulingRole } from './AppointmentFinder.roles';
+import type { HealthcareService, Location, PractitionerRole, Reference, Schedule } from '@medplum/fhirtypes';
+import type { BookableActorType, SchedulingActor, SchedulingActorResource, SchedulingActorType } from '../actors';
 import {
-  ROLE_LABELS,
-  SCHEDULING_ROLES,
-  getSchedulingRole,
+  BOOKABLE_ACTOR_TYPES,
+  getActorType,
+  getActorTypeLabel,
   isBookableActorType,
-  isRoleRequired,
-  isSchedulingActorType,
-} from './AppointmentFinder.roles';
+  REQUIRED_ACTOR_TYPES,
+} from '../actors';
 import { getActorsKey } from './AppointmentFinder.times';
 
 /**
@@ -28,7 +27,7 @@ import { getActorsKey } from './AppointmentFinder.times';
 export interface ScheduleCandidate {
   readonly schedule: WithId<Schedule>;
   /** The actor itself, when the search was able to include it. */
-  readonly actorResource: WithId<Resource> | undefined;
+  readonly actorResource: SchedulingActorResource | undefined;
 }
 
 /**
@@ -36,18 +35,8 @@ export interface ScheduleCandidate {
  * @param candidate - The candidate to read.
  * @returns Its schedule's only actor.
  */
-function getCandidateActor(candidate: ScheduleCandidate): SchedulingActor {
+export function getCandidateActor(candidate: ScheduleCandidate): SchedulingActor {
   return candidate.schedule.actor[0];
-}
-
-/**
- * Returns the role a candidate fills, from the type of its actor.
- * @param candidate - The candidate to read.
- * @returns The role, or undefined for an actor of a type nothing books against.
- */
-export function getCandidateRole(candidate: ScheduleCandidate): SchedulingRole | undefined {
-  const actorType = getActorType(getCandidateActor(candidate).reference);
-  return isSchedulingActorType(actorType) ? getSchedulingRole(actorType) : undefined;
 }
 
 /**
@@ -58,23 +47,63 @@ export function getCandidateRole(candidate: ScheduleCandidate): SchedulingRole |
 export function getCandidateDisplay(candidate: ScheduleCandidate): string {
   const actor = getCandidateActor(candidate);
   return (
+    getActorResourceName(candidate.actorResource) ??
     actor.display ??
-    (candidate.actorResource && getDisplayString(candidate.actorResource)) ??
     actor.reference ??
     `Schedule/${candidate.schedule.id}`
   );
 }
 
 /**
- * What an appointment is being asked for: the schedules chosen, per role.
- * Everything named attends.
+ * The name of an actor's resource, or undefined where it has none.
+ * @param resource - The actor's resource, or undefined where none was read.
+ * @returns The resource's name.
  */
-export type ActorSelections = Partial<Record<SchedulingRole, readonly ScheduleCandidate[]>>;
+function getActorResourceName(resource: SchedulingActorResource | undefined): string | undefined {
+  if (!resource) {
+    return undefined;
+  }
+  const display = getDisplayString(resource);
+  return display === getReferenceString(resource) ? undefined : display;
+}
+
+/**
+ * One thing an appointment needs, of a single actor type.
+ *
+ * The candidates in it are alternatives: a row naming two
+ * providers asks for *either* of them rather than both.
+ */
+export interface ActorRequirement {
+  readonly id: string;
+  readonly candidates: readonly ScheduleCandidate[];
+}
+
+/**
+ * What an appointment is being asked for, per actor type.
+ *
+ * Each actor type holds a list of requirements, and the two directions read
+ * differently: requirements are ANDed, so two provider rows ask for two
+ * providers, while the candidates within one row are ORed.
+ */
+export type ActorSelections = Partial<Record<SchedulingActorType, readonly ActorRequirement[]>>;
+
+// Used to tell one row from another within a form.
+let nextRequirementId = 0;
+
+/**
+ * Opens a new requirement row.
+ * @param candidates - What it starts out asking for. Empty by default.
+ * @returns The row.
+ */
+export function createActorRequirement(candidates: readonly ScheduleCandidate[] = []): ActorRequirement {
+  nextRequirementId++;
+  return { id: `requirement-${nextRequirementId}`, candidates };
+}
 
 export interface SearchScheduleCandidatesOptions {
   /** Which of the service's actors to offer. */
-  readonly role: SchedulingRole;
-  /** What the user typed. Empty offers whatever the role has, unfiltered by name. */
+  readonly actorType: SchedulingActorType;
+  /** What the user typed. Empty offers whatever the actor type has, unfiltered by name. */
   readonly query: string;
   /**
    * The site being booked at. Actors sited elsewhere are left out: a room or a
@@ -91,50 +120,56 @@ export interface SearchScheduleCandidatesOptions {
 const DEFAULT_COUNT = 25;
 
 /**
- * The chained filters that scope a Schedule search to one role's actors.
- * @param role - The role whose actors to offer.
+ * The chained filters that scope a Schedule search to actors of one type.
+ * @param actorType - The type of actors to offer.
  * @param query - What the user typed, or empty to match any name.
  * @returns The `actor:` criteria to search with.
  */
-function getActorCriteria(role: SchedulingRole, query: string): Record<string, string> {
-  switch (role) {
-    case 'provider':
+function getActorCriteria(actorType: SchedulingActorType, query: string): Record<string, string> {
+  switch (actorType) {
+    case 'Practitioner':
       return {
         'actor:Practitioner.active:not': 'false',
         ...(query ? { 'actor:Practitioner.name': query } : undefined),
       };
-    case 'room':
+    case 'Location':
       return {
         'actor:Location.status:not': 'inactive',
         ...(query ? { 'actor:Location.name': query } : undefined),
       };
-    case 'device':
+    case 'Device':
       return {
         'actor:Device.status:not': 'inactive',
         ...(query ? { 'actor:Device.device-name': query } : undefined),
       };
+    case 'HealthcareService':
+    case 'Patient':
+    case 'PractitionerRole':
+    case 'RelatedPerson':
+      throw new Error(`Got unsupported actor type ${actorType}`);
     default:
-      return assertNever(role);
+      return assertNever(actorType);
   }
 }
 
 /**
- * Finds the Schedules that can be booked for one role of a HealthcareService,
- * narrowed to the actors whose name matches what was typed.
+ * Finds the Schedules that can be booked for one role, narrowed to the actors
+ * whose name matches what was typed.
  * @param medplum - The Medplum client.
- * @param service - The HealthcareService being booked.
+ * @param service - The HealthcareService being booked, or undefined to search
+ *   unconstrained by service type — every active, bookable schedule for the role.
  * @param options - The role, the text typed, the site, an abort signal, and a page size.
  * @returns The matching schedules, each with its actor, by display name.
  */
 export async function searchScheduleCandidates(
   medplum: MedplumClient,
-  service: WithId<HealthcareService>,
+  service: WithId<HealthcareService> | undefined,
   options: SearchScheduleCandidatesOptions
 ): Promise<ScheduleCandidate[]> {
   const count = (options.count ?? DEFAULT_COUNT).toString();
-  const actorCriteria = getActorCriteria(options.role, options.query);
+  const actorCriteria = getActorCriteria(options.actorType, options.query);
 
-  const tokens = getServiceTypeTokens(service);
+  const tokens = service ? getServiceTypeTokens(service) : [];
   const typeCriteria = tokens.length > 0 ? { 'service-type': tokens.join(',') } : {};
 
   const bundle = await medplum.search(
@@ -143,18 +178,18 @@ export async function searchScheduleCandidates(
     { signal: options.signal }
   );
 
-  const actorsByReference = new Map<string, WithId<Resource>>();
+  const actorsByReference = new Map<string, SchedulingActorResource>();
   const schedules: WithId<Schedule>[] = [];
 
   for (const entry of bundle.entry ?? []) {
-    const resource = entry.resource as WithId<Resource> | undefined;
+    const resource = entry.resource as WithId<Schedule> | SchedulingActorResource | undefined;
     if (!resource?.id) {
       continue;
     }
-    if (entry.search?.mode === 'include') {
-      actorsByReference.set(`${resource.resourceType}/${resource.id}`, resource);
-    } else if (resource.resourceType === 'Schedule') {
+    if (resource.resourceType === 'Schedule') {
       schedules.push(resource);
+    } else {
+      actorsByReference.set(`${resource.resourceType}/${resource.id}`, resource);
     }
   }
 
@@ -177,10 +212,10 @@ function getServiceTypeTokens(service: HealthcareService): string[] {
 
 function toScheduleCandidate(
   schedule: WithId<Schedule>,
-  service: WithId<HealthcareService>,
-  actors: Map<string, WithId<Resource>>
+  service: WithId<HealthcareService> | undefined,
+  actors: Map<string, SchedulingActorResource>
 ): ScheduleCandidate | undefined {
-  if (schedule.active === false || !serviceTypeIncludesService(schedule.serviceType, service)) {
+  if (schedule.active === false || (service && !serviceTypeIncludesService(schedule.serviceType, service))) {
     return undefined;
   }
 
@@ -190,13 +225,15 @@ function toScheduleCandidate(
     return undefined;
   }
 
-  // Leaves out schedules held on a PractitionerRole
-  const reference = schedule.actor[0].reference;
-  if (!reference || !isBookableActorType(getActorType(reference))) {
+  // Leaves out schedules held on a PractitionerRole, HealthcareService, or other
+  // resource that are not commonly used for scheduling.
+  const actor = schedule.actor[0];
+  const referenceStr = actor.reference;
+  if (!referenceStr || !isBookableActorType(getActorType(actor))) {
     return undefined;
   }
 
-  return { schedule, actorResource: actors.get(reference) };
+  return { schedule, actorResource: actors.get(referenceStr) };
 }
 
 /** How far up a `partOf` chain of Locations to look. */
@@ -264,8 +301,8 @@ async function searchRolesByPractitioner(
   const references = [
     ...new Set(
       candidates
+        .filter((candidate) => getActorType(getCandidateActor(candidate)) === 'Practitioner')
         .map((candidate) => getCandidateActor(candidate).reference)
-        .filter((reference) => getActorType(reference) === 'Practitioner')
     ),
   ];
 
@@ -323,26 +360,29 @@ async function isCandidateAtLocation(
   options: FilterCandidatesOptions | undefined
 ): Promise<boolean> {
   const actor = candidate.actorResource;
-  const actorReference = getCandidateActor(candidate).reference;
-  const role = getCandidateRole(candidate);
+  const actorReference = getCandidateActor(candidate);
+  const actorType = getActorType(actorReference);
 
-  switch (role) {
-    case 'room':
+  switch (actorType) {
+    case 'Location':
       // A room is the Location, so it sites itself.
-      return isWithinLocation(medplum, actorReference, locationReference, options);
-    case 'device': {
+      return isWithinLocation(medplum, actorReference.reference, locationReference, options);
+    case 'Device': {
       // Where a device is kept is recorded on the Device itself, which is only
       // to hand when the search could include it.
       const device = actor?.resourceType === 'Device' ? actor : undefined;
       return isWithinLocation(medplum, device?.location?.reference, locationReference, options);
     }
-    case 'provider':
-      return isPractitionerAtLocation(actorReference, locationReference, getRoles);
-    case undefined:
+    case 'Practitioner':
+      return isPractitionerAtLocation(actorReference.reference, locationReference, getRoles);
+    case 'HealthcareService':
+    case 'Patient':
+    case 'PractitionerRole':
+    case 'RelatedPerson':
       // An actor of a type nothing books against, so nothing sites it either.
       return true;
     default:
-      return assertNever(role);
+      return assertNever(actorType);
   }
 }
 
@@ -370,10 +410,6 @@ async function isPractitionerAtLocation(
     return true;
   }
   return practiceLocations.some((roleLocation) => roleLocation.reference === locationReference);
-}
-
-function getActorType(reference: string | undefined): string | undefined {
-  return reference?.split('/')[0];
 }
 
 /**
@@ -437,12 +473,50 @@ async function readLocation(
 }
 
 /**
- * Returns everything chosen, across roles.
+ * Returns everything chosen, across rows and actor types.
  * @param selections - What has been chosen.
- * @returns The chosen candidates, in `SCHEDULING_ROLES` order.
+ * @returns The chosen candidates in `BOOKABLE_ACTOR_TYPES` order, then row order.
  */
 export function getSelectedCandidates(selections: ActorSelections): ScheduleCandidate[] {
-  return SCHEDULING_ROLES.flatMap((role) => selections[role] ?? []);
+  return getRequirements(selections).flatMap((requirement) => [...requirement.candidates]);
+}
+
+/**
+ * Returns every row across every actor type, in the order they are asked about.
+ * @param selections - What has been chosen.
+ * @returns The rows, empty ones included.
+ */
+export function getRequirements(selections: ActorSelections): ActorRequirement[] {
+  return BOOKABLE_ACTOR_TYPES.flatMap((actorType) => selections[actorType] ?? []);
+}
+
+/**
+ * Returns the rows that actually ask for something.
+ *
+ * A row nobody has named anyone in asks for nothing, so it drops out rather than
+ * emptying the product of the rows around it.
+ *
+ * @param selections - What has been chosen.
+ * @returns The rows holding at least one candidate.
+ */
+function getFilledRequirements(selections: ActorSelections): ActorRequirement[] {
+  return getRequirements(selections).filter((requirement) => requirement.candidates.length > 0);
+}
+
+/**
+ * Flattens the loaded actor resources into a map, keyed by their reference.
+ * @param selections - What has been chosen.
+ * @returns The resource behind each chosen actor the search was able to include.
+ */
+export function getSelectedActorResources(selections: ActorSelections): Map<string, SchedulingActorResource> {
+  const resources = new Map<string, SchedulingActorResource>();
+  for (const candidate of getSelectedCandidates(selections)) {
+    const reference = getReferenceString(getCandidateActor(candidate));
+    if (reference && candidate.actorResource) {
+      resources.set(reference, candidate.actorResource);
+    }
+  }
+  return resources;
 }
 
 function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> {
@@ -450,19 +524,108 @@ function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> 
 }
 
 /**
+ * The most alternatives worth expanding into requests at all.
+ *
+ * The search runs a few combinations at a time, so this is not the size of a
+ * round: it is the point past which the whole product is more than anyone is
+ * going to sit through, whatever order it is asked in.
+ */
+export const MAX_ACTOR_COMBINATIONS = 100;
+
+/**
+ * Whether a blocker is a form that is not finished yet, or answers that cannot work.
+ *
+ * Only `invalid` is the user's to undo, so only it is worth showing as an error.
+ */
+export type SelectionBlockerSeverity = 'incomplete' | 'invalid';
+
+/** Why the current selections cannot be searched. */
+export interface SelectionBlocker {
+  /** A whole sentence to show the user. */
+  readonly message: string;
+  readonly severity: SelectionBlockerSeverity;
+}
+
+/** Joins labels the way a sentence offering a choice between them would. */
+const listAlternatives = new Intl.ListFormat('en', { type: 'disjunction' });
+
+/**
  * Reports why the current selections cannot be searched, if they cannot.
  * @param selections - What has been chosen.
- * @returns A message to show the user, or undefined when the search can run.
+ * @returns The blocker to show the user, or undefined when the search can run.
  */
-export function getSelectionError(selections: ActorSelections): string | undefined {
-  const missing = SCHEDULING_ROLES.find((role) => isRoleRequired(role) && (selections[role] ?? []).length === 0);
-  return missing ? `Choose at least one ${ROLE_LABELS[missing].toLowerCase()}` : undefined;
+export function getSelectionError(selections: ActorSelections): SelectionBlocker | undefined {
+  const missing = [...REQUIRED_ACTOR_TYPES].find(
+    (actorType) => !(selections[actorType] ?? []).some((requirement) => requirement.candidates.length > 0)
+  );
+  if (missing) {
+    return {
+      message: `Choose at least one ${getActorTypeLabel(missing).toLowerCase()} first.`,
+      severity: 'incomplete',
+    };
+  }
+  if (countActorCombinations(selections) > MAX_ACTOR_COMBINATIONS) {
+    // Naming only the types in play keeps the advice actionable: there is nothing
+    // to remove from a row nobody has named anyone in.
+    const crowded = listAlternatives.format(getSelectedActorTypes(selections).map(getActorTypePluralLabel));
+    return {
+      message: `Too many combinations to search at once. Remove a few ${crowded} to find a time.`,
+      severity: 'invalid',
+    };
+  }
+  if (getActorCombinations(selections).length === 0) {
+    return { message: 'Nobody can fill every row at once.', severity: 'invalid' };
+  }
+  return undefined;
+}
+
+/**
+ * Returns the actor types someone has actually been named under.
+ * @param selections - What has been chosen.
+ * @returns The types holding at least one candidate, in `BOOKABLE_ACTOR_TYPES` order.
+ */
+function getSelectedActorTypes(selections: ActorSelections): BookableActorType[] {
+  return BOOKABLE_ACTOR_TYPES.filter((actorType) =>
+    (selections[actorType] ?? []).some((requirement) => requirement.candidates.length > 0)
+  );
+}
+
+/**
+ * Names an actor type the way a sentence about several of them would.
+ * @param actorType - The type being named.
+ * @returns Its label, lowercased and pluralized.
+ */
+function getActorTypePluralLabel(actorType: BookableActorType): string {
+  return `${getActorTypeLabel(actorType).toLowerCase()}s`;
+}
+
+/** Rows that cannot all be filled at once, and where to say so. */
+export interface UnsatisfiableRows {
+  /** The actor type whose rows have no answer between them. */
+  readonly actorType: BookableActorType;
+  /** What to do about it, to show against those rows. */
+  readonly message: string;
+}
+
+/**
+ * Finds the rows that cannot all be filled at once, when there are any. Specifically happens
+ * when two rows offer the same resource, so one resource cannot fill both halves of a visit.
+ * @param selections - What has been chosen.
+ * @returns The first type whose rows have no answer between them, or undefined when
+ *   every type can be satisfied.
+ */
+export function getUnsatisfiableRows(selections: ActorSelections): UnsatisfiableRows | undefined {
+  const actorType = BOOKABLE_ACTOR_TYPES.find((candidateType) => {
+    const alone: ActorSelections = { [candidateType]: selections[candidateType] };
+    return getFilledRequirements(alone).length > 0 && getActorCombinations(alone).length === 0;
+  });
+  return actorType && { actorType, message: 'Name someone else in one of them.' };
 }
 
 /**
  * One way of holding an appointment: a set of actors whose schedules `$find`
- * intersects in a single request. A role contributes as many actors as were
- * chosen for it, since everything chosen attends.
+ * intersects in a single request. Each requirement contributes exactly one
+ * actor, since a row is satisfied by any one of its alternatives.
  */
 export interface ActorCombination {
   /** Matches `getActorGroupKey` of the appointments offered for these actors. */
@@ -473,18 +636,80 @@ export interface ActorCombination {
 }
 
 /**
+ * Counts the combinations the selections expand into, without building them.
+ *
+ * An upper bound rather than an exact count: the ones that would name the same
+ * actor twice are only recognised while building. Enough to decide whether the
+ * product is worth expanding at all.
+ *
+ * @param selections - What has been chosen.
+ * @returns How many ways there are of satisfying every row, or 0 when nothing
+ *   has been chosen.
+ */
+export function countActorCombinations(selections: ActorSelections): number {
+  const requirements = getFilledRequirements(selections);
+  if (requirements.length === 0) {
+    return 0;
+  }
+  return requirements.reduce((total, requirement) => total * requirement.candidates.length, 1);
+}
+
+/**
  * Builds the sets of actors an appointment could be held on.
  *
  * One combination is one `$find` request: the schedules within it are
- * intersected, so its times are the times all of those actors are free.
+ * intersected, so its times are the times all of those actors are free. Rows are
+ * ANDed and the alternatives within a row are ORed, so the combinations are the
+ * product of the rows — one alternative taken from each.
+ *
+ * Ordered as an odometer with the last row turning fastest, so the first
+ * combination is every row's first pick and the rounds the search runs stay
+ * predictable.
  *
  * @param selections - What has been chosen.
- * @returns One combination holding every chosen actor, in role order, or an
- *   empty list when nothing is chosen.
+ * @returns One combination per way of satisfying every row, or an empty list
+ *   when nothing is chosen.
  */
 export function getActorCombinations(selections: ActorSelections): ActorCombination[] {
-  const chosen = getSelectedCandidates(selections);
-  return chosen.length > 0 ? [toActorCombination(chosen)] : [];
+  const requirements = getFilledRequirements(selections);
+  if (requirements.length === 0) {
+    return [];
+  }
+
+  const combinations = cartesianProduct(requirements.map((requirement) => requirement.candidates))
+    // Two rows may offer the same person, and nobody fills both halves of a visit.
+    .filter((chosen) => !hasRepeatedActor(chosen))
+    .map(toActorCombination);
+
+  // The key ignores order, so this also collapses the pair {A,B} × {A,B} reaches twice.
+  // First wins: `new Map(entries)` would keep the last, and `label` does read in order.
+  const byKey = new Map<string, ActorCombination>();
+  for (const combination of combinations) {
+    if (!byKey.has(combination.key)) {
+      byKey.set(combination.key, combination);
+    }
+  }
+  return [...byKey.values()];
+}
+
+/**
+ * Every way of taking one element from each list, the last list turning fastest.
+ * @param lists - The lists to take from. One empty list empties the product.
+ * @returns One tuple per combination; one empty tuple when given no lists at all.
+ */
+function cartesianProduct<T>(lists: readonly (readonly T[])[]): T[][] {
+  return lists.reduce<T[][]>((tuples, list) => tuples.flatMap((tuple) => list.map((item) => [...tuple, item])), [[]]);
+}
+
+/**
+ * Reports whether one actor was picked for more than one row.
+ * @param candidates - One pick per row.
+ * @returns Whether any actor appears twice.
+ */
+function hasRepeatedActor(candidates: readonly ScheduleCandidate[]): boolean {
+  // Always set: a candidate only exists for a schedule whose actor is referenced.
+  const actors = candidates.map((candidate) => getCandidateActor(candidate).reference);
+  return new Set(actors).size !== actors.length;
 }
 
 function toActorCombination(candidates: readonly ScheduleCandidate[]): ActorCombination {

@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Client, Pool } from 'pg';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
-import { isValidTableName } from '../sql';
+import type { PgQueryable } from '../sql';
+import { isValidPostgresIdentifier } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import {
   buildOutputParameters,
@@ -53,7 +53,7 @@ export async function getColumnStatisticsHandler(req: FhirRequest): Promise<Fhir
 
   const params = parseInputParameters<{ tableName?: string }>(LookupOperation, req);
 
-  if (params.tableName && !isValidTableName(params.tableName)) {
+  if (params.tableName && !isValidPostgresIdentifier(params.tableName)) {
     throw new OperationOutcomeError(badRequest('Invalid tableName'));
   }
 
@@ -127,7 +127,7 @@ interface ColumnInfo {
   elemCountHistogram: string | undefined;
 }
 
-async function getTableColumns(db: Client | Pool, tableName: string): Promise<ColumnInfo[]> {
+async function getTableColumns(db: PgQueryable, tableName: string): Promise<ColumnInfo[]> {
   const rs = await db.query<RawColumnInfo>(
     `SELECT
       n.nspname as "schemaName",

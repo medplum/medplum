@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { createTestProject, initTestAuth } from '../../test.setup';
+import { createTestProject, getSuperAdminAccessToken, initTestAuth } from '../../test.setup';
 import { Column, Condition, SelectQuery } from '../sql';
 import { selectCoding } from './utils/terminology';
 
@@ -48,7 +48,7 @@ describe('CodeSystem $import', () => {
   });
 
   beforeEach(async () => {
-    accessToken = await initTestAuth({ superAdmin: true });
+    accessToken = await getSuperAdminAccessToken();
     expect(accessToken).toBeDefined();
 
     const resS = await request(app)

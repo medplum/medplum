@@ -30,3 +30,12 @@ export function formatValue(val: boolean | string | number | undefined): string 
 
   return val;
 }
+
+export function formatBytes(bytes: number): string {
+  if (bytes === 0) {
+    return '0 B';
+  }
+  const unitIndex = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), 4);
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  return `${(bytes / 1024 ** unitIndex).toFixed(2)} ${units[unitIndex]}`;
+}

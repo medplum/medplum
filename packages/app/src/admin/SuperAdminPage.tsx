@@ -18,7 +18,14 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { createReference, forbidden, getReferenceString, normalizeErrorString, resolveId } from '@medplum/core';
+import {
+  createReference,
+  forbidden,
+  generateId,
+  getReferenceString,
+  normalizeErrorString,
+  resolveId,
+} from '@medplum/core';
 import type { Parameters, Patient, Practitioner, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import {
   convertLocalToIso,
@@ -155,6 +162,10 @@ export function SuperAdminPage(): JSX.Element {
 
   function reconcileSchemaDiff(): void {
     startAsyncJob(medplum, 'Reconcile Schema Diff', 'admin/super/reconcile-db-schema-drift');
+  }
+
+  function rebuildIndex(targets: DatabaseReindexTarget[]): void {
+    startAsyncJob(medplum, 'Rebuilding indexes', 'admin/super/rebuild-index', { targets });
   }
 
   return (
@@ -338,7 +349,88 @@ export function SuperAdminPage(): JSX.Element {
       </Modal>
       <Divider my="lg" />
       <RescopeUserWidget />
+      <Divider my="lg" />
+      <Title order={2}>Rebuild Indexes</Title>
+      <p>
+        Rebuild one or more PostgreSQL table or index targets concurrently. The operation runs asynchronously and may
+        take a long time to complete.
+      </p>
+      <DatabaseReindexForm onSubmit={rebuildIndex} />
     </Document>
+  );
+}
+
+type DatabaseReindexTarget = { table: string } | { index: string };
+type DatabaseReindexFormTarget = { id: string; type: 'table' | 'index'; name: string };
+
+function DatabaseReindexForm({
+  onSubmit,
+}: {
+  readonly onSubmit: (targets: DatabaseReindexTarget[]) => void;
+}): JSX.Element {
+  const [targets, setTargets] = useState<DatabaseReindexFormTarget[]>(() => [
+    { id: generateId(), type: 'table', name: '' },
+  ]);
+
+  function updateTarget(index: number, update: Partial<DatabaseReindexFormTarget>): void {
+    setTargets((current) =>
+      current.map((target, targetIndex) => (targetIndex === index ? { ...target, ...update } : target))
+    );
+  }
+
+  function removeTarget(index: number): void {
+    setTargets((current) => current.filter((_target, targetIndex) => targetIndex !== index));
+  }
+
+  function handleSubmit(): void {
+    onSubmit(
+      targets.map((target) => (target.type === 'table' ? { table: target.name.trim() } : { index: target.name.trim() }))
+    );
+  }
+
+  return (
+    <Form onSubmit={handleSubmit}>
+      <Stack>
+        {targets.map((target, index) => (
+          <Group key={target.id} align="end" grow>
+            <NativeSelect
+              label={`Target type ${index + 1}`}
+              value={target.type}
+              data={[
+                { label: 'Table', value: 'table' },
+                { label: 'Index', value: 'index' },
+              ]}
+              onChange={(event) => updateTarget(index, { type: event.currentTarget.value as 'table' | 'index' })}
+            />
+            <TextInput
+              required
+              label={`Target name ${index + 1}`}
+              placeholder={target.type === 'table' ? 'Table name' : 'Index name'}
+              value={target.name}
+              onChange={(event) => updateTarget(index, { name: event.currentTarget.value })}
+            />
+            {targets.length > 1 && (
+              <Button type="button" variant="default" onClick={() => removeTarget(index)}>
+                Remove
+              </Button>
+            )}
+          </Group>
+        ))}
+        <Group>
+          <Button
+            type="button"
+            variant="default"
+            disabled={targets.length >= 10}
+            onClick={() => setTargets((current) => [...current, { id: generateId(), type: 'table', name: '' }])}
+          >
+            Add Target
+          </Button>
+          <Button type="submit" disabled={targets.some((target) => !target.name.trim())}>
+            Rebuild Indexes
+          </Button>
+        </Group>
+      </Stack>
+    </Form>
   );
 }
 

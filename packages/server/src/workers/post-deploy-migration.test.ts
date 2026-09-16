@@ -7,7 +7,8 @@ import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type {
   CustomPostDeployMigration,
@@ -35,7 +36,7 @@ import { queueRegistry } from './utils';
 describe('Post-Deploy Migration Worker', () => {
   let config: MedplumServerConfig;
   let mockRegisteredServers: ServerRegistryInfo[];
-  const systemRepo = getGlobalSystemRepo();
+  const systemRepo = getShardSystemRepo(GLOBAL_SHARD_ID);
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -90,7 +91,7 @@ describe('Post-Deploy Migration Worker', () => {
     return queue;
   }
 
-  test('prepareCustomMigrationJobData and addPostDeployMigrationJobData', async () => {
+  test('prepareCustomMigrationJobData and addPostDeployMigrationJobData without deduplication', async () => {
     await initWorkers(config);
 
     const queue = getQueueFromRegistryOrThrow();
@@ -127,9 +128,7 @@ describe('Post-Deploy Migration Worker', () => {
           data: data1,
         })
       );
-      expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data1, {
-        deduplication: { id: expect.any(String) },
-      });
+      expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data1, undefined);
     });
 
     // outside of withTestContext, requestId and traceId are undefined
@@ -147,9 +146,7 @@ describe('Post-Deploy Migration Worker', () => {
         data: data2,
       })
     );
-    expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data2, {
-      deduplication: { id: expect.any(String) },
-    });
+    expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data2, undefined);
   });
 
   test.each<[string, Partial<AsyncJob>, boolean]>([
@@ -200,7 +197,7 @@ describe('Post-Deploy Migration Worker', () => {
     const executeMigrationActionsSpy = vi
       .spyOn(migrateModule, 'executeMigrationActions')
       .mockImplementation(async (_client, results) => {
-        results.push({ name: 'some-action', durationMs: 10 });
+        results.push({ name: 'some-action', durationMs: 10, notices: 'index "some_index" was reindexed' });
       });
 
     const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
@@ -246,7 +243,13 @@ describe('Post-Deploy Migration Worker', () => {
     const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', mockAsyncJob.id);
     expect(updatedAsyncJob.status).toBe('completed');
     expect(updatedAsyncJob.output?.parameter).toEqual([
-      { name: 'some-action', part: [{ name: 'durationMs', valueInteger: 10 }] },
+      {
+        name: 'some-action',
+        part: [
+          { name: 'durationMs', valueInteger: 10 },
+          { name: 'notices', valueString: 'index "some_index" was reindexed' },
+        ],
+      },
     ]);
 
     getPostDeployMigrationSpy.mockRestore();

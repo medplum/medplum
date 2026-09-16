@@ -13,7 +13,7 @@ import {
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Attachment, Binary, Bot, OperationOutcome } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
-import { isBotEnabled } from '../../bots/utils';
+import { isBotEnabledForProject } from '../../bots/utils';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
 import { deployLambdaStreaming } from '../../cloud/aws/deploystreaming';
 import { deployFissionBot } from '../../cloud/fission/deploy';
@@ -90,7 +90,7 @@ export async function deployBot(
     throw new OperationOutcomeError(badRequest('Bot missing executable code'));
   }
 
-  if (!(await isBotEnabled(bot))) {
+  if (!(await isBotEnabledForProject(bot.meta?.project as string))) {
     throw new OperationOutcomeError(badRequest('Bots not enabled'));
   }
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { QueryTypes, WithId } from '@medplum/core';
-import { getQueryString } from '@medplum/core';
+import { badRequest, getQueryString } from '@medplum/core';
 import type { Appointment, ResourceType, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -187,6 +187,11 @@ describe('useSchedulingSlots', () => {
 
       await waitFor(() => expect(onError).toHaveBeenCalled());
       await waitFor(() => expect(result.current.loading).toBe(false));
+
+      // The raw Error is normalized to an OperationOutcome, both for the returned
+      // `error` and the value passed to `onError`.
+      expect(result.current.error).toEqual(badRequest('boom'));
+      expect(onError).toHaveBeenCalledWith(badRequest('boom'));
     });
 
     test('searches are not triggered by unstable wrappers', async () => {
@@ -470,6 +475,11 @@ describe('useSchedulingAppointments', () => {
 
       await waitFor(() => expect(onError).toHaveBeenCalled());
       await waitFor(() => expect(result.current.loading).toBe(false));
+
+      // The raw Error is normalized to an OperationOutcome, both for the returned
+      // `error` and the value passed to `onError`.
+      expect(result.current.error).toEqual(badRequest('boom'));
+      expect(onError).toHaveBeenCalledWith(badRequest('boom'));
     });
 
     test('searches are not triggered by unstable wrappers', async () => {
@@ -695,5 +705,15 @@ describe('useSchedulingResources', () => {
     });
 
     expect(result.current.loading).toBe(false);
+  });
+
+  test('surfaces an error from either underlying fetch', async () => {
+    medplum.searchResources = vi.fn().mockImplementation((resourceType: ResourceType) => {
+      return resourceType === 'Slot' ? Promise.reject(new Error('boom')) : Promise.resolve([]);
+    });
+
+    const { result } = setup(useSchedulingResources, [SCHEDULE_A], RANGE);
+
+    await waitFor(() => expect(result.current.error).toEqual(badRequest('boom')));
   });
 });

@@ -5,8 +5,8 @@ import { copyFileSync, existsSync } from 'fs';
 import path from 'path';
 import { defineConfig } from 'vite';
 
-if (!existsSync(path.join(__dirname, '.env'))) {
-  copyFileSync(path.join(__dirname, '.env.defaults'), path.join(__dirname, '.env'));
+if (!existsSync(path.join(import.meta.dirname, '.env'))) {
+  copyFileSync(path.join(import.meta.dirname, '.env.defaults'), path.join(import.meta.dirname, '.env'));
 }
 
 // https://vitejs.dev/config/

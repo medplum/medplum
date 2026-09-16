@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   allOk,
   badRequest,
   created,
   createReference,
+  forbidden,
   getReferenceString,
   isGone,
   isOk,
@@ -18,6 +20,7 @@ import {
 } from '@medplum/core';
 import { RepositoryMode } from '@medplum/fhir-router';
 import type {
+  AuditEvent,
   Binary,
   BundleEntry,
   Login,
@@ -43,25 +46,31 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getLogger } from '../logger';
+import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorageKey } from '../storage/base';
 import { getBinaryStorage } from '../storage/loader';
-import { bundleContains, createTestProject, mockStdoutWrite, spyOnQuery, withTestContext } from '../test.setup';
+import {
+  bundleContains,
+  createTestProject,
+  getSuperAdminTestProject,
+  mockStdoutWrite,
+  spyOnQuery,
+  withTestContext,
+} from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
-import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
+import type { SystemRepository } from './repo';
+import { getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
 describe('FHIR Repo', () => {
-  const globalSystemRepo = getGlobalSystemRepo();
   let testProject: WithId<Project>;
-
   let testProjectRepo: Repository;
-  let systemRepo: Repository;
+  let systemRepo: SystemRepository;
   let stdoutSpy: MockInstance<typeof process.stdout.write>;
 
   beforeAll(async () => {
@@ -70,19 +79,8 @@ describe('FHIR Repo', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    testProject = await globalSystemRepo.createResource({
-      resourceType: 'Project',
-      id: randomUUID(),
-    });
-    systemRepo = await getProjectSystemRepo(testProject);
-    testProjectRepo = new Repository({
-      projects: [testProject],
-      extendedMode: true,
-      strictMode: true,
-      author: {
-        reference: 'Practitioner/' + randomUUID(),
-      },
-    });
+    ({ project: testProject, repo: testProjectRepo } = await createTestProject({ withRepo: true }));
+    systemRepo = testProjectRepo.getSystemRepo();
   });
 
   afterAll(async () => {
@@ -103,6 +101,11 @@ describe('FHIR Repo', () => {
         userConfig: {} as UserConfiguration,
       })
     ).rejects.toThrow('Invalid reference');
+  });
+
+  test('Enterprise access is limited to super admins', () => {
+    expect(testProjectRepo.supportsInteraction(AccessPolicyInteraction.READ, 'Enterprise')).toBe(false);
+    expect(testProjectRepo.getSystemRepo().supportsInteraction(AccessPolicyInteraction.READ, 'Enterprise')).toBe(true);
   });
 
   describe('setMode routes reads to reader until writer promotion', () => {
@@ -234,9 +237,9 @@ describe('FHIR Repo', () => {
   });
 
   test('Read Binary requires access to securityContext', async () => {
-    const patient = await withTestContext(() => globalSystemRepo.createResource<Patient>({ resourceType: 'Patient' }));
+    const patient = await withTestContext(() => testProjectRepo.createResource<Patient>({ resourceType: 'Patient' }));
     const binary = await withTestContext(() =>
-      globalSystemRepo.createResource<Binary>({
+      testProjectRepo.createResource<Binary>({
         resourceType: 'Binary',
         contentType: 'text/plain',
         securityContext: createReference(patient),
@@ -245,7 +248,7 @@ describe('FHIR Repo', () => {
     const versionId = binary.meta?.versionId as string;
 
     const repoWithoutPatientAccess = new Repository({
-      author: { reference: 'Practitioner/' + randomUUID() },
+      ...testProjectRepo.getConfig(),
       accessPolicy: {
         resourceType: 'AccessPolicy',
         resource: [{ resourceType: 'Binary', interaction: ['read', 'vread'] }],
@@ -255,11 +258,12 @@ describe('FHIR Repo', () => {
     await expect(repoWithoutPatientAccess.readResource<Binary>('Binary', binary.id)).rejects.toThrow();
     await expect(repoWithoutPatientAccess.readReference<Binary>(createReference(binary))).rejects.toThrow();
     await expect(repoWithoutPatientAccess.readVersion<Binary>('Binary', binary.id, versionId)).rejects.toThrow();
-    const deniedReferences = await repoWithoutPatientAccess.readReferences<Binary>([createReference(binary)]);
-    expect(deniedReferences[0]).toBeInstanceOf(Error);
+    await expect(repoWithoutPatientAccess.readReferences<Binary>([createReference(binary)])).rejects.toThrow(
+      new OperationOutcomeError(forbidden)
+    );
 
     const repoWithPatientAccess = new Repository({
-      author: { reference: 'Practitioner/' + randomUUID() },
+      ...testProjectRepo.getConfig(),
       accessPolicy: {
         resourceType: 'AccessPolicy',
         resource: [{ resourceType: 'Binary' }, { resourceType: 'Patient' }],
@@ -276,7 +280,7 @@ describe('FHIR Repo', () => {
 
   test('Write Binary rejects Binary securityContext', async () => {
     const binary = await withTestContext(() =>
-      globalSystemRepo.createResource<Binary>({
+      systemRepo.createResource<Binary>({
         resourceType: 'Binary',
         contentType: 'text/plain',
         data: Buffer.from('recursive security context').toString('base64'),
@@ -284,10 +288,7 @@ describe('FHIR Repo', () => {
     );
 
     await expect(
-      globalSystemRepo.updateResource<Binary>({
-        ...binary,
-        securityContext: createReference(binary),
-      })
+      systemRepo.updateResource<Binary>({ ...binary, securityContext: createReference(binary) })
     ).rejects.toThrow('Binary.securityContext cannot reference another Binary');
   });
 
@@ -423,6 +424,37 @@ describe('FHIR Repo', () => {
       })
     );
   });
+
+  test('Includes numResults in search AuditEvent entity detail', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+      const prevLogAuditEvents = getConfig().logAuditEvents;
+      getConfig().logAuditEvents = true;
+      const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+
+      try {
+        const family = randomUUID();
+        const p1 = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+        const p2 = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+
+        writeSpy.mockClear();
+        await repo.search({
+          resourceType: 'Patient',
+          filters: [{ code: 'family', operator: Operator.EQUALS, value: family }],
+        });
+
+        const auditEventLog = writeSpy.mock.calls.map((call) => call[0] as string).find((s) => s.includes('search'));
+        expect(auditEventLog).toBeDefined();
+        const auditEvent = JSON.parse(auditEventLog as string) as AuditEvent;
+        expect(auditEvent.entity?.[0].detail).toContainExactly([
+          { type: 'result', valueString: getReferenceString(p1) },
+          { type: 'result', valueString: getReferenceString(p2) },
+        ]);
+      } finally {
+        getConfig().logAuditEvents = prevLogAuditEvents;
+        writeSpy.mockRestore();
+      }
+    }));
 
   test('Logs mixed transaction access across repo and system repo', async () => {
     const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => {});
@@ -652,7 +684,7 @@ describe('FHIR Repo', () => {
 
   test('Super Admin update ignores submitted meta.author', () =>
     withTestContext(async () => {
-      const { client, repo } = await createTestProject({ withClient: true, withRepo: true, superAdmin: true });
+      const { client, repo } = await getSuperAdminTestProject();
       const fakeAuthor = 'Practitioner/' + randomUUID();
 
       const patient = await repo.createResource<Patient>({
@@ -760,6 +792,7 @@ describe('FHIR Repo', () => {
       const author = 'Practitioner/' + randomUUID();
 
       const repo = new Repository({
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
         extendedMode: true,
         author: {
           reference: author,
@@ -780,6 +813,7 @@ describe('FHIR Repo', () => {
       const fakeAuthor = 'Practitioner/' + randomUUID();
 
       const repo = new Repository({
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
         extendedMode: true,
         author: {
           reference: author,
@@ -808,8 +842,8 @@ describe('FHIR Repo', () => {
       const { project } = await createTestProject();
 
       const repo = new Repository({
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
         projects: [project],
-        currentProject: project,
         extendedMode: true,
         skipBackgroundJobs: true,
         author: {
@@ -866,6 +900,7 @@ describe('FHIR Repo', () => {
       const author = 'Practitioner/' + randomUUID();
 
       const repo = new Repository({
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
         extendedMode: true,
         author: {
           reference: author,
@@ -1480,7 +1515,7 @@ describe('FHIR Repo', () => {
     const expungeAccessCases: ExpungeAccessCase[] = [
       {
         name: 'Super Admin',
-        createRepo: async () => (await createTestProject({ withRepo: true, superAdmin: true })).repo,
+        createRepo: async () => (await getSuperAdminTestProject()).repo,
         canExpungeOtherProject: true,
       },
       {
@@ -2003,7 +2038,7 @@ describe('FHIR Repo', () => {
     }));
 
   test('__version column', async () => {
-    const { repo } = await createTestProject({ withRepo: true, superAdmin: true });
+    const { repo } = await getSuperAdminTestProject();
 
     await withTestContext(async () => {
       const patient = await repo.createResource<Patient>({
@@ -2159,21 +2194,19 @@ describe('FHIR Repo', () => {
       resourceType: 'Project',
       id: randomUUID(),
     };
-    const context = {
+    const repo = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
       projects: [project],
       author: {
         reference: 'Practitioner/' + randomUUID(),
       },
-    };
-
-    const repo = new Repository(context);
+    });
     const clonedRepo = repo.clone();
 
     // Repository construction mutates the shared context in place, but repeated
     // construction from that context must not append duplicate synthetic projects.
-    expect(context.projects.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
-    expect(repo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
-    expect(clonedRepo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
+    expect(repo.getConfig().projects?.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
+    expect(clonedRepo.getConfig().projects?.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
   });
 });
 

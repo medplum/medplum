@@ -560,6 +560,151 @@ describe('AI Operation', () => {
     expect(bodyParam.temperature).toBe(0.3);
   });
 
+  test('Passes through reasoning_effort', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({
+        choices: [{ message: { content: 'ok', tool_calls: null } }],
+      }),
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'messages',
+            valueString: JSON.stringify([{ role: 'user', content: 'hi' }]),
+          },
+          { name: 'model', valueString: 'gpt-6-astra' },
+          { name: 'reasoning_effort', valueString: 'none' },
+        ],
+      });
+
+    expect(res).toHaveStatus(200);
+    const fetchCall = (global.fetch as Mock).mock.calls[0];
+    const bodyParam = JSON.parse(fetchCall[1].body);
+    expect(bodyParam.reasoning_effort).toBe('none');
+  });
+
+  test('Routes tools with a reasoning effort to the Responses API', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({
+        output: [
+          {
+            type: 'function_call',
+            call_id: 'call_1',
+            name: 'fhir_request',
+            arguments: '{"method":"GET","path":"Patient"}',
+          },
+        ],
+      }),
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'messages', valueString: JSON.stringify([{ role: 'user', content: 'find patients' }]) },
+          { name: 'model', valueString: 'gpt-6-astra' },
+          { name: 'tools', valueString: JSON.stringify(fhirTools) },
+          { name: 'reasoning_effort', valueString: 'xhigh' },
+        ],
+      });
+
+    expect(res).toHaveStatus(200);
+    const [url, init] = (global.fetch as Mock).mock.calls[0];
+    expect(url).toBe('https://api.openai.com/v1/responses');
+    const body = JSON.parse(init.body);
+    expect(body.reasoning).toStrictEqual({ effort: 'xhigh' });
+    expect(body.input).toStrictEqual([{ role: 'user', content: 'find patients' }]);
+    expect(body.tools[0].name).toBe('fhir_request');
+
+    const params = res.body as Parameters;
+    expect(params.parameter?.find((p) => p.name === 'provider')?.valueString).toBe('openai-responses');
+    const toolCalls = JSON.parse(params.parameter?.find((p) => p.name === 'tool_calls')?.valueString as string);
+    expect(toolCalls[0].id).toBe('call_1');
+    expect(toolCalls[0].function.arguments).toStrictEqual({ method: 'GET', path: 'Patient' });
+  });
+
+  test('Honors an explicit api parameter', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi
+        .fn()
+        .mockResolvedValue({ output: [{ type: 'message', content: [{ type: 'output_text', text: 'ok' }] }] }),
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'messages', valueString: JSON.stringify([{ role: 'user', content: 'hi' }]) },
+          { name: 'model', valueString: 'gpt-6-astra' },
+          { name: 'api', valueCode: 'responses' },
+        ],
+      });
+
+    expect(res).toHaveStatus(200);
+    expect((global.fetch as Mock).mock.calls[0][0]).toBe('https://api.openai.com/v1/responses');
+    expect((res.body as Parameters).parameter?.find((p) => p.name === 'content')?.valueString).toBe('ok');
+  });
+
+  test('Rejects an unknown reasoning_effort', async () => {
+    global.fetch = vi.fn();
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'messages', valueString: JSON.stringify([{ role: 'user', content: 'hi' }]) },
+          { name: 'model', valueString: 'gpt-6-astra' },
+          { name: 'reasoning_effort', valueString: 'maximum' },
+        ],
+      });
+
+    expect(res).toHaveStatus(400);
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain('Unsupported reasoning_effort');
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test('Rejects an unknown api parameter', async () => {
+    global.fetch = vi.fn();
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'messages', valueString: JSON.stringify([{ role: 'user', content: 'hi' }]) },
+          { name: 'model', valueString: 'gpt-4' },
+          { name: 'api', valueCode: 'completions' },
+        ],
+      });
+
+    expect(res).toHaveStatus(400);
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain('Unsupported api');
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   test('Defaults to OpenAI when no base URL secret is set', async () => {
     const mockFetchResponse = {
       ok: true,

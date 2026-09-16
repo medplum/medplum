@@ -5,9 +5,10 @@ export type * from './types';
 
 // Export all components
 export * from './AppointmentFinder/AppointmentActorSelect';
+export * from './AppointmentFinder/AppointmentActorSelections';
 export * from './AppointmentFinder/AppointmentBookingForm';
 export * from './AppointmentFinder/AppointmentDayTimes';
-export * from './AppointmentFinder/AppointmentFinder.roles';
+export * from './AppointmentFinder/AppointmentFinder.requirements';
 export * from './AppointmentFinder/AppointmentFinder.schedules';
 export * from './AppointmentFinder/AppointmentFinder.times';
 export * from './AppointmentFinder/AppointmentOptionRow';
@@ -17,10 +18,12 @@ export * from './AppointmentFinder/AppointmentSlotGroupCard';
 export * from './Calendar/Calendar';
 export * from './MultiCalendar/MultiCalendar';
 export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor';
+export * from './SchedulingWorkspace/SchedulingWorkspace';
 
 // Hooks that load what the components display
 export * from './AppointmentFinder/useProposedAppointments';
 export * from './hooks/useSchedulingResources';
 
 // Helpers the components are built on, usable without them
+export * from './actors';
 export * from './availability';

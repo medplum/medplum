@@ -5,6 +5,7 @@ import type {
   Agent,
   Bot,
   ClientApplication,
+  Cron,
   Device,
   Patient,
   Practitioner,
@@ -22,6 +23,7 @@ export interface BotExecutionRequest {
   readonly input: any;
   readonly contentType: string;
   readonly subscription?: Subscription;
+  readonly cron?: WithId<Cron>;
   readonly agent?: Agent;
   readonly device?: Device;
   readonly remoteAddress?: string;

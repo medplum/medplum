@@ -96,12 +96,12 @@ export async function addSetAccountsJobData(job: SetAccountsJobData): Promise<Jo
 
 export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<void> {
   const { resourceType, id, accounts, asyncJob } = job.data;
-  const { login, project, membership } = job.data.authState;
+  const { login, project, membership, smartAppLaunch } = job.data.authState;
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // job.data will eventually include shardId
 
   // Prepare the original submitting user's repo
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
-  const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
+  const repo = await getRepoForLogin({ login, project, membership, smartAppLaunch, userConfig }, true);
 
   const exec = new AsyncJobExecutor(repo, asyncJob);
   await exec.startAsync(async () => {

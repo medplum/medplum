@@ -111,7 +111,7 @@ export class ReferenceTable extends LookupTable {
         unchangedCount: resources.length - resourcesWithChangedReferences.length,
         changedCount: resourcesWithChangedReferences.length,
         rowsToInsert: rowsToInsert.length,
-        sampleIds: resourcesWithChangedReferences.slice(0, 5),
+        sampleIds: resourcesWithChangedReferences.slice(0, 5).map((r) => r.id),
       });
     }
 

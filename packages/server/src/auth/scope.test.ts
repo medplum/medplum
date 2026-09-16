@@ -1,35 +1,51 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Login, User } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import type { Login, Patient, SmartAppLaunch, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { authenticator } from 'otplib';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 describe('Scope', () => {
   const app = express();
-  const systemRepo = getGlobalSystemRepo();
+  let systemRepo: SystemRepository;
   const email = `multi${randomUUID()}@example.com`;
   const password = randomUUID();
+  // Patient scopes require a Patient context, which is provided to the login by this launch
+  let launchId: string;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    await withTestContext(() =>
-      registerNew({
+    await withTestContext(async () => {
+      const { project } = await registerNew({
         firstName: 'Scope',
         lastName: 'Scope',
         projectName: 'Scope Project',
         email,
         password,
-      })
-    );
+      });
+      systemRepo = await getProjectSystemRepo(project);
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+      });
+      const launch = await systemRepo.createResource<SmartAppLaunch>({
+        resourceType: 'SmartAppLaunch',
+        meta: { project: project.id },
+        patient: createReference(patient),
+      });
+      launchId = launch.id;
+    });
   });
 
   afterAll(async () => {
@@ -184,6 +200,7 @@ describe('Scope', () => {
       scope: 'openid profile patient/Condition.crs',
       email,
       password,
+      launch: launchId,
     });
     expect(res1).toHaveStatus(200);
     expect(res1.body.login).toBeDefined();
@@ -202,6 +219,7 @@ describe('Scope', () => {
       scope: 'openid profile patient/Condition.rs',
       email,
       password,
+      launch: launchId,
     });
     expect(res1).toHaveStatus(200);
     expect(res1.body.login).toBeDefined();
@@ -220,6 +238,7 @@ describe('Scope', () => {
       scope: 'openid profile patient/Condition.rs?encounter=Encounter/1',
       email,
       password,
+      launch: launchId,
     });
     expect(res1).toHaveStatus(200);
     expect(res1.body.login).toBeDefined();

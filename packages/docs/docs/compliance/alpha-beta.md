@@ -1,14 +1,18 @@
+---
+sidebar_position: 13
+---
+
 # Alpha & Beta Features
 
 Some Medplum features are released before they reach general availability (GA). This page explains what the **Alpha** and **Beta** labels mean and what to expect when building on pre-GA features.
 
 ## Stability Stages
 
-| Stage           | API stability                                    | Breaking changes                                      | Recommended usage                        |
-|-----------------|--------------------------------------------------|-------------------------------------------------------|------------------------------------------|
-| **Alpha**       | Experimental — subject to change at any time     | May occur in any release without advance notice       | Prototyping and early validation         |
-| **Beta**        | Mostly stable — core contract unlikely to change | Possible, with advance notice where practical         | Production use with caution              |
-| **GA (Stable)** | Stable — full semver guarantees apply            | Concentrated in major releases, announced in advance  | Production use, fully supported          |
+| Stage           | API stability                                    | Breaking changes                                     | Recommended usage                |
+| --------------- | ------------------------------------------------ | ---------------------------------------------------- | -------------------------------- |
+| **Alpha**       | Experimental — subject to change at any time     | May occur in any release without advance notice      | Prototyping and early validation |
+| **Beta**        | Mostly stable — core contract unlikely to change | Possible, with advance notice where practical        | Production use with caution      |
+| **GA (Stable)** | Stable — full semver guarantees apply            | Concentrated in major releases, announced in advance | Production use, fully supported  |
 
 ## Alpha
 
@@ -39,7 +43,7 @@ Beta features are appropriate for production use in non-critical workflows where
 
 ## General Availability (GA / Stable)
 
-Once a feature reaches GA it is governed by the full [Medplum Version Policy](/docs/compliance/versions): breaking changes are concentrated into major releases and announced in advance.
+Once a feature reaches GA it is governed by the full [Version Policy](/docs/compliance/versions): breaking changes are concentrated into major releases and announced in advance.
 
 ## Graduation path
 
@@ -50,7 +54,7 @@ A feature can also be **retired** from alpha or beta without reaching GA. Medplu
 ## Quick reference
 
 | Signal                              | Where you see it                  | Stage                               |
-|-------------------------------------|-----------------------------------|-------------------------------------|
+| ----------------------------------- | --------------------------------- | ----------------------------------- |
 | `:::info[Alpha]` admonition in docs | Doc page header                   | Alpha                               |
 | **Alpha** in a status table         | Docs overview table               | Alpha                               |
 | `@experimental` TSDoc tag           | TypeScript source / API reference | Alpha                               |
