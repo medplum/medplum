@@ -29,7 +29,7 @@ module.exports = async function (context) {
   logOutput.length = 0;
   try {
     const event = context.request.body;
-    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, traceparent, rawBody, headers } = event;
+    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, traceparent, headers } = event;
     const medplum = new MedplumClient({
       baseUrl,
       fetch: function (url, options = {}) {
@@ -54,7 +54,6 @@ module.exports = async function (context) {
       contentType,
       secrets,
       traceId,
-      rawBody,
       headers,
     });
     if (contentType === ContentType.HL7_V2 && returnValue) {

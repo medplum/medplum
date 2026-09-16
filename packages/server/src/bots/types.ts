@@ -30,8 +30,6 @@ export interface BotExecutionRequest {
   readonly forwardedFor?: string;
   readonly requestTime?: string;
   readonly traceId?: string;
-  /** Original UTF-8 JSON body for public webhooks, before parsing. Use for signature verification. */
-  readonly rawBody?: string;
   /** Headers from the original request, when invoked by HTTP request */
   readonly headers?: Record<string, string | string[] | undefined>;
   /** Default headers to add to MedplumClient, such as HTTP cookies */

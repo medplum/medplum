@@ -13,7 +13,7 @@ import { createTestProject } from '../test.setup';
 const cjsCode = `
 exports.handler = async function (medplum, event) {
   console.log(JSON.stringify(event));
-  return event.headers["x-test-return-event"] ? { input: event.input, rawBody: event.rawBody } : event.input;
+  return event.headers["x-test-return-event"] ? { input: event.input } : event.input;
 };
 `;
 
@@ -160,7 +160,7 @@ describe('Anonymous webhooks', () => {
   });
 
   test.each(['/webhook/', '/api/webhook/', '/projects/{projectId}/webhook/', '/api/projects/{projectId}/webhook/'])(
-    'Preserves original JSON through VM execution at %s',
+    'Preserves parsed JSON by default through VM execution at %s',
     async (prefix) => {
       const rawBody = '{ "greeting" : "café 🌍", "escaped": "\\u0061" }\n';
       const res = await request(app)
@@ -169,11 +169,11 @@ describe('Anonymous webhooks', () => {
         .set('x-test-return-event', 'true')
         .send(rawBody);
       expect(res).toHaveStatus(200);
-      expect(res.body).toEqual({ input: JSON.parse(rawBody), rawBody });
+      expect(res.body).toEqual({ input: JSON.parse(rawBody) });
     }
   );
 
-  test('Persists the raw-body forwarding setting and preserves parsed input', async () => {
+  test('Persists the raw-input setting and selects the input representation', async () => {
     const rawBody = '{ "value": 1.00 }\n';
     try {
       for (const enabled of [false, true]) {
@@ -191,7 +191,7 @@ describe('Anonymous webhooks', () => {
           .set('x-test-return-event', 'true')
           .send(rawBody);
         expect(response).toHaveStatus(200);
-        expect(response.body).toEqual(enabled ? { input: { value: 1 }, rawBody } : { input: { value: 1 } });
+        expect(response.body).toEqual(enabled ? { input: rawBody } : { input: { value: 1 } });
       }
     } finally {
       const reset = await request(app)

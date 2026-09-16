@@ -2593,7 +2593,7 @@
           {
             "id" : "Bot.webhookRawBodyEnabled",
             "path" : "Bot.webhookRawBodyEnabled",
-            "definition" : "Whether to forward the original UTF-8 JSON body as BotEvent.rawBody for public webhooks. Defaults to true. Set to false to avoid the additional invocation payload size; parsed input is always provided.",
+            "definition" : "Whether public webhooks provide the original UTF-8 JSON text in BotEvent.input instead of parsed JSON. Defaults to false. Set to true for webhook signature verification.",
             "min" : 0,
             "max" : "1",
             "type" : [{

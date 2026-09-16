@@ -16,7 +16,6 @@ import { parseWebhookBody } from './bodyparser';
  * @param res - The response object
  */
 export const webhookHandler = async (req: Request, res: Response): Promise<void> => {
-  const { input, rawBody } = parseWebhookBody(req.body);
   const globalSystemRepo = getGlobalSystemRepo();
   const membershipId = singularize(req.params.id) ?? '';
   const runAs = await globalSystemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
@@ -50,10 +49,9 @@ export const webhookHandler = async (req: Request, res: Response): Promise<void>
   const result = await executeBot({
     bot,
     runAs,
-    input: req.method === 'POST' ? input : req.query,
+    input: req.method === 'POST' ? parseWebhookBody(req.body, bot.webhookRawBodyEnabled === true) : req.query,
     contentType: req.header('content-type') as string,
     headers,
-    rawBody: bot.webhookRawBodyEnabled !== false ? rawBody : undefined,
   });
 
   if (isOperationOutcome(result)) {

@@ -13,7 +13,7 @@ app.use(WEBHOOK_PATHS, createWebhookRawParser({ type: ['application/json', 'appl
 app.use(json({ type: ['application/json', 'application/*+json'] }));
 app.use(urlencoded({ extended: false }));
 app.use(text());
-app.use((req, res) => res.json(parseWebhookBody(req.body)));
+app.use((req, res) => res.json({ input: parseWebhookBody(req.body, req.header('x-test-raw-body') === 'true') }));
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   res.sendStatus(err instanceof OperationOutcomeError ? getStatus(err.outcome) : (err.status ?? 500));
 };
@@ -21,13 +21,14 @@ app.use(errorHandler);
 
 const rawBody = '{ "greeting": "café 🌍", "escaped": "\\u0061", "number": 1.00 }\n';
 
-test.each(WEBHOOK_PATHS)('Captures exact JSON at %s while preserving parsed input', async (path) => {
+test.each(WEBHOOK_PATHS)('Provides exact JSON text at %s when opted in', async (path) => {
   const result = await request(app)
     .post(path.replace(':projectId', 'project').replace(':id', 'membership'))
     .type('application/json')
+    .set('x-test-raw-body', 'true')
     .send(rawBody);
   expect(result.status).toBe(200);
-  expect(result.body).toEqual({ input: JSON.parse(rawBody), rawBody });
+  expect(result.body).toEqual({ input: rawBody });
 });
 
 test('Does not retain JSON body on other routes', async () => {
@@ -56,9 +57,13 @@ test('Rejects malformed JSON before executing the webhook', async () => {
 test.each(['application/json; charset="UTF-8"', 'application/fhir+json', 'application/vendor+json'])(
   'Captures UTF-8 JSON with content type %s',
   async (contentType) => {
-    const result = await request(app).post('/webhook/test').set('Content-Type', contentType).send(rawBody);
+    const result = await request(app)
+      .post('/webhook/test')
+      .set('Content-Type', contentType)
+      .set('x-test-raw-body', 'true')
+      .send(rawBody);
     expect(result.status).toBe(200);
-    expect(result.body).toEqual({ input: JSON.parse(rawBody), rawBody });
+    expect(result.body).toEqual({ input: rawBody });
   }
 );
 
@@ -73,13 +78,14 @@ test.each(['{invalid', 'null', 'true', '42', '"string"', '   '])(
 test.each(['', '[]', '\uFEFF{"value":1}'])('Preserves empty, array, and BOM handling: %s', async (body) => {
   const result = await request(app).post('/webhook/test').type('application/json').send(body);
   expect(result.status).toBe(200);
-  expect(result.body).toEqual({ input: body ? JSON.parse(body.replace(/^\uFEFF/, '')) : {}, rawBody: body });
+  expect(result.body).toEqual({ input: body ? JSON.parse(body.replace(/^\uFEFF/, '')) : {} });
 });
 
 test('Leaves UTF-16 JSON to the existing parser without forwarding raw text', async () => {
   const result = await request(app)
     .post('/webhook/test')
     .set('Content-Type', 'application/json; charset=utf-16le')
+    .set('x-test-raw-body', 'true')
     .serialize((body) => body)
     .send(Buffer.from(rawBody, 'utf16le'));
   expect(result.status).toBe(200);
@@ -99,10 +105,11 @@ test('Captures decompressed JSON text', async () => {
     .post('/webhook/test')
     .type('application/json')
     .set('Content-Encoding', 'gzip')
+    .set('x-test-raw-body', 'true')
     .serialize((body) => body)
     .send(gzipSync(rawBody));
   expect(result.status).toBe(200);
-  expect(result.body).toEqual({ input: JSON.parse(rawBody), rawBody });
+  expect(result.body).toEqual({ input: rawBody });
 });
 
 test('Leaves form bodies to the existing parser', async () => {
@@ -110,3 +117,25 @@ test('Leaves form bodies to the existing parser', async () => {
   expect(result.status).toBe(200);
   expect(result.body).toEqual({ input: { value: 'hello' } });
 });
+
+test.each(WEBHOOK_PATHS)('Preserves parsed JSON by default at %s', async (path) => {
+  const result = await request(app)
+    .post(path.replace(':projectId', 'project').replace(':id', 'membership'))
+    .type('application/json')
+    .send(rawBody);
+  expect(result.status).toBe(200);
+  expect(result.body).toEqual({ input: JSON.parse(rawBody) });
+});
+
+test.each(['{invalid', 'null', 'true', '42', '"string"', '   ', '', '[]', '\uFEFF{"value":1}'])(
+  'Raw mode leaves validation to the Bot and preserves text: %s',
+  async (body) => {
+    const result = await request(app)
+      .post('/webhook/test')
+      .type('application/json')
+      .set('x-test-raw-body', 'true')
+      .send(body);
+    expect(result.status).toBe(200);
+    expect(result.body).toEqual({ input: body });
+  }
+);

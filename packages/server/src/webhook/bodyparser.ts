@@ -38,25 +38,29 @@ export function createWebhookRawParser(options: Pick<Options, 'type' | 'limit'>)
 }
 
 /**
- * Parses captured JSON while preserving its original text for signature verification.
+ * Selects raw text or parsed JSON for the webhook Bot input.
  * @param body - The request body from the raw or existing non-UTF-8/non-JSON parser.
- * @returns Parsed input and, for captured JSON, the original text.
+ * @param rawBodyEnabled - Whether the Bot opted in to receiving the original UTF-8 text.
+ * @returns Original text when opted in, otherwise parsed input.
  */
-export function parseWebhookBody(body: any): { input: any; rawBody?: string } {
+export function parseWebhookBody(body: any, rawBodyEnabled = false): any {
   if (!Buffer.isBuffer(body)) {
-    return { input: body };
+    return body;
   }
   const rawBody = body.toString('utf8');
+  if (rawBodyEnabled) {
+    return rawBody;
+  }
   // Match the JSON parser's BOM stripping, empty-body handling, and strict object/array validation.
   const text = rawBody.replace(/^\uFEFF/, '');
   if (text.length === 0) {
-    return { input: {}, rawBody };
+    return {};
   }
   try {
     if (!/^[ \t\r\n]*[{[]/.test(text)) {
       throw new Error('Expected a JSON object or array');
     }
-    return { input: JSON.parse(text), rawBody };
+    return JSON.parse(text);
   } catch {
     throw new OperationOutcomeError(badRequest('Content could not be parsed'));
   }
