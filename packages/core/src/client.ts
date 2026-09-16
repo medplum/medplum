@@ -4686,7 +4686,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The user profile resource.
    */
   private async fetchTokens(params: Record<string, string>): Promise<ProfileResource>;
-  private async fetchTokens(params: Record<string, string>, refreshProfile: false): Promise<ProfileResource | undefined>;
+  private async fetchTokens(
+    params: Record<string, string>,
+    refreshProfile: false
+  ): Promise<ProfileResource | undefined>;
   private async fetchTokens(
     params: Record<string, string>,
     refreshProfile = true
