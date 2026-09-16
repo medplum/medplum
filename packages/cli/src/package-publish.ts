@@ -720,11 +720,18 @@ async function registerRelease(medplum: MedplumClient, options: RegisterReleaseO
     // Only skip when the server does not know the catalog resource types yet.
     // Matching any "resource type … not found" also swallowed real failures
     // ("resource type 'Bot' not found in this project") into a skip — leaving
-    // impl bots deployed with no catalog entry and no error surfaced.
-    if (
-      /package(release)?/i.test(msg) &&
-      /(unknown|invalid) resource type|resource type .*(not found|not supported)/i.test(msg)
-    ) {
+    // impl bots deployed with no catalog entry and no error surfaced. Hence the
+    // `package` guard as well.
+    //
+    // Substring tests rather than one regex: the `resource type .*(not found)`
+    // form this replaces backtracks polynomially, since the literal prefix can
+    // match at many offsets and each drives a greedy scan to end-of-string.
+    const lower = msg.toLowerCase();
+    const mentionsUnknownType =
+      lower.includes('unknown resource type') ||
+      lower.includes('invalid resource type') ||
+      (lower.includes('resource type') && (lower.includes('not found') || lower.includes('not supported')));
+    if (/package(release)?/i.test(msg) && mentionsUnknownType) {
       console.warn(`! registry write skipped — server does not know Package/PackageRelease yet (${msg})`);
       return { skipped: msg };
     }
@@ -875,11 +882,16 @@ async function smokeTestInstallBundle(
 // upsert would silently overwrite it rather than create one.
 async function deleteSmokeResources(medplum: MedplumClient, created: string[], leftBehind: string[]): Promise<void> {
   let deleted = 0;
-  for (const location of created) {
-    const [resourceType, id] = location.replace(/^\/?fhir\/R4\//, '').split('/');
-    if (!resourceType || !id) {
+  // Reverse creation order, so a resource that references an earlier one is removed
+  // before the thing it points at.
+  for (const location of [...created].reverse()) {
+    const parsed = parseEntryLocation(location);
+    if (!parsed) {
+      leftBehind.push(location);
+      console.warn(`  smoke: could not parse created location ${location}; left in place`);
       continue;
     }
+    const { resourceType, id } = parsed;
     try {
       await medplum.deleteResource(resourceType as 'Bot', id);
       deleted++;
@@ -891,4 +903,26 @@ async function deleteSmokeResources(medplum: MedplumClient, created: string[], l
   if (deleted > 0) {
     console.log(`  smoke: cleaned up ${deleted} created resource(s)`);
   }
+}
+
+/**
+ * Splits a Bundle entry `response.location` into its resource type and id.
+ *
+ * Scans for the resource type rather than reading a fixed offset, because the
+ * location is only loosely specified: `Bot/<id>` today, but a prefixed
+ * (`fhir/R4/Bot/<id>`), absolute, or `_history`-suffixed form all name the same
+ * resource. Stripping one fixed prefix left the others unparseable, and an
+ * unparseable location was skipped outright — so a resource the smoke run really
+ * did create was neither deleted nor recorded as left behind.
+ * @param location - The `response.location` from a transaction Bundle entry.
+ * @returns The resource type and id, or undefined if the location names neither.
+ */
+function parseEntryLocation(location: string): { resourceType: string; id: string } | undefined {
+  const segments = location.split('?')[0].split('/').filter(Boolean);
+  for (let i = segments.length - 1; i >= 0; i--) {
+    if (/^[A-Z][A-Za-z]+$/.test(segments[i]) && segments[i + 1]) {
+      return { resourceType: segments[i], id: segments[i + 1] };
+    }
+  }
+  return undefined;
 }
