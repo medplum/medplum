@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Input, Stack, TextInput } from '@mantine/core';
+import { Button, Input, Stack, TextInput, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Address, Organization } from '@medplum/fhirtypes';
@@ -30,8 +30,8 @@ import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 const FORM_ID = 'billing-organization-form';
 
 /** Props for the billing organization modal; `organization` is the one to edit, or undefined to create a new one. */
-export interface BillingOrganizationModalProps {
-  readonly candidBotId: string | undefined;
+export interface CandidBillingOrganizationModalProps {
+  readonly candidCreateBotId: string | undefined;
   readonly candidEditBotId: string | undefined;
   readonly organization: WithId<Organization> | undefined;
   readonly opened: boolean;
@@ -45,13 +45,17 @@ export interface BillingOrganizationModalProps {
  * changes, so its state is always seeded from the organization currently being edited. The form
  * reports what Candid knows about the NPI it holds, so the footer button can read Edit while the
  * provider is already registered and hold while a lookup is in flight.
- * @param props - The BillingOrganizationModal React props.
- * @returns The BillingOrganizationModal React node.
+ * @param props - The CandidBillingOrganizationModal React props.
+ * @returns The CandidBillingOrganizationModal React node.
  */
-export function BillingOrganizationModal(props: BillingOrganizationModalProps): JSX.Element {
-  const { candidBotId, candidEditBotId, organization, opened, onClose, onSaved } = props;
+export function CandidBillingOrganizationModal(props: CandidBillingOrganizationModalProps): JSX.Element {
+  const { candidCreateBotId, candidEditBotId, organization, opened, onClose, onSaved } = props;
   const [saving, setSaving] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState<CandidProviderRegistration['status']>('unavailable');
+  const registered = registrationStatus === 'registered';
+  const missingBotMessage = registered
+    ? candidEditBotId === undefined && EDIT_BOT_MISSING_MESSAGE
+    : candidCreateBotId === undefined && CREATE_BOT_MISSING_MESSAGE;
 
   return (
     <Modal
@@ -60,15 +64,23 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
       size="lg"
       title={organization ? 'Edit billing organization' : 'New billing organization'}
       actions={
-        <Button type="submit" form={FORM_ID} loading={saving || registrationStatus === 'loading'}>
-          {registrationStatus === 'registered' ? 'Edit' : 'Save'}
-        </Button>
+        <Tooltip label={missingBotMessage} disabled={!missingBotMessage} multiline w={300}>
+          <Button
+            type="submit"
+            form={FORM_ID}
+            loading={saving || registrationStatus === 'loading'}
+            data-disabled={missingBotMessage ? true : undefined}
+            onClick={missingBotMessage ? (e) => e.preventDefault() : undefined}
+          >
+            {registered ? 'Edit' : 'Save'}
+          </Button>
+        </Tooltip>
       }
     >
       {opened && (
-        <BillingOrganizationForm
+        <CandidBillingOrganizationForm
           key={organization?.id ?? 'new'}
-          candidBotId={candidBotId}
+          candidCreateBotId={candidCreateBotId}
           candidEditBotId={candidEditBotId}
           organization={organization}
           onRegistrationStatusChange={setRegistrationStatus}
@@ -87,8 +99,8 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
  * Props for the form inside the modal; `onRegistrationStatusChange` reports the state of the Candid
  * lookup for the NPI on the form, and resets it to unavailable when the form unmounts.
  */
-interface BillingOrganizationFormProps {
-  readonly candidBotId: string | undefined;
+interface CandidBillingOrganizationFormProps {
+  readonly candidCreateBotId: string | undefined;
   readonly candidEditBotId: string | undefined;
   readonly organization: WithId<Organization> | undefined;
   readonly onRegistrationStatusChange: (status: CandidProviderRegistration['status']) => void;
@@ -100,15 +112,24 @@ interface BillingOrganizationFormProps {
  * The server profile validates name, NPI, Tax ID and address on save. Only the phone format is checked
  * here: the profile requires a phone but cannot express the X12 rule on its digits.
  */
+/** Shown on the disabled Save button when a provider cannot be registered with Candid. */
+const CREATE_BOT_MISSING_MESSAGE =
+  'The Candid create-provider bot is not deployed in this project, so billing organizations cannot be saved here.';
+
+/** Shown on the disabled Edit button when a registered provider cannot be pushed to Candid. */
+const EDIT_BOT_MISSING_MESSAGE =
+  'The Candid edit-provider bot is not deployed in this project, so registered providers cannot be edited here.';
+
 type FormErrors = Partial<Record<'phone', string>>;
 
 /**
  * The billing organization fields, seeded from the organization at mount.
- * @param props - The BillingOrganizationForm React props.
- * @returns The BillingOrganizationForm React node.
+ * @param props - The CandidBillingOrganizationForm React props.
+ * @returns The CandidBillingOrganizationForm React node.
  */
-function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Element {
-  const { candidBotId, candidEditBotId, organization, onRegistrationStatusChange, onSavingChange, onSaved } = props;
+function CandidBillingOrganizationForm(props: CandidBillingOrganizationFormProps): JSX.Element {
+  const { candidCreateBotId, candidEditBotId, organization, onRegistrationStatusChange, onSavingChange, onSaved } =
+    props;
   const medplum = useMedplum();
 
   const [name, setName] = useState(() => organization?.name ?? '');
@@ -159,7 +180,7 @@ function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Eleme
         registration.status === 'registered' ? registration.candidProviderId : undefined
       );
       const candidProviderId = getIdentifier(built, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
-      const botId = candidProviderId ? candidEditBotId : candidBotId;
+      const botId = candidProviderId ? candidEditBotId : candidCreateBotId;
       if (botId) {
         built = withCandidProviderExtensions(built);
       }
@@ -205,7 +226,7 @@ function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Eleme
         <CandidRegistrationAlert
           registration={registration}
           registersAs={
-            candidBotId ? 'this organization as an organization provider, billing under its own NPI' : undefined
+            candidCreateBotId ? 'this organization as an organization provider, billing under its own NPI' : undefined
           }
         />
         <CandidContractAlert contracts={contracts} subject="this organization" />

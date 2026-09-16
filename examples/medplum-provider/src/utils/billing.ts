@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { PatchOperation } from '@medplum/core';
 import { getIdentifier, normalizeErrorString } from '@medplum/core';
-import type { Address, ContactPoint, Identifier, Organization, Parameters, Practitioner } from '@medplum/fhirtypes';
+import type {
+  Address,
+  ContactPoint,
+  HumanName,
+  Identifier,
+  Organization,
+  Parameters,
+  Practitioner,
+} from '@medplum/fhirtypes';
 import {
   CANDID_BILLING_ORGANIZATION_PROFILE,
   CANDID_ELIGIBILITY_PAYER_ID_SYSTEM,
@@ -18,6 +26,9 @@ import {
   CANDID_REMITTANCE_SUPPORT_EXTENSION,
   CHC_PAYER_ID_SYSTEM,
 } from './candid';
+
+/** The `resourceId` on the billing settings Organizations tab that opens the modal for a new billing organization. */
+export const NEW_BILLING_ORGANIZATION_ID = 'new';
 
 export const NPI_SYSTEM = 'http://hl7.org/fhir/sid/us-npi';
 export const EIN_SYSTEM = 'http://hl7.org/fhir/sid/us-ein';
@@ -303,14 +314,16 @@ export function withCandidProviderExtensions(organization: Organization): Organi
  * bills individually; otherwise the billing organization on their role supplies both.
  */
 export interface BillingPractitionerFormValues {
+  name?: HumanName;
   npi: string;
   ein: string;
   address?: Address;
 }
 
 /**
- * Returns a copy of the Practitioner with the NPI, tax ID and address Candid needs, claiming the practitioner
- * profile and stamping the provider-app marker identifier. Qualifications (taxonomy) are left untouched.
+ * Returns a copy of the Practitioner with the name, NPI, tax ID and address Candid needs, claiming the
+ * practitioner profile and stamping the provider-app marker identifier. Only the first name and address are
+ * edited; further entries and qualifications (taxonomy) are left untouched.
  * @param practitioner - The practitioner being edited.
  * @param fields - The billing fields from the form.
  * @returns The updated Practitioner, ready to store.
@@ -336,6 +349,7 @@ export function buildUpdatedPractitioner(
       MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM,
       BILLING_PRACTITIONER_IDENTIFIER_VALUE
     ),
+    name: fields.name ? [fields.name, ...(practitioner.name?.slice(1) ?? [])] : practitioner.name,
     address: fields.address ? [fields.address, ...(practitioner.address?.slice(1) ?? [])] : practitioner.address,
   };
 }

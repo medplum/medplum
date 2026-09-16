@@ -31,14 +31,14 @@ const DEFAULT_SEARCH: SearchRequest = {
   offset: 0,
 };
 
-export interface BillingOrganizationListProps {
+export interface CandidBillingOrganizationListProps {
   readonly candidBotId: string | undefined;
   readonly savedVersion: number;
   readonly onNewOrganization: () => void;
   readonly onSelectOrganization: (organization: WithId<Organization>) => void;
 }
 
-export function BillingOrganizationList(props: BillingOrganizationListProps): JSX.Element {
+export function CandidBillingOrganizationList(props: CandidBillingOrganizationListProps): JSX.Element {
   const { candidBotId, savedVersion, onNewOrganization, onSelectOrganization } = props;
   const [search, setSearch] = useState<SearchRequest>(DEFAULT_SEARCH);
 
