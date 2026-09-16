@@ -538,6 +538,46 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
   if (resourceType === 'Observation') {
     result.indexes.push({ columns: ['subject', 'date'], indexType: 'btree' });
   }
+
+  if (resourceType === 'Task') {
+    applyTaskProjectScopedIndexes(result);
+  }
+}
+
+/**
+ * Columns of the Task indexes replaced by project-scoped equivalents in data migration v46, keyed by
+ * the columns of the index as generated from the search parameter. `suffix` columns are appended after
+ * the search parameter's own columns, e.g. `status` becomes `("projectId", status, "lastUpdated")`.
+ */
+const TaskProjectScopedIndexes: { columns: string[]; suffix?: string[] }[] = [
+  { columns: ['___tag'] },
+  { columns: ['___tagTextTrgm'] },
+  { columns: ['authoredOn'] },
+  { columns: ['__code'] },
+  { columns: ['__codeTextTrgm'] },
+  { columns: ['priority'] },
+  { columns: ['status'], suffix: ['lastUpdated'] },
+  { columns: ['dueDate'] },
+];
+
+/**
+ * TEMPORARY: mirrors the index changes made by data migration v46, which prefixes the most selective
+ * Task indexes with projectId so they can serve project-scoped searches. Remove once the generator can
+ * express project-scoped indexes for search parameters generally.
+ * @param result - The Task table definition, modified in place.
+ */
+function applyTaskProjectScopedIndexes(result: TableDefinition): void {
+  for (const { columns, suffix } of TaskProjectScopedIndexes) {
+    const index = result.indexes.find(
+      (i) => i.columns.length === columns.length && i.columns.every((c, idx) => getIndexColumnName(c) === columns[idx])
+    );
+    assert(index, `Could not find Task index on ${columns.join(', ')}`);
+    index.columns = ['projectId', ...index.columns, ...(suffix ?? EMPTY)];
+  }
+}
+
+function getIndexColumnName(column: IndexDefinition['columns'][number]): string {
+  return isString(column) ? column : column.name;
 }
 
 function buildAddressTable(result: SchemaDefinition): void {

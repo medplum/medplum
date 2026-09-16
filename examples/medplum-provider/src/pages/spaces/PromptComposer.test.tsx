@@ -10,7 +10,7 @@ import type { JSX } from 'react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import type { SpaceModelOption } from '../../utils/spaceModels';
+import type { ReasoningEffort, SpaceModelOption } from '../../utils/spaceModels';
 import { PromptComposer } from './PromptComposer';
 
 // Stand-in for the realtime transcription hook: the tests drive it through `whisper`, which counts
@@ -61,6 +61,7 @@ interface HarnessProps {
   onSend: (overrideInput?: string) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
   onModelChange: (value: string) => void;
+  onReasoningEffortChange: (value: ReasoningEffort) => void;
 }
 
 // The composer is fully controlled, so the tests wrap it in the state its parent would own.
@@ -71,10 +72,12 @@ function Harness({
   onSend,
   onKeyDown,
   onModelChange,
+  onReasoningEffortChange,
 }: HarnessProps): JSX.Element {
   const [input, setInput] = useState(initialInput ?? '');
   const [selectedPatients, setSelectedPatients] = useState<(Patient | Reference<Patient>)[]>(initialPatients ?? []);
   const [selectedModel, setSelectedModel] = useState(MODELS[0].value);
+  const [selectedReasoningEffort, setSelectedReasoningEffort] = useState<ReasoningEffort>('medium');
   return (
     <PromptComposer
       input={input}
@@ -88,6 +91,11 @@ function Harness({
         onModelChange(value);
         setSelectedModel(value);
       }}
+      selectedReasoningEffort={selectedReasoningEffort}
+      onReasoningEffortChange={(value) => {
+        onReasoningEffortChange(value);
+        setSelectedReasoningEffort(value);
+      }}
       selectedPatients={selectedPatients}
       setSelectedPatients={setSelectedPatients}
     />
@@ -99,6 +107,7 @@ describe('PromptComposer', () => {
   const onSend = vi.fn();
   const onKeyDown = vi.fn();
   const onModelChange = vi.fn();
+  const onReasoningEffortChange = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -117,7 +126,13 @@ describe('PromptComposer', () => {
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <Harness onSend={onSend} onKeyDown={onKeyDown} onModelChange={onModelChange} {...props} />
+            <Harness
+              onSend={onSend}
+              onKeyDown={onKeyDown}
+              onModelChange={onModelChange}
+              onReasoningEffortChange={onReasoningEffortChange}
+              {...props}
+            />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -294,6 +309,19 @@ describe('PromptComposer', () => {
       await waitFor(() => expect(screen.queryByText('Model')).not.toBeInTheDocument());
     });
 
+    test('Selects a different reasoning effort', async () => {
+      setup();
+
+      fireEvent.click(screen.getByRole('button', { name: /Medium/ }));
+
+      expect(await screen.findByText('Reasoning effort')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('Extra high'));
+
+      expect(onReasoningEffortChange).toHaveBeenCalledWith('xhigh');
+      expect(screen.getByRole('button', { name: /Extra high/ })).toBeInTheDocument();
+      await waitFor(() => expect(screen.queryByText('Reasoning effort')).not.toBeInTheDocument());
+    });
+
     test('Falls back to the raw value for a model missing from the list', () => {
       render(
         <MemoryRouter>
@@ -308,6 +336,8 @@ describe('PromptComposer', () => {
                 models={MODELS}
                 selectedModel="some-custom-model"
                 onModelChange={vi.fn()}
+                selectedReasoningEffort="medium"
+                onReasoningEffortChange={vi.fn()}
                 selectedPatients={[]}
                 setSelectedPatients={vi.fn()}
               />

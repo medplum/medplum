@@ -33,10 +33,18 @@ interface ComponentPreviewProps {
   onResourceClick?: (ref: string) => void;
 }
 
+/**
+ * Everything generated code may reference. Recharts and Mantine both export `Text` and `Tooltip`.
+ * Mantine wins for `Text`, since prose is far more common than SVG text. Recharts wins for
+ * `Tooltip`: a chart tooltip is what generated code means by it, and Mantine's throws when it
+ * has no child element. Mantine's version stays reachable as `MantineTooltip`.
+ */
 const scope = {
   ...Recharts,
   ...Mantine,
+  Tooltip: Recharts.Tooltip,
   ChartTooltip: Recharts.Tooltip,
+  MantineTooltip: Mantine.Tooltip,
 };
 
 function transformCode(code: string): string {

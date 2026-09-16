@@ -1,8 +1,9 @@
 on:
   # Not meant to run on its own -- only triggered via workflow_call, from
   # vouch-check-pr.yml (event-triggered) and vouch-check-pr-backlog.yml
-  # (matrix over the existing backlog). Holds the shared check -> label-check
-  # -> close logic so it isn't duplicated between the two.
+  # (matrix over the existing backlog). Holds the shared PR-label exemption
+  # -> vouch check -> linked-issue check -> close logic so it isn't duplicated
+  # between the two.
   workflow_call:
     inputs:
       pr-number:
@@ -24,6 +25,7 @@ name: "Vouch - Check PR (shared)"
 
 env:
   COMMUNITY_PR_LABEL: open-to-community
+  VOUCHED_PR_LABEL: vouched
 
 jobs:
   check:
@@ -33,11 +35,11 @@ jobs:
       pull-requests: write
       contents: read
     steps:
-      # Read once up front so both the close message and the result artifact
-      # share one lookup. There's no event payload to read the author from
-      # here (this runs the same way whether called from an event or a
-      # backlog matrix), so it has to come from the API either way. Kept in a
-      # file rather than step outputs so the untrusted PR title is never
+      # Read once up front so the exemption check, close message, and result
+      # artifact share one lookup. There's no event payload to read from here
+      # (this runs the same way whether called from an event or a backlog
+      # matrix), so it has to come from the API either way. Kept in a file
+      # rather than step outputs so the untrusted PR title is never
       # interpolated into a shell script.
       - name: Look up PR metadata
         id: pr
@@ -47,13 +49,17 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          gh pr view "$PR_NUMBER" --repo "$REPO" --json number,author,title > "$RUNNER_TEMP/pr.json"
-          jq -r '"author=" + .author.login' "$RUNNER_TEMP/pr.json" >> "$GITHUB_OUTPUT"
+          gh pr view "$PR_NUMBER" --repo "$REPO" --json number,author,title,labels > "$RUNNER_TEMP/pr.json"
+          jq -r --arg vouched_pr_label "$VOUCHED_PR_LABEL" '
+            "author=" + .author.login,
+            "has-vouched-label=" + ([.labels[].name] | any(. == $vouched_pr_label) | tostring)
+          ' "$RUNNER_TEMP/pr.json" >> "$GITHUB_OUTPUT"
 
-      # require-vouch is false so this step only ever auto-closes denounced
-      # users, which are always blocked with no exception. A merely-unvouched
-      # (never vouched, never denounced) author comes back as "allowed", and
-      # gets a second, narrower check below rather than being closed outright.
+      # A maintainer can exempt a PR from all automatic closing by applying
+      # the `vouched` label. Otherwise, require-vouch is false so this step
+      # only auto-closes denounced users. A merely-unvouched (never vouched,
+      # never denounced) author comes back as "allowed", and gets a second,
+      # narrower check below rather than being closed outright.
       #
       # Defaults to dry-run (safe) until the VOUCH_DRY_RUN repo variable
       # (Settings -> Secrets and variables -> Actions -> Variables) is
@@ -63,6 +69,7 @@ jobs:
       # the same either way.
       - uses: mitchellh/vouch/action/check-pr@d66fa29a64600490892131ad87597c30c91fcac4 # v1.5.0
         id: vouch
+        if: steps.pr.outputs.has-vouched-label == 'false'
         with:
           pr-number: ${{ inputs.pr-number }}
           require-vouch: false
@@ -131,6 +138,7 @@ jobs:
           MESSAGE=$(cat .github/pr-unvouched-message)
           MESSAGE="${MESSAGE//\{author\}/$PR_AUTHOR}"
           MESSAGE="${MESSAGE//\{label\}/$COMMUNITY_PR_LABEL}"
+          MESSAGE="${MESSAGE//\{vouched\}/$VOUCHED_PR_LABEL}"
           MESSAGE="${MESSAGE//\{repo\}/${{ github.repository }}}"
 
           if [ "$DRY_RUN" = "true" ]; then
@@ -141,15 +149,16 @@ jobs:
             gh pr close "${{ inputs.pr-number }}" --repo "${{ github.repository }}"
           fi
 
-      # Collapses the two independent gates (the vouch action's own verdict,
-      # then the linked-issue check) into a single outcome describing what this
-      # job actually did -- or, under dry-run, would have done. Runs even when
-      # an earlier step failed, so a broken PR shows up in the summary as an
-      # error rather than silently vanishing from it.
+      # Collapses the PR-label exemption and the two remaining gates (the
+      # vouch action's own verdict, then the linked-issue check) into a single
+      # outcome describing what this job actually did -- or, under dry-run,
+      # would have done. Runs even when an earlier step failed, so a broken PR
+      # shows up in the summary as an error rather than silently vanishing.
       - name: Record result
         if: ${{ !cancelled() && inputs.report-artifact }}
         env:
           PR_NUMBER: ${{ inputs.pr-number }}
+          HAS_VOUCHED_LABEL: ${{ steps.pr.outputs.has-vouched-label }}
           VOUCH_RESULT: ${{ steps.vouch.outcome }}
           VOUCH_STATUS: ${{ steps.vouch.outputs.status }}
           HAS_LABEL: ${{ steps.label-check.outputs.has-label }}
@@ -160,7 +169,9 @@ jobs:
 
           if [ "$DRY_RUN" = "true" ]; then WOULD="would-"; else WOULD=""; fi
 
-          if [ "$VOUCH_RESULT" != "success" ]; then
+          if [ "$HAS_VOUCHED_LABEL" = "true" ]; then
+            OUTCOME="vouched-label"
+          elif [ "$VOUCH_RESULT" != "success" ]; then
             OUTCOME="error"
           else
             case "$VOUCH_STATUS" in
@@ -196,6 +207,7 @@ jobs:
           jq -c \
             --arg outcome "$OUTCOME" \
             --arg vouch_status "$VOUCH_STATUS" \
+            --arg has_vouched_label "$HAS_VOUCHED_LABEL" \
             --arg has_label "$HAS_LABEL" \
             --arg dry_run "$DRY_RUN" \
             '{
@@ -204,6 +216,7 @@ jobs:
               title,
               outcome: $outcome,
               vouch_status: $vouch_status,
+              has_vouched_label: ($has_vouched_label == "true"),
               has_label: $has_label,
               dry_run: ($dry_run == "true")
             }' "$RUNNER_TEMP/pr.json" | tee "$RUNNER_TEMP/vouch-result/$PR_NUMBER.json"

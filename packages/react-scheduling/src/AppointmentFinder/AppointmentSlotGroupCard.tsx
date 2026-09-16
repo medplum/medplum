@@ -3,9 +3,9 @@
 import { Button, Group, Paper, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
-import { ReferenceDisplay } from '@medplum/react';
+import { ResourceName } from '@medplum/react';
 import type { JSX } from 'react';
-import type { SchedulingActor } from '../actors';
+import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
 import classes from './AppointmentFinder.module.css';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
@@ -22,7 +22,7 @@ export interface AppointmentSlotGroupCardProps {
   readonly disabled?: boolean;
 }
 
-function ActorLabel(props: { readonly actor: SchedulingActor }): JSX.Element {
+function ActorLabel(props: { readonly actor: SchedulingActorValue }): JSX.Element {
   const label = getActorTypeLabel(getActorType(props.actor));
   return (
     <Stack gap={2}>
@@ -30,7 +30,7 @@ function ActorLabel(props: { readonly actor: SchedulingActor }): JSX.Element {
         {label}
       </Text>
       <Text size="sm" fw={500}>
-        <ReferenceDisplay value={props.actor} link={false} />
+        <ResourceName value={props.actor} link={false} inherit />
       </Text>
     </Stack>
   );
@@ -52,7 +52,7 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
       <Group justify="space-between" align="flex-start" wrap="nowrap" mb="sm">
         <Group gap="lg" align="flex-start" wrap="wrap">
           {group.actors.map((actor) => (
-            <ActorLabel actor={actor} key={getReferenceString(actor) ?? actor.display} />
+            <ActorLabel actor={actor} key={getReferenceString(actor)} />
           ))}
         </Group>
         {group.durationMinutes > 0 && (

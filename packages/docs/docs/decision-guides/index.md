@@ -65,6 +65,13 @@ Scope your e-prescribing workflow — iframe vs. integrated prescribing UI, cont
 - **[Decision Guide →](/docs/decision-guides/e-prescribe)**
 - **Docs:** [Medications](/docs/medications)
 
+### Data Migration
+
+Scope a migration to Medplum – source-system inventory, data ownership, identity and mapping governance, import operations, validation, testing, cutover, and acceptance.
+
+- **[Decision Guide →](/docs/decision-guides/data-migration)**
+- **Docs:** [Migrating to Medplum](/docs/migration)
+
 ---
 
 More guides will be added as additional workflow areas are scoped. If you'd like a guide for a workflow not listed here, reach out on our [Discord](https://discord.gg/medplum) or email [support@medplum.com](mailto:support@medplum.com).

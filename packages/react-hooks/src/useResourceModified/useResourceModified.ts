@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClientEventMap, ResourceModifiedEvent } from '@medplum/core';
 import type { ExtractResource, ResourceType } from '@medplum/fhirtypes';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import { useStabilizedCallback } from '../useStabilizedCallback/useStabilizedCallback';
 
 /**
  * React hook for observing FHIR resource modifications made through the Medplum client.
@@ -32,10 +33,7 @@ export function useResourceModified<K extends ResourceType>(
   callback: (event: ResourceModifiedEvent<ExtractResource<K>>) => void
 ): void {
   const medplum = useMedplum();
-  const callbackRef = useRef(callback);
-  useEffect(() => {
-    callbackRef.current = callback;
-  });
+  const onModified = useStabilizedCallback(callback);
 
   const typesKey = Array.isArray(resourceType) ? resourceType.join(',') : resourceType;
 
@@ -44,10 +42,10 @@ export function useResourceModified<K extends ResourceType>(
     const listener = (event: MedplumClientEventMap['resourceModified']): void => {
       if (types.has(event.payload.resourceType)) {
         // Guarded above: the payload's resourceType is one of `K`, so this narrowing holds.
-        callbackRef.current(event.payload as ResourceModifiedEvent<ExtractResource<K>>);
+        onModified(event.payload as ResourceModifiedEvent<ExtractResource<K>>);
       }
     };
     medplum.addEventListener('resourceModified', listener);
     return () => medplum.removeEventListener('resourceModified', listener);
-  }, [medplum, typesKey]);
+  }, [medplum, typesKey, onModified]);
 }

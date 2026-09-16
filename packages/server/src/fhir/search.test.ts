@@ -60,12 +60,14 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import type { SystemRepository } from './repo';
-import { getGlobalSystemRepo, Repository } from './repo';
+import { Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
+import { getTestProjectSystemRepo } from './repository/test-utils';
 import type { ChainedSearchLink } from './search';
 import { clampEstimateCount, Direction, getCount, parseChainedParameter } from './search';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
+import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
 import { loadStructureDefinitions } from './structure';
 
@@ -81,6 +83,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
     await initAppServices(config);
     const { project } = await createTestProject({ project: { features } });
     repo = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
       strictMode: true,
       projects: [project],
       author: { reference: 'User/' + randomUUID() },
@@ -1108,6 +1111,66 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(searchResult2.entry?.length).toStrictEqual(0);
     }));
 
+  test.each([
+    [Operator.MISSING, 'false', true],
+    [Operator.MISSING, 'true', false],
+    [Operator.PRESENT, 'true', true],
+    [Operator.PRESENT, 'false', false],
+  ])('Filter by _id with %s=%s', (operator, value, expectedMatch) =>
+    withTestContext(async () => {
+      const family = randomUUID();
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+      });
+
+      const result = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          { code: 'name', operator: Operator.EXACT, value: family },
+          { code: '_id', operator, value },
+        ],
+      });
+
+      expect(bundleContains(result, patient) !== undefined).toBe(expectedMatch);
+    })
+  );
+
+  test('Filter by _compartment presence', () =>
+    withTestContext(async () => {
+      const identifier = randomUUID();
+      const account = await systemRepo.createResource<Organization>({ resourceType: 'Organization' });
+      const organizationWithCompartment = await systemRepo.createResource<Organization>({
+        resourceType: 'Organization',
+        identifier: [{ value: identifier }],
+        meta: { accounts: [createReference(account)] },
+      });
+      const organizationWithoutCompartment = await systemRepo.createResource<Organization>({
+        resourceType: 'Organization',
+        identifier: [{ value: identifier }],
+      });
+
+      const presentResult = await systemRepo.search({
+        resourceType: 'Organization',
+        filters: [
+          { code: 'identifier', operator: Operator.EQUALS, value: identifier },
+          { code: '_compartment', operator: Operator.MISSING, value: 'false' },
+        ],
+      });
+      expect(bundleContains(presentResult, organizationWithCompartment)).toBeDefined();
+      expect(bundleContains(presentResult, organizationWithoutCompartment)).toBeUndefined();
+
+      const missingResult = await systemRepo.search({
+        resourceType: 'Organization',
+        filters: [
+          { code: 'identifier', operator: Operator.EQUALS, value: identifier },
+          { code: '_compartment', operator: Operator.MISSING, value: 'true' },
+        ],
+      });
+      expect(bundleContains(missingResult, organizationWithCompartment)).toBeUndefined();
+      expect(bundleContains(missingResult, organizationWithoutCompartment)).toBeDefined();
+    }));
+
   test('Filter by chained _id', () =>
     withTestContext(async () => {
       const organizationId = randomUUID();
@@ -1121,6 +1184,21 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
 
       expect(searchResult1.entry?.length).toStrictEqual(1);
       expect(bundleContains(searchResult1 as Bundle, patient as Patient)).toBeDefined();
+    }));
+
+  test('Filter by chained _id presence', () =>
+    withTestContext(async () => {
+      const organization = await repo.createResource<Organization>({ resourceType: 'Organization' });
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        managingOrganization: createReference(organization),
+      });
+
+      const presentResult = await repo.search(parseSearchRequest('Patient?organization._id:missing=false'));
+      expect(bundleContains(presentResult, patient)).toBeDefined();
+
+      const missingResult = await repo.search(parseSearchRequest('Patient?organization._id:missing=true'));
+      expect(bundleContains(missingResult, patient)).toBeUndefined();
     }));
 
   test('Reverse filter by chained _id', () =>
@@ -1141,6 +1219,16 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         parseSearchRequest(`Location?_has:HealthcareService:location:_id=${healthcareService.id}`)
       );
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(location.id);
+
+      const presentResult = await repo.search(
+        parseSearchRequest('Location?_has:HealthcareService:location:_id:missing=false')
+      );
+      expect(bundleContains(presentResult, location)).toBeDefined();
+
+      const missingResult = await repo.search(
+        parseSearchRequest('Location?_has:HealthcareService:location:_id:missing=true')
+      );
+      expect(bundleContains(missingResult, location)).toBeUndefined();
     }));
 
   test('Reverse filter by _compartment:_id', () =>
@@ -2812,7 +2900,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         name: randomUUID(),
       });
 
-      const patient = await getGlobalSystemRepo().createResource({
+      const patient = await repo.getSystemRepo().createResource({
         resourceType: 'Patient',
         meta: { project: project.id },
         managingOrganization: createReference(organization),
@@ -5714,7 +5802,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
 });
 
 describe.each([true, false])('systemRepo', (rangeSearch) => {
-  const systemRepo = getGlobalSystemRepo();
+  const systemRepo = getTestProjectSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -5735,17 +5823,13 @@ describe.each([true, false])('systemRepo', (rangeSearch) => {
       const patient1 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         identifier: [{ system: 'id', value: idValue }],
-        meta: {
-          project: project1,
-        },
+        meta: { project: project1 },
       });
 
       const patient2 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         identifier: [{ system: 'id', value: idValue }],
-        meta: {
-          project: project2,
-        },
+        meta: { project: project2 },
       });
 
       const patient3 = await systemRepo.createResource<Patient>({
@@ -6125,6 +6209,16 @@ describe.each([true, false])('systemRepo', (rangeSearch) => {
       // special search params
       ['Patient?_id:in=123', 'Invalid modifier'],
       ['Patient?_id:not-in=123', 'Invalid modifier'],
+      ['Patient?_id:text=123', 'Invalid modifier'],
+      ['Patient?_id:above=123', 'Invalid modifier'],
+      ['Patient?_id:below=123', 'Invalid modifier'],
+      ['Patient?_id:of-type=123', 'Invalid modifier'],
+      ['Patient?_id:contains=123', 'Invalid modifier'],
+      ['Patient?_id:identifier=123', 'Invalid modifier'],
+      ['Patient?_id:iterate=123', 'Invalid modifier'],
+      ['Patient?_id:missing=maybe', "must have a value of 'true' or 'false'"],
+      ['Patient?_project:missing=maybe', "must have a value of 'true' or 'false'"],
+      ['Patient?_compartment:missing=maybe', "must have a value of 'true' or 'false'"],
       ['Patient?_lastUpdated:in=2025-10-15', 'Invalid modifier'],
       ['Patient?_lastUpdated:not-in=2025-10-15', 'Invalid modifier'],
       ['Patient?_deleted:in=true', 'Invalid modifier'],
@@ -6145,7 +6239,7 @@ describe.each([true, false])('systemRepo', (rangeSearch) => {
       // lookup table
       ['Patient?name:in=123', 'Invalid modifier'],
       ['Patient?name:not-in=123', 'Invalid modifier'],
-    ])(':in and :not-in for %s', (searchString, expectedError) =>
+    ])('Reject invalid operator or modifier for %s', (searchString, expectedError) =>
       withTestContext(async () => {
         await expect(async () => {
           const searchRequest = parseSearchRequest(searchString);

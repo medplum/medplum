@@ -63716,6 +63716,10 @@
           "description": "Whether this request has been used, and is therefore no longer valid.",
           "$ref": "#/definitions/boolean"
         },
+        "expiresAt": {
+          "description": "The time at which this request expires, and is therefore no longer valid.",
+          "$ref": "#/definitions/instant"
+        },
         "redirectUri": {
           "description": "Redirect URI used when redirecting a client back to the client application.",
           "$ref": "#/definitions/uri"

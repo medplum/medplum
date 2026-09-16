@@ -26,27 +26,57 @@ export const CANDID_GET_PAYERS_BOT_IDENTIFIER = {
   value: 'candid-get-payers',
 };
 
-// Bot that registers a Practitioner or Organization as a Candid organization provider and stamps
-// the Candid provider ID back onto the resource.
+/**
+ * Bot that registers a Practitioner or Organization as a Candid organization provider and stamps
+ * the Candid provider ID back onto the resource.
+ */
 export const CANDID_CREATE_PROVIDER_BOT_IDENTIFIER = {
   system: CANDID_INTEGRATION_SYSTEM,
   value: 'candid-create-provider',
 };
 
-// Profile the medplum-ee candid-health package publishes for billing organizations: it requires the
-// NPI and Tax ID identifiers, the 'prov' organization type, and a complete address. Saving a billing
-// organization claims it so the server enforces those on write; a project without the Candid package
-// deployed has no such StructureDefinition, and the server skips a profile it cannot resolve.
+/**
+ * Profile the medplum-ee candid-health package publishes for billing organizations (NPI, Tax ID, `prov` type,
+ * complete address). Saving claims it so the server enforces those; an unresolvable profile is skipped.
+ */
 export const CANDID_BILLING_ORGANIZATION_PROFILE =
   'https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-billing-organization';
 
-// Identifier the candid-create-provider bot writes onto the registered resource; its presence
-// means the provider exists in Candid.
+/**
+ * Companion profile for the practitioners claims are rendered by: it requires the NPI identifier
+ * and the NUCC taxonomy code Candid needs on an individual provider.
+ */
+export const CANDID_PRACTITIONER_PROFILE =
+  'https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-practitioner';
+
+/**
+ * Bot that pushes a provider's current details to the Candid organization provider it is already
+ * registered as; it resolves that provider by the identifier below.
+ */
+export const CANDID_EDIT_PROVIDER_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-edit-provider',
+};
+
+/**
+ * Bot that lists the organization providers registered in Candid, by NPI, as FHIR resources. It answers whether
+ * Candid knows a provider now; the identifier below only records that a registration once succeeded here.
+ */
+export const CANDID_LIST_PROVIDERS_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-list-providers',
+};
+
+/**
+ * Identifier the candid-create-provider bot writes onto the registered resource; its presence
+ * means the provider exists in Candid.
+ */
 export const CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM = 'https://candidhealth.com/organization-provider-id';
 
-// Candid requires isBilling/isRendering on every organization provider and FHIR has no native
-// field for them, so candid-create-provider reads them from these extensions and rejects a
-// resource that carries neither.
+/**
+ * Extensions candid-create-provider reads isBilling/isRendering from, since FHIR has no native field for them;
+ * a resource carrying neither is rejected.
+ */
 export const CANDID_IS_BILLING_PROVIDER_EXTENSION =
   'https://candidhealth.com/fhir/StructureDefinition/is-billing-provider';
 export const CANDID_IS_RENDERING_PROVIDER_EXTENSION =

@@ -7,7 +7,9 @@ import {
   OAuthGrantType,
   OAuthSigningAlgorithm,
   OAuthTokenType,
+  OperationOutcomeError,
   Operator,
+  badRequest,
   createReference,
   getStatus,
   isJwt,
@@ -149,6 +151,10 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
 
   const project = await systemRepo.readReference(membership.project);
   const scope = (req.body.scope || 'openid') as string;
+
+  if (scope.includes('patient/')) {
+    throw new OperationOutcomeError(badRequest('Cannot use client credentials with patient scope'));
+  }
 
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
@@ -501,6 +507,12 @@ export async function exchangeExternalAuthToken(
     forceUseFirstMembership: true,
     membershipId,
   });
+
+  // Token exchange carries the same proof as the external auth callback, so verify on the
+  // same terms.
+  await systemRepo.patchResource<User>('User', resolveId(login.user) as string, [
+    { op: 'add', path: '/emailVerified', value: true },
+  ]);
 
   await sendTokenResponse(req, res, login, client);
 }

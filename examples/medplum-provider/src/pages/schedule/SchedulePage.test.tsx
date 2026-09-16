@@ -365,13 +365,6 @@ describe('$find/$book component integration tests', () => {
     medplum = new MockClient({ profile: DrAliceSmith });
     vi.clearAllMocks();
 
-    // Mock window.innerHeight for calendar height calculation
-    Object.defineProperty(window, 'innerHeight', {
-      writable: true,
-      configurable: true,
-      value: 800,
-    });
-
     healthcareService = await medplum.createResource<HealthcareService>({
       resourceType: 'HealthcareService',
       name: 'Annual Checkup',

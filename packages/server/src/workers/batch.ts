@@ -221,7 +221,7 @@ async function addBatchJobData(jobData: BatchJobData): Promise<Job<BatchJobData>
 }
 
 export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<AsyncJob>): Promise<Job<BatchJobData>> {
-  const { authentication: authState, requestId, traceId } = getAuthenticatedContext();
+  const { authState, requestId, traceId } = getAuthenticatedContext();
   // Persist the (potentially large) input bundle to durable object storage rather than carrying it
   // in the BullMQ job data (see https://github.com/medplum/medplum/issues/9124). The worker loads
   // it on the first run to preprocess.
@@ -241,7 +241,7 @@ export async function queueLegacyBatchProcessing(
   bundle: Bundle,
   asyncJob: WithId<AsyncJob>
 ): Promise<Job<BatchJobData>> {
-  const { authentication: authState, requestId, traceId } = getAuthenticatedContext();
+  const { authState, requestId, traceId } = getAuthenticatedContext();
   const jobData: LegacyBatchJobData = { asyncJob, bundle, authState, requestId, traceId };
   return addBatchJobData(jobData);
 }
@@ -253,8 +253,8 @@ export async function queueLegacyBatchProcessing(
  * @returns The user's repository.
  */
 async function getBatchUserRepo(authState: Readonly<AuthState>, userConfig: UserConfiguration): Promise<Repository> {
-  const { login, project, membership } = authState;
-  return getRepoForLogin({ login, project, membership, userConfig }, true);
+  const { login, project, membership, smartAppLaunch } = authState;
+  return getRepoForLogin({ login, project, membership, smartAppLaunch, userConfig }, true);
 }
 
 /**
@@ -575,13 +575,13 @@ function countBundleErrors(bundle: Bundle): number {
  */
 export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<void> {
   const bundle = job.data.bundle;
-  const { login, project, membership } = job.data.authState;
+  const { login, project, membership, smartAppLaunch } = job.data.authState;
   const logger = getBatchLogger(job.data.asyncJob.id, job.id);
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
 
   // Prepare the original submitting user's repo
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
-  const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
+  const repo = await getRepoForLogin({ login, project, membership, smartAppLaunch, userConfig }, true);
   // This path runs the whole bundle through `processBatch`, which dispatches both telemetry events
   // itself; it only needed listeners subscribed. See the TODO in `execBatchJob` about the routes a
   // bare FhirRouter exposes.

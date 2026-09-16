@@ -10,6 +10,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { sendVerificationEmail } from './newuser';
 import { sendLoginResult } from './utils';
 import { sendWelcomeEmail } from './welcomeemail';
 
@@ -49,7 +50,15 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
   if (config.requireVerifiedEmailForProjectCreation && !user.emailVerified) {
-    sendOutcome(res, badRequest('Email verification is required to create a project'));
+    // This is the only gate on `emailVerified`, and users reach it by paths that never
+    // offer a verification link: an existing member creating a second project arrives
+    // via the login status endpoint, not registration. Send the link here so the
+    // requirement is actionable rather than a dead end.
+    await sendVerificationEmail(user, login);
+    sendOutcome(
+      res,
+      badRequest('Email verification is required to create a project. Check your email for a verification link.')
+    );
     return;
   }
 

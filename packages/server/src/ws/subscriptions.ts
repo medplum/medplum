@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import {
   badRequest,
   createReference,
+  deepClone,
   EMPTY,
   forbidden,
   normalizeErrorString,
@@ -157,7 +158,6 @@ async function sendSubscriptionEventNotifications(
 ): Promise<string[]> {
   const deadSubscriptionIds: string[] = [];
   for (const [subscriptionId, options] of subEventArgsArr) {
-    const bundle = createSubEventNotification(resource, subscriptionId, options);
     for (const socket of subToWsLookup.get(subscriptionId) ?? EMPTY) {
       // Get the repo for this socket in the context of the subscription
       const subMetadataMap = wsToSubLookup.get(socket);
@@ -181,9 +181,13 @@ async function sendSubscriptionEventNotifications(
           deadSubscriptionIds.push(subscriptionId);
           continue;
         }
+        // removeHiddenFields mutates its input, and one published resource is shared by every
+        // socket on this event, so each subscriber filters its own copy.
+        const visible = repo.removeHiddenFields(deepClone(resource));
+        const bundle = createSubEventNotification(visible, subscriptionId, options);
         rewrittenBundle = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, bundle);
       } catch (err) {
-        globalLogger.error('[WS] Error occurred while rewriting attachments', { err });
+        globalLogger.error('[WS] Error occurred while preparing subscription notification', { err });
         continue;
       }
 

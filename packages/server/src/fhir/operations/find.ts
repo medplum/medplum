@@ -7,10 +7,12 @@ import {
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
+  isDefined,
   isNotFound,
   isReference,
   OperationOutcomeError,
   resolveId,
+  SchedulingSlotCapacityURI,
   serviceTypeIncludesService,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
@@ -19,16 +21,18 @@ import type { Appointment, Bundle, HealthcareService, Reference, Schedule, Slot 
 import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
+import type { Interval } from '../../util/date';
 import { addMinutes, earliest, latest } from '../../util/date';
 import type { WithPath } from '../../util/withpath';
 import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
-import { findAlignedSlotTimes, overlappingIntervals } from './utils/find';
+import { bufferTimeConflicts, findAlignedSlotTimes, overlappingIntervals } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import {
   applyExistingSlots,
   assertAllLoaded,
   getSchedulingParametersGroup,
+  intervalsExceedingCapacity,
   resolveAvailability,
   slotsOverlappingInterval,
 } from './utils/scheduling';
@@ -150,6 +154,7 @@ async function handler(params: {
       slots: scheduleSlots,
       range: effectiveRange,
       serviceType: healthcareService.type,
+      capacity: schedulingParameters.get('slotCapacity'),
     });
 
     // Trim off bufferBefore/bufferAfter from availability
@@ -175,17 +180,46 @@ async function handler(params: {
     .reduce((acc, val) => overlappingIntervals(acc, val), allAvailability[0]);
   assert(intersectingAvailability);
 
+  // Tricky: `slotCapacity` lets an appointment overlap existing bookings, but its buffer
+  // time is exclusive — it is blocked by any existing booking, even one the appointment
+  // itself is allowed to overlap. Availability above is resolved at the appointment's own
+  // capacity, so buffers are checked against exclusively occupied time per candidate.
+  //
+  // Only schedules that allow overbooking need the check. At `slotCapacity` 1 the
+  // availability above already excludes every existing booking, and each candidate's
+  // buffers land inside the single availability window it was trimmed from, so the
+  // check could never reject a candidate.
+  const bufferChecks = schedules
+    .map((schedule) => {
+      const schedulingParameters = parameterGroup.get(schedule);
+      assert(schedulingParameters);
+      const bufferBefore = schedulingParameters.get('bufferBefore');
+      const bufferAfter = schedulingParameters.get('bufferAfter');
+      if (schedulingParameters.get('slotCapacity') === 1 || (bufferBefore === 0 && bufferAfter === 0)) {
+        return undefined;
+      }
+      const scheduleSlots = existingSlots.filter((slot) => resolveId(slot.schedule) === schedule.id);
+      return { blocked: intervalsExceedingCapacity(scheduleSlots, 1), bufferBefore, bufferAfter };
+    })
+    .filter(isDefined);
+
+  const hasBufferConflict = (interval: Interval): boolean =>
+    bufferChecks.some((check) => bufferTimeConflicts(interval, check.blocked, check));
+
+  const alignment = {
+    interval: commonParameters.alignmentInterval,
+    offset: commonParameters.alignmentOffset,
+    timezone: commonParameters.alignmentTimezone,
+  };
+
   const intervals = flatMapMax(
     intersectingAvailability,
     (interval, _idx, maxCount) =>
       findAlignedSlotTimes(interval, {
-        alignment: {
-          interval: commonParameters.alignmentInterval,
-          offset: commonParameters.alignmentOffset,
-          timezone: commonParameters.alignmentTimezone,
-        },
+        alignment,
         durationMinutes: commonParameters.duration,
         maxCount,
+        filter: (candidate) => !hasBufferConflict(candidate),
       }),
     pageSize
   );
@@ -198,15 +232,18 @@ async function handler(params: {
       const parameters = parameterGroup.get(schedule);
       assert(parameters);
 
-      const resultSlots: Slot[] = [
-        {
-          resourceType: 'Slot',
-          start,
-          end,
-          schedule: createReference(schedule),
-          status: 'busy',
-        },
-      ];
+      const busySlot: Slot = {
+        resourceType: 'Slot',
+        start,
+        end,
+        schedule: createReference(schedule),
+        status: 'busy',
+      };
+      const capacity = parameters.get('slotCapacity');
+      if (capacity > 1) {
+        busySlot.extension = [{ url: SchedulingSlotCapacityURI, valuePositiveInt: capacity }];
+      }
+      const resultSlots: Slot[] = [busySlot];
 
       if (parameters.get('bufferBefore')) {
         resultSlots.push({

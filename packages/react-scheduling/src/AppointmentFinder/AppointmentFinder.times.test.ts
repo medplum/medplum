@@ -1,22 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { buildProposedAppointment } from '../stories/scheduling';
+import { buildProposedAppointment, DrRiveraPractitioner, ExamRoomA, indexByReference } from '../stories/scheduling';
 import {
-  MAX_FIND_WINDOW_DAYS,
   endOfMonth,
   enumerateDateRange,
   filterByTimeOfDay,
-  formatDateRange,
-  formatDayLabel,
   formatTimezoneLabel,
   formatZonedTime,
   getActorGroupKey,
+  getAppointmentActors,
   getAppointmentKey,
   getDurationMinutes,
   getFindWindowError,
   getZonedDayRange,
   groupAppointmentsByDay,
   isViewerTimezone,
+  MAX_FIND_WINDOW_DAYS,
   parseDayKey,
   parseZonedTime,
 } from './AppointmentFinder.times';
@@ -24,6 +23,9 @@ import {
 const EASTERN = 'America/New_York';
 const PACIFIC = 'America/Los_Angeles';
 const ARIZONA = 'America/Phoenix';
+
+/** The resources a caller had already read, keyed as a proposal names them. */
+const RESOURCES = indexByReference([DrRiveraPractitioner, ExamRoomA]);
 
 describe('filterByTimeOfDay', () => {
   const morning = buildProposedAppointment({ start: '2026-07-27T13:00:00.000Z' }); // 9:00 Eastern
@@ -119,6 +121,44 @@ describe('groupAppointmentsByDay', () => {
     });
 
     expect(days.map((day) => day.key)).toStrictEqual(['2026-07-26', '2026-07-27']);
+  });
+
+  test('Heads a group with the actors themselves where it was given them', () => {
+    const appointment = buildProposedAppointment({
+      start: '2026-07-27T13:00:00.000Z',
+      actorReferences: [{ reference: 'Practitioner/dr-rivera' }, { reference: 'Location/exam-room-a' }],
+    });
+
+    const [day] = groupAppointmentsByDay([appointment], EASTERN, undefined, RESOURCES);
+
+    expect(day.groups[0].actors).toStrictEqual([DrRiveraPractitioner, ExamRoomA]);
+    // Keyed off the proposal's own references, so supplying resources cannot
+    // regroup the times or break a React key across a refetch.
+    expect(day.groups[0].key).toBe(groupAppointmentsByDay([appointment], EASTERN)[0].groups[0].key);
+  });
+});
+
+describe('getAppointmentActors', () => {
+  test('Swaps in each actor resource the caller had already read', () => {
+    const appointment = buildProposedAppointment({
+      start: '2026-07-27T13:00:00.000Z',
+      actorReferences: [{ reference: 'Practitioner/dr-rivera', display: 'Maya Rivera' }],
+    });
+
+    // The resource wins over the name `$find` copied off the Schedule.
+    expect(getAppointmentActors(appointment, RESOURCES)).toStrictEqual([DrRiveraPractitioner]);
+  });
+
+  test('Leaves an actor it was given no resource for as the proposal named it', () => {
+    const actor = { reference: 'Device/ultrasound-1', display: 'Ultrasound 1' };
+    const appointment = buildProposedAppointment({ start: '2026-07-27T13:00:00.000Z', actorReferences: [actor] });
+
+    expect(getAppointmentActors(appointment, RESOURCES)).toStrictEqual([actor]);
+    expect(getAppointmentActors(appointment)).toStrictEqual([actor]);
+  });
+
+  test('Reads nothing off nothing', () => {
+    expect(getAppointmentActors(undefined, RESOURCES)).toStrictEqual([]);
   });
 });
 
@@ -235,34 +275,6 @@ describe('enumerateDateRange', () => {
   test('Stops at the limit rather than running a year out', () => {
     const days = enumerateDateRange({ start: new Date(2026, 6, 1), end: new Date(2027, 6, 1) }, 5);
     expect(days).toHaveLength(5);
-  });
-});
-
-describe('formatDateRange', () => {
-  test('Says which days are being searched', () => {
-    expect(formatDateRange({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 27) })).toBe('Monday, July 27');
-    expect(formatDateRange({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 30) })).toBe(
-      'Monday, July 27 – Thursday, July 30'
-    );
-    expect(formatDateRange({ start: new Date(2026, 6, 27) })).toBe('From Monday, July 27');
-    expect(formatDateRange({ end: new Date(2026, 6, 30) })).toBe('Through Thursday, July 30');
-  });
-
-  test('Says nothing when neither end was asked for', () => {
-    expect(formatDateRange({})).toBeUndefined();
-  });
-
-  test('Names the days however the caller asks them to be named', () => {
-    expect(formatDateRange({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 30) }, formatDayLabel)).toBe(
-      'July 27 – July 30'
-    );
-    expect(formatDateRange({ start: new Date(2026, 6, 27) }, formatDayLabel)).toBe('From July 27');
-  });
-});
-
-describe('formatDayLabel', () => {
-  test('Names a day without its weekday', () => {
-    expect(formatDayLabel(new Date(2026, 6, 27))).toBe('July 27');
   });
 });
 

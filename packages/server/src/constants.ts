@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { Project } from '@medplum/fhirtypes';
+import type { Project, UserSecurityRequest } from '@medplum/fhirtypes';
 
 /**
  * The hardcoded ID for the base FHIR R4 Project.
@@ -35,6 +35,19 @@ export const WEBSOCKET_SUB_PUBLISH_CHANNEL = 'medplum:subscriptions:r4:websocket
  * How long a single-use email MFA code remains valid before it expires, in milliseconds.
  */
 export const EMAIL_MFA_CODE_EXPIRATION_MS = 20 * 60 * 1000; // 20 minutes
+
+/**
+ * How long a UserSecurityRequest remains valid before it expires, in milliseconds, by request type.
+ *
+ * Password reset links get a short window because they hand over control of the account.
+ * Invite and email verification links are mailed to people who may not act on them right away,
+ * so they get a longer one.
+ */
+export const USER_SECURITY_REQUEST_EXPIRATION_MS: Record<NonNullable<UserSecurityRequest['type']>, number> = {
+  reset: 60 * 60 * 1000, // 1 hour
+  invite: 7 * 24 * 60 * 60 * 1000, // 7 days
+  'verify-email': 7 * 24 * 60 * 60 * 1000, // 7 days
+};
 
 /**
  * Minimum accepted password length, in bytes.
