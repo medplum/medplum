@@ -449,13 +449,26 @@ test('Format Observation value', () => {
       resourceType: 'Observation',
       valueString: '&lt;OBX.5.1&gt;&gt;=32&lt;/OBX.5.1&gt;&lt;OBX.5.1&gt;R&lt;/OBX.5.1&gt;',
     } as Observation)
-  ).toBe('>=32 / R');
+  ).toBe('>=32 (Resistant)');
   expect(
     formatObservationValue({
       resourceType: 'Observation',
       valueString: '<OBX.5.1><1</OBX.5.1><OBX.5.1>S</OBX.5.1>',
     } as Observation)
-  ).toBe('<1 / S');
+  ).toBe('<1 (Susceptible)');
+  expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueString: '<OBX.5.1>4</OBX.5.1><OBX.5.1>I</OBX.5.1>',
+    } as Observation)
+  ).toBe('4 (Intermediate)');
+  expect(
+    // Unrecognized second value: falls back to joining both, same as before.
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueString: '<OBX.5.1>4</OBX.5.1><OBX.5.1>Q</OBX.5.1>',
+    } as Observation)
+  ).toBe('4 / Q');
   expect(
     formatObservationValue({ resourceType: 'Observation', valueCodeableConcept: { text: 'foo' } } as Observation)
   ).toBe('foo');
