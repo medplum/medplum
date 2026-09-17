@@ -1,12 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Coding, Extension, HealthcareService, Practitioner, Schedule } from '@medplum/fhirtypes';
-import type { SchedulingParameterValues } from './scheduling';
+import type {
+  HealthcareServiceSchedulingParameterExtension,
+  HealthcareServiceSchedulingParameterUrl,
+  SchedulingParameterExtension,
+  SchedulingParameterValues,
+} from './scheduling';
 import {
-  clearSchedulingParameter,
+  clearHealthcareServiceSchedulingParameter,
+  clearScheduleSchedulingParameter,
   extractServiceTypeReferences,
-  getSchedulingParameters,
-  getSchedulingParameterValues,
+  getHealthcareServiceSchedulingParameters,
+  getHealthcareServiceSchedulingParameterValues,
+  getScheduleSchedulingParameters,
+  getScheduleSchedulingParameterValues,
   getSchedulingRequirements,
   getSchedulingTimezone,
   hasSchedulingParameters,
@@ -18,8 +26,10 @@ import {
   schedulingDurationToMinutes,
   SchedulingParametersURI,
   serviceTypeIncludesService,
-  setSchedulingParameter,
-  setSchedulingParameterValues,
+  setHealthcareServiceSchedulingParameter,
+  setHealthcareServiceSchedulingParameterValues,
+  setScheduleSchedulingParameter,
+  setScheduleSchedulingParameterValues,
   TimezoneExtensionURI,
   toServiceTypeCodeableConcepts,
 } from './scheduling';
@@ -93,33 +103,33 @@ function hasAvailability(schedule: Schedule, serviceId = 'service-1'): boolean {
 describe('schedule parameters', () => {
   // A single `value[x]` parameter, which is the shape these functions are for. `availability` nests instead,
   // and is reached through the typed wrapper in `@medplum/react-scheduling`.
-  const bufferBefore: Extension = { url: 'bufferBefore', valueDuration: { value: 10, unit: 'min' } };
+  const bufferBefore: SchedulingParameterExtension = { url: 'bufferBefore', valueDuration: { value: 10, unit: 'min' } };
 
   test('sets, reads, and clears a parameter with no wrapper of its own', () => {
     const schedule = scheduleWith(availableTime('mon', '09:00:00', '17:00:00'));
     const before = structuredClone(schedule);
 
-    const updated = setSchedulingParameter(schedule, service, bufferBefore);
+    const updated = setScheduleSchedulingParameter(schedule, service, bufferBefore);
     expect(schedule).toEqual(before);
-    expect(getSchedulingParameters(updated, service, 'bufferBefore')).toEqual([bufferBefore]);
+    expect(getScheduleSchedulingParameters(updated, service, 'bufferBefore')).toEqual([bufferBefore]);
     // Setting one parameter leaves the others in place, availability included.
     expect(durationOf(updated)).toEqual({ value: 30, unit: 'min' });
     expect(hasAvailability(updated)).toBe(true);
 
-    const cleared = clearSchedulingParameter(updated, service, 'bufferBefore');
-    expect(getSchedulingParameters(cleared, service, 'bufferBefore')).toEqual([]);
+    const cleared = clearScheduleSchedulingParameter(updated, service, 'bufferBefore');
+    expect(getScheduleSchedulingParameters(cleared, service, 'bufferBefore')).toEqual([]);
     expect(hasAvailability(cleared)).toBe(true);
   });
 
   test('replaces a parameter rather than appending a second one', () => {
-    const schedule = setSchedulingParameter(scheduleWith(), service, bufferBefore);
+    const schedule = setScheduleSchedulingParameter(scheduleWith(), service, bufferBefore);
 
-    const updated = setSchedulingParameter(schedule, service, {
+    const updated = setScheduleSchedulingParameter(schedule, service, {
       url: 'bufferBefore',
       valueDuration: { value: 20, unit: 'min' },
     });
 
-    expect(getSchedulingParameters(updated, service, 'bufferBefore')).toEqual([
+    expect(getScheduleSchedulingParameters(updated, service, 'bufferBefore')).toEqual([
       { url: 'bufferBefore', valueDuration: { value: 20, unit: 'min' } },
     ]);
   });
@@ -131,12 +141,12 @@ describe('schedule parameters', () => {
       extension: [{ url: 'service', valueReference: { reference: 'HealthcareService/service-1' } }, bufferBefore],
     });
 
-    const updated = setSchedulingParameter(schedule, service, {
+    const updated = setScheduleSchedulingParameter(schedule, service, {
       url: 'bufferBefore',
       valueDuration: { value: 20, unit: 'min' },
     });
 
-    expect(getSchedulingParameters(updated, service, 'bufferBefore')).toEqual([
+    expect(getScheduleSchedulingParameters(updated, service, 'bufferBefore')).toEqual([
       { url: 'bufferBefore', valueDuration: { value: 20, unit: 'min' } },
     ]);
   });
@@ -153,13 +163,13 @@ describe('schedule parameters', () => {
     );
 
     // Asked through the module rather than the local reader, since tolerating the suffix is the point.
-    expect(getSchedulingParameters(schedule, service, 'availability')).toHaveLength(1);
+    expect(getScheduleSchedulingParameters(schedule, service, 'availability')).toHaveLength(1);
 
-    const updated = setSchedulingParameter(schedule, service, bufferBefore);
+    const updated = setScheduleSchedulingParameter(schedule, service, bufferBefore);
     expect(schedulingParameters(updated, 'service-1/_history/2')).toHaveLength(1);
     expect(schedule.extension).toHaveLength(1);
     expect(updated.extension).toHaveLength(1);
-    expect(getSchedulingParameters(updated, service, 'bufferBefore')).toEqual([bufferBefore]);
+    expect(getScheduleSchedulingParameters(updated, service, 'bufferBefore')).toEqual([bufferBefore]);
   });
 
   test('creates service-specific SchedulingParameters when missing', () => {
@@ -168,13 +178,13 @@ describe('schedule parameters', () => {
       actor: [{ reference: 'Practitioner/123' }],
     };
 
-    const updated = setSchedulingParameter(schedule, service, bufferBefore);
+    const updated = setScheduleSchedulingParameter(schedule, service, bufferBefore);
     expect(schedulingParameters(updated)).toHaveLength(1);
-    expect(getSchedulingParameters(updated, service, 'bufferBefore')).toEqual([bufferBefore]);
+    expect(getScheduleSchedulingParameters(updated, service, 'bufferBefore')).toEqual([bufferBefore]);
   });
 
   test('leaves sibling parameters and the container in place when clearing one', () => {
-    const cleared = clearSchedulingParameter(
+    const cleared = clearScheduleSchedulingParameter(
       scheduleWith(availableTime('mon', '09:00:00', '17:00:00')),
       service,
       'availability'
@@ -193,16 +203,16 @@ describe('schedule parameters', () => {
       extension: [{ url: 'service', valueReference: { reference: 'HealthcareService/service-1' } }, bufferBefore],
     });
 
-    expect(getSchedulingParameters(schedule, service, 'duration')).toEqual([
+    expect(getScheduleSchedulingParameters(schedule, service, 'duration')).toEqual([
       { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
     ]);
-    expect(getSchedulingParameters(schedule, service, 'bufferBefore')).toEqual([bufferBefore]);
+    expect(getScheduleSchedulingParameters(schedule, service, 'bufferBefore')).toEqual([bufferBefore]);
   });
 
   test('reads nothing for a service the Schedule holds no parameters for', () => {
     const otherService = { ...service, id: 'service-2' } satisfies WithId<HealthcareService>;
 
-    expect(getSchedulingParameters(scheduleWith(), otherService, 'duration')).toEqual([]);
+    expect(getScheduleSchedulingParameters(scheduleWith(), otherService, 'duration')).toEqual([]);
   });
 });
 
@@ -375,31 +385,37 @@ describe('service parameters', () => {
   // Typed wider than the shared fixture, whose `satisfies` narrows it to a literal without `extension`.
   const visitType: WithId<HealthcareService> = service;
 
-  const bufferBefore: Extension = { url: 'bufferBefore', valueDuration: { value: 10, unit: 'min' } };
-  const duration: Extension = { url: 'duration', valueDuration: { value: 30, unit: 'min' } };
+  const bufferBefore: HealthcareServiceSchedulingParameterExtension = {
+    url: 'bufferBefore',
+    valueDuration: { value: 10, unit: 'min' },
+  };
+  const duration: HealthcareServiceSchedulingParameterExtension = {
+    url: 'duration',
+    valueDuration: { value: 30, unit: 'min' },
+  };
 
   test('sets, reads, and clears a parameter on a visitType with no extensions at all', () => {
     const before = structuredClone(visitType);
 
-    const updated = setSchedulingParameter(visitType, bufferBefore);
+    const updated = setHealthcareServiceSchedulingParameter(visitType, bufferBefore);
     expect(visitType).toEqual(before);
-    expect(getSchedulingParameters(updated, 'bufferBefore')).toEqual([bufferBefore]);
+    expect(getHealthcareServiceSchedulingParameters(updated, 'bufferBefore')).toEqual([bufferBefore]);
     // The container carries no `service` reference: a service's parameters are about itself.
     expect(updated.extension).toEqual([{ url: SchedulingParametersURI, extension: [bufferBefore] }]);
 
-    const cleared = clearSchedulingParameter(updated, 'bufferBefore');
-    expect(getSchedulingParameters(cleared, 'bufferBefore')).toEqual([]);
+    const cleared = clearHealthcareServiceSchedulingParameter(updated, 'bufferBefore');
+    expect(getHealthcareServiceSchedulingParameters(cleared, 'bufferBefore')).toEqual([]);
   });
 
   test('replaces a parameter rather than appending a second one', () => {
-    const configured = setSchedulingParameter(visitType, bufferBefore);
+    const configured = setHealthcareServiceSchedulingParameter(visitType, bufferBefore);
 
-    const updated = setSchedulingParameter(configured, {
+    const updated = setHealthcareServiceSchedulingParameter(configured, {
       url: 'bufferBefore',
       valueDuration: { value: 20, unit: 'min' },
     });
 
-    expect(getSchedulingParameters(updated, 'bufferBefore')).toEqual([
+    expect(getHealthcareServiceSchedulingParameters(updated, 'bufferBefore')).toEqual([
       { url: 'bufferBefore', valueDuration: { value: 20, unit: 'min' } },
     ]);
   });
@@ -413,9 +429,9 @@ describe('service parameters', () => {
       ],
     };
 
-    const updated = setSchedulingParameter(configured, bufferBefore);
+    const updated = setHealthcareServiceSchedulingParameter(configured, bufferBefore);
 
-    expect(getSchedulingParameters(updated, 'duration')).toEqual([duration]);
+    expect(getHealthcareServiceSchedulingParameters(updated, 'duration')).toEqual([duration]);
     expect(updated.extension?.[0]).toEqual({ url: 'https://example.com/unrelated', valueString: 'kept' });
   });
 
@@ -431,20 +447,20 @@ describe('service parameters', () => {
       ],
     };
 
-    const updated = setSchedulingParameter(configured, {
+    const updated = setHealthcareServiceSchedulingParameter(configured, {
       url: 'bufferBefore',
       valueDuration: { value: 20, unit: 'min' },
     });
 
-    expect(getSchedulingParameters(updated, 'bufferBefore')).toEqual([
+    expect(getHealthcareServiceSchedulingParameters(updated, 'bufferBefore')).toEqual([
       { url: 'bufferBefore', valueDuration: { value: 20, unit: 'min' } },
     ]);
   });
 
   test('drops a parameters extension left holding nothing, and the extension array with it', () => {
-    const configured = setSchedulingParameter(visitType, bufferBefore);
+    const configured = setHealthcareServiceSchedulingParameter(visitType, bufferBefore);
 
-    const cleared = clearSchedulingParameter(configured, 'bufferBefore');
+    const cleared = clearHealthcareServiceSchedulingParameter(configured, 'bufferBefore');
 
     // An empty container would violate ext-1 and leave hasSchedulingParameters reporting it as configured.
     expect(cleared.extension).toBeUndefined();
@@ -452,30 +468,33 @@ describe('service parameters', () => {
   });
 
   test('keeps the parameters extension while other parameters remain', () => {
-    const configured = setSchedulingParameter(setSchedulingParameter(visitType, duration), bufferBefore);
+    const configured = setHealthcareServiceSchedulingParameter(
+      setHealthcareServiceSchedulingParameter(visitType, duration),
+      bufferBefore
+    );
 
-    const cleared = clearSchedulingParameter(configured, 'bufferBefore');
+    const cleared = clearHealthcareServiceSchedulingParameter(configured, 'bufferBefore');
 
-    expect(getSchedulingParameters(cleared, 'duration')).toEqual([duration]);
+    expect(getHealthcareServiceSchedulingParameters(cleared, 'duration')).toEqual([duration]);
     expect(hasSchedulingParameters(cleared)).toBe(true);
   });
 
   test('keeps unrelated extensions when the parameters extension is dropped', () => {
-    const configured = setSchedulingParameter(
+    const configured = setHealthcareServiceSchedulingParameter(
       { ...visitType, extension: [{ url: 'https://example.com/unrelated', valueString: 'kept' }] },
       bufferBefore
     );
 
-    const cleared = clearSchedulingParameter(configured, 'bufferBefore');
+    const cleared = clearHealthcareServiceSchedulingParameter(configured, 'bufferBefore');
 
     expect(cleared.extension).toEqual([{ url: 'https://example.com/unrelated', valueString: 'kept' }]);
   });
 
   test('clearing a parameter that was never set is a no-op', () => {
-    const configured = setSchedulingParameter(visitType, duration);
+    const configured = setHealthcareServiceSchedulingParameter(visitType, duration);
 
-    expect(clearSchedulingParameter(configured, 'bufferBefore')).toEqual(configured);
-    expect(clearSchedulingParameter(visitType, 'bufferBefore')).toEqual(visitType);
+    expect(clearHealthcareServiceSchedulingParameter(configured, 'bufferBefore')).toEqual(configured);
+    expect(clearHealthcareServiceSchedulingParameter(visitType, 'bufferBefore')).toEqual(visitType);
   });
 
   test('reads every copy of a parameter that repeats', () => {
@@ -484,8 +503,8 @@ describe('service parameters', () => {
       extension: [{ url: SchedulingParametersURI, extension: [duration, bufferBefore] }],
     };
 
-    expect(getSchedulingParameters(configured, 'duration')).toEqual([duration]);
-    expect(getSchedulingParameters(configured, 'missing')).toEqual([]);
+    expect(getHealthcareServiceSchedulingParameters(configured, 'duration')).toEqual([duration]);
+    expect(getHealthcareServiceSchedulingParameters(configured, 'bufferAfter')).toEqual([]);
   });
 });
 
@@ -521,7 +540,7 @@ describe('flat scheduling parameters', () => {
     empty: () => T,
     read: (resource: T) => SchedulingParameterValues,
     write: (resource: T, values: SchedulingParameterValues) => T,
-    parameters: (resource: T, url: string) => Extension[]
+    parameters: (resource: T, url: HealthcareServiceSchedulingParameterUrl) => Extension[]
   ): void {
     describe(`on a ${name}`, () => {
       test('round trips every parameter', () => {
@@ -643,32 +662,33 @@ describe('flat scheduling parameters', () => {
   describeLevel(
     'service',
     () => visitType,
-    (resource) => getSchedulingParameterValues(resource),
-    (resource, values) => setSchedulingParameterValues(resource, values),
-    (resource, url) => getSchedulingParameters(resource, url)
+    (resource) => getHealthcareServiceSchedulingParameterValues(resource),
+    (resource, values) => setHealthcareServiceSchedulingParameterValues(resource, values),
+    (resource, url) => getHealthcareServiceSchedulingParameters(resource, url)
   );
 
   describeLevel(
     'schedule',
     (): Schedule => ({ resourceType: 'Schedule', id: 'schedule-1', actor: [{ reference: 'Practitioner/123' }] }),
-    (resource) => getSchedulingParameterValues(resource, visitType),
-    (resource, values) => setSchedulingParameterValues(resource, visitType, values),
-    (resource, url) => getSchedulingParameters(resource, visitType, url)
+    (resource) => getScheduleSchedulingParameterValues(resource, visitType),
+    (resource, values) => setScheduleSchedulingParameterValues(resource, visitType, values),
+    (resource, url) => getScheduleSchedulingParameters(resource, visitType, url)
   );
 
   test('clearing every parameter on a service drops the container', () => {
-    const written = setSchedulingParameterValues(visitType, allValues);
+    const written = setHealthcareServiceSchedulingParameterValues(visitType, allValues);
 
-    const cleared = setSchedulingParameterValues(written, {});
+    const cleared = setHealthcareServiceSchedulingParameterValues(written, {});
 
     expect(cleared.extension).toBeUndefined();
     expect(hasSchedulingParameters(cleared)).toBe(false);
   });
 
   test('a service write never emits the service reference scheduling rejects on it', () => {
-    const written = setSchedulingParameterValues(visitType, allValues);
+    const written = setHealthcareServiceSchedulingParameterValues(visitType, allValues);
 
-    expect(getSchedulingParameters(written, 'service')).toEqual([]);
+    const container = written.extension?.find((extension) => extension.url === SchedulingParametersURI);
+    expect(container?.extension?.some((subextension) => subextension.url === 'service')).toBe(false);
   });
 
   test('a schedule write keeps the service reference naming what it configures', () => {
@@ -678,23 +698,23 @@ describe('flat scheduling parameters', () => {
       actor: [{ reference: 'Practitioner/123' }],
     };
 
-    const written = setSchedulingParameterValues(schedule, visitType, allValues);
+    const written = setScheduleSchedulingParameterValues(schedule, visitType, allValues);
 
     expect(schedulingParameters(written)).toHaveLength(1);
-    expect(getSchedulingParameterValues(written, visitType).duration).toBe(30);
+    expect(getScheduleSchedulingParameterValues(written, visitType).duration).toBe(30);
   });
 
   test('a schedule write leaves another service on the same calendar untouched', () => {
     const other: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'service-2', name: 'Follow up' };
-    const schedule = setSchedulingParameterValues(
+    const schedule = setScheduleSchedulingParameterValues(
       { resourceType: 'Schedule', id: 'schedule-1', actor: [{ reference: 'Practitioner/123' }] },
       other,
       { duration: 15, bufferBefore: 2 }
     );
 
-    const written = setSchedulingParameterValues(schedule, visitType, allValues);
+    const written = setScheduleSchedulingParameterValues(schedule, visitType, allValues);
 
-    expect(getSchedulingParameterValues(written, other)).toMatchObject({ duration: 15, bufferBefore: 2 });
-    expect(getSchedulingParameterValues(written, visitType).duration).toBe(30);
+    expect(getScheduleSchedulingParameterValues(written, other)).toMatchObject({ duration: 15, bufferBefore: 2 });
+    expect(getScheduleSchedulingParameterValues(written, visitType).duration).toBe(30);
   });
 });
