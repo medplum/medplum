@@ -1029,7 +1029,7 @@ export class Repository extends FhirRepository implements Disposable {
       lastUpdated: this.getLastUpdated(existing, validatedResource),
       author: this.getAuthor(),
       onBehalfOf: this.context.onBehalfOf,
-      deleted: undefined, // Tombstones are written elsewhere; clients cannot set this.
+      deleted: undefined,
     };
 
     const result = { ...updated, meta: resultMeta };
@@ -2352,7 +2352,7 @@ export class Repository extends FhirRepository implements Disposable {
     });
 
     if (isSystem && (isReadOnlyAction(subtype) || resourceType === 'AuditEvent')) {
-      // Don't log system reads or ordinary AuditEvent interactions
+      // Don't log system read or audit events
       return;
     }
     let outcomeDesc: string | undefined = undefined;
@@ -2382,7 +2382,7 @@ export class Repository extends FhirRepository implements Disposable {
     );
     logAuditEvent(auditEvent);
 
-    if (getConfig().saveAuditEvents && isResource(resource) && resource.resourceType !== 'AuditEvent') {
+    if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
       // Clone the repository to obtain a separate RepositoryConnection for two reasons:
       // 1. the un-awaited save must outlive the current repo's connection scope, which is marked 'ended'

@@ -16,6 +16,7 @@ import {
   waitForAsyncJob,
   withTestContext,
 } from '../../test.setup';
+import { isExpungedHistoryVersion } from '../repository/row-builder';
 import { getTestProjectSystemRepo } from '../repository/test-utils';
 import { SelectQuery } from '../sql';
 import { Expunger } from './expunge';
@@ -68,9 +69,7 @@ describe('Expunge', () => {
       .send({});
     expect(res).toHaveStatus(200);
 
-    expect(await existsInDatabase('Patient', patient.id)).toBe(false);
-    expect(await existsInDatabase('Patient_History', patient.id)).toBe(true);
-    // Also expect lookup table to be cleaned up
+    await expectExpungeTombstone('Patient', patient.id);
     expect(await existsInLookupTable('HumanName', patient.id)).toBe(false);
   });
 
@@ -145,17 +144,17 @@ describe('Expunge', () => {
       const mainResourcesExists = opts.project === 'linked';
       const linkedResourcesExist = opts.project === 'main';
 
-      expect(await existsInDatabase('Patient', patient.id)).toBe(mainResourcesExists);
-      expect(await existsInDatabase('Observation', obs.id)).toBe(mainResourcesExists);
-      expect(await existsInDatabase('Project', project.id)).toBe(mainResourcesExists);
-      expect(await existsInDatabase('ClientApplication', client.id)).toBe(mainResourcesExists);
-      expect(await existsInDatabase('ProjectMembership', membership.id)).toBe(mainResourcesExists);
+      await expectExpungeOutcome('Patient', patient.id, mainResourcesExists);
+      await expectExpungeOutcome('Observation', obs.id, mainResourcesExists);
+      await expectExpungeOutcome('Project', project.id, mainResourcesExists);
+      await expectExpungeOutcome('ClientApplication', client.id, mainResourcesExists);
+      await expectExpungeOutcome('ProjectMembership', membership.id, mainResourcesExists);
 
-      expect(await existsInDatabase('Patient', linkedPatient.id)).toBe(linkedResourcesExist);
-      expect(await existsInDatabase('Observation', linkedObs.id)).toBe(linkedResourcesExist);
-      expect(await existsInDatabase('Project', linkedProject.id)).toBe(linkedResourcesExist);
-      expect(await existsInDatabase('ClientApplication', linkedClient.id)).toBe(linkedResourcesExist);
-      expect(await existsInDatabase('ProjectMembership', linkedMembership.id)).toBe(linkedResourcesExist);
+      await expectExpungeOutcome('Patient', linkedPatient.id, linkedResourcesExist);
+      await expectExpungeOutcome('Observation', linkedObs.id, linkedResourcesExist);
+      await expectExpungeOutcome('Project', linkedProject.id, linkedResourcesExist);
+      await expectExpungeOutcome('ClientApplication', linkedClient.id, linkedResourcesExist);
+      await expectExpungeOutcome('ProjectMembership', linkedMembership.id, linkedResourcesExist);
     } else {
       expect(res).toHaveStatus(403);
     }
@@ -196,9 +195,8 @@ describe('Expunge', () => {
     // must skip the ones a project admin cannot search rather than erroring out.
     expect(asyncJob.status).toBe('completed');
 
-    // Both the patient and its compartment resources should be expunged
-    expect(await existsInDatabase('Patient', patient.id)).toBe(false);
-    expect(await existsInDatabase('Observation', obs.id)).toBe(false);
+    await expectExpungeTombstone('Patient', patient.id);
+    await expectExpungeTombstone('Observation', obs.id);
   });
 
   test('Project admin cannot expunge patient everything in another project', async () => {
@@ -276,27 +274,14 @@ describe('Expunge', () => {
 
     //result
 
-    expect(await existsInDatabase('Project', project.id)).toBe(false);
-    expect(await existsInDatabase('Project_History', project.id)).toBe(true);
-
-    expect(await existsInDatabase('ClientApplication', client.id)).toBe(false);
-    expect(await existsInDatabase('ClientApplication_History', client.id)).toBe(true);
-
-    expect(await existsInDatabase('ProjectMembership', membership.id)).toBe(false);
-    expect(await existsInDatabase('ProjectMembership_History', membership.id)).toBe(true);
-
-    expect(await existsInDatabase('Patient', patient.id)).toBe(false);
-    expect(await existsInDatabase('Patient_History', patient.id)).toBe(true);
-    expect(await existsInDatabase('Patient', patient2.id)).toBe(false);
-    expect(await existsInDatabase('Patient_History', patient2.id)).toBe(true);
-    expect(await existsInDatabase('Patient', patient3.id)).toBe(false);
-    expect(await existsInDatabase('Patient_History', patient3.id)).toBe(true);
-
-    expect(await existsInDatabase('Observation', obs.id)).toBe(false);
-    expect(await existsInDatabase('Observation_History', obs.id)).toBe(true);
-
-    expect(await existsInDatabase('AuditEvent', auditEvent.id)).toBe(false);
-    expect(await existsInDatabase('AuditEvent_History', auditEvent.id)).toBe(true);
+    await expectExpungeTombstone('Project', project.id);
+    await expectExpungeTombstone('ClientApplication', client.id);
+    await expectExpungeTombstone('ProjectMembership', membership.id);
+    await expectExpungeTombstone('Patient', patient.id);
+    await expectExpungeTombstone('Patient', patient2.id);
+    await expectExpungeTombstone('Patient', patient3.id);
+    await expectExpungeTombstone('Observation', obs.id);
+    await expectExpungeTombstone('AuditEvent', auditEvent.id);
 
     expect(await existsInCache('Project', project.id)).toBe(false);
     expect(await existsInCache('ClientApplication', client.id)).toBe(false);
@@ -323,9 +308,8 @@ describe('Expunge', () => {
 
     await new Expunger(repo, project.id, 2).expunge();
 
-    expect(await existsInDatabase('Patient', patient.id)).toBe(false);
-    expect(await existsInDatabase('AuditEvent', auditEvent.id)).toBe(false);
-    expect(await existsInDatabase('AuditEvent_History', auditEvent.id)).toBe(true);
+    await expectExpungeTombstone('Patient', patient.id);
+    await expectExpungeTombstone('AuditEvent', auditEvent.id);
   });
 });
 
@@ -348,4 +332,32 @@ async function existsInLookupTable(tableName: string, id: string | undefined): P
     .where('resourceId', '=', id)
     .execute(getDatabasePool(DatabaseMode.READER));
   return rows.length > 0;
+}
+
+async function expectExpungeTombstone(resourceType: string, id: string | undefined): Promise<void> {
+  expect(await existsInDatabase(resourceType, id)).toBe(false);
+
+  const rows = await new SelectQuery(resourceType + '_History')
+    .column('content')
+    .where('id', '=', id)
+    .execute(getDatabasePool(DatabaseMode.READER));
+
+  expect(rows).toHaveLength(1);
+  const tombstone = JSON.parse(rows[0].content);
+  expect(isExpungedHistoryVersion(tombstone)).toBe(true);
+  expect(tombstone).toMatchObject({ resourceType, id });
+  expect(tombstone.meta.deleted).toBeUndefined();
+  expect(Object.keys(tombstone).sort()).toEqual(['id', 'meta', 'resourceType']);
+}
+
+async function expectExpungeOutcome(
+  resourceType: string,
+  id: string | undefined,
+  stillPresent: boolean
+): Promise<void> {
+  if (stillPresent) {
+    expect(await existsInDatabase(resourceType, id)).toBe(true);
+  } else {
+    await expectExpungeTombstone(resourceType, id);
+  }
 }
