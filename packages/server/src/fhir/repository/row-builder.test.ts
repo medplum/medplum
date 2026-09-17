@@ -456,9 +456,7 @@ describe('compareColumnValues', () => {
     const author = { reference: 'Practitioner/author' };
     const projectId = randomUUID();
 
-    const tombstone = JSON.parse(
-      buildExpungedHistoryContent('Patient', id, versionId, lastUpdated, author, projectId)
-    );
+    const tombstone = JSON.parse(buildExpungedHistoryContent('Patient', id, versionId, lastUpdated, author, projectId));
 
     expect(tombstone).toStrictEqual({
       resourceType: 'Patient',
