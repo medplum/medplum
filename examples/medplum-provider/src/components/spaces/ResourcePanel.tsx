@@ -41,11 +41,7 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
       case 'Patient':
         return (
           <>
-            <PatientSummary
-              patient={displayResource}
-              sections={sections}
-              headerMenuItems={headerMenuItems}
-            />
+            <PatientSummary patient={displayResource} sections={sections} headerMenuItems={headerMenuItems} />
             {actionsModals}
           </>
         );
@@ -63,7 +59,12 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
   };
 
   return (
-    <Box p="md" mih="100%" bg="light-dark(var(--mantine-color-white), var(--mantine-color-body))" data-testid="resource-panel">
+    <Box
+      p="md"
+      mih="100%"
+      bg="light-dark(var(--mantine-color-white), var(--mantine-color-body))"
+      data-testid="resource-panel"
+    >
       {renderResourceContent()}
     </Box>
   );

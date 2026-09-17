@@ -33,13 +33,7 @@ export interface PatientSummaryProps {
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
-  const {
-    patient: propsPatient,
-    onClickResource,
-    onRequestLabs,
-    headerMenuItems,
-    linkToPatient = true,
-  } = props;
+  const { patient: propsPatient, onClickResource, onRequestLabs, headerMenuItems, linkToPatient = true } = props;
   const [patientOutcome, setPatientOutcome] = useState<OperationOutcome | undefined>();
   const patient = useResource(propsPatient, setPatientOutcome);
   const [createdDate, setCreatedDate] = useState<string | undefined>();

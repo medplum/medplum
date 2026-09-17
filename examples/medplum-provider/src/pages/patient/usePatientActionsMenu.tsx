@@ -32,9 +32,7 @@ export function usePatientActionsMenu(patientArg: Patient | Reference<Patient> |
     </Menu.Item>
   );
 
-  const actionsModals = patient ? (
-    <SmartHealthLinkImportModal opened={shlOpened} onClose={shlHandlers.close} />
-  ) : null;
+  const actionsModals = patient ? <SmartHealthLinkImportModal opened={shlOpened} onClose={shlHandlers.close} /> : null;
 
   return { headerMenuItems, actionsModals };
 }

@@ -155,7 +155,10 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
               </ScrollArea>
             )}
             {activeTab === 'patient-summary' && selectedPatient?.resourceType === 'Patient' && (
-              <ScrollArea h="calc(100vh - 120px)" bg="light-dark(var(--mantine-color-white), var(--mantine-color-body))">
+              <ScrollArea
+                h="calc(100vh - 120px)"
+                bg="light-dark(var(--mantine-color-white), var(--mantine-color-body))"
+              >
                 <PatientSummary
                   patient={selectedPatient}
                   sections={getDefaultSections().map((s) =>
