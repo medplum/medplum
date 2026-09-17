@@ -70,8 +70,25 @@ function details(): HTMLElement | null {
   return screen.queryByRole('region', { name: 'Appointment details' });
 }
 
+/**
+ * The button on the details that turns the pane over to the cancellation page.
+ * @returns The button, or null while the pane offers no cancellation.
+ */
 function cancelButton(): HTMLElement | null {
   return screen.queryByRole('button', { name: 'Cancel Appointment' });
+}
+
+/**
+ * The button on the cancellation page that posts `$cancel`.
+ * @returns The button, or null while that page is not open.
+ */
+function confirmButton(): HTMLElement | null {
+  return screen.queryByRole('button', { name: 'Cancel Appointment' });
+}
+
+/** Opens the cancellation page, which is the only place a reason can be chosen. */
+async function openCancellation(): Promise<void> {
+  await userEvent.click(cancelButton() as HTMLElement);
 }
 
 /**
@@ -121,8 +138,9 @@ describe('SchedulingWorkspace appointment details', () => {
     renderWithMedplum(<SchedulingWorkspace />, medplum);
 
     await clickAppointment();
+    await openCancellation();
     await chooseReason();
-    await userEvent.click(cancelButton() as HTMLElement);
+    await userEvent.click(confirmButton() as HTMLElement);
 
     await waitFor(async () => {
       const stored = await medplum.readResource('Appointment', APPOINTMENT.id);
@@ -152,12 +170,14 @@ describe('SchedulingWorkspace appointment details', () => {
     await clickAppointment();
     expect(container.querySelector('.appointment.booked')).toBeInTheDocument();
 
+    await openCancellation();
     await chooseReason();
-    await userEvent.click(cancelButton() as HTMLElement);
+    await userEvent.click(confirmButton() as HTMLElement);
 
-    // The details stay open on what is now a cancelled visit, with nothing left to press.
+    // The pane lands back on the details, describing what is now a cancelled visit with
+    // nothing left to press.
     await waitFor(() => expect(within(details() as HTMLElement).getByText('cancelled')).toBeInTheDocument());
-    expect(cancelButton()).not.toBeInTheDocument();
+    expect(cancelButton()).toHaveAttribute('disabled');
     expect(within(details() as HTMLElement).getByText('This appointment is cancelled.')).toBeInTheDocument();
 
     // And the grid is drawn again from the same announcement, without re-fetching.
@@ -170,19 +190,21 @@ describe('SchedulingWorkspace appointment details', () => {
     renderWithMedplum(<SchedulingWorkspace />, medplum);
 
     await clickAppointment();
+    await openCancellation();
     await chooseReason();
-    await userEvent.click(cancelButton() as HTMLElement);
+    await userEvent.click(confirmButton() as HTMLElement);
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
 
     await userEvent.click(screen.getByRole('button', { name: 'Close appointment details' }));
     await waitFor(() => expect(details()).not.toBeInTheDocument());
     await clickAppointment();
+    await openCancellation();
 
-    // Closed is unmounted, so what the details say now is only about the appointment
-    // being opened — and the reason chosen for the cancellation that failed is gone with
-    // it, leaving nothing to cancel against.
+    // Closed is unmounted, so what the pane says now is only about the appointment being
+    // opened — and the reason chosen for the cancellation that failed is gone with it,
+    // leaving nothing to cancel against.
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(cancelButton()).toBeDisabled();
+    expect(confirmButton()).toBeDisabled();
   });
 
   test('cancellation reasons come from the default binding', async () => {
@@ -190,6 +212,7 @@ describe('SchedulingWorkspace appointment details', () => {
     renderWithMedplum(<SchedulingWorkspace />, medplum);
 
     await clickAppointment();
+    await openCancellation();
     await chooseReason();
 
     expect(expand).toHaveBeenCalledWith(
@@ -206,6 +229,7 @@ describe('SchedulingWorkspace appointment details', () => {
     );
 
     await clickAppointment();
+    await openCancellation();
     await userEvent.type(screen.getByPlaceholderText('Search reasons'), 'Ran');
 
     await waitFor(() =>

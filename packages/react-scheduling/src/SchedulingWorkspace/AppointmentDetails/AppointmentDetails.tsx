@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Badge, Button, Divider, Stack, Text } from '@mantine/core';
+import { Alert, Badge, Button, Divider, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { formatCodeableConcept, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
 import type { Appointment, AppointmentParticipant, CodeableConcept, Parameters, Reference } from '@medplum/fhirtypes';
@@ -10,6 +10,7 @@ import type { JSX, ReactNode } from 'react';
 import { Fragment, useCallback, useState } from 'react';
 import { formatDayHeading, formatZonedTime } from '../../AppointmentFinder/AppointmentFinder.times';
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
+import classes from './AppointmentDetails.module.css';
 
 /** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
 const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
@@ -34,29 +35,9 @@ export interface AppointmentDetailsProps {
   readonly cancellationReasonValueSet?: string;
 }
 
-/**
- * Shows a detail view of a single appointment
- *
- * Cancelling posts `Appointment/:id/$cancel`, which sets the appointment status
- * and releases every time it was holding, then announces both so views reading
- * them refresh.
- *
- * A reason has to be chosen before anything can be cancelled. The operation takes one
- * optionally; asking for it while the appointment is in front of whoever is calling it
- * off is the only moment it is known.
- *
- * @param props - The React props
- * @param props.appointment - The Appointment resource to detail
- * @param props.onCancelled - A callback that can be invoked after a successful $cancel
- * @param props.cancellationReasonValueSet - The value set to offer cancellation reasons from,
- * in place of the default binding
- * @returns The details component
- */
-export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element {
+export function AppointmentCancelForm(props: AppointmentDetailsProps): JSX.Element {
   const { appointment, onCancelled, cancellationReasonValueSet } = props;
   const medplum = useMedplum();
-  const patient = getPatientParticipant(appointment)?.actor;
-  const otherActors = getOtherActors(appointment);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<unknown>();
   const [reason, setReason] = useState<CodeableConcept>();
@@ -111,10 +92,94 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   }, [appointment, medplum, onCancelled, reason]);
 
   return (
-    <Stack gap="sm">
+    <>
+      <Title order={5}>Cancel this appointment</Title>
+      {cancelError !== undefined && (
+        <Alert color="red" title="Could not cancel this appointment">
+          {normalizeErrorString(cancelError)}
+        </Alert>
+      )}
+      <CodeableConceptInput
+        name="cancelationReason"
+        path="Appointment.cancelationReason"
+        binding={cancellationReasonValueSet ?? APPOINTMENT_CANCELLATION_REASON_VALUE_SET}
+        label="Cancellation reason"
+        placeholder="Search reasons"
+        maxValues={1}
+        creatable={false}
+        withHelpText={false}
+        required
+        onChange={setReason}
+      />
+      <Button color="red" loading={cancelling} disabled={!reason} onClick={cancel}>
+        Cancel Appointment
+      </Button>
+    </>
+  );
+}
+
+/**
+ * Shows a detail view of a single appointment
+ *
+ * Cancelling posts `Appointment/:id/$cancel`, which sets the appointment status
+ * and releases every time it was holding, then announces both so views reading
+ * them refresh.
+ *
+ * It takes two steps. "Cancel Appointment" turns the view over to a page of its own
+ * naming the visit and asking what it is being called off for, and nothing is posted
+ * until that page is submitted; going back from it leaves the visit untouched. A reason
+ * has to be chosen before anything can be cancelled: the operation takes one optionally,
+ * and the moment someone is calling the visit off is the only moment it is known.
+ *
+ * The cancellation lands back on the details, which then describe a cancelled visit. A
+ * refusal keeps the page open with what was chosen still on it, to try again.
+ *
+ * @param props - The React props
+ * @param props.appointment - The Appointment resource to detail
+ * @param props.onCancelled - A callback that can be invoked after a successful $cancel
+ * @param props.cancellationReasonValueSet - The value set to offer cancellation reasons from,
+ * in place of the default binding
+ * @returns The details component
+ */
+export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element {
+  const { appointment, onCancelled } = props;
+  const patient = getPatientParticipant(appointment)?.actor;
+  const otherActors = getOtherActors(appointment);
+  const [cancelling, setCancelling] = useState(false);
+
+  const patientLine = <Detail label="Patient" value={patient && <ReferenceDisplay link={false} value={patient} />} />;
+  const whenLine = <Detail label="When" value={formatWhen(appointment)} />;
+
+  const innerOnCancelled = useCallback(
+    (appointment: WithId<Appointment>) => {
+      setCancelling(false);
+      return onCancelled?.(appointment);
+    },
+    [setCancelling, onCancelled]
+  );
+
+  if (cancelling) {
+    return (
+      <Stack gap="sm" className={classes.details}>
+        <AppointmentCancelForm {...props} onCancelled={innerOnCancelled} />
+        <Stack gap="sm" className={classes.actions}>
+          <Button onClick={() => setCancelling(false)} variant="outline">
+            Back to Appointment Details
+          </Button>
+        </Stack>
+      </Stack>
+    );
+  }
+
+  const cancelable = CANCELABLE_STATUSES.has(appointment.status);
+
+  // Both pages fill the pane the same way, so what can be done to the visit sits at the
+  // foot of either.
+  return (
+    <Stack gap="sm" className={classes.details}>
       <Badge color={STATUS_COLORS[appointment.status]}>{appointment.status}</Badge>
-      <Detail label="Patient" value={patient && <ReferenceDisplay link={false} value={patient} />} />
-      <Detail label="When" value={formatWhen(appointment)} />
+      {patientLine}
+      {whenLine}
       <Detail label="Service" value={formatService(appointment)} />
       <Detail
         label="With"
@@ -132,36 +197,18 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       <Detail label="Notes" value={appointment.comment ?? appointment.description} />
       <Divider />
       <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
-      {cancelError !== undefined && (
-        <Alert color="red" title="Could not cancel this appointment">
-          {normalizeErrorString(cancelError)}
-        </Alert>
-      )}
-      {CANCELABLE_STATUSES.has(appointment.status) ? (
-        <>
-          <CodeableConceptInput
-            name="cancelationReason"
-            path="Appointment.cancelationReason"
-            binding={cancellationReasonValueSet ?? APPOINTMENT_CANCELLATION_REASON_VALUE_SET}
-            label="Cancellation reason"
-            placeholder="Search reasons"
-            maxValues={1}
-            creatable={false}
-            withHelpText={false}
-            required
-            onChange={setReason}
-          />
-          <Button color="red" variant="light" loading={cancelling} disabled={!reason} onClick={cancel}>
-            Cancel Appointment
-          </Button>
-        </>
-      ) : (
-        <Text size="sm" c="dimmed">
-          {appointment.status === 'cancelled'
-            ? 'This appointment is cancelled.'
-            : `An appointment in '${appointment.status}' status cannot be cancelled.`}
-        </Text>
-      )}
+      <Stack gap="sm" className={classes.actions}>
+        <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
+          Cancel Appointment
+        </Button>
+        {!cancelable && (
+          <Text size="sm" c="dimmed">
+            {appointment.status === 'cancelled'
+              ? 'This appointment is cancelled.'
+              : `An appointment in '${appointment.status}' status cannot be cancelled.`}
+          </Text>
+        )}
+      </Stack>
     </Stack>
   );
 }
