@@ -64,10 +64,10 @@ async function clickAppointment(): Promise<void> {
 
 /**
  * The details, as far as they are open.
- * @returns The dialog they are shown in, or null while they are closed.
+ * @returns The pane they are shown in, or null while they are closed.
  */
 function details(): HTMLElement | null {
-  return screen.queryByRole('dialog');
+  return screen.queryByRole('region', { name: 'Appointment details' });
 }
 
 function cancelButton(): HTMLElement | null {
