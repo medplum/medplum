@@ -230,23 +230,6 @@ export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<Asyn
 }
 
 /**
- * Enqueues a batch for the legacy single-shot worker. Only reachable when a project opts out of
- * re-entrant processing via the `reentrantAsyncBatch` system setting. TODO{v5.2}
- * @deprecated Can be removed in v5.2+ along with {@link execLegacyBatchJob}.
- * @param bundle - The batch bundle to process.
- * @param asyncJob - The AsyncJob tracking this batch.
- * @returns The enqueued job.
- */
-export async function queueLegacyBatchProcessing(
-  bundle: Bundle,
-  asyncJob: WithId<AsyncJob>
-): Promise<Job<BatchJobData>> {
-  const { authState, requestId, traceId } = getAuthenticatedContext();
-  const jobData: LegacyBatchJobData = { asyncJob, bundle, authState, requestId, traceId };
-  return addBatchJobData(jobData);
-}
-
-/**
  * Builds the submitting user's repository for processing batch entries.
  * @param authState - The auth state captured when the batch was submitted.
  * @param userConfig - The user's configuration.
@@ -570,7 +553,7 @@ function countBundleErrors(bundle: Bundle): number {
 }
 
 /**
- * @deprecated Processes legacy jobs. Can be removed in v5.2+
+ * @deprecated Processes legacy jobs. Can be removed in v5.3+
  * @param job - The BullMQ job instance.
  */
 export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<void> {
