@@ -4,7 +4,13 @@ import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Message } from '../types/spaces';
-import { createConversationTopic, loadConversationMessages, loadRecentTopics, saveMessage } from './spacePersistence';
+import {
+  createConversationTopic,
+  loadConversationMessages,
+  loadRecentTopics,
+  saveMessage,
+  touchConversationTopic,
+} from './spacePersistence';
 
 describe('spacePersistence', () => {
   let medplum: MockClient;
@@ -170,6 +176,23 @@ describe('spacePersistence', () => {
       expect(payload.role).toBe('tool');
       expect(payload.tool_call_id).toBe('call-1');
       expect(payload.sequenceNumber).toBe(3);
+    });
+  });
+
+  describe('touchConversationTopic', () => {
+    test('patches the topic sent time so meta.lastUpdated is bumped', async () => {
+      const patchSpy = vi.spyOn(medplum, 'patchResource').mockResolvedValue({
+        resourceType: 'Communication',
+        id: 'topic-1',
+        status: 'in-progress',
+      } as any);
+
+      const result = await touchConversationTopic(medplum, 'topic-1');
+
+      expect(patchSpy).toHaveBeenCalledWith('Communication', 'topic-1', [
+        { op: 'add', path: '/sent', value: expect.any(String) },
+      ]);
+      expect(result.id).toBe('topic-1');
     });
   });
 

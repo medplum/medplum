@@ -4,8 +4,8 @@ import { ActionIcon, Box, Flex, Modal, Stack, Text, Tooltip } from '@mantine/cor
 import type { Filter, SearchRequest, SortRule, WithId } from '@medplum/core';
 import { formatSearchQuery, getReferenceString, Operator, parseSearchRequest } from '@medplum/core';
 import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
-import type { ListWithDetailPaneTab } from '@medplum/react';
-import { ListWithDetailPane, useMedplum } from '@medplum/react';
+import type { ListDetailPaneTab } from '@medplum/react';
+import { ListDetailPane, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -138,7 +138,7 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
     resolveSelected().catch(showErrorNotification);
   }, [selectedId, items, resourceType, medplum]);
 
-  const tabs: ListWithDetailPaneTab[] = useMemo(() => {
+  const tabs: ListDetailPaneTab[] = useMemo(() => {
     const completedQuery = formatSearchQuery(
       addDefaultLabSearchValues(parseSearchRequest(COMPLETED_RESOURCE_TYPE), 'completed')
     );
@@ -191,12 +191,11 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
 
   return (
     <Box w="100%" h="100%">
-      <ListWithDetailPane<LabItem>
+      <ListDetailPane<LabItem>
         items={items}
         loading={loading}
         selectedKey={selectedId}
         selected={selected}
-        refresh={fetchData}
         tabs={tabs}
         activeTab={activeTab}
         headerActions={headerActions}
@@ -221,8 +220,8 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
             />
           )
         }
-        renderDetail={(item, ctx) => (
-          <LabDetailPane item={item} onOrderChange={() => ctx.refresh().catch(showErrorNotification)} />
+        renderDetail={(item) => (
+          <LabDetailPane item={item} onOrderChange={() => fetchData().catch(showErrorNotification)} />
         )}
       />
 
