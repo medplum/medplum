@@ -41,7 +41,7 @@ export interface DeleteHistoryContentOptions {
 }
 
 export const ExpungedHistoryTag = {
-  system: 'https://terminology.hl7.org/CodeSystem/iso-21089-lifecycle',
+  system: 'http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle',
   code: 'destroy',
   display: 'Destroy/Delete Record Lifecycle Event',
 } as const;
