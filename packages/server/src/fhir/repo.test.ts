@@ -30,6 +30,7 @@ import type {
   Practitioner,
   Project,
   ProjectMembership,
+  Reference,
   Questionnaire,
   ResearchDefinition,
   ResourceType,
@@ -1464,19 +1465,20 @@ describe('FHIR Repo', () => {
       return (await systemRepo.sqlRead(query, 'Patient')).length;
     }
 
-    async function expectPatientExpunged(patient: WithId<Patient>): Promise<void> {
+    async function expectPatientExpunged(patient: WithId<Patient>, author: Reference): Promise<void> {
       await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow();
       expect(await countRows('Patient', patient.id)).toStrictEqual(0);
-      const rows = await systemRepo.sqlRead<{ content: string }>(
-        new SelectQuery('Patient_History').column('content').where('id', '=', patient.id),
+      const rows = await systemRepo.sqlRead<{ content: string; versionId: string }>(
+        new SelectQuery('Patient_History').column('content').column('versionId').where('id', '=', patient.id),
         'Patient'
       );
       expect(rows).toHaveLength(1);
-      expect(JSON.parse(rows[0].content)).toMatchObject({
+      const tombstone = JSON.parse(rows[0].content);
+      expect(tombstone).toMatchObject({
         resourceType: 'Patient',
         id: patient.id,
         meta: {
-          author: { reference: 'system' },
+          author,
           tag: [
             {
               system: 'http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle',
@@ -1485,6 +1487,7 @@ describe('FHIR Repo', () => {
           ],
         },
       });
+      expect(tombstone.meta.deleted).toBeUndefined();
     }
 
     async function expectPatientPresent(patient: WithId<Patient>): Promise<void> {
@@ -1493,9 +1496,9 @@ describe('FHIR Repo', () => {
       expect(await countRows('Patient_History', patient.id)).toBeGreaterThan(0);
     }
 
-    async function expectPatientsExpunged(...patients: WithId<Patient>[]): Promise<void> {
+    async function expectPatientsExpunged(author: Reference, ...patients: WithId<Patient>[]): Promise<void> {
       for (const patient of patients) {
-        await expectPatientExpunged(patient);
+        await expectPatientExpunged(patient, author);
       }
     }
 
@@ -1508,6 +1511,7 @@ describe('FHIR Repo', () => {
     async function expectExpungeResult(
       expunge: () => Promise<void>,
       forbidden: boolean,
+      author: Reference,
       expunged: WithId<Patient>[],
       present: WithId<Patient>[] = []
     ): Promise<void> {
@@ -1516,7 +1520,7 @@ describe('FHIR Repo', () => {
         await expectPatientsPresent(...expunged, ...present);
       } else {
         await expunge();
-        await expectPatientsExpunged(...expunged);
+        await expectPatientsExpunged(author, ...expunged);
         await expectPatientsPresent(...present);
       }
     }
@@ -1555,6 +1559,7 @@ describe('FHIR Repo', () => {
           await expectExpungeResult(
             () => repo.expungeResource('Patient', patient.id),
             Boolean(forbidden),
+            repo.getAuthor(),
             [patient],
             [untouchedPatient]
           );
@@ -1568,6 +1573,7 @@ describe('FHIR Repo', () => {
           await expectExpungeResult(
             () => repo.expungeResources('Patient', [patient1.id, patient2.id]),
             Boolean(forbidden),
+            repo.getAuthor(),
             [patient1, patient2],
             [untouchedPatient]
           );
@@ -1592,6 +1598,7 @@ describe('FHIR Repo', () => {
           await expectExpungeResult(
             () => repo.expungeResource('Patient', otherProjectPatient.id),
             Boolean(forbidden),
+            repo.getAuthor(),
             expungedPatients,
             presentPatients
           );
@@ -1616,11 +1623,42 @@ describe('FHIR Repo', () => {
           await expectExpungeResult(
             () => repo.expungeResources('Patient', [ownPatient.id, otherProjectPatient.id]),
             Boolean(forbidden),
+            repo.getAuthor(),
             expungedPatients,
             presentPatients
           );
         }));
     });
+
+    test('Expunged tombstone has gone semantics after the resource ID is recreated', () =>
+      withTestContext(async () => {
+        const patient = await createPatient(systemRepo);
+        await systemRepo.expungeResource('Patient', patient.id);
+        const rows = await systemRepo.sqlRead<{ versionId: string }>(
+          new SelectQuery('Patient_History').column('versionId').where('id', '=', patient.id),
+          'Patient'
+        );
+
+        await systemRepo.createResource<Patient>({ resourceType: 'Patient', id: patient.id }, { assignedId: true });
+
+        const history = await systemRepo.readHistory('Patient', patient.id);
+        const tombstoneEntry = history.entry?.find((entry) => entry.request?.method === 'DELETE');
+        expect(tombstoneEntry).toMatchObject({
+          request: { method: 'DELETE', url: `Patient/${patient.id}` },
+          response: {
+            status: '410',
+            outcome: { issue: [{ details: { text: expect.stringMatching(/^Expunged on /) } }] },
+          },
+        });
+        expect(tombstoneEntry?.resource).toBeUndefined();
+
+        try {
+          await systemRepo.readVersion('Patient', patient.id, rows[0].versionId);
+          expect.fail('Expected error');
+        } catch (err) {
+          expect(isGone((err as OperationOutcomeError).outcome)).toBe(true);
+        }
+      }));
 
     test('Expunge Binary deletes the stored object for every version', () =>
       withTestContext(async () => {

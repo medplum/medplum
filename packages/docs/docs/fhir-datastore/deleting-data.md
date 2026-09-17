@@ -45,7 +45,7 @@ POST [base]/[resourceType]/[id]/$expunge
 
 Subsequent requests for the resource will result in HTTP 404 Not Found, as if the resource never existed.
 
-A minimal tombstone remains in the resource's history table. It contains only the resource type, id, version metadata, the system author, and a `meta.tag` with the ISO 21089 lifecycle code [`destroy`](https://hl7.org/fhir/R4/valueset-audit-event-type.html), which means that the record content was permanently erased.
+A minimal tombstone remains in the resource's history table. It contains only the resource type, id, version metadata, the author who performed the expunge, and a `meta.tag` with the ISO 21089 lifecycle code [`destroy`](https://hl7.org/fhir/R4/valueset-audit-event-type.html), which means that the record content was permanently erased. If no actor is present (for example, a system repository with no user context), the tombstone falls back to the system author.
 
 The `$expunge` operation is only available to users with administrator access to the Project in which the resource belongs.
 

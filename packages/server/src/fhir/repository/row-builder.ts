@@ -46,6 +46,14 @@ export const ExpungedHistoryTag = {
   display: 'Destroy/Delete Record Lifecycle Event',
 } as const;
 
+export function isExpungedHistoryVersion(resource: Resource): boolean {
+  return (
+    resource.meta?.tag?.some(
+      (tag) => tag.system === ExpungedHistoryTag.system && tag.code === ExpungedHistoryTag.code
+    ) === true
+  );
+}
+
 export function parseHistoryContent(content: string | null | undefined): Resource {
   return content ? (JSON.parse(content) as Resource) : ({ meta: { deleted: true } } as Resource);
 }
@@ -72,7 +80,8 @@ export function buildExpungedHistoryContent(
   resourceType: string,
   id: string,
   versionId: string,
-  lastUpdated: Date
+  lastUpdated: Date,
+  author?: Reference
 ): string {
   return stringify({
     resourceType,
@@ -80,7 +89,7 @@ export function buildExpungedHistoryContent(
     meta: {
       versionId,
       lastUpdated: lastUpdated.toISOString(),
-      author: { reference: 'system' },
+      author: author?.reference ? author : { reference: 'system' },
       tag: [ExpungedHistoryTag],
     },
   });

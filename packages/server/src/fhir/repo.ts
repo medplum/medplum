@@ -47,7 +47,6 @@ import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
-  AuditEvent,
   AuditEventEntityDetail,
   Binary,
   Bundle,
@@ -136,6 +135,7 @@ import {
   buildDeleteHistoryContent,
   buildExpungedHistoryContent,
   buildResourceRow,
+  isExpungedHistoryVersion,
   parseHistoryContent,
 } from './repository/row-builder';
 import { validateRepositoryResource } from './repository/validation';
@@ -827,7 +827,8 @@ export class Repository extends FhirRepository implements Disposable {
 
       for (const row of rows) {
         const parsed = parseHistoryContent(row.content);
-        const isDeleted = parsed.meta?.deleted;
+        const isExpunged = isExpungedHistoryVersion(parsed);
+        const isDeleted = parsed.meta?.deleted || isExpunged;
         const resource = !isDeleted ? this.removeHiddenFields(parsed as T) : undefined;
         const outcome: OperationOutcome = !isDeleted
           ? allOk
@@ -839,7 +840,7 @@ export class Repository extends FhirRepository implements Disposable {
                   severity: 'error',
                   code: 'deleted',
                   details: {
-                    text: 'Deleted on ' + row.lastUpdated,
+                    text: `${isExpunged ? 'Expunged' : 'Deleted'} on ${row.lastUpdated}`,
                   },
                 },
               ],
@@ -908,7 +909,7 @@ export class Repository extends FhirRepository implements Disposable {
 
       const parsed = parseHistoryContent(rows[0].content);
       // FHIR vread of a delete version returns 410 Gone with no resource body.
-      if (parsed.meta?.deleted) {
+      if (parsed.meta?.deleted || isExpungedHistoryVersion(parsed)) {
         throw new OperationOutcomeError(gone);
       }
 
@@ -1588,7 +1589,13 @@ export class Repository extends FhirRepository implements Disposable {
                 id,
                 versionId,
                 lastUpdated,
-                content: buildExpungedHistoryContent(resourceType, id, versionId, lastUpdated),
+                content: buildExpungedHistoryContent(
+                  resourceType,
+                  id,
+                  versionId,
+                  lastUpdated,
+                  txRepo.getAuthor()
+                ),
               };
             })
           ),
@@ -2317,7 +2324,6 @@ export class Repository extends FhirRepository implements Disposable {
    * @param options.searchRequest - Optional search parameters to associate with the AuditEvent.
    * @param options.entityDetail - Optional tagged value pairs to record as detail on the AuditEvent's entity.
    * @param options.durationMs - Duration of the operation, used for generating metrics.
-   * @returns The AuditEvent when one was created; undefined when logging is skipped.
    */
   private logEvent(
     subtype: AuditEventSubtype,
@@ -2329,7 +2335,7 @@ export class Repository extends FhirRepository implements Disposable {
       entityDetail?: AuditEventEntityDetail[];
       durationMs?: number;
     }
-  ): AuditEvent | undefined {
+  ): void {
     const resource = options?.resource;
     const isSystem = this.context.author.reference === 'system';
     const resourceType = isResource(resource) ? resource?.resourceType : undefined;
@@ -2353,7 +2359,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (isSystem && (isReadOnlyAction(subtype) || resourceType === 'AuditEvent')) {
       // Don't log system reads or ordinary AuditEvent interactions
-      return undefined;
+      return;
     }
     let outcomeDesc: string | undefined = undefined;
     if (description) {
@@ -2397,7 +2403,6 @@ export class Repository extends FhirRepository implements Disposable {
         .catch((err) => getLogger().error('Failed to save AuditEvent', err))
         .finally(() => saveRepo[Symbol.dispose]());
     }
-    return auditEvent;
   }
 
   /**

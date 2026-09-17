@@ -768,6 +768,7 @@ export class MemoryRepository extends FhirRepository {
   }
 
   async expungeResources(resourceType: string, ids: string[]): Promise<void> {
+    // Intentionally skips the history tombstone the server Repository writes.
     const resources = this.resources.get(resourceType);
     const resourceHistory = this.history.get(resourceType);
     for (const id of ids) {
