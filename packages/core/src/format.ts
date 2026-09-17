@@ -543,7 +543,11 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
   } else {
     const valueString = ensureString(obs.valueString);
     if (valueString) {
-      result.push(normalizeObxTemplateValue(valueString));
+      const normalized = normalizeObxTemplateValue(valueString);
+      // "DNR" is matched exactly by isDoNotReportObservation to hide the row entirely -
+      // never append a unit to it, or that check silently stops suppressing the row.
+      const unit = normalized !== 'DNR' ? getHealthGorillaObservationUnit(obs) : undefined;
+      result.push(unit ? `${normalized} ${unit}` : normalized);
     }
   }
 
@@ -600,6 +604,21 @@ function normalizeObxTemplateValue(value: string): string {
     }
   }
   return matches.map((m) => m[1]).join(' / ');
+}
+
+const HEALTH_GORILLA_OBSERVATION_UNIT_EXTENSION_URL =
+  'https://www.healthgorilla.com/fhir/StructureDefinition/observation-unit';
+
+/**
+ * Health Gorilla carries an OBX-6 unit (e.g. "titer", "%") that doesn't fit valueQuantity -
+ * the value itself isn't numeric (e.g. "1:80") - in a proprietary extension instead of on the
+ * value. Nothing else reads that extension, so the unit silently never renders anywhere.
+ * @param obs - A FHIR Observation resource or component.
+ * @returns The unit string, or undefined if the observation doesn't carry one.
+ */
+function getHealthGorillaObservationUnit(obs: Observation | ObservationComponent): string | undefined {
+  const extension = obs.extension?.find((e) => e.url === HEALTH_GORILLA_OBSERVATION_UNIT_EXTENSION_URL);
+  return ensureString(extension?.valueString);
 }
 
 /**

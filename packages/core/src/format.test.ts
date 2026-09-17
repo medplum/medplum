@@ -470,6 +470,26 @@ test('Format Observation value', () => {
     } as Observation)
   ).toBe('4 / Q');
   expect(
+    // Health Gorilla's proprietary unit extension (e.g. ANA titer) gets appended to the value.
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueString: '1:80',
+      extension: [
+        { url: 'https://www.healthgorilla.com/fhir/StructureDefinition/observation-unit', valueString: 'titer' },
+      ],
+    } as Observation)
+  ).toBe('1:80 titer');
+  expect(
+    // DNR must stay an exact match for isDoNotReportObservation - never append a unit to it.
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueString: 'DNR',
+      extension: [
+        { url: 'https://www.healthgorilla.com/fhir/StructureDefinition/observation-unit', valueString: '/HPF' },
+      ],
+    } as Observation)
+  ).toBe('DNR');
+  expect(
     formatObservationValue({ resourceType: 'Observation', valueCodeableConcept: { text: 'foo' } } as Observation)
   ).toBe('foo');
   expect(
