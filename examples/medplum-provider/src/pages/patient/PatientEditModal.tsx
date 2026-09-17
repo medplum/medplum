@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Modal } from '@mantine/core';
+import { Anchor } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, Patient, Resource } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { Modal, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
@@ -70,22 +70,7 @@ export function PatientEditModal(props: PatientEditModalProps): JSX.Element {
   );
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      size="xl"
-      title="Edit Patient Profile Details"
-      styles={{
-        body: {
-          padding: 0,
-          overflow: 'hidden',
-          height: '70vh',
-          flex: 'none',
-          display: 'flex',
-          flexDirection: 'column',
-        },
-      }}
-    >
+    <Modal opened={opened} onClose={onClose} size="xl" title="Edit Patient Profile Details" bodyHeight="70vh">
       {value ? (
         <ResourceFormWithRequiredProfile
           missingProfileMessage={missingProfileMessage}
@@ -93,8 +78,6 @@ export function PatientEditModal(props: PatientEditModalProps): JSX.Element {
           onSubmit={handleSubmit}
           outcome={outcome}
           profileUrl={RESOURCE_PROFILE_URLS.Patient}
-          stackedSubmit
-          stickyModalFooter
         />
       ) : null}
     </Modal>
