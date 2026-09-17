@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Button, Checkbox, Group, Loader, NumberInput, Pill, Stack, Text, TextInput } from '@mantine/core';
+import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   createReference,
@@ -205,6 +206,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const manual = chosen !== undefined && chosen === manualChoice;
 
+  // Settles once the time and length fields stop moving; only the conflict lookup waits.
+  const [debouncedChoice] = useDebouncedValue(manualChoice, CONFLICT_DEBOUNCE_MS);
+
   const selectionError = useMemo(() => getSelectionError(selections), [selections]);
 
   // Each field is asked for on its own, by a visit type whose eligibility names it.
@@ -397,34 +401,41 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   // Only a typed time needs this. A time the search offered was found by intersecting
   // the very Slots this would search, so it cannot conflict with them.
+  //
+  // A keystroke moves the proposal and nothing else here, so debouncing that one value
+  // holds the search off until typing settles while a change of visit type or of actors
+  // still looks up at once.
   useEffect(() => {
-    if (!manual || !chosen?.start || !chosen.end || !service || candidates.length === 0) {
+    if (
+      chosen !== debouncedChoice ||
+      !debouncedChoice?.start ||
+      !debouncedChoice.end ||
+      !service ||
+      candidates.length === 0
+    ) {
       // Nothing to look up; whatever was found last was cleared by the change that got here.
       return () => {};
     }
 
     let active = true;
-    const range = { start: new Date(chosen.start), end: new Date(chosen.end) };
-    const timer = setTimeout(() => {
-      findBookingConflicts({ medplum, service, candidates, range })
-        .then((found) => {
-          if (active) {
-            setConflicts(found);
-          }
-        })
-        .catch(() => {
-          // Saying nothing beats refusing a booking this user is allowed to make.
-          if (active) {
-            setConflicts([]);
-          }
-        });
-    }, CONFLICT_DEBOUNCE_MS);
+    const range = { start: new Date(debouncedChoice.start), end: new Date(debouncedChoice.end) };
+    findBookingConflicts({ medplum, service, candidates, range })
+      .then((found) => {
+        if (active) {
+          setConflicts(found);
+        }
+      })
+      .catch(() => {
+        // Saying nothing beats refusing a booking this user is allowed to make.
+        if (active) {
+          setConflicts([]);
+        }
+      });
 
     return () => {
       active = false;
-      clearTimeout(timer);
     };
-  }, [medplum, manual, chosen, service, candidates]);
+  }, [medplum, chosen, debouncedChoice, service, candidates]);
 
   function choosePatient(next: WithId<Patient> | undefined): void {
     setPatient(next);
