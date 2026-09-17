@@ -1589,13 +1589,7 @@ export class Repository extends FhirRepository implements Disposable {
                 id,
                 versionId,
                 lastUpdated,
-                content: buildExpungedHistoryContent(
-                  resourceType,
-                  id,
-                  versionId,
-                  lastUpdated,
-                  txRepo.getAuthor()
-                ),
+                content: buildExpungedHistoryContent(resourceType, id, versionId, lastUpdated, txRepo.getAuthor()),
               };
             })
           ),
