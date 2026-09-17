@@ -64,7 +64,12 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
   };
 
   return (
-    <Box p="md" mih="100%" bg="light-dark(var(--mantine-color-white), var(--mantine-color-body))" data-testid="resource-panel">
+    <Box
+      p="md"
+      mih="100%"
+      bg="light-dark(var(--mantine-color-white), var(--mantine-color-body))"
+      data-testid="resource-panel"
+    >
       {renderResourceContent()}
     </Box>
   );
