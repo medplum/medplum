@@ -1310,7 +1310,7 @@ class CcdaToFhirConverter {
       }
     }
 
-    return Array.from(result.values());
+    return result;
   }
 
   private mapReferenceRangeArray(
