@@ -97,8 +97,9 @@ describe('Server', () => {
   });
 });
 
-describe('uncaughtException handler', () => {
+describe('process event handlers', () => {
   let handler: (err: Error, origin: NodeJS.UncaughtExceptionOrigin) => Promise<void>;
+  let rejectionHandler: NodeJS.UnhandledRejectionListener;
   let baselineUncaught: NodeJS.UncaughtExceptionListener[];
   let baselineRejection: NodeJS.UnhandledRejectionListener[];
 
@@ -109,6 +110,9 @@ describe('uncaughtException handler', () => {
     const installed = process.listeners('uncaughtException').filter((l) => !baselineUncaught.includes(l));
     expect(installed).toHaveLength(1);
     handler = installed[0] as (err: Error, origin: NodeJS.UncaughtExceptionOrigin) => Promise<void>;
+    const installedRejection = process.listeners('unhandledRejection').filter((l) => !baselineRejection.includes(l));
+    expect(installedRejection).toHaveLength(1);
+    rejectionHandler = installedRejection[0];
   });
 
   afterAll(async () => {
@@ -152,6 +156,32 @@ describe('uncaughtException handler', () => {
     expect(exitDrainSpy).not.toHaveBeenCalled();
 
     exitDrainSpy.mockRestore();
+  });
+
+  test('unhandledRejection handler does not throw on rejection reason with circular references', () => {
+    // A throw here would surface as an uncaughtException and take down the process
+    const stdoutSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+
+    const incomingMessage: Record<string, any> = { readable: true };
+    const clientRequest: Record<string, any> = { res: incomingMessage };
+    const tlsSocket: Record<string, any> = { _httpMessage: clientRequest };
+    incomingMessage.socket = tlsSocket;
+
+    const abortError = new Error('The operation was aborted') as any;
+    abortError.name = 'AbortError';
+    abortError.response = incomingMessage;
+
+    expect(() => rejectionHandler(abortError, Promise.resolve())).not.toThrow();
+
+    expect(stdoutSpy).toHaveBeenCalledTimes(1);
+    const logLine = JSON.parse(stdoutSpy.mock.calls[0][0] as string);
+    expect(logLine).toMatchObject({
+      level: 'ERROR',
+      msg: 'Unhandled promise rejection',
+      error: 'AbortError: The operation was aborted',
+    });
+
+    stdoutSpy.mockRestore();
   });
 });
 
