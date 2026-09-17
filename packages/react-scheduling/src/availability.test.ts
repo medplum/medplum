@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { OperationOutcomeError, WithId } from '@medplum/core';
-import { clearSchedulingParameter, SchedulingParametersURI } from '@medplum/core';
+import { clearScheduleSchedulingParameter, SchedulingParametersURI } from '@medplum/core';
 import type { Extension, HealthcareService, OperationOutcome, Schedule } from '@medplum/fhirtypes';
 import { getEffectiveAvailability, setScheduleAvailability } from './availability';
 
@@ -120,7 +120,10 @@ describe('getEffectiveAvailability', () => {
     };
 
     expect(
-      getEffectiveAvailability(serviceWithDefaults, clearSchedulingParameter(scheduleWith(), service, 'availability'))
+      getEffectiveAvailability(
+        serviceWithDefaults,
+        clearScheduleSchedulingParameter(scheduleWith(), service, 'availability')
+      )
     ).toEqual(serviceWithDefaults.availableTime);
     expect(getEffectiveAvailability(serviceWithDefaults)).toEqual(serviceWithDefaults.availableTime);
   });
@@ -238,7 +241,7 @@ describe('setScheduleAvailability', () => {
     ]);
     expect(durationOf(updated)).toEqual({ value: 30, unit: 'min' });
 
-    const cleared = clearSchedulingParameter(updated, service, 'availability');
+    const cleared = clearScheduleSchedulingParameter(updated, service, 'availability');
     expect(hasAvailability(cleared)).toBe(false);
     expect(durationOf(cleared)).toEqual({ value: 30, unit: 'min' });
   });
@@ -266,7 +269,7 @@ describe('setScheduleAvailability', () => {
 
     expect(() => setScheduleAvailability(schedule, service, [])).toThrow(/at least one availableTime/);
     // Clearing is the way to hand the calendar back to the service default, and it still works.
-    expect(hasAvailability(clearSchedulingParameter(schedule, service, 'availability'))).toBe(false);
+    expect(hasAvailability(clearScheduleSchedulingParameter(schedule, service, 'availability'))).toBe(false);
   });
 
   test('reports what is missing as a required-value validation issue', () => {
