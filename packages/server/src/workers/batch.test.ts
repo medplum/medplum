@@ -15,14 +15,13 @@ import { runInAuthenticatedContext } from '../context';
 import { BatchCheckpointStore } from '../fhir/batch/checkpoint-store';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { Repository, SystemRepository } from '../fhir/repo';
-import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import * as otelModule from '../otel/otel';
 import { BASE_METRIC_OPTIONS } from '../otel/otel';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject, streamToString, withTestContext } from '../test.setup';
+import { getAsyncJobTracking } from './base';
 import type { LegacyBatchJobData, ReentrantBatchJobData } from './batch';
 import {
   execBatchJob as execBatchJobImpl,
@@ -111,7 +110,7 @@ describe('Batch worker', () => {
 
     const project = await createTestProject({ withClient: true, withAccessToken: true, withRepo: true });
     repo = project.repo;
-    systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
+    systemRepo = repo.getSystemRepo();
     const userConfig = await getUserConfiguration(systemRepo, project.project, project.membership);
     authState = { login: project.login, project: project.project, membership: project.membership, userConfig };
   });
@@ -578,10 +577,13 @@ describe('Batch worker', () => {
           queueBatchProcessing(bundle, asyncJob)
         );
 
-        // Enqueued data carries asyncJobId and authState, but NOT the bundle (#9124).
+        // Enqueued data carries AsyncJob tracking and authState, but NOT the bundle (#9124).
         expect(queue.add).toHaveBeenCalledWith(
           'BatchJobData',
-          expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: asyncJob.id, authState })
+          expect.objectContaining<Partial<ReentrantBatchJobData>>({
+            tracking: getAsyncJobTracking(asyncJob),
+            authState,
+          })
         );
         const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
         expect(enqueued.bundle).toBeUndefined();

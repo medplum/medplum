@@ -16,8 +16,10 @@ import {
 import { tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
+import type { AsyncJobTracking } from './base';
+import { getTrackingAsyncJobExecutor } from './repository';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -38,11 +40,19 @@ interface ResolvedLambdaCleanerOptions extends LambdaCleanerOptions, DeleteLambd
   readonly dryRun: boolean;
 }
 
-export interface LambdaCleanerJobData {
-  readonly asyncJob: WithId<AsyncJob>;
+export type LambdaCleanerJobData = {
   readonly options: LambdaCleanerOptions;
   readonly requestId?: string;
   readonly traceId?: string;
+} & (NewLambdaCleanerJobData | LegacyLambdaCleanerJobData);
+
+interface NewLambdaCleanerJobData {
+  readonly tracking: AsyncJobTracking;
+}
+
+// PENDING{v5.2+} remove legacy job data interface
+interface LegacyLambdaCleanerJobData {
+  readonly asyncJob: WithId<AsyncJob>;
 }
 
 export interface LambdaCleanerSummary extends DeleteOldLambdaVersionStats {
@@ -70,11 +80,21 @@ export const initLambdaCleanerWorker: WorkerInitializer = (config, options?: Wor
       ),
       getWorkerBullmqConfig(config, 'lambda-cleaner', queueOptions, { concurrency: 1 })
     );
-    addVerboseQueueLogging<LambdaCleanerJobData>(queue, worker, (job) => ({
-      asyncJob: `AsyncJob/${job.data.asyncJob.id}`,
-      nameRegex: job.data.options.nameRegex,
-      dryRun: job.data.options.dryRun,
-    }));
+    addVerboseQueueLogging<LambdaCleanerJobData>(queue, worker, (job) => {
+      if ('asyncJob' in job.data) {
+        return {
+          asyncJob: `AsyncJob/${job.data.asyncJob.id}`,
+          nameRegex: job.data.options.nameRegex,
+          dryRun: job.data.options.dryRun,
+        };
+      }
+
+      return {
+        asyncJob: `AsyncJob/${job.data.tracking.asyncJobId}`,
+        nameRegex: job.data.options.nameRegex,
+        dryRun: job.data.options.dryRun,
+      };
+    });
   }
 
   return { queue, worker, name: LambdaCleanerQueueName };
@@ -93,8 +113,14 @@ export async function addLambdaCleanerJobData(jobData: LambdaCleanerJobData): Pr
 }
 
 export async function lambdaCleanerJobProcessor(job: Job<LambdaCleanerJobData>): Promise<WithId<AsyncJob>> {
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
-  const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
+  let exec: AsyncJobExecutor;
+  if ('tracking' in job.data) {
+    exec = await getTrackingAsyncJobExecutor(job.data.tracking);
+  } else {
+    // PENDING{v5.2+} remove legacy else statement
+    exec = new AsyncJobExecutor(getShardSystemRepo(TODO_SHARD_ID), job.data.asyncJob);
+  }
+
   return exec.startAsync(async () => {
     const summary = await execLambdaCleanerJob(job.data.options);
     return formatSummary(summary);

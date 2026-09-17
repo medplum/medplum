@@ -16,8 +16,7 @@ import assert from 'node:assert';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import { createTestProject } from '../test.setup';
 import type { LambdaCleanerJobData } from './lambda-cleaner';
 import { execLambdaCleanerJob, lambdaCleanerJobProcessor } from './lambda-cleaner';
 
@@ -86,11 +85,12 @@ describe('Lambda version cleanup worker', () => {
       return {};
     });
 
-    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
-    const exec = new AsyncJobExecutor(systemRepo);
+    const { project, repo } = await createTestProject({ withRepo: true });
+    const exec = new AsyncJobExecutor(repo);
     const asyncJob = await exec.init('/some-url');
     const job = {
       data: {
+        target: { kind: 'project', projectId: project.id },
         asyncJob,
         options: { nameRegex: '^medplum-bot-lambda-*', keepLatest: 1, deleteConcurrency: 2, dryRun: false },
       },

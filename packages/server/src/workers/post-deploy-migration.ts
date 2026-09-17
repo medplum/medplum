@@ -12,7 +12,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type {
   CustomPostDeployMigrationJobData,
@@ -32,6 +32,8 @@ import {
 } from '../migrations/migration-utils';
 import type { MigrationActionResult, PhasalMigration } from '../migrations/types';
 import { getRegisteredServers } from '../server-registry';
+import { getAsyncJobTracking } from './base';
+import { getTrackingAsyncJobExecutor } from './repository';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -46,8 +48,14 @@ import {
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
 
 function getJobDataLoggingFields(job: Job<PostDeployJobData>): Record<string, string> {
+  if (job.data.asyncJobId !== undefined) {
+    return {
+      asyncJob: 'AsyncJob/' + job.data.asyncJobId,
+      jobType: job.data.type,
+    };
+  }
   return {
-    asyncJob: 'AsyncJob/' + job.data.asyncJobId,
+    asyncJob: 'AsyncJob/' + job.data.tracking.asyncJobId,
     jobType: job.data.type,
   };
 }
@@ -86,8 +94,16 @@ export async function isClusterCompatible(migrationNumber: number): Promise<bool
 }
 
 export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
-  const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
+  let exec: AsyncJobExecutor;
+  if ('tracking' in job.data) {
+    exec = await getTrackingAsyncJobExecutor(job.data.tracking);
+  } else {
+    // PENDING{v5.2} remove else branch
+    const asyncJobSystemRepo = getShardSystemRepo(TODO_SHARD_ID);
+    const asyncJob = await asyncJobSystemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
+    exec = new AsyncJobExecutor(asyncJobSystemRepo, asyncJob);
+  }
+  const asyncJob = exec.getAsyncJob();
 
   if (!isJobCompatible(asyncJob)) {
     await moveToDelayedAndThrow(job, 'Post-deploy migration delayed since this worker is not compatible');
@@ -103,7 +119,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   }
 
   if (job.data.type === 'dynamic') {
-    await runDynamicMigration(systemRepo, job as Job<DynamicPostDeployJobData>);
+    await runDynamicMigration(exec, job as Job<DynamicPostDeployJobData>);
     return;
   }
 
@@ -136,6 +152,9 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
     );
   }
 
+  // PENDING{v5.2+} remove legacy else branch and use getJobSystemRepo
+  const shardId = 'target' in job.data ? job.data.target.shardId : TODO_SHARD_ID;
+  const systemRepo = getShardSystemRepo(shardId);
   const result: PostDeployJobRunResult = await migration.run(systemRepo, job, job.data);
 
   switch (result) {
@@ -153,11 +172,10 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
 }
 
 async function runDynamicMigration(
-  systemRepo: SystemRepository,
+  exec: AsyncJobExecutor,
   job: Job<DynamicPostDeployJobData>
 ): Promise<PostDeployJobRunResult> {
-  const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
-  const exec = new AsyncJobExecutor(systemRepo, asyncJob);
+  const asyncJob = exec.getAsyncJob();
   const results: MigrationActionResult[] = [];
   try {
     await withLongRunningDatabaseClient(async (client) => {
@@ -194,8 +212,14 @@ export async function runCustomMigration(
     jobData: CustomPostDeployMigrationJobData
   ) => Promise<void>
 ): Promise<PostDeployJobRunResult> {
-  const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
-  const exec = new AsyncJobExecutor(systemRepo, asyncJob);
+  let exec: AsyncJobExecutor;
+  if ('tracking' in jobData) {
+    exec = await getTrackingAsyncJobExecutor(jobData.tracking);
+  } else {
+    const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+    exec = new AsyncJobExecutor(systemRepo, asyncJob);
+  }
+  const asyncJob = exec.getAsyncJob();
 
   if (jobData.skipInFirstBootMode && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER)))) {
     globalLogger.info('Skipping custom post-deploy migration since server is in firstBoot mode', {
@@ -211,9 +235,10 @@ export async function runCustomMigration(
 
   const results: MigrationActionResult[] = [];
   try {
+    const shardId = 'target' in jobData ? jobData.target.shardId : TODO_SHARD_ID; // PENDING{v5.2} simplify
     await withLongRunningDatabaseClient(async (client) => {
       await callback(client, results, job, jobData);
-    });
+    }, shardId);
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(output);
   } catch (err: any) {
@@ -270,8 +295,9 @@ function getAsyncJobOutputFromMigrationActionResults(results: MigrationActionRes
 export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): CustomPostDeployMigrationJobData {
   const ctx = tryGetRequestContext();
   return {
+    target: { kind: 'shard', shardId: TODO_SHARD_ID },
+    tracking: getAsyncJobTracking(asyncJob),
     type: 'custom',
-    asyncJobId: asyncJob.id,
     requestId: ctx?.requestId,
     traceId: ctx?.traceId,
   };
@@ -283,9 +309,10 @@ export function prepareDynamicMigrationJobData(
 ): DynamicPostDeployJobData {
   const ctx = tryGetRequestContext();
   return {
+    target: { kind: 'shard', shardId: TODO_SHARD_ID },
+    tracking: getAsyncJobTracking(asyncJob),
     type: 'dynamic',
     migrationActions,
-    asyncJobId: asyncJob.id,
     requestId: ctx?.requestId,
     traceId: ctx?.traceId,
   };

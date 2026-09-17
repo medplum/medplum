@@ -8,7 +8,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { getShardSystemRepo } from '../fhir/repo';
-import { GLOBAL_SHARD_ID } from '../fhir/sharding';
+import { GLOBAL_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type {
   CustomPostDeployMigration,
@@ -23,6 +23,7 @@ import * as serverRegistry from '../server-registry';
 import { withTestContext } from '../test.setup';
 import * as versionModule from '../util/version';
 import { getServerVersion } from '../util/version';
+import { getAsyncJobTracking } from './base';
 import {
   addPostDeployMigrationJobData,
   jobProcessor,
@@ -117,7 +118,8 @@ describe('Post-Deploy Migration Worker', () => {
       const data1 = prepareCustomMigrationJobData(asyncJob);
       expect(data1).toEqual({
         type: 'custom',
-        asyncJobId: asyncJob.id,
+        target: { kind: 'shard', shardId: TODO_SHARD_ID },
+        tracking: getAsyncJobTracking(asyncJob),
         requestId: expect.any(String),
         traceId: expect.any(String),
       });
@@ -135,7 +137,8 @@ describe('Post-Deploy Migration Worker', () => {
     const data2 = prepareCustomMigrationJobData(asyncJob);
     expect(data2).toEqual({
       type: 'custom',
-      asyncJobId: asyncJob.id,
+      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      tracking: getAsyncJobTracking(asyncJob),
       requestId: undefined,
       traceId: undefined,
     });
