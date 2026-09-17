@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getScheduleParameters, SchedulingParametersURI } from '@medplum/core';
+import { getSchedulingParameters, SchedulingParametersURI } from '@medplum/core';
 import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { getEffectiveAvailability } from '../availability';
 import { act, fireEvent, render, screen } from '../test-utils/render';
@@ -27,7 +27,7 @@ import {
 // Whether the Schedule the editor handed back sets hours of its own, which is the
 // distinction `getEffectiveAvailability` folds away by falling back to the default.
 function overridesAvailability(schedule: Schedule, service: WithId<HealthcareService>): boolean {
-  return getScheduleParameters(schedule, service, 'availability').length > 0;
+  return getSchedulingParameters(schedule, service, 'availability').length > 0;
 }
 
 const service: WithId<HealthcareService> = {
