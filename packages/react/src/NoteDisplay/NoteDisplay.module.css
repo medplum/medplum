@@ -9,4 +9,6 @@
 
 .noteRoot {
   padding: 5px;
+  white-space: pre-wrap;
+  font-family: var(--mantine-font-family-monospace);
 }

@@ -1,14 +1,27 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import type { Communication } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
+import { Notifications, notifications } from '@mantine/notifications';
+import type { Communication, Parameters } from '@medplum/fhirtypes';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type { Message } from '../../types/spaces';
 import { SpacesInbox } from './SpacesInbox';
+
+/** HistoryList navigates through links, so the stub selects a topic directly and echoes the active topic id. */
+type HistoryListProps = { currentTopicId?: string; onSelectTopic: (id: string) => void };
+vi.mock('./HistoryList', () => ({
+  HistoryList: ({ currentTopicId, onSelectTopic }: HistoryListProps) => (
+    <button type="button" data-current-topic={currentTopicId ?? ''} onClick={() => onSelectTopic('topic-456')}>
+      Select topic-456
+    </button>
+  ),
+}));
 
 const mockTopic: Communication = {
   resourceType: 'Communication',
@@ -30,7 +43,6 @@ const mockProfile = {
   id: 'practitioner-123',
 };
 
-// Helper to create a mock streaming response
 function createMockStreamingResponse(content: string): Response {
   const encoder = new TextEncoder();
   const sseData = `data: ${JSON.stringify({ content })}\n\ndata: [DONE]\n\n`;
@@ -47,18 +59,48 @@ function createMockStreamingResponse(content: string): Response {
   });
 }
 
+function controlledStream(): { response: Response; push: (content: string) => void; close: () => void } {
+  let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
+  const stream = new ReadableStream<Uint8Array>({ start: (c) => (controller = c) });
+  return {
+    response: new Response(stream, { status: 200, headers: { 'Content-Type': 'text/event-stream' } }),
+    push: (content) => controller?.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content })}\n\n`)),
+    close: () => controller?.close(),
+  };
+}
+
+function toCommunication(message: Message, seq: number): Communication {
+  const contentString = JSON.stringify({ ...message, sequenceNumber: seq });
+  return { resourceType: 'Communication', id: `msg-${seq}`, status: 'completed', payload: [{ contentString }] };
+}
+
+type ToolCall = { id?: string; function: { name: string; arguments: unknown } };
+
+function toolCallsResponse(toolCalls: ToolCall[], visualize = false): Parameters {
+  const parameter = [{ name: 'tool_calls', valueString: JSON.stringify(toolCalls) }];
+  return { resourceType: 'Parameters', parameter: [...parameter, { name: 'visualize', valueBoolean: visualize }] };
+}
+
+function fhirRequestToolCall(id: string, method: string, path: string): ToolCall {
+  return { id, function: { name: 'fhir_request', arguments: JSON.stringify({ method, path }) } };
+}
+
 describe('SpacesInbox', () => {
   let medplum: MockClient;
   const onNewTopicMock = vi.fn();
   const onSelectedItemMock = vi.fn((topic: Communication) => `/Spaces/Communication/${topic.id}`);
+  const onAdd = vi.fn();
 
   beforeEach(() => {
     medplum = new MockClient();
     vi.clearAllMocks();
+    notifications.clean();
 
     Element.prototype.scrollTo = vi.fn();
     medplum.getProfile = vi.fn().mockResolvedValue(mockProfile) as any;
-    medplum.searchResources = vi.fn().mockResolvedValue([]);
+    medplum.searchResources = vi
+      .fn()
+      .mockImplementation((resourceType: string) => Promise.resolve(resourceType === 'Patient' ? [HomerSimpson] : []));
     medplum.searchOne = vi.fn().mockResolvedValue({ resourceType: 'Bot', id: 'bot-123' });
     medplum.getAccessToken = vi.fn().mockReturnValue('mock-token');
     medplum.fhirUrl = vi.fn().mockReturnValue(new URL('https://api.medplum.com/fhir/R4/Bot/bot-123/$execute'));
@@ -66,7 +108,6 @@ describe('SpacesInbox', () => {
       if (ref.reference?.startsWith('Communication/')) {
         return Promise.resolve(mockTopic);
       }
-      // For other references, return a basic resource with resourceType and id
       const [resourceType, id] = ref.reference?.split('/') || [];
       return Promise.resolve({ resourceType, id, meta: {} } as any);
     });
@@ -78,16 +119,33 @@ describe('SpacesInbox', () => {
     });
   });
 
-  const setup = (topicRef?: { reference: string }): ReturnType<typeof render> => {
+  const setup = (topic?: { reference: string }): ReturnType<typeof render> => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <SpacesInbox topic={topicRef} onNewTopic={onNewTopicMock} onSelectedItem={onSelectedItemMock} />
+            <Notifications />
+            <SpacesInbox topic={topic} onNewTopic={onNewTopicMock} onSelectedItem={onSelectedItemMock} onAdd={onAdd} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
     );
+  };
+
+  const panelHeader = (title: string): HTMLElement =>
+    screen.getByText(title).closest('div')?.parentElement as HTMLElement;
+
+  const closePanel = (user: UserEvent, title: string): Promise<void> =>
+    user.click(panelHeader(title).querySelector('.mantine-CloseButton-root') as HTMLElement);
+
+  const goBackFromDetails = (user: UserEvent): Promise<void> =>
+    user.click(panelHeader('Resource Details').querySelector('button') as HTMLElement);
+
+  const mockConversation = (messages: Message[]): void => {
+    const comms = messages.map(toCommunication);
+    medplum.searchResources = vi
+      .fn()
+      .mockImplementation(async (t: string) => (t === 'Patient' ? [HomerSimpson] : comms));
   };
 
   describe('Initial state (before first message)', () => {
@@ -115,6 +173,120 @@ describe('SpacesInbox', () => {
       });
 
       expect(screen.getByText('How can I help you today?')).toBeInTheDocument();
+    });
+  });
+
+  describe('Sidebar', () => {
+    test('toggles the conversations sidebar and forwards the New conversation click', async () => {
+      const user = userEvent.setup();
+      setup();
+      const sidebar = screen.getByText('Conversations').parentElement?.parentElement as HTMLElement;
+      expect(sidebar).toHaveStyle({ width: '0px' });
+      const header = screen.getByLabelText('New conversation').parentElement as HTMLElement;
+      await user.click(header.querySelector('button') as HTMLButtonElement);
+      expect(sidebar).toHaveStyle({ width: '280px' });
+      await user.click(screen.getByLabelText('New conversation'));
+      expect(onAdd).toHaveBeenCalledTimes(1);
+      await user.click(screen.getByText('Conversations').parentElement?.querySelector('button') as HTMLElement);
+      expect(sidebar).toHaveStyle({ width: '0px' });
+    });
+
+    test('reports a failed history load, then loads the selected conversation', async () => {
+      const user = userEvent.setup();
+      medplum.searchResources = vi.fn().mockRejectedValue(new Error('History unavailable'));
+      setup();
+      await user.click(screen.getByText('Select topic-456'));
+      expect(await screen.findByText('History unavailable')).toBeInTheDocument();
+      mockConversation([{ role: 'user', content: 'Earlier question' }]);
+      await user.click(screen.getByText('Select topic-456'));
+      expect(await screen.findByText('Earlier question')).toBeInTheDocument();
+      expect(screen.queryByText('How can I help you today?')).not.toBeInTheDocument();
+      expect(screen.getByText('Select topic-456')).toHaveAttribute('data-current-topic', 'topic-456');
+    });
+  });
+
+  describe('Loading a topic', () => {
+    const toolCallMessages: Message[] = [
+      { role: 'system', content: 'hidden system prompt' },
+      { role: 'user', content: 'Look things up' },
+      {
+        role: 'assistant',
+        content: null,
+        tool_calls: [
+          fhirRequestToolCall('tc-get', 'GET', 'Patient/patient-1'),
+          { id: 'tc-broken', function: { name: 'fhir_request', arguments: 'not json' } },
+          { function: { name: 'custom_tool', arguments: { foo: 'bar' } } },
+        ],
+      },
+      { role: 'tool', tool_call_id: 'tc-get', content: JSON.stringify({ resourceType: 'Patient', id: 'patient-1' }) },
+    ];
+
+    test('loads persisted messages, hides system messages, and renders tool calls with toggleable responses', async () => {
+      const user = userEvent.setup();
+      mockConversation(toolCallMessages);
+      setup({ reference: 'Communication/topic-123' });
+      expect(await screen.findByText('Look things up')).toBeInTheDocument();
+      expect(screen.queryByText('hidden system prompt')).not.toBeInTheDocument();
+      expect(screen.getByText('Select topic-456')).toHaveAttribute('data-current-topic', 'topic-123');
+      expect(screen.getByText('GET')).toBeInTheDocument();
+      expect(screen.getByText('CALL')).toBeInTheDocument();
+      expect(screen.getByText('Unable to parse tool call')).toBeInTheDocument();
+      await user.click(screen.getByText('Response'));
+      expect(screen.getByText(/"resourceType": "Patient"/)).toBeInTheDocument();
+      expect(screen.getByText('▲')).toBeInTheDocument();
+      await user.click(screen.getByText('Response'));
+      expect(screen.getByText('▼')).toBeInTheDocument();
+    });
+
+    test('opens the results list, drills into a result, navigates back, and closes each panel', async () => {
+      const user = userEvent.setup();
+      const resources = ['Patient/p-1', 'Patient/p-2', 'Patient/p-3'];
+      mockConversation([{ role: 'assistant', content: 'Found three', resources }]);
+      setup({ reference: 'Communication/topic-123' });
+      await user.click(await screen.findByText('3 results'));
+      expect(screen.getByText('Results (3)')).toBeInTheDocument();
+      await user.click((await screen.findAllByTestId('resource-box'))[1]);
+      expect(screen.getByText('Resource Details')).toBeInTheDocument();
+      await goBackFromDetails(user);
+      expect(screen.getByText('Results (3)')).toBeInTheDocument();
+      await closePanel(user, 'Results (3)');
+      expect(screen.queryByText('Results (3)')).not.toBeInTheDocument();
+    });
+
+    test('opens a persisted component, drills into one of its resources, returns, and closes', async () => {
+      const user = userEvent.setup();
+      const componentCode = 'function Widget() {\n  return <Text>Widget rendered</Text>;\n}';
+      mockConversation([{ role: 'assistant', content: 'Here you go', componentCode, resources: ['Patient/p-1'] }]);
+      setup({ reference: 'Communication/topic-123' });
+      await user.click(await screen.findByText('View Component'));
+      expect(screen.getByText('Component Preview')).toBeInTheDocument();
+      await user.click(screen.getByRole('tab', { name: 'Resources' }));
+      await user.click(await screen.findByTestId('resource-box'));
+      expect(screen.getByText('Resource Details')).toBeInTheDocument();
+      await goBackFromDetails(user);
+      expect(screen.getByText('Component Preview')).toBeInTheDocument();
+      await closePanel(user, 'Component Preview');
+      expect(screen.queryByText('Component Preview')).not.toBeInTheDocument();
+    });
+
+    test('shows an error notification when loading the topic fails', async () => {
+      medplum.searchResources = vi.fn().mockRejectedValue(new Error('Load failed'));
+      setup({ reference: 'Communication/topic-123' });
+      expect(await screen.findByText('Load failed')).toBeInTheDocument();
+      expect(screen.getByText('How can I help you today?')).toBeInTheDocument();
+    });
+
+    test('shows a scroll-to-bottom button when scrolled up and scrolls down on click', async () => {
+      const user = userEvent.setup();
+      mockConversation([{ role: 'user', content: 'Persisted question' }]);
+      setup({ reference: 'Communication/topic-123' });
+      await screen.findByText('Persisted question');
+      const viewport = document.querySelector('.mantine-ScrollArea-viewport') as HTMLElement;
+      Object.defineProperties(viewport, { scrollHeight: { value: 1000 }, clientHeight: { value: 300 } });
+      fireEvent.scroll(viewport);
+      await user.click(screen.getByLabelText('Scroll to bottom'));
+      expect(Element.prototype.scrollTo).toHaveBeenCalledWith({ top: 1000, behavior: 'smooth' });
+      expect(screen.queryByLabelText('Scroll to bottom')).not.toBeInTheDocument();
     });
   });
 
@@ -153,8 +325,6 @@ describe('SpacesInbox', () => {
         setup();
       });
 
-      // With an empty input there is no send button (voice mode is offered instead),
-      // so an empty message can never be submitted.
       expect(screen.queryByRole('button', { name: 'Send message' })).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Start voice mode' })).toBeInTheDocument();
       expect(medplum.createResource).not.toHaveBeenCalled();
@@ -173,12 +343,32 @@ describe('SpacesInbox', () => {
 
       const input = screen.getByPlaceholderText('Ask, search, or make anything...');
 
+      await user.click(input);
+      await user.keyboard('{Enter}');
+      expect(medplum.createResource).not.toHaveBeenCalled();
+
       await user.type(input, 'Hello AI');
       await user.keyboard('{Enter}');
 
       await waitFor(() => {
         expect(medplum.createResource).toHaveBeenCalled();
       });
+    });
+
+    test('sends selected patients as context and shows them above the message', async () => {
+      const user = userEvent.setup();
+      medplum.executeBot = vi.fn().mockResolvedValue({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'content', valueString: 'About Homer' }],
+      });
+      setup();
+      await user.click(screen.getByRole('button', { name: 'Patients' }));
+      await user.click(await screen.findByText('Homer Simpson', {}, { timeout: 3000 }));
+      await user.type(screen.getByPlaceholderText('Ask, search, or make anything...'), 'Summarize');
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
+      expect(await screen.findByText('About Homer')).toBeInTheDocument();
+      const userMessage = screen.getByText('Summarize').parentElement?.parentElement as HTMLElement;
+      expect(within(userMessage).getByText('Homer Simpson')).toBeInTheDocument();
     });
   });
 
@@ -216,26 +406,7 @@ describe('SpacesInbox', () => {
 
       medplum.executeBot = vi
         .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method: 'GET',
-                      path: 'Patient/patient-123',
-                    }),
-                  },
-                },
-              ]),
-            },
-          ],
-        })
+        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient/patient-123')]))
         .mockResolvedValueOnce({
           resourceType: 'Parameters',
           parameter: [],
@@ -269,26 +440,7 @@ describe('SpacesInbox', () => {
 
       medplum.executeBot = vi
         .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method: 'GET',
-                      path: 'Patient/nonexistent',
-                    }),
-                  },
-                },
-              ]),
-            },
-          ],
-        })
+        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient/nonexistent')]))
         .mockResolvedValueOnce({
           resourceType: 'Parameters',
           parameter: [],
@@ -316,32 +468,46 @@ describe('SpacesInbox', () => {
     });
   });
 
+  describe('Component generation', () => {
+    test('streams the generated component into the preview panel and keeps it as a card', async () => {
+      const user = userEvent.setup();
+      medplum.executeBot = vi
+        .fn()
+        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient/patient-123')], true))
+        .mockResolvedValueOnce({ resourceType: 'Parameters', parameter: [] });
+      medplum.get = vi.fn().mockResolvedValue({ resourceType: 'Patient', id: 'patient-123' });
+      medplum.readResource = vi.fn().mockResolvedValue({ resourceType: 'Patient', id: 'patient-123' });
+      const componentStream = controlledStream();
+      vi.spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(createMockStreamingResponse('Here is your chart'))
+        .mockResolvedValueOnce(componentStream.response);
+      setup();
+      await user.type(screen.getByPlaceholderText('Ask, search, or make anything...'), 'Chart patients');
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
+      const generating = await screen.findByText('Generating component...', {}, { timeout: 3000 });
+      expect(screen.getByText('Component Preview')).toBeInTheDocument();
+      await closePanel(user, 'Component Preview');
+      expect(screen.queryByText('Component Preview')).not.toBeInTheDocument();
+      await user.click(generating);
+      expect(screen.getByText('Component Preview')).toBeInTheDocument();
+      await act(async () =>
+        componentStream.push('```jsx\nfunction Chart() {\n  return <Text>Generated chart</Text>;\n}\n```')
+      );
+      expect(await screen.findByText(/function Chart/)).toBeInTheDocument();
+      await act(async () => componentStream.close());
+      expect(await screen.findByText('View Component')).toBeInTheDocument();
+      expect(screen.getByText('Here is your chart')).toBeInTheDocument();
+      expect(screen.queryByText('Generating component...')).not.toBeInTheDocument();
+    });
+  });
+
   describe('Resource display', () => {
     test('displays resource boxes when resources are returned', async () => {
       const user = userEvent.setup();
 
       medplum.executeBot = vi
         .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method: 'GET',
-                      path: 'Patient/patient-123',
-                    }),
-                  },
-                },
-              ]),
-            },
-          ],
-        })
+        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient/patient-123')]))
         .mockResolvedValueOnce({
           resourceType: 'Parameters',
           parameter: [],
@@ -377,26 +543,7 @@ describe('SpacesInbox', () => {
 
       medplum.executeBot = vi
         .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method: 'GET',
-                      path: 'Patient/patient-123',
-                    }),
-                  },
-                },
-              ]),
-            },
-          ],
-        })
+        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient/patient-123')]))
         .mockResolvedValueOnce({
           resourceType: 'Parameters',
           parameter: [],
@@ -435,26 +582,7 @@ describe('SpacesInbox', () => {
 
       medplum.executeBot = vi
         .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method: 'GET',
-                      path: 'Patient/patient-123',
-                    }),
-                  },
-                },
-              ]),
-            },
-          ],
-        })
+        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient/patient-123')]))
         .mockResolvedValueOnce({
           resourceType: 'Parameters',
           parameter: [],
@@ -587,26 +715,7 @@ describe('SpacesInbox', () => {
 
       medplum.executeBot = vi
         .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method: 'GET',
-                      path: 'Patient?name=John',
-                    }),
-                  },
-                },
-              ]),
-            },
-          ],
-        })
+        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient?name=John')]))
         .mockResolvedValueOnce({
           resourceType: 'Parameters',
           parameter: [],

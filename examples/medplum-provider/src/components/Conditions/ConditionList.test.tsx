@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
+import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { HTTP_HL7_ORG } from '@medplum/core';
-import type { Condition, Encounter, Patient } from '@medplum/fhirtypes';
+import { HTTP_HL7_ORG, sleep } from '@medplum/core';
+import type { Condition, Encounter, Patient, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
+import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ConditionList } from './ConditionList';
@@ -34,7 +36,7 @@ const mockEncounter: WithId<Encounter> = {
   ],
 };
 
-const mockCondition: Condition = {
+const mockCondition: WithId<Condition> = {
   resourceType: 'Condition',
   id: 'condition-123',
   subject: { reference: 'Patient/patient-123' },
@@ -47,15 +49,58 @@ const mockCondition: Condition = {
       },
     ],
   },
-  clinicalStatus: {
-    coding: [
-      {
-        system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-        code: 'active',
-      },
-    ],
-  },
 };
+
+const hypertension: WithId<Condition> = {
+  ...mockCondition,
+  id: 'condition-456',
+  code: { coding: [{ code: 'I10', display: 'Essential hypertension' }] },
+};
+
+const diabetes: WithId<Condition> = {
+  ...mockCondition,
+  id: 'condition-789',
+  code: { coding: [{ code: 'E11.9', display: 'Type 2 diabetes mellitus' }] },
+};
+
+const expansions: Record<string, ValueSetExpansionContains[]> = {
+  'http://hl7.org/fhir/sid/icd-10-cm/vs/billable': [{ code: 'A00.9', display: 'Cholera, unspecified' }],
+  [HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical']: [{ code: 'active', display: 'Active' }],
+};
+
+function mockValueSetExpand(medplum: MockClient): void {
+  medplum.valueSetExpand = vi.fn().mockImplementation(async (params: { url: string }) => ({
+    resourceType: 'ValueSet',
+    expansion: { contains: expansions[params.url] ?? [] },
+  }));
+}
+
+async function submitCholeraDiagnosis(user: UserEvent): Promise<void> {
+  await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
+  await user.type(await screen.findByRole('searchbox', { name: 'ICD-10 Code' }), 'cholera');
+  await user.click(await screen.findByText('Cholera, unspecified'));
+  await user.type(await screen.findByRole('searchbox', { name: 'Status' }), 'active');
+  await user.click(await screen.findByText('Active'));
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+}
+
+/**
+ * Every rank Select portals its own dropdown, so the option is scoped to the one this input controls.
+ * @param user - The user-event session.
+ * @param select - The Select input to open.
+ * @param rank - The option label to choose.
+ */
+async function selectRank(user: UserEvent, select: HTMLElement, rank: string): Promise<void> {
+  await user.click(select);
+  const dropdownId = select.getAttribute('aria-controls');
+  const dropdown = dropdownId ? document.getElementById(dropdownId) : null;
+  const scope = dropdown ? within(dropdown) : screen;
+  await user.click(await scope.findByRole('option', { name: rank, hidden: true }));
+}
+
+function findRemoveButtons(): HTMLElement[] {
+  return screen.getAllByRole('button', { hidden: true }).filter((btn) => btn.querySelector('svg'));
+}
 
 describe('ConditionList', () => {
   let medplum: MockClient;
@@ -63,12 +108,14 @@ describe('ConditionList', () => {
   beforeEach(() => {
     medplum = new MockClient();
     vi.clearAllMocks();
+    notifications.clean();
   });
 
   const setup = (props: Partial<Parameters<typeof ConditionList>[0]> = {}): ReturnType<typeof render> => {
     return render(
       <MedplumProvider medplum={medplum}>
         <MantineProvider>
+          <Notifications />
           <ConditionList
             patient={mockPatient}
             encounter={mockEncounter}
@@ -94,27 +141,13 @@ describe('ConditionList', () => {
   });
 
   test('renders multiple conditions with ranks', () => {
-    const condition2: Condition = {
-      ...mockCondition,
-      id: 'condition-456',
-      code: {
-        coding: [
-          {
-            system: 'http://hl7.org/fhir/sid/icd-10-cm',
-            code: 'I10',
-            display: 'Essential hypertension',
-          },
-        ],
-      },
-    };
-
-    setup({ conditions: [mockCondition, condition2] });
+    setup({ conditions: [mockCondition, hypertension] });
 
     expect(screen.getByText('Acute bronchitis')).toBeInTheDocument();
     expect(screen.getByText('Essential hypertension')).toBeInTheDocument();
   });
 
-  test('opens add diagnosis modal', async () => {
+  test('opens add diagnosis modal and closes it on escape', async () => {
     const user = userEvent.setup();
     setup();
 
@@ -124,6 +157,9 @@ describe('ConditionList', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
       expect(screen.getByText('Add Diagnosis', { selector: '.mantine-Modal-title' })).toBeInTheDocument();
     });
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   test('displays modal form fields', async () => {
@@ -144,7 +180,7 @@ describe('ConditionList', () => {
     const onDiagnosisChange = vi.fn();
     const user = userEvent.setup();
 
-    vi.spyOn(medplum, 'deleteResource').mockResolvedValue({} as any);
+    vi.spyOn(medplum, 'deleteResource').mockResolvedValue({});
 
     setup({
       conditions: [mockCondition],
@@ -152,40 +188,40 @@ describe('ConditionList', () => {
       onDiagnosisChange,
     });
 
-    const removeButtons = screen.getAllByRole('button', { hidden: true });
-    const removeButton = removeButtons.find((btn) => btn.querySelector('svg'));
-
-    if (!removeButton) {
-      throw new Error('Remove button not found');
-    }
-
-    await user.click(removeButton);
+    await user.click(findRemoveButtons()[0]);
 
     await waitFor(() => {
       expect(medplum.deleteResource).toHaveBeenCalledWith('Condition', 'condition-123');
       expect(setConditions).toHaveBeenCalledWith([]);
-      expect(onDiagnosisChange).toHaveBeenCalled();
+      expect(onDiagnosisChange).toHaveBeenCalledWith([]);
     });
   });
 
-  test('displays rank selects for multiple conditions', () => {
-    const condition2: Condition = {
-      ...mockCondition,
-      id: 'condition-456',
-      code: {
-        coding: [
-          {
-            system: 'http://hl7.org/fhir/sid/icd-10-cm',
-            code: 'I10',
-            display: 'Essential hypertension',
-          },
-        ],
-      },
-    };
+  test('reindexes remaining diagnosis ranks after removing a condition', async () => {
+    const setConditions = vi.fn();
+    const onDiagnosisChange = vi.fn();
+    vi.spyOn(medplum, 'deleteResource').mockResolvedValue({});
+    const conditions = [mockCondition, hypertension, diabetes];
+    const diagnosis = conditions.map((c, i) => ({ condition: { reference: `Condition/${c.id}` }, rank: i + 1 }));
+    setup({ encounter: { ...mockEncounter, diagnosis }, conditions, setConditions, onDiagnosisChange });
+    await userEvent.setup().click(findRemoveButtons()[0]);
+    await waitFor(() => expect(setConditions).toHaveBeenCalledWith([hypertension, diabetes]));
+    expect(onDiagnosisChange).toHaveBeenCalledWith([diagnosis[1], diagnosis[2]].map((d, i) => ({ ...d, rank: i + 1 })));
+  });
 
-    setup({
-      conditions: [mockCondition, condition2],
-    });
+  test('shows an error notification when deleting a condition fails', async () => {
+    const setConditions = vi.fn();
+    const onDiagnosisChange = vi.fn();
+    vi.spyOn(medplum, 'deleteResource').mockRejectedValue(new Error('Delete failed'));
+    setup({ conditions: [mockCondition], setConditions, onDiagnosisChange });
+    await userEvent.setup().click(findRemoveButtons()[0]);
+    expect(await screen.findByText('Delete failed')).toBeInTheDocument();
+    expect(setConditions).not.toHaveBeenCalled();
+    expect(onDiagnosisChange).not.toHaveBeenCalled();
+  });
+
+  test('displays rank selects for multiple conditions', () => {
+    setup({ conditions: [mockCondition, hypertension] });
 
     const selects = screen.getAllByRole('textbox');
     expect(selects).toHaveLength(2);
@@ -193,253 +229,95 @@ describe('ConditionList', () => {
     expect(selects[1]).toHaveValue('2');
   });
 
+  test.each([
+    ['moves the first condition down to rank 3', 0, '3', [hypertension, diabetes, mockCondition]],
+    ['moves the last condition up to rank 1', 2, '1', [diabetes, mockCondition, hypertension]],
+  ])('%s and renumbers the diagnosis list', async (_name, index, rank, expected) => {
+    const setConditions = vi.fn();
+    const onDiagnosisChange = vi.fn();
+    setup({ conditions: [mockCondition, hypertension, diabetes], setConditions, onDiagnosisChange });
+
+    await selectRank(userEvent.setup(), screen.getAllByRole('textbox')[index], rank);
+
+    expect(setConditions).toHaveBeenCalledWith(expected);
+    expect(onDiagnosisChange).toHaveBeenCalledWith(
+      expected.map((c, i) => ({ condition: { reference: `Condition/${c.id}` }, rank: i + 1 }))
+    );
+  });
+
+  test('does not reorder when the encounter is missing', async () => {
+    const setConditions = vi.fn();
+    const onDiagnosisChange = vi.fn();
+    const encounter = undefined as unknown as Encounter;
+    setup({ encounter, conditions: [mockCondition, hypertension], setConditions, onDiagnosisChange });
+    await selectRank(userEvent.setup(), screen.getAllByRole('textbox')[0], '2');
+    expect(setConditions).not.toHaveBeenCalled();
+    expect(onDiagnosisChange).not.toHaveBeenCalled();
+  });
+
   test('fetches conditions on mount', async () => {
-    vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
+    vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition);
 
     const setConditions = vi.fn();
 
-    setup({
-      encounter: mockEncounter,
-      setConditions,
-    });
+    setup({ setConditions });
 
     await waitFor(() => {
       expect(medplum.readReference).toHaveBeenCalledWith({ reference: 'Condition/condition-123' });
     });
+    await waitFor(() => {
+      expect(setConditions).toHaveBeenCalledWith([mockCondition]);
+    });
+  });
+
+  test('does not fetch conditions when the encounter is missing', async () => {
+    const readReference = vi.spyOn(medplum, 'readReference');
+    const show = vi.spyOn(notifications, 'show');
+    const setConditions = vi.fn();
+    setup({ encounter: undefined as unknown as Encounter, setConditions });
+    expect(screen.getByText('Diagnosis')).toBeInTheDocument();
+    await act(() => sleep(0));
+    expect(readReference).not.toHaveBeenCalled();
+    expect(setConditions).not.toHaveBeenCalled();
+    expect(show).not.toHaveBeenCalled();
+  });
+
+  test('falls back to diagnosis position for a missing rank and skips diagnoses without a reference', async () => {
+    await Promise.all([mockCondition, hypertension].map((c) => medplum.createResource(c)));
+    const setConditions = vi.fn();
+    const diagnosis = [
+      { condition: { reference: 'Condition/condition-456' }, rank: 2 },
+      { condition: { reference: 'Condition/condition-123' } },
+      { condition: { display: 'Unlinked' } },
+    ];
+    setup({ encounter: { ...mockEncounter, diagnosis }, setConditions });
+
+    await waitFor(() => {
+      expect(setConditions).toHaveBeenCalled();
+    });
+    expect(setConditions.mock.calls[0][0].map((c: Condition) => c.id)).toEqual(['condition-123', 'condition-456']);
+  });
+
+  test('shows an error notification when fetching conditions fails', async () => {
+    vi.spyOn(medplum, 'readReference').mockRejectedValue(new Error('Condition not found'));
+    const setConditions = vi.fn();
+
+    setup({ setConditions });
+
+    expect(await screen.findByText('Condition not found')).toBeInTheDocument();
+    expect(setConditions).not.toHaveBeenCalled();
   });
 
   test('creates a new condition with cholera ICD-10 code and active status', async () => {
     const user = userEvent.setup();
     const setConditions = vi.fn();
     const onDiagnosisChange = vi.fn();
-
-    const newCondition: Condition & { id: string } = {
-      resourceType: 'Condition',
-      id: 'condition-new',
-      subject: { reference: 'Patient/patient-123' },
-      encounter: { reference: 'Encounter/encounter-123' },
-      code: {
-        coding: [
-          {
-            system: 'http://hl7.org/fhir/sid/icd-10-cm',
-            code: 'A00.9',
-            display: 'Cholera, unspecified',
-          },
-        ],
-      },
-      clinicalStatus: {
-        coding: [
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-            code: 'active',
-            display: 'Active',
-          },
-        ],
-      },
-    };
-
-    // Mock valueSetExpand for ICD-10 codes (cholera)
-    medplum.valueSetExpand = vi
-      .fn()
-      .mockImplementation(async (params: { url: string; filter?: string; count?: number }) => {
-        if (params.url === 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable') {
-          const choleraCodes = [
-            {
-              system: 'http://hl7.org/fhir/sid/icd-10-cm',
-              code: 'A00.0',
-              display: 'Cholera due to Vibrio cholerae 01, biovar cholerae',
-            },
-            {
-              system: 'http://hl7.org/fhir/sid/icd-10-cm',
-              code: 'A00.9',
-              display: 'Cholera, unspecified',
-            },
-          ];
-          const filtered = params.filter
-            ? choleraCodes.filter(
-                (c) =>
-                  c.code.toLowerCase().includes(params.filter?.toLowerCase() ?? '') ||
-                  c.display.toLowerCase().includes(params.filter?.toLowerCase() ?? '')
-              )
-            : choleraCodes;
-          const paginated = params.count ? filtered.slice(0, params.count) : filtered;
-          return {
-            resourceType: 'ValueSet',
-            expansion: {
-              total: filtered.length,
-              timestamp: new Date().toISOString(),
-              contains: paginated,
-            },
-          };
-        }
-        if (params.url === HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical') {
-          const statuses = [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-              code: 'active',
-              display: 'Active',
-            },
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-              code: 'inactive',
-              display: 'Inactive',
-            },
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-              code: 'resolved',
-              display: 'Resolved',
-            },
-          ];
-          const filtered = params.filter
-            ? statuses.filter(
-                (s) =>
-                  s.code.toLowerCase().includes(params.filter?.toLowerCase() ?? '') ||
-                  s.display.toLowerCase().includes(params.filter?.toLowerCase() ?? '')
-              )
-            : statuses;
-          const paginated = params.count ? filtered.slice(0, params.count) : filtered;
-          return {
-            resourceType: 'ValueSet',
-            expansion: {
-              total: filtered.length,
-              timestamp: new Date().toISOString(),
-              contains: paginated,
-            },
-          };
-        }
-        return { resourceType: 'ValueSet', expansion: { contains: [] } };
-      });
-
+    const newCondition: WithId<Condition> = { ...mockCondition, id: 'condition-new' };
+    mockValueSetExpand(medplum);
     vi.spyOn(medplum, 'createResource').mockResolvedValue(newCondition);
+    setup({ conditions: [mockCondition], setConditions, onDiagnosisChange });
+    await submitCholeraDiagnosis(user);
 
-    setup({
-      setConditions,
-      onDiagnosisChange,
-    });
-
-    // Open modal
-    await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-
-    // Wait for form fields to be ready
-    await waitFor(() => {
-      expect(screen.getByText('ICD-10 Code')).toBeInTheDocument();
-      expect(screen.getByText('Status')).toBeInTheDocument();
-    });
-
-    // Find ICD-10 code input by label
-    await waitFor(() => {
-      const inputs = screen.getAllByRole('searchbox');
-      expect(inputs.length).toBeGreaterThan(0);
-    });
-
-    const icd10Inputs = screen.getAllByRole('searchbox');
-    let icd10Input = icd10Inputs.find((input) => {
-      const label = input.closest('.mantine-InputWrapper-root')?.querySelector('label');
-      return label?.textContent?.includes('ICD-10 Code');
-    });
-
-    // Fallback to first input if label search doesn't work
-    if (!icd10Input && icd10Inputs.length > 0) {
-      icd10Input = icd10Inputs[0];
-    }
-
-    expect(icd10Input).toBeDefined();
-
-    if (icd10Input) {
-      // Type "cholera" to search
-      await user.type(icd10Input, 'cholera');
-
-      // Wait for valueSetExpand to be called with cholera filter
-      await waitFor(
-        () => {
-          const calls = vi.mocked(medplum.valueSetExpand).mock.calls;
-          const choleraCall = calls.find(
-            (call) =>
-              call[0]?.url === 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable' &&
-              call[0]?.filter?.toLowerCase().includes('cholera')
-          );
-          expect(choleraCall).toBeDefined();
-        },
-        { timeout: 10000 }
-      );
-
-      // Select cholera option using keyboard navigation (select second option A00.9)
-      await act(async () => {
-        fireEvent.keyDown(icd10Input, { key: 'ArrowDown', code: 'ArrowDown' });
-        await new Promise<void>((resolve) => {
-          setTimeout(() => {
-            resolve();
-          }, 100);
-        });
-        fireEvent.keyDown(icd10Input, { key: 'ArrowDown', code: 'ArrowDown' });
-        await new Promise<void>((resolve) => {
-          setTimeout(() => {
-            resolve();
-          }, 100);
-        });
-        fireEvent.keyDown(icd10Input, { key: 'Enter', code: 'Enter' });
-      });
-    }
-
-    // After selecting the ICD-10 code with maxValues={1}, the ICD-10 searchbox is
-    // removed and only the Status searchbox remains.
-    await waitFor(() => {
-      const inputs = screen.getAllByRole('searchbox');
-      expect(inputs.length).toBeGreaterThan(0);
-    });
-
-    const statusInputs = screen.getAllByRole('searchbox');
-    let statusInput = statusInputs.find((input) => {
-      const label = input.closest('.mantine-InputWrapper-root')?.querySelector('label');
-      return label?.textContent?.includes('Status');
-    });
-
-    // Fallback to first remaining input if label search doesn't work
-    if (!statusInput && statusInputs.length > 0) {
-      statusInput = statusInputs[0];
-    }
-
-    expect(statusInput).toBeDefined();
-
-    if (statusInput) {
-      // Type "active" to search
-      await user.type(statusInput, 'active');
-
-      // Wait for valueSetExpand to be called with condition-clinical
-      await waitFor(
-        () => {
-          const calls = vi.mocked(medplum.valueSetExpand).mock.calls;
-          const clinicalStatusCall = calls.find(
-            (call) => call[0]?.url === HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical'
-          );
-          expect(clinicalStatusCall).toBeDefined();
-        },
-        { timeout: 10000 }
-      );
-
-      // Select active status using keyboard navigation
-      await act(async () => {
-        fireEvent.keyDown(statusInput, { key: 'ArrowDown', code: 'ArrowDown' });
-        await act(async () => {
-          await new Promise<void>((resolve) => {
-            setTimeout(() => {
-              resolve();
-            }, 100);
-          });
-        });
-        fireEvent.keyDown(statusInput, { key: 'Enter', code: 'Enter' });
-      });
-    }
-
-    // Submit form
-    const saveButton = screen.getByRole('button', { name: 'Save' });
-    await user.click(saveButton);
-
-    // Wait for createResource to be called
     await waitFor(
       () => {
         expect(medplum.createResource).toHaveBeenCalled();
@@ -447,19 +325,31 @@ describe('ConditionList', () => {
       { timeout: 10000 }
     );
 
-    // Verify the condition was created with correct values
     const createCall = vi.mocked(medplum.createResource).mock.calls[0][0] as Condition;
     expect(createCall.code?.coding?.[0]?.code).toBe('A00.9');
     expect(createCall.code?.coding?.[0]?.display).toBe('Cholera, unspecified');
     expect(createCall.clinicalStatus?.coding?.[0]?.code).toBe('active');
 
-    // Verify setConditions and onDiagnosisChange were called
-    await waitFor(
-      () => {
-        expect(setConditions).toHaveBeenCalled();
-        expect(onDiagnosisChange).toHaveBeenCalled();
-      },
-      { timeout: 10000 }
-    );
+    await waitFor(() => {
+      expect(setConditions).toHaveBeenCalledWith([mockCondition, newCondition]);
+      expect(onDiagnosisChange).toHaveBeenCalledWith([
+        { condition: { reference: 'Condition/condition-123' }, rank: 1 },
+        { condition: { reference: 'Condition/condition-new' }, rank: 2 },
+      ]);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  }, 15000);
+
+  test('shows an error notification and closes the modal when creating a condition fails', async () => {
+    const setConditions = vi.fn();
+    const onDiagnosisChange = vi.fn();
+    mockValueSetExpand(medplum);
+    vi.spyOn(medplum, 'createResource').mockRejectedValue(new Error('Create failed'));
+    setup({ setConditions, onDiagnosisChange });
+    await submitCholeraDiagnosis(userEvent.setup());
+    expect(await screen.findByText('Create failed', {}, { timeout: 10000 })).toBeInTheDocument();
+    expect(setConditions).not.toHaveBeenCalled();
+    expect(onDiagnosisChange).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   }, 15000);
 });
