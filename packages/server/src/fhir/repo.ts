@@ -442,20 +442,11 @@ export class Repository extends FhirRepository implements Disposable {
   async recordFhirQuota(points: number): Promise<void> {
     this.assertUsable();
     const ctx = tryGetRequestContext();
-    const limiter = this.isSuperAdmin() ? undefined : ctx?.fhirRateLimiter;
-    if (ctx instanceof AuthenticatedRequestContext && ctx.isAsync) {
-      // Do not enforce rate limits in async context; instead, slow down the consumer
-      // in proportion to the weight of the operation being performed
-      const delay = points * getConfig().asyncDelayScaling;
-      if (this.inOwnTransaction()) {
-        // Don't hold the transaction open, but shift the delay to after the transaction commits
-        await this.postCommit(() => sleep(delay));
-      } else {
-        await sleep(delay);
-      }
-    } else {
-      await limiter?.consume(points);
-    }
+    const limiter =
+      this.isSuperAdmin() || (ctx instanceof AuthenticatedRequestContext && ctx.isAsync)
+        ? undefined
+        : ctx?.fhirRateLimiter;
+    await limiter?.consume(points);
   }
 
   async sqlRead<R extends QueryResultRow = any>(
