@@ -106,8 +106,8 @@ export function isDayOfWeek(value: string | undefined): value is DayOfWeek {
 /**
  * Returns whether a Schedule or HealthcareService has a SchedulingParameters extension.
  *
- * Unscoped: on a Schedule, where the extension repeats once per service, this reports that some
- * service is configured rather than any particular one. Ask `getSchedulingParameters` about a service.
+ * On a Schedule the extension repeats once per service, so this reports only that some service is
+ * configured; ask `getSchedulingParameters` about a particular one.
  * @param resource - Schedule or HealthcareService to inspect
  * @returns True if the resource has a SchedulingParameters extension
  */
@@ -133,10 +133,9 @@ export function getSchedulingRequirements(service: HealthcareService | undefined
   return requirements;
 }
 
-// Scheduling matches a `service` reference on resourceType and id, so a stored reference carrying a version
-// suffix still names the service. Match the same way: a reference the server honours but this module missed
-// would read as belonging to another service, and `setSchedulingParameter` would then add a second
-// SchedulingParameters extension for it, which the scheduling operations reject outright.
+// Match on resourceType and id only, as the server does, since a stored reference may carry a version
+// suffix and still name the service. Missing one makes `setSchedulingParameter` add a second
+// SchedulingParameters extension, which the scheduling operations reject outright.
 function isServiceReference(reference: Reference | undefined, serviceReference: string): boolean {
   if (!reference?.reference) {
     return false;
@@ -156,12 +155,7 @@ function matchesServiceSchedulingParameters(extension: Extension, serviceReferen
   );
 }
 
-/**
- * Finds the SchedulingParameters extensions a resource carries.
- * @param resource - Schedule or HealthcareService to inspect
- * @param service - HealthcareService the parameters are scoped to, for a Schedule subject
- * @returns Every matching SchedulingParameters extension, in document order
- */
+// Unscoped when `service` is undefined, which is how a HealthcareService's own parameters are read.
 function getSchedulingParameterExtensions(
   resource: Schedule | HealthcareService,
   service: WithId<HealthcareService> | undefined
@@ -173,14 +167,8 @@ function getSchedulingParameterExtensions(
   return resource.extension?.filter((extension) => matchesServiceSchedulingParameters(extension, reference)) ?? [];
 }
 
-/**
- * Splits the overloaded arguments, which differ because a Schedule subject names the service its parameters
- * configure and a HealthcareService subject does not.
- * @param resource - Subject the parameters live on
- * @param serviceOrRest - The service, for a Schedule subject, otherwise the argument after it
- * @param rest - The argument after the service, for a Schedule subject
- * @returns The service, where the subject has one, and the remaining argument
- */
+// The overloads differ in arity because a Schedule's parameters name the service they configure and a
+// HealthcareService's do not. Dispatch on the subject, not on how many arguments arrived.
 function splitSubject<T>(
   resource: Schedule | HealthcareService,
   serviceOrRest: WithId<HealthcareService> | T,
@@ -263,20 +251,13 @@ export function setSchedulingParameter<T extends Schedule | HealthcareService>(
   return setParameter(resource, service, subextension);
 }
 
-/**
- * Sets one parameter without the overload dispatch, so the flat write can reuse it.
- * @param resource - Schedule or HealthcareService to update
- * @param service - HealthcareService the parameters are scoped to, for a Schedule subject
- * @param subextension - SchedulingParameters sub-extension to set
- * @returns A cloned resource containing the parameter
- */
+// Without the overload dispatch, so the flat write can reuse it.
 function setParameter<T extends Schedule | HealthcareService>(
   resource: T,
   service: WithId<HealthcareService> | undefined,
   subextension: Extension
 ): T {
-  // Start from a cleared clone so a resource carrying more than one matching SchedulingParameters extension
-  // cannot keep a stale value behind.
+  // Clear first: a resource carrying more than one matching container would otherwise keep a stale value.
   const updated = clearParameter(resource, service, subextension.url);
 
   updated.extension ??= [];
@@ -332,13 +313,7 @@ export function clearSchedulingParameter<T extends Schedule | HealthcareService>
   return clearParameter(resource, service, url);
 }
 
-/**
- * Clears one parameter without the overload dispatch, so the set path can reuse it.
- * @param resource - Schedule or HealthcareService to update
- * @param service - HealthcareService the parameters are scoped to, for a Schedule subject
- * @param url - Url of the SchedulingParameters sub-extension to remove
- * @returns A cloned resource without the matching parameter
- */
+// Without the overload dispatch, so the set path can reuse it.
 function clearParameter<T extends Schedule | HealthcareService>(
   resource: T,
   service: WithId<HealthcareService> | undefined,
@@ -356,9 +331,7 @@ function clearParameter<T extends Schedule | HealthcareService>(
     return updated;
   }
 
-  // An extension with neither a value nor sub-extensions violates FHIR `ext-1`, and would leave
-  // `hasSchedulingParameters` reporting a resource that configures nothing as configured. Inert for a
-  // Schedule, whose container always keeps the `service` reference naming what it configures.
+  // An extension with neither a value nor sub-extensions violates FHIR `ext-1`.
   updated.extension = updated.extension.filter(
     (extension) => extension.url !== SchedulingParametersURI || !!extension.extension?.length
   );
@@ -540,9 +513,8 @@ export function minutesToSchedulingDuration(minutes: number): Duration {
  * an hourly alignment grid anchored to UTC, and one appointment per time. `duration` is the exception, and
  * a visit type that leaves it unset is bookable only on calendars that set it themselves.
  *
- * `availability` is absent by design. It nests rather than carrying a single `value[x]`, a service holds it
- * in the native `HealthcareService.availableTime` field rather than as a parameter, and it has a typed
- * wrapper of its own in `@medplum/react-scheduling`.
+ * `availability` is absent by design: it nests rather than carrying a single `value[x]`, a service holds it
+ * in `HealthcareService.availableTime`, and `@medplum/react-scheduling` wraps the Schedule form.
  */
 export interface SchedulingParameterValues {
   /** How long the appointment runs. */
@@ -563,7 +535,6 @@ export interface SchedulingParameterValues {
   alignmentTimezone?: string;
 }
 
-/** The parameters carrying a Duration, which this module reads and writes in minutes. */
 const DURATION_PARAMETERS = [
   'duration',
   'bufferBefore',
@@ -575,14 +546,9 @@ const DURATION_PARAMETERS = [
 /** The parameters carrying an IANA timezone identifier. */
 const CODE_PARAMETERS = ['timezone', 'alignmentTimezone'] as const satisfies (keyof SchedulingParameterValues)[];
 
-/**
- * Every flat parameter, which is what a write walks. A write covers the whole list rather than the keys the
- * caller happened to pass, so an absent key clears the parameter instead of leaving it behind.
- */
 const FLAT_PARAMETERS = [...DURATION_PARAMETERS, ...CODE_PARAMETERS, 'slotCapacity'] as const;
 
-// Scheduling reads an alignmentInterval of zero as hourly, a legacy encoding of the unset default.
-// Resolved here so callers never see the sentinel.
+// An alignmentInterval of zero is a legacy encoding of the unset hourly default.
 const HOURLY_ALIGNMENT_MINUTES = 60;
 
 function toSubextension(key: (typeof FLAT_PARAMETERS)[number], value: number | string): Extension {

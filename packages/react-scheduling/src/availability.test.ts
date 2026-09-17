@@ -72,8 +72,7 @@ function durationOf(schedule: Schedule): unknown {
 }
 
 // Whether a Schedule sets availability of its own, read off the resource for the same reason as
-// `schedulingParameters` above. There is no wrapper for this: the question is one line through
-// `getSchedulingParameters`, which is how callers ask it.
+// `schedulingParameters` above.
 function hasAvailability(schedule: Schedule, serviceId = 'service-1'): boolean {
   return schedulingParameters(schedule, serviceId).some((parameters) =>
     parameters.extension?.some((subextension) => subextension.url === 'availability')
