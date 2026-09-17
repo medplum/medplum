@@ -69,6 +69,17 @@ export const SchedulingMedicalNecessityURI = 'https://medplum.com/fhir/Structure
 export const SchedulingSlotCapacityURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSlotCapacity';
 
 /**
+ * This extension marks an `Appointment` created without the scheduling rules being
+ * applied: the time may be occupied or blocked, past the configured capacity, off the
+ * configured start interval, or any length at all.
+ *
+ * Such an appointment is written through the FHIR CRUD API rather than `$book`, so
+ * nothing else about it says that it was never checked. This records only that.
+ */
+export const SchedulingUnvalidatedBookingURI =
+  'https://medplum.com/fhir/StructureDefinition/SchedulingUnvalidatedBooking';
+
+/**
  * Extension URI holding a `Reference<HealthcareService>` on a `serviceType` CodeableConcept.
  *
  * In R5/R6, `serviceType` attributes change from `CodeableConcept[]` to
