@@ -11,10 +11,10 @@
 import type { WithId } from '@medplum/core';
 import {
   getExtensions,
-  getScheduleParameters,
+  getSchedulingParameters,
   isDayOfWeek,
   OperationOutcomeError,
-  setScheduleParameter,
+  setSchedulingParameter,
   validationError,
 } from '@medplum/core';
 import type { Extension, HealthcareService, HealthcareServiceAvailableTime, Schedule } from '@medplum/fhirtypes';
@@ -55,12 +55,12 @@ function toAvailableTime(availableTime: Extension): HealthcareServiceAvailableTi
 
 // The hours a Schedule sets for a service, ignoring the service default, or undefined when it sets none.
 // Kept internal: `getEffectiveAvailability` answers what is in effect, and a caller asking the narrower
-// question of whether the calendar has hours of its own reads `getScheduleParameters`.
+// question of whether the calendar has hours of its own reads `getSchedulingParameters`.
 function getScheduleAvailability(
   schedule: Schedule,
   service: WithId<HealthcareService>
 ): HealthcareServiceAvailableTime[] | undefined {
-  const availability = getScheduleParameters(schedule, service, 'availability');
+  const availability = getSchedulingParameters(schedule, service, 'availability');
 
   if (!availability.length) {
     return undefined;
@@ -159,10 +159,10 @@ function buildAvailabilityExtension(availableTime: HealthcareServiceAvailableTim
 /**
  * Immutably gives a Schedule its own hours for a HealthcareService, in place of the service default.
  * Reads back through `getEffectiveAvailability`; to drop the calendar back to the default, clear the
- * parameter with `clearScheduleParameter(schedule, service, 'availability')` from `@medplum/core`.
+ * parameter with `clearSchedulingParameter(schedule, service, 'availability')` from `@medplum/core`.
  *
  * Availability is the one parameter with a typed wrapper, because it is the only one that is not a single
- * `value[x]`: `bufferBefore` and the rest go through `setScheduleParameter` directly, already legible as
+ * `value[x]`: `bufferBefore` and the rest go through `setSchedulingParameter` directly, already legible as
  * `{ url: 'bufferBefore', valueDuration: { value: 10, unit: 'min' } }`. Availability is a repeating nested
  * structure, so hand-building it at every call site would mean re-deriving the encoding.
  *
@@ -182,5 +182,5 @@ export function setScheduleAvailability(
   service: WithId<HealthcareService>,
   availableTime: HealthcareServiceAvailableTime[]
 ): Schedule {
-  return setScheduleParameter(schedule, service, buildAvailabilityExtension(availableTime));
+  return setSchedulingParameter(schedule, service, buildAvailabilityExtension(availableTime));
 }

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { OperationOutcomeError, WithId } from '@medplum/core';
-import { clearScheduleParameter, SchedulingParametersURI } from '@medplum/core';
+import { clearSchedulingParameter, SchedulingParametersURI } from '@medplum/core';
 import type { Extension, HealthcareService, OperationOutcome, Schedule } from '@medplum/fhirtypes';
 import { getEffectiveAvailability, setScheduleAvailability } from './availability';
 
@@ -73,7 +73,7 @@ function durationOf(schedule: Schedule): unknown {
 
 // Whether a Schedule sets availability of its own, read off the resource for the same reason as
 // `schedulingParameters` above. There is no wrapper for this: the question is one line through
-// `getScheduleParameters`, which is how callers ask it.
+// `getSchedulingParameters`, which is how callers ask it.
 function hasAvailability(schedule: Schedule, serviceId = 'service-1'): boolean {
   return schedulingParameters(schedule, serviceId).some((parameters) =>
     parameters.extension?.some((subextension) => subextension.url === 'availability')
@@ -121,7 +121,7 @@ describe('getEffectiveAvailability', () => {
     };
 
     expect(
-      getEffectiveAvailability(serviceWithDefaults, clearScheduleParameter(scheduleWith(), service, 'availability'))
+      getEffectiveAvailability(serviceWithDefaults, clearSchedulingParameter(scheduleWith(), service, 'availability'))
     ).toEqual(serviceWithDefaults.availableTime);
     expect(getEffectiveAvailability(serviceWithDefaults)).toEqual(serviceWithDefaults.availableTime);
   });
@@ -239,7 +239,7 @@ describe('setScheduleAvailability', () => {
     ]);
     expect(durationOf(updated)).toEqual({ value: 30, unit: 'min' });
 
-    const cleared = clearScheduleParameter(updated, service, 'availability');
+    const cleared = clearSchedulingParameter(updated, service, 'availability');
     expect(hasAvailability(cleared)).toBe(false);
     expect(durationOf(cleared)).toEqual({ value: 30, unit: 'min' });
   });
@@ -267,7 +267,7 @@ describe('setScheduleAvailability', () => {
 
     expect(() => setScheduleAvailability(schedule, service, [])).toThrow(/at least one availableTime/);
     // Clearing is the way to hand the calendar back to the service default, and it still works.
-    expect(hasAvailability(clearScheduleParameter(schedule, service, 'availability'))).toBe(false);
+    expect(hasAvailability(clearSchedulingParameter(schedule, service, 'availability'))).toBe(false);
   });
 
   test('reports what is missing as a required-value validation issue', () => {
