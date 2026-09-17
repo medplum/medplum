@@ -371,17 +371,19 @@ describe('Set Password', () => {
       })
     );
 
-    // Fail the User update that follows the consume, so the transaction rolls back
-    const originalUpdate = Repository.prototype.updateResource;
-    const updateSpy = vi.spyOn(Repository.prototype, 'updateResource').mockImplementation(async function (
+    // Fail the User write that follows the consume, so the transaction rolls back
+    const originalPatch = Repository.prototype.patchResource;
+    const updateSpy = vi.spyOn(Repository.prototype, 'patchResource').mockImplementation(async function (
       this: Repository,
-      resource,
+      resourceType,
+      id,
+      patch,
       options
     ) {
-      if (resource.resourceType === 'User') {
+      if (resourceType === 'User') {
         throw new Error('Simulated failure');
       }
-      return originalUpdate.call(this, resource, options);
+      return originalPatch.call(this, resourceType, id, patch, options);
     });
 
     try {

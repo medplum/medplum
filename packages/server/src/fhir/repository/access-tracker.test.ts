@@ -6,11 +6,15 @@ import type { MockInstance } from 'vitest';
 import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 import { Repository } from '../repo';
+import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { SelectQuery } from '../sql';
 import { RepositoryAccessTracker } from './access-tracker';
 
 describe('Repository SQL access', () => {
-  const repo = new Repository({ author: { reference: 'system' } });
+  const repo = new Repository({
+    routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+    author: { reference: 'system' },
+  });
 
   test('Rejects a statement that declares no resource types', () => {
     expect(() =>

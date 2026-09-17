@@ -342,6 +342,15 @@ Returned when the requested time overlaps an existing busy Slot or falls outside
 }
 ```
 
+### HealthcareService is inactive
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "HealthcareService is inactive" } }]
+}
+```
+
 ## Related
 
 - [Appointment `$find`](/docs/scheduling/appointment-find) - Find available Slots

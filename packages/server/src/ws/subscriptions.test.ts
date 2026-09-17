@@ -26,8 +26,7 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type * as Constants from '../constants';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
-import type { SystemRepository } from '../fhir/repo';
-import { Repository } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
 import type * as FhirRewrite from '../fhir/rewrite';
 import { globalLogger } from '../logger';
 import * as keysModule from '../oauth/keys';
@@ -42,7 +41,7 @@ import {
   setActiveSubscription,
 } from '../pubsub';
 import * as redisModule from '../redis';
-import { createTestProject, withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, waitFor, withTestContext } from '../test.setup';
 import { findAndExecDispatchJob } from '../workers/test-utils';
 import { cleanupR4SubscriptionResources } from './subscriptions';
 
@@ -742,6 +741,87 @@ describe('WebSocket Subscription', () => {
         .expectClosed();
     }));
 
+  test('Removes hidden fields per subscriber access policy', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Hidden'], family: 'Fields' }],
+        birthDate: '1990-01-01',
+        gender: 'unknown',
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      // The two policies hide different fields so the assertions fail whichever socket is filtered
+      // first: one shared resource, filtered in place, would strip the other subscriber's field too.
+      const bindingTokenFor = async (hiddenField: string): Promise<string> => {
+        const { accessToken: userToken } = await addTestUser(project, {
+          accessPolicy: {
+            resourceType: 'AccessPolicy',
+            resource: [{ resourceType: 'Patient', hiddenFields: [hiddenField] }, { resourceType: 'Subscription' }],
+          },
+        });
+        const res = await request(server)
+          .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+          .set('Authorization', 'Bearer ' + userToken);
+        return (res.body as FhirParameters).parameter?.[0]?.valueString as string;
+      };
+
+      const noBirthDateToken = await bindingTokenFor('birthDate');
+      const noGenderToken = await bindingTokenFor('gender');
+
+      let boundCount = 0;
+      const bothBound = async (): Promise<void> => {
+        boundCount++;
+        await waitFor(async () => expect(boundCount).toStrictEqual(2));
+      };
+
+      let published = false;
+      const publishOnce = async (): Promise<void> => {
+        if (published) {
+          return;
+        }
+        published = true;
+        await publish(
+          WEBSOCKET_SUB_PUBLISH_CHANNEL,
+          JSON.stringify({ resource: patient, events: [[subscription.id, { includeResource: true }]] })
+        );
+      };
+
+      const expectNotification = (token: string, expected: Partial<Patient>): Promise<unknown> =>
+        request(server)
+          .ws('/ws/subscriptions-r4')
+          .sendJson({ type: 'bind-with-token', payload: { token } })
+          .expectJson((actual) => {
+            expect(actual).toMatchObject({
+              resourceType: 'Bundle',
+              entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+            });
+          })
+          .exec(bothBound)
+          .exec(publishOnce)
+          .expectJson((msg: Bundle) => {
+            const received = (msg.entry?.[1] as BundleEntry<Patient> | undefined)?.resource;
+            expect(received?.id).toStrictEqual(patient.id);
+            expect(received?.name).toStrictEqual(patient.name);
+            expect(received?.birthDate).toStrictEqual(expected.birthDate);
+            expect(received?.gender).toStrictEqual(expected.gender);
+          })
+          .close()
+          .expectClosed();
+
+      await Promise.all([
+        expectNotification(noBirthDateToken, { gender: patient.gender }),
+        expectNotification(noGenderToken, { birthDate: patient.birthDate }),
+      ]);
+    }));
+
   test('V2 payload with multiple subscriptions fires all events', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({
@@ -1146,9 +1226,12 @@ describe('WebSocket Subscription', () => {
 
       while (Date.now() - startTime < 5000 && !success) {
         try {
-          expect(globalLoggerErrorSpy).toHaveBeenCalledWith('[WS] Error occurred while rewriting attachments', {
-            err: expect.any(Error),
-          });
+          expect(globalLoggerErrorSpy).toHaveBeenCalledWith(
+            '[WS] Error occurred while preparing subscription notification',
+            {
+              err: expect.any(Error),
+            }
+          );
           success = true;
         } catch (err) {
           await sleep(100);
@@ -1974,19 +2057,13 @@ describe('Subscription Heartbeat', () => {
       createTestProject({
         project: { features: ['websocket-subscriptions'] },
         withAccessToken: true,
+        withRepo: true,
       })
     );
 
     project = result.project;
+    repo = result.repo;
     accessToken = result.accessToken;
-
-    repo = new Repository({
-      extendedMode: true,
-      projects: [project],
-      author: {
-        reference: 'ClientApplication/' + randomUUID(),
-      },
-    });
 
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 8521, resolve);
