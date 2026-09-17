@@ -69,34 +69,34 @@ export function SecurityPage(): JSX.Element | null {
       <Document>
         <Title>Sessions</Title>
         <Table>
-          <thead>
-            <tr>
-              <th>Project</th>
-              <th>OS</th>
-              <th>Browser</th>
-              <th>IP Address</th>
-              <th>Auth Method</th>
-              <th>Last Updated</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Project</Table.Th>
+              <Table.Th>OS</Table.Th>
+              <Table.Th>Browser</Table.Th>
+              <Table.Th>IP Address</Table.Th>
+              <Table.Th>Auth Method</Table.Th>
+              <Table.Th>Last Updated</Table.Th>
+              <Table.Th />
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
             {details.security.sessions.map((session) => (
-              <tr key={session.id}>
-                <td>{session.project?.display ?? 'Unknown'}</td>
-                <td>{session.os}</td>
-                <td>{session.browser}</td>
-                <td>{session.remoteAddress}</td>
-                <td>{session.authMethod}</td>
-                <td>{formatDateTime(session.lastUpdated)}</td>
-                <td>
+              <Table.Tr key={session.id}>
+                <Table.Td>{session.project?.display ?? 'Unknown'}</Table.Td>
+                <Table.Td>{session.os}</Table.Td>
+                <Table.Td>{session.browser}</Table.Td>
+                <Table.Td>{session.remoteAddress}</Table.Td>
+                <Table.Td>{session.authMethod}</Table.Td>
+                <Table.Td>{formatDateTime(session.lastUpdated)}</Table.Td>
+                <Table.Td>
                   <Anchor href="#" onClick={() => revokeLogin(session.id)}>
                     Revoke
                   </Anchor>
-                </td>
-              </tr>
+                </Table.Td>
+              </Table.Tr>
             ))}
-          </tbody>
+          </Table.Tbody>
         </Table>
       </Document>
       <Document>
