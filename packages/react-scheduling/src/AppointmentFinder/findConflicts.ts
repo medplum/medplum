@@ -77,8 +77,8 @@ export async function findBookingConflicts(options: FindBookingConflictsOptions)
       const overlapping = slots.filter((slot) => overlaps(slot, range));
       const label = getCandidateDisplay(candidate);
 
-      // Buffers and blocks are never overbookable, whatever the capacity: the server
-      // holds them to one occupant.
+      // Treat buffers and blocks as exclusive: the server never stamps a capacity on the
+      // `busy-unavailable` Slots it writes, and over-warning is safe for advisory text.
       if (overlapping.some((slot) => slot.status === 'busy-unavailable')) {
         return { schedule, label, kind: 'blocked' };
       }
