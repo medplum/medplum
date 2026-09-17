@@ -321,7 +321,7 @@ export const DrOkaforSchedule = setSchedulingParameter(
   buildSchedule('schedule-dr-okafor', 'Practitioner/dr-okafor', 'Dr. Tunde Okafor'),
   UltrasoundImagingService,
   { url: 'timezone', valueCode: 'America/Chicago' }
-) as WithId<Schedule>;
+);
 export const ImagingBenchSchedules: WithId<Schedule>[] = IMAGING_BENCH.map((member) =>
   buildSchedule(`schedule-${member.id}`, `Practitioner/${member.id}`, benchDisplay(member))
 );
