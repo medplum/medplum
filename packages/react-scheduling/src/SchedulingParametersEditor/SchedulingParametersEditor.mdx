@@ -1,0 +1,153 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+import * as SchedulingParametersEditorStories from './SchedulingParametersEditor.stories';
+
+<Meta of={SchedulingParametersEditorStories} />
+
+# SchedulingParametersEditor
+
+Edits the scheduling parameters a visit service type sets for itself, and whether it can be booked at all.
+
+Every calendar offering the service follows these unless it overrides a parameter of its own. Working hours
+are not here: they belong to [ScheduleAvailabilityEditor](?path=/docs/medplum-scheduleavailabilityeditor--docs),
+and a service holds them in `HealthcareService.availableTime` rather than as a parameter.
+
+The component renders form content only, so you choose the container: place it inline in a page, or wrap it
+in a Modal or Drawer. It returns an updated resource for you to persist (for example, via
+`medplum.updateResource`).
+
+```tsx
+<SchedulingParametersEditor
+  service={service}
+  onCancel={close}
+  onSave={async (updated) => {
+    await medplum.updateResource(updated);
+  }}
+/>
+```
+
+## What it edits
+
+{/* A plain table: Storybook's MDX does not load remark-gfm, so pipe tables render as a paragraph. */}
+
+<table>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Unit</th>
+      <th>Used for</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <code>duration</code>
+      </td>
+      <td>minutes</td>
+      <td>How long the appointment runs</td>
+    </tr>
+    <tr>
+      <td>
+        <code>bufferBefore</code>
+      </td>
+      <td>minutes</td>
+      <td>Prep time held before the start, reserved with a Slot of its own</td>
+    </tr>
+    <tr>
+      <td>
+        <code>bufferAfter</code>
+      </td>
+      <td>minutes</td>
+      <td>Cleanup or turnover time held after the end</td>
+    </tr>
+    <tr>
+      <td>
+        <code>alignmentInterval</code>
+      </td>
+      <td>minutes</td>
+      <td>The grid start times land on</td>
+    </tr>
+    <tr>
+      <td>
+        <code>alignmentOffset</code>
+      </td>
+      <td>minutes</td>
+      <td>Shifts that grid</td>
+    </tr>
+    <tr>
+      <td>
+        <code>slotCapacity</code>
+      </td>
+      <td>count</td>
+      <td>How many appointments may be held at the same start time</td>
+    </tr>
+    <tr>
+      <td>
+        <code>timezone</code>
+      </td>
+      <td>IANA id</td>
+      <td>Interprets the working hours. Shown only when already stored; see below</td>
+    </tr>
+    <tr>
+      <td>
+        <code>alignmentTimezone</code>
+      </td>
+      <td>IANA id</td>
+      <td>Whose midnight anchors the start time grid. Shown only when already stored; see below</td>
+    </tr>
+  </tbody>
+</table>
+
+A field left empty sets nothing, and its placeholder names what takes effect instead. Clearing the last
+parameter removes the `SchedulingParameters` extension rather than leaving an empty one behind.
+
+## Time zones
+
+Neither `timezone` nor `alignmentTimezone` can be set here. A visit type is booked across calendars that may
+sit in different places, so `timezone` belongs on each Schedule or on its actor. `alignmentTimezone` is left
+unset, which counts start times from UTC midnight, the one anchor every calendar already agrees on.
+
+Scheduling still honors either one stored on a HealthcareService, so a stored value is shown rather than
+left to act unseen. The two fields share one rule: a visit type storing either shows both, read-only with a
+button to remove them, and a visit type storing neither shows neither. They appear together so that removing
+one cannot leave the other out of sight.
+
+Removing `alignmentTimezone` is worth reading before clicking. Start times go back to being counted from UTC
+midnight, so local start times shift by an hour either side of a daylight saving change, which is the shift
+the parameter exists to prevent.
+
+## Seeded once
+
+The form is seeded from the service when it mounts and does not resync, so reset it by remounting with a
+`key`. This matches `ScheduleAvailabilityEditor`, and it is why the stories bump a key after each save.
+
+## What it deliberately does not do
+
+**It does not write.** `onSave` hands you the updated resource and the caller performs the write, so failure
+reporting and optimistic concurrency stay with the host. Returning a Promise keeps the button pending until
+the write settles.
+
+**It does not create a visit type.** The service must exist; this edits it.
+
+**It does not resolve inherited values.** It shows what the service itself sets. A calendar-level editor
+reading the same parameters would show what that calendar overrides, with the service behind it.
+
+## Three combinations worth knowing
+
+**Capacity alongside buffers.** Buffer time is always reserved exclusively and is never overbookable, so a
+`slotCapacity` above 1 is largely defeated by a non-zero buffer: the first appointment's buffer blocks the
+second. The form warns about it rather than refusing it.
+
+**Capacity is not retroactive.** Capacity is stamped onto each Slot when it is booked, so changing the
+number only affects new bookings.
+
+**An interval that does not divide into an hour moves at a daylight saving change.** Start times are counted
+from UTC midnight unless `alignmentTimezone` says otherwise, and moving that grid by an hour lands it back on
+itself only when the interval divides into 60. A 30-minute grid is unaffected; a 90 or 120-minute one has
+every start time shift. The fix is an interval that divides into 60, or an `alignmentTimezone` that observes
+the same change, which is set through the API rather than in this form.
+
+## Deactivating
+
+Turning off **Active** writes `active: false`, which stops `$find`, `$book` and `$hold`. Existing
+appointments are kept and can still be cancelled, but an appointment currently on hold can no longer be
+confirmed. The form states all three, and the save button relabels so the change does not read as routine.

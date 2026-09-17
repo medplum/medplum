@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
+  clearHealthcareServiceSchedulingParameter,
   CPT,
   createReference,
   deepClone,
@@ -130,6 +131,16 @@ export interface SchedulableServiceOptions {
   readonly locationIds?: readonly string[];
   /** What booking it is blocked on, recorded as eligibility codes. */
   readonly requirements?: readonly SchedulingRequirement[];
+  /** Prep time held before the appointment, omitted when the visit type sets none. */
+  readonly bufferBeforeMinutes?: number;
+  /** Cleanup or turnover time held after the appointment, omitted when the visit type sets none. */
+  readonly bufferAfterMinutes?: number;
+  /** Shifts the start time grid, omitted when the visit type sets none. */
+  readonly alignmentOffsetMinutes?: number;
+  /** How many appointments may be held at the same start time, omitted when the visit type sets none. */
+  readonly slotCapacity?: number;
+  /** Whether the visit type can be booked at all. Omitted, which scheduling reads as active. */
+  readonly active?: boolean;
 }
 
 /**
@@ -153,18 +164,58 @@ export function buildSchedulableService(options: SchedulableServiceOptions): Wit
         code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code }] },
       })),
     }),
+    ...(options.active !== undefined && { active: options.active }),
     extension: [
       {
         url: SchedulingParametersURI,
         extension: [
           { url: 'duration', valueDuration: { value: options.durationMinutes, unit: 'min' } },
           { url: 'alignmentInterval', valueDuration: { value: options.alignmentMinutes, unit: 'min' } },
+          // Emitted only when asked for, so a fixture silent about a parameter builds a service that sets none.
+          ...(options.bufferBeforeMinutes !== undefined
+            ? [{ url: 'bufferBefore', valueDuration: { value: options.bufferBeforeMinutes, unit: 'min' } }]
+            : []),
+          ...(options.bufferAfterMinutes !== undefined
+            ? [{ url: 'bufferAfter', valueDuration: { value: options.bufferAfterMinutes, unit: 'min' } }]
+            : []),
+          ...(options.alignmentOffsetMinutes !== undefined
+            ? [{ url: 'alignmentOffset', valueDuration: { value: options.alignmentOffsetMinutes, unit: 'min' } }]
+            : []),
+          ...(options.slotCapacity !== undefined
+            ? [{ url: 'slotCapacity', valuePositiveInt: options.slotCapacity }]
+            : []),
           { url: 'timezone', valueCode: 'America/New_York' },
         ],
       },
     ],
   };
 }
+
+/**
+ * A visit type configured the recommended way, for the configuration editor: every flat scheduling parameter
+ * except `timezone`, which belongs to each calendar or its actor.
+ */
+export const FullyConfiguredService = clearHealthcareServiceSchedulingParameter(
+  buildSchedulableService({
+    id: 'fully-configured',
+    name: 'Established Patient Visit',
+    category: 'Office visit',
+    durationMinutes: 30,
+    alignmentMinutes: 30,
+    bufferBeforeMinutes: 5,
+    bufferAfterMinutes: 10,
+    alignmentOffsetMinutes: 0,
+    slotCapacity: 1,
+  }),
+  'timezone'
+);
+
+/** A visit type that sets no scheduling parameters at all. */
+export const UnconfiguredService: WithId<HealthcareService> = {
+  resourceType: 'HealthcareService',
+  id: 'unconfigured',
+  name: 'Unconfigured Visit',
+};
 
 export const UltrasoundImagingService = buildSchedulableService({
   id: 'ultrasound-imaging',
