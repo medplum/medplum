@@ -3,14 +3,39 @@
 import { showNotification } from '@mantine/notifications';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
-import { IconCalendarCheck } from '@tabler/icons-react';
+import { IconCalendarCancel, IconCalendarCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { withBookStub, withFindStub, withFixtures, withMockedDate } from '../stories/decorators';
-import { CalendarWeekFixtures, inViewerTimezone, PatientFixtures, SchedulingFixtures } from '../stories/scheduling';
+import {
+  withBookStub,
+  withCancelStub,
+  withFindStub,
+  withFixtures,
+  withMockedDate,
+  withValueSetStub,
+} from '../stories/decorators';
+import {
+  CalendarWeekFixtures,
+  ImagingBenchFixtures,
+  inViewerTimezone,
+  PatientFixtures,
+  SchedulingFixtures,
+} from '../stories/scheduling';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
-/** The clinic as the fixtures keep it: Dr. Rivera in Eastern time, Dr. Okafor in Central. */
-const ELSEWHERE_FIXTURES = [...SchedulingFixtures, ...CalendarWeekFixtures, ...PatientFixtures];
+/**
+ * The clinic as the fixtures keep it: Dr. Rivera in Eastern time, Dr. Okafor in Central.
+ *
+ * `ImagingBenchFixtures` adds four more providers who declare no zone and hold no
+ * appointments. They are here to be *named* rather than watched — a booking form
+ * asking for "either of these, and any of those" needs a pool to draw from, and two
+ * providers is not one. Their calendars come up empty, which is what deselecting is for.
+ */
+const ELSEWHERE_FIXTURES = [
+  ...SchedulingFixtures,
+  ...ImagingBenchFixtures,
+  ...CalendarWeekFixtures,
+  ...PatientFixtures,
+];
 
 /** The same clinic, moved onto whatever clock the reader is on. */
 const LOCAL_FIXTURES = inViewerTimezone(ELSEWHERE_FIXTURES);
@@ -20,7 +45,7 @@ const LOCAL_FIXTURES = inViewerTimezone(ELSEWHERE_FIXTURES);
 export default {
   title: 'Medplum/SchedulingWorkspace',
   component: SchedulingWorkspace,
-  decorators: [withBookStub(), withFindStub(), withMockedDate],
+  decorators: [withBookStub(), withCancelStub(), withValueSetStub(), withFindStub(), withMockedDate],
   parameters: {
     // Default seeding includes a lot of cluttering Slot resources for Dr. Alice Smith; skip it.
     skipDefaultSeeding: true,
@@ -49,6 +74,14 @@ export default {
  *
  * Clicking a different day with the form part-filled re-opens it on the new day and
  * clears the answers; clicking again inside the day already open leaves them alone.
+ *
+ * Clicking a booked appointment instead — the Tuesday and Wednesday imaging visits, or
+ * anything booked from the form — opens its details over the calendar. A reason has to be
+ * searched for and picked before anything can be called off; "Cancel Appointment" then
+ * runs the visit through `Appointment/:id/$cancel`: the drawer comes back describing a
+ * cancelled appointment, showing the reason and with no button left on it, and the event
+ * behind it is drawn as cancelled without a reload, because the cancellation announces
+ * what it wrote the way booking does.
  *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
@@ -95,6 +128,14 @@ function Workspace(): JSX.Element {
             color: 'green',
             icon: <IconCalendarCheck size={18} />,
             title: 'Appointment booked',
+            message: describeBooking(appointment),
+          });
+        }}
+        onCancelled={(appointment) => {
+          showNotification({
+            color: 'red',
+            icon: <IconCalendarCancel size={18} />,
+            title: 'Appointment cancelled',
             message: describeBooking(appointment),
           });
         }}

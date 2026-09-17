@@ -27,7 +27,7 @@ import { loadTestConfig } from '../../config/loader';
 import * as storage from '../../storage/loader';
 import type { BinaryStorage } from '../../storage/types';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
-import { getGlobalSystemRepo } from '../repo';
+import type { Repository, SystemRepository } from '../repo';
 import {
   PackageInstallationConfigHashUrl,
   PackageInstallationErrorPhaseUrl,
@@ -57,6 +57,7 @@ class MockBinaryStorage {
 describe('PackageRelease $install', () => {
   const app = express();
   let project: WithId<Project>;
+  let systemRepo: SystemRepository;
   let adminAccessToken: string;
   let nonAdminAccessToken: string;
 
@@ -64,16 +65,15 @@ describe('PackageRelease $install', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    const testProject = await createTestProject({
-      withAccessToken: true,
-      membership: { admin: true },
-    });
+    let adminRepo: Repository;
+    ({
+      project,
+      repo: adminRepo,
+      accessToken: adminAccessToken,
+    } = await createTestProject({ withAccessToken: true, withRepo: true, membership: { admin: true } }));
+    systemRepo = adminRepo.getSystemRepo();
 
-    const testUser = await addTestUser(testProject.project);
-
-    project = testProject.project;
-    adminAccessToken = testProject.accessToken;
-    nonAdminAccessToken = testUser.accessToken;
+    ({ accessToken: nonAdminAccessToken } = await addTestUser(project));
   });
 
   afterAll(async () => {
@@ -85,7 +85,6 @@ describe('PackageRelease $install', () => {
   });
 
   test('Require semver version string', async () => {
-    const systemRepo = getGlobalSystemRepo();
     await expect(async () =>
       withTestContext(() =>
         systemRepo.createResource<PackageRelease>({
@@ -103,7 +102,6 @@ describe('PackageRelease $install', () => {
   });
 
   test('Forbidden for non-admin user', async () => {
-    const systemRepo = getGlobalSystemRepo();
     const packageRelease = await withTestContext(() =>
       systemRepo.createResource<PackageRelease>({
         resourceType: 'PackageRelease',
@@ -126,8 +124,6 @@ describe('PackageRelease $install', () => {
   });
 
   test('Success for admin user', async () => {
-    const systemRepo = getGlobalSystemRepo();
-
     // Create a test bundle to install
     const bundle: Bundle = {
       resourceType: 'Bundle',
@@ -194,7 +190,6 @@ describe('PackageRelease $install', () => {
   });
 
   test('An installed bot is deployed and given a membership', async () => {
-    const systemRepo = getGlobalSystemRepo();
     const identifierSystem = 'https://example.com/' + randomUUID();
 
     // A Bundle can only describe the Bot row. Everything that makes a bot
@@ -267,7 +262,6 @@ describe('PackageRelease $install', () => {
   });
 
   test('An installed bot that cannot be deployed fails the install', async () => {
-    const systemRepo = getGlobalSystemRepo();
 
     // No `bots` feature, so the package cannot work in this project at all. The
     // install has to say so rather than record `installed` over a dead bot.
@@ -327,7 +321,6 @@ describe('PackageRelease $install', () => {
   });
 
   test('Install Bundle of conditional upserts is not limited by the serializable entry cap', async () => {
-    const systemRepo = getGlobalSystemRepo();
     const identifierSystem = 'https://example.com/' + randomUUID();
 
     // The entry caps only apply when the Bundle is processed as a transaction,
@@ -418,7 +411,6 @@ describe('PackageRelease $install', () => {
   });
 
   test('Project admin can browse and install a release from a linked catalog project', async () => {
-    const systemRepo = getGlobalSystemRepo();
 
     // Catalog project publishes the package and exports the catalog types (option 1: link + export).
     const { project: catalogProject } = await createTestProject({
@@ -506,8 +498,6 @@ describe('PackageRelease $install', () => {
   });
 
   test('Error handling when bundle processing fails', async () => {
-    const systemRepo = getGlobalSystemRepo();
-
     // Create a malformed bundle
     const malformedBundle = {
       resourceType: 'Bundle',
@@ -613,7 +603,6 @@ describe('PackageRelease $install', () => {
     setupBotIdentifier: string,
     options?: { runAsUser?: boolean; exportedResourceType?: Project['exportedResourceType'] }
   ): Promise<{ implProject: WithId<Project>; setupBot: WithId<Bot> }> {
-    const systemRepo = getGlobalSystemRepo();
     const implProject = await withTestContext(() =>
       systemRepo.createResource<Project>({
         resourceType: 'Project',
@@ -642,7 +631,6 @@ describe('PackageRelease $install', () => {
     bundle: Bundle,
     options?: { version?: string; setupBot?: string; implProject?: string; packageRef?: string }
   ): Promise<WithId<PackageRelease>> {
-    const systemRepo = getGlobalSystemRepo();
     const binary = await withTestContext(() =>
       systemRepo.createResource<Binary>({
         resourceType: 'Binary',
@@ -730,7 +718,7 @@ describe('PackageRelease $install', () => {
     expect(resolveId(call.runAs.project)).toStrictEqual(project.id);
 
     // impl project linked
-    const updatedProject = await getGlobalSystemRepo().readResource<Project>('Project', project.id);
+    const updatedProject = await systemRepo.readResource<Project>('Project', project.id);
     expect(updatedProject.link?.some((l) => l.project?.reference === 'Project/' + implProject.id)).toBe(true);
 
     const installations = await searchInstallations('10.0.0');
@@ -861,7 +849,7 @@ describe('PackageRelease $install', () => {
     // scoping makes a cross-project collision unlikely, but a duplicate publish
     // within one impl project would otherwise resolve nondeterministically.
     await withTestContext(() =>
-      getGlobalSystemRepo().createResource<Bot>({
+      systemRepo.createResource<Bot>({
         resourceType: 'Bot',
         meta: { project: implProject.id },
         name: 'Duplicate Setup Bot',
@@ -902,7 +890,7 @@ describe('PackageRelease $install', () => {
     // A bot in the *calling* project sharing the setup bot's identifier. Resolution
     // is scoped to the impl project, so this must be ignored rather than preferred.
     const impostor = await withTestContext(() =>
-      getGlobalSystemRepo().createResource<Bot>({
+      systemRepo.createResource<Bot>({
         resourceType: 'Bot',
         meta: { project: project.id },
         name: 'Impostor',
@@ -1047,7 +1035,7 @@ describe('PackageRelease $install', () => {
 
     // Pre-existing in-progress record (recent), simulating another caller in flight
     await withTestContext(() =>
-      getGlobalSystemRepo().createResource<PackageInstallation>({
+      systemRepo.createResource<PackageInstallation>({
         resourceType: 'PackageInstallation',
         meta: { project: project.id },
         package: release.package,
@@ -1244,7 +1232,7 @@ describe('PackageRelease $install', () => {
     }
 
     async function projectSecrets(): Promise<Record<string, string | undefined>> {
-      const current = await getGlobalSystemRepo().readResource<Project>('Project', project.id);
+      const current = await systemRepo.readResource<Project>('Project', project.id);
       return Object.fromEntries((current.secret ?? []).map((s) => [s.name, s.valueString]));
     }
 
@@ -1267,7 +1255,7 @@ describe('PackageRelease $install', () => {
       await installWithSettings('31.0.0', { API_KEY: 'sk-old', WEBHOOK_SECRET: 'whsec-old' });
       await installWithSettings('32.0.0', { API_KEY: 'sk-new', WEBHOOK_SECRET: 'whsec-old' });
 
-      const current = await getGlobalSystemRepo().readResource<Project>('Project', project.id);
+      const current = await systemRepo.readResource<Project>('Project', project.id);
       const apiKeys = (current.secret ?? []).filter((s) => s.name === 'API_KEY');
       expect(apiKeys).toHaveLength(1);
       expect(apiKeys[0].valueString).toBe('sk-new');
@@ -1276,7 +1264,7 @@ describe('PackageRelease $install', () => {
     test('Records how many secrets were written, without the values', async () => {
       await installWithSettings('33.0.0', { API_KEY: 'sk-audited', WEBHOOK_SECRET: 'whsec-audited' });
 
-      const events = await getGlobalSystemRepo().searchResources<AuditEvent>({
+      const events = await systemRepo.searchResources<AuditEvent>({
         resourceType: 'AuditEvent',
         filters: [
           { code: '_project', operator: Operator.EQUALS, value: project.id },
@@ -1293,7 +1281,7 @@ describe('PackageRelease $install', () => {
 
   describe('audit trail', () => {
     async function findInstallAuditEvents(releaseId: string): Promise<AuditEvent[]> {
-      const events = await getGlobalSystemRepo().searchResources<AuditEvent>({
+      const events = await systemRepo.searchResources<AuditEvent>({
         resourceType: 'AuditEvent',
         filters: [
           { code: '_project', operator: Operator.EQUALS, value: project.id },
@@ -1412,7 +1400,6 @@ describe('PackageRelease $install', () => {
   // so each needs its own check or the operation is a confused deputy.
   describe('Elevated reads stay inside what the caller proved access to', () => {
     test('Refuses a release whose content Binary belongs to another project', async () => {
-      const systemRepo = getGlobalSystemRepo();
       const otherProject = await withTestContext(() =>
         systemRepo.createResource<Project>({ resourceType: 'Project', name: 'other-' + randomUUID() })
       );
@@ -1463,7 +1450,7 @@ describe('PackageRelease $install', () => {
       expect(res.body.issue[0].details.text).toContain('must export only Bot resources');
       expect(res.body.issue[0].details.text).toContain('Bot, Patient');
 
-      const updatedProject = await getGlobalSystemRepo().readResource<Project>('Project', project.id);
+      const updatedProject = await systemRepo.readResource<Project>('Project', project.id);
       expect(updatedProject.link?.some((l) => l.project?.reference === 'Project/' + implProject.id)).toBeFalsy();
     });
 

@@ -9,7 +9,8 @@ import { createPrivateKey, createPublicKey, createVerify } from 'node:crypto';
 import { pipeline } from 'node:stream';
 import { promisify } from 'node:util';
 import { getConfig } from '../config/loader';
-import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+import { getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getBinaryStorage } from './loader';
 
 export const storageRouter = Router();
@@ -86,7 +87,8 @@ async function verifyAndLoadBinary(req: Request, res: Response, method: 'GET' | 
 
   const id = singularize(req.params.id) ?? '';
   const projectId = originalUrl.searchParams.get('Project');
-  const systemRepo = projectId ? await getProjectSystemRepo(projectId) : getGlobalSystemRepo();
+  // SHARDING: Drop support for URLs without Project: https://github.com/medplum/medplum/issues/10451
+  const systemRepo = projectId ? await getProjectSystemRepo(projectId) : getShardSystemRepo(TODO_SHARD_ID);
   return systemRepo.readResource<Binary>('Binary', id);
 }
 

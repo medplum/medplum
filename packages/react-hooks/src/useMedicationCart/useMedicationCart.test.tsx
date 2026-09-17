@@ -1,8 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { WithId } from '@medplum/core';
-import { INVALID_MEDICATION_CART_RESPONSE, INVALID_MEDICATION_CHECKOUT_RESPONSE } from '@medplum/core';
+import type { MedicationCartContentsResponse, WithId } from '@medplum/core';
+import {
+  INVALID_MEDICATION_CART_CONTENTS_RESPONSE,
+  INVALID_MEDICATION_CART_RESPONSE,
+  INVALID_MEDICATION_CHECKOUT_RESPONSE,
+} from '@medplum/core';
 import type { MedicationRequest, Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, renderHook, waitFor } from '@testing-library/react';
@@ -24,6 +28,7 @@ function wrapper(medplum: MockClient) {
 const REMOVE_URL = 'fhir/R4/MedicationRequest/$remove-cart-medication';
 const CLEAR_URL = 'fhir/R4/MedicationRequest/$clear-cart';
 const CHECKOUT_URL = 'fhir/R4/MedicationRequest/$checkout-medications';
+const GET_CART_URL = 'fhir/R4/MedicationRequest/$get-cart';
 
 describe('useMedicationCart', () => {
   test('removeFromCart POSTs to $remove-cart-medication and decodes the Parameters response', async () => {
@@ -212,6 +217,65 @@ describe('useMedicationCart', () => {
 
     await expect(result.current.checkout({ patientId: 'p1', medicationRequestIds: ['mr-1'] })).rejects.toThrow(
       INVALID_MEDICATION_CHECKOUT_RESPONSE
+    );
+  });
+
+  test('getCart POSTs to $get-cart and decodes the reconciled lines', async () => {
+    const medplum = new MockClient();
+    const responseParams: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'vendorPatientId', valueInteger: 24057 },
+        { name: 'vendorTotal', valueInteger: 2 },
+        { name: 'draftCount', valueInteger: 1 },
+        { name: 'locked', valueBoolean: false },
+        {
+          name: 'items',
+          part: [
+            { name: 'status', valueCode: 'in-sync' },
+            { name: 'medicationRequestId', valueId: 'mr-1' },
+            { name: 'vendorLineId', valueString: 'rx-1' },
+          ],
+        },
+        {
+          name: 'items',
+          part: [
+            { name: 'status', valueCode: 'vendor-only' },
+            { name: 'vendorLineId', valueString: 'rx-2' },
+            { name: 'drugName', valueString: 'Melatonin 3 MG' },
+          ],
+        },
+      ],
+    };
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(responseParams);
+
+    const { result } = renderHook(() => useMedicationCart(), { wrapper: wrapper(medplum) });
+
+    let out: MedicationCartContentsResponse | undefined;
+    await act(async () => {
+      out = await result.current.getCart({ patientId: 'p1' });
+    });
+
+    // The vendor holds a line we never staged, so a draft-derived badge (1)
+    // would under-report what the prescriber sees (2).
+    expect(out).toMatchObject({ vendorTotal: 2, draftCount: 1, locked: false });
+    expect(out?.items[1]).toMatchObject({ status: 'vendor-only', drugName: 'Melatonin 3 MG' });
+    const [calledUrl, body] = postSpy.mock.calls[0];
+    expect(calledUrl.toString()).toContain(GET_CART_URL);
+    expect(body).toMatchObject({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'patientId', valueId: 'p1' }],
+    });
+  });
+
+  test('getCart throws when response is not a Parameters envelope', async () => {
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'post').mockResolvedValueOnce({ vendorTotal: 0 });
+
+    const { result } = renderHook(() => useMedicationCart(), { wrapper: wrapper(medplum) });
+
+    await expect(result.current.getCart({ patientId: 'p1' })).rejects.toThrow(
+      INVALID_MEDICATION_CART_CONTENTS_RESPONSE
     );
   });
 

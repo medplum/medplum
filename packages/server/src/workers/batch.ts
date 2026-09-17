@@ -221,7 +221,7 @@ async function addBatchJobData(jobData: BatchJobData): Promise<Job<BatchJobData>
 }
 
 export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<AsyncJob>): Promise<Job<BatchJobData>> {
-  const { authentication: authState, requestId, traceId } = getAuthenticatedContext();
+  const { authState, requestId, traceId } = getAuthenticatedContext();
   // Persist the (potentially large) input bundle to durable object storage rather than carrying it
   // in the BullMQ job data (see https://github.com/medplum/medplum/issues/9124). The worker loads
   // it on the first run to preprocess.
@@ -241,7 +241,7 @@ export async function queueLegacyBatchProcessing(
   bundle: Bundle,
   asyncJob: WithId<AsyncJob>
 ): Promise<Job<BatchJobData>> {
-  const { authentication: authState, requestId, traceId } = getAuthenticatedContext();
+  const { authState, requestId, traceId } = getAuthenticatedContext();
   const jobData: LegacyBatchJobData = { asyncJob, bundle, authState, requestId, traceId };
   return addBatchJobData(jobData);
 }

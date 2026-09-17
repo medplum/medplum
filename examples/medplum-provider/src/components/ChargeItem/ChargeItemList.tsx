@@ -9,6 +9,7 @@ import { AsyncAutocomplete, CodeableConceptInput, useMedplum } from '@medplum/re
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { CPT_COPYRIGHT_NOTICE } from '../../config/constants';
 import { applyChargeItemDefinition, calculateTotalPrice } from '../../utils/chargeitems';
 import { showErrorNotification } from '../../utils/notifications';
 import ChargeItemPanel from './ChargeItemPanel';
@@ -104,6 +105,10 @@ export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
           Add Charge Item
         </Button>
       </Flex>
+
+      <Text size="xs" c="dimmed" mb="md">
+        {CPT_COPYRIGHT_NOTICE}
+      </Text>
 
       {chargeItems.length > 0 ? (
         <Stack gap="md">
@@ -204,6 +209,10 @@ function AddChargeItemModal({ opened, onClose, onSubmit }: AddChargeItemModalPro
           required
           onChange={setCptCode}
         />
+
+        <Text size="xs" c="dimmed">
+          {CPT_COPYRIGHT_NOTICE}
+        </Text>
 
         <Box>
           <Text size="sm" fw={500} mb={5}>
