@@ -10,6 +10,28 @@ export function publish(channel: string, message: string | Buffer): Promise<numb
   return getPubSubRedis().publish(channel, message);
 }
 
+/**
+ * Publishes messages to a channel in order, in a single round trip.
+ *
+ * Ordering is the point: a FHIRcast context change publishes the events derived from it alongside
+ * the event itself, and they only make sense in sequence — a subscriber has to see a patient opened
+ * before the report inside it. A pipeline keeps the publishes on one connection in one order, which
+ * is also what stops them from being turned into concurrent publishes later.
+ * @param channel - The channel to publish to.
+ * @param messages - The messages to publish, in the order subscribers should receive them.
+ */
+export async function publishAll(channel: string, messages: (string | Buffer)[]): Promise<void> {
+  if (messages.length === 1) {
+    await publish(channel, messages[0]);
+    return;
+  }
+  const pipeline = getPubSubRedis().pipeline();
+  for (const message of messages) {
+    pipeline.publish(channel, message);
+  }
+  await pipeline.exec();
+}
+
 // --- Active WebSocket subscription hash helpers ---
 
 export type ActiveSubscriptionEntry = {
