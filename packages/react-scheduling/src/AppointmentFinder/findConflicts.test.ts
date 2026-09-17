@@ -46,8 +46,7 @@ describe('findBookingConflicts', () => {
       medplum,
       service: UltrasoundImagingService,
       candidates: [candidate(schedule)],
-      start: START,
-      end: END,
+      range: { start: START, end: END },
     });
     return result.map(describeConflict);
   }

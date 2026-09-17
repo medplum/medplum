@@ -4,6 +4,7 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
 import type { HealthcareService, Slot } from '@medplum/fhirtypes';
 import { resolveBookingGeometry } from '../bookingGeometry';
+import type { DateTimeRange } from '../types';
 import type { ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getCandidateDisplay } from './AppointmentFinder.schedules';
 
@@ -25,24 +26,22 @@ export interface FindBookingConflictsOptions {
   readonly medplum: MedplumClient;
   readonly service: WithId<HealthcareService>;
   readonly candidates: readonly ScheduleCandidate[];
-  readonly start: Date;
-  readonly end: Date;
+  readonly range: DateTimeRange;
 }
 
 /**
  * Whether a Slot shares any time with the interval.
  * @param slot - The Slot to test.
- * @param startMs - When the interval opens.
- * @param endMs - When it closes.
+ * @param range - The interval to test against.
  * @returns True when the two overlap.
  */
-function overlaps(slot: Slot, startMs: number, endMs: number): boolean {
-  const slotStart = slot.start ? Date.parse(slot.start) : NaN;
-  const slotEnd = slot.end ? Date.parse(slot.end) : NaN;
+function overlaps(slot: Slot, range: DateTimeRange): boolean {
+  const slotStart = Date.parse(slot.start);
+  const slotEnd = Date.parse(slot.end);
   if (Number.isNaN(slotStart) || Number.isNaN(slotEnd)) {
     return false;
   }
-  return slotStart < endMs && slotEnd > startMs;
+  return slotStart < range.end.getTime() && slotEnd > range.start.getTime();
 }
 
 /**
@@ -59,11 +58,9 @@ function overlaps(slot: Slot, startMs: number, endMs: number): boolean {
  * @returns One conflict per schedule that has one, in the order the schedules were given.
  */
 export async function findBookingConflicts(options: FindBookingConflictsOptions): Promise<BookingConflict[]> {
-  const { medplum, service, candidates, start, end } = options;
-  const startIso = start.toISOString();
-  const endIso = end.toISOString();
-  const startMs = start.getTime();
-  const endMs = end.getTime();
+  const { medplum, service, candidates, range } = options;
+  const startIso = range.start.toISOString();
+  const endIso = range.end.toISOString();
 
   const found = await Promise.all(
     candidates.map(async (candidate): Promise<BookingConflict | undefined> => {
@@ -77,7 +74,7 @@ export async function findBookingConflicts(options: FindBookingConflictsOptions)
         ['_count', String(CONFLICT_PAGE_SIZE)],
       ]);
 
-      const overlapping = slots.filter((slot) => overlaps(slot, startMs, endMs));
+      const overlapping = slots.filter((slot) => overlaps(slot, range));
       const label = getCandidateDisplay(candidate);
 
       // Buffers and blocks are never overbookable, whatever the capacity: the server

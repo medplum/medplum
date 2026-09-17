@@ -404,10 +404,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     }
 
     let active = true;
-    const start = new Date(chosen.start);
-    const end = new Date(chosen.end);
+    const range = { start: new Date(chosen.start), end: new Date(chosen.end) };
     const timer = setTimeout(() => {
-      findBookingConflicts({ medplum, service, candidates, start, end })
+      findBookingConflicts({ medplum, service, candidates, range })
         .then((found) => {
           if (active) {
             setConflicts(found);
