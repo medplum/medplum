@@ -454,8 +454,11 @@ describe('compareColumnValues', () => {
     const versionId = randomUUID();
     const lastUpdated = new Date('2025-06-25T12:00:00.000Z');
     const author = { reference: 'Practitioner/author' };
+    const projectId = randomUUID();
 
-    const tombstone = JSON.parse(buildExpungedHistoryContent('Patient', id, versionId, lastUpdated, author));
+    const tombstone = JSON.parse(
+      buildExpungedHistoryContent('Patient', id, versionId, lastUpdated, author, projectId)
+    );
 
     expect(tombstone).toStrictEqual({
       resourceType: 'Patient',
@@ -464,10 +467,11 @@ describe('compareColumnValues', () => {
         versionId,
         lastUpdated: lastUpdated.toISOString(),
         author,
+        project: projectId,
+        deleted: true,
         tag: [ExpungedHistoryTag],
       },
     });
-    expect(tombstone.meta.deleted).toBeUndefined();
   });
 
   test('buildExpungedHistoryContent falls back to the system author', () => {
@@ -478,6 +482,8 @@ describe('compareColumnValues', () => {
     const tombstone = JSON.parse(buildExpungedHistoryContent('Patient', id, versionId, lastUpdated));
 
     expect(tombstone.meta.author).toStrictEqual({ reference: 'system' });
+    expect(tombstone.meta.deleted).toBe(true);
+    expect(tombstone.meta.project).toBeUndefined();
   });
 
   test('parseHistoryContent', () => {

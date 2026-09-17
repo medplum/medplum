@@ -81,17 +81,23 @@ export function buildExpungedHistoryContent(
   id: string,
   versionId: string,
   lastUpdated: Date,
-  author?: Reference
+  author?: Reference,
+  projectId?: string
 ): string {
+  const meta: Meta = {
+    versionId,
+    lastUpdated: lastUpdated.toISOString(),
+    author: author?.reference ? author : { reference: 'system' },
+    deleted: true,
+    tag: [ExpungedHistoryTag],
+  };
+  if (projectId) {
+    meta.project = projectId;
+  }
   return stringify({
     resourceType,
     id,
-    meta: {
-      versionId,
-      lastUpdated: lastUpdated.toISOString(),
-      author: author?.reference ? author : { reference: 'system' },
-      tag: [ExpungedHistoryTag],
-    },
+    meta,
   });
 }
 

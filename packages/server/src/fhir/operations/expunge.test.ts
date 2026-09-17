@@ -345,8 +345,8 @@ async function expectExpungeTombstone(resourceType: string, id: string | undefin
   expect(rows).toHaveLength(1);
   const tombstone = JSON.parse(rows[0].content);
   expect(isExpungedHistoryVersion(tombstone)).toBe(true);
-  expect(tombstone).toMatchObject({ resourceType, id });
-  expect(tombstone.meta.deleted).toBeUndefined();
+  expect(tombstone).toMatchObject({ resourceType, id, meta: { deleted: true } });
+  expect(tombstone.meta.project).toBeDefined();
   expect(Object.keys(tombstone).sort()).toEqual(['id', 'meta', 'resourceType']);
 }
 

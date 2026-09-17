@@ -827,8 +827,7 @@ export class Repository extends FhirRepository implements Disposable {
 
       for (const row of rows) {
         const parsed = parseHistoryContent(row.content);
-        const isExpunged = isExpungedHistoryVersion(parsed);
-        const isDeleted = parsed.meta?.deleted || isExpunged;
+        const isDeleted = parsed.meta?.deleted;
         const resource = !isDeleted ? this.removeHiddenFields(parsed as T) : undefined;
         const outcome: OperationOutcome = !isDeleted
           ? allOk
@@ -840,7 +839,7 @@ export class Repository extends FhirRepository implements Disposable {
                   severity: 'error',
                   code: 'deleted',
                   details: {
-                    text: `${isExpunged ? 'Expunged' : 'Deleted'} on ${row.lastUpdated}`,
+                    text: `${isExpungedHistoryVersion(parsed) ? 'Expunged' : 'Deleted'} on ${row.lastUpdated}`,
                   },
                 },
               ],
@@ -909,7 +908,7 @@ export class Repository extends FhirRepository implements Disposable {
 
       const parsed = parseHistoryContent(rows[0].content);
       // FHIR vread of a delete version returns 410 Gone with no resource body.
-      if (parsed.meta?.deleted || isExpungedHistoryVersion(parsed)) {
+      if (parsed.meta?.deleted) {
         throw new OperationOutcomeError(gone);
       }
 
@@ -1549,11 +1548,11 @@ export class Repository extends FhirRepository implements Disposable {
     const projectId = this.isSuperAdmin() ? undefined : this.currentProject()?.id;
     const deletedIds = await this.withTransaction<string[]>(
       async (txRepo) => {
-        const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id');
+        const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id').returning('projectId');
         if (projectId) {
           deleteQuery.where('projectId', '=', projectId);
         }
-        const deleteResult = await txRepo.sqlWrite<{ id: string }>(deleteQuery, resourceType, {
+        const deleteResult = await txRepo.sqlWrite<{ id: string; projectId: string }>(deleteQuery, resourceType, {
           source: 'repo.expungeResources.resource',
         });
         if (deleteResult.length === 0) {
@@ -1583,13 +1582,20 @@ export class Repository extends FhirRepository implements Disposable {
         await txRepo.sqlWrite(
           new InsertQuery(
             resourceType + '_History',
-            deletedIds.map((id) => {
+            deleteResult.map((res) => {
               const versionId = txRepo.generateId();
               return {
-                id,
+                id: res.id,
                 versionId,
                 lastUpdated,
-                content: buildExpungedHistoryContent(resourceType, id, versionId, lastUpdated, txRepo.getAuthor()),
+                content: buildExpungedHistoryContent(
+                  resourceType,
+                  res.id,
+                  versionId,
+                  lastUpdated,
+                  txRepo.getAuthor(),
+                  res.projectId
+                ),
               };
             })
           ),

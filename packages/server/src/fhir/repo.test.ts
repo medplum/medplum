@@ -1479,6 +1479,8 @@ describe('FHIR Repo', () => {
         id: patient.id,
         meta: {
           author,
+          project: patient.meta?.project,
+          deleted: true,
           tag: [
             {
               system: 'http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle',
@@ -1487,7 +1489,6 @@ describe('FHIR Repo', () => {
           ],
         },
       });
-      expect(tombstone.meta.deleted).toBeUndefined();
     }
 
     async function expectPatientPresent(patient: WithId<Patient>): Promise<void> {
