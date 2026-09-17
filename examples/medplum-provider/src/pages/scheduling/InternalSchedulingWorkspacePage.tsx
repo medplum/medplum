@@ -12,7 +12,7 @@ import type { JSX } from 'react';
  */
 export function InternalSchedulingWorkspacePage(): JSX.Element {
   return (
-    <div style={{ height: '100%', padding: '1rem', boxSizing: 'border-box' }}>
+    <div style={{ height: '100dvh', padding: '1rem', boxSizing: 'border-box' }}>
       <SchedulingWorkspace />
     </div>
   );
