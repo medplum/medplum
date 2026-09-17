@@ -72,7 +72,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
 
   const headerContent = (
     <Group align="center" gap="sm" wrap="nowrap" className={styles.headerContent}>
-      <ResourceAvatar value={patient} size={48} radius={48} className={styles.avatar} />
+      <ResourceAvatar value={patient} size={48} radius={48} />
       <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
         <Tooltip
           label={formatHumanName(patient.name?.[0])}

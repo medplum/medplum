@@ -11,14 +11,6 @@
   background-color: var(--mantine-color-white);
 }
 
-.avatar {
-  border: 1px solid var(--mantine-color-gray-3);
-}
-
-[data-mantine-color-scheme='dark'] .avatar {
-  border-color: var(--mantine-color-dark-4);
-}
-
 .headerLink,
 .headerContent {
   flex: 1;
