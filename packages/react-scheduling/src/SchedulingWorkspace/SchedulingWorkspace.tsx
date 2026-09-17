@@ -61,7 +61,14 @@ export interface SchedulingWorkspaceProps {
    * rules would refuse: over occupied or blocked time, past the configured capacity,
    * or at a time or length the visit type does not offer.
    *
-   * Passing it draws the fields; it enforces nothing. Which users get it is the host's.
+   * Passing it draws the fields; it enforces nothing. Which users get it is the host
+   * application's responsibility.
+   *
+   * Such a booking is sent as a transaction, so the appointment and its Slots commit
+   * together on projects with the `transaction-bundles` feature enabled. Without it they
+   * are applied as a plain batch, where an appointment that failed to write would leave
+   * Slots holding no visit.
+   * @see https://www.medplum.com/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions
    */
   readonly canBypassSchedulingRules?: boolean;
   /**

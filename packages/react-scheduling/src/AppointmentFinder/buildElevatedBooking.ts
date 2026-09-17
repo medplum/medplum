@@ -98,6 +98,11 @@ export function buildElevatedBooking(options: ElevatedBookingOptions): Appointme
 
 /**
  * Writes a proposal that no rule was checked against.
+ *
+ * Sent as a transaction, so the appointment and its Slots commit together on projects with
+ * the `transaction-bundles` feature enabled. Without it they are applied as a plain batch,
+ * where an appointment that failed to write would leave Slots holding no visit.
+ * @see https://www.medplum.com/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions
  * @param medplum - The client to write through.
  * @param proposal - The proposal to write, with its Slots contained.
  * @returns The bundle the server answered with.
