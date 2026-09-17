@@ -853,6 +853,46 @@ describe('PackageRelease $install', () => {
     );
   });
 
+  test('An ambiguous setup bot identifier in the impl project is refused', async () => {
+    const { implProject } = await publishImplProjectWithSetupBot('test-setup-dup');
+    const execSpy = vi.spyOn(botExecute, 'executeBot');
+
+    // Two bots sharing the identifier within the same impl project. `_project`
+    // scoping makes a cross-project collision unlikely, but a duplicate publish
+    // within one impl project would otherwise resolve nondeterministically.
+    await withTestContext(() =>
+      getGlobalSystemRepo().createResource<Bot>({
+        resourceType: 'Bot',
+        meta: { project: implProject.id },
+        name: 'Duplicate Setup Bot',
+        runtimeVersion: 'awslambda',
+        runAsUser: true,
+        identifier: [{ system: 'https://www.medplum.com/bots', value: 'test-setup-dup' }],
+      })
+    );
+
+    const release = await publishRelease(installBundle('test-proxy-dup'), {
+      setupBot: 'test-setup-dup',
+      implProject: implProject.id,
+      version: '22.1.0',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res.status).not.toBe(200);
+    expect(res.body.issue[0].details.text).toContain('matched multiple bots');
+    expect(execSpy).not.toHaveBeenCalled();
+
+    const installations = await searchInstallations('22.1.0');
+    expect(installations[0].status).toBe('error');
+    expect(installations[0].extension?.find((e) => e.url === PackageInstallationErrorPhaseUrl)?.valueCode).toBe(
+      'setup-bot'
+    );
+  });
+
   test('A customer-project bot cannot impersonate the published setupBot', async () => {
     const { implProject, setupBot } = await publishImplProjectWithSetupBot('test-setup-f');
     const execSpy = vi

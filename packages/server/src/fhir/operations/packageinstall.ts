@@ -734,17 +734,28 @@ async function runSetupBot(
 
   // Reading as system is bounded to the one bot this release names, and the
   // caller already proved access to the release itself (same rationale as
-  // reading the install Bundle Binary above).
-  const bot = await ctx.systemRepo.searchOne<Bot>({
+  // reading the install Bundle Binary above). Two results are enough to know the
+  // identifier is ambiguous — mirroring `getBotForRequest` and
+  // `resolveConditionalEntries`, which refuse rather than execute whichever row
+  // the database happened to return first.
+  const [bot, duplicate] = await ctx.systemRepo.searchResources<Bot>({
     resourceType: 'Bot',
     filters: [
       { code: 'identifier', operator: Operator.EXACT, value: setupBotIdentifier },
       { code: '_project', operator: Operator.EQUALS, value: implProjectId },
     ],
+    count: 2,
   });
   if (!bot) {
     throw new OperationOutcomeError(
       badRequest(`Setup bot not found in impl project: ${setupBotIdentifier}. Was the package published?`)
+    );
+  }
+  if (duplicate) {
+    throw new OperationOutcomeError(
+      badRequest(
+        `Setup bot identifier "${setupBotIdentifier}" matched multiple bots in the impl project; publish exactly one.`
+      )
     );
   }
 
