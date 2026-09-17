@@ -23,6 +23,7 @@ schedule as needed.
 A few constraints trip people up most often — see [Common Pitfalls](#common-pitfalls) for a quick reference before you start.
 
 The diagram below shows how availability can be defined at both
+
 - The [actor level](/docs/scheduling/defining-availability#actor-level-availability) (via Schedule)
 - The [service level](/docs/scheduling/defining-availability#service-level-availability) (via HealthcareService)
 
@@ -65,18 +66,18 @@ When using scheduling APIs to interact with multiple `Schedule` resources at onc
 
 #### Extension Fields
 
-| Url                 | Type                                                        | Default Value                               | Description                                                                                                                                                             | `HealthcareService` usage notes                               | `Schedule` usage notes                                    |
-| ------------------- | ----------------------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------- |
-| `duration`          | [Duration](/docs/api/fhir/datatypes/duration)               | *none*                                      | Determines how long the time increments for a Slot are                                                                                                                  |                                                               | Recommended to prefer setting this on `HealthcareService` |
-| `timezone`          | Code                                                        | *none*                                      | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability. When not set, falls back to the `Schedule.actor`'s timezone. |                                                               |                                                           |
-| `bufferBefore`      | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes (no buffer needed)                | Sets prep-time needed before appointment start. It must be free at booking time, and will be reserved with a Slot.                                                      |                                                               |                                                           |
-| `bufferAfter`       | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes (no buffer needed)                | Sets cleanup time needed after appointment end. It must be free at booking time, and will be reserved with a Slot.                                                      |                                                               |                                                           |
-| `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration)               | 60 minutes (appointments start on-the-hour) | Start times must align to this interval (e.g., every 15 minutes)                                                                                                        |                                                               | Recommended to prefer setting this on `HealthcareService` |
-| `alignmentOffset`   | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes                                   | Shifts allowed start times by this offset (e.g., with a 15-minute alignmentInterval and a 5-minute alignmentOffset, valid starts are :05, :20, :35, :50)                |                                                               | Recommended to prefer setting this on `HealthcareService` |
-| `alignmentTimezone` | Code                                                        | 'Etc/UTC'                                   | Anchors the alignment grid to local midnight of the given timezone, keeping start times stable across DST transitions.                                                  |                                                               | Recommended to prefer setting this on `HealthcareService` |
-| `service`           | `Reference(HealthcareService)`                              | *none*                                      | Pointer to the `HealthcareService` that these parameters  should override.                                                                                              | Not permitted                                                 | Required; parameters without it are ignored               |
-| `slotCapacity`      | positiveInt                                                 | 1 (no overbooking)                          | Maximum number of appointments that may occupy a time concurrently. A value above 1 enables [overbooking](#overbooking).                                                |                                                               |                                                           |
-| `availability`      | [Nested Extension](#availability-extension)                 | Always available                            | Weekly recurring availability windows. When set, appointments must fit inside these windows.                                                                            | Not permitted (use `HealthcareService.availableTime` instead) |                                                           |
+| Url                 | Type                                          | Default Value                               | Description                                                                                                                                                             | `HealthcareService` usage notes                               | `Schedule` usage notes                                    |
+| ------------------- | --------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------- |
+| `duration`          | [Duration](/docs/api/fhir/datatypes/duration) | _none_                                      | Determines how long the time increments for a Slot are                                                                                                                  |                                                               | Recommended to prefer setting this on `HealthcareService` |
+| `timezone`          | Code                                          | _none_                                      | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability. When not set, falls back to the `Schedule.actor`'s timezone. |                                                               |                                                           |
+| `bufferBefore`      | [Duration](/docs/api/fhir/datatypes/duration) | 0 minutes (no buffer needed)                | Sets prep-time needed before appointment start. It must be free at booking time, and will be reserved with a Slot.                                                      |                                                               |                                                           |
+| `bufferAfter`       | [Duration](/docs/api/fhir/datatypes/duration) | 0 minutes (no buffer needed)                | Sets cleanup time needed after appointment end. It must be free at booking time, and will be reserved with a Slot.                                                      |                                                               |                                                           |
+| `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration) | 60 minutes (appointments start on-the-hour) | Start times must align to this interval (e.g., every 15 minutes)                                                                                                        |                                                               | Recommended to prefer setting this on `HealthcareService` |
+| `alignmentOffset`   | [Duration](/docs/api/fhir/datatypes/duration) | 0 minutes                                   | Shifts allowed start times by this offset (e.g., with a 15-minute alignmentInterval and a 5-minute alignmentOffset, valid starts are :05, :20, :35, :50)                |                                                               | Recommended to prefer setting this on `HealthcareService` |
+| `alignmentTimezone` | Code                                          | 'Etc/UTC'                                   | Anchors the alignment grid to local midnight of the given timezone, keeping start times stable across DST transitions.                                                  |                                                               | Recommended to prefer setting this on `HealthcareService` |
+| `service`           | `Reference(HealthcareService)`                | _none_                                      | Pointer to the `HealthcareService` that these parameters should override.                                                                                               | Not permitted                                                 | Required; parameters without it are ignored               |
+| `slotCapacity`      | positiveInt                                   | 1 (no overbooking)                          | Maximum number of appointments that may occupy a time concurrently. A value above 1 enables [overbooking](#overbooking).                                                |                                                               |                                                           |
+| `availability`      | [Nested Extension](#availability-extension)   | Always available                            | Weekly recurring availability windows. When set, appointments must fit inside these windows.                                                                            | Not permitted (use `HealthcareService.availableTime` instead) |                                                           |
 
 <details>
 <summary>Example of the `SchedulingParameters` extension on a `HealthcareService`</summary>
@@ -86,7 +87,6 @@ When using scheduling APIs to interact with multiple `Schedule` resources at onc
 </MedplumCodeBlock>
 
 </details>
-
 
 <details>
 <summary>Example of the `SchedulingParameters` extension on a `Schedule`</summary>
@@ -120,6 +120,7 @@ Example: to align your appointments starting at 9:15, 10:15, ..., set `alignment
 When clocks change for DST, slots appear to shift by an hour in local time — for example, a 9:00am slot may appear at 8:00am or 10:00am. Setting `alignmentTimezone` anchors the grid to local midnight instead, keeping slot times consistent year-round.
 
 **Relationship to `timezone`:** The two fields serve distinct purposes and can be set independently:
+
 - `timezone` — which timezone to use when reading `availableStartTime`/`availableEndTime` values
 - `alignmentTimezone` — which timezone's midnight to use as the alignment grid anchor
 
@@ -130,7 +131,7 @@ The rare case in which they differ: a provider whose availability hours and appo
 Actor-level availability is defined per [`Schedule`](/docs/api/fhir/resources/schedule) and is resolved **field-by-field against** the [service-level parameters](#service-level-availability) on the [HealthcareService](/docs/api/fhir/resources/healthcareservice):
 
 - For each parameter (`duration`, buffers, alignment, **and `availability`**), the value set on the Schedule **overrides** the HealthcareService value for that field; any field the Schedule does not set is **inherited** from the service. This is an override, not a merge — a Schedule that sets its own `availability` fully replaces the service's `availableTime`, rather than narrowing it. See [Override Behavior](#override-behavior) for the full resolution order.
-- A separate **intersection** applies only when [booking across multiple Schedules at once](#example-3-location-specific-complex-surgical-scheduling) (e.g. surgeon + room + anesthesiologist): a time is offered only when *every* required Schedule is available. That intersection is between Schedules — not between a Schedule and its HealthcareService.
+- A separate **intersection** applies only when [booking across multiple Schedules at once](#example-3-location-specific-complex-surgical-scheduling) (e.g. surgeon + room + anesthesiologist): a time is offered only when _every_ required Schedule is available. That intersection is between Schedules — not between a Schedule and its HealthcareService.
 
 ### The Concept of Implicit Availability
 
@@ -152,7 +153,7 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
 
 :::note[`Schedule` has no `name` element]
 
-In FHIR R4, [`Schedule`](/docs/api/fhir/resources/schedule) has no `name` element. This is easy to trip over because `Organization`, `HealthcareService`, and `Location` all *do* have `name`. Sending `name` on a `Schedule` fails validation with `Invalid additional property "name"`.
+In FHIR R4, [`Schedule`](/docs/api/fhir/resources/schedule) has no `name` element. This is easy to trip over because `Organization`, `HealthcareService`, and `Location` all _do_ have `name`. Sending `name` on a `Schedule` fails validation with `Invalid additional property "name"`.
 
 Instead, use `comment` — a free-text field that's a good place for a human-readable description or label (for example, `"Dr. Smith's Office Visit availability"`).
 
@@ -168,16 +169,16 @@ If a provider's hours at one site differ from that site's default, add a [per-se
 
 ### `availability` Extension
 
-The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://hl7.org/fhir/R5/metadatatypes.html#Availability) datatype shape.  It is encoded using nested R4 extensions (because R4 does not have a native `Availability` data type).  This is close to the R4 definition of `HealthcareService.availabileTime`, which is another possible source of scheduling availability data. If this sub-extension is not present, availability is constrained only by the presence of existing `Slot` resources for the schedule.
+The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://hl7.org/fhir/R5/metadatatypes.html#Availability) datatype shape. It is encoded using nested R4 extensions (because R4 does not have a native `Availability` data type). This is close to the R4 definition of `HealthcareService.availabileTime`, which is another possible source of scheduling availability data. If this sub-extension is not present, availability is constrained only by the presence of existing `Slot` resources for the schedule.
 
-| Sub-extension         | Type          | Description                                          | Repeatable |
-| --------------------- | ------------- | ---------------------------------------------------- | ---------- |
-| `availableTime`       | (nested)      | One entry per availability window                    | Yes        |
-| ↳ `daysOfWeek`        | `valueCode`   | One entry per day (`mon`–`sun`)                      | Yes        |
-| ↳ `allDay`            | `valueBoolean`| If `true`, window spans the full day                 | No         |
-| ↳ `availableStartTime`| `valueTime`   | Opening time (not allowed  when `allDay` is present) | No         |
-| ↳ `availableEndTime`  | `valueTime`   | Closing time (not allowed  when `allDay` is present) | No         |
-| `notAvailableTime`    | (nested)      | Typed for future use; not yet processed              | Yes        |
+| Sub-extension          | Type           | Description                                         | Repeatable |
+| ---------------------- | -------------- | --------------------------------------------------- | ---------- |
+| `availableTime`        | (nested)       | One entry per availability window                   | Yes        |
+| ↳ `daysOfWeek`         | `valueCode`    | One entry per day (`mon`–`sun`)                     | Yes        |
+| ↳ `allDay`             | `valueBoolean` | If `true`, window spans the full day                | No         |
+| ↳ `availableStartTime` | `valueTime`    | Opening time (not allowed when `allDay` is present) | No         |
+| ↳ `availableEndTime`   | `valueTime`    | Closing time (not allowed when `allDay` is present) | No         |
+| `notAvailableTime`     | (nested)       | Typed for future use; not yet processed             | Yes        |
 
 <MedplumCodeBlock language="ts" selectBlocks="scheduleAvailability">
   {ExampleCode}
@@ -209,10 +210,10 @@ In Medplum scheduling, **one HealthcareService represents one bookable appointme
 
 A `HealthcareService` carries several `CodeableConcept` fields. The most relevant for scheduling is `type` (the specific appointment/service type that the `Schedule.serviceType` matches against). The full set:
 
-| Field       | Meaning                                  | Conventional code system                                                                                                                  |
-| ----------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `category`  | Broad category of service                | HL7 [`service-category`](https://hl7.org/fhir/R4/valueset-service-category.html)                                                          |
-| `type`      | The specific service / appointment type  | HL7 [`service-type`](https://hl7.org/fhir/R4/valueset-service-type.html), or [SNOMED CT](https://www.snomed.org/) procedure codes         |
+| Field       | Meaning                                  | Conventional code system                                                                                                                     |
+| ----------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `category`  | Broad category of service                | HL7 [`service-category`](https://hl7.org/fhir/R4/valueset-service-category.html)                                                             |
+| `type`      | The specific service / appointment type  | HL7 [`service-type`](https://hl7.org/fhir/R4/valueset-service-type.html), or [SNOMED CT](https://www.snomed.org/) procedure codes            |
 | `specialty` | Clinical specialties handled by the site | [SNOMED CT](https://www.snomed.org/) practice-setting codes ([c80-practice-codes](https://hl7.org/fhir/R4/valueset-c80-practice-codes.html)) |
 
 These bindings are **example/preferred, not required** — FHIR does not force a particular terminology here. You can use a code from the HL7 `service-type` value set, a SNOMED CT code (as the surgical examples below do), or your own local system (as the `http://example.org/appointment-types` examples below do). What matters is that the same code/system you put on `HealthcareService.type` is what the `Schedule.serviceType` declares and what `$find` is queried with.
@@ -302,10 +303,9 @@ When [booking across multiple Schedules at once](#example-3-location-specific-co
 
 :::warning[Changing `slotCapacity` does not affect existing bookings]
 
-`slotCapacity` is resolved and stamped onto each Slot at the moment it is booked — the Slot carries its own capacity from then on. Raising or lowering `slotCapacity` on the `HealthcareService` or `Schedule` only changes the limit applied to *new* bookings; it does not retroactively change the capacity of Slots that were already booked under the old value.
+`slotCapacity` is resolved and stamped onto each Slot at the moment it is booked — the Slot carries its own capacity from then on. Raising or lowering `slotCapacity` on the `HealthcareService` or `Schedule` only changes the limit applied to _new_ bookings; it does not retroactively change the capacity of Slots that were already booked under the old value.
 
 :::
-
 
 ## Timezone Resolution
 
@@ -324,7 +324,6 @@ There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/p
 </MedplumCodeBlock>
 
 :::
-
 
 **Timezone Resolution Order:**
 
