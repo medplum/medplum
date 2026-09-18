@@ -3,6 +3,10 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Scheduling
 
+:::tip[Planning this workflow?]
+The [Scheduling Decision Guide](/docs/decision-guides/scheduling) walks through requirements questions and FHIR modeling decisions for scheduling; use it alongside these docs.
+:::
+
 :::info[Beta]
 
 Medplum Scheduling is currently in [beta](/docs/compliance/alpha-beta).
