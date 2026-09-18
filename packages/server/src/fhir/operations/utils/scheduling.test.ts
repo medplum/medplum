@@ -9,6 +9,7 @@ import { withPath } from '../../../util/withpath';
 import type { Repository } from '../../repo';
 import {
   applyExistingSlots,
+  getSchedulingParametersGroup,
   intersectIntervals,
   intervalsExceedingCapacity,
   isAlignedToGrid,
@@ -43,6 +44,19 @@ const service: WithId<HealthcareService> = {
   id: generateId(),
   meta: { project: project.id },
 };
+
+describe('getSchedulingParametersGroup', () => {
+  test('rejects inactive schedules before loading actors', async () => {
+    const inactiveSchedule = withPath({ ...schedule, active: false }, 'Schedule/123');
+    const healthcareService = withPath(service, 'HealthcareService/123');
+    const repo = { readReferences: vi.fn() } as unknown as Repository;
+
+    await expect(getSchedulingParametersGroup(repo, [inactiveSchedule], healthcareService)).rejects.toMatchObject({
+      outcome: { issue: [{ details: { text: 'Schedule is inactive' }, expression: ['Schedule/123'] }] },
+    });
+    expect(repo.readReferences).not.toHaveBeenCalled();
+  });
+});
 
 describe('resolveAvailability', () => {
   const layered = (sp: SchedulingParameters): LayeredDict<SchedulingParameters> =>
