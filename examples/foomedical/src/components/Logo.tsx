@@ -5,15 +5,24 @@ import type { JSX } from 'react';
 
 export interface LogoProps {
   readonly width: number;
+  readonly src?: string;
+  readonly alt?: string;
 }
 
 export function Logo(props: LogoProps): JSX.Element {
   const theme = useMantineTheme();
   const color = theme.primaryColor;
   const width = props.width;
+  const src = props.src ?? import.meta.env.MEDPLUM_LOGO_URL;
+  const alt = props.alt ?? import.meta.env.MEDPLUM_LOGO_ALT ?? 'Foo Medical';
+  if (src) {
+    return <img src={src} alt={alt} width={width} style={{ maxWidth: '100%', height: 'auto' }} />;
+  }
   const height = Math.round((180 / 1050) * width);
   return (
     <svg
+      role="img"
+      aria-label={alt}
       width="1050"
       height="180"
       viewBox="0 0 1343 150"
