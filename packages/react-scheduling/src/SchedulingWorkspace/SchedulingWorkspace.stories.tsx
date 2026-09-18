@@ -76,11 +76,14 @@ export default {
  * clears the answers; clicking again inside the day already open leaves them alone.
  *
  * Clicking a booked appointment instead — the Tuesday and Wednesday imaging visits, or
- * anything booked from the form — opens its details over the calendar. A reason has to be
- * searched for and picked before anything can be called off; "Cancel Appointment" then
- * runs the visit through `Appointment/:id/$cancel`: the drawer comes back describing a
+ * anything booked from the form — opens its details in the same pane the booking form
+ * uses, closing the form if one was open; clicking open time again puts the form back.
+ * "Cancel Appointment" turns the pane over to a page asking what the visit is being
+ * called off for; a reason has to be searched for and picked before it can be confirmed,
+ * and "Back" leaves without touching the visit. Confirming runs it through
+ * `Appointment/:id/$cancel`: the pane lands back on the details, now describing a
  * cancelled appointment, showing the reason and with no button left on it, and the event
- * behind it is drawn as cancelled without a reload, because the cancellation announces
+ * beside it is drawn as cancelled without a reload, because the cancellation announces
  * what it wrote the way booking does.
  *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
