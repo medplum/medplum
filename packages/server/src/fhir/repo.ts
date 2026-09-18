@@ -133,7 +133,9 @@ import {
 import {
   buildDeletedResourceRow,
   buildDeleteHistoryContent,
+  buildExpungedHistoryContent,
   buildResourceRow,
+  isExpungedHistoryVersion,
   parseHistoryContent,
 } from './repository/row-builder';
 import { validateRepositoryResource } from './repository/validation';
@@ -837,7 +839,7 @@ export class Repository extends FhirRepository implements Disposable {
                   severity: 'error',
                   code: 'deleted',
                   details: {
-                    text: 'Deleted on ' + row.lastUpdated,
+                    text: `${isExpungedHistoryVersion(parsed) ? 'Expunged' : 'Deleted'} on ${row.lastUpdated}`,
                   },
                 },
               ],
@@ -1546,11 +1548,11 @@ export class Repository extends FhirRepository implements Disposable {
     const projectId = this.isSuperAdmin() ? undefined : this.currentProject()?.id;
     const deletedIds = await this.withTransaction<string[]>(
       async (txRepo) => {
-        const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id');
+        const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id').returning('projectId');
         if (projectId) {
           deleteQuery.where('projectId', '=', projectId);
         }
-        const deleteResult = await txRepo.sqlWrite<{ id: string }>(deleteQuery, resourceType, {
+        const deleteResult = await txRepo.sqlWrite<{ id: string; projectId: string }>(deleteQuery, resourceType, {
           source: 'repo.expungeResources.resource',
         });
         if (deleteResult.length === 0) {
@@ -1575,6 +1577,31 @@ export class Repository extends FhirRepository implements Disposable {
           historyDelete.returning('id').returning('versionId');
         }
         const historyResult = await txRepo.sqlWrite<{ id: string; versionId?: string }>(historyDelete, resourceType);
+
+        const lastUpdated = new Date();
+        await txRepo.sqlWrite(
+          new InsertQuery(
+            resourceType + '_History',
+            deleteResult.map((res) => {
+              const versionId = txRepo.generateId();
+              return {
+                id: res.id,
+                versionId,
+                lastUpdated,
+                content: buildExpungedHistoryContent(
+                  resourceType,
+                  res.id,
+                  versionId,
+                  lastUpdated,
+                  txRepo.getAuthor(),
+                  res.projectId
+                ),
+              };
+            })
+          ),
+          resourceType,
+          { source: 'repo.expungeResources.tombstone' }
+        );
 
         await txRepo.postCommit(() => txRepo.deleteCacheEntries(resourceType, deletedIds));
 
