@@ -137,6 +137,7 @@ describe('Appointment/$book', () => {
     extension?: Extension[];
     planningHorizon?: Schedule['planningHorizon'];
     healthcareService?: WithId<HealthcareService>;
+    active?: boolean;
   }): Promise<WithId<Schedule>> {
     const service = opts.healthcareService ?? officeVisitService;
     return systemRepo.createResource<Schedule>({
@@ -146,6 +147,7 @@ describe('Appointment/$book', () => {
       serviceType: toServiceTypeCodeableConcepts(service),
       extension: opts.extension ?? [makeSchedulingExtension({ service })],
       planningHorizon: opts.planningHorizon,
+      active: opts.active,
     });
   }
 
@@ -398,6 +400,45 @@ describe('Appointment/$book', () => {
       },
     ]);
     expect(response).toHaveStatus(400);
+  });
+
+  test('fails when a Schedule is inactive', async () => {
+    const actor = await makePractitioner({ timezone: 'America/New_York' });
+    const schedule = await makeSchedule({ actor, active: false });
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType: toServiceTypeCodeableConcepts(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toBe('Schedule is inactive');
   });
 
   test('fails when the HealthcareService is inactive', async () => {
