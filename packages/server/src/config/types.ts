@@ -83,6 +83,7 @@ export interface MedplumServerConfig {
   shutdownTimeoutMilliseconds?: number;
   heartbeatMilliseconds?: number;
   heartbeatEnabled?: boolean;
+  fhircastDerivedEventsEnabled?: boolean;
   accurateCountThreshold: number;
   maxSearchOffset?: number;
   base64BinaryMaxBytes?: number;
