@@ -1,23 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { isDefined } from '@medplum/core';
 import type { Appointment, Bundle, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
+import type { AppointmentWrite } from './AppointmentFinder.writes';
+import { readAppointmentWrite } from './AppointmentFinder.writes';
 import type { AppointmentProposalFormProps, BookOptions } from './AppointmentProposalForm';
 import { AppointmentProposalForm } from './AppointmentProposalForm';
 import { writeElevatedBooking } from './buildElevatedBooking';
 
 /** What a booking wrote, as `Appointment/$book` returned it. */
-export interface AppointmentBooking {
-  readonly appointment: WithId<Appointment>;
-  /** The times reserved for it, one per schedule it is held on. */
-  readonly slots: readonly WithId<Slot>[];
-}
+export type AppointmentBooking = AppointmentWrite;
 
-export interface AppointmentBookingFormProps extends Omit<AppointmentProposalFormProps, 'onBook'> {
+export interface AppointmentBookingFormProps extends Omit<AppointmentProposalFormProps, 'onSubmit' | 'mode'> {
   /**
    * Called with what the booking wrote.
    *
@@ -54,7 +51,7 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
             resourceType: 'Parameters',
             parameter: [{ name: 'appointment', resource: proposal }],
           });
-      const booking = readBooking(written);
+      const booking = readAppointmentWrite(written, options.manual ? 'manual booking' : '$book');
 
       // Neither path above notifies the client what it changed.
       medplum.notifyResourceModified({
@@ -78,22 +75,5 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
     [medplum, onBooked]
   );
 
-  return <AppointmentProposalForm {...formProps} onBook={book} />;
-}
-
-/**
- * Reads what a booking wrote out of the bundle it answers with. Both write paths answer
- * with the appointment and its Slots, so both are read the same way.
- * @param written - The bundle the server returned.
- * @returns The appointment and the times reserved for it.
- */
-function readBooking(written: Bundle<WithId<Appointment> | WithId<Slot>>): AppointmentBooking {
-  const resources = (written.entry ?? []).map((entry) => entry.resource).filter(isDefined);
-  const appointment = resources.find((resource) => resource.resourceType === 'Appointment');
-  if (!appointment) {
-    // Cannot happen against a server that honoured the request, and the host is
-    // owed an appointment rather than a silent success.
-    throw new Error('Booking returned no appointment');
-  }
-  return { appointment, slots: resources.filter((resource) => resource.resourceType === 'Slot') };
+  return <AppointmentProposalForm {...formProps} onSubmit={book} />;
 }
