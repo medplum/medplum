@@ -201,9 +201,17 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
               <div
                 key={name}
                 className={rowClass}
+                role="button"
+                tabIndex={0}
                 draggable={handleIndex === index}
                 aria-label={`column-${name}`}
                 onClick={() => toggleColumn(name)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleColumn(name);
+                  }
+                }}
                 onDragStart={(e) => {
                   dragIndexRef.current = index;
                   setDragIndex(index);
@@ -230,10 +238,11 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
               >
                 <span
                   className={classes.grip}
-                  aria-label={`drag-${name}`}
+                  aria-hidden="true"
                   onPointerDown={() => setHandleIndex(index)}
                   onPointerUp={() => setHandleIndex(null)}
                   onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
                 >
                   <IconGripVertical size={16} stroke={1.5} />
                 </span>
