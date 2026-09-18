@@ -379,7 +379,7 @@ describe('BillingSetupPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await user.click(screen.getByRole('button', { name: 'New...' }));
+    await user.click(screen.getByRole('button', { name: 'New Organization' }));
     expect(await screen.findByRole('heading', { name: 'New billing organization' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations/new');
   });
@@ -488,7 +488,7 @@ describe('BillingSetupPage', () => {
     expect(await within(screen.getByRole('tabpanel')).findByText('No results')).toBeInTheDocument();
 
     mockSearches({ organizations: [billingOrg] });
-    await user.click(screen.getByRole('button', { name: 'New...' }));
+    await user.click(screen.getByRole('button', { name: 'New Organization' }));
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');
     await user.type(within(dialog).getByLabelText(/NPI/), '3564119220');
@@ -515,7 +515,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New...' }));
+    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
 
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');
@@ -549,7 +549,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New...' }));
+    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
 
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Bad Org');
@@ -614,7 +614,7 @@ describe('BillingSetupPage', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'New...' }));
+    await user.click(screen.getByRole('button', { name: 'New Organization' }));
     dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('heading', { name: 'New billing organization' })).toBeInTheDocument();
     expect(within(dialog).getByLabelText(/^Name/)).toHaveValue('');
@@ -688,7 +688,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New...' }));
+    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
 
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');
@@ -738,7 +738,7 @@ describe('BillingSetupPage', () => {
     const showSpy = vi.spyOn(notifications, 'show');
     const { router } = setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New...' }));
+    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
 
     await waitFor(() =>
       expect(showSpy).toHaveBeenCalledWith(
@@ -758,7 +758,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New...' }));
+    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
 
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');

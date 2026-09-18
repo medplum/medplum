@@ -45,7 +45,7 @@ test.describe('Medplum App Smoke Tests', () => {
 
     await page.getByRole('button', { name: 'Medplum Logo' }).click();
     await page.getByRole('link', { name: 'Patient' }).click();
-    await page.getByRole('button', { name: 'New...' }).click();
+    await page.getByRole('button', { name: 'New Patient' }).click();
     await page.getByRole('button', { name: 'Add Name' }).click();
     await page.getByPlaceholder('Given').fill('Frodo');
     await page.getByPlaceholder('Family').fill('Baggins');
