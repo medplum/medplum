@@ -51,6 +51,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.rateLimitsEnabled ??= true;
   config.defaultRateLimit ??= 60_000;
   config.defaultAuthRateLimit ??= 160;
+  config.defaultMfaRateLimit ??= 10;
   config.defaultFhirQuota ??= 50_000;
   config.defaultMaxUserWebSocketSubscriptions ??= 20;
   config.asyncDelayScaling ??= 5;
@@ -114,6 +115,7 @@ type DefaultConfigKeys =
   | 'rateLimitsEnabled'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
+  | 'defaultMfaRateLimit'
   | 'defaultFhirQuota'
   | 'aiRealtimeTranscriptionUrl'
   | 'asyncDelayScaling'
@@ -124,6 +126,7 @@ const integerKeys = new Set([
   'bcryptHashSalt',
   'base64BinaryMaxBytes',
   'defaultAuthRateLimit',
+  'defaultMfaRateLimit',
   'defaultFhirQuota',
   'defaultRateLimit',
   'heartbeatMilliseconds',
