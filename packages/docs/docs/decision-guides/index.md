@@ -23,12 +23,12 @@ Scope your intake workflow — who completes it and when, identity and duplicate
 - **[Decision Guide →](/docs/decision-guides/intake)**
 - **Docs:** [Intake & Registration](/docs/intake)
 
-### Referrals
+### Scheduling
 
-Scope your referral workflow — which sides of the lifecycle you build (send, receive, or both), referral semantics and coding, capture flow and recipient directory, what clinical context to carry, transmission channels, lifecycle and assignment, and closure round-trip.
+Scope your scheduling workflow – visit types, actors and availability, patient preferences and eligibility, multi-resource booking, capacity, holds, appointment lifecycle, and integrations.
 
-- **[Decision Guide →](/docs/decision-guides/referrals)**
-- **Docs:** [Referral Management](/docs/careplans/referrals)
+- **[Decision Guide →](/docs/decision-guides/scheduling)**
+- **Docs:** [Scheduling](/docs/scheduling)
 
 ### Charting
 
@@ -37,19 +37,26 @@ Scope your charting workflow — care setting and visit types, how structured th
 - **[Decision Guide →](/docs/decision-guides/charting)**
 - **Docs:** [Charting](/docs/charting)
 
+### E-Prescribe
+
+Scope your e-prescribing workflow – iframe vs. integrated prescribing UI, controlled substances, prescriber enrollment and identity verification, and vendor integration approach.
+
+- **[Decision Guide →](/docs/decision-guides/e-prescribe)**
+- **Docs:** [Medications](/docs/medications)
+
+### Referrals
+
+Scope your referral workflow – which sides of the lifecycle you build (send, receive, or both), referral semantics and coding, capture flow and recipient directory, what clinical context to carry, transmission channels, lifecycle and assignment, and closure round-trip.
+
+- **[Decision Guide →](/docs/decision-guides/referrals)**
+- **Docs:** [Referral Management](/docs/careplans/referrals)
+
 ### Messaging & Communications
 
-Scope your messaging workflow — thread structure, live updates, routing and assignment, read receipts, attachments, drafts and editing, automations, external channels (SMS, email), and async encounter billing.
+Scope your messaging workflow – thread structure, live updates, routing and assignment, read receipts, attachments, drafts and editing, automations, external channels (SMS, email), and async encounter billing.
 
 - **[Decision Guide →](/docs/decision-guides/messaging)**
 - **Docs:** [Messaging & Communications](/docs/communications)
-
-### Access Control
-
-Scope your authorization model — user types and organizational structure, multi-tenancy and patient/practitioner sharing, role inventory and permission mechanics, admin structure, and optional patterns like SMART on FHIR and IP access rules.
-
-- **[Decision Guide →](/docs/decision-guides/access-control)**
-- **Docs:** [Authorization and Access Control](/docs/access)
 
 ### RCM & Billing
 
@@ -58,19 +65,19 @@ Scope your billing workflow — charge capture, claims and clearinghouse integra
 - **[Decision Guide →](/docs/decision-guides/rcm-billing)**
 - **Docs:** [Billing and Payments](/docs/billing)
 
-### E-Prescribe
-
-Scope your e-prescribing workflow — iframe vs. integrated prescribing UI, controlled substances, prescriber enrollment and identity verification, and vendor integration approach.
-
-- **[Decision Guide →](/docs/decision-guides/e-prescribe)**
-- **Docs:** [Medications](/docs/medications)
-
 ### Data Migration
 
 Scope a migration to Medplum – source-system inventory, data ownership, identity and mapping governance, import operations, validation, testing, cutover, and acceptance.
 
 - **[Decision Guide →](/docs/decision-guides/data-migration)**
 - **Docs:** [Migrating to Medplum](/docs/migration)
+
+### Access Control
+
+Scope your authorization model – user types and organizational structure, multi-tenancy and patient/practitioner sharing, role inventory and permission mechanics, admin structure, and optional patterns like SMART on FHIR and IP access rules.
+
+- **[Decision Guide →](/docs/decision-guides/access-control)**
+- **Docs:** [Authorization and Access Control](/docs/access)
 
 ---
 
