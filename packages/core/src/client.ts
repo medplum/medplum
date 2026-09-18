@@ -118,7 +118,14 @@ const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
 const DEFAULT_BROWSER_CACHE_TIME = 60000; // 60 seconds
 const DEFAULT_NODE_CACHE_TIME = 0;
 const DEFAULT_REFRESH_GRACE_PERIOD = 300000; // 5 minutes
+const DEFAULT_AUTH_REQUEST_TIMEOUT = 60000; // 1 minute
 const BINARY_URL_PREFIX = 'Binary/';
+
+function createAuthRequestSignal(): AbortSignal | undefined {
+  return typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+    ? AbortSignal.timeout(DEFAULT_AUTH_REQUEST_TIMEOUT)
+    : undefined;
+}
 
 const system: Device = {
   resourceType: 'Device',
@@ -3182,6 +3189,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category Authentication
    */
   async setActiveLogin(login: LoginState): Promise<void> {
+    this.setActiveLoginState(login);
+    await this.refreshProfile();
+  }
+
+  private setActiveLoginState(login: LoginState): void {
     if (!this.sessionDetails?.profile || getReferenceString(this.sessionDetails.profile) !== login.profile?.reference) {
       this.clearActiveLogin();
     }
@@ -3189,7 +3201,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
     this.refreshPromise = undefined;
-    await this.refreshProfile();
   }
 
   /**
@@ -3249,7 +3260,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     }
 
     this.profilePromise = new Promise((resolve, reject) => {
-      this.get('auth/me', { cache: 'no-cache' })
+      this.get('auth/me', { cache: 'no-cache', signal: createAuthRequestSignal() })
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
           const profileChanged = this.sessionDetails?.profile?.id !== result.profile.id;
@@ -3261,7 +3272,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           resolve(result.profile);
           this.dispatchEvent({ type: 'profileRefreshed' });
         })
-        .catch(reject);
+        .catch((err) => {
+          this.profilePromise = undefined;
+          reject(err);
+        });
     });
 
     this.dispatchEvent({ type: 'profileRefreshing' });
@@ -3836,7 +3850,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         }
 
         // If we got an abort error or exceeded retries, then throw immediately
-        if ((err as Error).name === 'AbortError' || attemptNum === maxRetries) {
+        if (options.signal?.aborted || (err as Error).name === 'AbortError' || attemptNum === maxRetries) {
           throw err;
         }
       }
@@ -4280,7 +4294,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns Promise that resolves when the refresh (or short-circuit) is complete.
    */
   private async runRefreshWithLock(gracePeriod?: number, force = false): Promise<ProfileResource | undefined> {
-    const run = (): Promise<ProfileResource | undefined> => {
+    const run = async (): Promise<boolean> => {
       // Re-read latest tokens from storage before hitting the network.
       // A peer tab may have completed a refresh while we were queued on the lock.
       const previousAccessToken = this.accessToken;
@@ -4292,31 +4306,44 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       // token, but still reuses a different token a peer already produced if it is valid.
       const adoptedNewerToken = this.accessToken !== previousAccessToken;
       if (this.isAuthenticated(gracePeriod) && (!force || adoptedNewerToken)) {
-        return Promise.resolve(this.getProfile());
+        return false;
       }
 
       if (this.refreshToken) {
-        return this.fetchTokens({
-          grant_type: OAuthGrantType.RefreshToken,
-          client_id: this.clientId ?? '',
-          refresh_token: this.refreshToken,
-        });
+        await this.fetchTokens(
+          {
+            grant_type: OAuthGrantType.RefreshToken,
+            client_id: this.clientId ?? '',
+            refresh_token: this.refreshToken,
+          },
+          false
+        );
+        return true;
       }
 
       if (this.clientId && this.clientSecret) {
-        return this.startClientLogin(this.clientId, this.clientSecret);
+        await this.fetchTokens(
+          {
+            grant_type: OAuthGrantType.ClientCredentials,
+            client_id: this.clientId,
+            client_secret: this.clientSecret,
+          },
+          false
+        );
+        return true;
       }
 
-      return Promise.resolve(undefined);
+      return false;
     };
 
     const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
     if (!locks?.request) {
-      return run();
+      return (await run()) ? this.refreshProfile() : this.getProfile();
     }
 
     const lockName = `medplum-refresh:${this.storage.makeKey('activeLogin')}`;
-    return locks.request(lockName, run);
+    const refreshed = await locks.request(lockName, run);
+    return refreshed ? this.refreshProfile() : this.getProfile();
   }
 
   /**
@@ -4658,7 +4685,15 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param params - Token parameters.
    * @returns The user profile resource.
    */
-  private async fetchTokens(params: Record<string, string>): Promise<ProfileResource> {
+  private async fetchTokens(params: Record<string, string>): Promise<ProfileResource>;
+  private async fetchTokens(
+    params: Record<string, string>,
+    refreshProfile: false
+  ): Promise<ProfileResource | undefined>;
+  private async fetchTokens(
+    params: Record<string, string>,
+    refreshProfile = true
+  ): Promise<ProfileResource | undefined> {
     const formBody = new URLSearchParams(params);
     const headers: HeadersInit = { ...this.defaultHeaders, 'Content-Type': ContentType.FORM_URL_ENCODED };
     if (this.basicAuth) {
@@ -4678,6 +4713,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       headers,
       body: formBody.toString(),
       credentials: 'include',
+      signal: createAuthRequestSignal(),
     };
 
     let response: Response;
@@ -4694,8 +4730,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       await this.handleTokenError(response);
     }
     const tokens = await response.json();
-    await this.verifyTokens(tokens);
-    return this.getProfile() as ProfileResource;
+    await this.verifyTokens(tokens, refreshProfile);
+    return this.getProfile();
   }
 
   /**
@@ -4703,9 +4739,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Validates the JWT against the JWKS.
    * See {@link https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint | OpenID Connect Core 1.0 TokenEndpoint} for full details.
    * @param tokens - The token response.
+   * @param refreshProfile - Whether to refresh the profile after storing the tokens.
    * @returns Promise to complete.
    */
-  private async verifyTokens(tokens: TokenResponse): Promise<void> {
+  private async verifyTokens(tokens: TokenResponse, refreshProfile = true): Promise<void> {
     const token = tokens.access_token;
 
     if (isJwt(token)) {
@@ -4729,12 +4766,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       }
     }
 
-    return this.setActiveLogin({
+    const login = {
       accessToken: token,
       refreshToken: tokens.refresh_token,
       project: tokens.project,
       profile: tokens.profile,
-    });
+    };
+    if (refreshProfile) {
+      await this.setActiveLogin(login);
+    } else {
+      this.setActiveLoginState(login);
+    }
   }
 
   private checkSessionDetailsMatchLogin(login?: LoginState): boolean {
