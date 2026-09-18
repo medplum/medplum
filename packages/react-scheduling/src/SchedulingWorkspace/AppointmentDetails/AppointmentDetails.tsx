@@ -39,6 +39,13 @@ const STATUS_COLORS: Record<Appointment['status'], string> = {
   waitlist: 'gray',
 };
 
+export interface AppointmentCancelFormProps {
+  readonly appointment: WithId<Appointment>;
+  readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
+  /** Overrides the value set the cancellation reason is coded against. */
+  readonly cancellationReasonValueSet?: string;
+}
+
 export interface AppointmentDetailsProps {
   readonly appointment: WithId<Appointment>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
@@ -64,7 +71,7 @@ export interface AppointmentDetailsProps {
   readonly cancellationReasonValueSet?: string;
 }
 
-export function AppointmentCancelForm(props: AppointmentDetailsProps): JSX.Element {
+export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.Element {
   const { appointment, onCancelled, cancellationReasonValueSet } = props;
   const medplum = useMedplum();
   const [cancelling, setCancelling] = useState(false);
@@ -198,7 +205,11 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       <Stack gap="sm" className={classes.details}>
         {patientLine}
         {whenLine}
-        <AppointmentCancelForm {...props} onCancelled={innerOnCancelled} />
+        <AppointmentCancelForm
+          appointment={appointment}
+          onCancelled={innerOnCancelled}
+          cancellationReasonValueSet={props.cancellationReasonValueSet}
+        />
         <Stack gap="sm" className={classes.actions}>
           <Button onClick={() => setCancelling(false)} variant="outline">
             Back to Appointment Details
