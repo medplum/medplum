@@ -10,6 +10,7 @@
  */
 import type { WithId } from '@medplum/core';
 import {
+  assertNever,
   clearHealthcareServiceSchedulingParameter,
   clearScheduleSchedulingParameter,
   getHealthcareServiceSchedulingParameters,
@@ -64,6 +65,16 @@ const CODE_PARAMETERS = ['timezone', 'alignmentTimezone'] as const satisfies (ke
 const FLAT_PARAMETERS = [...DURATION_PARAMETERS, ...CODE_PARAMETERS, 'slotCapacity'] as const;
 
 type FlatParameter = (typeof FLAT_PARAMETERS)[number];
+type DurationParameter = (typeof DURATION_PARAMETERS)[number];
+type CodeParameter = (typeof CODE_PARAMETERS)[number];
+
+function isDurationParameter(key: FlatParameter): key is DurationParameter {
+  return (DURATION_PARAMETERS as readonly string[]).includes(key);
+}
+
+function isCodeParameter(key: FlatParameter): key is CodeParameter {
+  return (CODE_PARAMETERS as readonly string[]).includes(key);
+}
 
 // An alignmentInterval of zero is a legacy encoding of the unset hourly default.
 const HOURLY_ALIGNMENT_MINUTES = 60;
@@ -72,10 +83,15 @@ function toSubextension(key: FlatParameter, value: number | string): Extension &
   if (key === 'slotCapacity') {
     return { url: key, valuePositiveInt: value as number };
   }
-  if (key === 'timezone' || key === 'alignmentTimezone') {
+  if (isCodeParameter(key)) {
     return { url: key, valueCode: value as string };
   }
-  return { url: key, valueDuration: minutesToSchedulingDuration(value as number) };
+  if (isDurationParameter(key)) {
+    return { url: key, valueDuration: minutesToSchedulingDuration(value as number) };
+  }
+  // A parameter added to FLAT_PARAMETERS without a group fails to compile here rather than encoding as a
+  // duration, which is what the previous fallthrough did.
+  return assertNever(key);
 }
 
 function readParameters(read: (url: FlatParameter) => Extension[]): SchedulingParameterValues {
