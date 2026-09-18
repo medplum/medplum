@@ -21,7 +21,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { SAVE_TIMEOUT_MS } from '../../config/constants';
+import { CPT_COPYRIGHT_NOTICE, SAVE_TIMEOUT_MS } from '../../config/constants';
 import { ChartNoteStatus } from '../../types/encounter';
 import * as chargeItemsUtils from '../../utils/chargeitems';
 import { BillingTab } from './BillingTab';
@@ -202,6 +202,13 @@ describe('BillingTab', () => {
     expect(screen.getByText('Diagnosis')).toBeInTheDocument();
     expect(screen.getByText('Add Diagnosis')).toBeInTheDocument();
     expect(screen.queryByText('Headache')).not.toBeInTheDocument();
+  });
+
+  test('renders the AMA CPT copyright notice', async () => {
+    mockChargeItems([mockChargeItem]);
+    await setup();
+
+    expect(screen.getByText(CPT_COPYRIGHT_NOTICE)).toBeInTheDocument();
   });
 
   test('renders charge item list when charge items are provided', async () => {
