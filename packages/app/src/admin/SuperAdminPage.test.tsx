@@ -11,6 +11,7 @@ import { MemoryRouter } from 'react-router';
 import type { MockInstance } from 'vitest';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
+import { formatExplainPlan } from './SuperAdminPage';
 
 describe('SuperAdminPage', () => {
   let postSpy: MockInstance;
@@ -480,6 +481,65 @@ describe('SuperAdminPage', () => {
       expect(await screen.findByText('Database Explain')).toBeInTheDocument();
     });
 
+    test('Explain search with hypothetical indexes', async () => {
+      setup();
+
+      medplum.router.add('POST', '$explain', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'query', valueString: 'SELECT * FROM "Appointment"' },
+              { name: 'parameters', valueString: '[]' },
+              { name: 'explain', valueString: 'Index Scan using <hypo> on Appointment' },
+              { name: 'hypotheticalIndex', valueString: '<hypo> ON public.Appointment USING btree' },
+              {
+                name: 'warning',
+                valueString:
+                  'EXPLAIN ANALYZE is skipped because HypoPG hypothetical indexes are only considered by EXPLAIN',
+              },
+            ],
+          },
+        ];
+      });
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Search *'), {
+          target: { value: 'Appointment?status=booked' },
+        });
+      });
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Hypothetical indexes (HypoPG)'), {
+          target: { value: 'CREATE INDEX ON "Appointment" ("projectId", "status")' },
+        });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith(
+        'fhir/R4/$explain',
+        expect.objectContaining({
+          query: 'Appointment?status=booked',
+          hypotheticalIndex: 'CREATE INDEX ON "Appointment" ("projectId", "status")',
+          format: 'text',
+        }),
+        undefined,
+        expect.any(Object)
+      );
+
+      expect(await screen.findByText('Hypothetical indexes')).toBeInTheDocument();
+      expect(await screen.findByText('<hypo> ON public.Appointment USING btree')).toBeInTheDocument();
+      expect(
+        await screen.findByText(
+          'EXPLAIN ANALYZE is skipped because HypoPG hypothetical indexes are only considered by EXPLAIN'
+        )
+      ).toBeInTheDocument();
+    });
+
     test('Explain search with analyze checkbox', async () => {
       setup();
 
@@ -521,6 +581,127 @@ describe('SuperAdminPage', () => {
         undefined,
         expect.any(Object)
       );
+    });
+
+    test('Explain search with JSON format checkbox', async () => {
+      setup();
+
+      medplum.router.add('POST', '$explain', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'query', valueString: 'SELECT * FROM observation' },
+              { name: 'parameters', valueString: '[]' },
+              { name: 'explain', valueString: '{"Plan":{"Node Type":"Seq Scan"}}' },
+            ],
+          },
+        ];
+      });
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Search *'), {
+          target: { value: 'Observation?code=85354-9' },
+        });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('JSON format'));
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith(
+        'fhir/R4/$explain',
+        expect.objectContaining({
+          query: 'Observation?code=85354-9',
+          format: 'json',
+        }),
+        undefined,
+        expect.any(Object)
+      );
+
+      expect(await screen.findByText('Plan (JSON)')).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Copy plan' })).toBeInTheDocument();
+      expect(await screen.findByText(/"Node Type": "Seq Scan"/)).toBeInTheDocument();
+    });
+
+    test('Copies JSON plan to the clipboard', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText },
+        configurable: true,
+      });
+
+      setup();
+
+      medplum.router.add('POST', '$explain', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'query', valueString: 'SELECT 1' },
+              { name: 'parameters', valueString: '[]' },
+              { name: 'explain', valueString: '{"Plan":{"Node Type":"Seq Scan"}}' },
+            ],
+          },
+        ];
+      });
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Search *'), {
+          target: { value: 'Patient?active=true' },
+        });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('JSON format'));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      const copyButton = await screen.findByRole('button', { name: 'Copy plan' });
+      await act(async () => {
+        fireEvent.click(copyButton);
+      });
+
+      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('"Node Type": "Seq Scan"'));
+    });
+
+    test('Shows invalid JSON plan unchanged', async () => {
+      setup();
+
+      medplum.router.add('POST', '$explain', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'query', valueString: 'SELECT 1' },
+              { name: 'parameters', valueString: '[]' },
+              { name: 'explain', valueString: '{not-json' },
+            ],
+          },
+        ];
+      });
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Search *'), {
+          target: { value: 'Patient?active=true' },
+        });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('JSON format'));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      expect(await screen.findByText('{not-json')).toBeInTheDocument();
     });
 
     test('Explain search with total count checkbox', async () => {
@@ -810,6 +991,24 @@ describe('SuperAdminPage', () => {
       // The ExplainSearchForm should show forbidden when user is not super admin
       const explainSections = screen.getAllByText('Forbidden');
       expect(explainSections.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('formatExplainPlan', () => {
+    test('Returns empty string when explain is missing', () => {
+      expect(formatExplainPlan(undefined, true)).toBe('');
+    });
+
+    test('Returns text plans unchanged', () => {
+      expect(formatExplainPlan('Seq Scan', false)).toBe('Seq Scan');
+    });
+
+    test('Pretty-prints JSON plans', () => {
+      expect(formatExplainPlan('{"Plan":{"Node Type":"Seq Scan"}}', true)).toContain('\n');
+    });
+
+    test('Returns invalid JSON unchanged', () => {
+      expect(formatExplainPlan('{not-json', true)).toBe('{not-json');
     });
   });
 });

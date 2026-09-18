@@ -6,6 +6,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject, getSuperAdminAccessToken } from '../../test.setup';
 
 describe('$explain', () => {
@@ -119,4 +120,104 @@ describe('$explain', () => {
     expect(plan).toContain(project.id);
     expect(plan).toContain(linkedProject.id);
   });
+
+  test('Rejects hypotheticalIndex that is not CREATE INDEX', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$explain')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'query', valueString: 'Patient?active=true' },
+          { name: 'hypotheticalIndex', valueString: 'DROP INDEX "Patient_id_idx"' },
+        ],
+      } satisfies Parameters);
+    expect(res).toHaveStatus(400);
+  });
+
+  test('Rejects CONCURRENTLY hypothetical indexes', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$explain')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        query: 'Patient?active=true',
+        hypotheticalIndex: 'CREATE INDEX CONCURRENTLY ON "Patient" ("active")',
+      });
+    expect(res).toHaveStatus(400);
+  });
+
+  test('Uses HypoPG hypothetical indexes when the extension is available', async () => {
+    const available = await isHypoPgAvailable();
+    if (!available) {
+      return;
+    }
+
+    const res = await request(app)
+      .post('/fhir/R4/$explain')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'query', valueString: 'Patient?active=true' },
+          { name: 'analyze', valueBoolean: true },
+          { name: 'hypotheticalIndex', valueString: 'CREATE INDEX ON "Patient" ("active")' },
+        ],
+      } satisfies Parameters);
+    expect(res).toHaveStatus(200);
+
+    const output = res.body.parameter as ParametersParameter[];
+    expect(output).toContainEqual(
+      expect.objectContaining({
+        name: 'hypotheticalIndex',
+        valueString: expect.stringContaining('CREATE INDEX ON "Patient" ("active")'),
+      })
+    );
+    expect(output).toContainEqual(
+      expect.objectContaining({
+        name: 'warning',
+        valueString: expect.stringContaining('EXPLAIN ANALYZE is skipped'),
+      })
+    );
+    const plan = output.find((p) => p.name === 'explain')?.valueString;
+    expect(plan).toEqual(expect.stringContaining('(cost='));
+  });
+
+  test('Uses HypoPG bloom indexes when bloom and hypopg are available', async () => {
+    if (!(await isExtensionAvailable('hypopg')) || !(await isExtensionAvailable('bloom'))) {
+      return;
+    }
+
+    const res = await request(app)
+      .post('/fhir/R4/$explain')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        query: 'Patient?active=true',
+        hypotheticalIndex: 'CREATE INDEX ON "Patient" USING bloom ("_source")',
+      });
+    expect(res).toHaveStatus(200);
+
+    const output = res.body.parameter as ParametersParameter[];
+    expect(output).toContainEqual(
+      expect.objectContaining({
+        name: 'hypotheticalIndex',
+        valueString: expect.stringMatching(/bloom.*CREATE INDEX ON "Patient" USING bloom \("_source"\)/i),
+      })
+    );
+  });
 });
+
+async function isHypoPgAvailable(): Promise<boolean> {
+  return isExtensionAvailable('hypopg');
+}
+
+async function isExtensionAvailable(name: string): Promise<boolean> {
+  const result = await getDatabasePool(DatabaseMode.WRITER).query(
+    `SELECT 1 FROM pg_available_extensions WHERE name = $1`,
+    [name]
+  );
+  return (result.rowCount ?? 0) > 0;
+}

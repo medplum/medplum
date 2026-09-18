@@ -4,6 +4,7 @@ import {
   Button,
   Checkbox,
   Code,
+  CopyButton,
   Divider,
   Grid,
   Group,
@@ -13,6 +14,7 @@ import {
   NumberInput,
   Stack,
   Text,
+  Textarea,
   TextInput,
   Title,
 } from '@mantine/core';
@@ -294,7 +296,12 @@ export function SuperAdminPage(): JSX.Element {
       </Form>
       <Divider my="lg" />
       <Title order={2}>Database Explain Search</Title>
-      <p>Runs an EXPLAIN query on the database to show the query plan for a search.</p>
+      <p>
+        Runs an EXPLAIN query on the database to show the query plan for a search. Optional HypoPG hypothetical indexes
+        are created on the same database session so you can test indexes without building them, including bloom indexes
+        when the bloom extension is installed. Check JSON format to copy the plan into a visualizer. EXPLAIN ANALYZE is
+        skipped when hypothetical indexes are provided, because HypoPG only affects EXPLAIN.
+      </p>
       <ExplainSearchForm setModalTitle={setModalTitle} setModalContent={setModalContent} openModal={open} />
       <Divider my="lg" />
       <Title order={2}>WebSocket Subscription Stats</Title>
@@ -636,12 +643,17 @@ export function ExplainSearchForm({
     const onBehalfOfHeader: string | undefined = formData['onBehalfOfProjectMembership'];
     delete formData['onBehalfOfProjectMembership'];
 
-    const toSubmit = {
+    const jsonFormat = formData.json === 'on';
+    const hypotheticalIndex = formData.hypotheticalIndex?.trim();
+    const toSubmit: Record<string, unknown> = {
       query: formData.query,
       analyze: formData.analyze === 'on',
       count: formData.count === 'on',
-      format: 'text',
+      format: jsonFormat ? 'json' : 'text',
     };
+    if (hypotheticalIndex) {
+      toSubmit.hypotheticalIndex = hypotheticalIndex;
+    }
 
     const headers: HeadersInit = {};
     if (onBehalfOfHeader) {
@@ -657,15 +669,57 @@ export function ExplainSearchForm({
         const parametersLine = params.parameter?.find((p) => p.name === 'parameters')?.valueString;
         const countEstimate = params.parameter?.find((p) => p.name === 'countEstimate')?.valueInteger?.toLocaleString();
         const countAccurate = params.parameter?.find((p) => p.name === 'countAccurate')?.valueInteger?.toLocaleString();
-        const lines = [queryLine, parametersLine, '\n', explainLine].join('\n');
+        const hypotheticalIndexes = params.parameter
+          ?.filter((p) => p.name === 'hypotheticalIndex')
+          .map((p) => p.valueString)
+          .filter((value): value is string => !!value);
+        const warnings = params.parameter
+          ?.filter((p) => p.name === 'warning')
+          .map((p) => p.valueString)
+          .filter((value): value is string => !!value);
+        const queryText = [queryLine, parametersLine].filter(Boolean).join('\n');
+        const explainText = formatExplainPlan(explainLine, jsonFormat);
         setModalContent(
           <Stack>
             <div>
               <Text fw={700}>Query</Text>
               <Code block maw={'100%'} style={{ whiteSpace: 'pre-wrap' }}>
-                {lines}
+                {queryText}
               </Code>
             </div>
+            {explainText && (
+              <div>
+                <Group justify="space-between" mb="xs">
+                  <Text fw={700}>{jsonFormat ? 'Plan (JSON)' : 'Plan'}</Text>
+                  <CopyButton value={explainText} timeout={2000}>
+                    {({ copied, copy }) => (
+                      <Button type="button" variant="light" size="xs" onClick={copy}>
+                        {copied ? 'Copied' : 'Copy plan'}
+                      </Button>
+                    )}
+                  </CopyButton>
+                </Group>
+                <Code block maw={'100%'} style={{ whiteSpace: 'pre-wrap' }}>
+                  {explainText}
+                </Code>
+              </div>
+            )}
+            {hypotheticalIndexes && hypotheticalIndexes.length > 0 && (
+              <div>
+                <Text fw={700}>Hypothetical indexes</Text>
+                <Code block maw={'100%'} style={{ whiteSpace: 'pre-wrap' }}>
+                  {hypotheticalIndexes.join('\n')}
+                </Code>
+              </div>
+            )}
+            {warnings && warnings.length > 0 && (
+              <div>
+                <Text fw={700}>Warnings</Text>
+                {warnings.map((warning) => (
+                  <Text key={warning}>{warning}</Text>
+                ))}
+              </div>
+            )}
             {(countEstimate || countAccurate) && (
               <div>
                 <Text fw={700}>Counts</Text>
@@ -689,9 +743,18 @@ export function ExplainSearchForm({
     <Form onSubmit={explainSearch}>
       <Stack>
         <TextInput name="query" label="Search" required placeholder="Observation?code=85354-9&_sort=-date&_count=5" />
+        <Textarea
+          name="hypotheticalIndex"
+          label="Hypothetical indexes (HypoPG)"
+          description='Optional CREATE INDEX statements, separated by semicolons. Bloom example: CREATE INDEX ON "Appointment" USING bloom ("projectId", "status")'
+          placeholder='CREATE INDEX ON "Appointment" ("projectId", "status")'
+          minRows={3}
+          autosize
+        />
         <Group>
           <Checkbox name="analyze" label="Analyze" />
           <Checkbox name="count" label="Total count" />
+          <Checkbox name="json" label="JSON format" />
         </Group>
         <InputWrapper label="On Behalf Of">
           <Stack gap="sm">
@@ -737,4 +800,18 @@ export function ExplainSearchForm({
       </Stack>
     </Form>
   );
+}
+
+export function formatExplainPlan(explain: string | undefined, jsonFormat: boolean): string {
+  if (!explain) {
+    return '';
+  }
+  if (!jsonFormat) {
+    return explain;
+  }
+  try {
+    return JSON.stringify(JSON.parse(explain), null, 2);
+  } catch {
+    return explain;
+  }
 }
