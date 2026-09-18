@@ -120,13 +120,13 @@ mfaRouter.post(
     const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
-    assertMfaLoginActive(login);
-
     const user = await systemRepo.readReference<User>(login.user as Reference<User>);
     if (user.mfaEnrolled) {
       sendOutcome(res, badRequest('Already enrolled'));
       return;
     }
+
+    assertMfaLoginActive(login);
 
     const method = parseMfaMethod(req.body.method);
 
