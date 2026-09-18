@@ -27,6 +27,17 @@ export interface ResourceFormProps {
   readonly onDelete?: (resource: Resource) => void;
   /** (optional) URL of the resource profile used to display the form. Takes priority over schemaName. */
   readonly profileUrl?: string;
+  /**
+   * (optional) `id` for the underlying `<form>` element. Lets a submit control rendered outside the
+   * form (e.g. a `Modal` footer) target it via the HTML `form` attribute.
+   */
+  readonly formId?: string;
+  /**
+   * (optional) When true, the built-in submit/patch/delete action row is not rendered, so the caller
+   * can supply its own submit control (paired with `formId`). Use only when `onPatch`/`onDelete` are
+   * unset, since those actions live in the omitted row.
+   */
+  readonly hideSubmitButton?: boolean;
 }
 
 export function ResourceForm(props: ResourceFormProps): JSX.Element {
@@ -104,6 +115,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
 
   return (
     <form
+      id={props.formId}
       noValidate
       autoComplete="off"
       onSubmit={(e: FormEvent) => {
@@ -131,49 +143,51 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         profileUrl={props.profileUrl}
         accessPolicyResource={accessPolicyResource}
       />
-      <Group justify="flex-end" mt="xl" wrap="nowrap" gap={0}>
-        <Button type="submit" className={cx((props.onPatch || props.onDelete) && classes.splitButton)}>
-          {defaultValue?.id ? 'Update' : 'Create'}
-        </Button>
-        {(props.onPatch || props.onDelete) && (
-          <Menu transitionProps={{ transition: 'pop' }} position="bottom-end" withinPortal>
-            <Menu.Target>
-              <ActionIcon
-                variant="filled"
-                color={theme.primaryColor}
-                size={36}
-                className={classes.menuControl}
-                aria-label="More actions"
-              >
-                <IconChevronDown size={14} stroke={1.5} />
-              </ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown>
-              {props.onPatch && (
-                <Menu.Item
-                  leftSection={<IconEdit size={14} stroke={1.5} />}
-                  onClick={() => {
-                    (props.onPatch as (resource: Resource) => void)(value);
-                  }}
+      {!props.hideSubmitButton && (
+        <Group justify="flex-end" mt="xl" wrap="nowrap" gap={0}>
+          <Button type="submit" className={cx((props.onPatch || props.onDelete) && classes.splitButton)}>
+            {defaultValue?.id ? 'Update' : 'Create'}
+          </Button>
+          {(props.onPatch || props.onDelete) && (
+            <Menu transitionProps={{ transition: 'pop' }} position="bottom-end" withinPortal>
+              <Menu.Target>
+                <ActionIcon
+                  variant="filled"
+                  color={theme.primaryColor}
+                  size={36}
+                  className={classes.menuControl}
+                  aria-label="More actions"
                 >
-                  Patch
-                </Menu.Item>
-              )}
-              {props.onDelete && (
-                <Menu.Item
-                  color="red"
-                  leftSection={<IconTrash size={14} stroke={1.5} color="red" />}
-                  onClick={() => {
-                    (props.onDelete as (resource: Resource) => void)(value);
-                  }}
-                >
-                  Delete
-                </Menu.Item>
-              )}
-            </Menu.Dropdown>
-          </Menu>
-        )}
-      </Group>
+                  <IconChevronDown size={14} stroke={1.5} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {props.onPatch && (
+                  <Menu.Item
+                    leftSection={<IconEdit size={14} stroke={1.5} />}
+                    onClick={() => {
+                      (props.onPatch as (resource: Resource) => void)(value);
+                    }}
+                  >
+                    Patch
+                  </Menu.Item>
+                )}
+                {props.onDelete && (
+                  <Menu.Item
+                    color="red"
+                    leftSection={<IconTrash size={14} stroke={1.5} color="red" />}
+                    onClick={() => {
+                      (props.onDelete as (resource: Resource) => void)(value);
+                    }}
+                  >
+                    Delete
+                  </Menu.Item>
+                )}
+              </Menu.Dropdown>
+            </Menu>
+          )}
+        </Group>
+      )}
     </form>
   );
 }
