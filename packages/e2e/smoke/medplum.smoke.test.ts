@@ -69,17 +69,17 @@ test.describe('Medplum App Smoke Tests', () => {
     await signIn(page, 'admin@example.com', 'medplum_admin');
 
     await page.goto('http://localhost:3000/Patient?name=Frodo&_sort=-_lastUpdated');
-    await expect(page.getByTestId('search-control-row').first().locator('div')).toContainText('Frodo Baggins');
+    await expect(page.getByTestId('search-control-row').first()).toContainText('Frodo Baggins');
   });
 
   test('Upload patient profile photo', async ({ page }) => {
     await signIn(page, 'admin@example.com', 'medplum_admin');
 
     await page.goto('http://localhost:3000/Patient?name=Frodo&_sort=-_lastUpdated');
-    await expect(page.getByTestId('search-control-row').first().locator('div')).toContainText('Frodo Baggins');
+    await expect(page.getByTestId('search-control-row').first()).toContainText('Frodo Baggins');
 
     // Click on patient
-    await page.getByTestId('search-control-row').first().locator('div').click();
+    await page.getByTestId('search-control-row').first().getByText('Frodo Baggins').click();
 
     // Edit and upload image
     await page.getByRole('tab', { name: 'Edit' }).click();
