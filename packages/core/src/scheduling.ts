@@ -144,9 +144,10 @@ export function getSchedulingRequirements(service: HealthcareService | undefined
   return requirements;
 }
 
-// Match on resourceType and id only, as the server does, since a stored reference may carry a version
-// suffix and still name the service. Missing one makes `setScheduleSchedulingParameter` add a second
-// SchedulingParameters extension, which the scheduling operations reject outright.
+// Compare resourceType and id only, as the server does: a stored reference may carry a version suffix and
+// still name the same service. If that reference failed to match, `setScheduleSchedulingParameter` would
+// see no parameters for the service and append a second SchedulingParameters extension for it, which the
+// scheduling operations reject outright.
 function isServiceReference(reference: Reference | undefined, serviceReference: string): boolean {
   if (!reference?.reference) {
     return false;
