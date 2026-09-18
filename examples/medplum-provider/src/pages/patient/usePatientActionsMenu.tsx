@@ -9,19 +9,10 @@ import { SmartHealthLinkImportModal } from '../smart/SmartHealthLinkImportModal'
 import { SmartLogo } from '../smart/SmartLogo';
 
 export interface PatientActionsMenu {
-  /** `<Menu.Item>` nodes to pass to `PatientSummary`'s `headerMenuItems` prop. */
   readonly headerMenuItems: ReactNode;
-  /** The action modals to render alongside the summary. */
   readonly actionsModals: ReactNode;
 }
 
-/**
- * Shared "…" header-menu actions for the Patient Summary: import patient data from a SMART
- * Health Link. The action opens a state-driven modal hosted here, so the menu works wherever
- * the summary appears (patient chart, /Communication, /Task, …).
- * @param patientArg - The patient (or a reference to it) the actions apply to; undefined while loading.
- * @returns The menu items and the modals to render.
- */
 export function usePatientActionsMenu(patientArg: Patient | Reference<Patient> | undefined): PatientActionsMenu {
   const patient = useResource(patientArg);
   const [shlOpened, shlHandlers] = useDisclosure(false);

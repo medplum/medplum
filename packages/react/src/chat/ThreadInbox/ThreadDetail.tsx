@@ -38,7 +38,6 @@ export interface ThreadDetailProps {
   readonly thread: Communication;
   readonly showPatientSummary?: boolean;
   readonly sections?: PatientSummarySectionConfig[];
-  /** `<Menu.Item>` nodes for the patient summary header's "…" actions menu. */
   readonly patientHeaderMenuItems?: ReactNode;
   readonly uploadEnabled?: boolean;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
