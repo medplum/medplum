@@ -53,8 +53,8 @@ import { recordHistogramValue } from '../otel/otel';
 import type { ActiveSubscriptionEntry } from '../pubsub';
 import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
 import { getCacheRedis } from '../redis';
-import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import {
@@ -671,7 +671,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     if (subscription.channel?.endpoint?.startsWith('Bot/')) {
       await execBot(systemRepo, job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
     } else {
-      await sendRestHook(job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
+      await sendRestHook(systemRepo, job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
     }
     // Success - reset the failure counter
     await clearSubscriptionFailures(subscription.id);
@@ -722,6 +722,7 @@ async function tryGetCurrentVersion<T extends Resource = Resource>(
 
 /**
  * Sends a rest-hook subscription.
+ * @param systemRepo - The system repository.
  * @param job - The subscription job details.
  * @param subscription - The subscription.
  * @param resource - The resource that triggered the subscription.
@@ -729,6 +730,7 @@ async function tryGetCurrentVersion<T extends Resource = Resource>(
  * @param requestTime - The request time.
  */
 async function sendRestHook(
+  systemRepo: SystemRepository,
   job: Job<SubscriptionJobData>,
   subscription: WithId<Subscription>,
   resource: Resource,
@@ -749,12 +751,6 @@ async function sendRestHook(
 
   const fetchStartTime = Date.now();
   let fetchEndTime: number;
-  let systemRepo: SystemRepository;
-  if (subscription.meta?.project) {
-    systemRepo = await getProjectSystemRepo(subscription.meta.project);
-  } else {
-    systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
-  }
   try {
     log.info('Sending rest hook', {
       url,
@@ -862,8 +858,9 @@ function buildRestHookHeaders(
   const traceId = job.data.traceId;
   if (traceId) {
     headers['x-trace-id'] = traceId;
-    if (parseTraceparent(traceId)) {
-      headers['traceparent'] = traceId;
+    const traceparent = buildTraceparent(traceId);
+    if (traceparent) {
+      headers['traceparent'] = traceparent;
     }
   }
 

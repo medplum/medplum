@@ -13,6 +13,15 @@
     background-color: var(--cal-background-color);
   }
 
+  /**
+   * Appointment styles per-status
+   * - Happy-path statuses (pending, booked, arrived, fulfilled) do not get an
+   *   explicit status annotation after the title
+   * - Unusual or actionable statuses get color coding (pending, cancelled)
+   */
+  :global(.appointment.proposed) {
+    .eventTitle::after { content: ' (proposed)'; }
+  }
 
   :global(.appointment.pending) {
     --cal-color: light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-6));
@@ -22,9 +31,39 @@
     border: 1px solid var(--cal-color);
   }
 
+  :global(.appointment.waitlist) {
+    .eventTitle::after { content: ' (waitlist)'; }
+  }
+
+  :global(.appointment.checked-in) {
+    .eventTitle::after { content: ' (checked in)'; }
+  }
+
+  :global(.appointment.cancelled) {
+    .eventTitle::after { content: ' (cancelled)'; }
+    --cal-color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+    --cal-background-color: light-dark(var(--mantine-color-red-3), var(--mantine-color-red-8));
+  }
+
+  :global(.appointment.noshow) {
+    .eventTitle::after { content: ' (no show)'; }
+  }
+
+  :global(.appointment.entered-in-error) {
+    .eventTitle::after { content: ' (entered in error)'; }
+  }
+
+  /**
+   * Slot styles per-status
+   */
   :global(.slot.free) {
     --cal-color: light-dark(var(--mantine-color-dark-7), var(--mantine-color-gray-1));
     --cal-background-color: light-dark(var(--mantine-color-green-1), var(--mantine-color-green-9));
+  }
+
+  :global(.slot.entered-in-error) {
+    --cal-color: light-dark(var(--mantine-color-dark-7), var(--mantine-color-black));
+    --cal-background-color: light-dark(var(--mantine-color-red-1), var(--mantine-color-red-3));
   }
 
   .event,
@@ -40,25 +79,5 @@
 
   .eventTitle::after {
     opacity: .7;
-  }
-
-  /* No status annotation for "happy path" status in: pending, booked, arrived, fulfilled */
-  :global(.appointment.proposed) {
-    .eventTitle::after { content: ' (proposed)'; }
-  }
-  :global(.appointment.cancelled) {
-    .eventTitle::after { content: ' (cancelled)'; }
-  }
-  :global(.appointment.noshow) {
-    .eventTitle::after { content: ' (no show)'; }
-  }
-  :global(.appointment.entered-in-error) {
-    .eventTitle::after { content: ' (entered in error)'; }
-  }
-  :global(.appointment.checked-in) {
-    .eventTitle::after { content: ' (checked in)'; }
-  }
-  :global(.appointment.waitlist) {
-    .eventTitle::after { content: ' (waitlist)'; }
   }
 }

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
-import type { Claim, ClaimResponse } from '@medplum/fhirtypes';
+import type { Claim, ClaimResponse, Contract } from '@medplum/fhirtypes';
 
 // Identifier system shared by the deployed Candid Health integration bots. The bots are looked up
 // by identifier so nothing renders (or runs) in projects where they are not deployed.
@@ -25,6 +25,74 @@ export const CANDID_GET_PAYERS_BOT_IDENTIFIER = {
   system: CANDID_INTEGRATION_SYSTEM,
   value: 'candid-get-payers',
 };
+
+/**
+ * Bot that registers a Practitioner or Organization as a Candid organization provider and stamps
+ * the Candid provider ID back onto the resource.
+ */
+export const CANDID_CREATE_PROVIDER_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-create-provider',
+};
+
+/**
+ * Profile the medplum-ee candid-health package publishes for billing organizations (NPI, Tax ID, `prov` type,
+ * complete address). Saving claims it so the server enforces those; an unresolvable profile is skipped.
+ */
+export const CANDID_BILLING_ORGANIZATION_PROFILE =
+  'https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-billing-organization';
+
+/**
+ * Companion profile for the practitioners claims are rendered by: it requires the NPI identifier
+ * and the NUCC taxonomy code Candid needs on an individual provider.
+ */
+export const CANDID_PRACTITIONER_PROFILE =
+  'https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-practitioner';
+
+/**
+ * Bot that pushes a provider's current details to the Candid organization provider it is already
+ * registered as; it resolves that provider by the identifier below.
+ */
+export const CANDID_EDIT_PROVIDER_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-edit-provider',
+};
+
+/**
+ * Bot that lists the organization providers registered in Candid, by NPI, as FHIR resources. It answers whether
+ * Candid knows a provider now; the identifier below only records that a registration once succeeded here.
+ */
+export const CANDID_LIST_PROVIDERS_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-list-providers',
+};
+
+/**
+ * Bot that fetches a provider's Candid payer contracts as FHIR Contract resources. Contracts belong to the
+ * contracting (billing) provider, so it is queried with that provider's Candid organization provider ID.
+ */
+export const CANDID_GET_CONTRACTS_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-get-contracts',
+};
+
+/** Identifier the candid-get-contracts bot stamps on each Contract it maps from Candid. */
+export const CANDID_CONTRACT_ID_SYSTEM = 'https://candidhealth.com/contract-id';
+
+/**
+ * Identifier the candid-create-provider bot writes onto the registered resource; its presence
+ * means the provider exists in Candid.
+ */
+export const CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM = 'https://candidhealth.com/organization-provider-id';
+
+/**
+ * Extensions candid-create-provider reads isBilling/isRendering from, since FHIR has no native field for them;
+ * a resource carrying neither is rejected.
+ */
+export const CANDID_IS_BILLING_PROVIDER_EXTENSION =
+  'https://candidhealth.com/fhir/StructureDefinition/is-billing-provider';
+export const CANDID_IS_RENDERING_PROVIDER_EXTENSION =
+  'https://candidhealth.com/fhir/StructureDefinition/is-rendering-provider';
 
 // Identifier systems the Candid bots use to resolve a payer Organization back to the Candid
 // directory (see medplum-ee payer-lookup.ts). The Candid UUID is the preferred, unambiguous key.
@@ -100,4 +168,46 @@ export async function refreshCandidClaimResponse(
   }
   await medplum.executeBot(bot.id, { encounterId }, 'application/json');
   return true;
+}
+
+/**
+ * Whether a Contract mapped by candid-get-contracts is in force: Candid marked it effective (FHIR `executed`) and
+ * today falls within its applies window. Candid sends plain dates, so the comparison is on the user's local
+ * calendar date rather than the UTC one.
+ * @param contract - The Contract as returned by the candid-get-contracts bot.
+ * @param today - The date to test against; defaults to now.
+ * @returns True when the contract is executed and today is within its start/end dates.
+ */
+export function isContractInForce(contract: Contract, today: Date = new Date()): boolean {
+  if (contract.status !== 'executed') {
+    return false;
+  }
+  const start = contract.applies?.start?.slice(0, 10);
+  if (!start) {
+    return false;
+  }
+  const date = toLocalCalendarDate(today);
+  const end = contract.applies?.end?.slice(0, 10);
+  return start <= date && (!end || end >= date);
+}
+
+/**
+ * Formats a date as `YYYY-MM-DD` in the local time zone, matching the plain calendar dates Candid sends.
+ * @param date - The date to format.
+ * @returns The local calendar date.
+ */
+function toLocalCalendarDate(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/**
+ * The payer names the contracts stand under, deduplicated in order of first appearance.
+ * @param contracts - Contracts as returned by the candid-get-contracts bot.
+ * @returns The distinct payer display names.
+ */
+export function getContractPayerNames(contracts: Contract[]): string[] {
+  const names = contracts.map((contract) => contract.authority?.[0]?.display).filter((name): name is string => !!name);
+  return Array.from(new Set(names));
 }

@@ -13,7 +13,8 @@ import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { SystemRepository } from './fhir/repo';
-import { getGlobalSystemRepo } from './fhir/repo';
+import { getShardSystemRepo } from './fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import type { PgQueryable } from './fhir/sql';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
@@ -34,7 +35,7 @@ import * as migrationVersions from './migrations/migration-versions';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import type { MigrationAction } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
-import { createTestProject, withTestContext } from './test.setup';
+import { getSuperAdminTestProject, withTestContext } from './test.setup';
 import * as version from './util/version';
 import * as workers from './workers';
 import type * as PostDeployMigration from './workers/post-deploy-migration';
@@ -175,7 +176,7 @@ describe('Database migrations', () => {
       restoreWorkerQueueMocks();
     });
 
-    systemRepo = getGlobalSystemRepo();
+    systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
     await loadTestConfig();
     // We want a clean history of post-deploy migration AsyncJob. init and shutdown the app
     // to facilitate expunging all relevant AsyncJob
@@ -625,7 +626,7 @@ describe('Database migrations', () => {
       await initApp(app, config);
       await expungePostDeployMigrationAsyncJob(systemRepo);
 
-      ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
+      ({ project } = await getSuperAdminTestProject());
 
       const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 
@@ -926,8 +927,8 @@ describe('Database migrations', () => {
     describe('Drop invalid indexes', () => {
       test('Queues explicitly selected invalid index cleanup actions', async () => {
         const targets = [
-          { index: 'AuditEvent_References_pkey_ccnew' },
-          { index: 'AuditEvent_References_targetId_code_idx_ccnew' },
+          { schema: 'public', index: 'AuditEvent_References_pkey_ccnew' },
+          { schema: 'pg_toast', index: 'pg_toast_2539493_index_ccnew' },
         ];
         const queueAddSpy = getQueueAddSpy();
 
@@ -949,18 +950,20 @@ describe('Database migrations', () => {
             postDeploy: [
               {
                 type: 'DROP_INVALID_INDEX',
+                schemaName: 'public',
                 indexName: 'AuditEvent_References_pkey_ccnew',
               },
               {
                 type: 'DROP_INVALID_INDEX',
-                indexName: 'AuditEvent_References_targetId_code_idx_ccnew',
+                schemaName: 'pg_toast',
+                indexName: 'pg_toast_2539493_index_ccnew',
               },
             ],
           },
         });
         const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
         expect(asyncJob.request).toBe(
-          '/admin/super/drop-invalid-indexes?index=AuditEvent_References_pkey_ccnew&index=AuditEvent_References_targetId_code_idx_ccnew'
+          '/admin/super/drop-invalid-indexes?index=public.AuditEvent_References_pkey_ccnew&index=pg_toast.pg_toast_2539493_index_ccnew'
         );
         expect(asyncJob.meta?.project).toBeUndefined();
       });
@@ -968,15 +971,17 @@ describe('Database migrations', () => {
       test.each([
         {},
         { targets: [] },
-        { targets: Array.from({ length: 11 }, (_, index) => ({ index: `Index${index}` })) },
+        { targets: Array.from({ length: 11 }, (_, index) => ({ schema: 'public', index: `Index${index}` })) },
         { targets: 'AuditEvent_References_pkey_ccnew' },
         { targets: [123] },
         { targets: [{}] },
         { targets: [{ schema: 'public' }] },
-        { targets: [{ schema: 'public', index: 'AuditEvent_References_pkey_ccnew' }] },
+        { targets: [{ index: 'AuditEvent_References_pkey_ccnew' }] },
         { targets: [{ schema: 'public', index: 'AuditEvent_References_pkey_ccnew', extra: true }] },
-        { targets: [{ index: 123 }] },
-        { targets: [{ index: 'index; DROP TABLE Patient' }] },
+        { targets: [{ schema: 123, index: 'AuditEvent_References_pkey_ccnew' }] },
+        { targets: [{ schema: 'schema; DROP SCHEMA public', index: 'AuditEvent_References_pkey_ccnew' }] },
+        { targets: [{ schema: 'public', index: 123 }] },
+        { targets: [{ schema: 'public', index: 'index; DROP TABLE Patient' }] },
       ])('Rejects invalid input: %j', async (body) => {
         const queueAddSpy = getQueueAddSpy();
 

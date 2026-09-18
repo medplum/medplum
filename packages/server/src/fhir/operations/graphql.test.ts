@@ -15,6 +15,7 @@ import { getCacheRedis } from '../../redis';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
 import * as searchFile from '../search';
+import { PLACEHOLDER_SHARD_ID } from '../sharding';
 
 const app = express();
 let practitioner: Practitioner;
@@ -44,6 +45,7 @@ describe('GraphQL', () => {
       practitioner = aliceRegistration.profile as Practitioner;
 
       const aliceRepo = new Repository({
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
         author: createReference(aliceRegistration.profile),
         projects: [aliceRegistration.project],
       });

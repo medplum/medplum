@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Group, Menu, Text } from '@mantine/core';
+import { ActionIcon, Group, Menu, Skeleton, Stack, Text } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
 import { IconDots } from '@tabler/icons-react';
@@ -20,7 +20,7 @@ export interface TimelineProps {
 }
 
 export function Timeline(props: TimelineProps): JSX.Element {
-  return <Container>{props.children}</Container>;
+  return <Container w="100%">{props.children}</Container>;
 }
 
 export interface TimelineItemProps<T extends Resource = Resource> extends PanelProps {
@@ -82,6 +82,37 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
       <ErrorBoundary>
         <div className={cx(classes.item, { [classes.itemPadding]: padding })}>{props.children}</div>
       </ErrorBoundary>
+    </Panel>
+  );
+}
+
+export interface TimelineItemSkeletonProps {
+  readonly lines?: number;
+}
+
+/**
+ * Loading placeholder that mirrors the TimelineItem layout: an avatar with name and date lines
+ * in the header, followed by a title bar and full-width body rows.
+ * @param props - The skeleton props.
+ * @returns The TimelineItemSkeleton React node.
+ */
+export function TimelineItemSkeleton(props: TimelineItemSkeletonProps): JSX.Element {
+  const lines = props.lines ?? 4;
+  return (
+    <Panel data-testid="timeline-item-skeleton" fill={true}>
+      <Group gap={8} mx="xs" my="sm" wrap="nowrap">
+        <Skeleton circle height={38} />
+        <Stack gap={8} style={{ flex: 1 }}>
+          <Skeleton height={16} width="28%" />
+          <Skeleton height={12} width="40%" />
+        </Stack>
+      </Group>
+      <Stack gap="md" className={classes.itemPadding}>
+        <Skeleton height={24} width="35%" mb="xs" />
+        {Array.from({ length: lines }, (_, index) => (
+          <Skeleton key={index} height={18} />
+        ))}
+      </Stack>
     </Panel>
   );
 }

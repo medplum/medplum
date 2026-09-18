@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, CloseButton, Group, Title, useMantineTheme } from '@mantine/core';
+import { Alert, CloseButton, Drawer, Group, Title, useMantineTheme } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import {
   getExtensionValue,
   getReferenceString,
@@ -8,15 +9,15 @@ import {
   normalizeErrorString,
   SchedulingScheduleColorURI,
 } from '@medplum/core';
-import type { Appointment, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Extension, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { BookableActorType } from '../actors';
+import { BOOKABLE_ACTOR_TYPES } from '../actors';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
 import { AppointmentBookingForm } from '../AppointmentFinder/AppointmentBookingForm';
-import type { SchedulingRole } from '../AppointmentFinder/AppointmentFinder.roles';
-import { SCHEDULING_ROLES } from '../AppointmentFinder/AppointmentFinder.roles';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { resolveThemeColor } from '../colors';
@@ -24,15 +25,57 @@ import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
 import type { DateTimeRange } from '../types';
+import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
+import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
+import { getCalendarTimezones } from './SchedulingWorkspace.utils';
 
-const EMPTY_CANDIDATES: Readonly<Record<SchedulingRole, ScheduleCandidate[]>> = { provider: [], room: [], device: [] };
+type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
+type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
+
+const NO_CANDIDATES: CandidatesByActorType = { Practitioner: [], Location: [], Device: [] };
+
+const NONE_DESELECTED: DeselectedIdsByActorType = {
+  Practitioner: new Set(),
+  Location: new Set(),
+  Device: new Set(),
+};
 
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
+  /** The ValueSet the procedure code field binds to. Defaults to full CPT valueset. */
+  readonly procedureBinding?: string;
+  /** The ValueSet the diagnosis code field binds to. Defaults to full ICD-10-CM valueset. */
+  readonly diagnosisBinding?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
+  readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
+  /**
+   * Overrides the value set the appointment detail view offers cancellation reasons
+   * from, for a host coding them against its own terminology.
+   */
+  readonly appointmentCancellationReasonValueSet?: string;
+  /**
+   * Lets the booking form take a typed time and length, placing a visit the scheduling
+   * rules would refuse: over occupied or blocked time, past the configured capacity,
+   * or at a time or length the visit type does not offer.
+   *
+   * Passing it draws the fields; it enforces nothing. Which users get it is the host
+   * application's responsibility.
+   *
+   * Such a booking is sent as a transaction, so the appointment and its Slots commit
+   * together on projects with the `transaction-bundles` feature enabled. Without it they
+   * are applied as a plain batch, where an appointment that failed to write would leave
+   * Slots holding no visit.
+   * @see https://www.medplum.com/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions
+   */
+  readonly canBypassSchedulingRules?: boolean;
+  /**
+   * Extensions to put on every appointment booked from this workspace. See
+   * {@link AppointmentProposalFormProps.appointmentExtensions}.
+   */
+  readonly appointmentExtensions?: readonly Extension[];
 }
 
 /**
@@ -45,6 +88,9 @@ export interface SchedulingWorkspaceProps {
  *   The form writes the booking and announces what it wrote, which is what puts the
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
+ * - Shows what is booked: clicking an appointment opens {@link AppointmentDetails} in a
+ *   drawer over the calendar, describing the visit and offering to cancel it. Cancelling
+ *   is what takes the time back off the calendar, again without a host supplying anything.
  * - Highlights the time last chosen, wherever it was chosen: the click that opened the
  *   pane, then whatever the form's time search settles on, and nothing while the form
  *   holds no time. The calendar is never moved to reach it — a highlight off the week
@@ -54,47 +100,54 @@ export interface SchedulingWorkspaceProps {
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
  */
 export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Element {
-  const { onBooked } = props;
+  const {
+    procedureBinding,
+    diagnosisBinding,
+    onBooked,
+    appointmentCancellationReasonValueSet,
+    canBypassSchedulingRules,
+    appointmentExtensions,
+  } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
 
   const [schedulesLoadingError, setSchedulesLoadingError] = useState<unknown>();
 
-  const [candidatesByRole, setCandidatesByRole] =
-    useState<Readonly<Record<SchedulingRole, ScheduleCandidate[]>>>(EMPTY_CANDIDATES);
+  const [candidatesByActorType, setCandidatesByActorType] = useState<CandidatesByActorType>(NO_CANDIDATES);
   const [candidatesLoading, setCandidatesLoading] = useState(false);
 
-  const [deselectedProviderIds, setDeselectedProviderIds] = useState<ReadonlySet<string>>(new Set());
-  const [deselectedDeviceIds, setDeselectedDeviceIds] = useState<ReadonlySet<string>>(new Set());
-  const [deselectedRoomIds, setDeselectedRoomIds] = useState<ReadonlySet<string>>(new Set());
+  const [deselectedIds, setDeselectedIds] = useState<DeselectedIdsByActorType>(NONE_DESELECTED);
 
   const [range, setRange] = useState<DateTimeRange>();
 
-  // What was clicked
+  // What was selected
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>();
+
   // What the calendar highlights
   const [highlight, setHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
 
-  // Finds all bookable Schedules, with one search per schedulable role.
+  // Finds all bookable Schedules, with one search per bookable actor type.
   useEffect(() => {
     const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional loading flag
     setCandidatesLoading(true);
     Promise.all(
-      SCHEDULING_ROLES.map((role) =>
-        searchScheduleCandidates(medplum, undefined, {
-          role,
+      BOOKABLE_ACTOR_TYPES.map(async (actorType) => {
+        const candidates = await searchScheduleCandidates(medplum, undefined, {
+          actorType,
           query: '',
           signal: controller.signal,
           count: 100,
-        })
-      )
+        });
+        return [actorType, candidates] as const;
+      })
     )
-      .then(([provider, room, device]) => {
+      .then((results) => {
         if (!controller.signal.aborted) {
           setSchedulesLoadingError(undefined);
-          setCandidatesByRole({ provider, room, device });
+          setCandidatesByActorType(Object.fromEntries(results) as CandidatesByActorType);
         }
       })
       .catch((err: unknown) => {
@@ -110,25 +163,23 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     return () => controller.abort();
   }, [medplum]);
 
-  // Every candidate across all three roles gets its own stable color, shared between
+  // Every candidate across all the bookable types gets its own stable color, shared between
   // its CalendarsPanel row and its MultiCalendar source so the two always match.
   const colorByScheduleId = useMemo(() => {
-    const all = [...candidatesByRole.provider, ...candidatesByRole.room, ...candidatesByRole.device];
+    const all = BOOKABLE_ACTOR_TYPES.flatMap((actorType) => candidatesByActorType[actorType]);
     const map = new Map<string, keyof typeof theme.colors>();
     all.forEach((candidate, i) => {
       const extensionColor = getExtensionValue(candidate.schedule, SchedulingScheduleColorURI) as string | undefined;
       map.set(candidate.schedule.id, resolveThemeColor(theme, extensionColor, i));
     });
     return map;
-  }, [candidatesByRole, theme]);
+  }, [candidatesByActorType, theme]);
 
   const activeCandidates = useMemo(() => {
-    return [
-      ...candidatesByRole.provider.filter((c) => !deselectedProviderIds.has(c.schedule.id)),
-      ...candidatesByRole.room.filter((c) => !deselectedRoomIds.has(c.schedule.id)),
-      ...candidatesByRole.device.filter((c) => !deselectedDeviceIds.has(c.schedule.id)),
-    ];
-  }, [candidatesByRole, deselectedProviderIds, deselectedRoomIds, deselectedDeviceIds]);
+    return BOOKABLE_ACTOR_TYPES.flatMap((actorType) =>
+      candidatesByActorType[actorType].filter((c) => !deselectedIds[actorType].has(c.schedule.id))
+    );
+  }, [candidatesByActorType, deselectedIds]);
 
   const schedules = useMemo(() => activeCandidates.map((c) => c.schedule), [activeCandidates]);
   const {
@@ -155,6 +206,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     });
   }, [activeCandidates, slots, appointments, colorByScheduleId]);
 
+  const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
+
   const startBooking = useCallback((interval: DateTimeRange): void => {
     setBookingSelection(interval);
     setHighlight(interval);
@@ -166,6 +219,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setTimeFinderOpen(false);
   }, []);
 
+  const toggleCandidate = useCallback((actorType: BookableActorType, id: string): void => {
+    setDeselectedIds((prev) => ({ ...prev, [actorType]: toggleId(prev[actorType], id) }));
+  }, []);
+
   const finishBooking = useCallback(
     (booking: AppointmentBooking): void | Promise<void> => {
       closeBooking();
@@ -173,6 +230,21 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     },
     [closeBooking, onBooked]
   );
+
+  const selectAppointment = useCallback((appointment: Appointment): void => {
+    if (appointment.id) {
+      setSelectedAppointmentId(appointment.id);
+    }
+  }, []);
+
+  const closeAppointment = useCallback((): void => setSelectedAppointmentId(undefined), []);
+
+  const openAppointment = useMemo((): WithId<Appointment> | undefined => {
+    if (selectedAppointmentId) {
+      return (appointments ?? []).find((a) => a.id === selectedAppointmentId);
+    }
+    return undefined;
+  }, [appointments, selectedAppointmentId]);
 
   const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => {
     const color = colorByScheduleId.get(candidate.schedule.id);
@@ -187,20 +259,19 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     };
   };
 
+  const panelItems = Object.fromEntries(
+    BOOKABLE_ACTOR_TYPES.map((actorType) => [
+      actorType,
+      candidatesByActorType[actorType].map((c) => toItem(c, !deselectedIds[actorType].has(c.schedule.id))),
+    ])
+  ) as Record<BookableActorType, CalendarsPanelItem[]>;
+
   const displayError = resourcesError ?? schedulesLoadingError;
 
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
       <div className={classes.sidebar}>
-        <CalendarsPanel
-          providers={candidatesByRole.provider.map((c) => toItem(c, !deselectedProviderIds.has(c.schedule.id)))}
-          devices={candidatesByRole.device.map((c) => toItem(c, !deselectedDeviceIds.has(c.schedule.id)))}
-          rooms={candidatesByRole.room.map((c) => toItem(c, !deselectedRoomIds.has(c.schedule.id)))}
-          candidatesLoading={candidatesLoading}
-          onToggleProvider={(id) => setDeselectedProviderIds((prev) => toggleId(prev, id))}
-          onToggleDevice={(id) => setDeselectedDeviceIds((prev) => toggleId(prev, id))}
-          onToggleRoom={(id) => setDeselectedRoomIds((prev) => toggleId(prev, id))}
-        />
+        <CalendarsPanel items={panelItems} candidatesLoading={candidatesLoading} onToggle={toggleCandidate} />
       </div>
       <div className={classes.calendar}>
         {displayError !== undefined && (
@@ -209,13 +280,31 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           </Alert>
         )}
         <MultiCalendar
+          className={classes.multiCalendar}
           sources={sources}
           onRangeChange={setRange}
           loading={resourcesLoading}
           onSelectInterval={startBooking}
+          onSelectAppointment={selectAppointment}
           selection={highlight}
         />
+        <CalendarTimezoneNotice className={classes.timezoneNotice} timezones={timezones} anyUnknown={anyUnknown} />
       </div>
+      <Drawer
+        opened={openAppointment !== undefined}
+        onClose={closeAppointment}
+        position="right"
+        title="Appointment details"
+        closeButtonProps={{ 'aria-label': 'Close appointment details' }}
+      >
+        {openAppointment && (
+          <AppointmentDetails
+            appointment={openAppointment}
+            cancellationReasonValueSet={appointmentCancellationReasonValueSet}
+            onCancelled={props.onCancelled}
+          />
+        )}
+      </Drawer>
       {bookingSelection && (
         <div className={cx(classes.bookingPane, { [classes.bookingPaneWide]: timeFinderOpen })}>
           <Group justify="space-between" wrap="nowrap" mb="sm">
@@ -225,6 +314,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           <AppointmentBookingForm
             key={bookingSelection.start.toDateString()}
             defaultStart={bookingSelection.start}
+            procedureBinding={procedureBinding}
+            diagnosisBinding={diagnosisBinding}
+            canBypassSchedulingRules={canBypassSchedulingRules}
+            appointmentExtensions={appointmentExtensions}
             onToggleTimeFinder={setTimeFinderOpen}
             onChangeTime={setHighlight}
             onBooked={finishBooking}

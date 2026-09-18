@@ -2,10 +2,11 @@
 # "Vouch" GitHub Actions workflows (.github/workflows/vouch-*.yml) to decide
 # who can open issues/PRs without extra scrutiny.
 #
-# - Vouched users' PRs are never required to link to a correctly
-#   labeled issue; everyone else's are (see vouch-check-pr.yml).
-# - Denounced users have their issues and PRs closed automatically,
-#   regardless of anything else (see vouch-check-issue.yml / vouch-check-pr.yml).
+# - Vouched users' PRs and PRs labeled `vouched` are never required to link
+#   to a correctly labeled issue; everyone else's are (see vouch-check-pr.yml).
+# - Denounced users have their issues and PRs closed automatically, except
+#   that PRs labeled `vouched` are exempt (see vouch-check-issue.yml /
+#   vouch-check-pr.yml).
 #
 # This file is largely managed automatically: vouch-sync-codeowners.yml
 # (run manually via the Actions UI) expands the teams in .github/CODEOWNERS

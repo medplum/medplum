@@ -5,6 +5,19 @@ import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 import { medplumAliases } from '../../aliases.mjs';
 
+/*
+ * Default the runner's timezone. This package renders times in one zone and reads them in another
+ * throughout, and several tests turn on the two differing, so a suite that inherits whatever zone
+ * the machine is set to is a different suite on a laptop than on CI. UTC is what CI already runs
+ * in, so this only makes a local run agree with it by default.
+ *
+ * Daylight saving is still exercised: the tests that turn on it pass their zone explicitly, and an
+ * explicit zone observes DST whatever the runner is set to. Only the browser-default paths follow
+ * this, which is why it stays overridable: `TZ=America/New_York npm test` runs those in a zone
+ * that changes twice a year.
+ */
+process.env.TZ ??= 'UTC';
+
 export default defineConfig({
   plugins: [
     react(),

@@ -23,6 +23,11 @@ This is a living document, and we continually update our resources. We welcome f
 - [Good Manufacturing Practices (GMP)](/docs/compliance/gmp)
 - ISO 27001 Certification (coming soon)
 
+## Platform Controls
+
+- [High Availability, Backup, and Retention](/docs/compliance/backup-and-recovery)
+- [Uptime, Availability, and SLAs](/docs/uptime)
+
 ## Materials and Usage
 
 The materials in this section can be used in multiple contexts, and depend on your objectives. Common use cases are as follows:

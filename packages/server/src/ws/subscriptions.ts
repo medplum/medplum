@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, createReference, EMPTY, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
+import {
+  badRequest,
+  createReference,
+  deepClone,
+  EMPTY,
+  forbidden,
+  normalizeErrorString,
+  OperationOutcomeError,
+} from '@medplum/core';
 import type { Bundle, Project, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
 import type { JWTPayload } from 'jose';
@@ -30,6 +38,7 @@ import {
   setActiveSubscription,
 } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
+import { getProjectIdFromUrl } from '../util/url';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -149,7 +158,6 @@ async function sendSubscriptionEventNotifications(
 ): Promise<string[]> {
   const deadSubscriptionIds: string[] = [];
   for (const [subscriptionId, options] of subEventArgsArr) {
-    const bundle = createSubEventNotification(resource, subscriptionId, options);
     for (const socket of subToWsLookup.get(subscriptionId) ?? EMPTY) {
       // Get the repo for this socket in the context of the subscription
       const subMetadataMap = wsToSubLookup.get(socket);
@@ -173,9 +181,13 @@ async function sendSubscriptionEventNotifications(
           deadSubscriptionIds.push(subscriptionId);
           continue;
         }
+        // removeHiddenFields mutates its input, and one published resource is shared by every
+        // socket on this event, so each subscriber filters its own copy.
+        const visible = repo.removeHiddenFields(deepClone(resource));
+        const bundle = createSubEventNotification(visible, subscriptionId, options);
         rewrittenBundle = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, bundle);
       } catch (err) {
-        globalLogger.error('[WS] Error occurred while rewriting attachments', { err });
+        globalLogger.error('[WS] Error occurred while preparing subscription notification', { err });
         continue;
       }
 
@@ -402,6 +414,21 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
       return;
     }
     const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
+
+    // When the socket was opened on a project-scoped URL, the project in the URL must match the
+    // subscription's project. This mirrors the check that authenticateRequest applies to HTTP
+    // requests, so that a project-scoped WebSocket URL means the same thing as a project-scoped
+    // HTTP URL rather than being decorative.
+    const urlProjectId = getProjectIdFromUrl(request.url ?? '');
+    if (urlProjectId && urlProjectId !== cacheEntry.projectId) {
+      globalLogger.warn('[WS] Subscription project does not match the project-scoped URL', {
+        socketId,
+        subscriptionId: verifiedToken.subscription_id,
+        urlProjectId,
+      });
+      socket.send(JSON.stringify(forbidden));
+      return;
+    }
 
     // We can cast here because these criteria are proven to be valid when calling $get-ws-binding-token
     const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0] as ResourceType;

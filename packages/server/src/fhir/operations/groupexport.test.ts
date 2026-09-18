@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType, getReferenceString } from '@medplum/core';
-import type { BulkDataExportOutput, Group, Organization, Patient } from '@medplum/fhirtypes';
+import type { BulkDataExportOutput, Group, Organization, Patient, Project } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -9,20 +10,23 @@ import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
 import { getBinaryStorage } from '../../storage/loader';
-import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { getGlobalSystemRepo } from '../repo';
+import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
+import type { Repository, SystemRepository } from '../repo';
 import { groupExportResources } from './groupexport';
 import { BulkExporter } from './utils/bulkexporter';
 
 describe('Group Export', () => {
   const app = express();
-  const systemRepo = getGlobalSystemRepo();
   let accessToken: string;
+  let project: WithId<Project>;
+  let repo: Repository;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    ({ project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true }));
+    systemRepo = repo.getSystemRepo();
   });
 
   afterAll(async () => {
@@ -326,8 +330,6 @@ describe('Group Export', () => {
   });
 
   test('groupExportResources without members', async () => {
-    const { project } = await createTestProject();
-    expect(project).toBeDefined();
     const exporter = new BulkExporter(systemRepo);
     const exportWriteResourceSpy = vi.spyOn(exporter, 'writeResource');
 
@@ -344,8 +346,6 @@ describe('Group Export', () => {
   });
 
   test('groupExportResources members without reference', async () => {
-    const { project } = await createTestProject();
-    expect(project).toBeDefined();
     const exporter = new BulkExporter(systemRepo);
 
     const patient: Patient = await systemRepo.createResource<Patient>({
@@ -375,12 +375,12 @@ describe('Group Export', () => {
       // and Binary resources are server-side bookkeeping and must not require the caller
       // to have write access -- e.g. a read-only `system/*.read` scope must still work.
       // BulkExporter creates these via the system repo, scoped to the caller's project.
-      const { repo, project } = await createTestProject({
-        withRepo: true,
-        accessPolicy: { resource: [{ resourceType: '*', readonly: true }] },
+
+      const readOnlyRepo = repo.clone({
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: '*', readonly: true }] },
       });
 
-      const exporter = new BulkExporter(repo);
+      const exporter = new BulkExporter(readOnlyRepo);
 
       // Previously threw OperationOutcomeError(Forbidden): the AsyncJob was created via
       // the caller's (read-only) repo.

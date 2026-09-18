@@ -1,6 +1,6 @@
 {
   "name": "@medplum/core",
-  "version": "5.1.36",
+  "version": "5.1.39",
   "description": "Medplum TS/JS Library",
   "keywords": [
     "medplum",
@@ -57,10 +57,10 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@medplum/definitions": "5.1.36",
-    "@medplum/fhirtypes": "5.1.36",
-    "fast-check": "4.9.0",
-    "@fast-check/vitest": "0.4.1"
+    "@medplum/definitions": "5.1.39",
+    "@medplum/fhirtypes": "5.1.39",
+    "fast-check": "4.10.0",
+    "@fast-check/vitest": "0.5.0"
   },
   "peerDependencies": {
     "pdfmake": "^0.2.5"

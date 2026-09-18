@@ -49,8 +49,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build:all -- --filter=@medplum/storybook
+      - name: Build Storybook dependencies
+        # Chromatic runs build:test itself to inject output and TurboSnap stats options.
+        # Build only dependencies here to avoid building Storybook twice.
+        run: npx turbo run build '--filter=@medplum/storybook^...'
 
       - name: Publish @medplum/react Chromatic
         uses: chromaui/action@94713c544284a14195de3b50ef24301579f1877e # v18.0.1
@@ -59,7 +61,7 @@ jobs:
         with:
           projectToken: chpt_429b596edaecafb
           workingDir: packages/storybook
-          buildScriptName: build
+          buildScriptName: build:test
           autoAcceptChanges: 'main'
           exitOnceUploaded: true
           exitZeroOnChanges: true

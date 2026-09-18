@@ -525,6 +525,50 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
       { columns: ['project', 'userName'], indexType: 'btree', unique: true }
     );
   }
+
+  if (resourceType === 'Observation') {
+    result.indexes.push({ columns: ['subject', 'date'], indexType: 'btree' });
+  }
+
+  if (resourceType === 'Task') {
+    applyTaskProjectScopedIndexes(result);
+  }
+}
+
+/**
+ * Columns of the Task indexes replaced by project-scoped equivalents in data migration v46, keyed by
+ * the columns of the index as generated from the search parameter. `suffix` columns are appended after
+ * the search parameter's own columns, e.g. `status` becomes `("projectId", status, "lastUpdated")`.
+ */
+const TaskProjectScopedIndexes: { columns: string[]; suffix?: string[] }[] = [
+  { columns: ['___tag'] },
+  { columns: ['___tagTextTrgm'] },
+  { columns: ['authoredOn'] },
+  { columns: ['__code'] },
+  { columns: ['__codeTextTrgm'] },
+  { columns: ['priority'] },
+  { columns: ['status'], suffix: ['lastUpdated'] },
+  { columns: ['dueDate'] },
+];
+
+/**
+ * TEMPORARY: mirrors the index changes made by data migration v46, which prefixes the most selective
+ * Task indexes with projectId so they can serve project-scoped searches. Remove once the generator can
+ * express project-scoped indexes for search parameters generally.
+ * @param result - The Task table definition, modified in place.
+ */
+function applyTaskProjectScopedIndexes(result: TableDefinition): void {
+  for (const { columns, suffix } of TaskProjectScopedIndexes) {
+    const index = result.indexes.find(
+      (i) => i.columns.length === columns.length && i.columns.every((c, idx) => getIndexColumnName(c) === columns[idx])
+    );
+    assert(index, `Could not find Task index on ${columns.join(', ')}`);
+    index.columns = ['projectId', ...index.columns, ...(suffix ?? EMPTY)];
+  }
+}
+
+function getIndexColumnName(column: IndexDefinition['columns'][number]): string {
+  return isString(column) ? column : column.name;
 }
 
 function buildAddressTable(result: SchemaDefinition): void {
@@ -643,11 +687,7 @@ function buildCodingTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'Coding',
     columns: [
-      {
-        name: 'id',
-        type: 'BIGSERIAL',
-        primaryKey: true,
-      },
+      { name: 'id', type: 'BIGSERIAL', primaryKey: true },
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'display', type: 'TEXT' },
@@ -656,7 +696,6 @@ function buildCodingTable(result: SchemaDefinition): void {
       { name: 'language', type: 'TEXT' },
     ],
     indexes: [
-      { columns: ['id'], indexType: 'btree', unique: true },
       {
         columns: ['system', 'code'],
         indexType: 'btree',
@@ -727,11 +766,7 @@ function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'CodeSystem_Property',
     columns: [
-      {
-        name: 'id',
-        type: 'BIGSERIAL',
-        primaryKey: true,
-      },
+      { name: 'id', type: 'BIGSERIAL', primaryKey: true },
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'type', type: 'TEXT', notNull: true },
@@ -880,7 +915,7 @@ export async function executeMigrationActions(
         break;
       }
       case 'DROP_INVALID_INDEX': {
-        await fns.dropInvalidIndexConcurrently(client, results, action.indexName);
+        await fns.dropInvalidIndexConcurrently(client, results, action.schemaName, action.indexName);
         break;
       }
       case 'REINDEX_CONCURRENTLY': {
@@ -1051,7 +1086,9 @@ export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]
         break;
       }
       case 'DROP_INVALID_INDEX': {
-        b.appendNoWrap(`await fns.dropInvalidIndexConcurrently(client, results, ${JSON.stringify(action.indexName)});`);
+        b.appendNoWrap(
+          `await fns.dropInvalidIndexConcurrently(client, results, '${action.schemaName}', '${action.indexName}');`
+        );
         break;
       }
       case 'REINDEX_CONCURRENTLY': {
@@ -1271,9 +1308,9 @@ export function generateIndexesActions(
     assert(!seenIndexNames.has(indexName), new Error('Duplicate index name: ' + indexName, { cause: targetIndex }));
     seenIndexNames.add(indexName);
 
-    const matchingStartIndexes = startTable.indexes.filter(
-      (i) => !matchedIndexes.has(i) && indexDefinitionsEqual(i, targetIndex)
-    );
+    // A physical index can satisfy multiple structurally identical target declarations, such as a unique index
+    // declaration that duplicates a primary key. Preserve that compatibility while preferring the expected name.
+    const matchingStartIndexes = startTable.indexes.filter((i) => indexDefinitionsEqual(i, targetIndex));
     // REINDEX CONCURRENTLY can leave a duplicate _ccnew/_ccold index behind after a failure. Prefer the expected
     // name, then any established legacy name, so the temporary copy is the index classified as unmatched.
     const startIndex =

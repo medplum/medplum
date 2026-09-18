@@ -154,6 +154,29 @@ describe('CalendarDateInput', () => {
     expect(screen.getByRole('button', { name: '10' }).className).toContain('available');
   });
 
+  test('Marks both ends of the range even when a day within it is named selected', () => {
+    const month = getStartMonth();
+
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        selected={dayOf(month, 10)}
+        range={{ start: dayOf(month, 10), end: dayOf(month, 12) }}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+      />
+    );
+
+    // A multi-day range on show always marks both its ends, whether or not one of
+    // them also happens to be named as the day picked.
+    expect(screen.getByRole('button', { name: '10' }).className).toContain('selected');
+    expect(screen.getByRole('button', { name: '12' }).className).toContain('selected');
+    expect(cellOf('12').className).toContain('inRange');
+    expect(screen.getByRole('button', { name: '12' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
   test('Bands a range whose ends carry a time of day', () => {
     const month = getStartMonth();
     const start = dayOf(month, 10);

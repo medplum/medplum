@@ -14,7 +14,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
+import { createTestProject, getSuperAdminAccessToken, initTestAuth, withTestContext } from '../../test.setup';
 import { repoAccess } from '../repository/access-tracker';
 import type { PgQueryable } from '../sql';
 import { addExpansionItems, countCandidatesBounded, expansionQuery, hydrateCodeSystemProperties } from './expand';
@@ -313,7 +313,7 @@ describe('Expand', () => {
       version: '1',
       content: 'not-present',
     };
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    const superAdminAccessToken = await getSuperAdminAccessToken();
 
     // First version of code system
     const res1 = await request(app)
@@ -1960,6 +1960,15 @@ describe('Expand', () => {
     expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
       { code: 'MSG_INVALID_ID', display: 'Identifiant invalide', system: codeSystem.url },
     ]);
+
+    // The CodeSystem has no Spanish translation, so the ValueSet designation is the only source for it
+    const esRes = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url)}&displayLanguage=es`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(esRes).toHaveStatus(200);
+    expect((esRes.body.expansion as ValueSetExpansion).contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { code: 'MSG_INVALID_ID', display: 'ID inválido', system: codeSystem.url },
+    ]);
   });
 
   test('Base resources are not shadowed for Super Admin', async () => {
@@ -1975,7 +1984,7 @@ describe('Expand', () => {
       } satisfies CodeSystem);
     expect(csRes).toHaveStatus(201);
 
-    const superAdminToken = await initTestAuth({ superAdmin: true });
+    const superAdminToken = await getSuperAdminAccessToken();
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${url}&filter=clien`)
       .set('Authorization', 'Bearer ' + superAdminToken);
@@ -2012,8 +2021,6 @@ describe('Expand', () => {
       compose: { include: [{ system: flatSystem }] },
     };
 
-    // Enumerated concepts: FVR and TOUX take their translation from the CodeSystem, while RHUME carries an
-    // inline designation that differs from it ('Rhume'), so the two sources can be told apart
     const conceptValueSet: ValueSet = {
       resourceType: 'ValueSet',
       status: 'active',
@@ -2026,6 +2033,11 @@ describe('Expand', () => {
               { code: 'FVR', display: 'Fever' },
               { code: 'TOUX', display: 'Cough' },
               { code: 'RHUME', display: 'Cold', designation: [{ language: 'fr', value: 'Rhume sévère' }] },
+              {
+                code: 'LYMPH',
+                display: 'Naïve lymphocyte',
+                designation: [{ language: 'fr', value: 'Lymphocyte naïf' }],
+              },
             ],
           },
         ],
@@ -2249,7 +2261,14 @@ describe('Expand', () => {
           { system: flatSystem, code: 'FVR', display: 'Fièvre' },
           { system: flatSystem, code: 'TOUX', display: 'Toux' },
           { system: flatSystem, code: 'RHUME', display: 'Rhume sévère' },
+          { system: flatSystem, code: 'LYMPH', display: 'Lymphocyte naïf' },
         ],
+      },
+      {
+        name: 'Inline designation supplies the display when the CodeSystem has no translation',
+        valueSet: conceptValueSet,
+        query: 'filter=naif&displayLanguage=fr',
+        expected: [{ system: flatSystem, code: 'LYMPH', display: 'Lymphocyte naïf' }],
       },
       {
         name: 'Enumerated concepts filter on the translated display',
