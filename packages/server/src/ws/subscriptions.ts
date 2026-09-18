@@ -64,11 +64,8 @@ export interface WebSocketSubMetadata {
 
 export type WebSocketSubToken = MedplumAccessTokenClaims & AdditionalWsBindingClaims;
 
-export type V1SubEventEntry = [WithId<Resource>, string, SubEventsOptions];
-export type V1SubEventPayload = V1SubEventEntry[];
-
-export type V2SubEventEntry = [string, SubEventsOptions];
-export type V2SubEventPayload = { resource: WithId<Resource>; events: V2SubEventEntry[] };
+export type SubEventEntry = [string, SubEventsOptions];
+export type SubEventPayload = { resource: WithId<Resource>; events: SubEventEntry[] };
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
@@ -127,26 +124,18 @@ async function setupSubscriptionHandler(): Promise<void> {
   });
   subscriber.on('message', async (channel: string, events: string) => {
     globalLogger.debug('[WS] redis subscription events', { channel, events });
-    let subEventPayload: V1SubEventPayload | V2SubEventPayload;
+    let subEventPayload: SubEventPayload;
     try {
-      subEventPayload = JSON.parse(events) as V1SubEventPayload | V2SubEventPayload;
+      subEventPayload = JSON.parse(events) as SubEventPayload;
     } catch (err) {
       globalLogger.error(`[WS]: Failed to parse subscription event payload: ${normalizeErrorString(err)}`, { channel });
       return;
     }
-    let resource: WithId<Resource>;
-    let subEventArgsArr: [string, SubEventsOptions][];
 
-    // TODO{v5.2} - Deprecate v1
-    if (isV1SubEventPayload(subEventPayload)) {
-      resource = subEventPayload[0][0];
-      subEventArgsArr = subEventPayload.map((entry) => [entry[1], entry[2]]);
-    } else {
-      resource = subEventPayload.resource;
-      subEventArgsArr = subEventPayload.events;
-    }
-
-    const deadSubscriptionIds = await sendSubscriptionEventNotifications(resource, subEventArgsArr);
+    const deadSubscriptionIds = await sendSubscriptionEventNotifications(
+      subEventPayload.resource,
+      subEventPayload.events
+    );
     await handleDeadSubscriptions(deadSubscriptionIds);
   });
   await subscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
@@ -154,7 +143,7 @@ async function setupSubscriptionHandler(): Promise<void> {
 
 async function sendSubscriptionEventNotifications(
   resource: WithId<Resource>,
-  subEventArgsArr: [string, SubEventsOptions][]
+  subEventArgsArr: SubEventEntry[]
 ): Promise<string[]> {
   const deadSubscriptionIds: string[] = [];
   for (const [subscriptionId, options] of subEventArgsArr) {
@@ -244,10 +233,6 @@ async function handleDeadSubscriptions(deadSubscriptionIds: string[]): Promise<v
   } catch (err) {
     globalLogger.error('[WS] Error marking dead subscriptions inactive', { err });
   }
-}
-
-function isV1SubEventPayload(candidate: unknown): candidate is V1SubEventPayload {
-  return Array.isArray(candidate) && candidate.length !== 0;
 }
 
 function ensureHeartbeatHandler(): void {
