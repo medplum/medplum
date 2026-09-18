@@ -22,12 +22,12 @@ import type { CandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
 import { formatPayerCategory, getPayerCategory } from '../../utils/billing';
 import { CANDID_PAYER_UUID_SYSTEM, CHC_PAYER_ID_SYSTEM, CMS_PAYER_ID_SYSTEM } from '../../utils/candid';
 
-export interface PayerDirectorySearchProps {
+export interface CandidPayerDirectorySearchProps {
   readonly directory: CandidPayerDirectory;
   readonly onSelectPayer: (payer: Organization) => void;
 }
 
-export function PayerDirectorySearch(props: PayerDirectorySearchProps): JSX.Element | null {
+export function CandidPayerDirectorySearch(props: CandidPayerDirectorySearchProps): JSX.Element | null {
   const { directory, onSelectPayer } = props;
   const [searchTerm, setSearchTerm] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
