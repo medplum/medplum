@@ -56,7 +56,7 @@ import { getCacheRedis } from '../redis';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
 import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
-import type { SubEventsOptions } from '../ws/subscriptions';
+import type { SubEventEntry, SubEventPayload } from '../ws/subscriptions';
 import {
   clearSubscriptionFailures,
   getSubscriptionAutoDisableTriggers,
@@ -360,7 +360,7 @@ export async function addSubscriptionJobs(
   const subscriptions = await getSubscriptions(resource, project);
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
-  const wsSubEvents = [] as [string, SubEventsOptions][];
+  const wsSubEvents: SubEventEntry[] = [];
   // Cache access policy results per (author, channel type) for the duration of this evaluation.
   // Within one addSubscriptionJobs() call, `resource` and `project` are constant,
   // so the boolean result is identical for all subscriptions sharing the same author AND channel type.
@@ -436,7 +436,10 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
-    await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify({ resource, events: wsSubEvents }));
+    await publish(
+      WEBSOCKET_SUB_PUBLISH_CHANNEL,
+      JSON.stringify({ resource, events: wsSubEvents } satisfies SubEventPayload)
+    );
   }
 }
 
