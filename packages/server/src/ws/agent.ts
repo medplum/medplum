@@ -11,12 +11,11 @@ import type { RawData, WebSocket } from 'ws';
 import type { AgentInfo } from '../agent/utils';
 import { AgentConnectionState } from '../agent/utils';
 import { executeBot } from '../bots/execute';
-import { getCallbackChannelFromId } from '../fhir/operations/utils/agentcallback';
+import { publishAgentCallback } from '../fhir/operations/utils/agentcallback';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
-import { publish } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
 const INFO_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
@@ -103,13 +102,13 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
           case 'agent:logs:response':
           case 'agent:stats:response':
             if (command.callback) {
-              await publish(getCallbackChannelFromId(command.callback), JSON.stringify(command));
+              await publishAgentCallback(command.callback, JSON.stringify(command));
             }
             break;
 
           case 'agent:error':
             if (command.callback) {
-              await publish(getCallbackChannelFromId(command.callback), JSON.stringify(command));
+              await publishAgentCallback(command.callback, JSON.stringify(command));
             }
             globalLogger.error('[Agent]: Error received from agent', { error: command.body });
             break;

@@ -23,7 +23,12 @@ import { getAuthenticatedContext } from '../../../context';
 import { publish } from '../../../pubsub';
 import type { Repository } from '../../repo';
 import type { AgentPushParameters } from '../agentpush';
-import { buildAgentCallbackId, ensureCallbackSubscriber, registerAgentCallback } from './agentcallback';
+import {
+  buildAgentCallbackId,
+  ensureCallbackSubscriber,
+  registerAgentCallback,
+  subscribeLegacyCallbackChannel,
+} from './agentcallback';
 
 export const MAX_AGENTS_PER_PAGE = 100;
 
@@ -180,6 +185,10 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
     message.callback = buildAgentCallbackId(randomUUID());
 
     await ensureCallbackSubscriber();
+    // Rolling-deploy compatibility: a server still on the previous release publishes the
+    // response to the callback id verbatim, so listen on that channel too until every
+    // process is upgraded.
+    await subscribeLegacyCallbackChannel(message.callback);
     const resultPromise = registerAgentCallback<T>(message.callback, options?.timeout ?? 5000);
     await publishRequestMessage(agent, message);
     return resultPromise;

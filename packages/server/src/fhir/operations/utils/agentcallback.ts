@@ -7,6 +7,7 @@ import type { Redis } from 'ioredis';
 import assert from 'node:assert';
 import os from 'node:os';
 import { globalLogger } from '../../../logger';
+import { publish } from '../../../pubsub';
 import { getPubSubRedisSubscriber } from '../../../redis';
 
 const HOSTNAME = os.hostname();
@@ -55,14 +56,81 @@ export function buildAgentCallbackId(uuid: string): string {
  * preserving compatibility with peers that still publish per-callback channels.
  *
  * @param callback - The callback id from the agent response.
- * @returns The Redis channel to publish the response on.
+ * @returns The Redis channel to publish the response on, or `undefined` if the id is
+ * malformed, i.e. neither shape yields a non-empty channel name.
  */
-export function getCallbackChannelFromId(callback: string): string {
+export function getCallbackChannelFromId(callback: string): string | undefined {
   const idx = callback.lastIndexOf(':');
-  if (idx <= 0) {
-    return callback;
+  return (idx === -1 ? callback : callback.slice(0, idx)) || undefined;
+}
+
+/**
+ * Publishes an agent response so that whichever server process is awaiting it receives it.
+ *
+ * Writes to both the shared per-hostname channel and the callback id itself. The
+ * latter is the channel a server running the previous release subscribes to, and is
+ * only needed until every process has been upgraded; see {@link subscribeLegacyCallbackChannel}.
+ *
+ * A callback id that yields no channel is malformed: the response is logged and dropped
+ * rather than published somewhere arbitrary.
+ *
+ * @param callback - The callback id echoed back by the agent.
+ * @param message - The serialized agent response.
+ */
+export async function publishAgentCallback(callback: string, message: string): Promise<void> {
+  const channel = getCallbackChannelFromId(callback);
+  if (!channel) {
+    globalLogger.warn('[AgentCallback]: Dropping response with a malformed callback id', { callback });
+    return;
   }
-  return callback.slice(0, idx);
+  await publish(channel, message);
+  if (channel !== callback) {
+    await publish(callback, message);
+  }
+}
+
+/**
+ * Subscribes the shared subscriber to the callback id itself, in addition to the
+ * per-hostname channel it already listens on.
+ *
+ * A server running the previous release publishes responses to the callback id
+ * verbatim rather than deriving the channel from it, so during a rolling deploy the
+ * response to a request this process originated may arrive on either channel. This
+ * adds a channel to the existing connection rather than a connection per request, so
+ * the O(1) connection count is preserved.
+ *
+ * @param callbackId - The fully-qualified callback id to also listen on.
+ */
+export async function subscribeLegacyCallbackChannel(callbackId: string): Promise<void> {
+  const subscriber = sharedSubscriber;
+  assert(subscriber, 'Callback subscriber not yet initialized');
+  await subscriber.subscribe(callbackId);
+}
+
+function unsubscribeLegacyCallbackChannel(callbackId: string): void {
+  sharedSubscriber?.unsubscribe(callbackId).catch((err) => {
+    globalLogger.warn('[AgentCallback]: Failed to unsubscribe callback channel', {
+      error: normalizeErrorString(err),
+    });
+  });
+}
+
+/**
+ * Removes a pending callback from the registry, cancelling its timer and dropping the
+ * per-callback subscription.
+ *
+ * @param callbackId - The callback id to settle.
+ * @returns The removed pending callback, or `undefined` if it had already settled.
+ */
+function settlePendingCallback(callbackId: string): PendingCallback | undefined {
+  const pending = pendingCallbacks.get(callbackId);
+  if (!pending) {
+    return undefined;
+  }
+  pendingCallbacks.delete(callbackId);
+  clearTimeout(pending.timer);
+  unsubscribeLegacyCallbackChannel(callbackId);
+  return pending;
 }
 
 /**
@@ -113,12 +181,10 @@ async function setupCallbackSubscriber(): Promise<void> {
     if (!callbackId) {
       return;
     }
-    const pending = pendingCallbacks.get(callbackId);
+    const pending = settlePendingCallback(callbackId);
     if (!pending) {
       return;
     }
-    pendingCallbacks.delete(callbackId);
-    clearTimeout(pending.timer);
     pending.resolve([allOk, parsed]);
   });
   await subscriber.subscribe(getAgentCallbackChannel());
@@ -144,7 +210,7 @@ export async function registerAgentCallback<T extends AgentResponseMessage = Age
   assertCallbackSubscriber();
   return new Promise<[OperationOutcome, T | AgentError]>((resolve, reject) => {
     const timer = setTimeout(() => {
-      pendingCallbacks.delete(callbackId);
+      settlePendingCallback(callbackId);
       reject(new OperationOutcomeError(badRequest('Timeout')));
     }, timeoutMs);
 

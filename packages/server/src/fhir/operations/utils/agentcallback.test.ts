@@ -9,6 +9,7 @@ import type { MockInstance } from 'vitest';
 import { loadTestConfig } from '../../../config/loader';
 import type { MedplumServerConfig } from '../../../config/types';
 import { globalLogger } from '../../../logger';
+import * as pubsubModule from '../../../pubsub';
 import { publish } from '../../../pubsub';
 import * as redisModule from '../../../redis';
 import { closeRedis, getPubSubRedisSubscriberCount, initRedis } from '../../../redis';
@@ -19,17 +20,21 @@ import {
   ensureCallbackSubscriber,
   getAgentCallbackChannel,
   getCallbackChannelFromId,
+  publishAgentCallback,
   registerAgentCallback,
+  subscribeLegacyCallbackChannel,
 } from './agentcallback';
 
 type FakeSubscriber = EventEmitter & {
   subscribe: ReturnType<typeof vi.fn>;
+  unsubscribe: ReturnType<typeof vi.fn>;
   disconnect: ReturnType<typeof vi.fn>;
 };
 
 function makeFakeSubscriber(subscribeResult: Promise<number> = Promise.resolve(1)): FakeSubscriber {
   const fake = new EventEmitter() as FakeSubscriber;
   fake.subscribe = vi.fn().mockReturnValue(subscribeResult);
+  fake.unsubscribe = vi.fn().mockResolvedValue(1);
   fake.disconnect = vi.fn();
   return fake;
 }
@@ -71,12 +76,9 @@ describe('agentcallback', () => {
       expect(getCallbackChannelFromId(legacyId)).toStrictEqual(legacyId);
     });
 
-    test('getCallbackChannelFromId returns ids with a leading colon verbatim', () => {
-      expect(getCallbackChannelFromId(':leading-colon')).toStrictEqual(':leading-colon');
-    });
-
-    test('getCallbackChannelFromId returns the empty string verbatim', () => {
-      expect(getCallbackChannelFromId('')).toStrictEqual('');
+    test('getCallbackChannelFromId returns undefined for ids that yield no channel', () => {
+      expect(getCallbackChannelFromId(':leading-colon')).toBeUndefined();
+      expect(getCallbackChannelFromId('')).toBeUndefined();
     });
   });
 
@@ -121,8 +123,8 @@ describe('agentcallback', () => {
       const resultPromise = registerAgentCallback<AgentTransmitResponse>(callbackId, 5000);
 
       const response = makeTransmitResponse(callbackId);
-      // Publish on the channel derived from the id, exactly as ws/agent.ts does
-      await publish(getCallbackChannelFromId(callbackId), JSON.stringify(response));
+      // Publish on the shared channel that ws/agent.ts derives from this id
+      await publish(getAgentCallbackChannel(), JSON.stringify(response));
 
       await expect(resultPromise).resolves.toStrictEqual([allOk, response]);
     });
@@ -133,7 +135,7 @@ describe('agentcallback', () => {
       const resultPromise = registerAgentCallback(callbackId, 5000);
 
       const response: AgentError = { type: 'agent:error', body: 'Something is broken', callback: callbackId };
-      await publish(getCallbackChannelFromId(callbackId), JSON.stringify(response));
+      await publish(getAgentCallbackChannel(), JSON.stringify(response));
 
       await expect(resultPromise).resolves.toStrictEqual([allOk, response]);
     });
@@ -170,14 +172,45 @@ describe('agentcallback', () => {
       await expect(registerAgentCallback(callbackId, 5)).rejects.toThrow('Timeout');
 
       // A response arriving after the timeout must not throw or resolve anything
-      await publish(getCallbackChannelFromId(callbackId), JSON.stringify(makeTransmitResponse(callbackId)));
+      await publish(getAgentCallbackChannel(), JSON.stringify(makeTransmitResponse(callbackId)));
 
       // The subscriber must still work for new callbacks afterwards
       const callbackId2 = buildAgentCallbackId(randomUUID());
       const resultPromise = registerAgentCallback<AgentTransmitResponse>(callbackId2, 5000);
       const response2 = makeTransmitResponse(callbackId2);
-      await publish(getCallbackChannelFromId(callbackId2), JSON.stringify(response2));
+      await publish(getAgentCallbackChannel(), JSON.stringify(response2));
       await expect(resultPromise).resolves.toStrictEqual([allOk, response2]);
+    });
+
+    test('subscribeLegacyCallbackChannel throws when subscriber not yet initialized', async () => {
+      await expect(subscribeLegacyCallbackChannel('agent:cb:host:abc')).rejects.toThrow(
+        'Callback subscriber not yet initialized'
+      );
+    });
+
+    test('resolves when a peer publishes to the callback id instead of the shared channel', async () => {
+      await ensureCallbackSubscriber();
+      const callbackId = buildAgentCallbackId(randomUUID());
+      await subscribeLegacyCallbackChannel(callbackId);
+      const resultPromise = registerAgentCallback<AgentTransmitResponse>(callbackId, 5000);
+
+      // A server on the previous release publishes to the callback id verbatim
+      const response = makeTransmitResponse(callbackId);
+      await publish(callbackId, JSON.stringify(response));
+
+      await expect(resultPromise).resolves.toStrictEqual([allOk, response]);
+    });
+
+    test('resolves once when a peer publishes to both channels', async () => {
+      await ensureCallbackSubscriber();
+      const callbackId = buildAgentCallbackId(randomUUID());
+      await subscribeLegacyCallbackChannel(callbackId);
+      const resultPromise = registerAgentCallback<AgentTransmitResponse>(callbackId, 5000);
+
+      const response = makeTransmitResponse(callbackId);
+      await publishAgentCallback(callbackId, JSON.stringify(response));
+
+      await expect(resultPromise).resolves.toStrictEqual([allOk, response]);
     });
 
     test('closeAgentCallbackSubscriber rejects in-flight callbacks', async () => {
@@ -200,7 +233,7 @@ describe('agentcallback', () => {
       const callbackId = buildAgentCallbackId(randomUUID());
       const resultPromise = registerAgentCallback<AgentTransmitResponse>(callbackId, 5000);
       const response = makeTransmitResponse(callbackId);
-      await publish(getCallbackChannelFromId(callbackId), JSON.stringify(response));
+      await publish(getAgentCallbackChannel(), JSON.stringify(response));
       await expect(resultPromise).resolves.toStrictEqual([allOk, response]);
     });
   });
@@ -266,6 +299,44 @@ describe('agentcallback', () => {
       await expect(resultPromise).resolves.toStrictEqual([allOk, response]);
     });
 
+    test('also subscribes to the callback id, and unsubscribes once it resolves', async () => {
+      const callbackId = buildAgentCallbackId(randomUUID());
+      await subscribeLegacyCallbackChannel(callbackId);
+      expect(fake.subscribe).toHaveBeenCalledWith(callbackId);
+
+      const resultPromise = registerAgentCallback<AgentTransmitResponse>(callbackId, 5000);
+      const response = makeTransmitResponse(callbackId);
+      fake.emit('message', callbackId, JSON.stringify(response));
+
+      await expect(resultPromise).resolves.toStrictEqual([allOk, response]);
+      expect(fake.unsubscribe).toHaveBeenCalledExactlyOnceWith(callbackId);
+    });
+
+    test('unsubscribes from the callback id when the callback times out', async () => {
+      const callbackId = buildAgentCallbackId(randomUUID());
+      await subscribeLegacyCallbackChannel(callbackId);
+
+      await expect(registerAgentCallback(callbackId, 5)).rejects.toThrow('Timeout');
+      expect(fake.unsubscribe).toHaveBeenCalledExactlyOnceWith(callbackId);
+    });
+
+    test('logs a warning when unsubscribing from the callback id fails', async () => {
+      const warnSpy = vi.spyOn(globalLogger, 'warn').mockImplementation(() => undefined);
+      fake.unsubscribe.mockRejectedValue(new Error('unsubscribe failed'));
+
+      const callbackId = buildAgentCallbackId(randomUUID());
+      const resultPromise = registerAgentCallback<AgentTransmitResponse>(callbackId, 5000);
+      const response = makeTransmitResponse(callbackId);
+      fake.emit('message', getAgentCallbackChannel(), JSON.stringify(response));
+
+      await expect(resultPromise).resolves.toStrictEqual([allOk, response]);
+      await vi.waitFor(() =>
+        expect(warnSpy).toHaveBeenCalledWith('[AgentCallback]: Failed to unsubscribe callback channel', {
+          error: expect.stringContaining('unsubscribe failed'),
+        })
+      );
+    });
+
     test('resolves a callback only once', async () => {
       const callbackId = buildAgentCallbackId(randomUUID());
       const resultPromise = registerAgentCallback<AgentTransmitResponse>(callbackId, 5000);
@@ -276,6 +347,49 @@ describe('agentcallback', () => {
       fake.emit('message', getAgentCallbackChannel(), JSON.stringify({ ...response, body: 'DUPLICATE' }));
 
       await expect(resultPromise).resolves.toStrictEqual([allOk, response]);
+    });
+  });
+
+  describe('publishAgentCallback', () => {
+    let publishSpy: MockInstance<typeof pubsubModule.publish>;
+
+    beforeEach(() => {
+      publishSpy = vi.spyOn(pubsubModule, 'publish').mockResolvedValue(1);
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    test('publishes to both the shared channel and the callback id', async () => {
+      const callbackId = buildAgentCallbackId(randomUUID());
+      const message = JSON.stringify(makeTransmitResponse(callbackId));
+
+      await publishAgentCallback(callbackId, message);
+
+      expect(publishSpy).toHaveBeenCalledTimes(2);
+      expect(publishSpy).toHaveBeenNthCalledWith(1, getAgentCallbackChannel(), message);
+      expect(publishSpy).toHaveBeenNthCalledWith(2, callbackId, message);
+    });
+
+    test('logs and drops a response whose callback id yields no channel', async () => {
+      const warnSpy = vi.spyOn(globalLogger, 'warn').mockImplementation(() => undefined);
+
+      await publishAgentCallback(':leading-colon', 'message');
+
+      expect(publishSpy).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith('[AgentCallback]: Dropping response with a malformed callback id', {
+        callback: ':leading-colon',
+      });
+    });
+
+    test('publishes once for a legacy callback id, where both channels are the same', async () => {
+      const legacyId = `Agent/${randomUUID()}-${randomUUID()}`;
+      const message = JSON.stringify(makeTransmitResponse(legacyId));
+
+      await publishAgentCallback(legacyId, message);
+
+      expect(publishSpy).toHaveBeenCalledExactlyOnceWith(legacyId, message);
     });
   });
 
