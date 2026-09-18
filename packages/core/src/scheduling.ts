@@ -167,7 +167,10 @@ function matchesServiceSchedulingParameters(extension: Extension, serviceReferen
   );
 }
 
-// Unscoped when `service` is undefined, which is how a HealthcareService's own parameters are read.
+// Internal, and loose where the exported wrappers are strict: `service` is undefined only when the
+// resource is a HealthcareService carrying its own parameters. Keep this and the read/write helpers
+// below unexported. Nothing here rejects `(schedule, undefined)` or `(service, service)`; both would
+// quietly match the wrong extensions, and only the exported wrappers make them unrepresentable.
 function getSchedulingParameterExtensions(
   resource: Schedule | HealthcareService,
   service: WithId<HealthcareService> | undefined
