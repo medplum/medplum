@@ -2,28 +2,33 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Menu } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
-import { Operator, globalSchema } from '@medplum/core';
-import type { ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { globalSchema } from '@medplum/core';
+import type { SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { getFieldDefinitions } from '../SearchControl/SearchControlField';
 import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
 import type { SearchPopupMenuProps } from './SearchPopupMenu';
 import { SearchPopupMenu } from './SearchPopupMenu';
 
 const medplum = new MockClient();
 
+function param(resourceType: string, code: string): SearchParameter {
+  return globalSchema.types[resourceType].searchParams?.[code] as SearchParameter;
+}
+
 describe('SearchPopupMenu', () => {
+  beforeAll(async () => {
+    await medplum.requestSchema('Patient');
+    await medplum.requestSchema('Observation');
+  });
+
   async function setup(partialProps: Partial<SearchPopupMenuProps>): Promise<void> {
-    const props = {
-      visible: true,
-      x: 0,
-      y: 0,
-      onPrompt: vi.fn(),
-      onChange: vi.fn(),
-      onClose: vi.fn(),
-      ...partialProps,
-    } as SearchPopupMenuProps;
+    const props: SearchPopupMenuProps = {
+      search: partialProps.search ?? { resourceType: 'Patient' },
+      searchParams: partialProps.searchParams,
+      onChange: partialProps.onChange ?? vi.fn(),
+      onFilterByColumn: partialProps.onFilterByColumn,
+    };
 
     render(
       <MedplumProvider medplum={medplum}>
@@ -39,671 +44,161 @@ describe('SearchPopupMenu', () => {
     await toggleMenu();
   }
 
-  test('Invalid resource', async () => {
-    await setup({
-      search: { resourceType: 'xyz' as ResourceType },
-    });
+  test('Renders nothing without a search parameter', async () => {
+    await setup({ searchParams: undefined });
+    expect(screen.queryByText('Sort A to Z')).not.toBeInTheDocument();
   });
 
-  test('Invalid property', async () => {
-    await setup({
-      search: { resourceType: 'Patient' },
-    });
+  test('Only shows the two sort options - no filter controls', async () => {
+    await setup({ searchParams: [param('Patient', 'name')] });
+    expect(await screen.findByText('Sort A to Z')).toBeInTheDocument();
+    expect(screen.getByText('Sort Z to A')).toBeInTheDocument();
+    expect(screen.queryByText('Equals...')).not.toBeInTheDocument();
+    expect(screen.queryByText('Contains...')).not.toBeInTheDocument();
+    expect(screen.queryByText('Missing')).not.toBeInTheDocument();
+    expect(screen.queryByText('Clear filters')).not.toBeInTheDocument();
   });
 
-  test('Date sort', async () => {
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-    };
-
+  test('Date sort uses oldest/newest labels', async () => {
+    let currSearch: SearchRequest = { resourceType: 'Patient' };
     await setup({
-      search: currSearch,
-      searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
+      searchParams: [param('Patient', 'birthdate')],
       onChange: (e) => (currSearch = e),
     });
 
-    const sortOldest = await screen.findByText('Sort Oldest to Newest');
     await act(async () => {
-      fireEvent.click(sortOldest);
+      fireEvent.click(await screen.findByText('Sort Oldest to Newest'));
     });
+    expect(currSearch.sortRules).toMatchObject([{ code: 'birthdate', descending: false }]);
 
-    expect(currSearch.sortRules).toBeDefined();
-    expect(currSearch.sortRules?.length).toEqual(1);
-    expect(currSearch.sortRules?.[0].code).toEqual('birthdate');
-    expect(currSearch.sortRules?.[0].descending).toEqual(false);
-
-    const sortNewest = await screen.findByText('Sort Newest to Oldest');
     await act(async () => {
-      fireEvent.click(sortNewest);
+      fireEvent.click(await screen.findByText('Sort Newest to Oldest'));
     });
-
-    expect(currSearch.sortRules).toBeDefined();
-    expect(currSearch.sortRules?.length).toEqual(1);
-    expect(currSearch.sortRules?.[0].code).toEqual('birthdate');
-    expect(currSearch.sortRules?.[0].descending).toEqual(true);
+    expect(currSearch.sortRules).toMatchObject([{ code: 'birthdate', descending: true }]);
   });
 
-  test('Date submenu prompt', async () => {
-    const searchParam = globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter;
-    const onPrompt = vi.fn();
-
-    await setup({
-      search: {
-        resourceType: 'Patient',
-      },
-      searchParams: [searchParam],
-      onPrompt,
-    });
-
-    const options = [
-      { text: 'Equals...', operator: Operator.EQUALS },
-      { text: 'Does not equal...', operator: Operator.NOT_EQUALS },
-      { text: 'Before...', operator: Operator.ENDS_BEFORE },
-      { text: 'After...', operator: Operator.STARTS_AFTER },
-      { text: 'Between...', operator: Operator.EQUALS },
-    ];
-
-    for (const option of options) {
-      onPrompt.mockClear();
-
-      const optionButton = await screen.findByText(option.text);
-      await act(async () => {
-        fireEvent.click(optionButton);
-      });
-
-      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
-        code: 'birthdate',
-        operator: option.operator,
-        value: '',
-      });
-    }
+  test('Quantity sort uses smallest/largest labels', async () => {
+    await setup({ searchParams: [param('Observation', 'value-quantity')] });
+    expect(await screen.findByText('Sort Smallest to Largest')).toBeInTheDocument();
+    expect(screen.getByText('Sort Largest to Smallest')).toBeInTheDocument();
   });
 
-  test.each([
-    'Tomorrow',
-    'Today',
-    'Yesterday',
-    'Next 24 Hours',
-    'Next Month',
-    'This Month',
-    'Last Month',
-    'Year to date',
-  ])('%s shortcut', async (option) => {
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-    };
-
+  test('Reference columns are now sortable (A to Z)', async () => {
+    let currSearch: SearchRequest = { resourceType: 'Patient' };
     await setup({
-      search: currSearch,
-      searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
+      searchParams: [param('Patient', 'organization')],
       onChange: (e) => (currSearch = e),
     });
 
-    const optionButton = await screen.findByText(option);
     await act(async () => {
-      fireEvent.click(optionButton);
+      fireEvent.click(await screen.findByText('Sort A to Z'));
+    });
+    expect(currSearch.sortRules).toMatchObject([{ code: 'organization', descending: false }]);
+  });
+
+  test('Token columns are now sortable (A to Z)', async () => {
+    let currSearch: SearchRequest = { resourceType: 'Patient' };
+    await setup({
+      searchParams: [param('Patient', 'gender')],
+      onChange: (e) => (currSearch = e),
     });
 
-    expect(currSearch.filters).toBeDefined();
-    expect(currSearch.filters?.length).toEqual(2);
-    expect(currSearch.filters).toMatchObject([
-      {
-        code: 'birthdate',
-        operator: Operator.GREATER_THAN_OR_EQUALS,
-      },
-      {
-        code: 'birthdate',
-        operator: Operator.LESS_THAN_OR_EQUALS,
-      },
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Sort Z to A'));
+    });
+    expect(currSearch.sortRules).toMatchObject([{ code: 'gender', descending: true }]);
+  });
+
+  test('No "Filter by this column" item without the callback', async () => {
+    await setup({ searchParams: [param('Patient', 'name')] });
+    expect(await screen.findByText('Sort A to Z')).toBeInTheDocument();
+    expect(screen.queryByText('Filter by this column')).not.toBeInTheDocument();
+  });
+
+  test('"Filter by this column" invokes the callback with the search parameter', async () => {
+    const onFilterByColumn = vi.fn();
+    await setup({ searchParams: [param('Patient', 'name')], onFilterByColumn });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Filter by this column'));
+    });
+    expect(onFilterByColumn).toHaveBeenCalledWith(expect.objectContaining({ code: 'name' }));
+  });
+
+  test('Adds to existing sorts when 2+ are already applied', async () => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+      sortRules: [
+        { code: 'name', descending: false },
+        { code: 'birthdate', descending: true },
+      ],
+    };
+    await setup({
+      search: currSearch,
+      searchParams: [param('Patient', 'gender')],
+      onChange: (e) => (currSearch = e),
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Sort A to Z'));
+    });
+    expect(currSearch.sortRules).toMatchObject([
+      { code: 'name', descending: false },
+      { code: 'birthdate', descending: true },
+      { code: 'gender', descending: false },
     ]);
   });
 
-  test('Date missing', async () => {
+  test('Updates direction in place for a column already in a multi-sort', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
-    };
-
-    await setup({
-      search: currSearch,
-      searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
-      onChange: (e) => (currSearch = e),
-    });
-
-    const options = ['Missing', 'Not missing'];
-    for (const option of options) {
-      const optionButton = await screen.findByText(option);
-      await act(async () => {
-        fireEvent.click(optionButton);
-      });
-
-      expect(currSearch.filters).toBeDefined();
-      expect(currSearch.filters?.length).toEqual(1);
-      expect(currSearch.filters).toMatchObject([
-        {
-          code: 'birthdate',
-          operator: Operator.MISSING,
-        },
-      ]);
-    }
-  });
-
-  test('Date clear filters', async () => {
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-      filters: [
-        {
-          code: 'birthdate',
-          operator: Operator.EQUALS,
-          value: '2020-01-01',
-        },
+      sortRules: [
+        { code: 'name', descending: false },
+        { code: 'gender', descending: false },
       ],
     };
-
     await setup({
       search: currSearch,
-      searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
+      searchParams: [param('Patient', 'gender')],
       onChange: (e) => (currSearch = e),
     });
 
-    const clearButton = await screen.findByText('Clear filters');
     await act(async () => {
-      fireEvent.click(clearButton);
+      fireEvent.click(await screen.findByText('Sort Z to A'));
     });
-
-    expect(currSearch.filters?.length).toEqual(0);
+    expect(currSearch.sortRules).toMatchObject([
+      { code: 'name', descending: false },
+      { code: 'gender', descending: true },
+    ]);
   });
 
-  test('Quantity sort', async () => {
-    const searchParam = globalSchema.types['Observation'].searchParams?.['value-quantity'] as SearchParameter;
-
+  test('Replaces the sort when fewer than 2 are applied', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
+      sortRules: [{ code: 'name', descending: false }],
     };
-
     await setup({
       search: currSearch,
-      searchParams: [searchParam],
+      searchParams: [param('Patient', 'gender')],
       onChange: (e) => (currSearch = e),
     });
 
-    const sortSmallest = await screen.findByText('Sort Smallest to Largest');
     await act(async () => {
-      fireEvent.click(sortSmallest);
+      fireEvent.click(await screen.findByText('Sort A to Z'));
+    });
+    expect(currSearch.sortRules).toMatchObject([{ code: 'gender', descending: false }]);
+  });
+
+  test('Sorts by the first search parameter for multi-param columns', async () => {
+    let currSearch: SearchRequest = { resourceType: 'Patient' };
+    await setup({
+      searchParams: [param('Patient', 'name'), param('Patient', 'given')],
+      onChange: (e) => (currSearch = e),
     });
 
-    expect(currSearch.sortRules).toBeDefined();
-    expect(currSearch.sortRules?.length).toEqual(1);
-    expect(currSearch.sortRules?.[0].code).toEqual('value-quantity');
-    expect(currSearch.sortRules?.[0].descending).toEqual(false);
-
-    const sortLargest = await screen.findByText('Sort Largest to Smallest');
     await act(async () => {
-      fireEvent.click(sortLargest);
+      fireEvent.click(await screen.findByText('Sort A to Z'));
     });
-
-    expect(currSearch.sortRules).toBeDefined();
-    expect(currSearch.sortRules?.length).toEqual(1);
-    expect(currSearch.sortRules?.[0].code).toEqual('value-quantity');
-    expect(currSearch.sortRules?.[0].descending).toEqual(true);
-  });
-
-  test('Quantity submenu prompt', async () => {
-    const searchParam = globalSchema.types['Observation'].searchParams?.['value-quantity'] as SearchParameter;
-    const onPrompt = vi.fn();
-
-    await setup({
-      search: {
-        resourceType: 'Observation',
-      },
-      searchParams: [searchParam],
-      onPrompt,
-    });
-
-    const options = [
-      { text: 'Equals...', operator: Operator.EQUALS },
-      { text: 'Does not equal...', operator: Operator.NOT_EQUALS },
-      { text: 'Greater than...', operator: Operator.GREATER_THAN },
-      { text: 'Greater than or equal to...', operator: Operator.GREATER_THAN_OR_EQUALS },
-      { text: 'Less than...', operator: Operator.LESS_THAN },
-      { text: 'Less than or equal to...', operator: Operator.LESS_THAN_OR_EQUALS },
-    ];
-
-    for (const option of options) {
-      onPrompt.mockClear();
-
-      const optionButton = await screen.findByText(option.text);
-      await act(async () => {
-        fireEvent.click(optionButton);
-      });
-
-      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
-        code: 'value-quantity',
-        operator: option.operator,
-        value: '',
-      });
-    }
-  });
-
-  test('Quantity missing', async () => {
-    const searchParam = globalSchema.types['Observation'].searchParams?.['value-quantity'] as SearchParameter;
-
-    let currSearch: SearchRequest = {
-      resourceType: 'Observation',
-    };
-
-    await setup({
-      search: currSearch,
-      searchParams: [searchParam],
-      onChange: (e) => (currSearch = e),
-    });
-
-    const options = ['Missing', 'Not missing'];
-    for (const option of options) {
-      const optionButton = await screen.findByText(option);
-      await act(async () => {
-        fireEvent.click(optionButton);
-      });
-
-      expect(currSearch.filters).toBeDefined();
-      expect(currSearch.filters?.length).toEqual(1);
-      expect(currSearch.filters).toMatchObject([
-        {
-          code: 'value-quantity',
-          operator: Operator.MISSING,
-        },
-      ]);
-    }
-  });
-
-  test('Quantity clear filters', async () => {
-    const searchParam = globalSchema.types['Observation'].searchParams?.['value-quantity'] as SearchParameter;
-
-    let currSearch: SearchRequest = {
-      resourceType: 'Observation',
-      filters: [
-        {
-          code: 'value-quantity',
-          operator: Operator.EQUALS,
-          value: '100',
-        },
-      ],
-    };
-
-    await setup({
-      search: currSearch,
-      searchParams: [searchParam],
-      onChange: (e) => (currSearch = e),
-    });
-
-    const clearButton = await screen.findByText('Clear filters');
-    await act(async () => {
-      fireEvent.click(clearButton);
-    });
-
-    expect(currSearch.filters?.length).toEqual(0);
-  });
-
-  test('Reference clear filters', async () => {
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-      filters: [
-        {
-          code: 'organization',
-          operator: Operator.EQUALS,
-          value: 'Organization/125',
-        },
-      ],
-    };
-
-    await setup({
-      search: currSearch,
-      searchParams: [globalSchema.types['Patient'].searchParams?.['organization'] as SearchParameter],
-      onChange: (e) => (currSearch = e),
-    });
-
-    const clearButton = await screen.findByText('Clear filters');
-    await act(async () => {
-      fireEvent.click(clearButton);
-    });
-
-    expect(currSearch.filters?.length).toEqual(0);
-  });
-
-  test('Reference submenu prompt', async () => {
-    const searchParam = globalSchema.types['Patient'].searchParams?.['organization'] as SearchParameter;
-    const onPrompt = vi.fn();
-
-    await setup({
-      search: {
-        resourceType: 'Patient',
-      },
-      searchParams: [searchParam],
-      onPrompt,
-    });
-
-    const options = [
-      { text: 'Equals...', operator: Operator.EQUALS },
-      { text: 'Does not equal...', operator: Operator.NOT },
-    ];
-
-    for (const option of options) {
-      onPrompt.mockClear();
-
-      const optionButton = await screen.findByText(option.text);
-      await act(async () => {
-        fireEvent.click(optionButton);
-      });
-
-      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
-        code: 'organization',
-        operator: option.operator,
-        value: '',
-      });
-    }
-  });
-
-  test('Reference missing', async () => {
-    const searchParam = globalSchema.types['Patient'].searchParams?.['organization'] as SearchParameter;
-
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-    };
-
-    await setup({
-      search: currSearch,
-      searchParams: [searchParam],
-      onChange: (e) => (currSearch = e),
-    });
-
-    const options = ['Missing', 'Not missing'];
-    for (const option of options) {
-      const optionButton = await screen.findByText(option);
-      await act(async () => {
-        fireEvent.click(optionButton);
-      });
-
-      expect(currSearch.filters).toBeDefined();
-      expect(currSearch.filters?.length).toEqual(1);
-      expect(currSearch.filters).toMatchObject([
-        {
-          code: 'organization',
-          operator: Operator.MISSING,
-        },
-      ]);
-    }
-  });
-
-  test('Text sort', async () => {
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-    };
-
-    await setup({
-      search: currSearch,
-      searchParams: [globalSchema.types['Patient'].searchParams?.['name'] as SearchParameter],
-      onChange: (e) => (currSearch = e),
-    });
-
-    const sortAtoZ = await screen.findByText('Sort A to Z');
-    await act(async () => {
-      fireEvent.click(sortAtoZ);
-    });
-
-    expect(currSearch.sortRules).toBeDefined();
-    expect(currSearch.sortRules?.length).toEqual(1);
-    expect(currSearch.sortRules?.[0].code).toEqual('name');
-    expect(currSearch.sortRules?.[0].descending).toEqual(false);
-
-    const sortZtoA = await screen.findByText('Sort Z to A');
-    await act(async () => {
-      fireEvent.click(sortZtoA);
-    });
-
-    expect(currSearch.sortRules).toBeDefined();
-    expect(currSearch.sortRules?.length).toEqual(1);
-    expect(currSearch.sortRules?.[0].code).toEqual('name');
-    expect(currSearch.sortRules?.[0].descending).toEqual(true);
-  });
-
-  test('Text clear filters', async () => {
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-      filters: [
-        {
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice',
-        },
-      ],
-    };
-
-    await setup({
-      search: currSearch,
-      searchParams: [globalSchema.types['Patient'].searchParams?.['name'] as SearchParameter],
-      onChange: (e) => (currSearch = e),
-    });
-
-    const clearButton = await screen.findByText('Clear filters');
-    await act(async () => {
-      fireEvent.click(clearButton);
-    });
-
-    expect(currSearch.filters?.length).toEqual(0);
-  });
-
-  test('Text submenu prompt', async () => {
-    const searchParam = globalSchema.types['Patient'].searchParams?.['name'] as SearchParameter;
-    const onPrompt = vi.fn();
-
-    await setup({
-      search: {
-        resourceType: 'Patient',
-      },
-      searchParams: [searchParam],
-      onPrompt,
-    });
-
-    const options = [
-      { text: 'Equals...', operator: Operator.EQUALS },
-      { text: 'Does not equal...', operator: Operator.NOT },
-      { text: 'Contains...', operator: Operator.CONTAINS },
-      { text: 'Does not contain...', operator: Operator.EQUALS },
-    ];
-
-    for (const option of options) {
-      onPrompt.mockClear();
-
-      const optionButton = await screen.findByText(option.text);
-      await act(async () => {
-        fireEvent.click(optionButton);
-      });
-
-      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
-        code: 'name',
-        operator: option.operator,
-        value: '',
-      });
-    }
-  });
-
-  test('Text missing', async () => {
-    const searchParam = globalSchema.types['Patient'].searchParams?.['name'] as SearchParameter;
-
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-    };
-
-    await setup({
-      search: currSearch,
-      searchParams: [searchParam],
-      onChange: (e) => (currSearch = e),
-    });
-
-    const options = ['Missing', 'Not missing'];
-    for (const option of options) {
-      const optionButton = await screen.findByText(option);
-      await act(async () => {
-        fireEvent.click(optionButton);
-      });
-
-      expect(currSearch.filters).toBeDefined();
-      expect(currSearch.filters?.length).toEqual(1);
-      expect(currSearch.filters).toMatchObject([
-        {
-          code: 'name',
-          operator: Operator.MISSING,
-        },
-      ]);
-    }
-  });
-
-  test('Token submenu prompt', async () => {
-    const searchParam = globalSchema.types['MedicationRequest'].searchParams?.['code'] as SearchParameter;
-    const onPrompt = vi.fn();
-
-    await setup({
-      search: {
-        resourceType: 'MedicationRequest',
-      },
-      searchParams: [searchParam],
-      onPrompt,
-    });
-
-    const options = [
-      { text: 'Equals...', operator: Operator.EQUALS },
-      { text: 'Does not equal...', operator: Operator.NOT },
-      { text: 'Text contains...', operator: Operator.TEXT },
-    ];
-
-    for (const option of options) {
-      onPrompt.mockClear();
-
-      const optionButton = await screen.findByText(option.text);
-      await act(async () => {
-        fireEvent.click(optionButton);
-      });
-
-      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
-        code: 'code',
-        operator: option.operator,
-        value: '',
-      });
-    }
-  });
-
-  test('URI submenu prompt', async () => {
-    const searchParam = globalSchema.types['Device'].searchParams?.['url'] as SearchParameter;
-    const onPrompt = vi.fn();
-
-    await setup({
-      search: {
-        resourceType: 'Device',
-      },
-      searchParams: [searchParam],
-      onPrompt,
-    });
-
-    const options = [
-      { text: 'Equals...', operator: Operator.EQUALS },
-      { text: 'Does not equal...', operator: Operator.NOT },
-    ];
-
-    for (const option of options) {
-      onPrompt.mockClear();
-
-      const optionButton = await screen.findByText(option.text);
-      await act(async () => {
-        fireEvent.click(optionButton);
-      });
-
-      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
-        code: 'url',
-        operator: option.operator,
-        value: '',
-      });
-    }
-  });
-
-  test('Renders meta.versionId', async () => {
-    const search: SearchRequest = {
-      resourceType: 'Patient',
-      fields: ['meta.versionId'],
-    };
-
-    const fields = getFieldDefinitions(search);
-
-    await setup({
-      search,
-      searchParams: fields[0].searchParams,
-    });
-
-    expect(await screen.findByText('Equals...')).toBeDefined();
-  });
-
-  test('Renders _lastUpdated', async () => {
-    const search: SearchRequest = {
-      resourceType: 'Patient',
-      fields: ['_lastUpdated'],
-    };
-
-    const fields = getFieldDefinitions(search);
-
-    await setup({
-      search: {
-        resourceType: 'Patient',
-      },
-      searchParams: fields[0].searchParams,
-    });
-
-    expect(await screen.findByText('Before...')).toBeDefined();
-    expect(await screen.findByText('After...')).toBeDefined();
-  });
-
-  test('Search parameter choice', async () => {
-    const search: SearchRequest = {
-      resourceType: 'Observation',
-      fields: ['value[x]'],
-    };
-
-    const fields = getFieldDefinitions(search);
-
-    await setup({
-      search: {
-        resourceType: 'Observation',
-      },
-      searchParams: fields[0].searchParams,
-    });
-
-    expect(await screen.findByText('Value Quantity')).toBeDefined();
-    expect(await screen.findByText('Value String')).toBeDefined();
-  });
-
-  test('Only one search parameter on exact match', async () => {
-    globalSchema.types['Observation'].searchParams = {
-      subject: {
-        resourceType: 'SearchParameter',
-        code: 'patient',
-        type: 'reference',
-        expression: 'Observation.patient',
-      } as SearchParameter,
-    };
-
-    const search: SearchRequest = {
-      resourceType: 'Observation',
-      fields: ['subject'],
-    };
-
-    const fields = getFieldDefinitions(search);
-
-    await setup({
-      search: {
-        resourceType: 'Observation',
-      },
-      searchParams: fields[0].searchParams,
-    });
-
-    expect(await screen.findByText('Equals...')).toBeDefined();
-    expect(screen.queryByText('Patient')).toBeNull();
+    expect(currSearch.sortRules).toMatchObject([{ code: 'name', descending: false }]);
   });
 });
 

@@ -269,7 +269,7 @@ describe('SearchFilterEditor', () => {
     expect(input.value).toMatch(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
   });
 
-  test('Meta fields are disambiguated from same-named elements', async () => {
+  test('Meta fields use readable labels and stay grouped as metadata', async () => {
     // ProjectMembership has both `project`/`profile` elements and `_project`/`_profile` meta fields.
     const currSearch: SearchRequest = {
       resourceType: 'ProjectMembership',
@@ -279,12 +279,14 @@ describe('SearchFilterEditor', () => {
     await setup(<SearchFilterEditor search={currSearch} visible={true} onOk={vi.fn()} onCancel={vi.fn()} />);
 
     const fieldInput = screen.getByTestId<HTMLSelectElement>('filter-0-row-filter-field');
-    const optionLabels = Array.from(fieldInput.options).map((o) => o.textContent);
+    const options = Array.from(fieldInput.options).map((o) => ({ value: o.value, label: o.textContent }));
 
-    expect(optionLabels.filter((label) => label === 'Project')).toHaveLength(1);
-    expect(optionLabels.filter((label) => label === '_project')).toHaveLength(1);
-    expect(optionLabels.filter((label) => label === 'Profile')).toHaveLength(1);
-    expect(optionLabels.filter((label) => label === '_profile')).toHaveLength(1);
+    expect(options.find((o) => o.value === '_project')?.label).toBe('Project');
+    expect(options.find((o) => o.value === '_profile')?.label).toBe('Profile');
+
+    expect(options.filter((o) => o.label === 'Project').length).toBeGreaterThanOrEqual(2);
+    const metaGroup = fieldInput.querySelector('optgroup[label="Metadata"]');
+    expect(metaGroup?.querySelector('option[value="_project"]')).toBeInTheDocument();
 
     const groups = Array.from(fieldInput.querySelectorAll('optgroup')).map((g) => g.label);
     expect(groups).toContain('Fields');

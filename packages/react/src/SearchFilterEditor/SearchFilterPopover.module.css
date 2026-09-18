@@ -1,0 +1,61 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.dropdown {
+  max-width: calc(100vw - 32px);
+  padding: 0;
+}
+
+.header {
+  padding: 12px 16px 8px;
+}
+
+.body {
+  padding: var(--mantine-spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The leading "Where" / "and" conjunction cell keeps every row's field select aligned. */
+.conjunction {
+  flex: 0 0 64px;
+  font-size: var(--mantine-font-size-sm);
+  color: var(--mantine-color-dimmed);
+}
+
+.field {
+  flex: 0 0 200px;
+}
+
+.operator {
+  flex: 0 0 170px;
+}
+
+.value {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.footer {
+  padding: 6px 12px;
+  border-top: 1px solid var(--mantine-color-gray-2);
+}
+
+.empty {
+  /* Vertical padding so the empty state matches the height of a single filter row. */
+  padding-block: 7px;
+  font-size: var(--mantine-font-size-sm);
+  color: var(--mantine-color-dimmed);
+}
+
+/* Nudge the active-indicator dot's horizontal position onto the button's rounded corner. */
+.indicator {
+  --indicator-right: calc(0.25rem * var(--mantine-scale)) !important;
+}

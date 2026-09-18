@@ -1,12 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Group, Text } from '@mantine/core';
 import type { Filter, InternalSchemaElement, SearchRequest } from '@medplum/core';
-import { capitalize, DEFAULT_SEARCH_COUNT, evalFhirPathTyped, formatDateTime, Operator } from '@medplum/core';
-import type { Resource, SearchParameter } from '@medplum/fhirtypes';
+import {
+  capitalize,
+  DEFAULT_SEARCH_COUNT,
+  evalFhirPathTyped,
+  formatDateTime,
+  formatHumanName,
+  Operator,
+  PropertyType,
+} from '@medplum/core';
+import type { HumanName, Patient, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
+import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
 import type { SearchControlField } from './SearchControlField';
 
 const searchParamToOperators: Record<string, Operator[]> = {
@@ -520,15 +532,14 @@ export function isMetaSearchParam(code: string): boolean {
 }
 
 /**
- * Returns a display label for a search parameter code.
- *
- * Meta fields keep their underscore-prefixed code so they don't collide with same-named
- * elements (e.g. `ProjectMembership.project` vs `_project`).
+ * Returns a human-readable display label for a search parameter code. Metadata codes are formatted
+ * like regular fields, so `_lastUpdated` reads as "Last Updated". Display-only: the search still
+ * uses the raw code, so a label matching a same-named element stays a distinct value.
  * @param code - The search parameter code.
  * @returns The display label for the search parameter.
  */
 export function buildSearchParamFieldLabel(code: string): string {
-  return isMetaSearchParam(code) ? code : buildFieldNameString(code);
+  return buildFieldNameString(code);
 }
 
 /**
@@ -551,6 +562,11 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
     return formatDateTime(resource.meta?.lastUpdated);
   }
 
+  // Patient name shows a single preferred name with the patient's avatar, rather than every name.
+  if (resource.resourceType === 'Patient' && key === 'name') {
+    return renderPatientName(resource);
+  }
+
   // Priority 1: InternalSchemaElement by exact match
   if (`${resource.resourceType}.${field.name}` === field.elementDefinition?.path) {
     return renderPropertyValue(resource, field.elementDefinition);
@@ -563,6 +579,61 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
 
   // We don't know how to render this field definition
   return null;
+}
+
+/**
+ * Chooses the single name to display for a patient, by `use`: unspecified first, then `official`,
+ * then `usual`, then any remaining name.
+ * @param names - The patient's names.
+ * @returns The preferred name, or undefined when the patient has none.
+ */
+function selectPreferredName(names: HumanName[] | undefined): HumanName | undefined {
+  if (!names || names.length === 0) {
+    return undefined;
+  }
+  for (const use of [undefined, 'official', 'usual']) {
+    const match = names.find((name) => name.use === use);
+    if (match) {
+      return match;
+    }
+  }
+  return names[0];
+}
+
+/**
+ * Renders the Patient name column as the patient's avatar next to a single preferred name.
+ * @param patient - The patient resource.
+ * @returns The avatar + name element, or null when the patient has no usable name.
+ */
+function renderPatientName(patient: Patient): JSX.Element | null {
+  const name = selectPreferredName(patient.name);
+  const text = name ? formatHumanName(name) : '';
+  return (
+    <Group gap="xs" wrap="nowrap">
+      <ResourceAvatar value={patient} radius="xl" size={28} />
+      <Text size="sm" fw={500} truncate>
+        {text}
+      </Text>
+    </Group>
+  );
+}
+
+/**
+ * Renders references as an avatar/name badge and `status` fields as a colored badge, so search
+ * columns get the richer treatment used elsewhere in the app.
+ * @param propertyType - The FHIR property type of the value.
+ * @param value - The value to render.
+ * @param code - The field's element name or search parameter code (used to detect status fields).
+ * @returns A rich display element, or undefined to fall back to {@link ResourcePropertyDisplay}.
+ */
+function renderRichValue(propertyType: string, value: unknown, code: string): JSX.Element | undefined {
+  if (propertyType === PropertyType.Reference) {
+    return <ResourceBadge value={value as Reference} link />;
+  }
+  if (code === 'status' && typeof value === 'string') {
+    return <StatusBadge status={value} variant="light" />;
+  }
+  return undefined;
 }
 
 /**
@@ -579,15 +650,17 @@ function renderPropertyValue(resource: Resource, elementDefinition: InternalSche
   }
 
   return (
-    <ResourcePropertyDisplay
-      path={elementDefinition.path}
-      property={elementDefinition}
-      propertyType={propertyType}
-      value={value}
-      maxWidth={200}
-      ignoreMissingValues={true}
-      link={false}
-    />
+    renderRichValue(propertyType, value, path) ?? (
+      <ResourcePropertyDisplay
+        path={elementDefinition.path}
+        property={elementDefinition}
+        propertyType={propertyType}
+        value={value}
+        maxWidth={200}
+        ignoreMissingValues={true}
+        link={false}
+      />
+    )
   );
 }
 
@@ -605,16 +678,23 @@ function renderSearchParameterValue(resource: Resource, searchParam: SearchParam
 
   return (
     <>
-      {value.map((v, index) => (
-        <ResourcePropertyDisplay
-          key={`${index}-${value.length}`}
-          propertyType={v.type}
-          value={v.value}
-          maxWidth={200}
-          ignoreMissingValues={true}
-          link={false}
-        />
-      ))}
+      {value.map((v, index) => {
+        const key = `${index}-${value.length}`;
+        const rich = renderRichValue(v.type, v.value, searchParam.code);
+        if (rich) {
+          return <span key={key}>{rich}</span>;
+        }
+        return (
+          <ResourcePropertyDisplay
+            key={key}
+            propertyType={v.type}
+            value={v.value}
+            maxWidth={200}
+            ignoreMissingValues={true}
+            link={false}
+          />
+        );
+      })}
     </>
   );
 }

@@ -1,12 +1,55 @@
 .root {
   max-width: 100%;
-  overflow: auto;
+  overflow: hidden;
   text-align: left;
-  margin-bottom: 20px;
+}
+
+/* Scoped to the table so the toolbar and pagination stay put when columns overflow horizontally. */
+.tableScroll {
+  overflow-x: auto;
 }
 
 .table {
   cursor: pointer;
+  --table-border-color: var(--mantine-color-gray-2);
+}
+
+/* Mantine drops the final row's bottom border; re-add it so the table closes with a divider. */
+.table tbody tr:last-of-type > td,
+.table tbody tr:last-of-type > th {
+  border-bottom: 1px solid var(--table-border-color);
+}
+
+.toolbar {
+  border-bottom: 1px solid var(--mantine-color-gray-2);
+}
+
+.actionIcon {
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-6));
+  transition: border-color 150ms ease;
+}
+
+.actionIcon:hover,
+.actionIcon[data-opened] {
+  border-color: var(--mantine-color-gray-5);
+}
+
+/* Suppress Mantine's press-down transform on the toolbar action-icon buttons. */
+.toolbar :global(.mantine-ActionIcon-root):active {
+  transform: none !important;
+}
+
+.actionsMenu :global(.mantine-Menu-item) {
+  border-radius: var(--mantine-radius-sm);
+}
+
+.actionsMenu :global(.mantine-Menu-item:hover),
+.actionsMenu :global(.mantine-Menu-item[data-hovered]) {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+.actionIcon svg {
+  color: var(--mantine-color-gray-6);
 }
 
 .tr {
@@ -19,17 +62,77 @@
   padding: 0 !important;
 }
 
+/* width:1px collapses the auto-layout column to just the checkbox plus its cell padding. */
+.checkboxCell {
+  width: 1px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Flex centering avoids the inline vertical-align rounding that left the checkbox off-center. */
+.checkboxWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.checkboxWrap input {
+  margin: 0;
+}
+
+/* Block padding keeps the header row the same height as the body rows despite the smaller text. */
+.control,
+.staticColumnTitle {
+  padding: 6px 8px;
+  /* Offset the left padding so the header text left-aligns with the row content below. */
+  margin-left: -8px;
+}
+
 .control {
-  width: 100%;
-  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  width: fit-content;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--mantine-color-gray-6);
 
   &:hover {
     background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
   }
 }
 
-.icon {
-  width: 21px;
-  height: 21px;
-  border-radius: 21px;
+.toolbarButton {
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-6));
+  border-radius: var(--mantine-radius-xl);
+  transition: border-color 150ms ease;
+
+  /* !important overrides Mantine's logical padding and the inline height it derives from `size`. */
+  padding-left: 10px !important;
+  padding-right: 12px !important;
+  --button-height: 32px !important;
+  font-weight: 450;
+  color: var(--mantine-color-gray-8);
+}
+
+.toolbarButton:hover,
+.toolbarButton:focus,
+.toolbarButton:active,
+.toolbarButton[data-opened] {
+  background-color: transparent !important;
+  color: var(--mantine-color-gray-8) !important;
+}
+
+.toolbarButton:hover,
+.toolbarButton[data-opened] {
+  border-color: var(--mantine-color-gray-5);
+}
+
+.toolbarButton:active {
+  transform: none !important;
+}
+
+.toolbarButton svg {
+  color: var(--mantine-color-gray-6);
+}
+
+.toolbarButton :global(.mantine-Button-section[data-position='left']) {
+  margin-inline-end: 6px;
 }

@@ -1,0 +1,86 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.dropdown {
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 0;
+}
+
+.header {
+  padding-block: var(--mantine-spacing-md) 4px;
+  padding-inline: var(--mantine-spacing-md);
+}
+
+.body {
+  padding: 4px 6px 6px;
+  display: flex;
+  flex-direction: column;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--mantine-radius-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.item:hover {
+  background-color: var(--mantine-color-gray-1);
+}
+
+/* The row currently being dragged is dimmed; the row under the cursor gets a top guide line. */
+.dragging {
+  opacity: 0.4;
+}
+
+.dragOver {
+  box-shadow: inset 0 2px 0 0 var(--mantine-color-blue-5);
+}
+
+.grip {
+  display: flex;
+  align-items: center;
+  color: var(--mantine-color-gray-5);
+  cursor: grab;
+}
+
+.grip:active {
+  cursor: grabbing;
+}
+
+.label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--mantine-font-size-sm);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  color: var(--mantine-color-blue-6);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px 6px 6px;
+  border-top: 1px solid var(--mantine-color-gray-2);
+}
+
+/* Suppress Mantine's press-down transform so the button does not shift on mousedown/active. */
+.staticButton,
+.staticButton:active,
+.staticButton:focus,
+.staticButton[data-active] {
+  transform: none !important;
+}
