@@ -130,6 +130,12 @@ export interface SearchControlProps {
   readonly onChange?: (e: SearchChangeEvent) => void;
   readonly onClick?: (e: SearchClickEvent) => void;
   readonly onAuxClick?: (e: SearchClickEvent) => void;
+  /**
+   * The link target for a row, used as the `href` that makes each row a real link (native
+   * right-click "Open in new tab" / "Copy link"). Defaults to `/{resourceType}/{id}`. Navigation on
+   * left/middle click still goes through {@link onClick}/{@link onAuxClick}.
+   */
+  readonly getResourceUrl?: (resource: Resource) => string;
   readonly onNew?: () => void;
   readonly onExport?: () => void;
   readonly onExportCsv?: () => void;
@@ -329,6 +335,8 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const showBulk = !isMobile && !!props.onBulk;
   const showRefresh = !props.hideRefresh;
   const showActionsMenu = showExport || showDelete || showBulk || showRefresh;
+
+  const getRowUrl = props.getResourceUrl ?? ((r: Resource): string => `/${r.resourceType}/${r.id}`);
 
   return (
     <div className={classes.root} data-testid="search-control">
@@ -552,8 +560,18 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                         </div>
                       </Table.Td>
                     )}
-                    {fields.map((field) => (
-                      <Table.Td key={field.name}>{renderValue(resource, field)}</Table.Td>
+                    {fields.map((field, index) => (
+                      <Table.Td key={field.name}>
+                        {index === 0 && (
+                          <a
+                            className={classes.rowLink}
+                            href={getRowUrl(resource)}
+                            aria-label={`Open ${resource.resourceType}`}
+                            tabIndex={-1}
+                          />
+                        )}
+                        {renderValue(resource, field)}
+                      </Table.Td>
                     ))}
                     {props.additionalColumns?.map((col) => (
                       <Table.Td key={col.name}>{col.renderCell(resource)}</Table.Td>

@@ -53,20 +53,40 @@
 }
 
 .tr {
+  /* Containing block for the stretched row link below. */
+  position: relative;
+
   &:hover {
     background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
   }
+}
+
+/*
+ * Stretched link: an empty anchor whose ::after covers the whole row, so right-clicking anywhere on
+ * the row offers the browser's native link menu (open in new tab, copy link). Left/middle clicks are
+ * handled by the row's own JS handlers, which preventDefault the anchor's navigation.
+ */
+.rowLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
 }
 
 .th {
   padding: 0 !important;
 }
 
-/* width:1px collapses the auto-layout column to just the checkbox plus its cell padding. */
+/*
+ * width:1px collapses the auto-layout column to just the checkbox plus its cell padding.
+ * position/z-index keep the checkbox above the stretched row link so it stays clickable.
+ */
 .checkboxCell {
   width: 1px;
   white-space: nowrap;
   vertical-align: middle;
+  position: relative;
+  z-index: 1;
 }
 
 /* Flex centering avoids the inline vertical-align rounding that left the checkbox off-center. */

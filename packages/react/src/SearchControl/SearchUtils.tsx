@@ -11,7 +11,7 @@ import {
   Operator,
   PropertyType,
 } from '@medplum/core';
-import type { HumanName, Patient, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
+import type { HumanName, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
@@ -20,6 +20,9 @@ import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourceProp
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import type { SearchControlField } from './SearchControlField';
+
+/** Resource types whose `name` is a HumanName[] and that render an avatar in the name column. */
+const AVATAR_NAME_RESOURCE_TYPES = new Set(['Patient', 'Practitioner', 'RelatedPerson', 'Person']);
 
 const searchParamToOperators: Record<string, Operator[]> = {
   string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
@@ -562,9 +565,9 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
     return formatDateTime(resource.meta?.lastUpdated);
   }
 
-  // Patient name shows a single preferred name with the patient's avatar, rather than every name.
-  if (resource.resourceType === 'Patient' && key === 'name') {
-    return renderPatientName(resource);
+  // The name column of a person-like resource shows a single preferred name with its avatar.
+  if (key === 'name' && AVATAR_NAME_RESOURCE_TYPES.has(resource.resourceType)) {
+    return renderNameWithAvatar(resource);
   }
 
   // Priority 1: InternalSchemaElement by exact match
@@ -601,16 +604,16 @@ function selectPreferredName(names: HumanName[] | undefined): HumanName | undefi
 }
 
 /**
- * Renders the Patient name column as the patient's avatar next to a single preferred name.
- * @param patient - The patient resource.
- * @returns The avatar + name element, or null when the patient has no usable name.
+ * Renders a person-like resource's name column as its avatar next to a single preferred name.
+ * @param resource - The person-like resource (Patient, Practitioner, RelatedPerson, Person).
+ * @returns The avatar + name element.
  */
-function renderPatientName(patient: Patient): JSX.Element | null {
-  const name = selectPreferredName(patient.name);
+function renderNameWithAvatar(resource: Resource): JSX.Element {
+  const name = selectPreferredName((resource as { name?: HumanName[] }).name);
   const text = name ? formatHumanName(name) : '';
   return (
     <Group gap="xs" wrap="nowrap">
-      <ResourceAvatar value={patient} radius="xl" size={28} />
+      <ResourceAvatar value={resource} radius="xl" size={28} />
       <Text size="sm" fw={500} truncate>
         {text}
       </Text>

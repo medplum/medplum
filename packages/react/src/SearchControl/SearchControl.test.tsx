@@ -96,6 +96,48 @@ describe('SearchControl', () => {
     expect(document.body.querySelector('.mantine-Avatar-root')).toBeInTheDocument();
   });
 
+  test('Practitioner name column also shows a single preferred name with an avatar', async () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [
+        {
+          resource: {
+            resourceType: 'Practitioner',
+            id: 'prac-1',
+            name: [
+              { use: 'official', given: ['Gregory'], family: 'House' },
+              { given: ['Greg'], family: 'House' },
+            ],
+          },
+        },
+      ],
+    };
+    await setup({ search: { resourceType: 'Practitioner', fields: ['id', 'name'] } }, bundle);
+
+    // The no-`use` name wins; the avatar renders alongside it.
+    expect(await screen.findByText('Greg House')).toBeInTheDocument();
+    expect(screen.queryByText('Gregory House')).toBeNull();
+    expect(document.body.querySelector('.mantine-Avatar-root')).toBeInTheDocument();
+  });
+
+  test('Each row is a link to the resource', async () => {
+    await setup({ search: { resourceType: 'Patient', fields: ['id', 'name'] } });
+    await screen.findByText('Homer Simpson');
+    const link = document.querySelector('[data-testid="search-control-row"] a[href^="/Patient/"]');
+    expect(link).toBeInTheDocument();
+  });
+
+  test('getResourceUrl customizes the row link href', async () => {
+    await setup({
+      search: { resourceType: 'Patient', fields: ['id', 'name'] },
+      getResourceUrl: (r) => `/custom/${r.id}`,
+    });
+    await screen.findByText('Homer Simpson');
+    expect(document.querySelector('[data-testid="search-control-row"] a[href^="/custom/"]')).toBeInTheDocument();
+  });
+
   test('Patient name column falls back to official when no unspecified-use name exists', async () => {
     const bundle: Bundle = {
       resourceType: 'Bundle',

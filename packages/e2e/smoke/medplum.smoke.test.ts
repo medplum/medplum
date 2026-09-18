@@ -78,8 +78,8 @@ test.describe('Medplum App Smoke Tests', () => {
     await page.goto('http://localhost:3000/Patient?name=Frodo&_sort=-_lastUpdated');
     await expect(page.getByTestId('search-control-row').first()).toContainText('Frodo Baggins');
 
-    // Click on patient
-    await page.getByTestId('search-control-row').first().getByText('Frodo Baggins').click();
+    // Click on patient (the whole row is a link)
+    await page.getByTestId('search-control-row').first().click();
 
     // Edit and upload image
     await page.getByRole('tab', { name: 'Edit' }).click();
