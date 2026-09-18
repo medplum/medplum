@@ -50,26 +50,20 @@ export function buildAgentCallbackId(uuid: string): string {
 /**
  * Derives the Redis pub/sub channel from a callback id sent back by the agent.
  *
- * New-style callback ids (`agent:cb:${hostname}:${uuid}`) contain a `:`-delimited
- * hostname prefix; the channel is everything before the last `:`. Legacy callback
- * ids without any `:` (e.g. `Agent/abc-uuid`) are treated as the channel itself,
- * preserving compatibility with peers that still publish per-callback channels.
+ * A callback id (`agent:cb:${hostname}:${uuid}`) carries a `:`-delimited hostname
+ * prefix; the channel is everything before the last `:`.
  *
  * @param callback - The callback id from the agent response.
- * @returns The Redis channel to publish the response on, or `undefined` if the id is
- * malformed, i.e. neither shape yields a non-empty channel name.
+ * @returns The Redis channel to publish the response on, or `undefined` if the id
+ * carries no channel prefix.
  */
 export function getCallbackChannelFromId(callback: string): string | undefined {
   const idx = callback.lastIndexOf(':');
-  return (idx === -1 ? callback : callback.slice(0, idx)) || undefined;
+  return idx > 0 ? callback.slice(0, idx) : undefined;
 }
 
 /**
- * Publishes an agent response so that whichever server process is awaiting it receives it.
- *
- * Writes to both the shared per-hostname channel and the callback id itself. The
- * latter is the channel a server running the previous release subscribes to, and is
- * only needed until every process has been upgraded; see {@link subscribeLegacyCallbackChannel}.
+ * Publishes an agent response on the shared channel of the server process awaiting it.
  *
  * A callback id that yields no channel is malformed: the response is logged and dropped
  * rather than published somewhere arbitrary.
@@ -84,40 +78,10 @@ export async function publishAgentCallback(callback: string, message: string): P
     return;
   }
   await publish(channel, message);
-  if (channel !== callback) {
-    await publish(callback, message);
-  }
 }
 
 /**
- * Subscribes the shared subscriber to the callback id itself, in addition to the
- * per-hostname channel it already listens on.
- *
- * A server running the previous release publishes responses to the callback id
- * verbatim rather than deriving the channel from it, so during a rolling deploy the
- * response to a request this process originated may arrive on either channel. This
- * adds a channel to the existing connection rather than a connection per request, so
- * the O(1) connection count is preserved.
- *
- * @param callbackId - The fully-qualified callback id to also listen on.
- */
-export async function subscribeLegacyCallbackChannel(callbackId: string): Promise<void> {
-  const subscriber = sharedSubscriber;
-  assert(subscriber, 'Callback subscriber not yet initialized');
-  await subscriber.subscribe(callbackId);
-}
-
-function unsubscribeLegacyCallbackChannel(callbackId: string): void {
-  sharedSubscriber?.unsubscribe(callbackId).catch((err) => {
-    globalLogger.warn('[AgentCallback]: Failed to unsubscribe callback channel', {
-      error: normalizeErrorString(err),
-    });
-  });
-}
-
-/**
- * Removes a pending callback from the registry, cancelling its timer and dropping the
- * per-callback subscription.
+ * Removes a pending callback from the registry, cancelling its timer.
  *
  * @param callbackId - The callback id to settle.
  * @returns The removed pending callback, or `undefined` if it had already settled.
@@ -129,7 +93,6 @@ function settlePendingCallback(callbackId: string): PendingCallback | undefined 
   }
   pendingCallbacks.delete(callbackId);
   clearTimeout(pending.timer);
-  unsubscribeLegacyCallbackChannel(callbackId);
   return pending;
 }
 
