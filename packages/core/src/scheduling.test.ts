@@ -172,6 +172,23 @@ describe('schedule parameters', () => {
     expect(getScheduleSchedulingParameters(updated, service, 'bufferBefore')).toEqual([bufferBefore]);
   });
 
+  test('replaces a parameter where it sits rather than moving it to the end', () => {
+    const updated = setScheduleSchedulingParameter(
+      scheduleWith(availableTime('mon', '09:00:00', '17:00:00')),
+      service,
+      {
+        url: 'duration',
+        valueDuration: { value: 45, unit: 'min' },
+      }
+    );
+
+    expect(schedulingParameters(updated)[0].extension?.map((subextension) => subextension.url)).toEqual([
+      'service',
+      'duration',
+      'availability',
+    ]);
+  });
+
   test('creates service-specific SchedulingParameters when missing', () => {
     const schedule: Schedule = {
       resourceType: 'Schedule',

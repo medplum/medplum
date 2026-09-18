@@ -320,6 +320,13 @@ function setParameter<T extends Schedule | HealthcareService>(
   service: WithId<HealthcareService> | undefined,
   subextension: SchedulingParameterExtension
 ): T {
+  // Note where the value sits before clearing removes it, so that replacing one leaves the sub-extension
+  // where it was rather than moving it to the end, which would show up as churn in the resource timeline.
+  const previousIndex =
+    getSchedulingParameterExtensions(resource, service)[0]?.extension?.findIndex(
+      (existing) => existing.url === subextension.url
+    ) ?? -1;
+
   // Clear first: a resource carrying more than one matching container would otherwise keep a stale value.
   const updated = clearParameter(resource, service, subextension.url);
 
@@ -334,7 +341,9 @@ function setParameter<T extends Schedule | HealthcareService>(
     updated.extension.push(parameters);
   }
 
-  parameters.extension = [...(parameters.extension ?? []), subextension];
+  const subextensions = [...(parameters.extension ?? [])];
+  subextensions.splice(previousIndex < 0 ? subextensions.length : previousIndex, 0, subextension);
+  parameters.extension = subextensions;
 
   return updated;
 }
