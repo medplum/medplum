@@ -9,6 +9,7 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   isString,
+  PropertyType,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
@@ -421,16 +422,81 @@ function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnD
   }
 }
 
+/**
+ * Search parameter types backed by a date or time value. Indexes on these columns are project-scoped:
+ * a date range rarely narrows results within a project, so the projectId prefix does the selective work.
+ */
+const dateSearchTypes: readonly SearchParameterType[] = [
+  SearchParameterType.DATE,
+  SearchParameterType.DATETIME,
+  SearchParameterType.PERIOD,
+];
+
+/**
+ * Element types whose token values are drawn from a bounded set of codes, e.g. a ValueSet. Any one code
+ * matches a large fraction of the table, so indexes on these columns are prefixed with projectId.
+ */
+const CodedTokenPropertyTypes: readonly string[] = [
+  PropertyType.CodeableConcept,
+  PropertyType.Coding,
+  PropertyType.code,
+  PropertyType.boolean,
+];
+
+/**
+ * Element types whose token values are effectively unique per resource, e.g. identifiers and phone
+ * numbers. These are selective on their own, so a projectId prefix would only make the index larger.
+ */
+const UniqueTokenPropertyTypes: readonly string[] = [
+  PropertyType.Identifier,
+  PropertyType.ContactPoint,
+  PropertyType.id,
+  PropertyType.uri,
+];
+
+/**
+ * Determines whether a token search parameter's values are codes from a bounded set.
+ *
+ * Coded element types must be found rather than assumed: a search parameter with no usable element
+ * definitions is either a derived `:identifier` parameter or an extension-backed one, neither of which
+ * can be shown to be low cardinality here.
+ * @param impl - The search parameter implementation.
+ * @returns True if the parameter's values come from a bounded set of codes.
+ */
+function isCodedToken(impl: SearchParameterImplementation): boolean {
+  if (impl.type === SearchParameterType.BOOLEAN) {
+    return true;
+  }
+
+  const types = new Set((impl.elementDefinitions ?? EMPTY).flatMap((ed) => (ed.type ?? EMPTY).map((t) => t.code)));
+  if (UniqueTokenPropertyTypes.some((t) => types.has(t))) {
+    return false;
+  }
+  return CodedTokenPropertyTypes.some((t) => types.has(t));
+}
+
+/**
+ * Columns prepended to project-scoped indexes. Every search other than super admin ones filters on
+ * projectId (see `Repository.addProjectFilters`), so leading with it keeps the index scan within the
+ * searching project rather than scanning matches from every project on the server.
+ */
+const ProjectIdColumn = 'projectId';
+const ProjectScopedIndexPrefix: readonly string[] = [ProjectIdColumn];
+
 function getSearchParameterIndexes(
   searchParam: SearchParameter,
   impl: SearchParameterImplementation
 ): IndexDefinition[] {
   switch (impl.searchStrategy) {
-    case 'token-column':
+    case 'token-column': {
+      // Shared token columns hold values from many search parameters at once, so they cannot be
+      // project-scoped based on any single parameter's cardinality.
+      const prefix = impl.hasDedicatedColumns && isCodedToken(impl) ? ProjectScopedIndexPrefix : EMPTY;
       return [
-        { columns: [impl.tokenColumnName], indexType: 'gin' },
+        { columns: [...prefix, impl.tokenColumnName], indexType: 'gin' },
         {
           columns: [
+            ...prefix,
             {
               expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.textSearchColumnName)}) gin_trgm_ops`,
               name: impl.textSearchColumnName + 'Trgm',
@@ -439,27 +505,21 @@ function getSearchParameterIndexes(
           indexType: 'gin',
         },
       ];
+    }
     case 'range-column': {
-      const indexes: IndexDefinition[] = [
+      const prefix = dateSearchTypes.includes(impl.type) ? ProjectScopedIndexPrefix : EMPTY;
+      return [
         // legacy index prior to range-column search strategy
-        { columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' },
+        { columns: [...prefix, impl.columnName], indexType: impl.array ? 'gin' : 'btree' },
         {
-          columns: [impl.rangeColumnName, impl.sortColumnName],
+          columns: [...prefix, impl.rangeColumnName, impl.sortColumnName],
           indexType: 'gist',
         },
       ];
-      // legacy index prior to range-column search strategy
-      if (!impl.array && (searchParam.code === 'date' || searchParam.code === 'sent')) {
-        indexes.push({ columns: ['projectId', impl.columnName], indexType: 'btree' });
-      }
-      return indexes;
     }
     case 'column': {
-      const indexes: IndexDefinition[] = [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
-      if (!impl.array && (searchParam.code === 'date' || searchParam.code === 'sent')) {
-        indexes.push({ columns: ['projectId', impl.columnName], indexType: 'btree' });
-      }
-      return indexes;
+      const prefix = searchParam.type === 'token' && isCodedToken(impl) ? ProjectScopedIndexPrefix : EMPTY;
+      return [{ columns: [...prefix, impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
     }
     case 'lookup-table':
       return impl.sortColumnName ? [{ columns: [impl.sortColumnName], indexType: 'btree' }] : [];
@@ -530,40 +590,30 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
     result.indexes.push({ columns: ['subject', 'date'], indexType: 'btree' });
   }
 
-  if (resourceType === 'Task') {
-    applyTaskProjectScopedIndexes(result);
-  }
+  applyProjectScopedIndexSuffixes(result, resourceType);
 }
 
 /**
- * Columns of the Task indexes replaced by project-scoped equivalents in data migration v46, keyed by
- * the columns of the index as generated from the search parameter. `suffix` columns are appended after
- * the search parameter's own columns, e.g. `status` becomes `("projectId", status, "lastUpdated")`.
+ * Columns appended to a project-scoped index beyond the search parameter's own columns, to serve a
+ * common sort within the project, e.g. Task `status` is indexed as `("projectId", status, "lastUpdated")`.
  */
-const TaskProjectScopedIndexes: { columns: string[]; suffix?: string[] }[] = [
-  { columns: ['___tag'] },
-  { columns: ['___tagTextTrgm'] },
-  { columns: ['authoredOn'] },
-  { columns: ['__code'] },
-  { columns: ['__codeTextTrgm'] },
-  { columns: ['priority'] },
-  { columns: ['status'], suffix: ['lastUpdated'] },
-  { columns: ['dueDate'] },
+const ProjectScopedIndexSuffixes: { resourceType: ResourceType; columns: string[]; suffix: string[] }[] = [
+  // Added by data migration v46 to paginate a project's tasks by status in last-updated order
+  { resourceType: 'Task', columns: ['projectId', 'status'], suffix: ['lastUpdated'] },
 ];
 
 /**
- * TEMPORARY: mirrors the index changes made by data migration v46, which prefixes the most selective
- * Task indexes with projectId so they can serve project-scoped searches. Remove once the generator can
- * express project-scoped indexes for search parameters generally.
- * @param result - The Task table definition, modified in place.
+ * Appends the extra sort columns declared in {@link ProjectScopedIndexSuffixes} to the matching indexes.
+ * @param result - The table definition, modified in place.
+ * @param resourceType - The resource type of the table.
  */
-function applyTaskProjectScopedIndexes(result: TableDefinition): void {
-  for (const { columns, suffix } of TaskProjectScopedIndexes) {
+function applyProjectScopedIndexSuffixes(result: TableDefinition, resourceType: ResourceType): void {
+  for (const { columns, suffix } of ProjectScopedIndexSuffixes.filter((s) => s.resourceType === resourceType)) {
     const index = result.indexes.find(
       (i) => i.columns.length === columns.length && i.columns.every((c, idx) => getIndexColumnName(c) === columns[idx])
     );
-    assert(index, `Could not find Task index on ${columns.join(', ')}`);
-    index.columns = ['projectId', ...index.columns, ...(suffix ?? EMPTY)];
+    assert(index, `Could not find ${resourceType} index on ${columns.join(', ')}`);
+    index.columns = [...index.columns, ...suffix];
   }
 }
 
@@ -957,6 +1007,7 @@ function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
   b.newLine();
 
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS btree_gin;`);
+  b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS btree_gist;`);
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pgstattuple;`);
   b.newLine();
@@ -1395,16 +1446,21 @@ function getIndexName(tableName: string, index: IndexDefinition): string {
     return tableName + '_pkey';
   }
 
+  // Range column indexes are named after the range column alone, e.g. ("__date", "__dateSort") reads
+  // better as `_date_sorted_idx` than as both column names concatenated
+  const projectScoped = index.columns[0] === ProjectIdColumn;
+  const sortColumns = projectScoped ? index.columns.slice(1) : index.columns;
   if (
-    index.columns.length === 2 &&
-    isString(index.columns[0]) &&
-    isString(index.columns[1]) &&
-    index.columns[1] === `${index.columns[0]}Sort`
+    sortColumns.length === 2 &&
+    isString(sortColumns[0]) &&
+    isString(sortColumns[1]) &&
+    sortColumns[1] === `${sortColumns[0]}Sort`
   ) {
     return (
       applyAbbreviations(tableName, TableNameAbbreviations) +
       '_' +
-      applyAbbreviations(index.columns[0], ColumnNameAbbreviations) +
+      (projectScoped ? ProjectIdColumn + '_' : '') +
+      applyAbbreviations(sortColumns[0], ColumnNameAbbreviations) +
       '_sorted_idx'
     );
   }

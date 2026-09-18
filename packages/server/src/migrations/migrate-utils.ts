@@ -18,6 +18,8 @@ export const ColumnNameAbbreviations: Record<string, string | undefined> = {
   immunizationEvent: 'immEvent',
   identifier: 'idnt',
   Identifier: 'Idnt',
+  monitoringProgramType: 'monProgType',
+  targetDisease: 'targetDis',
 };
 
 /**
