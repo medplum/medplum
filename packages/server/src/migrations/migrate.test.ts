@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { FileBuilder, loadDataType } from '@medplum/core';
+import type { ResourceType } from '@medplum/fhirtypes';
 import { escapeIdentifier } from 'pg';
 import type { Mock, MockInstance } from 'vitest';
 import { loadTestConfig } from '../config/loader';
@@ -359,6 +360,63 @@ describe('Generator', () => {
       for (let i = 0; i < actual.length; i++) {
         expect(columnDefinitionsEqual(table, actual[i], expected[i])).toBe(true);
       }
+    });
+
+    describe('project-scoped indexes', () => {
+      function getIndexQueries(resourceType: ResourceType): string[] {
+        const result: SchemaDefinition = { tables: [], functions: [] };
+        buildCreateTables(result, resourceType);
+        const table = result.tables.find((t) => t.name === resourceType) as TableDefinition;
+        return getCreateTableQueries(table, { includeIfExists: false }).filter((q) => q.includes('CREATE INDEX'));
+      }
+
+      test('date columns are prefixed with projectId', () => {
+        const queries = getIndexQueries('Patient');
+        expect(queries).toContain(
+          'CREATE INDEX "Patient_projectId_birthdate_idx" ON "Patient" ("projectId", "birthdate")'
+        );
+        expect(queries).toContain(
+          'CREATE INDEX "Patient_projectId___birthdate_sorted_idx" ON "Patient" USING gist ("projectId", "__birthdate", "__birthdateSort")'
+        );
+        expect(queries).not.toContain('CREATE INDEX "Patient_birthdate_idx" ON "Patient" ("birthdate")');
+      });
+
+      test('coded token columns are prefixed with projectId', () => {
+        const queries = getIndexQueries('Task');
+        expect(queries).toContain(
+          'CREATE INDEX "Task_projectId___code_idx" ON "Task" USING gin ("projectId", "__code")'
+        );
+        expect(queries).toContain(
+          'CREATE INDEX "Task_projectId___codeTextTrgm_idx" ON "Task" USING gin ("projectId", token_array_to_text("__codeText") gin_trgm_ops)'
+        );
+        expect(queries).toContain('CREATE INDEX "Task_projectId_intent_idx" ON "Task" ("projectId", "intent")');
+      });
+
+      test('Task status index keeps its lastUpdated suffix', () => {
+        expect(getIndexQueries('Task')).toContain(
+          'CREATE INDEX "Task_projectId_status_lastUpdated_idx" ON "Task" ("projectId", "status", "lastUpdated")'
+        );
+      });
+
+      test('identifier and telecom token columns are not prefixed', () => {
+        const queries = getIndexQueries('Patient');
+        expect(queries).toContain('CREATE INDEX "Patient___idnt_idx" ON "Patient" USING gin ("__identifier")');
+        expect(queries).toContain('CREATE INDEX "Patient___telecom_idx" ON "Patient" USING gin ("__telecom")');
+      });
+
+      test('shared token columns are not prefixed', () => {
+        expect(getIndexQueries('Patient')).toContain(
+          'CREATE INDEX "Patient___sharedTokens_idx" ON "Patient" USING gin ("__sharedTokens")'
+        );
+      });
+
+      test('reference and numeric columns are not prefixed', () => {
+        const queries = getIndexQueries('Task');
+        expect(queries).toContain('CREATE INDEX "Task_owner_idx" ON "Task" ("owner")');
+        expect(queries).toContain(
+          'CREATE INDEX "Task___priorityOrder_sorted_idx" ON "Task" USING gist ("__priorityOrder", "__priorityOrderSort")'
+        );
+      });
     });
 
     describe('identity columns', () => {
