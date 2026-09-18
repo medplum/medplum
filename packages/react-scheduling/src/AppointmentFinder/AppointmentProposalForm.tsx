@@ -477,6 +477,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           searchCriteria={LOCATION_SEARCH_CRITERIA}
           defaultValue={defaultLocation}
           onChange={chooseLocation}
+          clearable={false}
         />
         <AppointmentServiceSelect
           key={serviceFieldKey}

@@ -146,6 +146,7 @@ export interface MultiResourceInputProps<T extends Resource = Resource> {
   readonly error?: AsyncAutocompleteProps<T>['error'];
   /** Maximum number of resources that can be selected. Defaults to uncapped. */
   readonly maxValues?: number;
+  readonly clearable?: boolean;
 }
 
 export function MultiResourceInput<T extends Resource = Resource>(
@@ -239,7 +240,7 @@ export function MultiResourceInput<T extends Resource = Resource>(
       toOption={toOption}
       loadOptions={loadValues}
       onChange={handleChange}
-      clearable
+      clearable={props.clearable ?? true}
     />
   );
 }
