@@ -44,13 +44,7 @@ describe('PatientInfoItem', () => {
 
   test('shows the placeholder when value is empty', () => {
     render(
-      <PatientInfoItem
-        patient={HomerSimpson}
-        value={undefined}
-        icon={null}
-        placeholder="Add Birthdate"
-        label="Label"
-      />
+      <PatientInfoItem patient={HomerSimpson} value={undefined} icon={null} placeholder="Add Birthdate" label="Label" />
     );
 
     expect(screen.getByText('Add Birthdate')).toBeInTheDocument();
