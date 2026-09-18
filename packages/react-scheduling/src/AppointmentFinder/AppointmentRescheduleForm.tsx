@@ -16,7 +16,8 @@ import { useRescheduleDefaults } from './useRescheduleDefaults';
 /** What a reschedule wrote, as `Appointment/[id]/$reschedule` returned it. */
 export type AppointmentReschedule = AppointmentWrite;
 
-// TODO: support "canBypassSchedulingRules" here
+// Coming soon: support for `canBypassSchedulingRules`.
+// https://github.com/medplum/medplum/issues/10597
 export interface AppointmentRescheduleFormProps extends Omit<
   AppointmentProposalFormProps,
   | 'onSubmit'
