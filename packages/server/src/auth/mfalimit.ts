@@ -10,7 +10,6 @@ import {
   tooManyRequests,
 } from '@medplum/core';
 import type { Login } from '@medplum/fhirtypes';
-import { createHash } from 'node:crypto';
 import { MFA_LOGIN_ATTEMPT_LIMIT, MFA_LOGIN_EXPIRATION_MS, MFA_USER_ATTEMPT_LIMIT } from '../constants';
 import { getRateLimitRedis } from '../redis';
 
@@ -41,8 +40,16 @@ end
 return redis.call('DECR', KEYS[2])
 `;
 
-const RESERVE_MFA_ATTEMPT_SHA = createHash('sha1').update(RESERVE_MFA_ATTEMPT).digest('hex');
-const RELEASE_MFA_ATTEMPT_SHA = createHash('sha1').update(RELEASE_MFA_ATTEMPT).digest('hex');
+interface MfaRedisCommands {
+  reserveMfaAttempt(
+    loginKey: string,
+    userKey: string,
+    loginLimit: number,
+    userLimit: number,
+    expirationMs: number
+  ): Promise<number[]>;
+  releaseMfaAttempt(loginKey: string, userKey: string): Promise<unknown>;
+}
 
 /**
  * Atomically reserves one MFA attempt against both the login and its user.
@@ -50,11 +57,13 @@ const RELEASE_MFA_ATTEMPT_SHA = createHash('sha1').update(RELEASE_MFA_ATTEMPT).d
  * @returns The number of attempts reserved for this login.
  */
 export async function reserveMfaAttempt(login: Login): Promise<number> {
-  const result = (await evalMfaScript(RESERVE_MFA_ATTEMPT, RESERVE_MFA_ATTEMPT_SHA, getMfaAttemptKeys(login), [
+  const redis = getMfaRedis();
+  const result = await redis.reserveMfaAttempt(
+    ...getMfaAttemptKeys(login),
     MFA_LOGIN_ATTEMPT_LIMIT,
     MFA_USER_ATTEMPT_LIMIT,
-    MFA_LOGIN_EXPIRATION_MS,
-  ])) as number[];
+    MFA_LOGIN_EXPIRATION_MS
+  );
   if (result[0] !== 1) {
     const outcome = deepClone(tooManyRequests);
     setRateLimitReset(outcome, Math.max(result[3], 0));
@@ -68,7 +77,7 @@ export async function reserveMfaAttempt(login: Login): Promise<number> {
  * @param login - The successfully verified login.
  */
 export async function releaseMfaAttempt(login: Login): Promise<void> {
-  await evalMfaScript(RELEASE_MFA_ATTEMPT, RELEASE_MFA_ATTEMPT_SHA, getMfaAttemptKeys(login), []);
+  await getMfaRedis().releaseMfaAttempt(...getMfaAttemptKeys(login));
 }
 
 export async function tryReleaseMfaAttempt(logger: ILogger, login: Login): Promise<void> {
@@ -88,21 +97,16 @@ function getMfaAttemptKeys(login: Login): [string, string] {
   return [`${prefix}:login:${login.id}`, `${prefix}:user`];
 }
 
-async function evalMfaScript(
-  script: string,
-  sha: string,
-  keys: [string, string],
-  args: (string | number)[]
-): Promise<unknown> {
+const configuredRedisClients = new WeakSet<object>();
+
+function getMfaRedis(): ReturnType<typeof getRateLimitRedis> & MfaRedisCommands {
   const redis = getRateLimitRedis();
-  try {
-    return await redis.evalsha(sha, keys.length, ...keys, ...args);
-  } catch (err) {
-    if (!(err instanceof Error && err.message.includes('NOSCRIPT'))) {
-      throw err;
-    }
-    return redis.eval(script, keys.length, ...keys, ...args);
+  if (!configuredRedisClients.has(redis)) {
+    redis.defineCommand('reserveMfaAttempt', { numberOfKeys: 2, lua: RESERVE_MFA_ATTEMPT });
+    redis.defineCommand('releaseMfaAttempt', { numberOfKeys: 2, lua: RELEASE_MFA_ATTEMPT });
+    configuredRedisClients.add(redis);
   }
+  return redis as ReturnType<typeof getRateLimitRedis> & MfaRedisCommands;
 }
 
 /**
