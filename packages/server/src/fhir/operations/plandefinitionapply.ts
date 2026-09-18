@@ -24,10 +24,13 @@ import type {
   ClientApplication,
   CodeableConcept,
   Encounter,
+  Goal,
+  GoalTarget,
   Organization,
   Patient,
   PlanDefinition,
   PlanDefinitionAction,
+  PlanDefinitionGoal,
   Practitioner,
   Questionnaire,
   Reference,
@@ -105,6 +108,11 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
     );
   }
 
+  const goals: WithId<Goal>[] = [];
+  for (const goal of planDefinition.goal ?? EMPTY) {
+    goals.push(await createGoal(ctx.repo, subjectRef, goal));
+  }
+
   const requestGroup = await ctx.repo.createResource<RequestGroup>({
     resourceType: 'RequestGroup',
     instantiatesCanonical: planDefinition.url ? [planDefinition.url] : undefined,
@@ -128,9 +136,42 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
       ? undefined
       : [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))],
     activity: [{ reference: createReference(requestGroup) }],
+    goal: goals.length > 0 ? goals.map(createReference) : undefined,
   });
 
   return [allOk, carePlan];
+}
+
+/**
+ * Creates a Goal for the given PlanDefinition goal.
+ *
+ * See: https://hl7.org/fhir/plandefinition-definitions.html#PlanDefinition.goal
+ * @param repo - The repository configured for the current user.
+ * @param subject - The subject of the plan definition.
+ * @param goal - The PlanDefinition goal.
+ * @returns The created Goal.
+ */
+async function createGoal(
+  repo: Repository,
+  subject: Reference<Patient>,
+  goal: PlanDefinitionGoal
+): Promise<WithId<Goal>> {
+  return repo.createResource<Goal>({
+    resourceType: 'Goal',
+    lifecycleStatus: 'proposed',
+    subject,
+    description: goal.description,
+    category: goal.category ? [goal.category] : undefined,
+    priority: goal.priority,
+    startCodeableConcept: goal.start,
+    target: goal.target?.map((target): GoalTarget => ({
+      measure: target.measure,
+      detailQuantity: target.detailQuantity,
+      detailRange: target.detailRange,
+      detailCodeableConcept: target.detailCodeableConcept,
+      dueDuration: target.due,
+    })),
+  });
 }
 
 /**
