@@ -2591,8 +2591,8 @@
             }
           },
           {
-            "id" : "Bot.webhookRawBodyEnabled",
-            "path" : "Bot.webhookRawBodyEnabled",
+            "id" : "Bot.rawBody",
+            "path" : "Bot.rawBody",
             "definition" : "Whether public webhooks provide the original UTF-8 JSON text in BotEvent.input instead of parsed JSON. Defaults to false. Set to true for webhook signature verification.",
             "min" : 0,
             "max" : "1",
@@ -2600,7 +2600,7 @@
               "code" : "boolean"
             }],
             "base" : {
-              "path" : "Bot.webhookRawBodyEnabled",
+              "path" : "Bot.rawBody",
               "min" : 0,
               "max" : "1"
             }

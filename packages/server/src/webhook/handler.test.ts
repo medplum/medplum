@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getStatus, OperationOutcomeError } from '@medplum/core';
 import type { Bot, ProjectMembership } from '@medplum/fhirtypes';
+import { json } from 'body-parser';
 import type { ErrorRequestHandler } from 'express';
 import express from 'express';
 import request from 'supertest';
@@ -10,7 +11,6 @@ import * as bots from '../bots/execute';
 import { buildLambdaPayload } from '../cloud/aws/execute';
 import { loadTestConfig } from '../config/loader';
 import * as repo from '../fhir/repo';
-import { createWebhookRawParser } from './bodyparser';
 import { webhookHandler } from './routes';
 
 const bot: Bot = { resourceType: 'Bot', id: 'test-bot', publicWebhook: true };
@@ -22,7 +22,15 @@ const membership: ProjectMembership = {
   accessPolicy: { reference: 'AccessPolicy/test-policy' },
 };
 const app = express();
-app.use(createWebhookRawParser({ type: 'application/json', limit: '10mb' }));
+app.use(
+  json({
+    type: 'application/json',
+    limit: '10mb',
+    verify: (req, _res, buf) => {
+      (req as any).rawBody = buf;
+    },
+  })
+);
 app.post('/webhook/:id', webhookHandler);
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   res.sendStatus(err instanceof OperationOutcomeError ? getStatus(err.outcome) : (err.status ?? 500));
@@ -34,7 +42,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  delete bot.webhookRawBodyEnabled;
+  delete bot.rawBody;
   vi.spyOn(repo, 'getGlobalSystemRepo').mockReturnValue({
     readResource: vi.fn().mockResolvedValue(membership),
   } as unknown as repo.SystemRepository);
@@ -53,7 +61,7 @@ afterEach(() => {
 });
 
 test.each([undefined, true, false])('Applies raw-body forwarding flag %s before runtime dispatch', async (enabled) => {
-  bot.webhookRawBodyEnabled = enabled;
+  bot.rawBody = enabled;
   const rawBody = '{ "value": 1.00 }\n';
   const result = await request(app).post('/webhook/test-membership').type('application/json').send(rawBody);
   expect(result.status).toBe(200);
@@ -66,7 +74,7 @@ test.each([undefined, true, false])('Applies raw-body forwarding flag %s before 
 });
 
 test.each([undefined, false, true])('Setting %s sends a large Lambda input only once', async (enabled) => {
-  bot.webhookRawBodyEnabled = enabled;
+  bot.rawBody = enabled;
   const input = { value: 'x'.repeat(3 * 1024 * 1024) };
   const body = JSON.stringify(input);
   const result = await request(app).post('/webhook/test-membership').type('application/json').send(body);
@@ -78,13 +86,9 @@ test.each([undefined, false, true])('Setting %s sends a large Lambda input only 
   expect(Buffer.byteLength(payload)).toBeLessThan(Buffer.byteLength(body) + 1024);
 });
 
-test.each([undefined, false, true])('Setting %s controls whether the handler parses JSON', async (enabled) => {
-  bot.webhookRawBodyEnabled = enabled;
+test.each([undefined, false, true])('Malformed JSON is rejected regardless of rawBody setting %s', async (enabled) => {
+  bot.rawBody = enabled;
   const result = await request(app).post('/webhook/test-membership').type('application/json').send('{invalid');
-  expect(result.status).toBe(enabled === true ? 200 : 400);
-  if (enabled === true) {
-    expect(result.body).toEqual({ input: '{invalid' });
-  } else {
-    expect(bots.executeBot).not.toHaveBeenCalled();
-  }
+  expect(result.status).toBe(400);
+  expect(bots.executeBot).not.toHaveBeenCalled();
 });

@@ -62608,7 +62608,7 @@
           "description": "Optional flag to indicate that the bot can be used as an unauthenticated public webhook. Note that this is a security risk and should only be used for public bots that do not require authentication.",
           "$ref": "#/definitions/boolean"
         },
-        "webhookRawBodyEnabled": {
+        "rawBody": {
           "description": "Whether public webhooks provide the original UTF-8 JSON text in BotEvent.input instead of parsed JSON. Defaults to false. Set to true for webhook signature verification.",
           "$ref": "#/definitions/boolean"
         },

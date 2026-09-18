@@ -8,7 +8,13 @@ import { executeBot } from '../bots/execute';
 import { sendBotResponse } from '../bots/utils';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
-import { parseWebhookBody } from './bodyparser';
+
+export const WEBHOOK_PATHS = [
+  '/webhook/:id',
+  '/api/webhook/:id',
+  '/projects/:projectId/webhook/:id',
+  '/api/projects/:projectId/webhook/:id',
+];
 
 /**
  * Handles HTTP requests for anonymous webhooks.
@@ -49,7 +55,7 @@ export const webhookHandler = async (req: Request, res: Response): Promise<void>
   const result = await executeBot({
     bot,
     runAs,
-    input: req.method === 'POST' ? parseWebhookBody(req.body, bot.webhookRawBodyEnabled === true) : req.query,
+    input: req.method === 'POST' ? (bot.rawBody ? (req as any).rawBody.toString('utf8') : req.body) : req.query,
     contentType: req.header('content-type') as string,
     headers,
   });

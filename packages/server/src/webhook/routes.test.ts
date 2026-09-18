@@ -181,9 +181,9 @@ describe('Anonymous webhooks', () => {
           .patch(`/fhir/R4/Bot/${bot.id}`)
           .set('Authorization', 'Bearer ' + accessToken)
           .set('Content-Type', ContentType.JSON_PATCH)
-          .send([{ op: 'add', path: '/webhookRawBodyEnabled', value: enabled }]);
+          .send([{ op: 'add', path: '/rawBody', value: enabled }]);
         expect(update).toHaveStatus(200);
-        expect(update.body.webhookRawBodyEnabled).toBe(enabled);
+        expect(update.body.rawBody).toBe(enabled);
 
         const response = await request(app)
           .post(`/webhook/${botMembership.id}`)
@@ -198,7 +198,7 @@ describe('Anonymous webhooks', () => {
         .patch(`/fhir/R4/Bot/${bot.id}`)
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.JSON_PATCH)
-        .send([{ op: 'remove', path: '/webhookRawBodyEnabled' }]);
+        .send([{ op: 'remove', path: '/rawBody' }]);
       expect(reset).toHaveStatus(200);
     }
   });

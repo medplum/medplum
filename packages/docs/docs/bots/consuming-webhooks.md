@@ -100,11 +100,11 @@ Using unauthenticated webhooks inherently carries security risks. Medplum provid
 
 ### Verifying JSON signatures
 
-Public webhook Bots receive parsed JSON in `event.input` by default. To verify a provider's signature against the original UTF-8 JSON text, set `Bot.webhookRawBodyEnabled` to `true`. With this setting enabled, `event.input` is the original text instead of a parsed object. Omitting the flag or setting it to `false` preserves the existing parsed-input behavior.
+Public webhook Bots receive parsed JSON in `event.input` by default. To verify a provider's signature against the original UTF-8 JSON text, set `Bot.rawBody` to `true`. With this setting enabled, `event.input` is the original text instead of a parsed object. Omitting the flag or setting it to `false` preserves the existing parsed-input behavior.
 
 Pass the raw `event.input` and the provider's signature header from `event.headers` to the provider's verification library. For Stripe, pass them with your webhook signing secret to `stripe.webhooks.constructEvent()`, which verifies the signature and returns the parsed Stripe event. Do not parse and reserialize the text first: doing so can change whitespace, escaping, and number formatting, invalidating the signature. Verify the signature before writing resources or processing the event.
 
-Raw mode leaves JSON validation to your Bot or the provider's verification library. Parsed mode retains the existing JSON validation. Both modes use the normal server JSON size limit. Body-parser decompresses compressed requests before capturing the text; use uncompressed UTF-8 JSON for providers that sign the transmitted bytes. Other content types, encodings, and execution endpoints retain their existing input handling.
+Parsed mode retains the existing JSON validation; raw mode still requires valid JSON but leaves further validation to your Bot or the provider's verification library. Both modes use the normal server JSON size limit. Body-parser decompresses compressed requests before capturing the text; use uncompressed UTF-8 JSON for providers that sign the transmitted bytes. Other content types, encodings, and execution endpoints retain their existing input handling.
 
 Only one representation is sent to the Bot, so enabling raw input does not add a duplicate body to the invocation payload. Runtime payload limits still apply, including JSON escaping and invocation metadata. VM, standard and streaming AWS Lambda wrappers, and Fission already forward `input`; no wrapper redeployment is required solely for this feature. Public webhook routes do not provide a response stream.
 

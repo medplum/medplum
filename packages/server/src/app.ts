@@ -58,8 +58,7 @@ import { seedDatabase } from './seed';
 import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
-import { createWebhookRawParser, WEBHOOK_PATHS } from './webhook/bodyparser';
-import { webhookRouter } from './webhook/routes';
+import { WEBHOOK_PATHS, webhookRouter } from './webhook/routes';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
 import { closeWebSockets, initWebSockets } from './ws/routes';
@@ -228,8 +227,16 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
     asyncBatchHandler(config)
   );
 
-  // Retain JSON text only on public webhook routes, before parsing changes whitespace or escaping.
-  app.use(WEBHOOK_PATHS, createWebhookRawParser({ type: JSON_TYPE, limit: config.maxJsonSize }));
+  app.use(
+    WEBHOOK_PATHS,
+    json({
+      type: JSON_TYPE,
+      limit: config.maxJsonSize,
+      verify: (req, _res, buf) => {
+        (req as any).rawBody = buf;
+      },
+    })
+  );
 
   app.use(urlencoded({ extended: false }));
   app.use(text({ type: [ContentType.TEXT, ContentType.HL7_V2] }));
