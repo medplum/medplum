@@ -143,7 +143,7 @@ export function parseHypotheticalIndexStatements(input: string | string[] | unde
   return statements;
 }
 
-async function withHypotheticalIndexes<T extends object>(
+export async function withHypotheticalIndexes<T extends object>(
   repo: Repository,
   searchResourceTypes: ReturnType<typeof getSearchResourceTypes>,
   statements: string[],
@@ -154,7 +154,13 @@ async function withHypotheticalIndexes<T extends object>(
   }
 
   const access = repoAccess.sqlRead(searchResourceTypes, { source: 'dbExplainHandler' });
+  const configAccess = repoAccess.sqlReadConfig(searchResourceTypes, { source: 'dbExplainHandler' });
+  let transactionStarted = false;
   try {
+    await repo.executeRawSql('BEGIN READ ONLY', undefined, configAccess);
+    transactionStarted = true;
+    await repo.executeRawSql('SELECT hypopg_reset()', undefined, configAccess);
+
     const hypotheticalIndexes: string[] = [];
     for (const stmt of statements) {
       const created = await repo.executeRawSql<{ indexrelid: string; indexname: string }>(
@@ -174,8 +180,15 @@ async function withHypotheticalIndexes<T extends object>(
     }
     throw err;
   } finally {
+    if (transactionStarted) {
+      try {
+        await repo.executeRawSql('ROLLBACK', undefined, configAccess);
+      } catch {
+        // Continue to reset connection-private HypoPG state.
+      }
+    }
     try {
-      await repo.executeRawSql('SELECT hypopg_reset()', undefined, access);
+      await repo.executeRawSql('SELECT hypopg_reset()', undefined, configAccess);
     } catch {
       // Preserve the original error when hypopg is missing.
     }

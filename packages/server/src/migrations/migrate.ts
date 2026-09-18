@@ -960,6 +960,7 @@ function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pgstattuple;`);
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS bloom;`);
+  b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS hypopg;`);
   b.newLine();
 
   for (const action of actions) {

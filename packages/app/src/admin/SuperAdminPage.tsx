@@ -299,8 +299,9 @@ export function SuperAdminPage(): JSX.Element {
       <p>
         Runs an EXPLAIN query on the database to show the query plan for a search. Optional HypoPG hypothetical indexes
         are created on the same database session so you can test indexes without building them, including bloom indexes
-        when the bloom extension is installed. Check JSON format to copy the plan into a visualizer. EXPLAIN ANALYZE is
-        skipped when hypothetical indexes are provided, because HypoPG only affects EXPLAIN.
+        when the bloom extension is installed. All index definitions and the EXPLAIN run in one read-only transaction,
+        which is rolled back and reset afterward. Check JSON format to copy the plan into a visualizer. EXPLAIN ANALYZE
+        is skipped when hypothetical indexes are provided, because HypoPG only affects EXPLAIN.
       </p>
       <ExplainSearchForm setModalTitle={setModalTitle} setModalContent={setModalContent} openModal={open} />
       <Divider my="lg" />
@@ -746,7 +747,7 @@ export function ExplainSearchForm({
         <Textarea
           name="hypotheticalIndex"
           label="Hypothetical indexes (HypoPG)"
-          description='Optional CREATE INDEX statements, separated by semicolons. Bloom example: CREATE INDEX ON "Appointment" USING bloom ("projectId", "status")'
+          description='Optional CREATE INDEX statements, separated by semicolons and evaluated together. Bloom example: CREATE INDEX ON "Appointment" USING bloom ("projectId", "status")'
           placeholder='CREATE INDEX ON "Appointment" ("projectId", "status")'
           minRows={3}
           autosize
