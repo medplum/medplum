@@ -13,6 +13,7 @@ import {
 } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
+import { usePatientActionsMenu } from '../../pages/patient/usePatientActionsMenu';
 import { showErrorNotification } from '../../utils/notifications';
 import { usePharmacyDialog } from '../pharmacy/usePharmacyDialog';
 import { ScriptSureMessageTaskActions } from './ScriptSureMessageTaskActions';
@@ -43,6 +44,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
 
   const patientRef = task?.for as Reference<Patient>;
   const selectedPatient = useResource<Patient>(patientRef);
+  const { headerMenuItems, actionsModals, openEditModal } = usePatientActionsMenu(selectedPatient);
 
   if (!task) {
     return (
@@ -91,6 +93,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
 
   return (
     <>
+      {actionsModals}
       <Box
         h="100%"
         style={{
@@ -152,12 +155,17 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
               </ScrollArea>
             )}
             {activeTab === 'patient-summary' && selectedPatient?.resourceType === 'Patient' && (
-              <ScrollArea h="calc(100vh - 120px)">
+              <ScrollArea
+                h="calc(100vh - 120px)"
+                bg="light-dark(var(--mantine-color-white), var(--mantine-color-body))"
+              >
                 <PatientSummary
                   patient={selectedPatient}
                   sections={getDefaultSections().map((s) =>
                     s.key === 'pharmacies' ? createPharmaciesSection(PharmacyDialogComponent) : s
                   )}
+                  headerMenuItems={headerMenuItems}
+                  onEditPatient={openEditModal}
                 />
               </ScrollArea>
             )}
