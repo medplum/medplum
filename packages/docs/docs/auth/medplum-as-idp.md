@@ -55,7 +55,7 @@ The last step of this flow is for your application to trade in the `AUTHORIZATIO
 3. Use the `access_token` received in the [response](/docs/api/oauth/token#sample-response) to make future API calls (See the [**Client Credentials tutorial**](/docs/auth/client-credentials) for more details)
 
 :::note[Using the Medplum Client]
-You can also use the Medplum SDK to initiate this process, using either the [`startLogin`](/docs/sdk/core.medplumclient.startlogin) or [`signInWithRedirect`](/docs/sdk/core.medplumclient.signinwithredirect) convenience method.
+You can also use the Medplum SDK to initiate this process with [`signInWithRedirect`](/docs/sdk/core.medplumclient.signinwithredirect). If you'd rather render the login form inside your own application instead of redirecting away from it, see [Embedded Login](/docs/auth/embedded-login), which uses [`startLogin`](/docs/sdk/core.medplumclient.startlogin) or `<SignInForm>` instead.
 :::
 
 ## See Also

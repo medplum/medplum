@@ -269,6 +269,7 @@ const sidebars: SidebarsConfig = {
       items: [
         { type: 'html', value: '<strong class="menu__link">Identity Providers</strong>' },
         { type: 'doc', id: 'auth/medplum-as-idp' },
+        { type: 'doc', id: 'auth/embedded-login' },
         { type: 'doc', id: 'auth/external-identity-providers' },
         { type: 'doc', id: 'auth/google-auth' },
         { type: 'doc', id: 'auth/domain-level-identity-providers' },
