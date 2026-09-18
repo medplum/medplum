@@ -578,7 +578,6 @@ describe('ResourceForm', () => {
     const form = document.getElementById('test-resource-form') as HTMLFormElement;
     expect(form).toBeInstanceOf(HTMLFormElement);
 
-    // The external button is associated with the form via the HTML `form` attribute.
     expect(screen.getByText('External Save').getAttribute('form')).toBe('test-resource-form');
 
     await act(async () => {

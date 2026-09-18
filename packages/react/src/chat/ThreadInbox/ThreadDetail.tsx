@@ -38,9 +38,7 @@ export interface ThreadDetailProps {
   readonly thread: Communication;
   readonly showPatientSummary?: boolean;
   readonly sections?: PatientSummarySectionConfig[];
-  /** `<Menu.Item>` nodes for the patient summary header's "…" actions menu. */
   readonly patientHeaderMenuItems?: ReactNode;
-  /** When provided, Demographics rows open this (the patient edit modal) instead of navigating. */
   readonly onEditPatient?: () => void;
   readonly uploadEnabled?: boolean;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;

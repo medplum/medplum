@@ -45,11 +45,8 @@ export interface ThreadInboxProps {
   readonly subject?: Reference<Patient> | Patient;
   readonly showPatientSummary?: boolean;
   readonly sections?: PatientSummarySectionConfig[];
-  /** `<Menu.Item>` nodes for the patient summary header's "…" actions menu. */
   readonly patientHeaderMenuItems?: ReactNode;
-  /** When provided, Demographics rows open this (the patient edit modal) instead of navigating. */
   readonly onEditPatient?: () => void;
-  /** Fires with the selected thread's patient subject so the host can wire header actions/modals. */
   readonly onPatientChange?: (patient: Reference<Patient> | undefined) => void;
   readonly onNew: (message: Communication) => void;
   readonly onSelectFirst?: (thread: Communication) => void;

@@ -13,7 +13,6 @@ export interface PatientInfoItemProps {
   placeholder: string;
   label: string;
   onClickResource?: (patient: Patient) => void;
-  /** When provided, takes precedence over `onClickResource` (e.g. to open a patient edit modal). */
   onClick?: () => void;
 }
 

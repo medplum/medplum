@@ -19,20 +19,8 @@ export interface PatientSummaryProps {
   readonly onClickResource?: (resource: Resource) => void;
   readonly onRequestLabs?: () => void;
   readonly sections?: PatientSummarySectionConfig[];
-  /**
-   * Optional `<Menu.Item>` nodes rendered inside a "…" actions menu in the header.
-   * When provided, an always-visible menu button appears in the header's top-right.
-   */
   readonly headerMenuItems?: ReactNode;
-  /**
-   * When true (default), the header links to the patient profile root (`/Patient/:id`).
-   * Set false when the summary is already shown on that patient's profile page.
-   */
   readonly linkToPatient?: boolean;
-  /**
-   * When provided, clicking a Demographics row opens this callback (the patient edit modal)
-   * instead of navigating via `onClickResource`.
-   */
   readonly onEditPatient?: () => void;
 }
 

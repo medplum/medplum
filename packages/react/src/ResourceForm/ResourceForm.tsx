@@ -27,16 +27,7 @@ export interface ResourceFormProps {
   readonly onDelete?: (resource: Resource) => void;
   /** (optional) URL of the resource profile used to display the form. Takes priority over schemaName. */
   readonly profileUrl?: string;
-  /**
-   * (optional) `id` for the underlying `<form>` element. Lets a submit control rendered outside the
-   * form (e.g. a `Modal` footer) target it via the HTML `form` attribute.
-   */
   readonly formId?: string;
-  /**
-   * (optional) When true, the built-in submit/patch/delete action row is not rendered, so the caller
-   * can supply its own submit control (paired with `formId`). Use only when `onPatch`/`onDelete` are
-   * unset, since those actions live in the omitted row.
-   */
   readonly hideSubmitButton?: boolean;
 }
 

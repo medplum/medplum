@@ -25,14 +25,6 @@ export interface PatientEditModalProps {
   readonly onClose: () => void;
 }
 
-/**
- * State-driven modal for editing a patient's profile details. Reuses the same form flow as
- * the full-page {@link EditTab} (`/Patient/:id/edit`), but opens in place over whatever page
- * currently shows the Patient Summary — so it works on the patient chart and on top-level
- * pages like /Communication and /Task alike.
- * @param props - The modal props.
- * @returns The patient profile edit modal.
- */
 export function PatientEditModal(props: PatientEditModalProps): JSX.Element {
   const { patient, opened, onClose } = props;
   const medplum = useMedplum();
@@ -83,7 +75,7 @@ export function PatientEditModal(props: PatientEditModalProps): JSX.Element {
       actions={
         value ? (
           <Button type="submit" form={formId} loading={submitting}>
-            Update
+            Save
           </Button>
         ) : undefined
       }
