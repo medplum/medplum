@@ -112,7 +112,7 @@ export function AppointmentCancelForm(props: AppointmentDetailsProps): JSX.Eleme
         onChange={setReason}
       />
       <Button color="red" loading={cancelling} disabled={!reason} onClick={cancel}>
-        Cancel Appointment
+        Confirm Cancellation
       </Button>
     </>
   );
@@ -161,6 +161,8 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   if (cancelling) {
     return (
       <Stack gap="sm" className={classes.details}>
+        {patientLine}
+        {whenLine}
         <AppointmentCancelForm {...props} onCancelled={innerOnCancelled} />
         <Stack gap="sm" className={classes.actions}>
           <Button onClick={() => setCancelling(false)} variant="outline">

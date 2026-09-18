@@ -83,7 +83,7 @@ function cancelButton(): HTMLElement | null {
  * @returns The button, or null while that page is not open.
  */
 function confirmButton(): HTMLElement | null {
-  return screen.queryByRole('button', { name: 'Cancel Appointment' });
+  return screen.queryByRole('button', { name: 'Confirm Cancellation' });
 }
 
 /** Opens the cancellation page, which is the only place a reason can be chosen. */
