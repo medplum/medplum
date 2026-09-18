@@ -33,19 +33,19 @@ const DEFAULT_SEARCH: SearchRequest = {
 
 /**
  * Props for the billing organization list. `onNewOrganization` opens the modal for a new organization and
- * `onBringExisting` the picker for an organization already in the project; the list draws both actions itself,
+ * `onAddExisting` the picker for an organization already in the project; the list draws both actions itself,
  * in place of the search control toolbar, which only knows how to offer New.
  */
 export interface CandidBillingOrganizationListProps {
   readonly candidBotId: string | undefined;
   readonly savedVersion: number;
   readonly onNewOrganization: () => void;
-  readonly onBringExisting: () => void;
+  readonly onAddExisting: () => void;
   readonly onSelectOrganization: (organization: WithId<Organization>) => void;
 }
 
 export function CandidBillingOrganizationList(props: CandidBillingOrganizationListProps): JSX.Element {
-  const { candidBotId, savedVersion, onNewOrganization, onBringExisting, onSelectOrganization } = props;
+  const { candidBotId, savedVersion, onNewOrganization, onAddExisting, onSelectOrganization } = props;
   const [search, setSearch] = useState<SearchRequest>(DEFAULT_SEARCH);
 
   const additionalColumns: SearchControlAdditionalColumn[] = [
@@ -71,9 +71,9 @@ export function CandidBillingOrganizationList(props: CandidBillingOrganizationLi
           variant="subtle"
           color="gray"
           leftSection={<IconBuilding size={16} />}
-          onClick={onBringExisting}
+          onClick={onAddExisting}
         >
-          Bring existing...
+          Add existing...
         </Button>
       </Group>
       <SearchControl

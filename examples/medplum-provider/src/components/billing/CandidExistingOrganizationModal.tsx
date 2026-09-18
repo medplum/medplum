@@ -10,7 +10,7 @@ import { BILLING_ORGANIZATION_IDENTIFIER_VALUE, MEDPLUM_PROVIDER_IDENTIFIER_SYST
 import { BillingOrganizationOption } from './BillingOrganizationOption';
 
 /**
- * Props for the existing organization modal. `onSelect` receives the organization the user chose to bring into
+ * Props for the existing organization modal. `onSelect` receives the organization the user chose to add to
  * billing; the caller opens it for set-up.
  */
 export interface CandidExistingOrganizationModalProps {
@@ -41,7 +41,7 @@ export function CandidExistingOrganizationModal(props: CandidExistingOrganizatio
       opened={opened}
       onClose={close}
       size="lg"
-      title="Bring existing organization"
+      title="Add existing organization"
       actions={
         <Button
           disabled={!selected}

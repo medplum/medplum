@@ -643,7 +643,7 @@ describe('BillingSetupPage', () => {
      * @returns The picker dialog, with the clinic selected.
      */
     const pickClinic = async (user: UserEvent): Promise<HTMLElement> => {
-      await user.click(await screen.findByRole('button', { name: 'Bring existing...' }));
+      await user.click(await screen.findByRole('button', { name: 'Add existing...' }));
       const dialog = await screen.findByRole('dialog');
       await user.type(within(dialog).getByRole('searchbox'), 'Down');
       await user.click(await screen.findByRole('option', { name: /Downtown Clinic/, hidden: true }));
@@ -667,9 +667,9 @@ describe('BillingSetupPage', () => {
       mockBots({ createProvider: true });
       const { router } = setup();
 
-      await user.click(await screen.findByRole('button', { name: 'Bring existing...' }));
+      await user.click(await screen.findByRole('button', { name: 'Add existing...' }));
       const dialog = await screen.findByRole('dialog');
-      expect(within(dialog).getByRole('heading', { name: 'Bring existing organization' })).toBeInTheDocument();
+      expect(within(dialog).getByRole('heading', { name: 'Add existing organization' })).toBeInTheDocument();
       expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations/existing');
       expect(within(dialog).getByRole('button', { name: 'Continue' })).toBeDisabled();
 
@@ -691,7 +691,7 @@ describe('BillingSetupPage', () => {
       const { router } = setup('Organizations/existing');
 
       const dialog = await screen.findByRole('dialog');
-      expect(within(dialog).getByRole('heading', { name: 'Bring existing organization' })).toBeInTheDocument();
+      expect(within(dialog).getByRole('heading', { name: 'Add existing organization' })).toBeInTheDocument();
 
       await user.click(within(dialog).getByRole('button', { name: 'Close' }));
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -783,7 +783,7 @@ describe('BillingSetupPage', () => {
       await user.click(within(picker).getByRole('button', { name: 'Close' }));
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: 'Bring existing...' }));
+      await user.click(screen.getByRole('button', { name: 'Add existing...' }));
       const reopened = await screen.findByRole('dialog');
       expect(within(reopened).queryByText('Downtown Clinic')).not.toBeInTheDocument();
       expect(within(reopened).getByRole('button', { name: 'Continue' })).toBeDisabled();

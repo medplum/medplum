@@ -16,7 +16,7 @@ import { CandidExistingOrganizationModal } from './CandidExistingOrganizationMod
 /**
  * Props for the billing organizations tab. `resourceId` mirrors the URL: the ID of the organization whose modal
  * is open, `NEW_BILLING_ORGANIZATION_ID` for the new organization modal, or `EXISTING_BILLING_ORGANIZATION_ID`
- * for the picker that brings an organization already in the project into billing. The tab never navigates
+ * for the picker that adds an organization already in the project to billing. The tab never navigates
  * itself but calls `onNavigate` with the ID the URL should move to, or none to close the modal.
  */
 export interface BillingOrganizationsTabProps {
@@ -83,7 +83,7 @@ export function CandidBillingOrganizations(props: BillingOrganizationsTabProps):
         candidBotId={createBot?.id}
         savedVersion={savedVersion}
         onNewOrganization={() => onNavigate(NEW_BILLING_ORGANIZATION_ID)}
-        onBringExisting={() => onNavigate(EXISTING_BILLING_ORGANIZATION_ID)}
+        onAddExisting={() => onNavigate(EXISTING_BILLING_ORGANIZATION_ID)}
         onSelectOrganization={(organization) => {
           setEditing(organization);
           onNavigate(organization.id);
