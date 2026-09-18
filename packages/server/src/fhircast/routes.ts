@@ -27,6 +27,7 @@ import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
 import { getConfig } from '../config/loader';
+import type { AuthenticatedRequestContext } from '../context';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getLogger } from '../logger';
@@ -215,6 +216,23 @@ function getFhircastVersion(req: Request): FhircastVersion {
   return req.baseUrl.includes(FhircastVersion.STU2) ? FhircastVersion.STU2 : FhircastVersion.STU3;
 }
 
+/** The Hub stores a subscriber's name and hands it back on the wire, so it is bounded. */
+const MAX_SUBSCRIBER_NAME_LENGTH = 256;
+
+/**
+ * Names a subscriber that did not name itself, after the identity it subscribed with.
+ *
+ * The `ClientApplication` a token was issued to comes first, since it names the application rather
+ * than the person in front of it. A login that went through no client falls back to the
+ * membership's profile -- which under HTTP Basic auth is the client itself. Both displays are
+ * `getDisplayString` of what they reference, so naming a subscriber costs no reads.
+ * @param ctx - The authenticated context of the subscribe request.
+ * @returns A description of the subscriber, or `undefined` if its identity has no name.
+ */
+function getDefaultSubscriberName(ctx: AuthenticatedRequestContext): string | undefined {
+  return ctx.login.client?.display ?? ctx.membership.profile.display;
+}
+
 async function handleSubscriptionRequest(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
 
@@ -250,6 +268,18 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
     return;
   }
 
+  // `subscriber.name` is the one subscribe parameter the spec does not prefix with `hub.`
+  // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-4-Subscribing.html
+  const requestedName = singularize(req.body['subscriber.name']);
+  if (
+    requestedName !== undefined &&
+    !(typeof requestedName === 'string' && requestedName.length <= MAX_SUBSCRIBER_NAME_LENGTH)
+  ) {
+    sendOutcome(res, badRequest('Invalid subscriber.name'));
+    return;
+  }
+  const subscriberName = requestedName?.trim() || getDefaultSubscriberName(ctx);
+
   // Every subscribe request gets its own endpoint, so that the Hub can tell apart subscribers
   // sharing a topic and remember the events each one asked for.
   const endpoint = generateId();
@@ -259,11 +289,13 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
       topic,
       events,
       version: getFhircastVersion(req),
+      subscriberName,
     });
   } catch (err) {
     sendOutcome(res, serverError(new Error('Failed to create subscription for topic')));
     getLogger().error(`[FHIRcast]: Received error while creating subscription for topic`, {
       topic,
+      subscriberName,
       error: normalizeErrorString(err),
     });
     return;
