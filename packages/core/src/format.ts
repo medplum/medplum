@@ -543,7 +543,11 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
   } else {
     const valueString = ensureString(obs.valueString);
     if (valueString) {
-      result.push(valueString);
+      const normalized = normalizeObxTemplateValue(valueString);
+      // "DNR" is matched exactly by isDoNotReportObservation to hide the row entirely -
+      // never append a unit to it, or that check silently stops suppressing the row.
+      const unit = normalized !== 'DNR' ? getHealthGorillaObservationUnit(obs) : undefined;
+      result.push(unit ? `${normalized} ${unit}` : normalized);
     }
   }
 
@@ -552,6 +556,69 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
   }
 
   return result.join(' / ').trim();
+}
+
+const OBX_TEMPLATE_TAG_RE = /<OBX\.[\d.]+>([\s\S]*?)<\/OBX\.[\d.]+>/g;
+
+/**
+ * Standard antimicrobial susceptibility interpretation codes (CLSI/HL7 convention). When a
+ * broken OBX-5 template's second value is one of these, it's an interpretation code riding
+ * along with the result, not part of the value - expand it instead of showing a bare letter.
+ */
+const SUSCEPTIBILITY_CODE_LABELS: Record<string, string> = {
+  S: 'Susceptible',
+  I: 'Intermediate',
+  R: 'Resistant',
+  NS: 'Not susceptible',
+  '*': 'Not tested',
+  NR: 'Not reported',
+  '**NN': 'See antimicrobic comments',
+};
+
+/**
+ * Some Health Gorilla results carry a broken OBX-5 template substitution: instead of
+ * resolving to the real value, the literal placeholder tags are left in place, HTML-entity
+ * escaped, wrapping the real value/interpretation, e.g. `&lt;OBX.5.1&gt;&gt;=32&lt;/OBX.5.1&gt;
+ * &lt;OBX.5.1&gt;R&lt;/OBX.5.1&gt;` for a MIC of ">=32" interpreted as "R". Recovers the
+ * intended value from that broken template, expanding a trailing susceptibility code (see
+ * SUSCEPTIBILITY_CODE_LABELS) into its full label so it doesn't render as a bare, unexplained
+ * letter; returns the input unchanged when it doesn't match this pattern.
+ * @param value - A raw Observation.valueString.
+ * @returns The normalized display value.
+ */
+function normalizeObxTemplateValue(value: string): string {
+  const decoded = value
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&amp;', '&');
+  const matches = [...decoded.matchAll(OBX_TEMPLATE_TAG_RE)];
+  if (matches.length === 0) {
+    return value;
+  }
+  if (matches.length === 2) {
+    const label = SUSCEPTIBILITY_CODE_LABELS[matches[1][1].trim()];
+    if (label) {
+      return `${matches[0][1]} (${label})`;
+    }
+  }
+  return matches.map((m) => m[1]).join(' / ');
+}
+
+const HEALTH_GORILLA_OBSERVATION_UNIT_EXTENSION_URL =
+  'https://www.healthgorilla.com/fhir/StructureDefinition/observation-unit';
+
+/**
+ * Health Gorilla carries an OBX-6 unit (e.g. "titer", "%") that doesn't fit valueQuantity -
+ * the value itself isn't numeric (e.g. "1:80") - in a proprietary extension instead of on the
+ * value. Nothing else reads that extension, so the unit silently never renders anywhere.
+ * @param obs - A FHIR Observation resource or component.
+ * @returns The unit string, or undefined if the observation doesn't carry one.
+ */
+function getHealthGorillaObservationUnit(obs: Observation | ObservationComponent): string | undefined {
+  const extension = obs.extension?.find((e) => e.url === HEALTH_GORILLA_OBSERVATION_UNIT_EXTENSION_URL);
+  return ensureString(extension?.valueString);
 }
 
 /**
