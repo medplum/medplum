@@ -15,10 +15,11 @@ import type { HumanName, Reference, Resource, SearchParameter } from '@medplum/f
 import type { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
-import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
+import { ResourceName } from '../ResourceName/ResourceName';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
+import classes from './SearchControl.module.css';
 import type { SearchControlField } from './SearchControlField';
 
 /** Resource types whose `name` is a HumanName[] and that render an avatar in the name column. */
@@ -631,12 +632,29 @@ function renderNameWithAvatar(resource: Resource): JSX.Element {
  */
 function renderRichValue(propertyType: string, value: unknown, code: string): JSX.Element | undefined {
   if (propertyType === PropertyType.Reference) {
-    return <ResourceBadge value={value as Reference} link />;
+    return renderReferenceAvatarLink(value as Reference);
   }
   if (code === 'status' && typeof value === 'string') {
     return <StatusBadge status={value} variant="light" />;
   }
   return undefined;
+}
+
+/**
+ * Renders a reference as an avatar next to its name, matching the person-name column style but kept
+ * as a link (plain text that underlines on hover) to the referenced resource.
+ * @param value - The reference to render.
+ * @returns The avatar + link element.
+ */
+function renderReferenceAvatarLink(value: Reference): JSX.Element {
+  return (
+    <Group gap="xs" wrap="nowrap">
+      <ResourceAvatar value={value} radius="xl" size={28} />
+      <MedplumLink to={value} size="sm" fw={500} className={classes.nameLink}>
+        <ResourceName value={value} />
+      </MedplumLink>
+    </Group>
+  );
 }
 
 /**

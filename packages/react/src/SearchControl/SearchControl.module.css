@@ -62,6 +62,16 @@
   padding: 0 !important;
 }
 
+/* Reference cell link: matches the person-name text (no link color) and underlines only on hover. */
+.nameLink {
+  color: var(--mantine-color-text);
+  text-decoration: none;
+}
+
+.nameLink:hover {
+  text-decoration: underline;
+}
+
 /* width:1px collapses the auto-layout column to just the checkbox plus its cell padding. */
 .checkboxCell {
   width: 1px;
