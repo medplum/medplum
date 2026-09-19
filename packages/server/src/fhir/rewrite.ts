@@ -25,8 +25,10 @@ export const RewriteMode = {
    * Rewrite the attachment URL to a canonical FHIR reference string.
    *
    * No access checks are performed.  The URL is always rewritten to reference form.
+   * When the attachment URL names a specific Binary version, the version is preserved.
    *
    * Example: Binary/11feac5b-b5b7-4d5d-a416-0d64c194dac0
+   * Example: Binary/11feac5b-b5b7-4d5d-a416-0d64c194dac0/_history/2226b7ff-d61c-436c-bb5a-4e9e9b1b0f7a
    */
   REFERENCE: 'REFERENCE',
 } as const;
@@ -180,7 +182,9 @@ class Rewriter {
     if (!result) {
       if (this.mode === RewriteMode.REFERENCE) {
         // Return the canononical reference string.
-        result = `Binary/${id}`;
+        // Preserve the version when the attachment names a specific Binary version,
+        // so later reads still resolve to the named historical version.
+        result = versionId ? `Binary/${id}/_history/${versionId}` : `Binary/${id}`;
       } else {
         // Try to return the presigned URL
         result = await this.getAttachmentPresignedUrl(id, versionId);
@@ -228,19 +232,28 @@ class Rewriter {
 export function normalizeBinaryUrl(url: string): { id?: string; versionId?: string } {
   const config = getConfig();
   let refStr: string | undefined;
+  let isStorageUrl = false;
 
   if (url.startsWith(config.baseUrl + 'fhir/R4/Binary/')) {
     refStr = url.substring(config.baseUrl.length + 'fhir/R4/Binary/'.length);
   } else if (url.startsWith(config.storageBaseUrl)) {
     refStr = url.substring(config.storageBaseUrl.length);
+    isStorageUrl = true;
   } else if (url.startsWith('Binary/')) {
     refStr = url.substring('Binary/'.length);
   }
 
   if (refStr) {
-    const parts = refStr.split('/');
+    // Presigned URLs carry a query string (Expires, Signature, ...); strip it.
+    // The storage base URL has no trailing slash, so the remainder starts with one.
+    const path = refStr.split('?')[0].replace(/^\/+/, '');
+    const parts = path.split('/');
     if (parts.length === 3 && parts[1] === '_history') {
       return { id: parts[0], versionId: parts[2] };
+    }
+    if (isStorageUrl && parts.length === 2) {
+      // Presigned storage URL form: {storageBaseUrl}/{id}/{versionId}
+      return { id: parts[0], versionId: parts[1] };
     }
     return { id: parts[0] };
   }

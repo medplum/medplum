@@ -265,6 +265,45 @@ describe('URL rewrite', () => {
     expect(result.photo?.[0]?.url).toBe(`Binary/${binary.id}`);
   });
 
+  test('Versioned reference to reference preserves the version', async () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: `Binary/${binary.id}/_history/${binary.meta?.versionId}`,
+        },
+      ],
+    };
+
+    const result = await rewriteAttachments(RewriteMode.REFERENCE, systemRepo, practitioner);
+    expect(result).toBeDefined();
+    expect(result.resourceType).toBe('Practitioner');
+    expect(result.photo).toBeDefined();
+    expect(result.photo?.length).toBe(1);
+    expect(result.photo?.[0]?.url).toBe(`Binary/${binary.id}/_history/${binary.meta?.versionId}`);
+  });
+
+  test('Versioned storage URL to reference preserves the version', async () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          // Same shape as generatePresignedUrl(): {storageBaseUrl}/{id}/{versionId}?Expires=...&Signature=...
+          url: `${concatUrls(config.storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`)}?Expires=1726700000&Signature=abc123`,
+        },
+      ],
+    };
+
+    const result = await rewriteAttachments(RewriteMode.REFERENCE, systemRepo, practitioner);
+    expect(result).toBeDefined();
+    expect(result.resourceType).toBe('Practitioner');
+    expect(result.photo).toBeDefined();
+    expect(result.photo?.length).toBe(1);
+    expect(result.photo?.[0]?.url).toBe(`Binary/${binary.id}/_history/${binary.meta?.versionId}`);
+  });
+
   test('Consistent results', async () => {
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
