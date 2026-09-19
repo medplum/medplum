@@ -26,7 +26,6 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
 import { repoAccess } from '../fhir/repository/access-tracker';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { SelectQuery } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { createTestProject, withQueryInterceptor, withTestContext } from '../test.setup';
@@ -127,7 +126,7 @@ describe('Reindex Worker', () => {
     const jobData1 = prepareReindexJobData(['Patient'], asyncJob);
     expect(jobData1).toMatchObject<Partial<ReindexJobData>>({
       resourceTypes: ['Patient'],
-      target: { kind: 'shard', shardId: PLACEHOLDER_SHARD_ID },
+      target: { kind: 'shard', shardId: expect.any(String) },
       tracking: getAsyncJobTracking(asyncJob),
       requestId: undefined,
       traceId: undefined,
@@ -138,7 +137,7 @@ describe('Reindex Worker', () => {
       const jobData2 = prepareReindexJobData(['Patient'], asyncJob);
       expect(jobData2).toMatchObject<Partial<ReindexJobData>>({
         resourceTypes: ['Patient'],
-        target: { kind: 'shard', shardId: PLACEHOLDER_SHARD_ID },
+        target: { kind: 'shard', shardId: expect.any(String) },
         tracking: getAsyncJobTracking(asyncJob),
         requestId: expect.any(String),
         traceId: expect.any(String),

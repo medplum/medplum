@@ -1423,8 +1423,9 @@ describe('Super Admin routes', () => {
         },
         {
           data: {
-            resourceType: bot.resourceType,
+            resourceType: 'Bot',
             botId: bot.id,
+            target: expect.any(Object),
           },
         }
       );
