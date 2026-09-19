@@ -18,6 +18,7 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly disabled?: boolean;
   readonly label?: AsyncAutocompleteProps<T>['label'];
   readonly error?: AsyncAutocompleteProps<T>['error'];
+  readonly clearable?: boolean;
 }
 
 /**
@@ -50,6 +51,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       label={props.label}
       error={props.error}
       maxValues={1}
+      clearable={props.clearable}
     />
   );
 }
