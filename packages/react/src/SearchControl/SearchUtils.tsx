@@ -605,7 +605,9 @@ function selectPreferredName(names: HumanName[] | undefined): HumanName | undefi
 }
 
 /**
- * Renders a person-like resource's name column as its avatar next to a single preferred name.
+ * Renders a person-like resource's name column as its avatar next to a single preferred name,
+ * styled to match the reference columns (weight, and underline only on hover). The whole row already
+ * navigates on click, so the name is plain styled text rather than its own anchor.
  * @param resource - The person-like resource (Patient, Practitioner, RelatedPerson, Person).
  * @returns The avatar + name element.
  */
@@ -615,7 +617,7 @@ function renderNameWithAvatar(resource: Resource): JSX.Element {
   return (
     <Group gap="xs" wrap="nowrap">
       <ResourceAvatar value={resource} radius="xl" size={28} />
-      <Text size="sm" fw={500} truncate>
+      <Text size="sm" fw={500} truncate className={classes.nameLink}>
         {text}
       </Text>
     </Group>
