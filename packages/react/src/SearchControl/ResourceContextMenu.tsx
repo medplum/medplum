@@ -76,7 +76,7 @@ export function useResourceContextMenuController(): ResourceContextMenuControlle
 
   const target = state.target;
   const contextMenu = (
-    <Menu opened={state.opened} onClose={close} shadow="md" width={220} radius="md" position="bottom-start">
+    <Menu opened={state.opened} onClose={close} shadow="md" width="max-content" radius="md" position="bottom-start">
       <Menu.Target>
         <div aria-hidden style={{ position: 'fixed', left: state.x, top: state.y, width: 1, height: 1 }} />
       </Menu.Target>
