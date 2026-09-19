@@ -20,6 +20,17 @@
   border-bottom: 1px solid var(--table-border-color);
 }
 
+/*
+ * Shift the header cells' vertical padding down (default 7/7 -> 5/9, same total) so the sort/filter
+ * menu — anchored 8px below the header button — clears the row divider and overlaps it instead of
+ * landing ~1px below it (which read as a doubled border line). Row height and the 8px button/menu
+ * gap are unchanged.
+ */
+.table thead th {
+  padding-top: 5px;
+  padding-bottom: 9px;
+}
+
 .toolbar {
   border-bottom: 1px solid var(--mantine-color-gray-2);
 }
