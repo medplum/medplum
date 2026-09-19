@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Menu } from '@mantine/core';
 import { useMedplumNavigate } from '@medplum/react-hooks';
-import { IconArrowUpRight, IconExternalLink, IconLink } from '@tabler/icons-react';
+import { IconCornerDownRight, IconExternalLink, IconLink } from '@tabler/icons-react';
 import type { JSX, MouseEvent, ReactNode } from 'react';
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import classes from './SearchControl.module.css';
@@ -104,7 +104,7 @@ export function useResourceContextMenuController(): ResourceContextMenuControlle
         {target && (
           <>
             <Menu.Item
-              leftSection={<IconArrowUpRight size={14} />}
+              leftSection={<IconCornerDownRight size={14} />}
               onClick={() => {
                 navigate(target.href);
                 close();
