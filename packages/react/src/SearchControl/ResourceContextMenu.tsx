@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Menu, Text } from '@mantine/core';
+import { Menu } from '@mantine/core';
 import { useMedplumNavigate } from '@medplum/react-hooks';
 import { IconArrowUpRight, IconExternalLink, IconLink } from '@tabler/icons-react';
 import type { JSX, MouseEvent, ReactNode } from 'react';
@@ -100,29 +100,29 @@ export function useResourceContextMenuController(): ResourceContextMenuControlle
       <Menu.Target>
         <div aria-hidden style={{ position: 'fixed', left: state.x, top: state.y, width: 1, height: 1 }} />
       </Menu.Target>
-      <Menu.Dropdown className={classes.actionsMenu}>
+      <Menu.Dropdown>
         {target && (
           <>
             <Menu.Item
-              leftSection={<IconArrowUpRight size={16} color="var(--mantine-color-dimmed)" />}
+              leftSection={<IconArrowUpRight size={14} />}
               onClick={() => {
                 navigate(target.href);
                 close();
               }}
             >
-              <Text size="sm">Open {target.label}</Text>
+              Open {target.label}
             </Menu.Item>
             <Menu.Item
-              leftSection={<IconExternalLink size={16} color="var(--mantine-color-dimmed)" />}
+              leftSection={<IconExternalLink size={14} />}
               onClick={() => {
                 window.open(target.href, '_blank', 'noopener,noreferrer');
                 close();
               }}
             >
-              <Text size="sm">Open {target.label} in a New Tab</Text>
+              Open {target.label} in a New Tab
             </Menu.Item>
             <Menu.Item
-              leftSection={<IconLink size={16} color="var(--mantine-color-dimmed)" />}
+              leftSection={<IconLink size={14} />}
               onClick={() => {
                 navigator.clipboard
                   ?.writeText(new URL(target.href, window.location.origin).href)
@@ -130,7 +130,7 @@ export function useResourceContextMenuController(): ResourceContextMenuControlle
                 close();
               }}
             >
-              <Text size="sm">Copy Link</Text>
+              Copy Link
             </Menu.Item>
           </>
         )}
