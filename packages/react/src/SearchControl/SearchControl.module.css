@@ -58,6 +58,11 @@
   }
 }
 
+/* Keeps the right-clicked row highlighted while its context menu is open. */
+.trActive {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+}
+
 .th {
   padding: 0 !important;
 }

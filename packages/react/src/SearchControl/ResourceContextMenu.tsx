@@ -4,7 +4,7 @@ import { Menu, Text } from '@mantine/core';
 import { useMedplumNavigate } from '@medplum/react-hooks';
 import { IconArrowUpRight, IconExternalLink, IconLink } from '@tabler/icons-react';
 import type { JSX, MouseEvent, ReactNode } from 'react';
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import classes from './SearchControl.module.css';
 
 /** The resource a context menu acts on. */
@@ -59,13 +59,33 @@ export function useResourceContextMenuController(): ResourceContextMenuControlle
   const navigate = useMedplumNavigate();
   const [state, setState] = useState<MenuState>({ opened: false, x: 0, y: 0 });
 
-  const openContextMenu = useCallback<OpenResourceContextMenu>((event, target) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setState({ opened: true, x: event.clientX, y: event.clientY, target });
+  // The row the menu is open for keeps its hover background while the cursor is over the menu.
+  const activeRowRef = useRef<Element | null>(null);
+
+  const clearActiveRow = useCallback(() => {
+    activeRowRef.current?.classList.remove(classes.trActive);
+    activeRowRef.current = null;
   }, []);
 
-  const close = useCallback(() => setState((prev) => ({ ...prev, opened: false })), []);
+  const openContextMenu = useCallback<OpenResourceContextMenu>(
+    (event, target) => {
+      event.preventDefault();
+      event.stopPropagation();
+      clearActiveRow();
+      const row = (event.target as Element).closest('[data-testid="search-control-row"]');
+      if (row) {
+        row.classList.add(classes.trActive);
+        activeRowRef.current = row;
+      }
+      setState({ opened: true, x: event.clientX, y: event.clientY, target });
+    },
+    [clearActiveRow]
+  );
+
+  const close = useCallback(() => {
+    clearActiveRow();
+    setState((prev) => ({ ...prev, opened: false }));
+  }, [clearActiveRow]);
 
   const ContextMenuProvider = useCallback(
     ({ children }: { readonly children: ReactNode }): JSX.Element => (
