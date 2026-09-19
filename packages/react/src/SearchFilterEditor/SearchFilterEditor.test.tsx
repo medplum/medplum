@@ -16,6 +16,21 @@ async function setup(child: ReactNode): Promise<void> {
   });
 }
 
+/**
+ * Opens a Mantine Select (by test id) and clicks the option with the given label.
+ * @param testId - The Select input's data-testid.
+ * @param optionName - The option label (or matcher) to click.
+ */
+async function selectMantineOption(testId: string, optionName: string | RegExp): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByTestId(testId));
+  });
+  // The options render into a portal that the a11y tree treats as hidden.
+  await act(async () => {
+    fireEvent.click(screen.getByRole('option', { hidden: true, name: optionName }));
+  });
+}
+
 describe('SearchFilterEditor', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -62,17 +77,8 @@ describe('SearchFilterEditor', () => {
     expect(fieldInput).toBeInTheDocument();
     expect(fieldInput).toHaveValue('');
 
-    await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-0-row-filter-field'), {
-        target: { value: 'name' },
-      });
-    });
-
-    await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-0-row-filter-operation'), {
-        target: { value: 'contains' },
-      });
-    });
+    await selectMantineOption('filter-0-row-filter-field', 'Name');
+    await selectMantineOption('filter-0-row-filter-operation', 'contains');
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('filter-0-row-filter-value'), {
@@ -237,7 +243,8 @@ describe('SearchFilterEditor', () => {
       />
     );
 
-    expect(screen.queryByDisplayValue('not-a-code')).toBeNull();
+    // An unknown code has no matching option, so the field combobox shows nothing (not the raw code).
+    expect(screen.getByTestId('filter-0-row-filter-field')).toHaveValue('');
   });
 
   test('_lastUpdated filter', async () => {
@@ -278,19 +285,17 @@ describe('SearchFilterEditor', () => {
 
     await setup(<SearchFilterEditor search={currSearch} visible={true} onOk={vi.fn()} onCancel={vi.fn()} />);
 
-    const fieldInput = screen.getByTestId<HTMLSelectElement>('filter-0-row-filter-field');
-    const options = Array.from(fieldInput.options).map((o) => ({ value: o.value, label: o.textContent }));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('filter-0-row-filter-field'));
+    });
 
-    expect(options.find((o) => o.value === '_project')?.label).toBe('Project');
-    expect(options.find((o) => o.value === '_profile')?.label).toBe('Profile');
+    // Both the element field (project/profile) and the meta field (_project/_profile) render with the
+    // same readable label, so each appears at least twice across the Fields and Metadata groups.
+    expect(screen.getAllByRole('option', { hidden: true, name: 'Project' }).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByRole('option', { hidden: true, name: 'Profile' }).length).toBeGreaterThanOrEqual(2);
 
-    expect(options.filter((o) => o.label === 'Project').length).toBeGreaterThanOrEqual(2);
-    const metaGroup = fieldInput.querySelector('optgroup[label="Metadata"]');
-    expect(metaGroup?.querySelector('option[value="_project"]')).toBeInTheDocument();
-
-    const groups = Array.from(fieldInput.querySelectorAll('optgroup')).map((g) => g.label);
-    expect(groups).toContain('Fields');
-    expect(groups).toContain('Metadata');
+    expect(screen.getByText('Fields')).toBeInTheDocument();
+    expect(screen.getByText('Metadata')).toBeInTheDocument();
   });
 
   test('Quantity filter', async () => {

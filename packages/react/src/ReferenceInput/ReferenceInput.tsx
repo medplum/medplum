@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, NativeSelect } from '@mantine/core';
+import { Group, NativeSelect, Select } from '@mantine/core';
 import type { MedplumClient } from '@medplum/core';
 import { LRUCache, ReadablePromise, createReference, isEmpty, isPopulated, tryGetProfile } from '@medplum/core';
 import type { Reference, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
@@ -20,6 +20,11 @@ export interface ReferenceInputProps<T extends Resource = Resource> {
   readonly required?: boolean;
   readonly onChange?: (value: Reference<T> | undefined) => void;
   readonly disabled?: boolean;
+  /**
+   * Renders the target-type picker as an app-based Mantine `Select` (a searchable combobox) instead
+   * of the OS-native `<select>`. Used by the search filter editor. Defaults to 'native'.
+   */
+  readonly targetTypeSelectVariant?: 'native' | 'combobox';
 }
 
 interface BaseTargetType {
@@ -152,22 +157,41 @@ export function ReferenceInput<T extends Resource = Resource>(props: ReferenceIn
     <>
       {props.name && <input type="hidden" name={props.name} value={value?.reference ?? ''} />}
       <Group gap="xs" grow wrap="nowrap">
-        {targetTypes && targetTypes.length > 1 && (
-          <NativeSelect
-            name={props.name + '-resourceType'}
-            disabled={props.disabled}
-            data-autofocus={props.autoFocus}
-            data-testid="reference-input-resource-type-select"
-            defaultValue={targetType?.resourceType}
-            autoFocus={props.autoFocus}
-            onChange={(e) => {
-              const newValue = e.currentTarget.value;
-              const newTargetType = targetTypes.find((tt) => tt.value === newValue);
-              setTargetType(newTargetType);
-            }}
-            data={typeSelectOptions}
-          />
-        )}
+        {targetTypes &&
+          targetTypes.length > 1 &&
+          (props.targetTypeSelectVariant === 'combobox' ? (
+            <Select
+              name={props.name + '-resourceType'}
+              disabled={props.disabled}
+              data-autofocus={props.autoFocus}
+              data-testid="reference-input-resource-type-select"
+              aria-label="Resource type"
+              searchable
+              allowDeselect={false}
+              defaultValue={targetType?.value}
+              autoFocus={props.autoFocus}
+              onChange={(newValue) => {
+                const newTargetType = targetTypes.find((tt) => tt.value === newValue);
+                setTargetType(newTargetType);
+              }}
+              data={typeSelectOptions}
+            />
+          ) : (
+            <NativeSelect
+              name={props.name + '-resourceType'}
+              disabled={props.disabled}
+              data-autofocus={props.autoFocus}
+              data-testid="reference-input-resource-type-select"
+              defaultValue={targetType?.resourceType}
+              autoFocus={props.autoFocus}
+              onChange={(e) => {
+                const newValue = e.currentTarget.value;
+                const newTargetType = targetTypes.find((tt) => tt.value === newValue);
+                setTargetType(newTargetType);
+              }}
+              data={typeSelectOptions}
+            />
+          ))}
         {!targetTypes && (
           <ResourceTypeInput
             disabled={props.disabled}
