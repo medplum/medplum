@@ -556,7 +556,11 @@ export function buildSearchParamFieldLabel(code: string): string {
 export function renderValue(resource: Resource, field: SearchControlField): string | JSX.Element | null | undefined {
   const key = field.name;
   if (key === 'id') {
-    return <MedplumLink to={`/${resource.resourceType}/${resource.id}`}>{resource.id}</MedplumLink>;
+    return (
+      <MedplumLink to={`/${resource.resourceType}/${resource.id}`} className={classes.nameLink}>
+        {resource.id}
+      </MedplumLink>
+    );
   }
 
   if (key === 'meta.versionId') {
