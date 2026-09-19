@@ -3,6 +3,7 @@
 import type { SearchRequest } from '@medplum/core';
 import { Operator } from '@medplum/core';
 import type { Meta } from '@storybook/react';
+import { IconRefresh } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { SearchControl } from './SearchControl';
@@ -62,6 +63,7 @@ export const AllButtons = (): JSX.Element => {
   return (
     <SearchControl
       search={search}
+      checkboxesEnabled={true}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
       onAuxClick={(e) => console.log('auxClick', e)}
@@ -73,6 +75,30 @@ export const AllButtons = (): JSX.Element => {
         console.log('onChange', e);
         setSearch(e.definition);
       }}
+    />
+  );
+};
+
+export const ToolbarActions = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'MedicationRequest',
+    fields: ['id', '_lastUpdated', 'status'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      onNew={() => console.log('onNew')}
+      hideRefresh
+      toolbarActions={[
+        {
+          key: 'sync',
+          label: 'Sync with DoseSpot',
+          icon: <IconRefresh size={16} />,
+          onClick: () => console.log('sync'),
+        },
+      ]}
+      onChange={(e) => setSearch(e.definition)}
     />
   );
 };

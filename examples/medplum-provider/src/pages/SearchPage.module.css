@@ -1,6 +1,8 @@
-.paper {
+.container {
+  padding: var(--mantine-spacing-md);
+  background-color: var(--mantine-color-white);
+
   @mixin smaller-than $mantine-breakpoint-sm {
-    margin: 2px;
-    padding: 4px;
+    padding: var(--mantine-spacing-xs);
   }
 }

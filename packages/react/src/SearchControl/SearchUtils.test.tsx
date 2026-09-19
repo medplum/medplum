@@ -13,6 +13,7 @@ import {
   addYearToDateFilter,
   addYesterdayFilter,
   buildFieldNameString,
+  buildSearchParamFieldLabel,
   clearFilters,
   clearFiltersOnField,
   deleteFilter,
@@ -493,5 +494,13 @@ describe('SearchUtils', () => {
     expect(buildFieldNameString('name')).toBe('Name');
     expect(buildFieldNameString('birthDate')).toBe('Birth Date');
     expect(buildFieldNameString('order-detail')).toBe('Order Detail');
+  });
+
+  test('buildSearchParamFieldLabel formats metadata readably', () => {
+    expect(buildSearchParamFieldLabel('name')).toBe('Name');
+    expect(buildSearchParamFieldLabel('_lastUpdated')).toBe('Last Updated');
+    expect(buildSearchParamFieldLabel('_project')).toBe('Project');
+    expect(buildSearchParamFieldLabel('_profile')).toBe('Profile');
+    expect(buildSearchParamFieldLabel('_id')).toBe('ID');
   });
 });

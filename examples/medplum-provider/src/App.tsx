@@ -151,7 +151,7 @@ export function App(): JSX.Element | null {
                   {
                     icon: <IconUsers />,
                     label: 'Patients',
-                    href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated',
+                    href: '/Patient?_count=20&_fields=name,email,gender,_lastUpdated&_sort=-_lastUpdated',
                   },
                   { icon: <IconCalendarEvent />, label: 'Schedule', href: `/Calendar/Schedule` },
                   {
@@ -240,7 +240,7 @@ export function App(): JSX.Element | null {
                   <Navigate
                     to={
                       setupDismissed
-                        ? '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated'
+                        ? '/Patient?_count=20&_fields=name,email,gender,_lastUpdated&_sort=-_lastUpdated'
                         : '/getstarted'
                     }
                     replace

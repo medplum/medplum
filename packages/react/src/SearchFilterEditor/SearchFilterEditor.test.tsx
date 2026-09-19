@@ -16,6 +16,21 @@ async function setup(child: ReactNode): Promise<void> {
   });
 }
 
+/**
+ * Opens a Mantine Select (by test id) and clicks the option with the given label.
+ * @param testId - The Select input's data-testid.
+ * @param optionName - The option label (or matcher) to click.
+ */
+async function selectMantineOption(testId: string, optionName: string | RegExp): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByTestId(testId));
+  });
+  // The options render into a portal that the a11y tree treats as hidden.
+  await act(async () => {
+    fireEvent.click(screen.getByRole('option', { hidden: true, name: optionName }));
+  });
+}
+
 describe('SearchFilterEditor', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -62,17 +77,8 @@ describe('SearchFilterEditor', () => {
     expect(fieldInput).toBeInTheDocument();
     expect(fieldInput).toHaveValue('');
 
-    await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-0-row-filter-field'), {
-        target: { value: 'name' },
-      });
-    });
-
-    await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-0-row-filter-operation'), {
-        target: { value: 'contains' },
-      });
-    });
+    await selectMantineOption('filter-0-row-filter-field', 'Name');
+    await selectMantineOption('filter-0-row-filter-operation', 'contains');
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('filter-0-row-filter-value'), {
@@ -237,7 +243,8 @@ describe('SearchFilterEditor', () => {
       />
     );
 
-    expect(screen.queryByDisplayValue('not-a-code')).toBeNull();
+    // An unknown code has no matching option, so the field combobox shows nothing (not the raw code).
+    expect(screen.getByTestId('filter-0-row-filter-field')).toHaveValue('');
   });
 
   test('_lastUpdated filter', async () => {
@@ -269,7 +276,7 @@ describe('SearchFilterEditor', () => {
     expect(input.value).toMatch(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
   });
 
-  test('Meta fields are disambiguated from same-named elements', async () => {
+  test('Meta fields use readable labels and stay grouped as metadata', async () => {
     // ProjectMembership has both `project`/`profile` elements and `_project`/`_profile` meta fields.
     const currSearch: SearchRequest = {
       resourceType: 'ProjectMembership',
@@ -278,17 +285,17 @@ describe('SearchFilterEditor', () => {
 
     await setup(<SearchFilterEditor search={currSearch} visible={true} onOk={vi.fn()} onCancel={vi.fn()} />);
 
-    const fieldInput = screen.getByTestId<HTMLSelectElement>('filter-0-row-filter-field');
-    const optionLabels = Array.from(fieldInput.options).map((o) => o.textContent);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('filter-0-row-filter-field'));
+    });
 
-    expect(optionLabels.filter((label) => label === 'Project')).toHaveLength(1);
-    expect(optionLabels.filter((label) => label === '_project')).toHaveLength(1);
-    expect(optionLabels.filter((label) => label === 'Profile')).toHaveLength(1);
-    expect(optionLabels.filter((label) => label === '_profile')).toHaveLength(1);
+    // Both the element field (project/profile) and the meta field (_project/_profile) render with the
+    // same readable label, so each appears at least twice across the Fields and Metadata groups.
+    expect(screen.getAllByRole('option', { hidden: true, name: 'Project' }).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByRole('option', { hidden: true, name: 'Profile' }).length).toBeGreaterThanOrEqual(2);
 
-    const groups = Array.from(fieldInput.querySelectorAll('optgroup')).map((g) => g.label);
-    expect(groups).toContain('Fields');
-    expect(groups).toContain('Metadata');
+    expect(screen.getByText('Fields')).toBeInTheDocument();
+    expect(screen.getByText('Metadata')).toBeInTheDocument();
   });
 
   test('Quantity filter', async () => {

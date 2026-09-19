@@ -28,6 +28,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
           name={name}
           defaultValue={props.defaultValue ? { reference: props.defaultValue } : undefined}
           targetTypes={props.searchParam.target}
+          targetTypeSelectVariant="combobox"
           autoFocus={props.autoFocus}
           onChange={(newReference: Reference | undefined) => {
             if (newReference) {
