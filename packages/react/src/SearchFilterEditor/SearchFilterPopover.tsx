@@ -179,8 +179,19 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
   const searchParam = value.code ? searchParams[value.code] : undefined;
   const operators = searchParam && getSearchOperators(searchParam);
 
+  // A reference value with anything other than a single fixed target renders two controls (a resource
+  // type picker plus the value), making the row too wide for the popover. Wrap the value onto a second
+  // line (aligned under the field) so nothing gets cut off.
+  const multiInput = !!value.operator && searchParam?.type === 'reference' && searchParam.target?.length !== 1;
+
+  const deleteButton = (
+    <ActionIcon variant="subtle" color="gray" aria-label={`delete-filter-${props.index}`} onClick={props.onDelete}>
+      <IconX size={16} stroke={1.5} />
+    </ActionIcon>
+  );
+
   return (
-    <div className={classes.row}>
+    <div className={multiInput ? `${classes.row} ${classes.rowMulti}` : classes.row}>
       <Text className={classes.conjunction}>{props.index === 0 ? 'Where' : 'and'}</Text>
       <Select
         comboboxProps={{ withinPortal: false }}
@@ -202,6 +213,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
         value={value.operator ?? null}
         onChange={(op) => props.onChange({ code: value.code, operator: (op as Operator) ?? undefined, value: '' })}
       />
+      {multiInput && deleteButton}
       <div className={classes.value}>
         {searchParam && value.operator && (
           <SearchFilterValueInput
@@ -214,9 +226,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
           />
         )}
       </div>
-      <ActionIcon variant="subtle" color="gray" aria-label={`delete-filter-${props.index}`} onClick={props.onDelete}>
-        <IconX size={16} stroke={1.5} />
-      </ActionIcon>
+      {!multiInput && deleteButton}
     </div>
   );
 }

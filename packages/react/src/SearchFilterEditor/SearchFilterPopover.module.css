@@ -23,6 +23,17 @@
   gap: 8px;
 }
 
+/* Reference filters add a target-type select; let the row wrap so the value drops to a second line. */
+.rowMulti {
+  flex-wrap: wrap;
+}
+
+/* Second-line value aligned under the field select (past the conjunction cell + gap). */
+.rowMulti .value {
+  flex: 1 1 100%;
+  padding-left: calc(64px + 8px);
+}
+
 /* The leading "Where" / "and" conjunction cell keeps every row's field select aligned. */
 .conjunction {
   flex: 0 0 64px;
