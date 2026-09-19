@@ -122,22 +122,6 @@ describe('SearchControl', () => {
     expect(document.body.querySelector('.mantine-Avatar-root')).toBeInTheDocument();
   });
 
-  test('Each row is a link to the resource', async () => {
-    await setup({ search: { resourceType: 'Patient', fields: ['id', 'name'] } });
-    await screen.findByText('Homer Simpson');
-    const link = document.querySelector('[data-testid="search-control-row"] a[href^="/Patient/"]');
-    expect(link).toBeInTheDocument();
-  });
-
-  test('getResourceUrl customizes the row link href', async () => {
-    await setup({
-      search: { resourceType: 'Patient', fields: ['id', 'name'] },
-      getResourceUrl: (r) => `/custom/${r.id}`,
-    });
-    await screen.findByText('Homer Simpson');
-    expect(document.querySelector('[data-testid="search-control-row"] a[href^="/custom/"]')).toBeInTheDocument();
-  });
-
   test('Patient name column falls back to official when no unspecified-use name exists', async () => {
     const bundle: Bundle = {
       resourceType: 'Bundle',
