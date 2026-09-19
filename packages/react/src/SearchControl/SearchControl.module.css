@@ -109,7 +109,9 @@
   border-radius: var(--mantine-radius-sm);
   color: var(--mantine-color-gray-6);
 
-  &:hover {
+  /* data-expanded is set by Mantine's Menu.Target so the header keeps its hover state while open. */
+  &:hover,
+  &[data-expanded] {
     background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
   }
 }
