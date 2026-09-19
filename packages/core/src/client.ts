@@ -3190,9 +3190,15 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   async setActiveLogin(login: LoginState): Promise<void> {
     this.setActiveLoginState(login);
+    this.refreshPromise = undefined;
     await this.refreshProfile();
   }
 
+  /**
+   * Stores the login in memory and in storage.
+   * Deliberately synchronous: it runs inside the refresh lock, where awaiting an authenticated request would deadlock.
+   * @param login - The new login state.
+   */
   private setActiveLoginState(login: LoginState): void {
     if (!this.sessionDetails?.profile || getReferenceString(this.sessionDetails.profile) !== login.profile?.reference) {
       this.clearActiveLogin();
@@ -3200,7 +3206,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.setAccessToken(login.accessToken, login.refreshToken);
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
-    this.refreshPromise = undefined;
   }
 
   /**
@@ -3254,13 +3259,23 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.storage.setObject('logins', logins);
   }
 
-  private async refreshProfile(): Promise<WithId<ProfileResource> | undefined> {
+  /**
+   * Reloads the session details from `auth/me`.
+   * @param state - Optional request state. Pass a spent `authAttempt` budget to make a 401 terminal.
+   * @returns The profile resource.
+   */
+  private async refreshProfile(state?: RequestState): Promise<WithId<ProfileResource> | undefined> {
     if (!this.medplumServer) {
       return undefined;
     }
 
     this.profilePromise = new Promise((resolve, reject) => {
-      this.get('auth/me', { cache: 'no-cache', signal: createAuthRequestSignal() })
+      const options: MedplumRequestOptions = { cache: 'no-cache', signal: createAuthRequestSignal() };
+      // get() always starts with a fresh 401 retry budget, so a spent budget has to go through request().
+      const sessionDetails: Promise<SessionDetails> = state
+        ? this.request('auth/me', { ...options, method: 'GET' }, state)
+        : this.get('auth/me', options);
+      sessionDetails
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
           const profileChanged = this.sessionDetails?.profile?.id !== result.profile.id;
@@ -4281,20 +4296,26 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return undefined;
     }
 
-    this.refreshPromise = this.runRefreshWithLock(gracePeriod, force);
+    this.refreshPromise = this.runRefresh(gracePeriod, force);
     return this.refreshPromise;
   }
 
   /**
-   * Acquires a cross-tab Web Lock (when available) and performs the token refresh.
-   * Tabs that wait on the lock check storage on acquisition and skip the network call
-   * if a peer tab has already produced a fresh access token.
+   * Runs a refresh in two phases:
+   *   1. Locked: get new tokens and commit them to storage, unless a peer tab already did.
+   *   2. Unlocked: reload the profile with the new tokens.
+   *
+   * The lock is not reentrant, so phase 1 must only talk to the token endpoint via {@link MedplumClient.requestLogin}
+   * (unauthenticated transport, bounded by a timeout) — never `this.get()` / `this.request()`.
+   *
+   * `refreshPromise` spans phase 1 only. The profile reload is an authenticated request, so a 401 there
+   * must be able to start a new refresh rather than wait on this one or on the lock this one held.
    * @param gracePeriod - Optional grace period in milliseconds used by the post-lock authentication check to decide whether the current token still has enough life left to skip the network refresh.
    * @param force - When true, bypass the post-lock expiry short-circuit for the current token (still preferring a newer token a peer tab produced).
-   * @returns Promise that resolves when the refresh (or short-circuit) is complete.
    */
-  private async runRefreshWithLock(gracePeriod?: number, force = false): Promise<ProfileResource | undefined> {
-    const run = async (): Promise<boolean> => {
+  private async runRefresh(gracePeriod?: number, force = false): Promise<void> {
+    // Runs while holding the refresh lock.
+    const run = async (): Promise<LoginState | undefined> => {
       // Re-read latest tokens from storage before hitting the network.
       // A peer tab may have completed a refresh while we were queued on the lock.
       const previousAccessToken = this.accessToken;
@@ -4306,44 +4327,48 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       // token, but still reuses a different token a peer already produced if it is valid.
       const adoptedNewerToken = this.accessToken !== previousAccessToken;
       if (this.isAuthenticated(gracePeriod) && (!force || adoptedNewerToken)) {
-        return false;
+        return undefined;
       }
 
+      let params: Record<string, string>;
       if (this.refreshToken) {
-        await this.fetchTokens(
-          {
-            grant_type: OAuthGrantType.RefreshToken,
-            client_id: this.clientId ?? '',
-            refresh_token: this.refreshToken,
-          },
-          false
-        );
-        return true;
+        params = {
+          grant_type: OAuthGrantType.RefreshToken,
+          client_id: this.clientId ?? '',
+          refresh_token: this.refreshToken,
+        };
+      } else if (this.clientId && this.clientSecret) {
+        params = {
+          grant_type: OAuthGrantType.ClientCredentials,
+          client_id: this.clientId,
+          client_secret: this.clientSecret,
+        };
+      } else {
+        return undefined;
       }
 
-      if (this.clientId && this.clientSecret) {
-        await this.fetchTokens(
-          {
-            grant_type: OAuthGrantType.ClientCredentials,
-            client_id: this.clientId,
-            client_secret: this.clientSecret,
-          },
-          false
-        );
-        return true;
-      }
-
-      return false;
+      // Store the login before releasing the lock, so the next tab in line reads the rotated refresh token.
+      const login = await this.requestLogin(params);
+      this.setActiveLoginState(login);
+      return login;
     };
 
-    const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
-    if (!locks?.request) {
-      return (await run()) ? this.refreshProfile() : this.getProfile();
+    let refreshedLogin: LoginState | undefined;
+    try {
+      const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
+      refreshedLogin = locks?.request
+        ? await locks.request(`medplum-refresh:${this.storage.makeKey('activeLogin')}`, run)
+        : await run();
+    } finally {
+      this.refreshPromise = undefined;
     }
 
-    const lockName = `medplum-refresh:${this.storage.makeKey('activeLogin')}`;
-    const refreshed = await locks.request(lockName, run);
-    return refreshed ? this.refreshProfile() : this.getProfile();
+    if (refreshedLogin) {
+      // A forced refresh is already the recovery for a 401. If the server also rejects the token it just issued,
+      // another refresh will not help, so the 401 must be terminal. Otherwise each reload starts a new request
+      // with a fresh retry budget, and refresh -> auth/me -> 401 -> refresh never ends.
+      await this.refreshProfile(force ? { authAttempt: MAX_AUTH_ATTEMPTS - 1 } : undefined);
+    }
   }
 
   /**
@@ -4685,15 +4710,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param params - Token parameters.
    * @returns The user profile resource.
    */
-  private async fetchTokens(params: Record<string, string>): Promise<ProfileResource>;
-  private async fetchTokens(
-    params: Record<string, string>,
-    refreshProfile: false
-  ): Promise<ProfileResource | undefined>;
-  private async fetchTokens(
-    params: Record<string, string>,
-    refreshProfile = true
-  ): Promise<ProfileResource | undefined> {
+  private async fetchTokens(params: Record<string, string>): Promise<ProfileResource> {
+    await this.setActiveLogin(await this.requestLogin(params));
+    return this.getProfile() as ProfileResource;
+  }
+
+  /**
+   * Exchanges the params for tokens at the token endpoint, and validates them.
+   * Uses the unauthenticated transport, so it can never trigger a token refresh. Safe inside the refresh lock.
+   * @param params - Token parameters.
+   * @returns The validated login state. Not yet committed.
+   */
+  private async requestLogin(params: Record<string, string>): Promise<LoginState> {
     const formBody = new URLSearchParams(params);
     const headers: HeadersInit = { ...this.defaultHeaders, 'Content-Type': ContentType.FORM_URL_ENCODED };
     if (this.basicAuth) {
@@ -4716,22 +4744,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       signal: createAuthRequestSignal(),
     };
 
-    let response: Response;
-    try {
-      response = await this.fetchWithRetry(this.tokenUrl, options);
-    } catch (err) {
-      this.refreshPromise = undefined;
-      throw err;
-    }
-
+    const response = await this.fetchWithRetry(this.tokenUrl, options);
     if (!response.ok) {
       this.clearActiveLogin();
       this.onUnauthenticated?.();
       await this.handleTokenError(response);
     }
-    const tokens = await response.json();
-    await this.verifyTokens(tokens, refreshProfile);
-    return this.getProfile();
+    return this.verifyTokens(await response.json());
   }
 
   /**
@@ -4739,10 +4758,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Validates the JWT against the JWKS.
    * See {@link https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint | OpenID Connect Core 1.0 TokenEndpoint} for full details.
    * @param tokens - The token response.
-   * @param refreshProfile - Whether to refresh the profile after storing the tokens.
-   * @returns Promise to complete.
+   * @returns The login state for the verified tokens.
    */
-  private async verifyTokens(tokens: TokenResponse, refreshProfile = true): Promise<void> {
+  private verifyTokens(tokens: TokenResponse): LoginState {
     const token = tokens.access_token;
 
     if (isJwt(token)) {
@@ -4766,17 +4784,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       }
     }
 
-    const login = {
+    return {
       accessToken: token,
       refreshToken: tokens.refresh_token,
       project: tokens.project,
       profile: tokens.profile,
     };
-    if (refreshProfile) {
-      await this.setActiveLogin(login);
-    } else {
-      this.setActiveLoginState(login);
-    }
   }
 
   private checkSessionDetailsMatchLogin(login?: LoginState): boolean {
