@@ -501,7 +501,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   return (
                     <Table.Th key={field.name}>
                       {field.searchParams ? (
-                        <Menu shadow="md" radius="md" position="bottom-start">
+                        // offset 6 (default 8) pulls the dropdown up ~2px so its top overlaps the row
+                        // divider instead of sitting just below it, avoiding a doubled border line.
+                        <Menu shadow="md" radius="md" position="bottom-start" offset={6}>
                           <Menu.Target>{label}</Menu.Target>
                           <SearchPopupMenu
                             search={memoizedSearch}
