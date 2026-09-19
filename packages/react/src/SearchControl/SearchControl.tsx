@@ -46,6 +46,7 @@ import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
 import { SearchSortEditor } from '../SearchSortEditor/SearchSortEditor';
 import { isAuxClick, isCheckboxCell, killEvent } from '../utils/dom';
 import { getPaginationControlProps } from '../utils/pagination';
+import { useResourceContextMenuController } from './ResourceContextMenu';
 import classes from './SearchControl.module.css';
 import { getFieldDefinitions } from './SearchControlField';
 import { buildFieldNameString, renderValue, setPage } from './SearchUtils';
@@ -213,6 +214,8 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     loadResults();
   }, [loadResults]);
 
+  const { ContextMenuProvider, openContextMenu, contextMenu } = useResourceContextMenuController();
+
   function handleSingleCheckboxClick(e: ChangeEvent, id: string): void {
     e.stopPropagation();
 
@@ -331,303 +334,315 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const showActionsMenu = showExport || showDelete || showBulk || showRefresh;
 
   return (
-    <div className={classes.root} data-testid="search-control">
-      {!props.hideToolbar && (
-        <Group justify="space-between" pb="md" className={classes.toolbar}>
-          <Group gap="xs">
-            <SearchColumnEditor
-              search={memoizedSearch}
-              onChange={emitSearchChange}
-              buttonVariant={buttonVariant}
-              buttonColor={buttonColor}
-              buttonClassName={classes.toolbarButton}
-              iconSize={iconSize}
-            />
-            <SearchFilterPopover
-              search={memoizedSearch}
-              onChange={emitSearchChange}
-              buttonVariant={buttonVariant}
-              buttonColor={buttonColor}
-              buttonClassName={classes.toolbarButton}
-              iconSize={iconSize}
-              requestFilterField={state.requestFilterField}
-            />
-            <SearchSortEditor
-              search={memoizedSearch}
-              onChange={emitSearchChange}
-              buttonVariant={buttonVariant}
-              buttonColor={buttonColor}
-              buttonClassName={classes.toolbarButton}
-              iconSize={iconSize}
-            />
-            {lastResult && (
-              <Text size="xs" c="dimmed" ml={4} data-testid="count-display">
-                {getStart(memoizedSearch, lastResult).toLocaleString()}-
-                {getEnd(memoizedSearch, lastResult).toLocaleString()}
-                {lastResult.total !== undefined &&
-                  ` of ${memoizedSearch.total === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
-              </Text>
-            )}
-          </Group>
-          <Group gap="xs">
-            {props.toolbarActions?.map((action) => (
-              <Tooltip key={action.key} label={action.label} position="bottom" openDelay={500}>
-                <ActionIcon
-                  className={action.variant === 'filled' ? undefined : classes.actionIcon}
-                  variant={action.variant === 'filled' ? 'filled' : 'transparent'}
-                  color={action.variant === 'filled' ? (action.color ?? 'blue') : 'gray'}
-                  size={32}
-                  radius="xl"
-                  aria-label={action.label}
-                  disabled={action.disabled}
-                  onClick={action.onClick}
-                >
-                  {action.icon}
-                </ActionIcon>
-              </Tooltip>
-            ))}
-            {showActionsMenu && (
-              <Menu shadow="md" width={200} radius="md" position="bottom-end">
-                <Menu.Target>
+    <ContextMenuProvider>
+      <div className={classes.root} data-testid="search-control">
+        {!props.hideToolbar && (
+          <Group justify="space-between" pb="md" className={classes.toolbar}>
+            <Group gap="xs">
+              <SearchColumnEditor
+                search={memoizedSearch}
+                onChange={emitSearchChange}
+                buttonVariant={buttonVariant}
+                buttonColor={buttonColor}
+                buttonClassName={classes.toolbarButton}
+                iconSize={iconSize}
+              />
+              <SearchFilterPopover
+                search={memoizedSearch}
+                onChange={emitSearchChange}
+                buttonVariant={buttonVariant}
+                buttonColor={buttonColor}
+                buttonClassName={classes.toolbarButton}
+                iconSize={iconSize}
+                requestFilterField={state.requestFilterField}
+              />
+              <SearchSortEditor
+                search={memoizedSearch}
+                onChange={emitSearchChange}
+                buttonVariant={buttonVariant}
+                buttonColor={buttonColor}
+                buttonClassName={classes.toolbarButton}
+                iconSize={iconSize}
+              />
+              {lastResult && (
+                <Text size="xs" c="dimmed" ml={4} data-testid="count-display">
+                  {getStart(memoizedSearch, lastResult).toLocaleString()}-
+                  {getEnd(memoizedSearch, lastResult).toLocaleString()}
+                  {lastResult.total !== undefined &&
+                    ` of ${memoizedSearch.total === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
+                </Text>
+              )}
+            </Group>
+            <Group gap="xs">
+              {props.toolbarActions?.map((action) => (
+                <Tooltip key={action.key} label={action.label} position="bottom" openDelay={500}>
                   <ActionIcon
-                    className={classes.actionIcon}
-                    variant="transparent"
-                    color="gray"
+                    className={action.variant === 'filled' ? undefined : classes.actionIcon}
+                    variant={action.variant === 'filled' ? 'filled' : 'transparent'}
+                    color={action.variant === 'filled' ? (action.color ?? 'blue') : 'gray'}
                     size={32}
                     radius="xl"
-                    aria-label="Actions"
+                    aria-label={action.label}
+                    disabled={action.disabled}
+                    onClick={action.onClick}
                   >
-                    <IconDots size={16} />
+                    {action.icon}
                   </ActionIcon>
-                </Menu.Target>
-                <Menu.Dropdown className={classes.actionsMenu}>
-                  {showRefresh && (
-                    <Menu.Item
-                      leftSection={<IconRefresh size={16} color="var(--mantine-color-dimmed)" />}
-                      onClick={refreshResults}
-                    >
-                      <Text size="sm">Refresh</Text>
-                    </Menu.Item>
-                  )}
-                  {showExport && (
-                    <Menu.Item
-                      leftSection={<IconTableExport size={16} color="var(--mantine-color-dimmed)" />}
-                      onClick={
-                        props.onExport
-                          ? props.onExport
-                          : () =>
-                              setState({ ...stateRef.current, exportDialogVisible: true, dialogOpenTime: Date.now() })
-                      }
-                    >
-                      <Text size="sm">Export</Text>
-                    </Menu.Item>
-                  )}
-                  {showBulk && (
-                    <Menu.Item
-                      leftSection={<IconLibraryPlus size={16} color="var(--mantine-color-dimmed)" />}
-                      onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(state.selected))}
-                    >
-                      <Text size="sm">Bulk Apply</Text>
-                    </Menu.Item>
-                  )}
-                  {showDelete && (
-                    <Menu.Item
-                      leftSection={<IconTrash size={16} color="var(--mantine-color-dimmed)" />}
-                      disabled={selectedCount === 0}
-                      onClick={() => setState({ ...stateRef.current, deleteConfirmVisible: true })}
-                    >
-                      <Text size="sm">Delete</Text>
-                    </Menu.Item>
-                  )}
-                </Menu.Dropdown>
-              </Menu>
-            )}
-            {props.onNew && (
-              <Tooltip label={`New ${resourceType}`} position="bottom" openDelay={500}>
-                <ActionIcon
-                  variant="filled"
-                  color="blue"
-                  size={32}
-                  radius="xl"
-                  aria-label={`New ${resourceType}`}
-                  onClick={props.onNew}
-                >
-                  <IconPlus size={16} />
-                </ActionIcon>
-              </Tooltip>
-            )}
-          </Group>
-        </Group>
-      )}
-      <div className={classes.tableScroll}>
-        <Table className={classes.table}>
-          <Table.Thead>
-            <Table.Tr>
-              {checkboxColumn && (
-                <Table.Th className={classes.checkboxCell}>
-                  <div className={classes.checkboxWrap}>
-                    <Checkbox
-                      size="xs"
-                      aria-label="all-checkbox"
-                      data-testid="all-checkbox"
-                      checked={isAllSelected()}
-                      onChange={(e) => handleAllCheckboxClick(e)}
-                    />
-                  </div>
-                </Table.Th>
-              )}
-              {fields.map((field) => {
-                const sortCode = field.searchParams?.[0]?.code;
-                const sortRule = sortCode ? memoizedSearch.sortRules?.find((r) => r.code === sortCode) : undefined;
-                const label = (
-                  <UnstyledButton className={classes.control}>
-                    <Group gap={4} wrap="nowrap">
-                      <Text size="xs" fw={500} c="gray.6">
-                        {buildFieldNameString(field.name)}
-                      </Text>
-                      {sortRule &&
-                        (sortRule.descending ? (
-                          <IconArrowDown size={12} stroke={2} aria-label={`sorted-desc-${field.name}`} />
-                        ) : (
-                          <IconArrowUp size={12} stroke={2} aria-label={`sorted-asc-${field.name}`} />
-                        ))}
-                    </Group>
-                  </UnstyledButton>
-                );
-                return (
-                  <Table.Th key={field.name}>
-                    {field.searchParams ? (
-                      <Menu shadow="md" radius="md" position="bottom-start">
-                        <Menu.Target>{label}</Menu.Target>
-                        <SearchPopupMenu
-                          search={memoizedSearch}
-                          searchParams={field.searchParams}
-                          onChange={(result) => emitSearchChange(result)}
-                          onFilterByColumn={(searchParam) =>
-                            setState({
-                              ...stateRef.current,
-                              requestFilterField: { code: searchParam.code, nonce: Date.now() },
-                            })
-                          }
-                        />
-                      </Menu>
-                    ) : (
-                      <Text className={classes.staticColumnTitle} size="xs" fw={500} c="gray.6">
-                        {buildFieldNameString(field.name)}
-                      </Text>
-                    )}
-                  </Table.Th>
-                );
-              })}
-              {props.additionalColumns?.map((col) => (
-                <Table.Th key={col.name}>
-                  <Text fw={500} c="black" p={2}>
-                    {col.name}
-                  </Text>
-                </Table.Th>
+                </Tooltip>
               ))}
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {resources?.map(
-              (resource) =>
-                resource && (
-                  <Table.Tr
-                    key={resource.id}
-                    className={classes.tr}
-                    data-testid="search-control-row"
-                    onClick={(e) => handleRowClick(e, resource)}
-                    onAuxClick={(e) => handleRowClick(e, resource)}
-                  >
-                    {checkboxColumn && (
-                      <Table.Td className={classes.checkboxCell}>
-                        <div className={classes.checkboxWrap}>
-                          <Checkbox
-                            size="xs"
-                            data-testid="row-checkbox"
-                            aria-label={`Checkbox for ${resource.id}`}
-                            checked={!!state.selected[resource.id as string]}
-                            onChange={(e) => handleSingleCheckboxClick(e, resource.id as string)}
-                          />
-                        </div>
-                      </Table.Td>
+              {showActionsMenu && (
+                <Menu shadow="md" width={200} radius="md" position="bottom-end">
+                  <Menu.Target>
+                    <ActionIcon
+                      className={classes.actionIcon}
+                      variant="transparent"
+                      color="gray"
+                      size={32}
+                      radius="xl"
+                      aria-label="Actions"
+                    >
+                      <IconDots size={16} />
+                    </ActionIcon>
+                  </Menu.Target>
+                  <Menu.Dropdown className={classes.actionsMenu}>
+                    {showRefresh && (
+                      <Menu.Item
+                        leftSection={<IconRefresh size={16} color="var(--mantine-color-dimmed)" />}
+                        onClick={refreshResults}
+                      >
+                        <Text size="sm">Refresh</Text>
+                      </Menu.Item>
                     )}
-                    {fields.map((field) => (
-                      <Table.Td key={field.name}>{renderValue(resource, field)}</Table.Td>
-                    ))}
-                    {props.additionalColumns?.map((col) => (
-                      <Table.Td key={col.name}>{col.renderCell(resource)}</Table.Td>
-                    ))}
-                  </Table.Tr>
-                )
-            )}
-          </Table.Tbody>
-        </Table>
-      </div>
-      {!resources?.length && (
-        <Container>
-          <Center style={{ height: 150 }}>
-            <Text size="xl" c="dimmed">
-              No results
-            </Text>
+                    {showExport && (
+                      <Menu.Item
+                        leftSection={<IconTableExport size={16} color="var(--mantine-color-dimmed)" />}
+                        onClick={
+                          props.onExport
+                            ? props.onExport
+                            : () =>
+                                setState({ ...stateRef.current, exportDialogVisible: true, dialogOpenTime: Date.now() })
+                        }
+                      >
+                        <Text size="sm">Export</Text>
+                      </Menu.Item>
+                    )}
+                    {showBulk && (
+                      <Menu.Item
+                        leftSection={<IconLibraryPlus size={16} color="var(--mantine-color-dimmed)" />}
+                        onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(state.selected))}
+                      >
+                        <Text size="sm">Bulk Apply</Text>
+                      </Menu.Item>
+                    )}
+                    {showDelete && (
+                      <Menu.Item
+                        leftSection={<IconTrash size={16} color="var(--mantine-color-dimmed)" />}
+                        disabled={selectedCount === 0}
+                        onClick={() => setState({ ...stateRef.current, deleteConfirmVisible: true })}
+                      >
+                        <Text size="sm">Delete</Text>
+                      </Menu.Item>
+                    )}
+                  </Menu.Dropdown>
+                </Menu>
+              )}
+              {props.onNew && (
+                <Tooltip label={`New ${resourceType}`} position="bottom" openDelay={500}>
+                  <ActionIcon
+                    variant="filled"
+                    color="blue"
+                    size={32}
+                    radius="xl"
+                    aria-label={`New ${resourceType}`}
+                    onClick={props.onNew}
+                  >
+                    <IconPlus size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
+            </Group>
+          </Group>
+        )}
+        <div className={classes.tableScroll}>
+          <Table className={classes.table}>
+            <Table.Thead>
+              <Table.Tr>
+                {checkboxColumn && (
+                  <Table.Th className={classes.checkboxCell}>
+                    <div className={classes.checkboxWrap}>
+                      <Checkbox
+                        size="xs"
+                        aria-label="all-checkbox"
+                        data-testid="all-checkbox"
+                        checked={isAllSelected()}
+                        onChange={(e) => handleAllCheckboxClick(e)}
+                      />
+                    </div>
+                  </Table.Th>
+                )}
+                {fields.map((field) => {
+                  const sortCode = field.searchParams?.[0]?.code;
+                  const sortRule = sortCode ? memoizedSearch.sortRules?.find((r) => r.code === sortCode) : undefined;
+                  const label = (
+                    <UnstyledButton className={classes.control}>
+                      <Group gap={4} wrap="nowrap">
+                        <Text size="xs" fw={500} c="gray.6">
+                          {buildFieldNameString(field.name)}
+                        </Text>
+                        {sortRule &&
+                          (sortRule.descending ? (
+                            <IconArrowDown size={12} stroke={2} aria-label={`sorted-desc-${field.name}`} />
+                          ) : (
+                            <IconArrowUp size={12} stroke={2} aria-label={`sorted-asc-${field.name}`} />
+                          ))}
+                      </Group>
+                    </UnstyledButton>
+                  );
+                  return (
+                    <Table.Th key={field.name}>
+                      {field.searchParams ? (
+                        <Menu shadow="md" radius="md" position="bottom-start">
+                          <Menu.Target>{label}</Menu.Target>
+                          <SearchPopupMenu
+                            search={memoizedSearch}
+                            searchParams={field.searchParams}
+                            onChange={(result) => emitSearchChange(result)}
+                            onFilterByColumn={(searchParam) =>
+                              setState({
+                                ...stateRef.current,
+                                requestFilterField: { code: searchParam.code, nonce: Date.now() },
+                              })
+                            }
+                          />
+                        </Menu>
+                      ) : (
+                        <Text className={classes.staticColumnTitle} size="xs" fw={500} c="gray.6">
+                          {buildFieldNameString(field.name)}
+                        </Text>
+                      )}
+                    </Table.Th>
+                  );
+                })}
+                {props.additionalColumns?.map((col) => (
+                  <Table.Th key={col.name}>
+                    <Text fw={500} c="black" p={2}>
+                      {col.name}
+                    </Text>
+                  </Table.Th>
+                ))}
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {resources?.map(
+                (resource) =>
+                  resource && (
+                    <Table.Tr
+                      key={resource.id}
+                      className={classes.tr}
+                      data-testid="search-control-row"
+                      onClick={(e) => handleRowClick(e, resource)}
+                      onAuxClick={(e) => handleRowClick(e, resource)}
+                      onContextMenu={(e) => {
+                        if (isCheckboxCell(e.target as Element)) {
+                          return;
+                        }
+                        openContextMenu(e, {
+                          label: resource.resourceType,
+                          href: `/${resource.resourceType}/${resource.id}`,
+                        });
+                      }}
+                    >
+                      {checkboxColumn && (
+                        <Table.Td className={classes.checkboxCell}>
+                          <div className={classes.checkboxWrap}>
+                            <Checkbox
+                              size="xs"
+                              data-testid="row-checkbox"
+                              aria-label={`Checkbox for ${resource.id}`}
+                              checked={!!state.selected[resource.id as string]}
+                              onChange={(e) => handleSingleCheckboxClick(e, resource.id as string)}
+                            />
+                          </div>
+                        </Table.Td>
+                      )}
+                      {fields.map((field) => (
+                        <Table.Td key={field.name}>{renderValue(resource, field)}</Table.Td>
+                      ))}
+                      {props.additionalColumns?.map((col) => (
+                        <Table.Td key={col.name}>{col.renderCell(resource)}</Table.Td>
+                      ))}
+                    </Table.Tr>
+                  )
+              )}
+            </Table.Tbody>
+          </Table>
+        </div>
+        {!resources?.length && (
+          <Container>
+            <Center style={{ height: 150 }}>
+              <Text size="xl" c="dimmed">
+                No results
+              </Text>
+            </Center>
+          </Container>
+        )}
+        {lastResult && (
+          <Center m={0} p="md" pb={0}>
+            <Pagination
+              value={getPage(memoizedSearch)}
+              total={getTotalPages(memoizedSearch, lastResult)}
+              onChange={(newPage) => emitSearchChange(setPage(memoizedSearch, newPage))}
+              getControlProps={getPaginationControlProps}
+            />
           </Center>
-        </Container>
-      )}
-      {lastResult && (
-        <Center m={0} p="md" pb={0}>
-          <Pagination
-            value={getPage(memoizedSearch)}
-            total={getTotalPages(memoizedSearch, lastResult)}
-            onChange={(newPage) => emitSearchChange(setPage(memoizedSearch, newPage))}
-            getControlProps={getPaginationControlProps}
-          />
-        </Center>
-      )}
-      <SearchExportDialog
-        key={`search-export-dialog-${state.dialogOpenTime}`}
-        visible={state.exportDialogVisible}
-        exportCsv={props.onExportCsv}
-        exportTransactionBundle={props.onExportTransactionBundle}
-        onCancel={() => {
-          setState({
-            ...stateRef.current,
-            exportDialogVisible: false,
-          });
-        }}
-      />
-      <Modal
-        opened={!!state.deleteConfirmVisible}
-        onClose={() => setState({ ...stateRef.current, deleteConfirmVisible: false })}
-        title={`Delete ${resourceType}${selectedCount === 1 ? '' : 's'}`}
-        actions={
-          <>
-            <Button
-              color="red"
-              w="100%"
-              onClick={() => {
-                setState({ ...stateRef.current, deleteConfirmVisible: false });
-                (props.onDelete as (ids: string[]) => any)(Object.keys(stateRef.current.selected));
-              }}
-            >
-              Delete
-            </Button>
-            <Button
-              variant="outline"
-              w="100%"
-              onClick={() => setState({ ...stateRef.current, deleteConfirmVisible: false })}
-            >
-              Cancel
-            </Button>
-          </>
-        }
-      >
-        <Text>
-          Are you sure you want to delete {selectedCount === 1 ? 'this' : 'these'} {selectedCount}{' '}
-          {resourceType.toLowerCase()}
-          {selectedCount === 1 ? '' : 's'}? This action cannot be undone.
-        </Text>
-      </Modal>
-    </div>
+        )}
+        <SearchExportDialog
+          key={`search-export-dialog-${state.dialogOpenTime}`}
+          visible={state.exportDialogVisible}
+          exportCsv={props.onExportCsv}
+          exportTransactionBundle={props.onExportTransactionBundle}
+          onCancel={() => {
+            setState({
+              ...stateRef.current,
+              exportDialogVisible: false,
+            });
+          }}
+        />
+        <Modal
+          opened={!!state.deleteConfirmVisible}
+          onClose={() => setState({ ...stateRef.current, deleteConfirmVisible: false })}
+          title={`Delete ${resourceType}${selectedCount === 1 ? '' : 's'}`}
+          actions={
+            <>
+              <Button
+                color="red"
+                w="100%"
+                onClick={() => {
+                  setState({ ...stateRef.current, deleteConfirmVisible: false });
+                  (props.onDelete as (ids: string[]) => any)(Object.keys(stateRef.current.selected));
+                }}
+              >
+                Delete
+              </Button>
+              <Button
+                variant="outline"
+                w="100%"
+                onClick={() => setState({ ...stateRef.current, deleteConfirmVisible: false })}
+              >
+                Cancel
+              </Button>
+            </>
+          }
+        >
+          <Text>
+            Are you sure you want to delete {selectedCount === 1 ? 'this' : 'these'} {selectedCount}{' '}
+            {resourceType.toLowerCase()}
+            {selectedCount === 1 ? '' : 's'}? This action cannot be undone.
+          </Text>
+        </Modal>
+        {contextMenu}
+      </div>
+    </ContextMenuProvider>
   );
 }
 

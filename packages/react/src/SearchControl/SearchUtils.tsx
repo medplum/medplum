@@ -19,6 +19,7 @@ import { ResourceName } from '../ResourceName/ResourceName';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
+import { useResourceContextMenu } from './ResourceContextMenu';
 import classes from './SearchControl.module.css';
 import type { SearchControlField } from './SearchControlField';
 
@@ -617,7 +618,7 @@ function renderNameWithAvatar(resource: Resource): JSX.Element {
   return (
     <Group gap="xs" wrap="nowrap">
       <ResourceAvatar value={resource} radius="xl" size={28} />
-      <Text size="sm" fw={500} truncate className={classes.nameLink}>
+      <Text size="sm" truncate className={classes.nameLink}>
         {text}
       </Text>
     </Group>
@@ -634,7 +635,7 @@ function renderNameWithAvatar(resource: Resource): JSX.Element {
  */
 function renderRichValue(propertyType: string, value: unknown, code: string): JSX.Element | undefined {
   if (propertyType === PropertyType.Reference) {
-    return renderReferenceAvatarLink(value as Reference);
+    return <ReferenceAvatarLink value={value as Reference} />;
   }
   if (code === 'status' && typeof value === 'string') {
     return <StatusBadge status={value} variant="light" />;
@@ -644,15 +645,29 @@ function renderRichValue(propertyType: string, value: unknown, code: string): JS
 
 /**
  * Renders a reference as an avatar next to its name, matching the person-name column style but kept
- * as a link (plain text that underlines on hover) to the referenced resource.
- * @param value - The reference to render.
+ * as a link (plain text that underlines on hover) to the referenced resource. Right-clicking opens
+ * the shared context menu with link actions scoped to the referenced resource (e.g. "Open
+ * Practitioner in a New Tab") rather than the row's resource.
+ * @param props - The component props.
+ * @param props.value - The reference to render.
  * @returns The avatar + link element.
  */
-function renderReferenceAvatarLink(value: Reference): JSX.Element {
+function ReferenceAvatarLink({ value }: { readonly value: Reference }): JSX.Element {
+  const openContextMenu = useResourceContextMenu();
+  const referenceString = value.reference;
+  const [referenceType] = referenceString?.split('/') ?? [];
   return (
-    <Group gap="xs" wrap="nowrap">
+    <Group
+      gap="xs"
+      wrap="nowrap"
+      onContextMenu={
+        referenceString && referenceType
+          ? (e) => openContextMenu(e, { label: referenceType, href: `/${referenceString}` })
+          : undefined
+      }
+    >
       <ResourceAvatar value={value} radius="xl" size={28} />
-      <MedplumLink to={value} size="sm" fw={500} className={classes.nameLink}>
+      <MedplumLink to={value} size="sm" className={classes.nameLink}>
         <ResourceName value={value} />
       </MedplumLink>
     </Group>

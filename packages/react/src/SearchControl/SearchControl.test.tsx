@@ -673,6 +673,111 @@ describe('SearchControl', () => {
     expect(props.onAuxClick).toHaveBeenCalledTimes(3);
   });
 
+  test('Right click on row opens the resource context menu', async () => {
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        fields: ['name'],
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Simpson' }],
+      },
+    };
+
+    await setup(props);
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.contextMenu(screen.getAllByTestId('search-control-row')[0]);
+    });
+
+    expect(await screen.findByText('Open Patient')).toBeInTheDocument();
+    expect(screen.getByText('Open Patient in a New Tab')).toBeInTheDocument();
+    expect(screen.getByText('Copy Link')).toBeInTheDocument();
+  });
+
+  test('Open in a new tab from the row context menu', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        fields: ['name'],
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Simpson' }],
+      },
+    };
+
+    await setup(props);
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.contextMenu(screen.getAllByTestId('search-control-row')[0]);
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Open Patient in a New Tab'));
+    });
+
+    expect(openSpy).toHaveBeenCalledWith(`/Patient/${HomerSimpson.id}`, '_blank', 'noopener,noreferrer');
+    openSpy.mockRestore();
+  });
+
+  test('Copy link from the row context menu', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        fields: ['name'],
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Simpson' }],
+      },
+    };
+
+    await setup(props);
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.contextMenu(screen.getAllByTestId('search-control-row')[0]);
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Copy Link'));
+    });
+
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining(`/Patient/${HomerSimpson.id}`));
+  });
+
+  test('Reference cell context menu targets the referenced resource', async () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [
+        {
+          resource: {
+            resourceType: 'Observation',
+            id: 'obs1',
+            status: 'final',
+            code: { text: 'Test' },
+            subject: { reference: `Patient/${HomerSimpson.id}`, display: 'Homer Simpson' },
+          },
+        },
+      ],
+    };
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Observation',
+        fields: ['subject'],
+      },
+    };
+
+    await setup(props, bundle);
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.contextMenu(screen.getByText('Homer Simpson'));
+    });
+
+    // The typed label comes from the reference, not the row's Observation resource.
+    expect(await screen.findByText('Open Patient in a New Tab')).toBeInTheDocument();
+    expect(screen.queryByText('Open Observation in a New Tab')).not.toBeInTheDocument();
+  });
+
   test('Columns editor opens', async () => {
     const props: SearchControlProps = {
       search: {
