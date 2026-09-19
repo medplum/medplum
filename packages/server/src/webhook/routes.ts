@@ -54,7 +54,8 @@ export const webhookHandler = async (req: Request, res: Response): Promise<void>
   // If the request is HTTP GET, then the query string is the input
   let input = req.query;
   if (req.method === 'POST') {
-    input = bot.rawBody ? (req as any).rawBody.toString('utf8') : req.body;
+    const rawBody = (req as any).rawBody as Buffer | undefined;
+    input = bot.rawBody && rawBody ? rawBody.toString('utf8') : req.body;
   }
 
   const result = await executeBot({

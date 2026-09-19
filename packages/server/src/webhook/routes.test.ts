@@ -214,6 +214,32 @@ describe('Anonymous webhooks', () => {
     expect(JSON.parse(res.text)).toEqual({ input: 'hello' });
   });
 
+  test('Falls back to parsed body when rawBody is enabled but content type is not JSON', async () => {
+    try {
+      const update = await request(app)
+        .patch(`/fhir/R4/Bot/${bot.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON_PATCH)
+        .send([{ op: 'add', path: '/rawBody', value: true }]);
+      expect(update).toHaveStatus(200);
+
+      const res = await request(app)
+        .post(`/webhook/${botMembership.id}`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('x-test-return-event', 'true')
+        .send('hello');
+      expect(res).toHaveStatus(200);
+      expect(JSON.parse(res.text)).toEqual({ input: 'hello' });
+    } finally {
+      const reset = await request(app)
+        .patch(`/fhir/R4/Bot/${bot.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON_PATCH)
+        .send([{ op: 'remove', path: '/rawBody' }]);
+      expect(reset).toHaveStatus(200);
+    }
+  });
+
   test('Does not capture raw body for authenticated execute', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
