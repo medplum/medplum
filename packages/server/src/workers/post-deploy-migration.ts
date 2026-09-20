@@ -235,10 +235,9 @@ export async function runCustomMigration(
 
   const results: MigrationActionResult[] = [];
   try {
-    const shardId = 'target' in jobData ? jobData.target.shardId : TODO_SHARD_ID; // PENDING{v5.2} simplify
     await withLongRunningDatabaseClient(async (client) => {
       await callback(client, results, job, jobData);
-    }, shardId);
+    });
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(output);
   } catch (err: any) {
