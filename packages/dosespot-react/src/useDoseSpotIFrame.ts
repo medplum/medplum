@@ -4,6 +4,7 @@ import type { ProjectMembership } from '@medplum/fhirtypes';
 import type { MedicationIFrameOptions } from '@medplum/react-hooks';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useRef, useState } from 'react';
+import type { DoseSpotPatientSyncParams } from './common';
 import { DOSESPOT_IFRAME_BOT, DOSESPOT_PATIENT_SYNC_BOT, DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT } from './common';
 import type { DoseSpotSelfEnrollmentResult } from './useDoseSpotSelfEnrollment';
 
@@ -15,6 +16,16 @@ export interface DoseSpotIFrameOptions extends MedicationIFrameOptions {
    * DoseSpot role type codes for the practitioner.
    */
   readonly selfEnroll?: boolean;
+  /**
+   * When true, the patient-sync bot also pushes the current Patient
+   * demographics to the linked DoseSpot record, so profile edits made in
+   * Medplum are reflected in DoseSpot.
+   *
+   * Defaults to false: the sync runs on every iframe mount, and re-sending
+   * demographics each time is usually wasted work. Turn it on where a profile
+   * change is expected, or expose it behind an explicit user action.
+   */
+  readonly updatePatient?: boolean;
   /** Called after self-enrollment completes successfully. */
   readonly onSelfEnrollSuccess?: (result: DoseSpotSelfEnrollmentResult) => void;
 }
@@ -31,7 +42,8 @@ export interface DoseSpotIFrameOptions extends MedicationIFrameOptions {
  */
 export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | undefined {
   const medplum = useMedplum();
-  const { patientId, selfEnroll, onPatientSyncSuccess, onIframeSuccess, onSelfEnrollSuccess, onError } = options;
+  const { patientId, selfEnroll, updatePatient, onPatientSyncSuccess, onIframeSuccess, onSelfEnrollSuccess, onError } =
+    options;
   const [iframeUrl, setIframeUrl] = useState<string | undefined>(undefined);
 
   const onPatientSyncSuccessRef = useRef(onPatientSyncSuccess);
@@ -62,7 +74,8 @@ export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | unde
       }
 
       if (patientId) {
-        await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId });
+        const syncParams: DoseSpotPatientSyncParams = updatePatient ? { patientId, update: true } : { patientId };
+        await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, syncParams);
         if (cancelled) {
           return;
         }
@@ -87,7 +100,7 @@ export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | unde
     return (): void => {
       cancelled = true;
     };
-  }, [medplum, patientId, selfEnroll]);
+  }, [medplum, patientId, selfEnroll, updatePatient]);
 
   return iframeUrl;
 }

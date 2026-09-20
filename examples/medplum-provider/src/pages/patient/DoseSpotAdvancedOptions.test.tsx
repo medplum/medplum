@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
+import { cleanNotifications, Notifications } from '@mantine/notifications';
+import { DOSESPOT_PATIENT_SYNC_BOT } from '@medplum/dosespot-react';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -15,6 +16,9 @@ describe('DoseSpotAdvancedOptions', () => {
   beforeEach(() => {
     medplum = new MockClient();
     vi.clearAllMocks();
+    // Mantine queues notifications globally and only renders a few at a time,
+    // so leftovers from a previous test would hide this test's notification.
+    cleanNotifications();
   });
 
   const setup = (patientId: string): ReturnType<typeof render> => {
@@ -359,6 +363,67 @@ describe('DoseSpotAdvancedOptions', () => {
           patientId: 'test-patient-id',
         })
       );
+    });
+  });
+
+  test('Update Patient Profile button calls executeBot with the update flag', async () => {
+    const user = userEvent.setup();
+    setup('patient-123');
+
+    const executeBot = vi.spyOn(medplum, 'executeBot').mockResolvedValue({} as any);
+
+    await user.click(screen.getByText('Advanced Options'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Update Patient Profile')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Update Patient Profile'));
+
+    await waitFor(() => {
+      expect(executeBot).toHaveBeenCalledWith(DOSESPOT_PATIENT_SYNC_BOT, {
+        patientId: 'patient-123',
+        update: true,
+      });
+      expect(screen.getByText('Patient profile updated in DoseSpot')).toBeInTheDocument();
+    });
+  });
+
+  test('Sync Patient button does not send the update flag', async () => {
+    const user = userEvent.setup();
+    setup('patient-123');
+
+    const executeBot = vi.spyOn(medplum, 'executeBot').mockResolvedValue({} as any);
+
+    await user.click(screen.getByText('Advanced Options'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Sync Patient')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Sync Patient'));
+
+    await waitFor(() => {
+      expect(executeBot).toHaveBeenCalledWith(DOSESPOT_PATIENT_SYNC_BOT, { patientId: 'patient-123' });
+    });
+  });
+
+  test('Handles patient profile update error', async () => {
+    const user = userEvent.setup();
+    setup('patient-123');
+
+    vi.spyOn(medplum, 'executeBot').mockRejectedValue(new Error('Profile update failed'));
+
+    await user.click(screen.getByText('Advanced Options'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Update Patient Profile')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Update Patient Profile'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Profile update failed/i)).toBeInTheDocument();
     });
   });
 });

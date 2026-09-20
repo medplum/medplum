@@ -63,6 +63,18 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
     }
   }, [medplum, patientId]);
 
+  const updatePatientProfile = useCallback(async () => {
+    try {
+      await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, {
+        patientId,
+        update: true,
+      });
+      showNotification({ color: 'green', title: 'Success', message: 'Patient profile updated in DoseSpot' });
+    } catch (err) {
+      showNotification({ color: 'red', title: 'Error', message: normalizeErrorString(err) });
+    }
+  }, [medplum, patientId]);
+
   return (
     <>
       <Group style={{ position: 'absolute', top: 8, right: 8, zIndex: 100 }}>
@@ -140,6 +152,16 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
                 from Medplum to that patient's record in DoseSpot.
               </Text>
               <Button onClick={syncPatient}>Sync Patient</Button>
+            </Box>
+
+            <Box mt="md">
+              <Text mb="sm">Patient Profile Update</Text>
+              <Text c="dimmed" mb="md">
+                Pushes this patient's current demographics (name, email, phone, address, date of birth) from Medplum to
+                their existing DoseSpot record. Use this after editing the Patient resource, since the regular sync only
+                links the patient and leaves an already-linked DoseSpot profile untouched.
+              </Text>
+              <Button onClick={updatePatientProfile}>Update Patient Profile</Button>
             </Box>
           </Stack>
         </Box>

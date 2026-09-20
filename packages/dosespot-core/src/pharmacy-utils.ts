@@ -47,6 +47,20 @@ export const DOSESPOT_PATIENT_SYNC_BOT: Identifier = {
   value: 'dosespot-patient-sync-bot',
 };
 
+/** Input parameters for the DoseSpot patient sync bot. */
+export interface DoseSpotPatientSyncParams {
+  /** The Medplum Patient to sync. */
+  readonly patientId: string;
+  /**
+   * When true, also push the current Patient demographics (name, email, phone,
+   * address, birth date) to an already-linked DoseSpot patient record.
+   *
+   * Omit for the default behavior, which only links the patient to DoseSpot,
+   * creating the DoseSpot record if it does not exist yet.
+   */
+  readonly update?: boolean;
+}
+
 export const DOSESPOT_IFRAME_BOT: Identifier = {
   system: MEDPLUM_BOT_SYSTEM,
   value: 'dosespot-iframe-bot',

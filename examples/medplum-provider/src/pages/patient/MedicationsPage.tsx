@@ -268,7 +268,9 @@ export function MedicationsPage(): JSX.Element {
     });
     (async () => {
       try {
-        await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId: patient.id });
+        // `update: true` re-pushes demographics: this page is an explicit
+        // full sync, unlike the iframe mount where the flag would be wasted work.
+        await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId: patient.id, update: true });
         await Promise.all([
           medplum.executeBot(DOSESPOT_PRESCRIPTIONS_SYNC_BOT, {
             patientId: patient.id as string,

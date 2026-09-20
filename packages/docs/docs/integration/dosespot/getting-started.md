@@ -43,6 +43,23 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
 - date of birth
 - name (first and last)
 
+By default the sync only *links* the patient: if the Patient already carries a `https://dosespot.com/patient-id` identifier, the sync is a no-op and later edits to the patient's name, email, phone or address in Medplum are **not** reflected in DoseSpot.
+
+To push those edits, pass `update: true` to the sync bot, or set `updatePatient: true` on [useDoseSpotIFrame](#usedosespotiframe):
+
+```typescript
+import { DOSESPOT_PATIENT_SYNC_BOT } from '@medplum/dosespot-react';
+
+await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, {
+  patientId,
+  update: true, // also push current demographics to the linked DoseSpot record
+});
+```
+
+:::tip
+`update` is opt-in on purpose. The patient sync bot runs on every DoseSpot iframe mount, so re-sending demographics every time would be wasted work. Turn it on where a profile change is expected — after an edit to the Patient resource, or behind an explicit "Update Patient Profile" action.
+:::
+
 :::warning[Pediatric Patients (Under 18)]
 For patients under 18 years of age, you **must** also sync Height and Weight as [Observations](/docs/api/fhir/resources/observation) using the correct LOINC codes. The sync will fail without these required vital signs. See the [Height and Weight for Pediatric Patients](#height-and-weight-for-pediatric-patients) section for more details.
 :::
@@ -264,6 +281,7 @@ export function DoseSpotTab(): JSX.Element {
   const { patientId } = useParams();
   const iframeUrl = useDoseSpotIFrame({
     patientId, // if not provided, the iframe will be the generic DoseSpot notifications iframe
+    //updatePatient: true, // also push the current Patient demographics to DoseSpot (default: false)
     //onPatientSyncSuccess: () => //do something
     //onIframeSuccess: () => //do something
     //onError: (err) => //do something

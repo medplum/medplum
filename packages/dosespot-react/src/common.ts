@@ -20,4 +20,4 @@ export {
   DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT,
   MEDPLUM_BOT_SYSTEM,
 } from '@medplum/dosespot-core';
-export type { DoseSpotNotificationCountsResponse } from '@medplum/dosespot-core';
+export type { DoseSpotNotificationCountsResponse, DoseSpotPatientSyncParams } from '@medplum/dosespot-core';

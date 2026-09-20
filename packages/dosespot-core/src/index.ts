@@ -36,6 +36,7 @@ export type {
   AddFavoriteParams,
   AddPharmacyResponse,
   DoseSpotNotificationCountsResponse,
+  DoseSpotPatientSyncParams,
   PharmacySearchParams,
   PreferredPharmacy,
 } from './pharmacy-utils';

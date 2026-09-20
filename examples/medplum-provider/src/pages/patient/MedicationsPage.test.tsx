@@ -8,6 +8,7 @@ import type {
   MedicationCheckoutResponse,
   WithId,
 } from '@medplum/core';
+import { DOSESPOT_PATIENT_SYNC_BOT } from '@medplum/dosespot-react';
 import type { Bundle, MedicationRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -334,6 +335,22 @@ describe('MedicationsPage', () => {
 
     await waitFor(() => {
       expect(executeBotSpy).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  test('DoseSpot sync asks the patient sync bot to update the patient profile', async () => {
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(0));
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createDoseSpotMembership());
+    const executeBotSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue({});
+
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`, medplum);
+
+    await waitFor(() => {
+      expect(executeBotSpy).toHaveBeenCalledWith(DOSESPOT_PATIENT_SYNC_BOT, {
+        patientId: HomerSimpson.id,
+        update: true,
+      });
     });
   });
 

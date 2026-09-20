@@ -187,4 +187,87 @@ describe('useDoseSpotIFrame', () => {
     expect(medplum.executeBot).toHaveBeenCalledWith(DOSESPOT_IFRAME_BOT, { patientId: undefined });
     expect(onIframeSuccess).toHaveBeenCalledWith(mockIframeUrl);
   });
+
+  test('updatePatient: true asks the patient sync bot to update the profile', async () => {
+    const medplum = new MockClient();
+    const onPatientSyncSuccess = vi.fn();
+
+    medplum.executeBot = vi.fn().mockResolvedValueOnce(allOk).mockResolvedValueOnce({ url: mockIframeUrl });
+
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <TestComponent options={{ patientId: '123', updatePatient: true, onPatientSyncSuccess }} />
+        </MedplumProvider>
+      );
+    });
+
+    expect(medplum.executeBot).toHaveBeenNthCalledWith(1, DOSESPOT_PATIENT_SYNC_BOT, {
+      patientId: '123',
+      update: true,
+    });
+    expect(onPatientSyncSuccess).toHaveBeenCalled();
+  });
+
+  test('updatePatient: false omits the update flag', async () => {
+    const medplum = new MockClient();
+
+    medplum.executeBot = vi.fn().mockResolvedValueOnce(allOk).mockResolvedValueOnce({ url: mockIframeUrl });
+
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <TestComponent options={{ patientId: '123', updatePatient: false }} />
+        </MedplumProvider>
+      );
+    });
+
+    expect(medplum.executeBot).toHaveBeenNthCalledWith(1, DOSESPOT_PATIENT_SYNC_BOT, { patientId: '123' });
+  });
+
+  test('updatePatient: true without a patientId does not run the patient sync bot', async () => {
+    const medplum = new MockClient();
+
+    medplum.executeBot = vi.fn().mockResolvedValueOnce({ url: mockIframeUrl });
+
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <TestComponent options={{ updatePatient: true }} />
+        </MedplumProvider>
+      );
+    });
+
+    expect(medplum.executeBot).toHaveBeenCalledTimes(1);
+    expect(medplum.executeBot).toHaveBeenCalledWith(DOSESPOT_IFRAME_BOT, { patientId: undefined });
+  });
+
+  test('turning updatePatient on re-runs the patient sync bot with the update flag', async () => {
+    const medplum = new MockClient();
+
+    medplum.executeBot = vi.fn().mockResolvedValue({ url: mockIframeUrl });
+
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(
+        <MedplumProvider medplum={medplum}>
+          <TestComponent options={{ patientId: '123' }} />
+        </MedplumProvider>
+      );
+    });
+
+    const updateSyncParams = [DOSESPOT_PATIENT_SYNC_BOT, { patientId: '123', update: true }];
+    expect(medplum.executeBot).toHaveBeenCalledWith(DOSESPOT_PATIENT_SYNC_BOT, { patientId: '123' });
+    expect(medplum.executeBot).not.toHaveBeenCalledWith(...updateSyncParams);
+
+    await act(async () => {
+      view.rerender(
+        <MedplumProvider medplum={medplum}>
+          <TestComponent options={{ patientId: '123', updatePatient: true }} />
+        </MedplumProvider>
+      );
+    });
+
+    expect(medplum.executeBot).toHaveBeenCalledWith(...updateSyncParams);
+  });
 });
