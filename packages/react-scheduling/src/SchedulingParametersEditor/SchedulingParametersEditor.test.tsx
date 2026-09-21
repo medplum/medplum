@@ -488,13 +488,14 @@ describe('SchedulingParametersEditor', () => {
 
   test('a rejected save leaves the button usable rather than stuck pending', async () => {
     const failing = vi.fn().mockRejectedValue(new Error('conflict'));
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     render(<SchedulingParametersEditor service={FullyConfiguredService} onSave={failing} />);
 
     fireEvent.click(saveButton());
 
     await waitFor(() => expect(failing).toHaveBeenCalled());
     await waitFor(() => expect(saveButton()).not.toHaveAttribute('data-loading'));
+    consoleError.mockRestore();
   });
 
   test('hides the cancel button when there is nothing to cancel to', () => {
@@ -689,6 +690,31 @@ describe('SchedulingParametersEditor on a Schedule', () => {
       expect(screen.getByTestId('scheduling-parameters-warning-capacity-with-buffers')).toBeInTheDocument()
     );
   });
+
+  test("leaves a warning about the visit type's own values to the visit type", () => {
+    // A 50 minute grid does not divide into a day, but it is the visit type's, and a calendar is not offered it.
+    const awkward = buildSchedulableService({
+      id: 'awkward',
+      name: 'Awkward Visit',
+      category: 'Office visit',
+      durationMinutes: 50,
+      alignmentMinutes: 50,
+    });
+    renderScheduleEditor(baseSchedule, awkward);
+
+    expect(missingField('alignmentInterval')).toBeNull();
+    expect(screen.queryByTestId('scheduling-parameters-warning-alignment-uneven')).toBeNull();
+  });
+
+  test('clearing every override removes the parameters extension rather than leaving the service pointer', async () => {
+    const { saved } = renderScheduleEditor(scheduleWith({ bufferBefore: 20 }));
+
+    setField('bufferBefore', '');
+    fireEvent.click(saveButton());
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0].extension).toBeUndefined();
+  });
 });
 
 describe('scheduling parameter levels', () => {
@@ -715,6 +741,17 @@ describe('scheduling parameter levels', () => {
 
     expect(defaults).toMatchObject({ duration: 30, bufferBefore: 5, bufferAfter: 0, alignmentInterval: 60 });
     expect(labels).toMatchObject({ duration: 'Follow-up', bufferBefore: 'Follow-up', bufferAfter: 'default' });
+  });
+
+  test('on a calendar, keeps only the warnings whose inputs the calendar sets', () => {
+    const inherited = { duration: 30, alignmentInterval: 50 };
+
+    expect(getSchedulingParameterWarnings({}, {}, inherited).map((warning) => warning.id)).toEqual([]);
+    expect(
+      getSchedulingParameterWarnings({ alignmentInterval: 50 }, { alignmentInterval: 50 }, inherited).map(
+        (warning) => warning.id
+      )
+    ).toEqual(expect.arrayContaining(['alignment-uneven', 'alignment-against-duration']));
   });
 
   test('warnings judge what a calendar inherits along with what it overrides', () => {

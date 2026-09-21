@@ -59,7 +59,8 @@ showing what only that level does. The levels differ in four ways:
 - **Placeholders.** On a Schedule, an empty field names the service value it inherits, or the default where
   the service sets none.
 - **Warnings.** On a Schedule they judge the values in effect, the override layered over the service, so a
-  capacity override is checked against the buffers it inherits.
+  capacity override is checked against the buffers it inherits. A warning about values the calendar does not
+  set is left to the service's editor, since the calendar cannot fix it.
 - **Active.** Only the service level shows it. `Schedule.active` switches off the whole calendar, which is
   more than one service's override decides.
 

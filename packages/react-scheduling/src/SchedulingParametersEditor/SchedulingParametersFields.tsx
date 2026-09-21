@@ -36,10 +36,10 @@ interface SchedulingParametersFieldsProps {
    */
   readonly defaults: SchedulingParameterValues;
   /**
-   * Names where an empty field's value comes from, for example `default` or `Follow-up visit`. Given per
-   * parameter where the fallbacks come from different places, as on a calendar's override.
+   * Names where each empty field's value comes from, for example `Follow-up visit` on a calendar's override.
+   * A parameter left out is labelled `default`.
    */
-  readonly defaultsLabel: string | SchedulingParameterLabels;
+  readonly defaultLabels: SchedulingParameterLabels;
   /** Messages to show against a field, keyed by parameter. */
   readonly errors: SchedulingParameterErrors;
   /** Prefix for each field's `id`, so a warning elsewhere in the form can move focus to one. */
@@ -55,17 +55,16 @@ interface SchedulingParametersFieldsProps {
  * than as zero.
  * @param defaults - What takes effect where a field is left empty.
  * @param key - The parameter the field edits.
- * @param label - Names where the fallback comes from.
+ * @param labels - Names where each fallback comes from.
  * @returns The placeholder text.
  */
 function placeholderFor(
   defaults: SchedulingParameterValues,
   key: keyof SchedulingParameterValues,
-  label: string | SchedulingParameterLabels
+  labels: SchedulingParameterLabels
 ): string {
   const fallback = defaults[key];
-  const source = typeof label === 'string' ? label : (label[key] ?? 'default');
-  return fallback === undefined ? 'Not set' : `${fallback} (${source})`;
+  return fallback === undefined ? 'Not set' : `${fallback} (${labels[key] ?? 'default'})`;
 }
 
 /**
@@ -76,7 +75,7 @@ function placeholderFor(
  * @returns The parameter fields.
  */
 export function SchedulingParametersFields(props: SchedulingParametersFieldsProps): JSX.Element {
-  const { values, defaults, defaultsLabel, errors, idPrefix, onChange, disabled, visible } = props;
+  const { values, defaults, defaultLabels, errors, idPrefix, onChange, disabled, visible } = props;
   const shows = (key: SchedulingParameter): boolean => !visible || visible.has(key);
   const showTimezones = shows('timezone') || shows('alignmentTimezone');
 
@@ -114,7 +113,7 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
         description={description}
         inputWrapperOrder={[...DESCRIPTION_BELOW]}
         value={values[key] ?? ''}
-        placeholder={placeholderFor(defaults, key, defaultsLabel)}
+        placeholder={placeholderFor(defaults, key, defaultLabels)}
         error={errors[key]}
         disabled={disabled}
         onChange={(raw) => setNumber(key, raw)}
@@ -143,7 +142,7 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
         inputWrapperOrder={[...DESCRIPTION_BELOW]}
         data={timezoneOptions}
         value={values[key] ?? null}
-        placeholder={placeholderFor(defaults, key, defaultsLabel)}
+        placeholder={placeholderFor(defaults, key, defaultLabels)}
         error={errors[key]}
         disabled={disabled}
         onChange={(next) => setValue(key, next ?? undefined)}
@@ -179,7 +178,7 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
       description="How many appointments may run at once, so anything above 1 allows overbooking"
       inputWrapperOrder={[...DESCRIPTION_BELOW]}
       value={values.slotCapacity ?? ''}
-      placeholder={placeholderFor(defaults, 'slotCapacity', defaultsLabel)}
+      placeholder={placeholderFor(defaults, 'slotCapacity', defaultLabels)}
       error={errors.slotCapacity}
       disabled={disabled}
       onChange={(raw) => setNumber('slotCapacity', raw)}

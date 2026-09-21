@@ -90,7 +90,7 @@ export type SchedulingParametersEditorProps<T extends HealthcareService = Health
 interface LevelConfig {
   readonly initial: SchedulingParameterValues;
   readonly defaults: SchedulingParameterValues;
-  readonly defaultsLabel: string | SchedulingParameterLabels;
+  readonly defaultLabels: SchedulingParameterLabels;
   readonly visible: ReadonlySet<SchedulingParameter>;
   /** What an empty field falls back to, which warnings judge the edited values against. */
   readonly inherited?: SchedulingParameterValues;
@@ -104,7 +104,7 @@ function getLevelConfig<T extends HealthcareService>(props: SchedulingParameters
     return {
       initial,
       defaults,
-      defaultsLabel: labels,
+      defaultLabels: labels,
       visible: getVisibleParameters('schedule', initial),
       inherited,
     };
@@ -113,7 +113,7 @@ function getLevelConfig<T extends HealthcareService>(props: SchedulingParameters
   return {
     initial,
     defaults: SCHEDULING_PARAMETER_DEFAULTS,
-    defaultsLabel: 'default',
+    defaultLabels: {},
     visible: getVisibleParameters('service', initial),
   };
 }
@@ -255,7 +255,7 @@ export function SchedulingParametersEditor<T extends HealthcareService = Healthc
         <SchedulingParametersFields
           values={values}
           defaults={level.defaults}
-          defaultsLabel={level.defaultsLabel}
+          defaultLabels={level.defaultLabels}
           errors={blocking}
           idPrefix={fieldIdPrefix}
           onChange={setValues}

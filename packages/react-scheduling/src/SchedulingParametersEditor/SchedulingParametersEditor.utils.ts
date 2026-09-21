@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { SchedulingParameterValues } from '../parameterValues';
+import { FLAT_PARAMETERS } from '../parameterValues';
 
 /** Minutes in a day, the longest alignment interval scheduling accepts. */
 export const MINUTES_PER_DAY = 1440;
@@ -26,17 +27,6 @@ export const SCHEDULING_PARAMETER_DEFAULTS: SchedulingParameterValues = {
 export type SchedulingParameterLevel = 'service' | 'schedule';
 
 export type SchedulingParameter = keyof SchedulingParameterValues;
-
-const ALL_PARAMETERS: readonly SchedulingParameter[] = [
-  'duration',
-  'bufferBefore',
-  'bufferAfter',
-  'alignmentInterval',
-  'alignmentOffset',
-  'slotCapacity',
-  'timezone',
-  'alignmentTimezone',
-];
 
 /**
  * The parameters the scheduling docs recommend against setting at each level. A calendar booked alongside
@@ -75,7 +65,9 @@ export function getVisibleParameters(
   initial: SchedulingParameterValues
 ): Set<SchedulingParameter> {
   const discouraged = DISCOURAGED_PARAMETERS[level];
-  const visible = new Set(ALL_PARAMETERS.filter((key) => !discouraged.includes(key) || initial[key] !== undefined));
+  const visible = new Set<SchedulingParameter>(
+    FLAT_PARAMETERS.filter((key) => !discouraged.includes(key) || initial[key] !== undefined)
+  );
   // A visit type offers its two time zones together or not at all, so it is never offering one and hiding
   // the other.
   if (level === 'service' && (visible.has('timezone') || visible.has('alignmentTimezone'))) {
@@ -100,7 +92,7 @@ export function getInheritedDefaults(
   serviceLabel: string
 ): { defaults: SchedulingParameterValues; labels: SchedulingParameterLabels } {
   const labels: SchedulingParameterLabels = {};
-  for (const key of ALL_PARAMETERS) {
+  for (const key of FLAT_PARAMETERS) {
     labels[key] = serviceValues[key] === undefined ? 'default' : serviceLabel;
   }
   return { defaults: withInherited(serviceValues, SCHEDULING_PARAMETER_DEFAULTS), labels };
@@ -119,6 +111,12 @@ export interface SchedulingParameterWarning {
     readonly field: keyof SchedulingParameterValues;
     readonly text: string;
   };
+  /**
+   * The parameters whose values raise it. On a calendar's override it is shown only when the calendar sets
+   * one of them; otherwise it is about the visit type's own values, which are the visit type's to fix.
+   * Absent on a warning that applies whoever sets its inputs.
+   */
+  readonly inputs?: readonly SchedulingParameter[];
 }
 
 /**
@@ -240,7 +238,8 @@ export function getBlockingErrors(
  * @param stored - The parameters as entered, in minutes.
  * @param storedInitial - The parameters the form loaded, used to notice a changed capacity.
  * @param inherited - What a calendar's override falls back to, which is the visit type's parameters. Omit
- * when editing the visit type itself. Given, every check judges the values that take effect.
+ * when editing the visit type itself. Given, every check judges the values that take effect, and a warning
+ * is kept only when the calendar sets one of its inputs.
  * @returns The warnings to show, in the order they should appear.
  */
 export function getSchedulingParameterWarnings(
@@ -266,6 +265,7 @@ export function getSchedulingParameterWarnings(
   if (slotCapacity !== undefined && slotCapacity > 1 && ((bufferBefore ?? 0) > 0 || (bufferAfter ?? 0) > 0)) {
     warnings.push({
       id: 'capacity-with-buffers',
+      inputs: ['slotCapacity', 'bufferBefore', 'bufferAfter'],
       message:
         'Concurrent appointments is above 1, but buffer time is never shared, so the first appointment’s Buffer ' +
         'before or Buffer after blocks the others. Set both buffers to 0 to allow concurrent appointments.',
@@ -278,6 +278,7 @@ export function getSchedulingParameterWarnings(
   if ((slotCapacity ?? defaultCapacity) !== (initial.slotCapacity ?? defaultCapacity)) {
     warnings.push({
       id: 'capacity-not-retroactive',
+      inputs: ['slotCapacity'],
       message:
         'Changing Concurrent appointments only affects new bookings. Existing appointments keep the limit they ' +
         'were booked under.',
@@ -287,6 +288,7 @@ export function getSchedulingParameterWarnings(
   if (alignmentInterval !== undefined && alignmentInterval > 0 && MINUTES_PER_DAY % alignmentInterval !== 0) {
     warnings.push({
       id: 'alignment-uneven',
+      inputs: ['alignmentInterval'],
       message:
         'Interval does not divide evenly into 24 hours. Start times restart at midnight each day, so they will ' +
         'not carry cleanly from one day to the next.',
@@ -306,6 +308,7 @@ export function getSchedulingParameterWarnings(
   ) {
     warnings.push({
       id: 'alignment-dst-shift',
+      inputs: ['alignmentInterval', 'alignmentTimezone'],
       message:
         'Interval does not divide into an hour, and start times are counted from UTC midnight, so every start ' +
         'time moves by an hour when the clocks change. Use an interval that divides into 60, or set an ' +
@@ -316,6 +319,7 @@ export function getSchedulingParameterWarnings(
   if (duration !== undefined && alignmentInterval !== undefined && alignmentInterval !== duration) {
     warnings.push({
       id: 'alignment-against-duration',
+      inputs: ['duration', 'alignmentInterval'],
       message:
         alignmentInterval > duration
           ? 'Interval is longer than Duration, so there will be a gap between appointments. Set Interval to ' +
@@ -327,11 +331,16 @@ export function getSchedulingParameterWarnings(
   if (alignmentOffset !== undefined && alignmentInterval !== undefined && alignmentOffset >= alignmentInterval) {
     warnings.push({
       id: 'offset-exceeds-interval',
+      inputs: ['alignmentOffset', 'alignmentInterval'],
       message:
         `Offset is as long as Interval or longer, so it wraps around: ${alignmentOffset} minutes works the same ` +
         `as ${alignmentOffset % alignmentInterval}.`,
     });
   }
 
-  return warnings;
+  if (!inherited) {
+    return warnings;
+  }
+  const setHere = (key: SchedulingParameter): boolean => stored[key] !== undefined || storedInitial[key] !== undefined;
+  return warnings.filter((warning) => !warning.inputs || warning.inputs.some(setHere));
 }
