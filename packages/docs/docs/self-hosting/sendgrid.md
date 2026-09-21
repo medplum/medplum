@@ -8,9 +8,9 @@ This page describes how to use [SendGrid](https://app.sendgrid.com/) as an [SMTP
 
 :::note[]
 
-SMTP email is only available when self-hosting Medplum.
+This page covers server-level SMTP configuration for self-hosted Medplum. Project admins can configure their own outbound SMTP provider in both hosted and self-hosted environments; see [Project SMTP](/docs/user-management/project-smtp) for instructions.
 
-Medplum's hosted environment uses [Amazon Simple Email Service (SES)](https://aws.amazon.com/ses/). Amazon SES is the default Medplum email provider.
+Medplum's hosted environment uses [Amazon Simple Email Service (SES)](https://aws.amazon.com/ses/) by default unless project SMTP is configured.
 
 :::
 

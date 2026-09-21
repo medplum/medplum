@@ -17,6 +17,7 @@ describe('utils', () => {
   test('isIntegerConfig', () => {
     expect(isIntegerConfig('baseUrl')).toBe(false);
     expect(isIntegerConfig('port')).toBe(true);
+    expect(isIntegerConfig('defaultMfaRateLimit')).toBe(true);
   });
 
   test('addDefaults sets maxSearchOffset default', () => {
@@ -31,6 +32,7 @@ describe('utils', () => {
       baseUrl: 'https://example.com',
     } as any);
     expect(config.rateLimitsEnabled).toBe(true);
+    expect(config.defaultMfaRateLimit).toBe(10);
   });
 
   test('addDefaults preserves existing maxSearchOffset', () => {

@@ -60,6 +60,7 @@ import { ResourcePage } from './pages/resource/ResourcePage';
 import { ResourceSchedulingPage } from './pages/resource/ResourceSchedulingPage';
 import { SchedulePage } from './pages/schedule/SchedulePage';
 import { ScheduleSettingsPage } from './pages/schedule/ScheduleSettingsPage';
+import { InternalSchedulingWorkspacePage } from './pages/scheduling/InternalSchedulingWorkspacePage';
 import { SearchPage } from './pages/SearchPage';
 import { BillingSetupPage } from './pages/settings/BillingSetupPage';
 import { SignInPage } from './pages/SignInPage';
@@ -193,7 +194,7 @@ export function App(): JSX.Element | null {
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
                   ...(hasBilling
-                    ? [{ icon: <IconReceipt2 />, label: 'Candid Billing Setup', href: '/Settings/Billing' }]
+                    ? [{ icon: <IconReceipt2 />, label: 'Billing Settings', href: '/Settings/Billing' }]
                     : []),
                   ...(hasDoseSpot
                     ? [
@@ -299,13 +300,15 @@ export function App(): JSX.Element | null {
               <Route path="/Calendar/Schedule" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsPage />} />
+              {/* Internal-only test harness for `SchedulingWorkspace` — intentionally not in `menus` above */}
+              <Route path="/internal-scheduling-workspace" element={<InternalSchedulingWorkspacePage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/register" element={<RegisterPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
               {/* Must precede the /:resourceType catch-alls below */}
-              {hasBilling && <Route path="/Settings/Billing/:tab?" element={<BillingSetupPage />} />}
+              {hasBilling && <Route path="/Settings/Billing/*" element={<BillingSetupPage />} />}
               <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
