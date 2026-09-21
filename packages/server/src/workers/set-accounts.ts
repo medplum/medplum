@@ -65,7 +65,7 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
       if ('asyncJob' in job.data) {
         return { asyncJob: 'AsyncJob/' + job.data.asyncJob.id };
       }
-      return { asyncJob: 'AyncJob/' + job.data.tracking.asyncJobId };
+      return { asyncJob: 'AsyncJob/' + job.data.tracking.asyncJobId };
     });
 
     worker.on('failed', async (job) => {

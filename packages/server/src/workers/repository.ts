@@ -13,10 +13,6 @@ import type { AsyncJobTracking, JobTarget } from './base';
  * @returns A system repository routed to the target project, shard, or global resources.
  */
 export async function getJobSystemRepo(target: JobTarget): Promise<SystemRepository> {
-  if (!isJobTarget(target)) {
-    throw new TypeError('Background job data must include a valid target', { cause: target });
-  }
-
   switch (target.kind) {
     case 'project':
       if (target.system) {
@@ -30,10 +26,6 @@ export async function getJobSystemRepo(target: JobTarget): Promise<SystemReposit
       target satisfies never;
       throw new TypeError(`Unsupported job target kind: ${(target as any).kind}`);
   }
-}
-
-function isJobTarget(target: unknown): target is JobTarget {
-  return typeof target === 'object' && target !== null && 'kind' in target;
 }
 
 /**

@@ -20,14 +20,6 @@ export type ShardJobTarget = { readonly kind: 'shard'; readonly shardId: string 
 
 export type JobTarget = ProjectJobTarget | ShardJobTarget;
 
-/**
- * Structural contract for all durable background job payloads.
- * Jobs queued before this contract was introduced must be drained before deployment; workers reject missing targets.
- */
-export interface MedplumJobData {
-  readonly target: JobTarget;
-}
-
 export function getProjectJobTarget(resource: WithId<Resource>): ProjectJobTarget {
   return resource.meta?.project
     ? { kind: 'project', projectId: resource.meta.project }

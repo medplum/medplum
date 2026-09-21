@@ -165,9 +165,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
         return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => {
           if (job.data.asyncJob) {
             return execLegacyBatchJob(job as Job<LegacyBatchJobData>);
-          } else if (job.data.asyncJobId) {
-            return execBatchJob(job as Job<ReentrantBatchJobData>);
-          } else if (job.data.tracking) {
+          } else if (job.data.tracking || job.data.asyncJobId) {
             return execBatchJob(job as Job<ReentrantBatchJobData>);
           } else {
             throw new TypeError('Unrecognized BatchJobData', { cause: job.data });
