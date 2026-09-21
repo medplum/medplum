@@ -204,14 +204,15 @@ describe('flat scheduling parameters', () => {
     expect(hasSchedulingParameters(cleared)).toBe(false);
   });
 
-  test('a service write never emits the service reference scheduling rejects on it', () => {
+  test('a service write omits the service pointer, which the server rejects there', () => {
     const written = setHealthcareServiceSchedulingParameterValues(visitType, allValues);
 
     const container = written.extension?.find((extension) => extension.url === SchedulingParametersURI);
-    expect(container?.extension?.some((subextension) => subextension.url === 'service')).toBe(false);
+    expect(container).toBeDefined();
+    expect(container?.extension?.map((subextension) => subextension.url)).not.toContain('service');
   });
 
-  test('a schedule write keeps the service reference naming what it configures', () => {
+  test('a schedule write includes the service pointer that scopes the override', () => {
     const schedule: Schedule = {
       resourceType: 'Schedule',
       id: 'schedule-1',
