@@ -15,16 +15,20 @@ import type { Job } from 'bullmq';
 import assert from 'node:assert';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import type { MedplumServerConfig } from '../config/types';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { createTestProject } from '../test.setup';
+import { getAsyncJobTracking } from './base';
 import type { LambdaCleanerJobData } from './lambda-cleaner';
-import { execLambdaCleanerJob, lambdaCleanerJobProcessor } from './lambda-cleaner';
+import { execLambdaCleanerJob, initLambdaCleanerWorker, lambdaCleanerJobProcessor } from './lambda-cleaner';
+import * as workerUtils from './utils';
 
 describe('Lambda version cleanup worker', () => {
   let mockLambdaClient: AwsClientStub<LambdaClient>;
+  let config: MedplumServerConfig;
 
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    config = await loadTestConfig();
     await initAppServices(config);
   });
   afterAll(async () => {
@@ -159,5 +163,43 @@ describe('Lambda version cleanup worker', () => {
     // expect(summary.versionsPlanned).toBe(1);
     // expect(summary.versionsDeleted).toBe(0);
     expect(mockLambdaClient.commandCalls(DeleteFunctionCommand)).toHaveLength(0);
+  });
+
+  test.each([
+    ['legacy', true],
+    ['tracked', false],
+  ] as const)('Processes %s async job data', async (_format, legacy) => {
+    mockLambdaClient.on(ListFunctionsCommand).resolves({ Functions: [] });
+    const { repo } = await createTestProject({ withRepo: true });
+    const exec = new AsyncJobExecutor(repo);
+    const asyncJob = await exec.init('/some-url');
+    const jobData: LambdaCleanerJobData = {
+      ...(legacy ? { asyncJob } : { tracking: getAsyncJobTracking(asyncJob) }),
+      options: { nameRegex: '^medplum-bot-lambda-' },
+    };
+
+    const updatedAsyncJob = await lambdaCleanerJobProcessor({ data: jobData } as Job<LambdaCleanerJobData>);
+
+    expect(updatedAsyncJob.status).toBe('completed');
+    expect(updatedAsyncJob.output?.parameter).toContainEqual({ name: 'functionsScanned', valueInteger: 0 });
+  });
+
+  test.each([
+    ['legacy', true],
+    ['tracked', false],
+  ] as const)('Logs %s async job data', (_format, legacy) => {
+    const loggingSpy = vi.spyOn(workerUtils, 'addVerboseQueueLogging');
+    initLambdaCleanerWorker(config);
+    const logFields = loggingSpy.mock.calls.at(-1)?.[2] as (job: Job<LambdaCleanerJobData>) => Record<string, unknown>;
+    const options = { nameRegex: '^medplum-bot-lambda-', dryRun: true };
+    const jobData = legacy
+      ? { asyncJob: { id: 'legacy-job' }, options }
+      : { tracking: { owner: 'system' as const, asyncJobId: 'tracked-job' }, options };
+
+    expect(logFields({ data: jobData } as unknown as Job<LambdaCleanerJobData>)).toEqual({
+      asyncJob: `AsyncJob/${legacy ? 'legacy-job' : 'tracked-job'}`,
+      nameRegex: options.nameRegex,
+      dryRun: true,
+    });
   });
 });

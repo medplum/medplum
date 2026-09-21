@@ -14,6 +14,7 @@ import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import type { ProjectJobTarget } from './base';
+import { getProjectJobTarget } from './base';
 import { getJobSystemRepo } from './repository';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
@@ -85,13 +86,9 @@ export function getDicomQueue(): Queue<DicomJobData> | undefined {
  */
 export async function addDicomJobs(resource: WithId<DicomInstance>, previousVersion: DicomInstance): Promise<void> {
   if (resource.raw?.reference !== previousVersion?.raw?.reference) {
-    const projectId = resource.meta?.project;
-    if (!projectId) {
-      throw new TypeError('Cannot enqueue a DICOM job without a project ID');
-    }
     const ctx = tryGetRequestContext();
     await addDicomJobData({
-      target: { kind: 'project', projectId },
+      target: getProjectJobTarget(resource),
       id: resource.id,
       requestId: ctx?.requestId,
       traceId: ctx?.traceId,

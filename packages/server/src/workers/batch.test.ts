@@ -29,6 +29,7 @@ import {
   getBatchQueue,
   initBatchWorker,
   queueBatchProcessing,
+  queueLegacyBatchProcessing,
 } from './batch';
 import * as workerUtils from './utils';
 import { queueRegistry } from './utils';
@@ -168,6 +169,24 @@ describe('Batch worker', () => {
   }
 
   describe('execBatchJob (re-entrant)', () => {
+    test.each([
+      ['legacy asyncJobId', true],
+      ['tracked', false],
+    ] as const)('Processes %s job data', (_format, legacy) =>
+      withTestContext(async () => {
+        const asyncJob = await createAsyncJob();
+        await new BatchCheckpointStore(asyncJob.id, globalLogger).saveInputBundle(singleEntryBundle());
+        const job = makeReentrantJob({
+          ...(legacy ? { asyncJobId: asyncJob.id } : { tracking: getAsyncJobTracking(asyncJob) }),
+          authState,
+        });
+
+        await expect(execBatchJob(job)).resolves.toBeUndefined();
+
+        expect((await readAsyncJob(asyncJob.id)).status).toStrictEqual('completed');
+      })
+    );
+
     test('Processes a batch to completion', () =>
       withTestContext(async () => {
         const { asyncJob, job } = await setupReentrantJob(multiEntryBundle(3));
@@ -605,6 +624,26 @@ describe('Batch worker', () => {
           )
         ).rejects.toThrow('Job queue BatchQueue not available');
       }));
+
+    test('Enqueues legacy job data with the AsyncJob and bundle inline', () =>
+      withTestContext(async () => {
+        const queue = getBatchQueue() as any;
+        queue.add.mockClear();
+        const asyncJob = await createAsyncJob();
+        const bundle = singleEntryBundle();
+
+        await runInAuthenticatedContext(authState, 'request-id', 'trace-id', undefined, () =>
+          queueLegacyBatchProcessing(bundle, asyncJob)
+        );
+
+        expect(queue.add).toHaveBeenCalledWith('BatchJobData', {
+          asyncJob,
+          bundle,
+          authState,
+          requestId: 'request-id',
+          traceId: 'trace-id',
+        });
+      }));
   });
 
   describe('worker wiring', () => {
@@ -648,18 +687,31 @@ describe('Batch worker', () => {
         await expect(processor({ data: { authState } } as unknown as Job)).rejects.toThrow(TypeError);
       }));
 
-    test('Verbose logging fields resolve the async job reference for both job shapes', () =>
+    test.each([
+      ['embedded AsyncJob', 'embedded'],
+      ['legacy asyncJobId', 'asyncJobId'],
+      ['tracking', 'tracking'],
+    ] as const)('Verbose logging fields resolve the async job reference for %s data', (_description, format) =>
       withTestContext(async () => {
         const spy = vi.spyOn(workerUtils, 'addVerboseQueueLogging');
         initBatchWorker(config);
         const logFields = spy.mock.calls.at(-1)?.[2] as (job: Job) => Record<string, unknown>;
         const asyncJob = await createAsyncJob();
+        const job =
+          format === 'embedded'
+            ? makeLegacyJob({ asyncJob, bundle: singleEntryBundle(), authState })
+            : makeReentrantJob({
+                ...(format === 'asyncJobId'
+                  ? { asyncJobId: asyncJob.id }
+                  : { tracking: getAsyncJobTracking(asyncJob) }),
+                authState,
+              });
 
-        expect(logFields(makeLegacyJob({ asyncJob, bundle: singleEntryBundle(), authState }))).toMatchObject({
+        expect(logFields(job)).toMatchObject({
           asyncJob: getReferenceString(asyncJob),
         });
-        expect(logFields(makeReentrantJob({ asyncJobId: asyncJob.id, authState }))).toHaveProperty('asyncJob');
-      }));
+      })
+    );
 
     describe('failed handler', () => {
       test('No-op when there is no job', async () => {
@@ -686,7 +738,8 @@ describe('Batch worker', () => {
       test('Fails the active AsyncJob and cleans up for a re-entrant job', () =>
         withTestContext(async () => {
           const { failedHandler } = captureWorker();
-          const { asyncJob, job } = await setupReentrantJob(singleEntryBundle(), { chunkSeq: 0 });
+          const asyncJob = await createAsyncJob();
+          const job = makeReentrantJob({ tracking: getAsyncJobTracking(asyncJob), authState, chunkSeq: 0 });
           const cleanupSpy = vi.spyOn(BatchCheckpointStore.prototype, 'cleanup');
 
           await failedHandler(job, new Error('boom'));
