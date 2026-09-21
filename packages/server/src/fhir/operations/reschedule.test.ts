@@ -6,6 +6,7 @@ import {
   getReferenceString,
   isDefined,
   isResource,
+  ServiceTypeReferenceURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
@@ -197,11 +198,11 @@ describe('Appointment/:id/$reschedule', () => {
     return booked as Appointment;
   }
 
-  // $reschedule takes the same schedule / service-type-reference used to search with $find,
-  // plus the chosen start. The Slot resources are derived server-side.
+  // $reschedule takes the same schedules used to search with $find, plus the chosen start.
+  // The service comes off the appointment, and the Slot resources are derived server-side.
   function reschedule(
     appointmentId: string,
-    opts: { start: string; schedules: WithId<Schedule>[]; service?: WithId<HealthcareService>; accessToken?: string }
+    opts: { start: string; schedules: WithId<Schedule>[]; accessToken?: string }
   ): ReturnType<typeof request.post> {
     return request
       .post(`/fhir/R4/Appointment/${appointmentId}/$reschedule`)
@@ -210,7 +211,6 @@ describe('Appointment/:id/$reschedule', () => {
         resourceType: 'Parameters',
         parameter: [
           { name: 'start', valueDateTime: opts.start },
-          { name: 'service-type-reference', valueReference: createReference(opts.service ?? officeVisitService) },
           ...opts.schedules.map((schedule) => ({ name: 'schedule', valueReference: createReference(schedule) })),
         ],
       });
@@ -635,49 +635,11 @@ describe('Appointment/:id/$reschedule', () => {
     expect(appointments[0].serviceType).toContainEqual(procedureCode);
   });
 
-  test('rejects a service type the appointment is not on file for', async () => {
-    // Changing what a visit *is* would leave everything keyed to its type — required codes, a
-    // prior authorization, whatever a PlanDefinition applied at booking — pointing at a type the
-    // visit no longer has. That is a new booking, not a move.
-    const practitionerSchedule = await makeSchedule(practitioner);
-    const start = '2026-05-20T16:00:00.000Z'; // Wed 11am EST
-    const end = '2026-05-20T17:00:00.000Z';
-
-    const booked = await book(makeProposal({ start, end, schedules: [practitionerSchedule] }));
-
-    const labDrawService = await systemRepo.createResource<HealthcareService>({
-      resourceType: 'HealthcareService',
-      name: 'Lab Draw',
-      type: [{ coding: [{ system: 'https://example.com/fhir', code: 'lab-draw' }] }],
-      meta: { project: project.project.id },
-    });
-
-    const response = await reschedule(booked.id as string, {
-      start: '2026-05-21T16:00:00.000Z', // Thu 11am EST
-      schedules: [practitionerSchedule],
-      service: labDrawService,
-    });
-
-    expect(response).toHaveStatus(400);
-    expect(response.body).toMatchObject({
-      issue: [
-        {
-          details: { text: 'Appointment is on file for a different service type' },
-          expression: ['Parameters.service-type-reference'],
-        },
-      ],
-    });
-
-    // The refusal costs the visit nothing: it is still where it was, holding what it held.
-    const stored = await systemRepo.readResource<Appointment>('Appointment', booked.id as string);
-    expect(stored.start).toStrictEqual(start);
-    expect(stored.slot?.map((ref) => ref.reference)).toStrictEqual(booked.slot?.map((ref) => ref.reference));
-  });
-
-  test('moves an appointment that records no service type at all', async () => {
-    // An imported or hand-written appointment may name no service. There is nothing for the
-    // parameter to contradict, so the move is allowed — and still writes no service type,
-    // since the operation does not fill in what the record never said.
+  test('rejects an appointment that records no service type at all', async () => {
+    // The service says how long the visit runs, what grid it sits on, and what buffers surround
+    // it. An imported or hand-written appointment naming none gives the move nothing to be
+    // measured against, and the operation will not adopt one on the appointment's behalf:
+    // what a visit *is* is not something a move decides.
     const practitionerSchedule = await makeSchedule(practitioner);
     const untyped = await systemRepo.createResource<Appointment>({
       resourceType: 'Appointment',
@@ -693,10 +655,59 @@ describe('Appointment/:id/$reschedule', () => {
       schedules: [practitionerSchedule],
     });
 
-    expect(response).toHaveStatus(200);
-    const appointments = bundleResources(response.body).filter((r) => isResource<Appointment>(r, 'Appointment'));
-    expect(appointments[0]).toMatchObject({ start: '2026-05-28T16:00:00.000Z' });
-    expect(appointments[0].serviceType).toBeUndefined();
+    expect(response).toHaveStatus(400);
+    expect(response.body).toHaveProperty('issue', [
+      {
+        code: 'invalid',
+        severity: 'error',
+        details: { text: 'Appointment has no service reference' },
+        expression: ['Appointment.serviceType'],
+      },
+    ]);
+
+    // The refusal costs the visit nothing: it is still where it was.
+    const stored = await systemRepo.readResource<Appointment>('Appointment', untyped.id);
+    expect(stored.start).toStrictEqual('2026-05-27T16:00:00.000Z');
+  });
+
+  test('rejects an appointment on file for more than one service type', async () => {
+    // Two services are two sets of scheduling parameters, and nothing in the request says
+    // which of them the move should be measured against.
+    const practitionerSchedule = await makeSchedule(practitioner);
+    const start = '2026-05-20T16:00:00.000Z'; // Wed 11am EST
+    const end = '2026-05-20T17:00:00.000Z';
+
+    const booked = await book(makeProposal({ start, end, schedules: [practitionerSchedule] }));
+    const labDrawService = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'Lab Draw',
+      type: [{ coding: [{ system: 'https://example.com/fhir', code: 'lab-draw' }] }],
+      meta: { project: project.project.id },
+    });
+    await systemRepo.updateResource<Appointment>({
+      ...booked,
+      serviceType: [...(booked.serviceType ?? []), ...toServiceTypeCodeableConcepts(labDrawService)],
+    });
+
+    const response = await reschedule(booked.id as string, {
+      start: '2026-05-21T16:00:00.000Z', // Thu 11am EST
+      schedules: [practitionerSchedule],
+    });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body).toHaveProperty('issue', [
+      {
+        code: 'invalid',
+        severity: 'error',
+        details: { text: 'Appointment has too many service references' },
+        expression: ['Appointment.serviceType'],
+      },
+    ]);
+
+    // The refusal costs the visit nothing: it is still where it was, holding what it held.
+    const stored = await systemRepo.readResource<Appointment>('Appointment', booked.id as string);
+    expect(stored.start).toStrictEqual(start);
+    expect(stored.slot?.map((ref) => ref.reference)).toStrictEqual(booked.slot?.map((ref) => ref.reference));
   });
 
   test('deduplicates a schedule named more than once', async () => {
@@ -765,7 +776,6 @@ describe('Appointment/:id/$reschedule', () => {
         resourceType: 'Parameters',
         parameter: [
           { name: 'start', valueDateTime: start },
-          { name: 'service-type-reference', valueReference: createReference(officeVisitService) },
           { name: 'schedule', valueReference: { reference: `Slot/${randomUUID()}` } },
         ],
       });
@@ -781,62 +791,34 @@ describe('Appointment/:id/$reschedule', () => {
     ]);
   });
 
-  test('rejects an invalid service-type-reference', async () => {
+  test('rejects when the service on file does not resolve', async () => {
+    // A dangling service reference is stored data, not a bad request body, so the refusal
+    // points at the appointment rather than at anything the caller sent.
     const practitionerSchedule = await makeSchedule(practitioner);
     const start = '2026-04-16T16:00:00.000Z'; // Thu 11am EST
     const end = '2026-04-16T17:00:00.000Z';
 
     const booked = await book(makeProposal({ start, end, schedules: [practitionerSchedule] }));
+    await systemRepo.updateResource<Appointment>({
+      ...booked,
+      serviceType: [
+        {
+          extension: [
+            { url: ServiceTypeReferenceURI, valueReference: { reference: `HealthcareService/${randomUUID()}` } },
+          ],
+        },
+      ],
+    });
 
-    const response = await request
-      .post(`/fhir/R4/Appointment/${booked.id}/$reschedule`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'start', valueDateTime: start },
-          { name: 'service-type-reference', valueReference: { reference: `Slot/${randomUUID()}` } },
-          { name: 'schedule', valueReference: createReference(practitionerSchedule) },
-        ],
-      });
+    const response = await reschedule(booked.id as string, { start, schedules: [practitionerSchedule] });
 
     expect(response).toHaveStatus(400);
     expect(response.body).toHaveProperty('issue', [
       {
         code: 'invalid',
         severity: 'error',
-        details: { text: 'Invalid service-type-reference' },
-        expression: ['Parameters.service-type-reference'],
-      },
-    ]);
-  });
-
-  test('rejects when the service-type-reference does not resolve', async () => {
-    const practitionerSchedule = await makeSchedule(practitioner);
-    const start = '2026-04-16T16:00:00.000Z'; // Thu 11am EST
-    const end = '2026-04-16T17:00:00.000Z';
-
-    const booked = await book(makeProposal({ start, end, schedules: [practitionerSchedule] }));
-
-    const response = await request
-      .post(`/fhir/R4/Appointment/${booked.id}/$reschedule`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'start', valueDateTime: start },
-          { name: 'service-type-reference', valueReference: { reference: `HealthcareService/${randomUUID()}` } },
-          { name: 'schedule', valueReference: createReference(practitionerSchedule) },
-        ],
-      });
-
-    expect(response).toHaveStatus(400);
-    expect(response.body).toHaveProperty('issue', [
-      {
-        code: 'invalid',
-        severity: 'error',
-        details: { text: 'HealthcareService not found' },
-        expression: ['Parameters.service-type-reference'],
+        details: { text: 'Loading HealthcareService failed' },
+        expression: ['Appointment.serviceType'],
       },
     ]);
   });

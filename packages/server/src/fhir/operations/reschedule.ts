@@ -8,20 +8,12 @@ import {
   createReference,
   extractServiceTypeReferences,
   isDefined,
-  isNotFound,
   isReference,
   OperationOutcomeError,
   serviceTypeIncludesService,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  Appointment,
-  AppointmentParticipant,
-  HealthcareService,
-  Reference,
-  Schedule,
-  Slot,
-} from '@medplum/fhirtypes';
+import type { Appointment, AppointmentParticipant, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { addMinutes } from '../../util/date';
@@ -46,7 +38,6 @@ const rescheduleOperation = makeOperationDefinition(
     code: 'reschedule',
     parameter: [
       { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
-      { use: 'in', name: 'service-type-reference', type: 'Reference', min: 1, max: '1' },
       { use: 'in', name: 'schedule', type: 'Reference', min: 1, max: '*' },
       { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
     ],
@@ -55,7 +46,6 @@ const rescheduleOperation = makeOperationDefinition(
 
 type RescheduleParameters = {
   start: string;
-  'service-type-reference': Reference;
   schedule: Reference | Reference[];
 };
 
@@ -66,16 +56,19 @@ type RescheduleParameters = {
  * the current appointment are released before availability is checked, so the time the
  * appointment currently occupies does not block itself.
  *
- * The inputs mirror Appointment/$find: pass the same `schedule` and `service-type-reference`
- * used to search, plus the `start` chosen from the results. The Slot resources are derived from
- * the scheduling parameters rather than submitted, and every attribute of the stored Appointment
- * other than `start`, `end`, `participant` and `slot` is left untouched — including `status`,
- * since the appointment lifecycle belongs to $hold, $confirm, and $cancel.
+ * Pass the same `schedule` values used to search with Appointment/$find, plus the `start` chosen
+ * from the results. The Slot resources are derived from the scheduling parameters rather than
+ * submitted, and every attribute of the stored Appointment other than `start`, `end`,
+ * `participant` and `slot` is left untouched — including `status`, since the appointment
+ * lifecycle belongs to $hold, $confirm, and $cancel.
  *
- * `service-type-reference` is read, never written: it says which service's scheduling parameters
- * the move is measured against, and must name the service the appointment is already on file
- * under. Changing what a visit *is* is not a move — the requirements its type carries, and
- * whatever was applied when it was booked, would be left keyed to a type it no longer has.
+ * The service the move is measured against — the duration it runs for, the grid it aligns to,
+ * the buffers around it — is read off the Appointment's own `serviceType`, which must name
+ * exactly one HealthcareService. It is not an input: changing what a visit *is* is not a move,
+ * since the requirements its type carries, and whatever was applied when it was booked, would be
+ * left keyed to a type it no longer has. An Appointment recording no service has no scheduling
+ * parameters to be measured against at all, and is rejected rather than measured against a
+ * service supplied by the caller.
  *
  * Endpoints:
  *   [fhir base]/Appointment/:id/$reschedule
@@ -92,11 +85,6 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
   const startDate = new Date(params.start);
   if (Number.isNaN(startDate.valueOf())) {
     throw new OperationOutcomeError(badRequest('Invalid start time', 'Parameters.start'));
-  }
-
-  const healthcareServiceRef = params['service-type-reference'];
-  if (!isReference<HealthcareService>(healthcareServiceRef, 'HealthcareService')) {
-    throw new OperationOutcomeError(badRequest('Invalid service-type-reference', 'Parameters.service-type-reference'));
   }
 
   const scheduleRefs: (Reference<Schedule> & { reference: string })[] = [];
@@ -119,36 +107,32 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
         );
       }
 
-      const [schedules, healthcareService] = await Promise.all([
-        txRepo.readReferences(requestedSchedules).then((loaded) => copyPaths(requestedSchedules, loaded)),
-        txRepo.readReference<HealthcareService>(healthcareServiceRef).catch((err) => {
-          if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
-            throw new OperationOutcomeError(
-              badRequest('HealthcareService not found', 'Parameters.service-type-reference')
-            );
-          }
-          throw err;
-        }),
-      ]);
-      assertAllLoaded(schedules, 'Loading schedule failed');
-
-      // Read, never written: the move is measured against this service, and changing what a
-      // visit is would leave its requirements keyed to a type it no longer has. An appointment
-      // recording no service has nothing to contradict, and keeps recording none.
-      if (
-        extractServiceTypeReferences(existingAppointment.serviceType).length > 0 &&
-        !serviceTypeIncludesService(existingAppointment.serviceType, healthcareService)
-      ) {
+      // Read, never written: the move is measured against the service the appointment is
+      // already on file under, since changing what a visit is would leave its requirements
+      // keyed to a type it no longer has. A visit recording no type says nothing about how
+      // long it runs or what grid it sits on, so there is nothing to measure the move against.
+      const serviceRefs = extractServiceTypeReferences(existingAppointment.serviceType);
+      if (serviceRefs.length === 0) {
+        throw new OperationOutcomeError(badRequest('Appointment has no service reference', 'Appointment.serviceType'));
+      }
+      if (serviceRefs.length > 1) {
         throw new OperationOutcomeError(
-          badRequest('Appointment is on file for a different service type', 'Parameters.service-type-reference')
+          badRequest('Appointment has too many service references', 'Appointment.serviceType')
         );
       }
+      const healthcareServiceRef = serviceRefs[0];
 
-      const parameterGroup = await getSchedulingParametersGroup(
-        txRepo,
-        schedules,
-        withPath(healthcareService, 'Parameters.service-type-reference')
-      );
+      const [schedules, services] = await Promise.all([
+        txRepo.readReferences(requestedSchedules).then((loaded) => copyPaths(requestedSchedules, loaded)),
+        txRepo
+          .readReferences([healthcareServiceRef])
+          .then((loaded) => loaded.map((service) => withPath(service, 'Appointment.serviceType'))),
+      ]);
+      assertAllLoaded(schedules, 'Loading schedule failed');
+      assertAllLoaded(services, 'Loading HealthcareService failed');
+      const healthcareService = services[0];
+
+      const parameterGroup = await getSchedulingParametersGroup(txRepo, schedules, healthcareService);
 
       schedules.forEach((schedule) => {
         if (!serviceTypeIncludesService(schedule.serviceType, healthcareService)) {

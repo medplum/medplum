@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Loader } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { extractServiceTypeReferences, isDefined, resolveId } from '@medplum/core';
+import { isDefined, resolveId } from '@medplum/core';
 import type { Appointment, Bundle, Parameters, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -60,9 +60,10 @@ export interface AppointmentRescheduleFormProps extends Omit<
  * Only the time and the actors are asked for. Everything else on the appointment — who
  * it is for, its status, its visit type, whatever clinical detail it carries — is left
  * exactly as it was, because that is all the operation will write. The visit type is
- * shown rather than offered: `$reschedule` refuses one the appointment is not on file
- * for, since changing what a visit *is* would leave its required codes, its
- * authorization, and anything applied at booking keyed to a type it no longer has.
+ * shown rather than offered: `$reschedule` takes none, reading the one the appointment
+ * is on file for instead, since changing what a visit *is* would leave its required
+ * codes, its authorization, and anything applied at booking keyed to a type it no
+ * longer has.
  *
  * @param props - The React props.
  * @returns The form.
@@ -74,16 +75,12 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
 
   const reschedule = useCallback(
     async (proposal: Appointment): Promise<void> => {
-      const service = extractServiceTypeReferences(proposal.serviceType)[0];
       const schedules = getProposedSchedules(proposal);
 
       // Assert that the shape we received matches what we need for `$reschedule`;
       // these fields are always present if we got the results from `$find`.
       if (!proposal.start) {
         throw new Error('The chosen time does not say when it is');
-      }
-      if (!service) {
-        throw new Error('The chosen time does not say which service type it belongs to');
       }
       if (schedules.length === 0) {
         throw new Error('The chosen time does not say which schedules to hold it on');
@@ -99,7 +96,6 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
           resourceType: 'Parameters',
           parameter: [
             { name: 'start', valueDateTime: proposal.start },
-            { name: 'service-type-reference', valueReference: service },
             ...schedules.map((reference) => ({ name: 'schedule', valueReference: { reference } })),
           ],
         } satisfies Parameters

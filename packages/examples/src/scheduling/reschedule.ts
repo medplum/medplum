@@ -26,10 +26,10 @@ const findBundle = (await medplum.get<Bundle<Appointment>>(findUrl)) as Bundle;
 // 2. Pick a proposed appointment from the results
 const proposal = findBundle.entry?.[0]?.resource as Appointment;
 
-// 3. Reschedule to it, reusing the same schedules and service you searched with. The service
-//    must be the one the appointment is already on file for: it says what the move is measured
-//    against and is never written, so changing a visit's type means a new booking. The Slot
-//    resources are derived from the scheduling parameters, and everything else about the
+// 3. Reschedule to it, reusing the same schedules you searched with. The service is not an
+//    input: the operation reads the one the appointment is already on file for, since it says
+//    what the move is measured against and changing a visit's type means a new booking. The
+//    Slot resources are derived from the scheduling parameters, and everything else about the
 //    stored Appointment — the patient participant, the status, the service type, any clinical
 //    detail — is left exactly as it was.
 const response = await medplum.post<Bundle<Appointment | Slot>>(
@@ -38,7 +38,6 @@ const response = await medplum.post<Bundle<Appointment | Slot>>(
     resourceType: 'Parameters',
     parameter: [
       { name: 'start', valueDateTime: proposal.start },
-      { name: 'service-type-reference', valueReference: serviceTypeReference },
       ...schedules.map((schedule) => ({ name: 'schedule', valueReference: schedule })),
     ],
   }

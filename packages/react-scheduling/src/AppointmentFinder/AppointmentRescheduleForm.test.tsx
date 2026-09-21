@@ -7,7 +7,7 @@ import type { JSX } from 'react';
 import type { MockInstance } from 'vitest';
 import { installFindStub } from '../stories/mockFind';
 import { installRescheduleStub } from '../stories/mockReschedule';
-import { RiveraImagingAppointment, RiveraImagingHeldSlots, UltrasoundImagingService } from '../stories/scheduling';
+import { RiveraImagingAppointment, RiveraImagingHeldSlots } from '../stories/scheduling';
 import { installAutocompleteTimers, removePill, settleAutocomplete } from '../test-utils/asyncAutocomplete';
 import {
   chooseActor,
@@ -229,10 +229,10 @@ describe('AppointmentRescheduleForm', () => {
       const parameters = lastRescheduleParameters(post);
       const [appointment] = onRescheduled.mock.calls[0] as [{ appointment: Appointment }];
       expect(parameterValues(parameters, 'start')).toEqual([appointment.appointment.start]);
-      expect(parameterValues(parameters, 'service-type-reference')).toEqual([
-        `HealthcareService/${UltrasoundImagingService.id}`,
-      ]);
       expect(parameterValues(parameters, 'schedule')).toEqual(expect.arrayContaining(HELD_SCHEDULES));
+
+      // The visit type is not sent: the operation reads the one the visit is on file for.
+      expect(parameterValues(parameters, 'service-type-reference')).toEqual([]);
     });
 
     test('Reassigns a visit to another actor at the same hour', async () => {

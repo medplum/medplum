@@ -17,7 +17,7 @@ Because the old Slots are released **before** availability is checked, an appoin
 
 `$reschedule` is the write path for [`$find`](/docs/scheduling/appointment-find) results obtained with the `ignore-appointment` parameter. [`$book`](/docs/scheduling/appointment-book) and [`$hold`](/docs/scheduling/appointment-hold) validate against the original Slots and will reject those times.
 
-Its inputs mirror `$find`: the same `schedule` and `service-type-reference` you searched with, plus the `start` you chose. See [What the operation writes](#what-the-operation-writes) for exactly which attributes change.
+Its inputs are the same `schedule` values you searched `$find` with, plus the `start` you chose. The visit type is not among them — the operation reads the one the Appointment is already on file for. See [What the operation writes](#what-the-operation-writes) for exactly which attributes change.
 
 ## Use Cases
 
@@ -49,10 +49,6 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/my-appointment-id/$res
     "resourceType": "Parameters",
     "parameter": [
       { "name": "start", "valueDateTime": "2026-03-10T09:00:00.000Z" },
-      {
-        "name": "service-type-reference",
-        "valueReference": { "reference": "HealthcareService/my-healthcareservice-id" }
-      },
       { "name": "schedule", "valueReference": { "reference": "Schedule/dr-smith-schedule" } },
       { "name": "schedule", "valueReference": { "reference": "Schedule/room-two-schedule" } }
     ]
@@ -64,17 +60,16 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/my-appointment-id/$res
 
 ## Parameters
 
-| Name                     | Type                           | Description                                                                        | Required |
-| ------------------------ | ------------------------------ | ---------------------------------------------------------------------------------- | -------- |
-| `start`                  | `dateTime`                     | The new start time for the appointment.                                            | Yes      |
-| `service-type-reference` | `reference(HealthcareService)` | The HealthcareService the appointment is already on file for. Read, never written. | Yes      |
-| `schedule`               | `reference(Schedule)`          | A schedule to move the appointment onto. May be passed multiple times.             | Yes      |
+| Name       | Type                  | Description                                                            | Required |
+| ---------- | --------------------- | ---------------------------------------------------------------------- | -------- |
+| `start`    | `dateTime`            | The new start time for the appointment.                                | Yes      |
+| `schedule` | `reference(Schedule)` | A schedule to move the appointment onto. May be passed multiple times. | Yes      |
 
 The Appointment being rescheduled is identified by the `id` in the URL.
 
-These are the same `schedule` and `service-type-reference` you passed to [`$find`](/docs/scheduling/appointment-find), plus the `start` of the proposal you picked from its results. Note that `start` means something slightly different in each operation: in `$find` it is the beginning of the search range, while here it is the appointment's own start time.
+These are the same `schedule` values you passed to [`$find`](/docs/scheduling/appointment-find), plus the `start` of the proposal you picked from its results. Note that `start` means something slightly different in each operation: in `$find` it is the beginning of the search range, while here it is the appointment's own start time.
 
-`service-type-reference` says which service's scheduling parameters the move is measured against — the duration it runs for, the grid it aligns to, the buffers around it. It must name the service the Appointment already records in `serviceType`; naming a different one is [rejected](#service-type-does-not-match-the-appointment). An Appointment that records no service reference at all — imported, or written outside the scheduling operations — has nothing to contradict, and is moved against whatever service you pass.
+Unlike `$find`, `$reschedule` takes no `service-type-reference`. The service whose scheduling parameters the move is measured against — the duration it runs for, the grid it aligns to, the buffers around it — is the one the Appointment already records in `serviceType`, and the operation reads it from there. An Appointment that records no service reference, or more than one, has no single set of parameters to be measured against and is [rejected](#appointment-does-not-record-exactly-one-service-type); it is not moved against a service the caller names, because adopting one would be deciding what the visit *is*.
 
 ### What the operation writes
 
@@ -92,7 +87,7 @@ Everything else is left exactly as it was — `serviceType`, `reasonCode`, `comm
 Three things deserve specific mention:
 
 - **`status` is not an input.** The appointment lifecycle belongs to [`$hold`](/docs/scheduling/appointment-hold), [`$confirm`](/docs/scheduling/appointment-confirm), and [`$cancel`](/docs/scheduling/appointment-cancel), each of which validates its own transition. `$reschedule` changes *when and where* an appointment happens, never *whether* it happens. A `booked` appointment stays booked; a `pending` one stays pending and keeps holding its new time with `busy-tentative` Slots.
-- **`serviceType` is not an input either.** What a visit *is* is not something a move changes. The requirements a visit type carries — the procedure and diagnosis codes it is booked with, which live in `Appointment.serviceType` alongside the service reference, any prior authorization, anything a `PlanDefinition` applied when it was booked — are all keyed to that type, and none of them are re-applied by a reschedule. Changing the type is a new booking: cancel and rebook. The parameter is therefore read and checked, never written, which also means the codes booked with the appointment survive the move untouched.
+- **`serviceType` is not an input at all.** What a visit *is* is not something a move changes. The requirements a visit type carries — the procedure and diagnosis codes it is booked with, which live in `Appointment.serviceType` alongside the service reference, any prior authorization, anything a `PlanDefinition` applied when it was booked — are all keyed to that type, and none of them are re-applied by a reschedule. Changing the type is a new booking: cancel and rebook. The stored `serviceType` is therefore read and never written, which also means the codes booked with the appointment survive the move untouched.
 - **`participant` is reconciled, not submitted.** The actors of the Schedules being moved away from are swapped for the actors of the Schedules in the request. Everyone else — the patient, related persons, secondary practitioners — is preserved untouched, and an actor that appears on both the old and new Schedules keeps its existing entry along with any `status` it had already responded with.
 
 ### Slots are derived, not submitted
@@ -104,8 +99,8 @@ Unlike [`$book`](/docs/scheduling/appointment-book) and [`$hold`](/docs/scheduli
 - The stored Appointment must have `status: booked` or `status: pending`. All other statuses are rejected.
 - All `Slot` resources referenced by `Appointment.slot` must exist and be readable by the caller.
 - `start` must fall on the schedule's alignment grid.
-- The requested HealthcareService must be the one the Appointment already records in `serviceType`, unless it records none.
-- Each Schedule's `serviceType` must include the requested HealthcareService.
+- The Appointment's `serviceType` must record exactly one HealthcareService, and that service must be readable by the caller.
+- Each Schedule's `serviceType` must include that HealthcareService.
 - Each Schedule must have exactly **one actor**, and that actor must have a timezone defined via the `http://hl7.org/fhir/StructureDefinition/timezone` extension.
 - Every Schedule in the request must agree on `duration` and the alignment parameters.
 - The new time must be available on every requested Schedule, ignoring the Slots this appointment currently holds.
@@ -182,7 +177,9 @@ If validation of the new time fails, the whole transaction rolls back: the appoi
 }
 ```
 
-### Service Type Does Not Match the Appointment
+### Appointment Does Not Record Exactly One Service Type
+
+An Appointment naming no service — imported, or written outside the scheduling operations — cannot be moved, because nothing says how long it runs or what grid it sits on:
 
 ```json
 {
@@ -191,8 +188,24 @@ If validation of the new time fails, the whole transaction rolls back: the appoi
     {
       "severity": "error",
       "code": "invalid",
-      "details": { "text": "Appointment is on file for a different service type" },
-      "expression": ["Parameters.service-type-reference"]
+      "details": { "text": "Appointment has no service reference" },
+      "expression": ["Appointment.serviceType"]
+    }
+  ]
+}
+```
+
+One naming more than one is rejected for the mirror-image reason — there is no single set of scheduling parameters to measure the move against:
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "error",
+      "code": "invalid",
+      "details": { "text": "Appointment has too many service references" },
+      "expression": ["Appointment.serviceType"]
     }
   ]
 }
@@ -216,7 +229,7 @@ If validation of the new time fails, the whole transaction rolls back: the appoi
 
 ## Rescheduling from the UI
 
-The [`@medplum/react-scheduling`](https://www.npmjs.com/package/@medplum/react-scheduling) library provides an `AppointmentRescheduleForm` component that drives this whole flow. Given an Appointment, it reads back the visit type it was booked under and the Schedules its Slots are held on, shows the visit type fixed and the actors as editable selections, searches with `$find` — passing `ignore-appointment` so the visit does not block its own move — and posts `$reschedule` for the time chosen. It announces the Appointment, the released Slots and the new ones, so a calendar rendered beside it refreshes without the host fetching anything.
+The [`@medplum/react-scheduling`](https://www.npmjs.com/package/@medplum/react-scheduling) library provides an `AppointmentRescheduleForm` component that drives this whole flow. Given an Appointment, it reads back the visit type it is on file for and the Schedules its Slots are held on, shows the visit type fixed and the actors as editable selections, searches with `$find` — passing `ignore-appointment` so the visit does not block its own move — and posts `$reschedule` for the time chosen. It announces the Appointment, the released Slots and the new ones, so a calendar rendered beside it refreshes without the host fetching anything.
 
 The `AppointmentDetails` view mounts it behind a **Reschedule** button, which is how the `SchedulingWorkspace` offers rescheduling from the calendar.
 

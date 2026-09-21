@@ -1,19 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, MedplumRequestOptions } from '@medplum/core';
-import {
-  badRequest,
-  extractServiceTypeReferences,
-  isDefined,
-  OperationOutcomeError,
-  resolveId,
-  serviceTypeIncludesService,
-} from '@medplum/core';
+import { badRequest, extractServiceTypeReferences, isDefined, OperationOutcomeError, resolveId } from '@medplum/core';
 import type {
   Appointment,
   AppointmentParticipant,
   Bundle,
-  HealthcareService,
   Parameters,
   Reference,
   Schedule,
@@ -65,14 +57,12 @@ export function installRescheduleStub(medplum: MedplumClient): () => void {
 
 async function rescheduleAppointment(medplum: MedplumClient, id: string, parameters: Parameters): Promise<Bundle> {
   const start = parameters.parameter?.find((parameter) => parameter.name === 'start')?.valueDateTime;
-  const serviceReference = parameters.parameter?.find((parameter) => parameter.name === 'service-type-reference')
-    ?.valueReference as Reference<HealthcareService> | undefined;
   const scheduleReferences = (parameters.parameter ?? [])
     .filter((parameter) => parameter.name === 'schedule')
     .map((parameter) => parameter.valueReference)
     .filter(isDefined) as Reference<Schedule>[];
 
-  if (!start || !serviceReference || scheduleReferences.length === 0) {
+  if (!start || scheduleReferences.length === 0) {
     throw new OperationOutcomeError(badRequest('$reschedule was called without a time to move to'));
   }
 
@@ -81,14 +71,16 @@ async function rescheduleAppointment(medplum: MedplumClient, id: string, paramet
     throw new OperationOutcomeError(badRequest(`Appointment cannot be rescheduled in '${appointment.status}' status`));
   }
 
-  const service = await medplum.readReference(serviceReference);
-  // The visit type is read, never written: a move cannot change what a visit is.
-  if (
-    extractServiceTypeReferences(appointment.serviceType).length > 0 &&
-    !serviceTypeIncludesService(appointment.serviceType, service)
-  ) {
-    throw new OperationOutcomeError(badRequest('Appointment is on file for a different service type'));
+  // The visit type is read, never written: a move cannot change what a visit is, and a
+  // visit that names no type says nothing about how long it runs.
+  const serviceReferences = extractServiceTypeReferences(appointment.serviceType);
+  if (serviceReferences.length === 0) {
+    throw new OperationOutcomeError(badRequest('Appointment has no service reference'));
   }
+  if (serviceReferences.length > 1) {
+    throw new OperationOutcomeError(badRequest('Appointment has too many service references'));
+  }
+  const service = await medplum.readReference(serviceReferences[0]);
 
   const schedules = await Promise.all(scheduleReferences.map(async (reference) => medplum.readReference(reference)));
 
