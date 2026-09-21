@@ -89,8 +89,6 @@ function toSubextension(key: FlatParameter, value: number | string): Extension &
   if (isDurationParameter(key)) {
     return { url: key, valueDuration: minutesToSchedulingDuration(value as number) };
   }
-  // A parameter added to FLAT_PARAMETERS without a group fails to compile here rather than encoding as a
-  // duration, which is what the previous fallthrough did.
   return assertNever(key);
 }
 
