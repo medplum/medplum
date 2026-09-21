@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   Alert,
+  Anchor,
   Badge,
   Button,
   Divider,
@@ -19,6 +20,7 @@ import type { HealthcareService } from '@medplum/fhirtypes';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useId, useState } from 'react';
+import type { SchedulingParameterWarning } from './SchedulingParametersEditor.utils';
 import {
   getHealthcareServiceSchedulingParameterValues,
   setHealthcareServiceSchedulingParameterValues,
@@ -45,6 +47,39 @@ export interface SchedulingParametersEditorProps {
 }
 
 /**
+ * Renders a warning, with the field it names as a jump to that field.
+ * @param props - The warning and the field id prefix.
+ * @param props.warning - The warning to render.
+ * @param props.idPrefix - The prefix the form's field ids are built from.
+ * @returns The warning text.
+ */
+function WarningText(props: { readonly warning: SchedulingParameterWarning; readonly idPrefix: string }): JSX.Element {
+  const { warning, idPrefix } = props;
+  const at = warning.focus ? warning.message.indexOf(warning.focus.text) : -1;
+
+  if (!warning.focus || at < 0) {
+    return <>{warning.message}</>;
+  }
+
+  const { field, text } = warning.focus;
+  return (
+    <>
+      {warning.message.slice(0, at)}
+      <Anchor
+        component="button"
+        type="button"
+        inherit
+        onClick={() => document.getElementById(`${idPrefix}-${field}`)?.focus()}
+        data-testid={`scheduling-parameters-warning-${warning.id}-focus`}
+      >
+        {text}
+      </Anchor>
+      {warning.message.slice(at + text.length)}
+    </>
+  );
+}
+
+/**
  * Edits the scheduling parameters a visit service type sets for itself, and whether it can be booked at all.
  *
  * Every calendar offering the service follows these unless it overrides a parameter of its own. Working
@@ -64,6 +99,7 @@ export function SchedulingParametersEditor(props: SchedulingParametersEditorProp
   const [active, setActive] = useState(service.active !== false);
   const [saving, setSaving] = useState(false);
   const reasonId = useId();
+  const fieldIdPrefix = useId();
 
   const serviceName = service.name ?? 'this visit service type';
   const deactivating = active !== (service.active !== false);
@@ -135,6 +171,7 @@ export function SchedulingParametersEditor(props: SchedulingParametersEditorProp
           defaults={SCHEDULING_PARAMETER_DEFAULTS}
           defaultsLabel="default"
           errors={blocking}
+          idPrefix={fieldIdPrefix}
           onChange={setValues}
           // Neither time zone is offered here: one belongs to each calendar, and the other is left at UTC so
           // calendars booked together agree. Either one already stored still takes effect, so both fields
@@ -154,7 +191,7 @@ export function SchedulingParametersEditor(props: SchedulingParametersEditorProp
                 icon={<IconAlertTriangle />}
                 data-testid={`scheduling-parameters-warning-${warning.id}`}
               >
-                {warning.message}
+                <WarningText warning={warning} idPrefix={fieldIdPrefix} />
               </Alert>
             ))}
           </Stack>

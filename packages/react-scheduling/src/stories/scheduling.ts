@@ -137,7 +137,7 @@ export interface SchedulableServiceOptions {
   readonly bufferAfterMinutes?: number;
   /** Shifts the start time grid, omitted when the visit type sets none. */
   readonly alignmentOffsetMinutes?: number;
-  /** How many appointments may be held at the same start time, omitted when the visit type sets none. */
+  /** How many appointments may overlap, omitted when the visit type sets none. */
   readonly slotCapacity?: number;
   /** Whether the visit type can be booked at all. Omitted, which scheduling reads as active. */
   readonly active?: boolean;

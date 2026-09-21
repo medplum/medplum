@@ -409,6 +409,23 @@ describe('SchedulingParametersEditor', () => {
     });
   });
 
+  test('the no-duration warning links its Duration back to the field', async () => {
+    renderEditor(FullyConfiguredService);
+
+    setField('duration', '');
+    await waitFor(() => expect(screen.getByTestId('scheduling-parameters-warning-no-duration')).toBeInTheDocument());
+
+    const link = screen.getByTestId('scheduling-parameters-warning-no-duration-focus');
+    expect(link).toHaveTextContent('Duration');
+    // The rest of the sentence stays plain text, so only the field name is a link.
+    expect(screen.getByTestId('scheduling-parameters-warning-no-duration')).toHaveTextContent(
+      'Duration is not set, so this visit type can only be booked on calendars that set their own duration for this service.'
+    );
+
+    fireEvent.click(link);
+    expect(field('duration')).toHaveFocus();
+  });
+
   test('a rejected save leaves the button usable rather than stuck pending', async () => {
     const failing = vi.fn().mockRejectedValue(new Error('conflict'));
     vi.spyOn(console, 'error').mockImplementation(() => undefined);

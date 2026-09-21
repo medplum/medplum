@@ -30,6 +30,11 @@ export interface SchedulingParameterWarning {
   /** Stable identifier, used for the test id and the React key. */
   readonly id: string;
   readonly message: string;
+  /** The field the message names, and the words in it that jump there. */
+  readonly focus?: {
+    readonly field: keyof SchedulingParameterValues;
+    readonly text: string;
+  };
 }
 
 /**
@@ -163,8 +168,8 @@ export function getSchedulingParameterWarnings(
     warnings.push({
       id: 'no-duration',
       message:
-        'Duration is not set, so this visit type can only be booked on calendars that set their own duration. ' +
-        'Booking on several calendars at once also requires them all to have the same duration.',
+        'Duration is not set, so this visit type can only be booked on calendars that set their own duration for this service.',
+      focus: { field: 'duration', text: 'Duration' },
     });
   }
 

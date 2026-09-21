@@ -66,29 +66,51 @@ export const Inactive = (): JSX.Element => (
 export const OverbookingWithBuffers = (): JSX.Element => (
   <EditorHost
     title="Concurrent appointments alongside buffers, which largely defeats them"
-    initial={buildSchedulableService({
-      id: 'overbooked',
-      name: 'Injection Clinic',
-      category: 'Treatment',
-      durationMinutes: 20,
-      alignmentMinutes: 20,
-      bufferBeforeMinutes: 5,
-      bufferAfterMinutes: 5,
-      slotCapacity: 3,
-    })}
+    initial={clearHealthcareServiceSchedulingParameter(
+      buildSchedulableService({
+        id: 'overbooked',
+        name: 'Injection Clinic',
+        category: 'Treatment',
+        durationMinutes: 20,
+        alignmentMinutes: 20,
+        bufferBeforeMinutes: 5,
+        bufferAfterMinutes: 5,
+        slotCapacity: 3,
+      }),
+      'timezone'
+    )}
   />
 );
 
 export const AwkwardAlignment = (): JSX.Element => (
   <EditorHost
     title="An interval that does not divide evenly into a day"
-    initial={buildSchedulableService({
-      id: 'awkward',
-      name: 'Extended Consult',
-      category: 'Office visit',
-      durationMinutes: 50,
-      alignmentMinutes: 50,
-    })}
+    initial={clearHealthcareServiceSchedulingParameter(
+      buildSchedulableService({
+        id: 'awkward',
+        name: 'Extended Consult',
+        category: 'Office visit',
+        durationMinutes: 50,
+        alignmentMinutes: 50,
+      }),
+      'timezone'
+    )}
+  />
+);
+
+export const DaylightSavingShift = (): JSX.Element => (
+  <EditorHost
+    title="A 90 minute grid, which divides into a day but not into an hour, so every start moves when the clocks change"
+    initial={clearHealthcareServiceSchedulingParameter(
+      buildSchedulableService({
+        id: 'ninety-minute',
+        name: 'New Patient Intake',
+        category: 'Office visit',
+        durationMinutes: 90,
+        alignmentMinutes: 90,
+      }),
+      'timezone'
+    )}
   />
 );
 

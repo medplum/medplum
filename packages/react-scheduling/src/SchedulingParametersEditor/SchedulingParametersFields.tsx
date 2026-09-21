@@ -19,8 +19,7 @@ type TimezoneParameter = 'timezone' | 'alignmentTimezone';
 
 /**
  * Puts the description under the input rather than above it, so a description that wraps pushes nothing
- * around: the labels and inputs stay on the same lines across a row whatever the copy does. Only the
- * start time fields carry one; the rest are named clearly enough not to need it.
+ * around: the labels and inputs stay on the same lines across a row whatever the copy does.
  */
 const DESCRIPTION_BELOW = ['label', 'input', 'description', 'error'] as const;
 
@@ -44,6 +43,8 @@ interface SchedulingParametersFieldsProps {
   readonly defaultsLabel: string;
   /** Messages to show against a field, keyed by parameter. */
   readonly errors: SchedulingParameterErrors;
+  /** Prefix for each field's `id`, so a warning elsewhere in the form can move focus to one. */
+  readonly idPrefix: string;
   readonly onChange: (values: SchedulingParameterValues) => void;
   readonly disabled?: boolean;
   /** Applies to `timezone` and `alignmentTimezone` alike. Defaults to `editable`. */
@@ -75,7 +76,7 @@ function placeholderFor(
  * @returns The parameter fields.
  */
 export function SchedulingParametersFields(props: SchedulingParametersFieldsProps): JSX.Element {
-  const { values, defaults, defaultsLabel, errors, onChange, disabled, timezoneMode = 'editable' } = props;
+  const { values, defaults, defaultsLabel, errors, idPrefix, onChange, disabled, timezoneMode = 'editable' } = props;
 
   function setValue(key: keyof SchedulingParameterValues, value: number | string | undefined): void {
     onChange({ ...values, [key]: value });
@@ -95,6 +96,7 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
   function minutesField(key: NumericParameter, label: string, min: number, description?: string): JSX.Element {
     return (
       <NumberInput
+        id={`${idPrefix}-${key}`}
         label={label}
         description={description}
         inputWrapperOrder={[...DESCRIPTION_BELOW]}
@@ -199,7 +201,10 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
         <Text fw={600}>Booking</Text>
         <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" className={classes.fieldGrid}>
           <NumberInput
+            id={`${idPrefix}-slotCapacity`}
             label="Concurrent appointments"
+            description="How many appointments may run at once, so anything above 1 allows overbooking"
+            inputWrapperOrder={[...DESCRIPTION_BELOW]}
             value={values.slotCapacity ?? ''}
             placeholder={placeholderFor(defaults, 'slotCapacity', defaultsLabel)}
             error={errors.slotCapacity}
