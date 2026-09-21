@@ -27,4 +27,3 @@ export * from './hooks/useSchedulingResources';
 // Helpers the components are built on, usable without them
 export * from './actors';
 export * from './availability';
-export * from './parameterValues';
