@@ -1,17 +1,27 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { SchedulingParametersURI } from '@medplum/core';
-import type { Extension, HealthcareService } from '@medplum/fhirtypes';
+import {
+  getScheduleSchedulingParameters,
+  SchedulingParametersURI,
+  setScheduleSchedulingParameter,
+} from '@medplum/core';
+import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { getHealthcareServiceSchedulingParameterValues } from '../parameterValues';
+import {
+  getHealthcareServiceSchedulingParameterValues,
+  getScheduleSchedulingParameterValues,
+  setScheduleSchedulingParameterValues,
+} from '../parameterValues';
 import { buildSchedulableService, FullyConfiguredService, UnconfiguredService } from '../stories/scheduling';
 import { fireEvent, render, renderWithMedplum, screen, waitFor } from '../test-utils/render';
 import { SchedulingParametersEditor } from './SchedulingParametersEditor';
 import {
   getBlockingErrors,
+  getInheritedDefaults,
   getSchedulingParameterWarnings,
   getTimezoneOptions,
+  getVisibleParameters,
   isSupportedTimezone,
   validateSchedulingParameters,
 } from './SchedulingParametersEditor.utils';
@@ -522,6 +532,198 @@ describe('SchedulingParametersEditor', () => {
 
     await waitFor(() => expect(saved).toHaveLength(1));
     expect(updateResource).not.toHaveBeenCalled();
+  });
+});
+
+describe('SchedulingParametersEditor on a draft service', () => {
+  test('edits a service not yet created, and hands it back for the caller to create', async () => {
+    const saved: HealthcareService[] = [];
+    render(
+      <SchedulingParametersEditor
+        service={{ resourceType: 'HealthcareService', name: 'New Visit' }}
+        onSave={(updated) => {
+          saved.push(updated);
+        }}
+      />
+    );
+
+    setField('duration', '45');
+    fireEvent.click(saveButton());
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0].id).toBeUndefined();
+    expect(getHealthcareServiceSchedulingParameterValues(saved[0])).toEqual({ duration: 45 });
+  });
+});
+
+describe('SchedulingParametersEditor on a Schedule', () => {
+  const service = FullyConfiguredService;
+  const otherService = buildSchedulableService({
+    id: 'other',
+    name: 'Other Visit',
+    category: 'Office visit',
+    durationMinutes: 60,
+    alignmentMinutes: 60,
+  });
+  const availability: Extension & { url: 'availability' } = {
+    url: 'availability',
+    extension: [{ url: 'availableTime', extension: [{ url: 'daysOfWeek', valueCode: 'mon' }] }],
+  };
+  const baseSchedule: Schedule = {
+    resourceType: 'Schedule',
+    id: 'calendar',
+    actor: [{ reference: 'Practitioner/dr-rivera' }],
+  };
+
+  /**
+   * Builds a calendar overriding the given parameters for the service under edit.
+   * @param overrides - The parameters the calendar overrides.
+   * @returns The calendar.
+   */
+  function scheduleWith(overrides: Parameters<typeof setScheduleSchedulingParameterValues>[2]): Schedule {
+    return setScheduleSchedulingParameterValues(baseSchedule, service, overrides);
+  }
+
+  function renderScheduleEditor(
+    schedule: Schedule,
+    forService: WithId<HealthcareService> = service
+  ): { saved: Schedule[] } {
+    const saved: Schedule[] = [];
+    render(
+      <SchedulingParametersEditor
+        schedule={schedule}
+        service={forService}
+        onSave={(updated) => {
+          saved.push(updated);
+        }}
+      />
+    );
+    return { saved };
+  }
+
+  test('is seeded from the calendar override, not the service', () => {
+    renderScheduleEditor(scheduleWith({ bufferBefore: 20 }));
+
+    expect(field('bufferBefore')).toHaveValue('20 min');
+    expect(field('bufferAfter')).toHaveValue('');
+  });
+
+  test('each placeholder names the service it inherits from, or the default where the service sets none', () => {
+    renderScheduleEditor(scheduleWith({}));
+
+    expect(field('bufferAfter')).toHaveAttribute('placeholder', `10 (${service.name})`);
+    expect(field('timezone')).toHaveAttribute('placeholder', 'Not set');
+  });
+
+  test('offers buffers, capacity and time zone, and leaves the grid to the service', () => {
+    renderScheduleEditor(scheduleWith({}));
+
+    for (const key of ['bufferBefore', 'bufferAfter', 'slotCapacity', 'timezone']) {
+      expect(field(key)).toBeInTheDocument();
+    }
+    for (const key of ['duration', 'alignmentInterval', 'alignmentOffset', 'alignmentTimezone']) {
+      expect(missingField(key)).toBeNull();
+    }
+    expect(screen.queryByText('Start times')).toBeNull();
+  });
+
+  test('shows a discouraged field the calendar already overrides, so it can be cleared', async () => {
+    const { saved } = renderScheduleEditor(scheduleWith({ alignmentInterval: 15 }));
+
+    expect(field('alignmentInterval')).toHaveValue('15 min');
+    expect(missingField('alignmentOffset')).toBeNull();
+    expect(screen.getByText('Start times')).toBeInTheDocument();
+
+    setField('alignmentInterval', '');
+    fireEvent.click(saveButton());
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(getScheduleSchedulingParameterValues(saved[0], service).alignmentInterval).toBeUndefined();
+  });
+
+  test('has no Active switch, and never writes Schedule.active', async () => {
+    const { saved } = renderScheduleEditor({ ...scheduleWith({}), active: false });
+
+    expect(screen.queryByTestId('scheduling-parameters-status')).toBeNull();
+    fireEvent.click(saveButton());
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0].active).toBe(false);
+  });
+
+  test('writes only the overrides entered, leaving availability and other services alone', async () => {
+    let schedule = setScheduleSchedulingParameter(scheduleWith({ bufferBefore: 20 }), service, availability);
+    schedule = setScheduleSchedulingParameterValues(schedule, otherService, { slotCapacity: 4 });
+    const { saved } = renderScheduleEditor(schedule);
+
+    setField('slotCapacity', '2');
+    fireEvent.click(saveButton());
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(getScheduleSchedulingParameterValues(saved[0], service)).toEqual({ bufferBefore: 20, slotCapacity: 2 });
+    expect(getScheduleSchedulingParameters(saved[0], service, 'availability')).toEqual([availability]);
+    expect(getScheduleSchedulingParameterValues(saved[0], otherService)).toEqual({ slotCapacity: 4 });
+  });
+
+  test('says nothing about a missing duration when the service sets one', () => {
+    renderScheduleEditor(scheduleWith({}));
+
+    expect(screen.queryByTestId('scheduling-parameters-warning-no-duration')).toBeNull();
+  });
+
+  test('warns about a missing duration set nowhere, without a jump to the hidden field', () => {
+    renderScheduleEditor(baseSchedule, { ...UnconfiguredService });
+
+    expect(screen.getByTestId('scheduling-parameters-warning-no-duration')).toHaveTextContent(
+      'Duration is not set on this calendar or on the visit type'
+    );
+    expect(screen.queryByTestId('scheduling-parameters-warning-no-duration-focus')).toBeNull();
+  });
+
+  test('judges capacity against the buffers the calendar inherits', async () => {
+    renderScheduleEditor(scheduleWith({}));
+
+    setField('slotCapacity', '3');
+
+    await waitFor(() =>
+      expect(screen.getByTestId('scheduling-parameters-warning-capacity-with-buffers')).toBeInTheDocument()
+    );
+  });
+});
+
+describe('scheduling parameter levels', () => {
+  test('a service offers its time zones together, and only once it stores one', () => {
+    expect(getVisibleParameters('service', {}).has('timezone')).toBe(false);
+    expect(getVisibleParameters('service', {}).has('alignmentTimezone')).toBe(false);
+
+    const visible = getVisibleParameters('service', { alignmentTimezone: 'America/Chicago' });
+    expect(visible.has('timezone')).toBe(true);
+    expect(visible.has('alignmentTimezone')).toBe(true);
+  });
+
+  test('a calendar offers each grid field only once it overrides that one', () => {
+    const empty = getVisibleParameters('schedule', {});
+    expect([...empty].sort()).toEqual(['bufferAfter', 'bufferBefore', 'slotCapacity', 'timezone']);
+
+    const withOffset = getVisibleParameters('schedule', { alignmentOffset: 5 });
+    expect(withOffset.has('alignmentOffset')).toBe(true);
+    expect(withOffset.has('alignmentInterval')).toBe(false);
+  });
+
+  test('a calendar inherits the service value where it sets one, and the default elsewhere', () => {
+    const { defaults, labels } = getInheritedDefaults({ duration: 30, bufferBefore: 5 }, 'Follow-up');
+
+    expect(defaults).toMatchObject({ duration: 30, bufferBefore: 5, bufferAfter: 0, alignmentInterval: 60 });
+    expect(labels).toMatchObject({ duration: 'Follow-up', bufferBefore: 'Follow-up', bufferAfter: 'default' });
+  });
+
+  test('warnings judge what a calendar inherits along with what it overrides', () => {
+    const ids = getSchedulingParameterWarnings({ slotCapacity: 2 }, {}, { bufferAfter: 10, duration: 30 }).map(
+      (warning) => warning.id
+    );
+
+    expect(ids).toContain('capacity-with-buffers');
+    expect(ids).not.toContain('no-duration');
   });
 });
 

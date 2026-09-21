@@ -335,7 +335,8 @@ calendars in other time zones.
 A value already stored on a `HealthcareService` stays in force, since resolution still reads it. To stop it
 taking effect, remove it and set `timezone` on each `Schedule` instead. `SchedulingParametersEditor` follows
 the same rule: it offers no time zone field on a service that stores none, and shows a stored value in a
-picker where clearing the field is how you remove it.
+picker where clearing the field is how you remove it. Editing a `Schedule`'s override, it offers `timezone`
+freely.
 
 :::
 
@@ -367,6 +368,8 @@ In this example:
 Rather than hand-authoring the [`availability` extension](#availability-extension), the [`@medplum/react-scheduling`](https://www.npmjs.com/package/@medplum/react-scheduling) library provides a `ScheduleAvailabilityEditor` component. It edits a Schedule's weekly `availability` override for a given visit service type, or, with the `schedule` prop omitted, the [service-level default](#service-level-availability) hours themselves. It implements the [override behavior](#override-behavior) described above through a single switch, and is used in the [Medplum Provider](https://github.com/medplum/medplum/tree/main/examples/medplum-provider) example app.
 
 The helpers the component reads and writes the override through, `getEffectiveAvailability` and `setScheduleAvailability`, are exported from the same library. They are plain functions over FHIR resources, so a custom editor can use them without the component. `@medplum/core` holds the generic scheduling parameter helpers underneath them, one set per resource the extension sits on: `getScheduleSchedulingParameters`, `setScheduleSchedulingParameter`, and `clearScheduleSchedulingParameter` read and write a calendar's per-service overrides, `availability` included, while `getHealthcareServiceSchedulingParameters` and its `set`/`clear` counterparts do the same for a service's own parameters.
+
+The rest of the parameters are edited with `SchedulingParametersEditor`, from the same library and in the same two modes: pass a `schedule` to edit that calendar's override for a service, or leave it out to edit the service's own parameters. Each mode follows the [usage notes](#extension-fields) for its level, so a Schedule is not offered `duration` or the alignment fields unless it already overrides them, and a HealthcareService is not offered the time zone fields unless it already stores one.
 
 See the [`ScheduleAvailabilityEditor` docs in Storybook](https://storybook.medplum.com/?path=/docs/medplum-scheduleavailabilityeditor--docs) for interactive examples, the behavior in detail, and the full component and utility API.
 

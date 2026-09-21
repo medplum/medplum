@@ -16,34 +16,106 @@ import {
   VisuallyHidden,
 } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import type { HealthcareService } from '@medplum/fhirtypes';
+import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useId, useState } from 'react';
+import type { SchedulingParameterValues } from '../parameterValues';
 import {
   getHealthcareServiceSchedulingParameterValues,
+  getScheduleSchedulingParameterValues,
   setHealthcareServiceSchedulingParameterValues,
+  setScheduleSchedulingParameterValues,
 } from '../parameterValues';
-import type { SchedulingParameterWarning } from './SchedulingParametersEditor.utils';
+import type {
+  SchedulingParameter,
+  SchedulingParameterLabels,
+  SchedulingParameterWarning,
+} from './SchedulingParametersEditor.utils';
 import {
   getBlockingErrors,
+  getInheritedDefaults,
   getSchedulingParameterWarnings,
+  getVisibleParameters,
   SCHEDULING_PARAMETER_DEFAULTS,
   validateSchedulingParameters,
 } from './SchedulingParametersEditor.utils';
 import { SchedulingParametersFields } from './SchedulingParametersFields';
 
-export interface SchedulingParametersEditorProps {
-  /** The visit service type whose parameters are being edited. */
-  readonly service: WithId<HealthcareService>;
-  /**
-   * Called with the updated HealthcareService when the user saves. The caller performs the write, and may
-   * return a Promise to keep the save button in its pending state until the write settles. A rejection only
-   * ends that state, so telling the user the write failed is the caller's to do.
-   */
-  readonly onSave: (updatedService: WithId<HealthcareService>) => void | Promise<void>;
+interface CommonProps {
   /** Called when the user cancels. Omit to hide the cancel button, e.g. when the editor is inline on a page. */
   readonly onCancel?: () => void;
+}
+
+/**
+ * Props for editing the parameters a Schedule overrides for one service. Scheduling ignores a Schedule's
+ * parameters without a service to scope them to, so the service is required. The caller keeps the service
+ * in `Schedule.serviceType`; the editor writes only the parameters.
+ * @param schedule - The Schedule holding the override.
+ * @param service - The visit service type the override applies to, whose values an empty field inherits.
+ * @param onSave - Called with the updated Schedule when the user saves. The caller performs the write, and may
+ * return a Promise to keep the save button in its pending state until the write settles. A rejection only ends
+ * that state, so telling the user the write failed is the caller's to do.
+ */
+export interface ScheduleSchedulingParametersEditorProps extends CommonProps {
+  readonly schedule: Schedule;
+  readonly service: WithId<HealthcareService>;
+  readonly onSave: (updatedSchedule: Schedule) => void | Promise<void>;
+}
+
+/**
+ * Props for editing the parameters a visit service type sets for itself, and whether it can be booked at all.
+ * @param schedule - Omitted, which is what selects this mode.
+ * @param service - The visit service type, which may be a draft not yet created.
+ * @param onSave - Called with the updated HealthcareService, of the same type as `service`, when the user saves.
+ * The caller performs the write, and may return a Promise to keep the save button in its pending state until the
+ * write settles. A rejection only ends that state, so telling the user the write failed is the caller's to do.
+ */
+export interface HealthcareServiceSchedulingParametersEditorProps<
+  T extends HealthcareService = HealthcareService,
+> extends CommonProps {
+  readonly schedule?: undefined;
+  readonly service: T;
+  readonly onSave: (updatedService: T) => void | Promise<void>;
+}
+
+/**
+ * Props for the SchedulingParametersEditor component. Passing a Schedule edits that calendar's override of the
+ * service's parameters; omitting it edits the service's own. Each level offers the fields the scheduling docs
+ * recommend setting there, and any other field it already stores.
+ */
+export type SchedulingParametersEditorProps<T extends HealthcareService = HealthcareService> =
+  ScheduleSchedulingParametersEditorProps | HealthcareServiceSchedulingParametersEditorProps<T>;
+
+interface LevelConfig {
+  readonly initial: SchedulingParameterValues;
+  readonly defaults: SchedulingParameterValues;
+  readonly defaultsLabel: string | SchedulingParameterLabels;
+  readonly visible: ReadonlySet<SchedulingParameter>;
+  /** What an empty field falls back to, which warnings judge the edited values against. */
+  readonly inherited?: SchedulingParameterValues;
+}
+
+function getLevelConfig<T extends HealthcareService>(props: SchedulingParametersEditorProps<T>): LevelConfig {
+  if (props.schedule) {
+    const initial = getScheduleSchedulingParameterValues(props.schedule, props.service);
+    const inherited = getHealthcareServiceSchedulingParameterValues(props.service);
+    const { defaults, labels } = getInheritedDefaults(inherited, props.service.name ?? 'visit type');
+    return {
+      initial,
+      defaults,
+      defaultsLabel: labels,
+      visible: getVisibleParameters('schedule', initial),
+      inherited,
+    };
+  }
+  const initial = getHealthcareServiceSchedulingParameterValues(props.service);
+  return {
+    initial,
+    defaults: SCHEDULING_PARAMETER_DEFAULTS,
+    defaultsLabel: 'default',
+    visible: getVisibleParameters('service', initial),
+  };
 }
 
 /**
@@ -80,20 +152,25 @@ function WarningText(props: { readonly warning: SchedulingParameterWarning; read
 }
 
 /**
- * Edits the scheduling parameters a visit service type sets for itself, and whether it can be booked at all.
+ * Edits scheduling parameters, either the ones a visit service type sets for itself along with whether it can
+ * be booked at all, or the ones a Schedule overrides for that service.
  *
- * Every calendar offering the service follows these unless it overrides a parameter of its own. Working
- * hours are not here: they are the availability editor's, and a service holds them in `availableTime`.
+ * Every calendar offering the service follows its parameters unless it overrides one of its own. Working
+ * hours are not here: they are the availability editor's.
  *
  * This renders form content only. The caller supplies the container, so the editor can live inline in a
  * page, in a Modal, or in a Drawer. The form is seeded once, so reset it by remounting with a `key`.
- * @param props - The service, and save/cancel handlers
+ * @param props - The service, an optional Schedule selecting what is edited, and save/cancel handlers
  * @returns The scheduling parameters editor form
  */
-export function SchedulingParametersEditor(props: SchedulingParametersEditorProps): JSX.Element {
-  const { service, onSave, onCancel } = props;
+export function SchedulingParametersEditor<T extends HealthcareService = HealthcareService>(
+  props: SchedulingParametersEditorProps<T>
+): JSX.Element {
+  const { schedule, service, onCancel } = props;
+  const editingSchedule = schedule !== undefined;
 
-  const [initial] = useState(() => getHealthcareServiceSchedulingParameterValues(service));
+  const [level] = useState(() => getLevelConfig(props));
+  const { initial } = level;
   const [values, setValues] = useState(initial);
   // Absent `active` counts as active, which is how scheduling reads it.
   const [active, setActive] = useState(service.active !== false);
@@ -102,7 +179,7 @@ export function SchedulingParametersEditor(props: SchedulingParametersEditorProp
   const fieldIdPrefix = useId();
 
   const serviceName = service.name ?? 'this visit service type';
-  const deactivating = active !== (service.active !== false);
+  const deactivating = !editingSchedule && active !== (service.active !== false);
 
   let saveLabel = 'Save Settings';
   if (deactivating) {
@@ -115,7 +192,10 @@ export function SchedulingParametersEditor(props: SchedulingParametersEditorProp
   const blocking = getBlockingErrors(errors, values, initial);
   const blocked = Object.keys(blocking).length > 0;
   const blockedReason = 'Fix the highlighted fields before saving.';
-  const warnings = getSchedulingParameterWarnings(values, initial);
+  // A warning only jumps to a field that is on the form.
+  const warnings = getSchedulingParameterWarnings(values, initial, level.inherited).map((warning) =>
+    warning.focus && !level.visible.has(warning.focus.field) ? { ...warning, focus: undefined } : warning
+  );
 
   async function handleSave(): Promise<void> {
     if (blocked) {
@@ -123,7 +203,11 @@ export function SchedulingParametersEditor(props: SchedulingParametersEditorProp
     }
     setSaving(true);
     try {
-      await onSave({ ...setHealthcareServiceSchedulingParameterValues(service, values), active });
+      if (props.schedule) {
+        await props.onSave(setScheduleSchedulingParameterValues(props.schedule, props.service, values));
+      } else {
+        await props.onSave({ ...setHealthcareServiceSchedulingParameterValues(props.service, values), active });
+      }
     } catch (err) {
       // The caller owns the write and so owns reporting its failure. This catch only keeps the rejection
       // from escaping an event handler that has nowhere to hand it.
@@ -162,20 +246,20 @@ export function SchedulingParametersEditor(props: SchedulingParametersEditorProp
   return (
     <Stack gap="lg">
       <Text c="dimmed">
-        Set how {serviceName} is scheduled. Every calendar offering it follows these unless it sets its own.
+        {editingSchedule
+          ? `Set how ${serviceName} is scheduled on this calendar. Leave a field empty to use the visit type's setting.`
+          : `Set how ${serviceName} is scheduled. Every calendar offering it follows these unless it sets its own.`}
       </Text>
 
       <Paper withBorder radius="md" p="xl">
         <SchedulingParametersFields
           values={values}
-          defaults={SCHEDULING_PARAMETER_DEFAULTS}
-          defaultsLabel="default"
+          defaults={level.defaults}
+          defaultsLabel={level.defaultsLabel}
           errors={blocking}
           idPrefix={fieldIdPrefix}
           onChange={setValues}
-          // Discourage timezone values on a HealthcareService, unless there are already values defined
-          // on either `timezone` or `alignmentTimezone`.
-          showTimezones={initial.timezone !== undefined || initial.alignmentTimezone !== undefined}
+          visible={level.visible}
         />
 
         {warnings.length > 0 && (
@@ -195,46 +279,49 @@ export function SchedulingParametersEditor(props: SchedulingParametersEditorProp
         )}
       </Paper>
 
-      <Paper withBorder radius="md" p="md" data-testid="scheduling-parameters-status">
-        <Group gap="sm" wrap="nowrap">
-          <Switch
-            checked={active}
-            onChange={(e) => setActive(e.currentTarget.checked)}
-            color="green.6"
-            withThumbIndicator={false}
-            aria-label={`${serviceName} is active`}
-            data-testid="scheduling-parameters-active"
-          />
-          <Text fw={500}>Active</Text>
-          <Badge color={active ? 'green' : 'gray'} variant="light">
-            {active ? 'Bookable' : 'Not bookable'}
-          </Badge>
-        </Group>
+      {/* Schedule.active switches off the whole calendar, which is more than one service's override decides. */}
+      {!editingSchedule && (
+        <Paper withBorder radius="md" p="md" data-testid="scheduling-parameters-status">
+          <Group gap="sm" wrap="nowrap">
+            <Switch
+              checked={active}
+              onChange={(e) => setActive(e.currentTarget.checked)}
+              color="green.6"
+              withThumbIndicator={false}
+              aria-label={`${serviceName} is active`}
+              data-testid="scheduling-parameters-active"
+            />
+            <Text fw={500}>Active</Text>
+            <Badge color={active ? 'green' : 'gray'} variant="light">
+              {active ? 'Bookable' : 'Not bookable'}
+            </Badge>
+          </Group>
 
-        {!active && (
-          <>
-            <Divider my="lg" />
-            <Alert
-              color="yellow"
-              variant="light"
-              icon={<IconAlertTriangle />}
-              data-testid="scheduling-parameters-deactivate-warning"
-            >
-              <List size="sm">
-                <List.Item>New bookings stop on every calendar offering {serviceName}.</List.Item>
-                <List.Item>Existing appointments are kept, and can still be cancelled.</List.Item>
-                <List.Item>Appointments currently on hold can no longer be confirmed.</List.Item>
-              </List>
-            </Alert>
-          </>
-        )}
+          {!active && (
+            <>
+              <Divider my="lg" />
+              <Alert
+                color="yellow"
+                variant="light"
+                icon={<IconAlertTriangle />}
+                data-testid="scheduling-parameters-deactivate-warning"
+              >
+                <List size="sm">
+                  <List.Item>New bookings stop on every calendar offering {serviceName}.</List.Item>
+                  <List.Item>Existing appointments are kept, and can still be cancelled.</List.Item>
+                  <List.Item>Appointments currently on hold can no longer be confirmed.</List.Item>
+                </List>
+              </Alert>
+            </>
+          )}
 
-        {active && service.active === false && (
-          <Text c="dimmed" size="sm" mt="md">
-            Booking resumes as soon as this is saved.
-          </Text>
-        )}
-      </Paper>
+          {active && service.active === false && (
+            <Text c="dimmed" size="sm" mt="md">
+              Booking resumes as soon as this is saved.
+            </Text>
+          )}
+        </Paper>
+      )}
 
       {blocked && (
         <VisuallyHidden id={reasonId} data-testid="scheduling-parameters-blocked">

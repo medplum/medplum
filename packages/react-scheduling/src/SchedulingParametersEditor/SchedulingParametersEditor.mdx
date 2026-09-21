@@ -1,11 +1,14 @@
 import { Meta } from '@storybook/addon-docs/blocks';
-import * as SchedulingParametersEditorStories from './SchedulingParametersEditor.stories';
 
-<Meta of={SchedulingParametersEditorStories} />
+{/* Standalone rather than attached to one stories file, since the stories are split across two folders. */}
+
+<Meta title="Medplum/SchedulingParametersEditor/Overview" />
 
 # SchedulingParametersEditor
 
-Edits the scheduling parameters a visit service type sets for itself, and whether it can be booked at all.
+Edits scheduling parameters at either level the `SchedulingParameters` extension sits on: the parameters a
+visit service type sets for itself, along with whether it can be booked at all, or the ones a Schedule
+overrides for that service.
 
 Every calendar offering the service follows these unless it overrides a parameter of its own. Working hours
 are not here: they belong to [ScheduleAvailabilityEditor](?path=/docs/medplum-scheduleavailabilityeditor--docs),
@@ -24,6 +27,44 @@ in a Modal or Drawer. It returns an updated resource for you to persist (for exa
   }}
 />
 ```
+
+## Two levels
+
+Pass a `schedule` to edit that calendar's override of the service's parameters, and leave it out to edit the
+service itself. This is the same shape as `ScheduleAvailabilityEditor`.
+
+```tsx
+<SchedulingParametersEditor
+  schedule={schedule}
+  service={service}
+  onSave={async (updated) => {
+    await medplum.updateResource(updated);
+  }}
+/>
+```
+
+On a Schedule, `service` is required. Scheduling matches a Schedule's parameters by their `service` pointer
+and ignores any without one, so there is no calendar-wide override to edit. The editor writes only the
+parameters: listing the service in `Schedule.serviceType` is the caller's to do, and so is choosing which
+service's override to edit.
+
+The stories are split the same way, into a **HealthcareService** folder and a **Schedule** folder, each
+showing what only that level does. The levels differ in four ways:
+
+- **Fields offered.** Each level hides the fields the
+  [extension docs](https://www.medplum.com/docs/scheduling/defining-availability#the-scheduling-parameters-extension)
+  recommend against setting there, unless it already stores one. A service hides both time zones. A Schedule
+  hides `duration` and the three alignment fields, since calendars booked together must agree on them. A
+  group left with no fields is dropped, heading included.
+- **Placeholders.** On a Schedule, an empty field names the service value it inherits, or the default where
+  the service sets none.
+- **Warnings.** On a Schedule they judge the values in effect, the override layered over the service, so a
+  capacity override is checked against the buffers it inherits.
+- **Active.** Only the service level shows it. `Schedule.active` switches off the whole calendar, which is
+  more than one service's override decides.
+
+A service may be a draft with no `id`, so a create flow can seed it, edit its parameters, and create it from
+`onSave`. `onSave` hands back the same type it was given.
 
 ## What it edits
 
@@ -85,7 +126,7 @@ in a Modal or Drawer. It returns an updated resource for you to persist (for exa
         <code>timezone</code>
       </td>
       <td>IANA id</td>
-      <td>Interprets the working hours. Editable only when already stored; see below</td>
+      <td>Interprets the working hours. On a service, editable only when already stored; see below</td>
     </tr>
     <tr>
       <td>
@@ -100,7 +141,7 @@ in a Modal or Drawer. It returns an updated resource for you to persist (for exa
 A field left empty sets nothing, and its placeholder names what takes effect instead. Clearing the last
 parameter removes the `SchedulingParameters` extension rather than leaving an empty one behind.
 
-## Time zones
+## Time zones on a service
 
 Neither `timezone` nor `alignmentTimezone` belongs on a visit type by default. A visit type is booked across
 calendars that may sit in different places, so `timezone` belongs on each Schedule or on its actor.
@@ -129,10 +170,11 @@ The form is seeded from the service when it mounts and does not resync, so reset
 reporting and optimistic concurrency stay with the host. Returning a Promise keeps the button pending until
 the write settles.
 
-**It does not create a visit type.** The service must exist; this edits it.
+**It does not create a resource.** It edits a draft service's parameters, but creating it, like adding a
+service to a Schedule, is the caller's.
 
-**It does not resolve inherited values.** It shows what the service itself sets. A calendar-level editor
-reading the same parameters would show what that calendar overrides, with the service behind it.
+**It does not show resolved values.** Each field shows what its level stores, and the placeholder shows what
+takes effect when it stores nothing.
 
 ## Three combinations worth knowing
 

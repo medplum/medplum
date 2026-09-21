@@ -5,7 +5,11 @@ import type { JSX } from 'react';
 import { useMemo } from 'react';
 import type { SchedulingParameterValues } from '../parameterValues';
 import classes from './SchedulingParametersEditor.module.css';
-import type { SchedulingParameterErrors } from './SchedulingParametersEditor.utils';
+import type {
+  SchedulingParameter,
+  SchedulingParameterErrors,
+  SchedulingParameterLabels,
+} from './SchedulingParametersEditor.utils';
 import { getTimezoneOptions } from './SchedulingParametersEditor.utils';
 
 /** How far an arrow press moves a minutes field. */
@@ -31,19 +35,19 @@ interface SchedulingParametersFieldsProps {
    * scheduling's own defaults; a calendar-level editor passes the service's values instead.
    */
   readonly defaults: SchedulingParameterValues;
-  /** Names where an empty field's value comes from, for example `default` or `Follow-up visit`. */
-  readonly defaultsLabel: string;
+  /**
+   * Names where an empty field's value comes from, for example `default` or `Follow-up visit`. Given per
+   * parameter where the fallbacks come from different places, as on a calendar's override.
+   */
+  readonly defaultsLabel: string | SchedulingParameterLabels;
   /** Messages to show against a field, keyed by parameter. */
   readonly errors: SchedulingParameterErrors;
   /** Prefix for each field's `id`, so a warning elsewhere in the form can move focus to one. */
   readonly idPrefix: string;
   readonly onChange: (values: SchedulingParameterValues) => void;
   readonly disabled?: boolean;
-  /**
-   * Whether to offer the two time zone fields, which are shown or hidden together so a level that does not
-   * set time zones here is not offering one of them and hiding the other. Defaults to true.
-   */
-  readonly showTimezones?: boolean;
+  /** The parameters to render a field for. Defaults to all of them. A group left with no fields is dropped. */
+  readonly visible?: ReadonlySet<SchedulingParameter>;
 }
 
 /**
@@ -57,10 +61,11 @@ interface SchedulingParametersFieldsProps {
 function placeholderFor(
   defaults: SchedulingParameterValues,
   key: keyof SchedulingParameterValues,
-  label: string
+  label: string | SchedulingParameterLabels
 ): string {
   const fallback = defaults[key];
-  return fallback === undefined ? 'Not set' : `${fallback} (${label})`;
+  const source = typeof label === 'string' ? label : (label[key] ?? 'default');
+  return fallback === undefined ? 'Not set' : `${fallback} (${source})`;
 }
 
 /**
@@ -71,7 +76,9 @@ function placeholderFor(
  * @returns The parameter fields.
  */
 export function SchedulingParametersFields(props: SchedulingParametersFieldsProps): JSX.Element {
-  const { values, defaults, defaultsLabel, errors, idPrefix, onChange, disabled, showTimezones = true } = props;
+  const { values, defaults, defaultsLabel, errors, idPrefix, onChange, disabled, visible } = props;
+  const shows = (key: SchedulingParameter): boolean => !visible || visible.has(key);
+  const showTimezones = shows('timezone') || shows('alignmentTimezone');
 
   // Gated inside the memo rather than around it: listing the runtime's zones and sorting them is wasted on
   // the common case, a visit type that sets no time zone and so shows neither field.
@@ -95,9 +102,13 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
     setValue(key, Number.isNaN(value) ? undefined : value);
   }
 
-  function minutesField(key: NumericParameter, label: string, min: number, description?: string): JSX.Element {
+  function minutesField(key: NumericParameter, label: string, min: number, description?: string): JSX.Element | null {
+    if (!shows(key)) {
+      return null;
+    }
     return (
       <NumberInput
+        key={key}
         id={`${idPrefix}-${key}`}
         label={label}
         description={description}
@@ -120,11 +131,12 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
   }
 
   function timezoneField(key: TimezoneParameter, label: string, description: string): JSX.Element | null {
-    if (!showTimezones) {
+    if (!shows(key)) {
       return null;
     }
     return (
       <Select
+        key={key}
         id={`${idPrefix}-${key}`}
         label={label}
         description={description}
@@ -145,56 +157,60 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
     );
   }
 
+  function group(title: string, fields: (JSX.Element | null)[]): JSX.Element | null {
+    if (fields.every((field) => field === null)) {
+      return null;
+    }
+    return (
+      <Stack gap="xs">
+        <Text fw={600}>{title}</Text>
+        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" className={classes.fieldGrid}>
+          {fields}
+        </SimpleGrid>
+      </Stack>
+    );
+  }
+
+  const capacityField = shows('slotCapacity') ? (
+    <NumberInput
+      key="slotCapacity"
+      id={`${idPrefix}-slotCapacity`}
+      label="Concurrent appointments"
+      description="How many appointments may run at once, so anything above 1 allows overbooking"
+      inputWrapperOrder={[...DESCRIPTION_BELOW]}
+      value={values.slotCapacity ?? ''}
+      placeholder={placeholderFor(defaults, 'slotCapacity', defaultsLabel)}
+      error={errors.slotCapacity}
+      disabled={disabled}
+      onChange={(raw) => setNumber('slotCapacity', raw)}
+      min={1}
+      step={1}
+      allowDecimal={false}
+      data-testid="scheduling-parameters-slotCapacity"
+    />
+  ) : null;
+
   return (
     <Stack gap="xl">
-      <Stack gap="xs">
-        <Text fw={600}>Length and spacing</Text>
-        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" className={classes.fieldGrid}>
-          {minutesField('duration', 'Duration', 1)}
-          {minutesField('bufferBefore', 'Buffer before', 0)}
-          {minutesField('bufferAfter', 'Buffer after', 0)}
-        </SimpleGrid>
-      </Stack>
-
-      <Stack gap="xs">
-        <Text fw={600}>Start times</Text>
-        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" className={classes.fieldGrid}>
-          {minutesField('alignmentInterval', 'Interval', 1, 'Start times are this far apart')}
-          {minutesField(
-            'alignmentOffset',
-            'Offset',
-            0,
-            'Pushes every start later, so 5 turns 9:00 and 9:30 into 9:05 and 9:35'
-          )}
-          {timezoneField('alignmentTimezone', 'Alignment time zone', 'Whose midnight the start times are counted from')}
-        </SimpleGrid>
-      </Stack>
-
-      <Stack gap="xs">
-        <Text fw={600}>Booking</Text>
-        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" className={classes.fieldGrid}>
-          <NumberInput
-            id={`${idPrefix}-slotCapacity`}
-            label="Concurrent appointments"
-            description="How many appointments may run at once, so anything above 1 allows overbooking"
-            inputWrapperOrder={[...DESCRIPTION_BELOW]}
-            value={values.slotCapacity ?? ''}
-            placeholder={placeholderFor(defaults, 'slotCapacity', defaultsLabel)}
-            error={errors.slotCapacity}
-            disabled={disabled}
-            onChange={(raw) => setNumber('slotCapacity', raw)}
-            min={1}
-            step={1}
-            allowDecimal={false}
-            data-testid="scheduling-parameters-slotCapacity"
-          />
-          {timezoneField(
-            'timezone',
-            'Time zone',
-            'The working hours are read in this zone, unless a calendar sets its own'
-          )}
-        </SimpleGrid>
-      </Stack>
+      {group('Length and spacing', [
+        minutesField('duration', 'Duration', 1),
+        minutesField('bufferBefore', 'Buffer before', 0),
+        minutesField('bufferAfter', 'Buffer after', 0),
+      ])}
+      {group('Start times', [
+        minutesField('alignmentInterval', 'Interval', 1, 'Start times are this far apart'),
+        minutesField(
+          'alignmentOffset',
+          'Offset',
+          0,
+          'Pushes every start later, so 5 turns 9:00 and 9:30 into 9:05 and 9:35'
+        ),
+        timezoneField('alignmentTimezone', 'Alignment time zone', 'Whose midnight the start times are counted from'),
+      ])}
+      {group('Booking', [
+        capacityField,
+        timezoneField('timezone', 'Time zone', 'The working hours are read in this zone'),
+      ])}
     </Stack>
   );
 }

@@ -22,6 +22,90 @@ export const SCHEDULING_PARAMETER_DEFAULTS: SchedulingParameterValues = {
   alignmentTimezone: 'Etc/UTC',
 };
 
+/** Where a set of parameters is stored: on the visit type itself, or on one calendar's override of it. */
+export type SchedulingParameterLevel = 'service' | 'schedule';
+
+export type SchedulingParameter = keyof SchedulingParameterValues;
+
+const ALL_PARAMETERS: readonly SchedulingParameter[] = [
+  'duration',
+  'bufferBefore',
+  'bufferAfter',
+  'alignmentInterval',
+  'alignmentOffset',
+  'slotCapacity',
+  'timezone',
+  'alignmentTimezone',
+];
+
+/**
+ * The parameters the scheduling docs recommend against setting at each level. A calendar booked alongside
+ * others must match them on duration and the alignment grid, so those belong on the visit type; a visit
+ * type is offered in more than one place, so its hours' time zone belongs on each calendar.
+ */
+export const DISCOURAGED_PARAMETERS: Record<SchedulingParameterLevel, readonly SchedulingParameter[]> = {
+  service: ['timezone', 'alignmentTimezone'],
+  schedule: ['duration', 'alignmentInterval', 'alignmentOffset', 'alignmentTimezone'],
+};
+
+/**
+ * Layers what a level stores over what it inherits, so a parameter the level leaves empty reads as the one
+ * that takes effect.
+ * @param values - The parameters the level stores.
+ * @param inherited - The parameters it falls back to.
+ * @returns The parameters in effect.
+ */
+function withInherited(
+  values: SchedulingParameterValues,
+  inherited: SchedulingParameterValues
+): SchedulingParameterValues {
+  const stored = Object.entries(values).filter(([, value]) => value !== undefined);
+  return { ...inherited, ...Object.fromEntries(stored) };
+}
+
+/**
+ * The fields to offer at a level. A discouraged parameter is offered only when the level already stores it,
+ * so a stored value is never in force unseen and can always be cleared.
+ * @param level - Where the parameters are stored.
+ * @param initial - The parameters the form loaded.
+ * @returns The parameters to render a field for.
+ */
+export function getVisibleParameters(
+  level: SchedulingParameterLevel,
+  initial: SchedulingParameterValues
+): Set<SchedulingParameter> {
+  const discouraged = DISCOURAGED_PARAMETERS[level];
+  const visible = new Set(ALL_PARAMETERS.filter((key) => !discouraged.includes(key) || initial[key] !== undefined));
+  // A visit type offers its two time zones together or not at all, so it is never offering one and hiding
+  // the other.
+  if (level === 'service' && (visible.has('timezone') || visible.has('alignmentTimezone'))) {
+    visible.add('timezone');
+    visible.add('alignmentTimezone');
+  }
+  return visible;
+}
+
+/** Names where an empty field's fallback comes from, per parameter. */
+export type SchedulingParameterLabels = Partial<Record<SchedulingParameter, string>>;
+
+/**
+ * What an empty field on a calendar's override falls back to: the visit type's value where it sets one,
+ * otherwise scheduling's own default.
+ * @param serviceValues - The parameters the visit type sets.
+ * @param serviceLabel - Names the visit type in a placeholder.
+ * @returns The fallback for each parameter, and the label naming where each comes from.
+ */
+export function getInheritedDefaults(
+  serviceValues: SchedulingParameterValues,
+  serviceLabel: string
+): { defaults: SchedulingParameterValues; labels: SchedulingParameterLabels } {
+  const labels: SchedulingParameterLabels = {};
+  for (const key of ALL_PARAMETERS) {
+    labels[key] = serviceValues[key] === undefined ? 'default' : serviceLabel;
+  }
+  return { defaults: withInherited(serviceValues, SCHEDULING_PARAMETER_DEFAULTS), labels };
+}
+
 /** A field that cannot be saved as entered, keyed by the parameter it belongs to. */
 export type SchedulingParameterErrors = Partial<Record<keyof SchedulingParameterValues, string>>;
 
@@ -153,22 +237,28 @@ export function getBlockingErrors(
 
 /**
  * Finds what is worth saying about a combination of values that scheduling will nevertheless accept.
- * @param values - The parameters as entered, in minutes.
- * @param initial - The parameters the form loaded, used to notice a changed capacity.
+ * @param stored - The parameters as entered, in minutes.
+ * @param storedInitial - The parameters the form loaded, used to notice a changed capacity.
+ * @param inherited - What a calendar's override falls back to, which is the visit type's parameters. Omit
+ * when editing the visit type itself. Given, every check judges the values that take effect.
  * @returns The warnings to show, in the order they should appear.
  */
 export function getSchedulingParameterWarnings(
-  values: SchedulingParameterValues,
-  initial: SchedulingParameterValues
+  stored: SchedulingParameterValues,
+  storedInitial: SchedulingParameterValues,
+  inherited?: SchedulingParameterValues
 ): SchedulingParameterWarning[] {
+  const values = inherited ? withInherited(stored, inherited) : stored;
+  const initial = inherited ? withInherited(storedInitial, inherited) : storedInitial;
   const warnings: SchedulingParameterWarning[] = [];
   const { duration, bufferBefore, bufferAfter, alignmentInterval, alignmentOffset, slotCapacity } = values;
 
   if (duration === undefined) {
     warnings.push({
       id: 'no-duration',
-      message:
-        'Duration is not set, so this visit type can only be booked on calendars that set their own duration for this service.',
+      message: inherited
+        ? 'Duration is not set on this calendar or on the visit type, so it cannot be booked here.'
+        : 'Duration is not set, so this visit type can only be booked on calendars that set their own duration for this service.',
       focus: { field: 'duration', text: 'Duration' },
     });
   }
