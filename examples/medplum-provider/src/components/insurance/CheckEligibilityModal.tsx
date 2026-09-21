@@ -56,8 +56,9 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
   const { opened, onClose, patient, defaultCoverageId, onCreated } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const [chosenId, setChosenId] = useState<string | null>(null);
-  const [chosenProvider, setChosenProvider] = useState<Organization | null | undefined>(undefined);
+  const [chosenId, setChosenId] = useState<string>();
+  const [chosenProvider, setChosenProvider] = useState<Organization>();
+  const [providerEdited, setProviderEdited] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const defaultCoverage = useResource<Coverage>(
@@ -82,15 +83,16 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
     return result;
   }, [activeCoverages, defaultCoverage]);
 
-  const selectedId = chosenId ?? defaultCoverageId ?? coverages[0]?.id ?? null;
+  const selectedId = chosenId ?? defaultCoverageId ?? coverages[0]?.id;
   const selectedCoverage = coverages.find((c) => c.id === selectedId);
 
   const defaultProvider = practitionerRole?.organization;
-  const providerOrganization = chosenProvider === undefined ? defaultProvider : toReference(chosenProvider);
+  const providerOrganization = providerEdited ? toReference(chosenProvider) : defaultProvider;
 
   const handleClose = (): void => {
-    setChosenId(null);
+    setChosenId(undefined);
     setChosenProvider(undefined);
+    setProviderEdited(false);
     onClose();
   };
 
@@ -146,8 +148,8 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
           label="Coverage"
           placeholder="Select coverage"
           data={coverages.map((c) => ({ value: c.id, label: formatCoverageLabel(c) }))}
-          value={selectedId}
-          onChange={setChosenId}
+          value={selectedId ?? null}
+          onChange={(value) => setChosenId(value ?? undefined)}
           nothingFoundMessage="No active coverages"
           allowDeselect={false}
         />
@@ -162,7 +164,10 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
               identifier: `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`,
             }}
             defaultValue={defaultProvider}
-            onChange={(value) => setChosenProvider(value ?? null)}
+            onChange={(value) => {
+              setChosenProvider(value);
+              setProviderEdited(true);
+            }}
           />
         )}
       </Stack>
@@ -182,9 +187,9 @@ function formatCoverageLabel(coverage: Coverage): string {
 
 /**
  * Reference to a billing organization the user picked, or undefined when the selection was cleared.
- * @param organization - The picked organization, or null once cleared.
+ * @param organization - The picked organization, or undefined once cleared.
  * @returns The reference, or undefined.
  */
-function toReference(organization: Organization | null): Reference<Organization> | undefined {
+function toReference(organization: Organization | undefined): Reference<Organization> | undefined {
   return organization ? createReference(organization) : undefined;
 }
