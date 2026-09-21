@@ -477,6 +477,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           searchCriteria={LOCATION_SEARCH_CRITERIA}
           defaultValue={defaultLocation}
           onChange={chooseLocation}
+          clearable={false}
         />
         <AppointmentServiceSelect
           key={serviceFieldKey}
@@ -532,6 +533,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           defaultValue={defaultPatient}
           itemComponent={patientItem}
           onChange={choosePatient}
+          clearable={false}
         />
 
         {/* Each field is shown only for a visit type whose eligibility asks for it. */}
