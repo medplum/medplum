@@ -34,7 +34,7 @@
     "@vitest/coverage-v8": "4.1.11",
     "@vitest/ui": "4.1.11",
     "commander": "12.1.0",
-    "dotenv": "17.4.2",
+    "dotenv": "18.0.0",
     "esbuild": "0.28.2",
     "fast-glob": "3.3.3",
     "tsx": "4.23.13",

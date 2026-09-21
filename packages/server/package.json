@@ -82,7 +82,7 @@
     "dataloader": "2.2.3",
     "dcmjs": "0.52.0",
     "dicomweb-multipart-parser": "0.0.2",
-    "dotenv": "17.4.2",
+    "dotenv": "18.0.0",
     "express": "5.2.1",
     "express-validator": "7.3.2",
     "graphql": "17.0.2",
