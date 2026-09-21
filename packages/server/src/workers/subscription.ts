@@ -59,7 +59,7 @@ import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import type { ProjectJobTarget } from './base';
-import { getJobSystemRepo } from './repository';
+import { getJobSystemRepo } from './base';
 import {
   clearSubscriptionFailures,
   getSubscriptionAutoDisableTriggers,

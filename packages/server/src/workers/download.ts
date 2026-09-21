@@ -24,8 +24,7 @@ import { getBinaryStorage } from '../storage/loader';
 import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { ProjectJobTarget } from './base';
-import { getProjectJobTarget } from './base';
-import { getJobSystemRepo } from './repository';
+import { getJobSystemRepo, getProjectJobTarget } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 

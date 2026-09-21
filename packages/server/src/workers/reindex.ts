@@ -25,8 +25,7 @@ import { TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
 import { isFirstBootMode } from '../migrations/migration-utils';
-import { getAsyncJobTracking } from './base';
-import { getJobSystemRepo, getTrackingAsyncJobExecutor } from './repository';
+import { getAsyncJobTracking, getJobSystemRepo, getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,

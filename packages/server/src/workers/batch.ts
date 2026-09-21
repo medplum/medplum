@@ -29,8 +29,7 @@ import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { BASE_METRIC_OPTIONS, incrementCounter } from '../otel/otel';
 import type { AsyncJobTracking } from './base';
-import { getAsyncJobTracking } from './base';
-import { getTrackingAsyncJobExecutor } from './repository';
+import { getAsyncJobTracking, getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,

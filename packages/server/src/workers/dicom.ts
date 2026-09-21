@@ -14,8 +14,7 @@ import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import type { ProjectJobTarget } from './base';
-import { getProjectJobTarget } from './base';
-import { getJobSystemRepo } from './repository';
+import { getJobSystemRepo, getProjectJobTarget } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 

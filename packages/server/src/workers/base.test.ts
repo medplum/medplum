@@ -3,7 +3,7 @@
 import type { AsyncJob } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
 import { GLOBAL_SHARD_ID } from '../fhir/sharding';
-import { getJobSystemRepo, getTrackingAsyncJobExecutor } from './repository';
+import { getJobSystemRepo, getTrackingAsyncJobExecutor } from './base';
 
 const repoMocks = vi.hoisted(() => ({
   global: { clone: vi.fn(), readResource: vi.fn() },
@@ -47,9 +47,7 @@ describe('job repository routing', () => {
   });
 
   test('rejects malformed serialized targets', async () => {
-    await expect(getJobSystemRepo(undefined as never)).rejects.toThrow(
-      'Background job data must include a valid target'
-    );
+    await expect(getJobSystemRepo({} as never)).rejects.toThrow('Unsupported job target kind');
   });
 });
 

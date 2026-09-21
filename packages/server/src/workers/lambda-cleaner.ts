@@ -19,7 +19,7 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type { AsyncJobTracking } from './base';
-import { getTrackingAsyncJobExecutor } from './repository';
+import { getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,

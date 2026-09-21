@@ -32,8 +32,7 @@ import {
 } from '../migrations/migration-utils';
 import type { MigrationActionResult, PhasalMigration } from '../migrations/types';
 import { getRegisteredServers } from '../server-registry';
-import { getAsyncJobTracking } from './base';
-import { getTrackingAsyncJobExecutor } from './repository';
+import { getAsyncJobTracking, getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
