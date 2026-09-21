@@ -533,6 +533,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           defaultValue={defaultPatient}
           itemComponent={patientItem}
           onChange={choosePatient}
+          clearable={false}
         />
 
         {/* Each field is shown only for a visit type whose eligibility asks for it. */}

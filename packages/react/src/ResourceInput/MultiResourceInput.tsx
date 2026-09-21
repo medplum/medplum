@@ -146,6 +146,7 @@ export interface MultiResourceInputProps<T extends Resource = Resource> {
   readonly error?: AsyncAutocompleteProps<T>['error'];
   /** Maximum number of resources that can be selected. Defaults to uncapped. */
   readonly maxValues?: number;
+  /** Whether to show a button that clears the whole selection. Defaults to true. */
   readonly clearable?: boolean;
 }
 
