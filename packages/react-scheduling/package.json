@@ -91,7 +91,7 @@
     "react-dom": "19.3.0",
     "sinon": "22.1.0",
     "storybook": "10.6.0",
-    "temporal-polyfill": "1.0.5",
+    "temporal-polyfill": "1.0.4",
     "typescript": "6.0.3"
   },
   "peerDependencies": {
