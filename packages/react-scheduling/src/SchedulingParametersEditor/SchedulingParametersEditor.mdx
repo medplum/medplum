@@ -85,14 +85,14 @@ in a Modal or Drawer. It returns an updated resource for you to persist (for exa
         <code>timezone</code>
       </td>
       <td>IANA id</td>
-      <td>Interprets the working hours. Shown only when already stored; see below</td>
+      <td>Interprets the working hours. Editable only when already stored; see below</td>
     </tr>
     <tr>
       <td>
         <code>alignmentTimezone</code>
       </td>
       <td>IANA id</td>
-      <td>Whose midnight anchors the start time grid. Shown only when already stored; see below</td>
+      <td>Whose midnight anchors the start time grid. Editable only when already stored; see below</td>
     </tr>
   </tbody>
 </table>
@@ -102,18 +102,21 @@ parameter removes the `SchedulingParameters` extension rather than leaving an em
 
 ## Time zones
 
-Neither `timezone` nor `alignmentTimezone` can be set here. A visit type is booked across calendars that may
-sit in different places, so `timezone` belongs on each Schedule or on its actor. `alignmentTimezone` is left
-unset, which counts start times from UTC midnight, the one anchor every calendar already agrees on.
+Neither `timezone` nor `alignmentTimezone` belongs on a visit type by default. A visit type is booked across
+calendars that may sit in different places, so `timezone` belongs on each Schedule or on its actor.
+`alignmentTimezone` is left unset, which counts start times from UTC midnight, the one anchor every calendar
+already agrees on. A visit type storing neither is therefore offered neither field.
 
-Scheduling still honors either one stored on a HealthcareService, so a stored value is shown rather than
-left to act unseen. The two fields share one rule: a visit type storing either shows both, read-only with a
-button to remove them, and a visit type storing neither shows neither. They appear together so that removing
-one cannot leave the other out of sight.
+Scheduling does honor either one stored on a HealthcareService, so a stored value is shown rather than left
+to act unseen. A visit type storing either shows both fields, each a searchable picker over the time zones
+this browser knows, plus whatever is already stored. They appear together so that clearing one cannot leave
+the other out of sight. Clearing a field removes that parameter on save.
 
-Removing `alignmentTimezone` is worth reading before clicking. Start times go back to being counted from UTC
-midnight, so local start times shift by an hour either side of a daylight saving change, which is the shift
-the parameter exists to prevent.
+A sub-extension carrying no value counts as unset: nothing is shown, and the next save drops it.
+
+Clearing `alignmentTimezone` is worth understanding. Start times go back to being counted from UTC midnight,
+so local start times shift by an hour either side of a daylight saving change, which is the shift the
+parameter exists to prevent.
 
 ## Seeded once
 
@@ -144,7 +147,8 @@ number only affects new bookings.
 from UTC midnight unless `alignmentTimezone` says otherwise, and moving that grid by an hour lands it back on
 itself only when the interval divides into 60. A 30-minute grid is unaffected; a 90 or 120-minute one has
 every start time shift. The fix is an interval that divides into 60, or an `alignmentTimezone` that observes
-the same change, which is set through the API rather than in this form.
+the same change, which the form offers once the visit type already stores a time zone, and otherwise has to
+be set through the API.
 
 ## Deactivating
 

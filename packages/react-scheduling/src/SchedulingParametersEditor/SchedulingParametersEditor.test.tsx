@@ -28,6 +28,22 @@ function setField(name: string, value: string): void {
   fireEvent.change(field(name), { target: { value } });
 }
 
+/**
+ * Opens a time zone picker and chooses a zone. Typing first narrows the list, which matters once the field
+ * holds a value: Mantine stops filtering when the search text already equals the selected option.
+ * @param name - The parameter the field edits.
+ * @param zone - The IANA identifier to pick.
+ */
+function pickTimezone(name: string, zone: string): void {
+  fireEvent.focus(field(name));
+  fireEvent.change(field(name), { target: { value: zone } });
+  fireEvent.click(screen.getByText(zone));
+}
+
+function clearTimezone(label: string): void {
+  fireEvent.click(screen.getByLabelText(`Clear ${label}`));
+}
+
 function saveButton(): HTMLElement {
   return screen.getByTestId('scheduling-parameters-save');
 }
@@ -255,13 +271,6 @@ describe('SchedulingParametersEditor', () => {
     expect(saved[0].active).toBe(true);
   });
 
-  test('leaves the time zone out for a visit type that sets none', () => {
-    renderEditor(FullyConfiguredService);
-
-    expect(screen.queryByTestId('scheduling-parameters-timezone')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('scheduling-parameters-warning-no-timezone')).not.toBeInTheDocument();
-  });
-
   interface StoredZones {
     timezone?: string;
     alignmentTimezone?: string;
@@ -292,6 +301,21 @@ describe('SchedulingParametersEditor', () => {
       expect(missingField('alignmentTimezone')).toBeNull();
     });
 
+    test('are both absent when a stored sub-extension carries no zone, and it is dropped on save', async () => {
+      const empty: WithId<HealthcareService> = {
+        ...UnconfiguredService,
+        extension: [{ url: SchedulingParametersURI, extension: [{ url: 'timezone' }] }],
+      };
+      const { saved } = renderEditor(empty);
+
+      expect(missingField('timezone')).toBeNull();
+      expect(missingField('alignmentTimezone')).toBeNull();
+
+      fireEvent.click(saveButton());
+      await waitFor(() => expect(saved).toHaveLength(1));
+      expect(saved[0].extension).toBeUndefined();
+    });
+
     const cases: [string, StoredZones][] = [
       ['only a time zone', { timezone: 'America/Chicago' }],
       ['only an alignment time zone', { alignmentTimezone: 'America/Chicago' }],
@@ -303,41 +327,73 @@ describe('SchedulingParametersEditor', () => {
 
       for (const key of ['timezone', 'alignmentTimezone'] as const) {
         expect(field(key)).toHaveValue(zones[key] ?? '');
-        expect(field(key)).toHaveAttribute('readonly');
-        // Only a zone that is actually stored offers to remove it. An empty field has nothing to undo.
-        const remove = screen.queryByTestId(`scheduling-parameters-${key}-remove`);
-        if (zones[key] === undefined) {
-          expect(remove).toBeNull();
-        } else {
-          expect(remove).toBeInTheDocument();
-        }
+        // Mantine marks a Select read-only unless it is searchable, so this fails if the field stops
+        // being a picker the user can type into.
+        expect(field(key)).not.toHaveAttribute('readonly');
       }
     });
 
-    test('an alignment time zone can be removed, and the removal undone', async () => {
+    test('a zone can be picked into the field left empty by the other', async () => {
       const { saved } = renderEditor(withZones({ alignmentTimezone: 'America/Chicago' }));
 
-      fireEvent.click(screen.getByTestId('scheduling-parameters-alignmentTimezone-remove'));
-      expect(field('alignmentTimezone')).toHaveValue('');
-      fireEvent.click(screen.getByTestId('scheduling-parameters-alignmentTimezone-restore'));
-      expect(field('alignmentTimezone')).toHaveValue('America/Chicago');
-
-      fireEvent.click(screen.getByTestId('scheduling-parameters-alignmentTimezone-remove'));
+      pickTimezone('timezone', 'Europe/Berlin');
       fireEvent.click(saveButton());
 
       await waitFor(() => expect(saved).toHaveLength(1));
-      expect(getHealthcareServiceSchedulingParameterValues(saved[0]).alignmentTimezone).toBeUndefined();
+      expect(getHealthcareServiceSchedulingParameterValues(saved[0])).toEqual({
+        timezone: 'Europe/Berlin',
+        alignmentTimezone: 'America/Chicago',
+      });
     });
 
-    test('removing one leaves the other stored', async () => {
+    test('a stored zone can be changed to another', async () => {
+      const { saved } = renderEditor(withZones({ alignmentTimezone: 'America/Chicago' }));
+
+      pickTimezone('alignmentTimezone', 'Europe/Berlin');
+      fireEvent.click(saveButton());
+
+      await waitFor(() => expect(saved).toHaveLength(1));
+      expect(getHealthcareServiceSchedulingParameterValues(saved[0]).alignmentTimezone).toBe('Europe/Berlin');
+    });
+
+    test('clearing one leaves the other stored', async () => {
       const zones = { timezone: 'America/Chicago', alignmentTimezone: 'Europe/Berlin' };
       const { saved } = renderEditor(withZones(zones));
 
-      fireEvent.click(screen.getByTestId('scheduling-parameters-timezone-remove'));
+      clearTimezone('time zone');
       fireEvent.click(saveButton());
 
       await waitFor(() => expect(saved).toHaveLength(1));
       expect(getHealthcareServiceSchedulingParameterValues(saved[0])).toEqual({ alignmentTimezone: 'Europe/Berlin' });
+    });
+
+    test('picking an alignment time zone settles the daylight saving warning', async () => {
+      const service: WithId<HealthcareService> = {
+        ...UnconfiguredService,
+        extension: [
+          {
+            url: SchedulingParametersURI,
+            extension: [
+              { url: 'alignmentInterval', valueDuration: { value: 90, unit: 'min' } },
+              { url: 'timezone', valueCode: 'America/Chicago' },
+            ],
+          },
+        ],
+      };
+      renderEditor(service);
+
+      expect(screen.getByTestId('scheduling-parameters-warning-alignment-dst-shift')).toBeInTheDocument();
+
+      pickTimezone('alignmentTimezone', 'America/New_York');
+
+      await waitFor(() => expect(screen.queryByTestId('scheduling-parameters-warning-alignment-dst-shift')).toBeNull());
+    });
+
+    test('each placeholder names what takes effect while the field is empty', () => {
+      renderEditor(withZones({ timezone: 'America/Chicago' }));
+
+      expect(field('alignmentTimezone')).toHaveAttribute('placeholder', 'Etc/UTC (default)');
+      expect(field('timezone')).toHaveAttribute('placeholder', 'Not set');
     });
   });
 
@@ -355,11 +411,11 @@ describe('SchedulingParametersEditor', () => {
       ],
     };
 
-    test('is shown read-only', () => {
+    test('is shown in a picker that can be changed', () => {
       renderEditor(service);
 
       expect(field('timezone')).toHaveValue('America/Chicago');
-      expect(field('timezone')).toHaveAttribute('readonly');
+      expect(field('timezone')).not.toHaveAttribute('readonly');
     });
 
     test('survives a save that changes something else', async () => {
@@ -372,27 +428,18 @@ describe('SchedulingParametersEditor', () => {
       expect(getHealthcareServiceSchedulingParameterValues(saved[0]).timezone).toBe('America/Chicago');
     });
 
-    test('can be removed, and the field stays so the removal can be undone', async () => {
+    test('can be cleared, and the field stays so another can be picked', async () => {
       const { saved } = renderEditor(service);
 
-      fireEvent.click(screen.getByTestId('scheduling-parameters-timezone-remove'));
+      clearTimezone('time zone');
       expect(field('timezone')).toHaveValue('');
+      // Visibility is read from the resource as loaded, so clearing a zone must not pull the field out
+      // from under the cursor.
+      expect(field('timezone')).toBeInTheDocument();
       fireEvent.click(saveButton());
 
       await waitFor(() => expect(saved).toHaveLength(1));
       expect(getHealthcareServiceSchedulingParameterValues(saved[0]).timezone).toBeUndefined();
-    });
-
-    test('can be restored after removing it', async () => {
-      const { saved } = renderEditor(service);
-
-      fireEvent.click(screen.getByTestId('scheduling-parameters-timezone-remove'));
-      fireEvent.click(screen.getByTestId('scheduling-parameters-timezone-restore'));
-      expect(field('timezone')).toHaveValue('America/Chicago');
-      fireEvent.click(saveButton());
-
-      await waitFor(() => expect(saved).toHaveLength(1));
-      expect(getHealthcareServiceSchedulingParameterValues(saved[0]).timezone).toBe('America/Chicago');
     });
 
     test('is shown even when this runtime does not recognize it, and does not block a save', async () => {
@@ -403,6 +450,9 @@ describe('SchedulingParametersEditor', () => {
       const { saved } = renderEditor(unknown);
 
       expect(field('timezone')).toHaveValue('Mars/Olympus_Mons');
+      // Offered as an option too, which is what stops the next save rewriting it.
+      fireEvent.focus(field('timezone'));
+      expect(screen.getByText('Mars/Olympus_Mons')).toBeInTheDocument();
       fireEvent.click(saveButton());
 
       await waitFor(() => expect(saved).toHaveLength(1));

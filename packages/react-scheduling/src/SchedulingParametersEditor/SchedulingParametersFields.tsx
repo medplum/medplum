@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { NumberInput, SimpleGrid, Stack, Text } from '@mantine/core';
+import { NumberInput, Select, SimpleGrid, Stack, Text } from '@mantine/core';
 import type { JSX } from 'react';
+import { useMemo } from 'react';
 import type { SchedulingParameterValues } from '../parameterValues';
-import { DiscouragedTimezoneInput } from './DiscouragedTimezoneInput';
 import classes from './SchedulingParametersEditor.module.css';
 import type { SchedulingParameterErrors } from './SchedulingParametersEditor.utils';
-import { TimezoneSelect } from './TimezoneSelect';
+import { getTimezoneOptions } from './SchedulingParametersEditor.utils';
 
 /** How far an arrow press moves a minutes field. */
 const MINUTES_STEP = 5;
@@ -14,7 +14,7 @@ const MINUTES_STEP = 5;
 /** The numeric parameters, which are all minutes apart from capacity. */
 type NumericParameter = 'duration' | 'bufferBefore' | 'bufferAfter' | 'alignmentInterval' | 'alignmentOffset';
 
-/** The parameters carrying an IANA time zone, which share one mode. */
+/** The parameters carrying an IANA time zone, which share one option list. */
 type TimezoneParameter = 'timezone' | 'alignmentTimezone';
 
 /**
@@ -22,14 +22,6 @@ type TimezoneParameter = 'timezone' | 'alignmentTimezone';
  * around: the labels and inputs stay on the same lines across a row whatever the copy does.
  */
 const DESCRIPTION_BELOW = ['label', 'input', 'description', 'error'] as const;
-
-/**
- * How both time zone fields appear. They share one mode so a level that does not set time zones here is not
- * offering one of them and hiding the other. `discouraged` is for a level where scheduling accepts a time
- * zone but this form does not offer to set one: a stored value is shown read-only with a way to remove it,
- * and nothing new can be entered. `hidden` leaves both fields out.
- */
-export type TimezoneFieldMode = 'editable' | 'discouraged' | 'hidden';
 
 interface SchedulingParametersFieldsProps {
   /** The parameters as entered, in minutes. */
@@ -47,8 +39,11 @@ interface SchedulingParametersFieldsProps {
   readonly idPrefix: string;
   readonly onChange: (values: SchedulingParameterValues) => void;
   readonly disabled?: boolean;
-  /** Applies to `timezone` and `alignmentTimezone` alike. Defaults to `editable`. */
-  readonly timezoneMode?: TimezoneFieldMode;
+  /**
+   * Whether to offer the two time zone fields, which are shown or hidden together so a level that does not
+   * set time zones here is not offering one of them and hiding the other. Defaults to true.
+   */
+  readonly showTimezones?: boolean;
 }
 
 /**
@@ -76,7 +71,14 @@ function placeholderFor(
  * @returns The parameter fields.
  */
 export function SchedulingParametersFields(props: SchedulingParametersFieldsProps): JSX.Element {
-  const { values, defaults, defaultsLabel, errors, idPrefix, onChange, disabled, timezoneMode = 'editable' } = props;
+  const { values, defaults, defaultsLabel, errors, idPrefix, onChange, disabled, showTimezones = true } = props;
+
+  // Gated inside the memo rather than around it: listing the runtime's zones and sorting them is wasted on
+  // the common case, a visit type that sets no time zone and so shows neither field.
+  const timezoneOptions = useMemo(
+    () => (showTimezones ? getTimezoneOptions([values.timezone, values.alignmentTimezone]) : []),
+    [showTimezones, values.timezone, values.alignmentTimezone]
+  );
 
   function setValue(key: keyof SchedulingParameterValues, value: number | string | undefined): void {
     onChange({ ...values, [key]: value });
@@ -117,50 +119,28 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
     );
   }
 
-  /**
-   * Renders one time zone field, or nothing where the mode hides them. Copy differs per field because
-   * removing one has a different consequence from removing the other.
-   * @param key - The parameter the field edits.
-   * @param label - The field label.
-   * @param copy - The description for each state the field can be in.
-   * @param copy.editable - Shown where a time zone can be picked.
-   * @param copy.stored - Shown where one is stored and read-only.
-   * @param copy.unset - Shown where the resource never set one.
-   * @param copy.removed - Shown once a stored one is marked for removal.
-   * @returns The field, or null where time zones are hidden.
-   */
-  function timezoneField(
-    key: TimezoneParameter,
-    label: string,
-    copy: { editable?: string; stored: string; unset: string; removed: string }
-  ): JSX.Element | null {
-    if (timezoneMode === 'hidden') {
+  function timezoneField(key: TimezoneParameter, label: string, description: string): JSX.Element | null {
+    if (!showTimezones) {
       return null;
     }
-    if (timezoneMode === 'editable') {
-      return (
-        <TimezoneSelect
-          label={label}
-          description={copy.editable}
-          value={values[key]}
-          placeholder={placeholderFor(defaults, key, defaultsLabel)}
-          error={errors[key]}
-          disabled={disabled}
-          onChange={(value) => setValue(key, value)}
-          testId={`scheduling-parameters-${key}`}
-        />
-      );
-    }
     return (
-      <DiscouragedTimezoneInput
+      <Select
+        id={`${idPrefix}-${key}`}
         label={label}
-        value={values[key]}
-        description={copy.stored}
-        unsetDescription={copy.unset}
-        removedDescription={copy.removed}
+        description={description}
+        inputWrapperOrder={[...DESCRIPTION_BELOW]}
+        data={timezoneOptions}
+        value={values[key] ?? null}
+        placeholder={placeholderFor(defaults, key, defaultsLabel)}
+        error={errors[key]}
         disabled={disabled}
-        onChange={(value) => setValue(key, value)}
-        testId={`scheduling-parameters-${key}`}
+        onChange={(next) => setValue(key, next ?? undefined)}
+        searchable
+        clearable
+        comboboxProps={{ keepMounted: false }}
+        clearButtonProps={{ 'aria-label': `Clear ${label.toLowerCase()}` }}
+        nothingFoundMessage="No matching time zone"
+        data-testid={`scheduling-parameters-${key}`}
       />
     );
   }
@@ -186,14 +166,7 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
             0,
             'Pushes every start later, so 5 turns 9:00 and 9:30 into 9:05 and 9:35'
           )}
-          {timezoneField('alignmentTimezone', 'Alignment time zone', {
-            editable: 'Whose midnight the start times are counted from',
-            stored: 'Start times are counted from this zone’s midnight.',
-            unset: 'Not set here. Start times are counted from UTC midnight.',
-            removed:
-              'Removed on save. Start times will be counted from UTC midnight, so they shift by an hour ' +
-              'either side of a daylight saving change.',
-          })}
+          {timezoneField('alignmentTimezone', 'Alignment time zone', 'Whose midnight the start times are counted from')}
         </SimpleGrid>
       </Stack>
 
@@ -215,11 +188,11 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
             allowDecimal={false}
             data-testid="scheduling-parameters-slotCapacity"
           />
-          {timezoneField('timezone', 'Time zone', {
-            stored: 'Best set on each calendar, or on the practitioner, room, or device it belongs to.',
-            unset: 'Not set here. Each calendar uses the time zone of its practitioner, room, or device.',
-            removed: 'Removed on save. Each calendar will use the time zone of its practitioner, room, or device.',
-          })}
+          {timezoneField(
+            'timezone',
+            'Time zone',
+            'The working hours are read in this zone, unless a calendar sets its own'
+          )}
         </SimpleGrid>
       </Stack>
     </Stack>

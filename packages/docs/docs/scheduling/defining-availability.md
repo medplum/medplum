@@ -334,7 +334,8 @@ calendars in other time zones.
 
 A value already stored on a `HealthcareService` stays in force, since resolution still reads it. To stop it
 taking effect, remove it and set `timezone` on each `Schedule` instead. `SchedulingParametersEditor` follows
-the same rule: it offers no way to enter one, and shows a stored value read-only with a button to remove it.
+the same rule: it offers no time zone field on a service that stores none, and shows a stored value in a
+picker where clearing the field is how you remove it.
 
 :::
 

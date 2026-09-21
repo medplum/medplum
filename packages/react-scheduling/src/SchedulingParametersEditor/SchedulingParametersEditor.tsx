@@ -20,11 +20,11 @@ import type { HealthcareService } from '@medplum/fhirtypes';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useId, useState } from 'react';
-import type { SchedulingParameterWarning } from './SchedulingParametersEditor.utils';
 import {
   getHealthcareServiceSchedulingParameterValues,
   setHealthcareServiceSchedulingParameterValues,
 } from '../parameterValues';
+import type { SchedulingParameterWarning } from './SchedulingParametersEditor.utils';
 import {
   getBlockingErrors,
   getSchedulingParameterWarnings,
@@ -173,12 +173,9 @@ export function SchedulingParametersEditor(props: SchedulingParametersEditorProp
           errors={blocking}
           idPrefix={fieldIdPrefix}
           onChange={setValues}
-          // Neither time zone is offered here: one belongs to each calendar, and the other is left at UTC so
-          // calendars booked together agree. Either one already stored still takes effect, so both fields
-          // appear together, read-only and removable, rather than a stored value going unseen.
-          timezoneMode={
-            initial.timezone === undefined && initial.alignmentTimezone === undefined ? 'hidden' : 'discouraged'
-          }
+          // Discourage timezone values on a HealthcareService, unless there are already values defined
+          // on either `timezone` or `alignmentTimezone`.
+          showTimezones={initial.timezone !== undefined || initial.alignmentTimezone !== undefined}
         />
 
         {warnings.length > 0 && (

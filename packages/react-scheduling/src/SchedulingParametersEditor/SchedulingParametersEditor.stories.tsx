@@ -132,7 +132,7 @@ export const NoDuration = (): JSX.Element => (
 
 export const StoredTimezone = (): JSX.Element => (
   <EditorHost
-    title="A visit type carrying a time zone. Both time zone fields appear, read-only, and only the one with a value offers to remove it"
+    title="A visit type carrying a time zone. Both time zone fields appear as pickers, and clearing one removes it on save"
     initial={buildSchedulableService({
       id: 'stored-timezone',
       name: 'Telehealth Follow-up',
@@ -158,6 +158,22 @@ export const StoredAlignmentTimezone = (): JSX.Element => {
         url: 'alignmentTimezone',
         valueCode: 'America/Denver',
       })}
+    />
+  );
+};
+
+export const UnrecognizedTimezone = (): JSX.Element => {
+  const service = buildSchedulableService({
+    id: 'unrecognized-timezone',
+    name: 'Off-world Consult',
+    category: 'Telehealth',
+    durationMinutes: 30,
+    alignmentMinutes: 30,
+  });
+  return (
+    <EditorHost
+      title="A zone this browser does not know is still shown and still offered, so saving cannot rewrite it"
+      initial={setHealthcareServiceSchedulingParameter(service, { url: 'timezone', valueCode: 'Mars/Olympus_Mons' })}
     />
   );
 };
