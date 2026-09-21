@@ -164,7 +164,7 @@ Decide when booking is allowed and how exceptions are maintained. Use implicit a
 | One-off absence or holiday | Create `busy-unavailable` Slots on affected Schedules. Omit Slot `serviceType` to block all services; set it only for an intentionally service-specific block. |
 | Facility closure | Include the facility as a required schedulable resource, or apply blocks to each affected Schedule. A facility block does not automatically propagate to practitioners. |
 | Maximum booking window | Use `Schedule.planningHorizon`. A rolling horizon requires application maintenance. |
-| Minimum lead time or daily/weekly caps | Implement and validate these policies in the controlled booking path, not just search filters. `bookingLimit` is not currently enforced. |
+| Minimum lead time or daily/weekly caps | The scheduling server does not enforce these policies. Implement and validate them in the application's controlled booking path, not just search filters. |
 
 **Defaults need explicit review:** without configured availability, time defaults to always available. Without a resolvable availability timezone, scheduling fails. `availability.notAvailableTime` is not currently processed; use blocked Slots for exceptions. A new block does not itself resolve existing appointments, so define the notification and rescheduling workflow.
 

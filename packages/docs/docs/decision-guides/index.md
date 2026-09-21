@@ -5,12 +5,12 @@ sidebar_position: 3
 
 # Designing Your Workflows
 
-Decision guides are companion documents to the Medplum docs. Each one walks through the requirements questions and FHIR modeling decisions for a specific workflow area — _who_ uses it, _what_ data flows through it, _how_ it integrates with other systems, and which Medplum primitives best fit each requirement.
+Decision guides are companion documents to the Medplum docs. Each one walks through the requirements questions and FHIR modeling decisions for a specific workflow area – _who_ uses it, _what_ data flows through it, _how_ it integrates with other systems, and which Medplum primitives best fit each requirement.
 
 The guides and the technical docs are designed to be used together:
 
-- **The decision guide** structures a scoping conversation — it asks discovery questions about your use case (who's involved, when the workflow runs, what systems it touches), then walks through FHIR modeling decisions for the relevant features, covering trade-offs and which Medplum primitive fits when.
-- **The technical docs** are the implementation reference — data model, APIs, React components, and worked examples that apply across scenarios.
+- **The decision guide** structures a scoping conversation – it asks discovery questions about your use case (who's involved, when the workflow runs, what systems it touches), then walks through FHIR modeling decisions for the relevant features, covering trade-offs and which Medplum primitive fits when.
+- **The technical docs** are the implementation reference – data model, APIs, React components, and worked examples that apply across scenarios.
 
 You'll move back and forth between them. The decision guide gives scenario-specific recommendations ("if intake happens before the patient record exists, do X"); the technical docs explain the general capabilities in depth. For some modeling questions the guide is the more direct answer; for implementation details the docs go further.
 
@@ -18,7 +18,7 @@ You'll move back and forth between them. The decision guide gives scenario-speci
 
 ### Intake & Registration
 
-Scope your intake workflow — who completes it and when, identity and duplicate handling, form library, prefill and reconciliation, extraction approach (SDC vs. Bot), coverage and consent modeling, and post-submission automation.
+Scope your intake workflow – who completes it and when, identity and duplicate handling, form library, prefill and reconciliation, extraction approach (SDC vs. Bot), coverage and consent modeling, and post-submission automation.
 
 - **[Decision Guide →](/docs/decision-guides/intake)**
 - **Docs:** [Intake & Registration](/docs/intake)
@@ -32,7 +32,7 @@ Scope your scheduling workflow – visit types, actors and availability, patient
 
 ### Charting
 
-Scope your charting workflow — care setting and visit types, how structured the chart should be, parsing form responses into queryable data, signing requirements, and Visit Template ownership.
+Scope your charting workflow – care setting and visit types, how structured the chart should be, parsing form responses into queryable data, signing requirements, and Visit Template ownership.
 
 - **[Decision Guide →](/docs/decision-guides/charting)**
 - **Docs:** [Charting](/docs/charting)
@@ -60,7 +60,7 @@ Scope your messaging workflow – thread structure, live updates, routing and as
 
 ### RCM & Billing
 
-Scope your billing workflow — charge capture, claims and clearinghouse integration, eligibility checks, coding and fee schedules, remittance and reconciliation, and patient billing.
+Scope your billing workflow – charge capture, claims and clearinghouse integration, eligibility checks, coding and fee schedules, remittance and reconciliation, and patient billing.
 
 - **[Decision Guide →](/docs/decision-guides/rcm-billing)**
 - **Docs:** [Billing and Payments](/docs/billing)
