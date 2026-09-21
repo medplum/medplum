@@ -1,24 +1,29 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Input, Stack, TextInput } from '@mantine/core';
+import { Alert, Button, Input, Stack, TextInput, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Address, Organization } from '@medplum/fhirtypes';
 import { AddressInput, Modal, useMedplum } from '@medplum/react';
+import { IconInfoCircle } from '@tabler/icons-react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
+import { useCandidProviderContracts } from '../../hooks/useCandidProviderContracts';
 import type { CandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import {
   EIN_SYSTEM,
   NPI_SYSTEM,
   buildUpdatedOrganization,
+  getMissingBillingOrganizationFields,
+  isBillingOrganization,
   isValidBillingPhone,
   withCandidProviderExtensions,
   withCandidProviderId,
 } from '../../utils/billing';
 import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
+import { CandidContractAlert } from './CandidContractAlert';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
 /**
@@ -27,9 +32,12 @@ import { CandidRegistrationAlert } from './CandidRegistrationAlert';
  */
 const FORM_ID = 'billing-organization-form';
 
-/** Props for the billing organization modal; `organization` is the one to edit, or undefined to create a new one. */
-export interface BillingOrganizationModalProps {
-  readonly candidBotId: string | undefined;
+/**
+ * Props for the billing organization modal. `organization` is the one to edit, or undefined to create a new one;
+ * an organization without the billing marker is one from elsewhere in the project being set up for billing.
+ */
+export interface CandidBillingOrganizationModalProps {
+  readonly candidCreateBotId: string | undefined;
   readonly candidEditBotId: string | undefined;
   readonly organization: WithId<Organization> | undefined;
   readonly opened: boolean;
@@ -43,30 +51,42 @@ export interface BillingOrganizationModalProps {
  * changes, so its state is always seeded from the organization currently being edited. The form
  * reports what Candid knows about the NPI it holds, so the footer button can read Edit while the
  * provider is already registered and hold while a lookup is in flight.
- * @param props - The BillingOrganizationModal React props.
- * @returns The BillingOrganizationModal React node.
+ * @param props - The CandidBillingOrganizationModal React props.
+ * @returns The CandidBillingOrganizationModal React node.
  */
-export function BillingOrganizationModal(props: BillingOrganizationModalProps): JSX.Element {
-  const { candidBotId, candidEditBotId, organization, opened, onClose, onSaved } = props;
+export function CandidBillingOrganizationModal(props: CandidBillingOrganizationModalProps): JSX.Element {
+  const { candidCreateBotId, candidEditBotId, organization, opened, onClose, onSaved } = props;
   const [saving, setSaving] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState<CandidProviderRegistration['status']>('unavailable');
+  const registered = registrationStatus === 'registered';
+  const missingBotMessage = registered
+    ? candidEditBotId === undefined && EDIT_BOT_MISSING_MESSAGE
+    : candidCreateBotId === undefined && CREATE_BOT_MISSING_MESSAGE;
 
   return (
     <Modal
       opened={opened}
       onClose={onClose}
       size="lg"
-      title={organization ? 'Edit billing organization' : 'New billing organization'}
+      title={getModalTitle(organization)}
       actions={
-        <Button type="submit" form={FORM_ID} loading={saving || registrationStatus === 'loading'}>
-          {registrationStatus === 'registered' ? 'Edit' : 'Save'}
-        </Button>
+        <Tooltip label={missingBotMessage} disabled={!missingBotMessage} multiline w={300}>
+          <Button
+            type="submit"
+            form={FORM_ID}
+            loading={saving || registrationStatus === 'loading'}
+            data-disabled={missingBotMessage ? true : undefined}
+            onClick={missingBotMessage ? (e) => e.preventDefault() : undefined}
+          >
+            {registered ? 'Edit' : 'Save'}
+          </Button>
+        </Tooltip>
       }
     >
       {opened && (
-        <BillingOrganizationForm
+        <CandidBillingOrganizationForm
           key={organization?.id ?? 'new'}
-          candidBotId={candidBotId}
+          candidCreateBotId={candidCreateBotId}
           candidEditBotId={candidEditBotId}
           organization={organization}
           onRegistrationStatusChange={setRegistrationStatus}
@@ -81,12 +101,19 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
   );
 }
 
+function getModalTitle(organization: Organization | undefined): string {
+  if (!organization) {
+    return 'New billing organization';
+  }
+  return isBillingOrganization(organization) ? 'Edit billing organization' : 'Set up billing organization';
+}
+
 /**
  * Props for the form inside the modal; `onRegistrationStatusChange` reports the state of the Candid
  * lookup for the NPI on the form, and resets it to unavailable when the form unmounts.
  */
-interface BillingOrganizationFormProps {
-  readonly candidBotId: string | undefined;
+interface CandidBillingOrganizationFormProps {
+  readonly candidCreateBotId: string | undefined;
   readonly candidEditBotId: string | undefined;
   readonly organization: WithId<Organization> | undefined;
   readonly onRegistrationStatusChange: (status: CandidProviderRegistration['status']) => void;
@@ -98,15 +125,24 @@ interface BillingOrganizationFormProps {
  * The server profile validates name, NPI, Tax ID and address on save. Only the phone format is checked
  * here: the profile requires a phone but cannot express the X12 rule on its digits.
  */
+/** Shown on the disabled Save button when a provider cannot be registered with Candid. */
+const CREATE_BOT_MISSING_MESSAGE =
+  'The Candid create-provider bot is not deployed in this project, so billing organizations cannot be saved here.';
+
+/** Shown on the disabled Edit button when a registered provider cannot be pushed to Candid. */
+const EDIT_BOT_MISSING_MESSAGE =
+  'The Candid edit-provider bot is not deployed in this project, so registered providers cannot be edited here.';
+
 type FormErrors = Partial<Record<'phone', string>>;
 
 /**
  * The billing organization fields, seeded from the organization at mount.
- * @param props - The BillingOrganizationForm React props.
- * @returns The BillingOrganizationForm React node.
+ * @param props - The CandidBillingOrganizationForm React props.
+ * @returns The CandidBillingOrganizationForm React node.
  */
-function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Element {
-  const { candidBotId, candidEditBotId, organization, onRegistrationStatusChange, onSavingChange, onSaved } = props;
+function CandidBillingOrganizationForm(props: CandidBillingOrganizationFormProps): JSX.Element {
+  const { candidCreateBotId, candidEditBotId, organization, onRegistrationStatusChange, onSavingChange, onSaved } =
+    props;
   const medplum = useMedplum();
 
   const [name, setName] = useState(() => organization?.name ?? '');
@@ -117,6 +153,9 @@ function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Eleme
   const [errors, setErrors] = useState<FormErrors>({});
 
   const registration = useCandidProviderRegistration('Organization', npi);
+  const contracts = useCandidProviderContracts(
+    registration.status === 'registered' ? registration.candidProviderId : undefined
+  );
 
   useEffect(() => {
     onRegistrationStatusChange(registration.status);
@@ -154,7 +193,7 @@ function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Eleme
         registration.status === 'registered' ? registration.candidProviderId : undefined
       );
       const candidProviderId = getIdentifier(built, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
-      const botId = candidProviderId ? candidEditBotId : candidBotId;
+      const botId = candidProviderId ? candidEditBotId : candidCreateBotId;
       if (botId) {
         built = withCandidProviderExtensions(built);
       }
@@ -163,7 +202,7 @@ function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Eleme
         : await medplum.createResource(built);
       showSuccessNotification({
         title: 'Success',
-        message: organization ? 'Billing organization updated' : 'Billing organization created',
+        message: getSavedMessage(organization),
       });
       if (botId) {
         try {
@@ -197,12 +236,16 @@ function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Eleme
   return (
     <form id={FORM_ID} onSubmit={handleSubmit}>
       <Stack gap="md">
+        {organization && !isBillingOrganization(organization) && (
+          <MissingBillingFieldsAlert organization={organization} />
+        )}
         <CandidRegistrationAlert
           registration={registration}
           registersAs={
-            candidBotId ? 'this organization as an organization provider, billing under its own NPI' : undefined
+            candidCreateBotId ? 'this organization as an organization provider, billing under its own NPI' : undefined
           }
         />
+        <CandidContractAlert contracts={contracts} subject="this organization" />
         <TextInput label="Name" required value={name} onChange={(event) => setName(event.currentTarget.value)} />
         <TextInput
           label="NPI"
@@ -235,6 +278,42 @@ function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Eleme
       </Stack>
     </form>
   );
+}
+
+function getSavedMessage(organization: Organization | undefined): string {
+  if (!organization) {
+    return 'Billing organization created';
+  }
+  return isBillingOrganization(organization) ? 'Billing organization updated' : 'Organization set up for billing';
+}
+
+interface MissingBillingFieldsAlertProps {
+  readonly organization: Organization;
+}
+
+/**
+ * Tells the user an organization from elsewhere in the project is about to become a billing organization, and
+ * which billing fields it still lacks; the fields below are empty and required, so the save cannot proceed
+ * without them.
+ * @param props - The MissingBillingFieldsAlert React props.
+ * @returns The MissingBillingFieldsAlert React node.
+ */
+function MissingBillingFieldsAlert(props: MissingBillingFieldsAlertProps): JSX.Element {
+  const missing = getMissingBillingOrganizationFields(props.organization);
+  return (
+    <Alert icon={<IconInfoCircle size={16} />} color={missing.length > 0 ? 'yellow' : 'blue'} variant="light">
+      {missing.length > 0
+        ? `This organization is not set up for billing yet. Enter its ${formatList(missing)} to make it available for billing.`
+        : 'This organization is not set up for billing yet. Check its details and save to make it available for billing.'}
+    </Alert>
+  );
+}
+
+function formatList(items: string[]): string {
+  if (items.length <= 1) {
+    return items.join('');
+  }
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
 function getIdentifierValue(organization: Organization | undefined, system: string): string {

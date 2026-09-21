@@ -263,7 +263,7 @@ describe('ScheduleDetails', () => {
 
       await setup(mockSchedule, { slots: [freeSlot, erroredSlot] });
 
-      expect(screen.getAllByText('Available')).toHaveLength(1);
+      expect(await screen.findAllByText('Available')).toHaveLength(1);
       expect(screen.queryAllByText('Entered in error')).toHaveLength(0);
     });
 
@@ -279,7 +279,7 @@ describe('ScheduleDetails', () => {
 
       await setup(mockSchedule, { appointments: [bookedAppointment, cancelledAppointment] });
 
-      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+      expect(await screen.findByText(/John Doe/)).toBeInTheDocument();
       expect(screen.queryByText(/Cancelled Patient/)).not.toBeInTheDocument();
     });
   });

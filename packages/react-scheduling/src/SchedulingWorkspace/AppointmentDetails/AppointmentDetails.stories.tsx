@@ -48,9 +48,11 @@ export default {
 /**
  * Everything on file for one visit, and controls for managing the visit.
  *
- * - Cancelling: requires selecting a `cancelationReason` from the
- *   `appointment-cancellation-reason` value set, which is sent as part of a
- *   `$cancel` request.
+ * - Cancelling: "Cancel Appointment" turns the view over to a page of its own, which
+ *   requires selecting a `cancelationReason` from the `appointment-cancellation-reason`
+ *   value set before it can be confirmed, and sends it as part of a `$cancel` request.
+ *   "Back" returns to the details without cancelling anything, and without keeping the
+ *   reason that was chosen.
  *
  * - Controls for rescheduling/reassigning coming soon!
  *

@@ -535,7 +535,13 @@ Limit for the rate at which requests can be sent to or processed by the server. 
 
 Limit for the rate at which auth requests can be sent to or processed by the server. If developers are hitting this limit, it could be an indication of a suboptimal integration where each request is authenticating rather than reusing a token. For more details see the [Rate Limit docs](/docs/rate-limits).
 
-**Default:** `60/minute`
+**Default:** `160/minute`
+
+### defaultMfaRateLimit
+
+Limit for MFA verification requests per IP address. This is an outer guard in addition to per-login and per-user MFA attempt limits.
+
+**Default:** `10/minute`
 
 ### defaultFhirQuota
 

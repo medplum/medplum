@@ -29,16 +29,14 @@ const PAYER_SUPPORT_CAPABILITIES: { url: string; label: string }[] = [
   { url: CANDID_REMITTANCE_SUPPORT_EXTENSION, label: 'Remittance' },
 ];
 
-export interface PayerDetailsModalProps {
+export interface CandidPayerDetailsModalProps {
   readonly directory: CandidPayerDirectory;
-  /** A search result (not yet persisted, no id) or an imported payer (with id, refreshable). */
   readonly payer: Organization | undefined;
   readonly onClose: () => void;
-  /** Called with the patched payer when a refresh changes it. */
   readonly onPayerUpdated: (payer: Organization) => void;
 }
 
-export function PayerDetailsModal(props: PayerDetailsModalProps): JSX.Element {
+export function CandidPayerDetailsModal(props: CandidPayerDetailsModalProps): JSX.Element {
   const { directory, payer, onClose, onPayerUpdated } = props;
 
   const handleRefresh = async (): Promise<void> => {

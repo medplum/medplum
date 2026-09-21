@@ -534,6 +534,23 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
+  test('MFA rate limit', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.defaultRateLimit = 100;
+    config.defaultMfaRateLimit = 1;
+
+    const rateLimitRedisConfig = config.rateLimitRedis as TestRedisConfig;
+    rateLimitRedisConfig.keyPrefix = 'mfa-rate-limit:';
+    await initApp(app, config);
+
+    expect(await request(app).post('/auth/mfa/verify').send({})).toHaveStatus(400);
+    expect(await request(app).post('/auth/mfa/verify').send({})).toHaveStatus(429);
+
+    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
   test('Server rate limit disabled', async () => {
     const app = express();
     const config = await loadTestConfig();

@@ -56,8 +56,25 @@ function renderDetails(appointment: WithId<Appointment>, onCancelled?: (a: WithI
   return renderWithMedplum(<AppointmentDetails appointment={appointment} onCancelled={onCancelled} />, medplum);
 }
 
+/**
+ * The button on the details that turns the view over to the cancellation page.
+ * @returns The button, or null while the details offer no cancellation.
+ */
 function cancelButton(): HTMLElement | null {
   return screen.queryByRole('button', { name: 'Cancel Appointment' });
+}
+
+/**
+ * The button on the cancellation page that posts `$cancel`.
+ * @returns The button, or null while that page is not open.
+ */
+function confirmButton(): HTMLElement | null {
+  return screen.queryByRole('button', { name: 'Confirm Cancellation' });
+}
+
+/** Opens the cancellation page, which is the only place a reason can be chosen. */
+async function openCancellation(): Promise<void> {
+  await userEvent.click(cancelButton() as HTMLElement);
 }
 
 /**
@@ -108,8 +125,9 @@ describe('AppointmentDetails', () => {
     const onCancelled = vi.fn();
     renderDetails(BOOKED_APPOINTMENT, onCancelled);
 
+    await openCancellation();
     await chooseReason();
-    await userEvent.click(cancelButton() as HTMLElement);
+    await userEvent.click(confirmButton() as HTMLElement);
 
     await waitFor(() => expect(onCancelled).toHaveBeenCalled());
     expect(post.mock.calls[0][0].toString()).toContain(`Appointment/${BOOKED_APPOINTMENT.id}/$cancel`);
@@ -125,8 +143,9 @@ describe('AppointmentDetails', () => {
     const onCancelled = vi.fn();
     renderDetails(BOOKED_APPOINTMENT, onCancelled);
 
+    await openCancellation();
     await chooseReason();
-    await userEvent.click(cancelButton() as HTMLElement);
+    await userEvent.click(confirmButton() as HTMLElement);
 
     await waitFor(() => expect(onCancelled).toHaveBeenCalled());
     expect(notify).toHaveBeenCalledWith(
@@ -145,24 +164,58 @@ describe('AppointmentDetails', () => {
     vi.spyOn(medplum, 'post').mockRejectedValue(new Error('Appointment cannot be canceled'));
     renderDetails(BOOKED_APPOINTMENT, onCancelled);
 
+    await openCancellation();
     await chooseReason();
-    await userEvent.click(cancelButton() as HTMLElement);
+    await userEvent.click(confirmButton() as HTMLElement);
 
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
     expect(screen.getByText('Appointment cannot be canceled')).toBeInTheDocument();
     expect(onCancelled).not.toHaveBeenCalled();
-    // Still offering to try again.
-    expect(cancelButton()).toBeInTheDocument();
+    // Still on the page that raised it, with the reason still chosen, to try again.
+    expect(confirmButton()).toBeEnabled();
+  });
+
+  test('asks for nothing until the cancellation is opened', async () => {
+    renderDetails(BOOKED_APPOINTMENT);
+
+    // The details describe the visit and offer to call it off. What it is being called
+    // off for is asked on the page that offer leads to, not here.
+    expect(screen.queryByPlaceholderText('Search reasons')).not.toBeInTheDocument();
+    expect(cancelButton()).toBeEnabled();
+
+    await openCancellation();
+
+    expect(screen.getByPlaceholderText('Search reasons')).toBeInTheDocument();
+    expect(screen.queryByText('Bring prior films')).not.toBeInTheDocument();
   });
 
   test('offers no cancellation until a reason is chosen', async () => {
     renderDetails(BOOKED_APPOINTMENT);
+    await openCancellation();
 
-    expect(cancelButton()).toBeDisabled();
+    expect(confirmButton()).toBeDisabled();
 
     await chooseReason();
 
-    expect(cancelButton()).toBeEnabled();
+    expect(confirmButton()).toBeEnabled();
+  });
+
+  test('going back leaves the appointment alone, and the reason behind', async () => {
+    const post = vi.spyOn(medplum, 'post');
+    renderDetails(BOOKED_APPOINTMENT);
+    await openCancellation();
+    await chooseReason();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Back to Appointment Details' }));
+
+    // Nothing was posted on the way out, and the details are what is back on screen.
+    expect(post).not.toHaveBeenCalled();
+    expect(screen.getByText('Bring prior films')).toBeInTheDocument();
+
+    // Opening it again is the same decision being made from the start, so what was
+    // chosen for the cancellation that never happened is not still chosen.
+    await openCancellation();
+    expect(confirmButton()).toBeDisabled();
   });
 
   test('sends the chosen reason to $cancel', async () => {
@@ -170,8 +223,9 @@ describe('AppointmentDetails', () => {
     const onCancelled = vi.fn();
     renderDetails(BOOKED_APPOINTMENT, onCancelled);
 
+    await openCancellation();
     await chooseReason('Provider: Hospitalized');
-    await userEvent.click(cancelButton() as HTMLElement);
+    await userEvent.click(confirmButton() as HTMLElement);
 
     await waitFor(() => expect(onCancelled).toHaveBeenCalled());
     const parameters = post.mock.calls[0][1] as Parameters;
@@ -208,14 +262,14 @@ describe('AppointmentDetails', () => {
   test('offers no cancellation for an appointment $cancel would refuse', () => {
     renderDetails({ ...BOOKED_APPOINTMENT, status: 'cancelled' });
 
-    expect(cancelButton()).not.toBeInTheDocument();
+    expect(cancelButton()).toHaveAttribute('disabled');
     expect(screen.getByText('This appointment is cancelled.')).toBeInTheDocument();
   });
 
   test('says why an appointment already seen cannot be cancelled', () => {
     renderDetails({ ...BOOKED_APPOINTMENT, status: 'fulfilled' });
 
-    expect(cancelButton()).not.toBeInTheDocument();
+    expect(cancelButton()).toHaveAttribute('disabled');
     expect(screen.getByText("An appointment in 'fulfilled' status cannot be cancelled.")).toBeInTheDocument();
   });
 });

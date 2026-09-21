@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getReferenceString } from '@medplum/core';
+import { createReference, getReferenceString } from '@medplum/core';
 import type {
   Appointment,
   ClinicalImpression,
@@ -53,17 +53,23 @@ export function useEncounterChart(encounter: WithId<Encounter> | Reference<Encou
   // Falls back to encounterResource on initial load before any explicit set.
   const encounterToUse = encounterState ?? encounterResource;
 
-  // Fetch tasks and clinical impressions on mount or when encounter ID changes
+  // Fetch tasks and the clinical impression on mount or when encounter ID changes. An encounter
+  // without a clinical impression gets one via conditional create so concurrent effect runs
+  // (e.g. StrictMode) cannot persist duplicates; the ignore flag drops results from a stale run.
   useEffect(() => {
     if (!encounterResource) {
-      return;
+      return undefined;
     }
     const enc = encounterResource;
+    let ignore = false;
 
     async function fetchTasks(): Promise<void> {
       const taskResult = await medplum.searchResources('Task', `encounter=${getReferenceString(enc)}`, {
         cache: 'no-cache',
       });
+      if (ignore) {
+        return;
+      }
       taskResult.sort((a: Task, b: Task) => {
         const dateA = new Date(a.authoredOn || '').getTime();
         const dateB = new Date(b.authoredOn || '').getTime();
@@ -73,15 +79,41 @@ export function useEncounterChart(encounter: WithId<Encounter> | Reference<Encou
     }
 
     async function fetchClinicalImpressions(): Promise<void> {
-      const clinicalImpressionResult = await medplum.searchResources(
-        'ClinicalImpression',
-        `encounter=${getReferenceString(enc)}`
+      const query = `encounter=${getReferenceString(enc)}`;
+      const clinicalImpressionResult = await medplum.searchResources('ClinicalImpression', query, {
+        cache: 'no-cache',
+      });
+      if (ignore) {
+        return;
+      }
+      const existing = clinicalImpressionResult?.[0];
+      if (existing || !enc.subject) {
+        setClinicalImpression(existing);
+        return;
+      }
+      const created = await medplum.createResourceIfNoneExist<ClinicalImpression>(
+        {
+          resourceType: 'ClinicalImpression',
+          status: 'in-progress',
+          description: 'Initial clinical impression',
+          subject: enc.subject,
+          encounter: createReference(enc),
+          date: new Date().toISOString(),
+        },
+        query
       );
-      setClinicalImpression(clinicalImpressionResult?.[0]);
+      if (ignore) {
+        return;
+      }
+      setClinicalImpression(created);
     }
 
     fetchTasks().catch((err) => showErrorNotification(err));
     fetchClinicalImpressions().catch((err) => showErrorNotification(err));
+
+    return () => {
+      ignore = true;
+    };
   }, [encounterResource, medplum]);
 
   // Fetch practitioner related to the encounter

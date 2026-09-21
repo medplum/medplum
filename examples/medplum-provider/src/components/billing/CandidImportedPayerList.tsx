@@ -21,12 +21,12 @@ const DEFAULT_SEARCH: SearchRequest = {
   offset: 0,
 };
 
-export interface ImportedPayerListProps {
+export interface CandidImportedPayerListProps {
   readonly directory: CandidPayerDirectory;
   readonly onSelectPayer: (payer: WithId<Organization>) => void;
 }
 
-export function ImportedPayerList(props: ImportedPayerListProps): JSX.Element {
+export function CandidImportedPayerList(props: CandidImportedPayerListProps): JSX.Element {
   const { directory, onSelectPayer } = props;
   const [search, setSearch] = useState<SearchRequest>(DEFAULT_SEARCH);
 

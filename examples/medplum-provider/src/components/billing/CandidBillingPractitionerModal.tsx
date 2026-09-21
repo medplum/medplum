@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Input, Stack, Text, TextInput } from '@mantine/core';
+import { Button, Input, Skeleton, Stack, TextInput, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { createReference, formatAddress, getIdentifier, normalizeErrorString } from '@medplum/core';
-import type { Address, Organization, Practitioner, PractitionerRole, Reference } from '@medplum/fhirtypes';
-import type { AsyncAutocompleteOption } from '@medplum/react';
-import { AddressInput, Modal, ResourceAvatar, ResourceInput, useMedplum } from '@medplum/react';
+import { createReference, getIdentifier, normalizeErrorString } from '@medplum/core';
+import type { Address, HumanName, Organization, Practitioner, PractitionerRole, Reference } from '@medplum/fhirtypes';
+import { AddressInput, HumanNameInput, Modal, ResourceInput, useMedplum, useResource } from '@medplum/react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
+import { useCandidProviderContracts } from '../../hooks/useCandidProviderContracts';
 import type { CandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import type { BillingPractitionerFormValues } from '../../utils/billing';
@@ -24,48 +24,74 @@ import {
 } from '../../utils/billing';
 import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
+import { BillingOrganizationOption } from './BillingOrganizationOption';
+import { CandidContractAlert } from './CandidContractAlert';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
 const FORM_ID = 'billing-practitioner-form';
 
-function OrganizationItem(props: AsyncAutocompleteOption<Organization>): JSX.Element {
-  const { label, resource } = props;
-  const address = resource.address?.[0];
-  return (
-    <Group wrap="nowrap">
-      <ResourceAvatar value={resource} />
-      <div>
-        <Text>{label}</Text>
-        {address && (
-          <Text size="xs" c="dimmed">
-            {formatAddress(address)}
-          </Text>
-        )}
-      </div>
-    </Group>
-  );
-}
-
 /**
  * Props for the practitioner billing modal. `practitioner` is the one to edit (undefined keeps the modal
- * closed); `roles` contains their active roles, from the row that opened it.
+ * closed); the modal looks up their active PractitionerRoles itself, so the form always starts from what is
+ * stored.
  */
-export interface BillingPractitionerModalProps {
-  readonly candidBotId: string | undefined;
+export interface CandidBillingPractitionerModalProps {
+  readonly candidCreateBotId: string | undefined;
   readonly candidEditBotId: string | undefined;
   readonly practitioner: WithId<Practitioner> | undefined;
-  readonly roles: WithId<PractitionerRole>[];
   readonly onClose: () => void;
   readonly onSaved: () => void;
 }
 
-type FormErrors = Partial<Record<'npi' | 'ein' | 'address', string>>;
+interface LoadedRoles {
+  readonly practitionerId: string;
+  readonly roles: WithId<PractitionerRole>[];
+}
 
-export function BillingPractitionerModal(props: BillingPractitionerModalProps): JSX.Element {
-  const { candidBotId, candidEditBotId, practitioner, roles, onClose, onSaved } = props;
+/** Shown on the disabled Save button when a provider cannot be registered with Candid. */
+const CREATE_BOT_MISSING_MESSAGE =
+  'The Candid create-provider bot is not deployed in this project, so practitioners cannot be saved here.';
+
+/** Shown on the disabled Edit button when a registered provider cannot be pushed to Candid. */
+const EDIT_BOT_MISSING_MESSAGE =
+  'The Candid edit-provider bot is not deployed in this project, so registered providers cannot be edited here.';
+
+type FormErrors = Partial<Record<'name' | 'npi' | 'ein' | 'address', string>>;
+
+export function CandidBillingPractitionerModal(props: CandidBillingPractitionerModalProps): JSX.Element {
+  const { candidCreateBotId, candidEditBotId, practitioner, onClose, onSaved } = props;
   const medplum = useMedplum();
+  const practitionerId = practitioner?.id;
+  const [loadedRoles, setLoadedRoles] = useState<LoadedRoles | undefined>(undefined);
+  const roles = loadedRoles && loadedRoles.practitionerId === practitionerId ? loadedRoles.roles : undefined;
   const [saving, setSaving] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState<CandidProviderRegistration['status']>('unavailable');
+  const registered = registrationStatus === 'registered';
+  const missingBotMessage = registered
+    ? candidEditBotId === undefined && EDIT_BOT_MISSING_MESSAGE
+    : candidCreateBotId === undefined && CREATE_BOT_MISSING_MESSAGE;
+
+  useEffect(() => {
+    if (!practitionerId) {
+      return undefined;
+    }
+    let active = true;
+    medplum
+      .searchResources('PractitionerRole', {
+        practitioner: `Practitioner/${practitionerId}`,
+        active: 'true',
+        _count: '100',
+      })
+      .then((found) => {
+        if (active) {
+          setLoadedRoles({ practitionerId, roles: found });
+        }
+      })
+      .catch(showErrorNotification);
+    return () => {
+      active = false;
+    };
+  }, [medplum, practitionerId]);
 
   const handleSave = async (
     fields: BillingPractitionerFormValues,
@@ -73,7 +99,7 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
     registration: CandidProviderRegistration,
     role: WithId<PractitionerRole> | undefined
   ): Promise<void> => {
-    if (!practitioner) {
+    if (!practitioner || !roles) {
       return;
     }
     setSaving(true);
@@ -84,7 +110,7 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
         registration.status === 'registered' ? registration.candidProviderId : undefined
       );
       const candidProviderId = getIdentifier(built, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
-      const botId = candidProviderId ? candidEditBotId : candidBotId;
+      const botId = candidProviderId ? candidEditBotId : candidCreateBotId;
       if (botId) {
         const billsIndividually = !organization || roles.some((other) => other.id !== role?.id && !other.organization);
         built = withCandidPractitionerExtensions(built, billsIndividually);
@@ -140,15 +166,24 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
       size="lg"
       title="Billing details"
       actions={
-        <Button type="submit" form={FORM_ID} loading={saving || registrationStatus === 'loading'}>
-          {registrationStatus === 'registered' ? 'Edit' : 'Save'}
-        </Button>
+        <Tooltip label={missingBotMessage} disabled={!missingBotMessage} multiline w={300}>
+          <Button
+            type="submit"
+            form={FORM_ID}
+            loading={saving || registrationStatus === 'loading'}
+            data-disabled={missingBotMessage ? true : undefined}
+            onClick={missingBotMessage ? (e) => e.preventDefault() : undefined}
+          >
+            {registered ? 'Edit' : 'Save'}
+          </Button>
+        </Tooltip>
       }
     >
-      {practitioner && (
-        <BillingPractitionerForm
+      {practitioner && !roles && <CandidBillingPractitionerFormSkeleton />}
+      {practitioner && roles && (
+        <CandidBillingPractitionerForm
           key={practitioner.id}
-          candidBotId={candidBotId}
+          candidCreateBotId={candidCreateBotId}
           practitioner={practitioner}
           roles={roles}
           onRegistrationStatusChange={setRegistrationStatus}
@@ -159,8 +194,25 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
   );
 }
 
-interface BillingPractitionerFormProps {
-  readonly candidBotId: string | undefined;
+/**
+ * Placeholder for the form's five fields while the practitioner's roles load.
+ * @returns The skeleton React node.
+ */
+function CandidBillingPractitionerFormSkeleton(): JSX.Element {
+  return (
+    <Stack gap="md">
+      {['name', 'npi', 'organization', 'ein', 'address'].map((field) => (
+        <div key={field}>
+          <Skeleton height={14} width={120} mb={8} />
+          <Skeleton height={36} />
+        </div>
+      ))}
+    </Stack>
+  );
+}
+
+interface CandidBillingPractitionerFormProps {
+  readonly candidCreateBotId: string | undefined;
   readonly practitioner: WithId<Practitioner>;
   readonly roles: WithId<PractitionerRole>[];
   readonly onRegistrationStatusChange: (status: CandidProviderRegistration['status']) => void;
@@ -172,9 +224,10 @@ interface BillingPractitionerFormProps {
   ) => Promise<void>;
 }
 
-function BillingPractitionerForm(props: BillingPractitionerFormProps): JSX.Element {
-  const { candidBotId, practitioner, roles, onRegistrationStatusChange, onSave } = props;
+function CandidBillingPractitionerForm(props: CandidBillingPractitionerFormProps): JSX.Element {
+  const { candidCreateBotId, practitioner, roles, onRegistrationStatusChange, onSave } = props;
 
+  const [name, setName] = useState<HumanName | undefined>(() => practitioner.name?.[0]);
   const [npi, setNpi] = useState(() => getIdentifier(practitioner, NPI_SYSTEM) ?? '');
   const [ein, setEin] = useState(() => getIdentifier(practitioner, EIN_SYSTEM) ?? '');
   const [address, setAddress] = useState<Address | undefined>(() => practitioner.address?.[0]);
@@ -186,6 +239,14 @@ function BillingPractitionerForm(props: BillingPractitionerFormProps): JSX.Eleme
   const billsIndividually = !organization || roles.some((role) => role.id !== selectedRole?.id && !role.organization);
 
   const registration = useCandidProviderRegistration('Practitioner', npi);
+  const billingOrg = useResource<Organization>(
+    organization && 'resourceType' in organization ? createReference(organization) : organization
+  );
+  const registeredProviderId = registration.status === 'registered' ? registration.candidProviderId : undefined;
+  const contractingProviderId = billsIndividually
+    ? registeredProviderId
+    : billingOrg && getIdentifier(billingOrg, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
+  const contracts = useCandidProviderContracts(contractingProviderId);
 
   useEffect(() => {
     onRegistrationStatusChange(registration.status);
@@ -197,6 +258,9 @@ function BillingPractitionerForm(props: BillingPractitionerFormProps): JSX.Eleme
 
   const handleSave = async (): Promise<void> => {
     const validationErrors: FormErrors = {};
+    if (!name?.given?.[0]?.trim() || !name.family?.trim()) {
+      validationErrors.name = 'Name needs a given and family name';
+    }
     if (!isValidNpi(npi.trim())) {
       validationErrors.npi = 'NPI must be 10 digits';
     }
@@ -213,7 +277,7 @@ function BillingPractitionerForm(props: BillingPractitionerFormProps): JSX.Eleme
       return;
     }
     await onSave(
-      { npi: npi.trim(), ein: ein.trim(), address },
+      { name, npi: npi.trim(), ein: ein.trim(), address },
       organization && 'resourceType' in organization ? createReference(organization) : organization,
       registration,
       selectedRole
@@ -230,8 +294,20 @@ function BillingPractitionerForm(props: BillingPractitionerFormProps): JSX.Eleme
       <Stack gap="md">
         <CandidRegistrationAlert
           registration={registration}
-          registersAs={candidBotId ? 'this practitioner as a rendering provider' : undefined}
+          registersAs={candidCreateBotId ? 'this practitioner as a rendering provider' : undefined}
         />
+        <CandidContractAlert
+          contracts={contracts}
+          subject={billsIndividually ? 'this practitioner' : (billingOrg?.name ?? 'the billing organization')}
+        />
+        <div>
+          <Input.Label required mb={4}>
+            Name
+          </Input.Label>
+          <Input.Description mb={4}>Given and family name, as they appear on claims</Input.Description>
+          <HumanNameInput name="name" path="Practitioner.name" defaultValue={name} onChange={setName} />
+          {errors.name && <Input.Error mt={4}>{errors.name}</Input.Error>}
+        </div>
         <TextInput
           label="NPI"
           required
@@ -250,7 +326,7 @@ function BillingPractitionerForm(props: BillingPractitionerFormProps): JSX.Eleme
               identifier: `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`,
             }}
             defaultValue={selectedRole?.organization}
-            itemComponent={OrganizationItem}
+            itemComponent={BillingOrganizationOption}
             onChange={setOrganization}
           />
           <Input.Description mt={4}>

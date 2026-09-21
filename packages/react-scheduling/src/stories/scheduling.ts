@@ -782,12 +782,32 @@ export const PatientFixtures = [ElderJordanPatient, YoungerJordanPatient, Untype
  * calendar titles an appointment event with the patient's name, so without one it
  * would just read "No Patient".
  */
+/**
+ * The time {@link RiveraImagingAppointment} holds on Dr. Rivera's calendar.
+ *
+ * A booked visit owes one: availability is worked out from Slots, never from
+ * Appointments, so a visit without one leaves its time on offer to the next patient.
+ *
+ * Its bounds are the appointment's own strings, character for character: the calendar
+ * hides the Slot behind the Appointment by comparing them as text, so two spellings of
+ * one instant would draw a "Blocked" block over the visit.
+ */
+export const RiveraImagingSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-rivera-imaging-tue',
+  status: 'busy',
+  start: '2020-05-05T17:00:00Z',
+  end: '2020-05-05T17:30:00Z',
+  schedule: createReference(DrRiveraSchedule),
+};
+
 export const RiveraImagingAppointment: WithId<Appointment> = {
   resourceType: 'Appointment',
   id: 'appt-rivera-imaging-tue',
   status: 'booked',
   start: '2020-05-05T17:00:00Z',
   end: '2020-05-05T17:30:00Z',
+  slot: [{ reference: 'Slot/slot-rivera-imaging-tue' }],
   participant: [
     { status: 'accepted', actor: { reference: 'Patient/pt-cooper', display: 'Miles Cooper' } },
     { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
@@ -843,6 +863,7 @@ export const SatelliteRoomFreeSlot: WithId<Slot> = {
 };
 
 export const CalendarWeekFixtures = [
+  RiveraImagingSlot,
   RiveraImagingAppointment,
   OkaforImagingAppointment,
   RiveraFreeSlot,

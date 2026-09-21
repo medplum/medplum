@@ -163,6 +163,7 @@ describe('Config', () => {
     setEnv('MEDPLUM_ACCURATE_COUNT_THRESHOLD', '500000');
     setEnv('MEDPLUM_SHUTDOWN_TIMEOUT_MILLISECONDS', '60000');
     setEnv('MEDPLUM_DEFAULT_RATE_LIMIT', '100');
+    setEnv('MEDPLUM_DEFAULT_MFA_RATE_LIMIT', '12');
     setEnv('MEDPLUM_BCRYPT_HASH_SALT', '12');
 
     const config = await loadConfig('env');
@@ -170,6 +171,7 @@ describe('Config', () => {
     expect(config.accurateCountThreshold).toStrictEqual(500000);
     expect(config.shutdownTimeoutMilliseconds).toStrictEqual(60000);
     expect(config.defaultRateLimit).toStrictEqual(100);
+    expect(config.defaultMfaRateLimit).toStrictEqual(12);
     expect(config.bcryptHashSalt).toStrictEqual(12);
   });
 

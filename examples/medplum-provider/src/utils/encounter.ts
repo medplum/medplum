@@ -14,7 +14,6 @@ import {
 import type {
   Appointment,
   ChargeItem,
-  ClinicalImpression,
   CodeableConcept,
   Coding,
   Condition,
@@ -98,17 +97,6 @@ export async function createEncounter(
     appointment: [createReference(appointment)],
     participant: [{ individual: practitionerRef }],
   });
-
-  const clinicalImpressionData: ClinicalImpression = {
-    resourceType: 'ClinicalImpression',
-    status: 'in-progress',
-    description: 'Initial clinical impression',
-    subject: patientRef,
-    encounter: createReference(encounter),
-    date: new Date().toISOString(),
-  };
-
-  await medplum.createResource(clinicalImpressionData);
 
   if (planDefinition) {
     await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinition.id as string, '$apply'), {

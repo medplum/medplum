@@ -40,7 +40,9 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
+import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '../auth/mfalimit';
 import { getConfig } from '../config/loader';
+import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
@@ -296,56 +298,59 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
  * @returns The updated login resource.
  */
 export async function verifyMfaToken(login: Login, token: string): Promise<Login> {
-  if (login.revoked) {
-    throw new OperationOutcomeError(badRequest('Login revoked'));
-  }
+  assertMfaLoginActive(login);
 
-  if (login.granted) {
-    throw new OperationOutcomeError(badRequest('Login granted'));
-  }
-
-  if (login.mfaVerified) {
-    throw new OperationOutcomeError(badRequest('Login already verified'));
+  if (login.emailMfa && new Date(login.emailMfa.expiresAt).getTime() < Date.now()) {
+    throw new OperationOutcomeError(badRequest('MFA code expired'));
   }
 
   const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.readReference(login.user as Reference<User>);
 
-  // Email-based MFA: the token is the 6-digit code that was emailed to the
-  // user. login.emailMfa holds a bcrypt hash of that code and its expiration;
-  // clear it on success.
-  if (login.emailMfa) {
-    if (new Date(login.emailMfa.expiresAt).getTime() < Date.now()) {
-      throw new OperationOutcomeError(badRequest('MFA code expired'));
-    }
-    if (await bcrypt.compare(token, login.emailMfa.codeHash)) {
-      // Entering the emailed code proves the user controls the email address.
-      if (!user.emailVerified) {
-        await systemRepo.patchResource<User>('User', user.id, [{ op: 'add', path: '/emailVerified', value: true }]);
-      }
-      return systemRepo.updateResource<Login>({
-        ...login,
-        mfaVerified: true,
-        emailMfa: undefined,
-      });
-    }
-  }
-
-  // TOTP authenticator application
   const secret = user.mfaSecret;
-  if (!secret) {
+  if (!login.emailMfa && !secret) {
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
-  authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-  if (!authenticator.verify({ token, secret })) {
+  const loginAttempts = await reserveMfaAttempt(login);
+  let emailCodeVerified = false;
+  let verified = false;
+
+  // Email-based MFA: the token is the 6-digit code that was emailed to the
+  // user. login.emailMfa holds a bcrypt hash of that code and its expiration;
+  // clear it on success.
+
+  if (login.emailMfa) {
+    emailCodeVerified = await bcrypt.compare(token, login.emailMfa.codeHash);
+    verified = emailCodeVerified;
+  }
+
+  // TOTP authenticator application
+  if (!verified && secret) {
+    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+    verified = authenticator.verify({ token, secret });
+  }
+
+  if (!verified) {
+    if (loginAttempts >= MFA_LOGIN_ATTEMPT_LIMIT) {
+      await systemRepo.patchResource<Login>('Login', login.id as string, [
+        { op: 'add', path: '/revoked', value: true },
+      ]);
+    }
     throw new OperationOutcomeError(badRequest('Invalid MFA token'));
   }
 
-  return systemRepo.updateResource<Login>({
+  if (emailCodeVerified && !user.emailVerified) {
+    await systemRepo.patchResource<User>('User', user.id, [{ op: 'add', path: '/emailVerified', value: true }]);
+  }
+
+  const result = await systemRepo.updateResource<Login>({
     ...login,
     mfaVerified: true,
+    emailMfa: emailCodeVerified ? undefined : login.emailMfa, // clear emailMfa on successful verification
   });
+  await tryReleaseMfaAttempt(getLogger(), login);
+  return result;
 }
 
 /**
