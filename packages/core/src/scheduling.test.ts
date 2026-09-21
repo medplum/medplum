@@ -4,9 +4,11 @@ import type { Coding, Extension, HealthcareService, Practitioner, Schedule } fro
 import type { HealthcareServiceSchedulingParameterExtension, SchedulingParameterExtension } from './scheduling';
 import {
   clearHealthcareServiceSchedulingParameter,
+  clearScheduleParameter,
   clearScheduleSchedulingParameter,
   extractServiceTypeReferences,
   getHealthcareServiceSchedulingParameters,
+  getScheduleParameters,
   getScheduleSchedulingParameters,
   getSchedulingRequirements,
   getSchedulingTimezone,
@@ -20,6 +22,7 @@ import {
   SchedulingParametersURI,
   serviceTypeIncludesService,
   setHealthcareServiceSchedulingParameter,
+  setScheduleParameter,
   setScheduleSchedulingParameter,
   TimezoneExtensionURI,
   toServiceTypeCodeableConcepts,
@@ -513,6 +516,42 @@ describe('service parameters', () => {
 
     expect(getHealthcareServiceSchedulingParameters(configured, 'duration')).toEqual([duration]);
     expect(getHealthcareServiceSchedulingParameters(configured, 'bufferAfter')).toEqual([]);
+  });
+});
+
+describe('deprecated schedule parameter helpers', () => {
+  const bufferBefore: Extension = { url: 'bufferBefore', valueDuration: { value: 10, unit: 'min' } };
+
+  test('writes what the current helpers read back', () => {
+    const updated = setScheduleParameter(
+      scheduleWith(availableTime('mon', '09:00:00', '17:00:00')),
+      service,
+      bufferBefore
+    );
+
+    expect(getScheduleParameters(updated, service, 'bufferBefore')).toEqual([bufferBefore]);
+    expect(getScheduleSchedulingParameters(updated, service, 'bufferBefore')).toEqual([bufferBefore]);
+  });
+
+  test('clears what it set', () => {
+    const updated = setScheduleParameter(scheduleWith(), service, bufferBefore);
+    const cleared = clearScheduleParameter(updated, service, 'bufferBefore');
+
+    expect(getScheduleParameters(cleared, service, 'bufferBefore')).toEqual([]);
+    expect(getScheduleSchedulingParameters(cleared, service, 'bufferBefore')).toEqual([]);
+  });
+
+  test('reads every copy of a parameter that repeats', () => {
+    const schedule = scheduleWith();
+    schedule.extension?.push({
+      url: SchedulingParametersURI,
+      extension: [{ url: 'service', valueReference: { reference: 'HealthcareService/service-1' } }, bufferBefore],
+    });
+
+    expect(getScheduleParameters(schedule, service, 'duration')).toEqual([
+      { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
+    ]);
+    expect(getScheduleParameters(schedule, service, 'bufferBefore')).toEqual([bufferBefore]);
   });
 });
 

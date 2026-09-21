@@ -170,7 +170,8 @@ function matchesServiceSchedulingParameters(extension: Extension, serviceReferen
 // Internal, and loose where the exported wrappers are strict: `service` is undefined only when the
 // resource is a HealthcareService carrying its own parameters. Keep this and the read/write helpers
 // below unexported. Nothing here rejects `(schedule, undefined)` or `(service, service)`; both would
-// quietly match the wrong extensions, and only the exported wrappers make them unrepresentable.
+// quietly match the wrong extensions, and the current exported wrappers are what make them
+// unrepresentable. The deprecated wrappers stay as loose as the signatures they preserve.
 function getSchedulingParameterExtensions(
   resource: Schedule | HealthcareService,
   service: WithId<HealthcareService> | undefined
@@ -307,10 +308,54 @@ export function clearHealthcareServiceSchedulingParameter<T extends HealthcareSe
   return clearParameter(service, undefined, url);
 }
 
+/**
+ * Reads one scheduling parameter a Schedule sets for a HealthcareService.
+ * @param schedule - Schedule to inspect
+ * @param service - HealthcareService the parameters are scoped to
+ * @param url - Url of the SchedulingParameters sub-extension to read, for example `availability`
+ * @returns Every matching sub-extension, in document order
+ * @deprecated Use getScheduleSchedulingParameters() instead.
+ */
+export function getScheduleParameters(
+  schedule: Schedule,
+  service: WithId<HealthcareService>,
+  url: string
+): Extension[] {
+  return readParameter(schedule, service, url);
+}
+
+/**
+ * Immutably sets one scheduling parameter a Schedule overrides for a HealthcareService.
+ * @param schedule - Schedule to update
+ * @param service - HealthcareService the parameters are scoped to
+ * @param subextension - SchedulingParameters sub-extension to set
+ * @returns A cloned Schedule containing the parameter
+ * @deprecated Use setScheduleSchedulingParameter() instead.
+ */
+export function setScheduleParameter(
+  schedule: Schedule,
+  service: WithId<HealthcareService>,
+  subextension: Extension
+): Schedule {
+  return setParameter(schedule, service, subextension);
+}
+
+/**
+ * Immutably clears one scheduling parameter a Schedule overrides for a HealthcareService.
+ * @param schedule - Schedule to update
+ * @param service - HealthcareService the parameters are scoped to
+ * @param url - Url of the SchedulingParameters sub-extension to remove, for example `availability`
+ * @returns A cloned Schedule without the matching parameter
+ * @deprecated Use clearScheduleSchedulingParameter() instead.
+ */
+export function clearScheduleParameter(schedule: Schedule, service: WithId<HealthcareService>, url: string): Schedule {
+  return clearParameter(schedule, service, url);
+}
+
 function readParameter(
   resource: Schedule | HealthcareService,
   service: WithId<HealthcareService> | undefined,
-  url: SchedulingParameterUrl
+  url: string
 ): Extension[] {
   return getSchedulingParameterExtensions(resource, service).flatMap((parameters) => getExtensions(parameters, url));
 }
@@ -318,7 +363,7 @@ function readParameter(
 function setParameter<T extends Schedule | HealthcareService>(
   resource: T,
   service: WithId<HealthcareService> | undefined,
-  subextension: SchedulingParameterExtension
+  subextension: Extension
 ): T {
   // Note where the value sits before clearing removes it, so that replacing one leaves the sub-extension
   // where it was rather than moving it to the end, which would show up as churn in the resource timeline.
@@ -351,7 +396,7 @@ function setParameter<T extends Schedule | HealthcareService>(
 function clearParameter<T extends Schedule | HealthcareService>(
   resource: T,
   service: WithId<HealthcareService> | undefined,
-  url: SchedulingParameterUrl
+  url: string
 ): T {
   const updated = deepClone(resource);
 
