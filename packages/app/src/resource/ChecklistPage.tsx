@@ -20,7 +20,7 @@ export function ChecklistPage(): JSX.Element | null {
       <RequestGroupDisplay
         value={resource as RequestGroup}
         onStart={(_task, taskInput) => navigate(`/forms/${resolveId(taskInput)}`)?.catch(console.error)}
-        onEdit={(_task, _taskInput, taskOutput) => navigate(`/${taskOutput.reference}}`)?.catch(console.error)}
+        onEdit={(_task, _taskInput, taskOutput) => navigate(`/${taskOutput.reference}`)?.catch(console.error)}
       />
     </Document>
   );
