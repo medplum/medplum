@@ -233,8 +233,8 @@ describe('Appointment/:id/$reschedule', () => {
       comment: 'Patient prefers the morning',
       reasonCode: [{ text: 'Annual physical' }],
     });
-    const originalSlotIds = (booked.slot ?? []).map((ref) => ref.reference);
-    expect(originalSlotIds).toHaveLength(2);
+    const originalSlotRefs = booked.slot ?? [];
+    expect(originalSlotRefs).toHaveLength(2);
 
     // $book would consider the practitioner busy at 11am due to the appointment we are
     // modifying already existing, but $reschedule will allow it. The proposal is passed
@@ -280,8 +280,51 @@ describe('Appointment/:id/$reschedule', () => {
     expect(appointments[0].slot?.map((ref) => ref.reference)).toContainExactly(slots.map((slot) => `Slot/${slot.id}`));
 
     // The slots held before the reschedule are gone
-    for (const reference of originalSlotIds) {
-      await expect(systemRepo.readReference<Slot>({ reference })).rejects.toThrow();
+    for (const reference of originalSlotRefs) {
+      await expect(systemRepo.readReference<Slot>(reference)).rejects.toThrow();
+    }
+  });
+
+  test('removing an actor', async () => {
+    const practitionerSchedule = await makeSchedule(practitioner);
+    const roomOneSchedule = await makeSchedule(roomOne);
+    const start = '2026-01-13T16:00:00.000Z'; // 11am EST
+    const end = '2026-01-13T17:00:00.000Z';
+
+    const booked = await book(makeProposal({ start, end, schedules: [practitionerSchedule, roomOneSchedule] }), {
+      comment: 'Patient prefers the morning',
+      reasonCode: [{ text: 'Annual physical' }],
+    });
+    const originalSlotRefs = booked.slot ?? [];
+    expect(originalSlotRefs).toHaveLength(2);
+
+    const response = await reschedule(booked.id as string, {
+      start,
+      schedules: [practitionerSchedule],
+    });
+
+    expect(response).toHaveStatus(200);
+
+    const resources = bundleResources(response.body);
+    const appointments = resources.filter((r) => isResource<Appointment>(r, 'Appointment'));
+    const slots = resources.filter((r) => isResource<Slot>(r, 'Slot'));
+
+    // The same Appointment resource is updated in place
+    expect(appointments).toHaveLength(1);
+    expect(appointments[0].id).toStrictEqual(booked.id);
+    expect(appointments[0]).toMatchObject({ status: 'booked', start, end });
+
+    const actors = (appointments[0].participant ?? []).map((p) => p.actor?.reference);
+    expect(actors).toContainExactly([getReferenceString(patient), getReferenceString(practitioner)]);
+    expect(appointments[0].participant).toContainEqual({ actor: createReference(patient), status: 'accepted' });
+
+    expect(slots).toHaveLength(1);
+    expect(slots.map((slot) => slot.schedule.reference)).toContainExactly([`Schedule/${practitionerSchedule.id}`]);
+    expect(appointments[0].slot?.map((ref) => ref.reference)).toContainExactly(slots.map((slot) => `Slot/${slot.id}`));
+
+    // The slots held before the reschedule are gone
+    for (const reference of originalSlotRefs) {
+      await expect(systemRepo.readReference<Slot>(reference)).rejects.toThrow();
     }
   });
 

@@ -50,8 +50,7 @@ export interface RescheduleDefaults {
  * actor's schedules is the one being moved off.
  *
  * Nothing here is required: whatever cannot be read is simply not pre-filled, and the
- * viewer answers it themselves. That is why no error is reported — a failure costs a
- * default, not the form.
+ * viewer answers it themselves.
  *
  * @param appointment - The appointment being moved.
  * @returns Its visit type and actors, whether they are still being read, and whether
@@ -80,10 +79,12 @@ export function useRescheduleDefaults(appointment: WithId<Appointment>): Resched
         }
       })
       .catch(() => {
-        // Settled as answered rather than left loading: the form is usable with nothing
-        // pre-filled, and a spinner that never stops is not.
         if (!controller.signal.aborted) {
-          setLoaded({ key, service: undefined, selections: NO_SELECTIONS, incomplete: false });
+          // If we didn't read the slots, it can result in the form not pre-filling all
+          // the participants, which can result in actors being inadvertently dropped.
+          // Mark as "incomplete" in that scenario.
+          const incomplete = slotReferences.length > 0;
+          setLoaded({ key, service: undefined, selections: NO_SELECTIONS, incomplete });
         }
       });
 

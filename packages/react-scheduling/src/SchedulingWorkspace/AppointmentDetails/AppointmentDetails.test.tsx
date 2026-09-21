@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { ServiceTypeReferenceURI } from '@medplum/core';
 import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { RenderResult } from '@testing-library/react';
@@ -26,7 +27,17 @@ const BOOKED_APPOINTMENT: WithId<Appointment> = {
   status: 'booked',
   start: '2020-05-05T17:00:00Z',
   end: '2020-05-05T17:30:00Z',
-  serviceType: [{ text: 'Ultrasound Imaging' }],
+  serviceType: [
+    {
+      text: 'Ultrasound Imaging',
+      extension: [
+        {
+          url: ServiceTypeReferenceURI,
+          valueReference: { reference: 'HealthcareService/123' },
+        },
+      ],
+    },
+  ],
   comment: 'Bring prior films',
   slot: [{ reference: `Slot/${HELD_SLOT.id}` }],
   participant: [

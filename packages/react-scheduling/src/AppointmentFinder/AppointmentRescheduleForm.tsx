@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Loader } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { isDefined, resolveId } from '@medplum/core';
+import { extractServiceTypeReferences, isDefined, resolveId } from '@medplum/core';
 import type { Appointment, Bundle, Parameters, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -126,6 +126,11 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
     },
     [appointment, medplum, onRescheduled]
   );
+
+  const serviceRefs = extractServiceTypeReferences(appointment.serviceType);
+  if (serviceRefs.length === 0) {
+    return <Alert color="red">This appointment does not have a visit type, and so cannot be rescheduled.</Alert>;
+  }
 
   if (defaults.loading) {
     // The form takes its defaults at mount and never again, so it is not mounted until

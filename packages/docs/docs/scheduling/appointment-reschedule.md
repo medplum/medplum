@@ -60,16 +60,22 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/my-appointment-id/$res
 
 ## Parameters
 
-| Name       | Type                  | Description                                                            | Required |
-| ---------- | --------------------- | ---------------------------------------------------------------------- | -------- |
-| `start`    | `dateTime`            | The new start time for the appointment.                                | Yes      |
-| `schedule` | `reference(Schedule)` | A schedule to move the appointment onto. May be passed multiple times. | Yes      |
+| Name       | Type                  | Description                                                                                | Required |
+| ---------- | --------------------- | ------------------------------------------------------------------------------------------ | -------- |
+| `start`    | `dateTime`            | The new start time for the appointment.                                                    | Yes      |
+| `schedule` | `reference(Schedule)` | The complete list of schedules to move the appointment onto. May be passed multiple times. | Yes      |
 
 The Appointment being rescheduled is identified by the `id` in the URL.
 
-These are the same `schedule` values you passed to [`$find`](/docs/scheduling/appointment-find), plus the `start` of the proposal you picked from its results. Note that `start` means something slightly different in each operation: in `$find` it is the beginning of the search range, while here it is the appointment's own start time.
+These are the same `schedule` values you passed to [`$find`](/docs/scheduling/appointment-find), plus the `start` of the proposal you picked from its results.
 
-Unlike `$find`, `$reschedule` takes no `service-type-reference`. The service whose scheduling parameters the move is measured against — the duration it runs for, the grid it aligns to, the buffers around it — is the one the Appointment already records in `serviceType`, and the operation reads it from there. An Appointment that records no service reference, or more than one, has no single set of parameters to be measured against and is [rejected](#appointment-does-not-record-exactly-one-service-type); it is not moved against a service the caller names, because adopting one would be deciding what the visit *is*.
+You must include all `Schedule` references that should be set on the appointment; schedules already recorded on the Appointment that are not submitted will be removed by this operation.0
+
+:::info
+
+Unlike `$find`, `$reschedule` takes no `service-type-reference`. The service whose scheduling parameters the move is measured against — the duration it runs for, the grid it aligns to, the buffers around it — is the one the Appointment already records in `serviceType`. An Appointment that records no service reference, or more than one, has no single set of parameters to be measured against and is [rejected](#appointment-does-not-record-exactly-one-service-type).
+
+:::
 
 ### What the operation writes
 
@@ -87,7 +93,7 @@ Everything else is left exactly as it was — `serviceType`, `reasonCode`, `comm
 Three things deserve specific mention:
 
 - **`status` is not an input.** The appointment lifecycle belongs to [`$hold`](/docs/scheduling/appointment-hold), [`$confirm`](/docs/scheduling/appointment-confirm), and [`$cancel`](/docs/scheduling/appointment-cancel), each of which validates its own transition. `$reschedule` changes *when and where* an appointment happens, never *whether* it happens. A `booked` appointment stays booked; a `pending` one stays pending and keeps holding its new time with `busy-tentative` Slots.
-- **`serviceType` is not an input at all.** What a visit *is* is not something a move changes. The requirements a visit type carries — the procedure and diagnosis codes it is booked with, which live in `Appointment.serviceType` alongside the service reference, any prior authorization, anything a `PlanDefinition` applied when it was booked — are all keyed to that type, and none of them are re-applied by a reschedule. Changing the type is a new booking: cancel and rebook. The stored `serviceType` is therefore read and never written, which also means the codes booked with the appointment survive the move untouched.
+- **`serviceType` is not an input.** What a visit *is* dose not change during a move. The requirements a visit type carries — the procedure and diagnosis codes it is booked with, which live in `Appointment.serviceType` alongside the service reference, any prior authorization, anything a `PlanDefinition` applied when it was booked — are all keyed to that type, and none of them are re-applied by a reschedule. Changing the type is a new booking: cancel and rebook. The stored `serviceType` is therefore read and never written, which also means the codes booked with the appointment survive the move untouched.
 - **`participant` is reconciled, not submitted.** The actors of the Schedules being moved away from are swapped for the actors of the Schedules in the request. Everyone else — the patient, related persons, secondary practitioners — is preserved untouched, and an actor that appears on both the old and new Schedules keeps its existing entry along with any `status` it had already responded with.
 
 ### Slots are derived, not submitted

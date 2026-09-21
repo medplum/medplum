@@ -182,7 +182,9 @@ describe('AppointmentRescheduleForm', () => {
       await setup(medplum, { appointment: bare });
 
       // Nothing on file to contradict, and the search cannot run without one, so it is asked.
-      expect(screen.getByRole('searchbox', { name: /visit type/i })).toBeInTheDocument();
+      expect(
+        screen.getByText('This appointment does not have a visit type, and so cannot be rescheduled.')
+      ).toBeInTheDocument();
     });
   });
 
