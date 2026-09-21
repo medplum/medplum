@@ -195,6 +195,16 @@ describe('schedule parameters', () => {
     ]);
   });
 
+  test('drops the parameters extension once it holds nothing but the service pointer', () => {
+    const schedule: Schedule = { resourceType: 'Schedule', actor: [{ reference: 'Practitioner/123' }] };
+    const configured = setScheduleSchedulingParameter(schedule, service, bufferBefore);
+
+    const cleared = clearScheduleSchedulingParameter(configured, service, 'bufferBefore');
+
+    expect(cleared.extension).toBeUndefined();
+    expect(hasSchedulingParameters(cleared)).toBe(false);
+  });
+
   test('creates service-specific SchedulingParameters when missing', () => {
     const schedule: Schedule = {
       resourceType: 'Schedule',
@@ -488,6 +498,26 @@ describe('service parameters', () => {
     // An empty container would violate ext-1 and leave hasSchedulingParameters reporting it as configured.
     expect(cleared.extension).toBeUndefined();
     expect(hasSchedulingParameters(cleared)).toBe(false);
+  });
+
+  test('replaces the only parameter without moving its extension behind the others', () => {
+    const configured: WithId<HealthcareService> = {
+      ...visitType,
+      extension: [
+        { url: SchedulingParametersURI, extension: [duration] },
+        { url: 'https://example.com/unrelated', valueString: 'kept' },
+      ],
+    };
+
+    const updated = setHealthcareServiceSchedulingParameter(configured, {
+      url: 'duration',
+      valueDuration: { value: 45, unit: 'min' },
+    });
+
+    expect(updated.extension?.map((extension) => extension.url)).toEqual([
+      SchedulingParametersURI,
+      'https://example.com/unrelated',
+    ]);
   });
 
   test('keeps the parameters extension while other parameters remain', () => {

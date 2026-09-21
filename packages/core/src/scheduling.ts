@@ -370,15 +370,16 @@ function setParameter<T extends Schedule | HealthcareService>(
   service: WithId<HealthcareService> | undefined,
   subextension: Extension
 ): T {
-  // Note where the value sits before clearing removes it, so that replacing one leaves the sub-extension
-  // where it was rather than moving it to the end, which would show up as churn in the resource timeline.
+  // Note where the value sits before removing it, so that replacing one leaves the sub-extension where it
+  // was rather than moving it to the end, which would show up as churn in the resource timeline.
   const previousIndex =
     getSchedulingParameterExtensions(resource, service)[0]?.extension?.findIndex(
       (existing) => existing.url === subextension.url
     ) ?? -1;
 
-  // Clear first: a resource carrying more than one matching container would otherwise keep a stale value.
-  const updated = clearParameter(resource, service, subextension.url);
+  // Remove first: a resource carrying more than one matching container would otherwise keep a stale value.
+  // Pruning waits until the value is back, so a container holding only this parameter stays where it is.
+  const updated = removeParameter(resource, service, subextension.url);
 
   updated.extension ??= [];
 
@@ -395,10 +396,18 @@ function setParameter<T extends Schedule | HealthcareService>(
   subextensions.splice(previousIndex < 0 ? subextensions.length : previousIndex, 0, subextension);
   parameters.extension = subextensions;
 
-  return updated;
+  return pruneEmptyParameters(updated);
 }
 
 function clearParameter<T extends Schedule | HealthcareService>(
+  resource: T,
+  service: WithId<HealthcareService> | undefined,
+  url: string
+): T {
+  return pruneEmptyParameters(removeParameter(resource, service, url));
+}
+
+function removeParameter<T extends Schedule | HealthcareService>(
   resource: T,
   service: WithId<HealthcareService> | undefined,
   url: string
@@ -411,20 +420,28 @@ function clearParameter<T extends Schedule | HealthcareService>(
     }
   }
 
-  if (!updated.extension) {
-    return updated;
+  return updated;
+}
+
+// Drops SchedulingParameters extensions that set nothing. One with no sub-extensions violates FHIR `ext-1`,
+// and a Schedule's left holding only its `service` pointer overrides nothing; both would still make
+// `hasSchedulingParameters` report the resource as configured.
+function pruneEmptyParameters<T extends Schedule | HealthcareService>(resource: T): T {
+  if (!resource.extension) {
+    return resource;
   }
 
-  // An extension with neither a value nor sub-extensions violates FHIR `ext-1`.
-  updated.extension = updated.extension.filter(
-    (extension) => extension.url !== SchedulingParametersURI || !!extension.extension?.length
+  resource.extension = resource.extension.filter(
+    (extension) =>
+      extension.url !== SchedulingParametersURI ||
+      !!extension.extension?.some((subextension) => subextension.url !== 'service')
   );
 
-  if (updated.extension.length === 0) {
-    delete updated.extension;
+  if (resource.extension.length === 0) {
+    delete resource.extension;
   }
 
-  return updated;
+  return resource;
 }
 
 /**
