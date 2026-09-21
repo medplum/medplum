@@ -92,7 +92,7 @@ interface LevelConfig {
   readonly defaults: SchedulingParameterValues;
   readonly defaultLabels: SchedulingParameterLabels;
   readonly visible: ReadonlySet<SchedulingParameter>;
-  /** What an empty field falls back to, which warnings judge the edited values against. */
+  /** The service's own values, on a calendar's override. */
   readonly inherited?: SchedulingParameterValues;
 }
 
@@ -155,8 +155,7 @@ function WarningText(props: { readonly warning: SchedulingParameterWarning; read
  * Edits scheduling parameters, either the ones a visit service type sets for itself along with whether it can
  * be booked at all, or the ones a Schedule overrides for that service.
  *
- * Every calendar offering the service follows its parameters unless it overrides one of its own. Working
- * hours are not here: they are the availability editor's.
+ * Working hours belong to ScheduleAvailabilityEditor.
  *
  * This renders form content only. The caller supplies the container, so the editor can live inline in a
  * page, in a Modal, or in a Drawer. The form is seeded once, so reset it by remounting with a `key`.
@@ -172,7 +171,7 @@ export function SchedulingParametersEditor<T extends HealthcareService = Healthc
   const [level] = useState(() => getLevelConfig(props));
   const { initial } = level;
   const [values, setValues] = useState(initial);
-  // Absent `active` counts as active, which is how scheduling reads it.
+  // Absent `active` means active, as scheduling reads it.
   const [active, setActive] = useState(service.active !== false);
   const [saving, setSaving] = useState(false);
   const reasonId = useId();
@@ -209,8 +208,7 @@ export function SchedulingParametersEditor<T extends HealthcareService = Healthc
         await props.onSave({ ...setHealthcareServiceSchedulingParameterValues(props.service, values), active });
       }
     } catch (err) {
-      // The caller owns the write and so owns reporting its failure. This catch only keeps the rejection
-      // from escaping an event handler that has nowhere to hand it.
+      // Reporting a failed write is the caller's; this only keeps the rejection out of the event handler.
       console.error(err);
     } finally {
       setSaving(false);

@@ -19,13 +19,7 @@ import { withDocument } from '../stories/decorators';
 import { buildSchedulableService, FullyConfiguredService, UnconfiguredService } from '../stories/scheduling';
 import { SchedulingParametersEditor } from './SchedulingParametersEditor';
 
-/**
- * The editor with no `schedule`, editing the parameters a visit type sets for itself. What only this level does:
- * the Active switch, and time zone fields offered only once the visit type already stores one.
- *
- * Each story renders the editor alone, so the Code panel shows how to use it; `withDocument` supplies the page
- * and the heading. Saving logs the updated resource to the Actions panel.
- */
+/** Each story renders the editor alone so the Code panel shows real usage; `withDocument` adds the page. */
 export default {
   title: 'Medplum/SchedulingParametersEditor/HealthcareService',
   component: SchedulingParametersEditor,

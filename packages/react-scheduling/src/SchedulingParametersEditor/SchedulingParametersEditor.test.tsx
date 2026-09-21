@@ -59,7 +59,7 @@ function saveButton(): HTMLElement {
 }
 
 /**
- * Captures what the editor hands back, which is the only thing it ever produces.
+ * Renders the editor and captures what it hands to onSave.
  * @param service - The visit type to edit.
  * @param onCancel - Passed through, to show or hide the cancel button.
  * @returns The resources handed to onSave, in order.
@@ -287,11 +287,6 @@ describe('SchedulingParametersEditor', () => {
   }
 
   describe('the time zone fields', () => {
-    /**
-     * Builds a visit type carrying only the time zone parameters given.
-     * @param zones - The time zone parameters to store.
-     * @returns A visit type with those, and nothing else.
-     */
     function withZones(zones: StoredZones): WithId<HealthcareService> {
       return {
         ...UnconfiguredService,
@@ -576,11 +571,6 @@ describe('SchedulingParametersEditor on a Schedule', () => {
     actor: [{ reference: 'Practitioner/dr-rivera' }],
   };
 
-  /**
-   * Builds a calendar overriding the given parameters for the service under edit.
-   * @param overrides - The parameters the calendar overrides.
-   * @returns The calendar.
-   */
   function scheduleWith(overrides: Parameters<typeof setScheduleSchedulingParameterValues>[2]): Schedule {
     return setScheduleSchedulingParameterValues(baseSchedule, service, overrides);
   }

@@ -15,14 +15,7 @@ import { withDocument } from '../stories/decorators';
 import { buildSchedulableService, FullyConfiguredService, UnconfiguredService } from '../stories/scheduling';
 import { SchedulingParametersEditor } from './SchedulingParametersEditor';
 
-/**
- * The editor given a `schedule`, editing that calendar's override of one visit type. What only this level does:
- * empty fields name the visit type value they inherit, duration and the start time grid are offered only once
- * overridden, time zone is always offered, warnings judge inherited values too, and there is no Active switch.
- *
- * Each story renders the editor alone, so the Code panel shows how to use it; `withDocument` supplies the page
- * and the heading. Saving logs the updated Schedule to the Actions panel.
- */
+/** Each story renders the editor alone so the Code panel shows real usage; `withDocument` adds the page. */
 export default {
   title: 'Medplum/SchedulingParametersEditor/Schedule',
   component: SchedulingParametersEditor,
@@ -112,8 +105,8 @@ NoDurationAnywhere.parameters = {
 };
 
 /**
- * Both levels over one visit type, one above the other. Saving the visit type remounts the calendar editor, so
- * its placeholders pick up the new values it inherits.
+ * Both levels over one visit type. Saving the visit type remounts the calendar editor, so its placeholders
+ * pick up the new values it inherits.
  * @returns The two editors.
  */
 export const AlongsideTheVisitType = (): JSX.Element => {

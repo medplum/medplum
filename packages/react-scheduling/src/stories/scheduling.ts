@@ -131,15 +131,10 @@ export interface SchedulableServiceOptions {
   readonly locationIds?: readonly string[];
   /** What booking it is blocked on, recorded as eligibility codes. */
   readonly requirements?: readonly SchedulingRequirement[];
-  /** Prep time held before the appointment, omitted when the visit type sets none. */
   readonly bufferBeforeMinutes?: number;
-  /** Cleanup or turnover time held after the appointment, omitted when the visit type sets none. */
   readonly bufferAfterMinutes?: number;
-  /** Shifts the start time grid, omitted when the visit type sets none. */
   readonly alignmentOffsetMinutes?: number;
-  /** How many appointments may overlap, omitted when the visit type sets none. */
   readonly slotCapacity?: number;
-  /** Whether the visit type can be booked at all. Omitted, which scheduling reads as active. */
   readonly active?: boolean;
 }
 
@@ -191,10 +186,7 @@ export function buildSchedulableService(options: SchedulableServiceOptions): Wit
   };
 }
 
-/**
- * A visit type configured the recommended way, for the configuration editor: every flat scheduling parameter
- * except `timezone`, which belongs to each calendar or its actor.
- */
+/** Every flat scheduling parameter except `timezone`, which belongs to each calendar or its actor. */
 export const FullyConfiguredService = clearHealthcareServiceSchedulingParameter(
   buildSchedulableService({
     id: 'fully-configured',
@@ -210,7 +202,6 @@ export const FullyConfiguredService = clearHealthcareServiceSchedulingParameter(
   'timezone'
 );
 
-/** A visit type that sets no scheduling parameters at all. */
 export const UnconfiguredService: WithId<HealthcareService> = {
   resourceType: 'HealthcareService',
   id: 'unconfigured',

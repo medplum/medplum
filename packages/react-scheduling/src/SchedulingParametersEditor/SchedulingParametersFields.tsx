@@ -15,7 +15,7 @@ import { getTimezoneOptions } from './SchedulingParametersEditor.utils';
 /** How far an arrow press moves a minutes field. */
 const MINUTES_STEP = 5;
 
-/** The numeric parameters, which are all minutes apart from capacity. */
+/** The parameters edited in minutes. */
 type NumericParameter = 'duration' | 'bufferBefore' | 'bufferAfter' | 'alignmentInterval' | 'alignmentOffset';
 
 /** The parameters carrying an IANA time zone, which share one option list. */
@@ -79,8 +79,7 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
   const shows = (key: SchedulingParameter): boolean => !visible || visible.has(key);
   const showTimezones = shows('timezone') || shows('alignmentTimezone');
 
-  // Gated inside the memo rather than around it: listing the runtime's zones and sorting them is wasted on
-  // the common case, a visit type that sets no time zone and so shows neither field.
+  // Gated inside the memo: listing and sorting the runtime's zones is wasted when neither zone field shows.
   const timezoneOptions = useMemo(
     () => (showTimezones ? getTimezoneOptions([values.timezone, values.alignmentTimezone]) : []),
     [showTimezones, values.timezone, values.alignmentTimezone]

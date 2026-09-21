@@ -10,9 +10,8 @@ export const MINUTES_PER_DAY = 1440;
 const MINUTES_PER_HOUR = 60;
 
 /**
- * What scheduling uses for a parameter nothing sets. `duration` and `timezone` are absent because neither
- * has one: a visit type without a duration is bookable only on calendars that set their own, and a timezone
- * falls back to the calendar actor's rather than to a fixed zone.
+ * What scheduling uses for a parameter nothing sets. `duration` and `timezone` have none: without a duration
+ * a visit type is bookable only where a calendar sets one, and timezone falls back to the calendar's actor.
  */
 export const SCHEDULING_PARAMETER_DEFAULTS: SchedulingParameterValues = {
   bufferBefore: 0,
@@ -29,22 +28,14 @@ export type SchedulingParameterLevel = 'service' | 'schedule';
 export type SchedulingParameter = keyof SchedulingParameterValues;
 
 /**
- * The parameters the scheduling docs recommend against setting at each level. A calendar booked alongside
- * others must match them on duration and the alignment grid, so those belong on the visit type; a visit
- * type is offered in more than one place, so its hours' time zone belongs on each calendar.
+ * The parameters the scheduling docs recommend against setting at each level. Calendars booked together must
+ * agree on duration and the alignment grid, and a visit type offered in several places has no one time zone.
  */
 export const DISCOURAGED_PARAMETERS: Record<SchedulingParameterLevel, readonly SchedulingParameter[]> = {
   service: ['timezone', 'alignmentTimezone'],
   schedule: ['duration', 'alignmentInterval', 'alignmentOffset', 'alignmentTimezone'],
 };
 
-/**
- * Layers what a level stores over what it inherits, so a parameter the level leaves empty reads as the one
- * that takes effect.
- * @param values - The parameters the level stores.
- * @param inherited - The parameters it falls back to.
- * @returns The parameters in effect.
- */
 function withInherited(
   values: SchedulingParameterValues,
   inherited: SchedulingParameterValues
@@ -68,8 +59,7 @@ export function getVisibleParameters(
   const visible = new Set<SchedulingParameter>(
     FLAT_PARAMETERS.filter((key) => !discouraged.includes(key) || initial[key] !== undefined)
   );
-  // A visit type offers its two time zones together or not at all, so it is never offering one and hiding
-  // the other.
+  // A visit type offers both time zones or neither.
   if (level === 'service' && (visible.has('timezone') || visible.has('alignmentTimezone'))) {
     visible.add('timezone');
     visible.add('alignmentTimezone');
@@ -112,9 +102,8 @@ export interface SchedulingParameterWarning {
     readonly text: string;
   };
   /**
-   * The parameters whose values raise it. On a calendar's override it is shown only when the calendar sets
-   * one of them; otherwise it is about the visit type's own values, which are the visit type's to fix.
-   * Absent on a warning that applies whoever sets its inputs.
+   * The parameters that raise it. A calendar's override shows it only when the calendar sets one of them,
+   * since otherwise only the visit type can fix it. Absent on a warning that always shows.
    */
   readonly inputs?: readonly SchedulingParameter[];
 }
@@ -213,7 +202,7 @@ export function validateSchedulingParameters(values: SchedulingParameterValues):
 
 /**
  * Restricts errors to the fields actually edited, so a value already stored out of range does not lock
- * someone out of the form. Editing anything else, deactivating included, stays possible.
+ * someone out of the form.
  * @param errors - Every field that cannot be saved as entered.
  * @param values - The parameters as entered.
  * @param initial - The parameters the form loaded.
@@ -237,9 +226,8 @@ export function getBlockingErrors(
  * Finds what is worth saying about a combination of values that scheduling will nevertheless accept.
  * @param stored - The parameters as entered, in minutes.
  * @param storedInitial - The parameters the form loaded, used to notice a changed capacity.
- * @param inherited - What a calendar's override falls back to, which is the visit type's parameters. Omit
- * when editing the visit type itself. Given, every check judges the values that take effect, and a warning
- * is kept only when the calendar sets one of its inputs.
+ * @param inherited - The visit type's parameters, when editing a calendar's override. Checks then judge the
+ * values in effect, and keep a warning only when the calendar sets one of its inputs.
  * @returns The warnings to show, in the order they should appear.
  */
 export function getSchedulingParameterWarnings(
