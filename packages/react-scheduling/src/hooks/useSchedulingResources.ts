@@ -87,7 +87,7 @@ export function useSchedulingSlots(
 
   // Keep the calendar's slots in sync with any Slot this client modifies, e.g. the
   // slots created when booking a visit from the FindPane or soft-deleted when cancelling
-  // one from the appointment details drawer.
+  // one from the appointment details pane.
   useResourceModified('Slot', (event) => {
     if (event.operation === 'delete') {
       // Deletes don't carry a resource, only the id of what went away.
