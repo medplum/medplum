@@ -23,6 +23,7 @@ import type {
   Coverage,
   CoverageEligibilityRequest,
   CoverageEligibilityResponse,
+  OperationOutcome,
   Organization,
   Patient,
   Practitioner,
@@ -322,14 +323,18 @@ interface CheckEligibilityButtonProps {
 
 /**
  * The Check Eligibility action. It opens a popover to pick the billing organization first, preselecting the
- * default every time; running with the picker cleared bills under the practitioner themselves. The popover
- * ignores outside clicks because the organization dropdown renders in a portal; Cancel or Escape dismisses it.
+ * default every time; running with the picker cleared bills under the practitioner themselves. The button stays
+ * disabled while the default organization is still loading so the picker never opens empty by accident; a default
+ * that fails to load is dropped. The popover ignores outside clicks because the organization dropdown renders in a
+ * portal; Cancel or Escape dismisses it.
  * @param props - The CheckEligibilityButton React props.
  * @returns The CheckEligibilityButton React node.
  */
 function CheckEligibilityButton(props: CheckEligibilityButtonProps): JSX.Element {
   const { loading, disabled, practitionerName, defaultBillingOrganization, onCheck } = props;
-  const defaultOrganization = useResource(defaultBillingOrganization);
+  const [defaultOutcome, setDefaultOutcome] = useState<OperationOutcome>();
+  const defaultOrganization = useResource(defaultBillingOrganization, setDefaultOutcome);
+  const resolvingDefault = !!defaultBillingOrganization && !defaultOrganization && !defaultOutcome;
   const [pickerOpened, setPickerOpened] = useState(false);
   const [chosenOrganization, setChosenOrganization] = useState<Organization>();
 
@@ -354,7 +359,7 @@ function CheckEligibilityButton(props: CheckEligibilityButtonProps): JSX.Element
           variant="light"
           color="blue"
           loading={loading}
-          disabled={disabled}
+          disabled={disabled || resolvingDefault}
           rightSection={<IconChevronDown size={14} />}
           onClick={openPicker}
         >

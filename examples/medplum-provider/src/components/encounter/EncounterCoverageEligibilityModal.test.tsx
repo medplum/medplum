@@ -9,6 +9,7 @@ import type {
   CoverageEligibilityResponse,
   Organization,
   PractitionerRole,
+  Reference,
 } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient, TestOrganization } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -387,6 +388,49 @@ describe('EncounterCoverageEligibilityModal', () => {
           expect.objectContaining({ provider: createReference(DrAliceSmith) })
         );
       });
+    });
+
+    test('keeps the button disabled until the default organization has loaded', async () => {
+      const user = userEvent.setup();
+      mockSearchOne(medplum, { practitionerRole: mockPractitionerRole });
+      let resolveOrganization: (organization: Organization) => void = () => undefined;
+      const originalRead = medplum.readReference.bind(medplum);
+      vi.spyOn(medplum, 'readReference').mockImplementation(((reference: Reference) =>
+        reference.reference === `Organization/${TestOrganization.id}`
+          ? new Promise((resolve) => {
+              resolveOrganization = resolve;
+            })
+          : originalRead(reference)) as any);
+      await setup();
+
+      await waitFor(() => {
+        expect(medplum.readReference).toHaveBeenCalledWith({ reference: `Organization/${TestOrganization.id}` });
+      });
+      expect(screen.getByRole('button', { name: 'Check Eligibility' })).toBeDisabled();
+
+      await act(async () => resolveOrganization(TestOrganization as Organization));
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Check Eligibility' })).toBeEnabled();
+      });
+      await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
+      expect(await screen.findByText(`The check runs under ${TestOrganization.name}.`)).toBeInTheDocument();
+    });
+
+    test('opens the picker empty when the default organization fails to load', async () => {
+      const user = userEvent.setup();
+      mockSearchOne(medplum, { practitionerRole: mockPractitionerRole });
+      const originalRead = medplum.readReference.bind(medplum);
+      vi.spyOn(medplum, 'readReference').mockImplementation(((reference: Reference) =>
+        reference.reference === `Organization/${TestOrganization.id}`
+          ? Promise.reject(new Error('Not found'))
+          : originalRead(reference)) as any);
+      await setup();
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Check Eligibility' })).toBeEnabled();
+      });
+      await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
+      expect(await screen.findByText('Leave empty to run the check as Alice Smith.')).toBeInTheDocument();
     });
 
     test('uses the picked billing organization as provider', async () => {
