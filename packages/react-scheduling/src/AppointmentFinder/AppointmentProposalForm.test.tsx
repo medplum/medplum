@@ -4,12 +4,14 @@ import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   CPT,
   extractServiceTypeReferences,
+  getAppointmentSite,
   getExtensionValue,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SchedulingMedicalNecessityURI,
+  toAppointmentSiteReference,
 } from '@medplum/core';
 import type { Appointment, Device, Schedule } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
@@ -1287,6 +1289,42 @@ describe('AppointmentProposalForm', () => {
   });
 
   describe('Booking the appointment', () => {
+    test('Records the site the booking was made at', async () => {
+      setup(medplum, { defaultLocation: MainClinic });
+      await fillBooking();
+      await clickBook();
+
+      expect(getAppointmentSite(proposedAppointment())).toEqual(toAppointmentSiteReference(MainClinic));
+    });
+
+    test('Records the site chosen in the field, not just one handed in', async () => {
+      setup(medplum);
+      await chooseSite('Main', 'Uro Associates - Main Clinic');
+      await fillBooking();
+      await clickBook();
+
+      expect(getAppointmentSite(proposedAppointment())).toEqual(toAppointmentSiteReference(MainClinic));
+    });
+
+    test('Keeps the site off the participants, where a room lives', async () => {
+      // A site named as a participant would be indistinguishable from a booked room.
+      setup(medplum, { defaultLocation: MainClinic });
+      await fillBooking();
+      await clickBook();
+
+      const actors = proposedAppointment().participant.map((participant) => participant.actor?.reference);
+      expect(actors).not.toContain(`Location/${MainClinic.id}`);
+    });
+
+    test('Books without a site when none was chosen', async () => {
+      // Absent, not `[]`: an empty array reads as a site recorded and then emptied.
+      setup(medplum);
+      await fillBooking();
+      await clickBook();
+
+      expect(proposedAppointment().supportingInformation).toBeUndefined();
+    });
+
     test('Hands the proposal it built over, writing and announcing nothing', async () => {
       const post = vi.spyOn(medplum, 'post');
       const notify = vi.spyOn(medplum, 'notifyResourceModified');
