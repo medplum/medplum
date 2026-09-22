@@ -542,7 +542,7 @@ export function getAppointmentSite(appointment: Appointment): Reference<Location
   return appointment.supportingInformation?.find(
     (reference): reference is Reference<Location> =>
       reference.reference?.startsWith('Location/') === true &&
-      getExtensionValue(reference, SchedulingSiteURI) !== undefined
+      getExtensionValue(reference, SchedulingSiteURI) === true
   );
 }
 
