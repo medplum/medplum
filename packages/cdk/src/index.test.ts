@@ -595,6 +595,40 @@ describe('Infra', () => {
     await unlink(filename);
   });
 
+  test('GuardDuty grants the server on-demand scan permissions', async () => {
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumGuardDutyScanStack',
+      guardDutyMalwareProtectionEnabled: true,
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
+
+    template.hasResourceProperties('AWS::IAM::Role', {
+      Description: 'Medplum Server Task Execution Role',
+      Policies: Match.arrayWith([
+        Match.objectLike({
+          PolicyDocument: Match.objectLike({
+            Statement: Match.arrayWith([
+              Match.objectLike({ Action: 's3:GetObjectTagging', Resource: 'arn:aws:s3:::medplum-storage/*' }),
+              Match.objectLike({ Action: 'guardduty:SendObjectMalwareScan', Resource: '*' }),
+            ]),
+          }),
+        }),
+      ]),
+    });
+  });
+
+  test('No on-demand scan permissions without GuardDuty', async () => {
+    const config = await normalizeInfraConfig({
+      ...baseConfig,
+      stackName: 'MedplumNoGuardDutyScanStack',
+    } as unknown as MedplumSourceInfraConfig);
+    const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
+
+    expect(JSON.stringify(template.toJSON())).not.toContain('guardduty:SendObjectMalwareScan');
+  });
+
   // Regression test for https://github.com/medplum/medplum/issues/8985:
   // The default ElastiCache node type was `cache.t2.medium`, but AWS no longer
   // allows creating new ElastiCache clusters on T2 instances, so fresh deploys

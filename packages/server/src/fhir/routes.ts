@@ -24,6 +24,7 @@ import { agentUpgradeHandler } from './operations/agentupgrade';
 import { aiOperationHandler } from './operations/ai';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { binaryPresignedUrlHandler } from './operations/binary-presigned-url';
+import { binaryScanHandler } from './operations/binary-scan';
 import { appointmentBookHandler } from './operations/book';
 import { botInitHandler } from './operations/botinit';
 import { appointmentCancelHandler } from './operations/cancel';
@@ -327,6 +328,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Binary $presigned-url operation
   router.add('GET', '/Binary/:id/$presigned-url', binaryPresignedUrlHandler);
+
+  // Binary $scan operation
+  router.add('POST', '/Binary/:id/$scan', binaryScanHandler);
 
   // Bot $init operation
   router.add('POST', '/Bot/$init', botInitHandler);

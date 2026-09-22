@@ -4,6 +4,7 @@ import {
   CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  GetObjectTaggingCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -127,6 +128,22 @@ export class S3Storage extends BaseBinaryStorage {
         }),
       })
     );
+  }
+
+  /**
+   * Returns the tags on an S3 object as a key/value map.
+   * @param key - The S3 key.
+   * @returns The object tags.
+   */
+  async getObjectTags(key: string): Promise<Record<string, string>> {
+    const response = await this.client.send(new GetObjectTaggingCommand({ Bucket: this.bucket, Key: key }));
+    const tags: Record<string, string> = {};
+    for (const tag of response.TagSet ?? []) {
+      if (tag.Key) {
+        tags[tag.Key] = tag.Value ?? '';
+      }
+    }
+    return tags;
   }
 
   /**
