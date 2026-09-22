@@ -12,7 +12,7 @@ import {
   SCHEDULING_REQUIREMENT_CODES,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
-  setScheduleParameter,
+  setScheduleSchedulingParameter,
   SNOMED,
   TimezoneExtensionURI,
 } from '@medplum/core';
@@ -317,11 +317,11 @@ export const DrRiveraSchedule = buildSchedule('schedule-dr-rivera', 'Practitione
  * itself names. One calendar somewhere else is what the workspace's timezone notice is for,
  * so without it the fixtures could only ever show the notice to a reader outside Eastern.
  */
-export const DrOkaforSchedule = setScheduleParameter(
+export const DrOkaforSchedule = setScheduleSchedulingParameter(
   buildSchedule('schedule-dr-okafor', 'Practitioner/dr-okafor', 'Dr. Tunde Okafor'),
   UltrasoundImagingService,
   { url: 'timezone', valueCode: 'America/Chicago' }
-) as WithId<Schedule>;
+);
 export const ImagingBenchSchedules: WithId<Schedule>[] = IMAGING_BENCH.map((member) =>
   buildSchedule(`schedule-${member.id}`, `Practitioner/${member.id}`, benchDisplay(member))
 );
