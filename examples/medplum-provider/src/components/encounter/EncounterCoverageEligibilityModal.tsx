@@ -32,13 +32,11 @@ import { Modal, ResourceInput, useMedplum, useMedplumProfile, useResource, useSe
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { BILLING_ORGANIZATION_IDENTIFIER_VALUE, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM } from '../../utils/billing';
+import { BILLING_ORGANIZATION_IDENTIFIER } from '../../utils/billing';
 import { isSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
 import { BillingOrganizationOption } from '../billing/BillingOrganizationOption';
 import { BenefitsTable } from '../insurance/BenefitsTable';
-
-const BILLING_ORGANIZATION_IDENTIFIER = `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`;
 
 interface EncounterCoverageEligibilityModalProps {
   patient: Reference<Patient> | Patient;

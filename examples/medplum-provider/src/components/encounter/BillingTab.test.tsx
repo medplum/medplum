@@ -804,6 +804,8 @@ describe('BillingTab', () => {
     await waitFor(() => {
       expect(medplum.searchOne).toHaveBeenCalledWith('PractitionerRole', {
         practitioner: 'Practitioner/practitioner-123',
+        active: 'true',
+        'organization.identifier': 'https://www.medplum.com/provider|billing-organization',
       });
     });
 
