@@ -34,6 +34,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.accurateCountThreshold ??= 1_000_000;
   config.maxSearchOffset ??= 10_000;
   config.defaultBotRuntimeVersion ??= 'awslambda';
+  config.storeBotInput ??= true;
   config.defaultProjectFeatures ??= [];
   config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
@@ -106,6 +107,7 @@ type DefaultConfigKeys =
   | 'base64BinaryMaxBytes'
   | 'inlineAttachmentsMaxTotalBytes'
   | 'defaultBotRuntimeVersion'
+  | 'storeBotInput'
   | 'defaultProjectFeatures'
   | 'defaultProjectSystemSetting'
   | 'emailProvider'
@@ -203,6 +205,7 @@ const booleanKeys = new Set([
   'registerEnabled',
   'requireVerifiedEmailForProjectCreation',
   'serverScopedSubscriptionsEnabled',
+  'storeBotInput',
   'require',
   'rejectUnauthorized',
   'fhirSearchDiscourageSeqScan',

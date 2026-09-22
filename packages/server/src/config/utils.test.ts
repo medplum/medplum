@@ -12,6 +12,7 @@ describe('utils', () => {
     expect(isBooleanConfig('logRequests')).toBe(true);
     expect(isBooleanConfig('rateLimitsEnabled')).toBe(true);
     expect(isBooleanConfig('requireVerifiedEmailForProjectCreation')).toBe(true);
+    expect(isBooleanConfig('storeBotInput')).toBe(true);
   });
 
   test('isIntegerConfig', () => {

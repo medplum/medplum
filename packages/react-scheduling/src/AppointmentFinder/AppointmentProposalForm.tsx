@@ -17,6 +17,7 @@ import {
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
   SchedulingMedicalNecessityURI,
+  toAppointmentSiteReference,
 } from '@medplum/core';
 import type {
   Appointment,
@@ -455,7 +456,17 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setBooking(true);
     setBookError(undefined);
     try {
-      await onBook(buildBooking(chosen, patient, requirementValues, requirements, appointmentExtensions), { manual });
+      await onBook(
+        buildBooking({
+          proposal: chosen,
+          patient,
+          site: location,
+          values: requirementValues,
+          requirements,
+          extensions: appointmentExtensions,
+        }),
+        { manual }
+      );
       setBooked(true);
     } catch (error) {
       // Left on screen with every answer still filled in: a refusal is usually
@@ -902,28 +913,33 @@ function RequirementCodePill(props: RequirementCodePillProps): JSX.Element {
   );
 }
 
+interface BuildBookingOptions {
+  /** The time that was chosen, as `$find` offered it. */
+  readonly proposal: Appointment;
+  readonly patient: WithId<Patient>;
+  /** The site it is held at: the facility, not the room. */
+  readonly site: WithId<Location> | undefined;
+  /** The codes and attestation given. */
+  readonly values: BookingRequirementValues;
+  /** What the visit type requires, from its eligibility codes. */
+  readonly requirements: ReadonlySet<SchedulingRequirement>;
+  /** Extensions the host asked to be carried on the appointment. */
+  readonly extensions: readonly Extension[] | undefined;
+}
+
 /**
- * Puts the patient, anything the visit type required, and whatever the host wants carried
- * onto the proposal that will be booked.
+ * Puts the patient, the site, anything the visit type required, and whatever the host
+ * wants carried onto the proposal that will be booked.
  *
  * Records a value only where the visit type asked for one: a field nobody was shown holds
  * whatever it was left at, and writing that would put an answer on the booking that was
  * never given.
  *
- * @param proposal - The time that was chosen, as `$find` offered it.
- * @param patient - Who the visit is for.
- * @param values - The codes and attestation given.
- * @param requirements - What the visit type requires, from its eligibility codes.
- * @param extensions - Extensions the host asked to be carried on the appointment.
+ * @param options - The proposal, and everything to record on it.
  * @returns The appointment to book.
  */
-function buildBooking(
-  proposal: Appointment,
-  patient: WithId<Patient>,
-  values: BookingRequirementValues,
-  requirements: ReadonlySet<SchedulingRequirement>,
-  extensions: readonly Extension[] | undefined
-): Appointment {
+function buildBooking(options: BuildBookingOptions): Appointment {
+  const { proposal, patient, site, values, requirements, extensions } = options;
   const patientReference = getReferenceString(patient);
   const procedure = requirements.has(REQUIRES_PROCEDURE_CODE) ? values.procedure : [];
   const diagnosis = requirements.has(REQUIRES_DIAGNOSIS_CODE) ? values.diagnosis : [];
@@ -936,6 +952,9 @@ function buildBooking(
       : []),
     ...(extensions ?? []),
   ];
+  const supportingInformation = site
+    ? [...(proposal.supportingInformation ?? []), toAppointmentSiteReference(site)]
+    : undefined;
 
   return {
     ...proposal,
@@ -949,6 +968,7 @@ function buildBooking(
     ...(serviceType.length > 0 && { serviceType }),
     ...(reasonCode.length > 0 && { reasonCode }),
     ...(extension.length > 0 && { extension }),
+    ...(supportingInformation && { supportingInformation }),
   };
 }
 
