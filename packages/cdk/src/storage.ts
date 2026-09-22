@@ -47,6 +47,7 @@ export class Storage extends Construct {
       if (config.guardDutyMalwareProtectionEnabled) {
         buildGuardDutyMalwareProtection(this, 'StorageGuardDuty', {
           bucket: this.storageBucket,
+          onDemandOnly: config.guardDutyMalwareProtectionOnDemandOnly,
         });
       }
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { GuardDutyClient, SendObjectMalwareScanCommand } from '@aws-sdk/client-guardduty';
-import { GetObjectTaggingCommand, NoSuchKey, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectTaggingCommand, NoSuchKey, PutObjectTaggingCommand, S3Client } from '@aws-sdk/client-s3';
 import type { WithId } from '@medplum/core';
 import { ContentType } from '@medplum/core';
 import type { Binary, OperationOutcome } from '@medplum/fhirtypes';
@@ -14,7 +14,13 @@ import { getConfig, loadTestConfig } from '../../config/loader';
 import { getBinaryStorageKey } from '../../storage/base';
 import { initBinaryStorage } from '../../storage/loader';
 import { initTestAuth } from '../../test.setup';
-import { MALWARE_SCAN_STATUS_SYSTEM, MALWARE_SCAN_STATUS_TAG, SCAN_REQUESTED } from './binary-scan';
+import {
+  MALWARE_SCAN_PENDING_MS,
+  MALWARE_SCAN_REQUESTED_TAG,
+  MALWARE_SCAN_STATUS_SYSTEM,
+  MALWARE_SCAN_STATUS_TAG,
+  SCAN_REQUESTED,
+} from './binary-scan';
 
 const app = express();
 const bucket = 'scan-test';
@@ -57,10 +63,20 @@ describe('Binary/$scan', () => {
     mockGuardDutyClient.restore();
   });
 
-  function mockScanStatus(status: string | undefined): void {
+  function mockTags(tags: Record<string, string>): void {
     mockS3Client
       .on(GetObjectTaggingCommand, { Bucket: bucket, Key: key })
-      .resolves({ TagSet: status ? [{ Key: MALWARE_SCAN_STATUS_TAG, Value: status }] : [] });
+      .resolves({ TagSet: Object.entries(tags).map(([Key, Value]) => ({ Key, Value })) });
+  }
+
+  function putTagSets(): Record<string, string>[] {
+    return mockS3Client
+      .commandCalls(PutObjectTaggingCommand)
+      .map((call) => Object.fromEntries((call.args[0].input.Tagging?.TagSet ?? []).map((t) => [t.Key, t.Value])));
+  }
+
+  function scanRequests(): number {
+    return mockGuardDutyClient.commandCalls(SendObjectMalwareScanCommand).length;
   }
 
   async function scan(token = accessToken): Promise<request.Response> {
@@ -78,15 +94,19 @@ describe('Binary/$scan', () => {
     } as OperationOutcome);
   }
 
-  test('Requests a scan when not yet scanned', async () => {
-    mockScanStatus(undefined);
+  test('Marks and requests a scan when not yet scanned', async () => {
+    mockTags({ Other: 'keep' });
 
     const res = await scan();
     expectScanStatus(res, 'information', 'informational', SCAN_REQUESTED);
-    expect(mockGuardDutyClient.commandCalls(SendObjectMalwareScanCommand)).toHaveLength(1);
     expect(mockGuardDutyClient.commandCalls(SendObjectMalwareScanCommand)[0].args[0].input).toStrictEqual({
       S3Object: { Bucket: bucket, Key: key },
     });
+    expect(scanRequests()).toBe(1);
+
+    const [tagSet] = putTagSets();
+    expect(tagSet).toStrictEqual({ Other: 'keep', [MALWARE_SCAN_REQUESTED_TAG]: expect.any(String) });
+    expect(Date.now() - Date.parse(tagSet[MALWARE_SCAN_REQUESTED_TAG])).toBeLessThan(60_000);
   });
 
   test.each([
@@ -94,20 +114,45 @@ describe('Binary/$scan', () => {
     ['THREATS_FOUND', 'error', 'security'],
     ['UNSUPPORTED', 'warning', 'not-supported'],
   ])('Returns %s without re-scanning', async (status, severity, code) => {
-    mockScanStatus(status);
+    mockTags({ [MALWARE_SCAN_STATUS_TAG]: status, [MALWARE_SCAN_REQUESTED_TAG]: new Date().toISOString() });
 
     const res = await scan();
     expectScanStatus(res, severity, code, status);
-    expect(mockGuardDutyClient.commandCalls(SendObjectMalwareScanCommand)).toHaveLength(0);
+    expect(scanRequests()).toBe(0);
+    expect(putTagSets()).toHaveLength(0);
   });
 
-  test.each(['FAILED', 'ACCESS_DENIED'])('Re-scans after %s', async (status) => {
-    mockScanStatus(status);
+  test('Does not re-send while a requested scan is in progress', async () => {
+    mockTags({ [MALWARE_SCAN_REQUESTED_TAG]: new Date(Date.now() - 60_000).toISOString() });
 
     const res = await scan();
     expectScanStatus(res, 'information', 'informational', SCAN_REQUESTED);
-    expect((res.body as OperationOutcome).issue[0].details?.text).toContain(status);
-    expect(mockGuardDutyClient.commandCalls(SendObjectMalwareScanCommand)).toHaveLength(1);
+    expect(res.body.issue[0].details.text).toBe('Malware scan in progress');
+    expect(scanRequests()).toBe(0);
+    expect(putTagSets()).toHaveLength(0);
+  });
+
+  test('Re-sends once a requested scan is stale', async () => {
+    mockTags({ [MALWARE_SCAN_REQUESTED_TAG]: new Date(Date.now() - MALWARE_SCAN_PENDING_MS - 1).toISOString() });
+
+    const res = await scan();
+    expectScanStatus(res, 'information', 'informational', SCAN_REQUESTED);
+    expect(scanRequests()).toBe(1);
+  });
+
+  test.each(['FAILED', 'ACCESS_DENIED'])('Re-scans after %s, dropping the old status', async (status) => {
+    // A status next to the marker was written after it, so the requested scan has finished
+    mockTags({
+      Other: 'keep',
+      [MALWARE_SCAN_STATUS_TAG]: status,
+      [MALWARE_SCAN_REQUESTED_TAG]: new Date().toISOString(),
+    });
+
+    const res = await scan();
+    expectScanStatus(res, 'information', 'informational', SCAN_REQUESTED);
+    expect(res.body.issue[0].details.text).toContain(status);
+    expect(scanRequests()).toBe(1);
+    expect(putTagSets()).toStrictEqual([{ Other: 'keep', [MALWARE_SCAN_REQUESTED_TAG]: expect.any(String) }]);
   });
 
   test('Binary without stored content', async () => {
@@ -116,12 +161,26 @@ describe('Binary/$scan', () => {
     const res = await scan();
     expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Binary has no content to scan');
-    expect(mockGuardDutyClient.commandCalls(SendObjectMalwareScanCommand)).toHaveLength(0);
+    expect(scanRequests()).toBe(0);
   });
 
-  test('GuardDuty error', async () => {
-    mockScanStatus(undefined);
+  test('GuardDuty error clears the marker', async () => {
+    mockTags({ Other: 'keep', [MALWARE_SCAN_STATUS_TAG]: 'FAILED' });
     mockGuardDutyClient.on(SendObjectMalwareScanCommand).rejects(new Error('Bucket is not protected'));
+
+    const res = await scan();
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Bucket is not protected');
+    expect(putTagSets()).toStrictEqual([
+      { Other: 'keep', [MALWARE_SCAN_REQUESTED_TAG]: expect.any(String) },
+      { Other: 'keep' },
+    ]);
+  });
+
+  test('GuardDuty error is reported even if clearing the marker fails', async () => {
+    mockTags({});
+    mockGuardDutyClient.on(SendObjectMalwareScanCommand).rejects(new Error('Bucket is not protected'));
+    mockS3Client.on(PutObjectTaggingCommand).resolvesOnce({}).rejects(new Error('Tagging failed'));
 
     const res = await scan();
     expect(res).toHaveStatus(400);
@@ -134,7 +193,7 @@ describe('Binary/$scan', () => {
     const res = await scan(otherAccessToken);
     expect(res).toHaveStatus(404);
     expect(mockS3Client.commandCalls(GetObjectTaggingCommand)).toHaveLength(0);
-    expect(mockGuardDutyClient.commandCalls(SendObjectMalwareScanCommand)).toHaveLength(0);
+    expect(scanRequests()).toBe(0);
   });
 
   test('Requires S3 storage', async () => {
@@ -158,6 +217,6 @@ describe('Binary/$scan', () => {
     } finally {
       config.sseCustomerKey = undefined;
     }
-    expect(mockGuardDutyClient.commandCalls(SendObjectMalwareScanCommand)).toHaveLength(0);
+    expect(scanRequests()).toBe(0);
   });
 });

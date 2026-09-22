@@ -610,12 +610,32 @@ describe('Infra', () => {
         Match.objectLike({
           PolicyDocument: Match.objectLike({
             Statement: Match.arrayWith([
-              Match.objectLike({ Action: 's3:GetObjectTagging', Resource: 'arn:aws:s3:::medplum-storage/*' }),
+              Match.objectLike({
+                Action: ['s3:GetObjectTagging', 's3:PutObjectTagging'],
+                Resource: 'arn:aws:s3:::medplum-storage/*',
+              }),
               Match.objectLike({ Action: 'guardduty:SendObjectMalwareScan', Resource: '*' }),
             ]),
           }),
         }),
       ]),
+    });
+  });
+
+  test.each([
+    [true, ['guardduty-on-demand-only/']],
+    [false, Match.absent()],
+  ])('GuardDuty on-demand only (%s) sets the plan object prefixes', async (onDemandOnly, objectPrefixes) => {
+    const config = await normalizeInfraConfig({
+      ...baseConfig,
+      stackName: `MedplumGuardDutyOnDemandOnly${onDemandOnly}Stack`,
+      guardDutyMalwareProtectionEnabled: true,
+      guardDutyMalwareProtectionOnDemandOnly: onDemandOnly,
+    } as unknown as MedplumSourceInfraConfig);
+    const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
+
+    template.hasResourceProperties('AWS::GuardDuty::MalwareProtectionPlan', {
+      ProtectedResource: { S3Bucket: Match.objectLike({ ObjectPrefixes: objectPrefixes }) },
     });
   });
 

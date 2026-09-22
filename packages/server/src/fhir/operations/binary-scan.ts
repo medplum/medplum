@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { GuardDutyClient, SendObjectMalwareScanCommand } from '@aws-sdk/client-guardduty';
 import { NoSuchKey } from '@aws-sdk/client-s3';
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, normalizeErrorString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Binary, OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { S3Storage } from '../../cloud/aws/storage';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters } from './utils/parameters';
@@ -23,6 +24,12 @@ const operation = makeOperationDefinition(
 
 /** Object tag written by GuardDuty Malware Protection for S3 once a scan finishes. */
 export const MALWARE_SCAN_STATUS_TAG = 'GuardDutyMalwareScanStatus';
+
+/** Object tag holding the time $scan last requested a scan. */
+export const MALWARE_SCAN_REQUESTED_TAG = 'MedplumMalwareScanRequested';
+
+/** How long a requested scan with no result counts as in progress before $scan requests another. */
+export const MALWARE_SCAN_PENDING_MS = 60 * 60 * 1000;
 
 export const MALWARE_SCAN_STATUS_SYSTEM = 'https://medplum.com/fhir/CodeSystem/malware-scan-status';
 
@@ -62,9 +69,9 @@ export async function binaryScanHandler(req: FhirRequest): Promise<FhirResponse>
   }
 
   const key = storage.getKey(binary);
-  let status: string | undefined;
+  let tags: Record<string, string>;
   try {
-    status = (await storage.getObjectTags(key))[MALWARE_SCAN_STATUS_TAG];
+    tags = await storage.getObjectTags(key);
   } catch (err) {
     if (err instanceof NoSuchKey) {
       return [badRequest('Binary has no content to scan')];
@@ -72,13 +79,36 @@ export async function binaryScanHandler(req: FhirRequest): Promise<FhirResponse>
     throw err;
   }
 
+  const status = tags[MALWARE_SCAN_STATUS_TAG];
   const result = status ? FINAL_RESULTS[status] : undefined;
   if (status && result) {
     return [allOk, buildOutputParameters(operation, scanOutcome(status, result))];
   }
 
-  const client = new GuardDutyClient({ region: getConfig().awsRegion });
-  await client.send(new SendObjectMalwareScanCommand({ S3Object: { Bucket: storage.bucket, Key: key } }));
+  // Requesting a scan drops any old status tag, so a status next to the marker means that scan finished
+  const requestedAt = tags[MALWARE_SCAN_REQUESTED_TAG];
+  if (!status && requestedAt && Date.now() - Date.parse(requestedAt) < MALWARE_SCAN_PENDING_MS) {
+    const pending: ScanResult = { severity: 'information', code: 'informational', text: 'Malware scan in progress' };
+    return [allOk, buildOutputParameters(operation, scanOutcome(SCAN_REQUESTED, pending))];
+  }
+
+  // PutObjectTagging replaces the whole tag set, and the bucket policy only lets GuardDuty write the
+  // status tag, so the marker write must drop it. The marker goes first so GuardDuty preserves it.
+  const otherTags = Object.fromEntries(
+    Object.entries(tags).filter(([k]) => k !== MALWARE_SCAN_STATUS_TAG && k !== MALWARE_SCAN_REQUESTED_TAG)
+  );
+  await storage.putObjectTags(key, { ...otherTags, [MALWARE_SCAN_REQUESTED_TAG]: new Date().toISOString() });
+
+  try {
+    const client = new GuardDutyClient({ region: getConfig().awsRegion });
+    await client.send(new SendObjectMalwareScanCommand({ S3Object: { Bucket: storage.bucket, Key: key } }));
+  } catch (err) {
+    // Clear the marker so the next call retries instead of reporting a scan that was never sent
+    await storage.putObjectTags(key, otherTags).catch((clearErr: unknown) => {
+      getLogger().error('Failed to clear malware scan marker', { key, err: normalizeErrorString(clearErr) });
+    });
+    throw err;
+  }
 
   const requested: ScanResult = {
     severity: 'information',

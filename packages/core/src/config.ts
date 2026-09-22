@@ -95,6 +95,8 @@ export interface MedplumSourceInfraConfig {
   loadBalancerLoggingPrefix?: ValueOrExternalSecret<string>;
   loadBalancerAlgorithm?: ValueOrExternalSecret<'round_robin' | 'least_outstanding_requests' | 'weighted_random'>;
   guardDutyMalwareProtectionEnabled?: ValueOrExternalSecret<boolean>;
+  /** Scan only via Binary $scan: GuardDuty does not scan new uploads automatically. */
+  guardDutyMalwareProtectionOnDemandOnly?: ValueOrExternalSecret<boolean>;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanEnabled?: ValueOrExternalSecret<boolean>;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
@@ -268,6 +270,8 @@ export interface MedplumInfraConfig {
   loadBalancerLoggingPrefix?: string;
   loadBalancerAlgorithm?: 'round_robin' | 'least_outstanding_requests' | 'weighted_random';
   guardDutyMalwareProtectionEnabled?: boolean;
+  /** Scan only via Binary $scan: GuardDuty does not scan new uploads automatically. */
+  guardDutyMalwareProtectionOnDemandOnly?: boolean;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanEnabled: boolean;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */

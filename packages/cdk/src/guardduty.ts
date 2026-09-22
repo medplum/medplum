@@ -9,9 +9,14 @@ const noThreatsFoundStatus = 'NO_THREATS_FOUND';
 const servicePrincipal = 'malware-protection-plan.guardduty.amazonaws.com';
 const sessionName = 'GuardDutyMalwareProtection';
 
+// GuardDuty has no on-demand-only mode. Automatic scans only cover the plan's object prefixes, while
+// on-demand scans ignore them, so a prefix nothing is written to disables automatic scanning.
+export const onDemandOnlyObjectPrefix = 'guardduty-on-demand-only/';
+
 export interface GuardDutyMalwareProtectionProps {
   bucket: s3.IBucket;
   consumerPrincipals?: iam.IPrincipal[];
+  onDemandOnly?: boolean;
 }
 
 export interface GuardDutyMalwareProtection {
@@ -39,6 +44,7 @@ export function buildGuardDutyMalwareProtection(
     protectedResource: {
       s3Bucket: {
         bucketName: props.bucket.bucketName,
+        objectPrefixes: props.onDemandOnly ? [onDemandOnlyObjectPrefix] : undefined,
       },
     },
     role: scanRole.roleArn,

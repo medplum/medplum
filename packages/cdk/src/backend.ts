@@ -472,12 +472,12 @@ export class BackEnd extends Construct {
     });
 
     if (config.guardDutyMalwareProtectionEnabled) {
-      // Binary $scan: read GuardDuty scan result tags and request on-demand scans
+      // Binary $scan: read scan result tags, mark pending scans, and request on-demand scans
       // https://docs.aws.amazon.com/guardduty/latest/ug/malware-protection-s3-on-demand.html
       this.taskRolePolicies.addStatements(
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          actions: ['s3:GetObjectTagging'],
+          actions: ['s3:GetObjectTagging', 's3:PutObjectTagging'],
           resources: [`arn:aws:s3:::${config.storageBucketName}/*`],
         }),
         new iam.PolicyStatement({
