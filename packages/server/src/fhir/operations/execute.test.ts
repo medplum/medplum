@@ -157,6 +157,7 @@ describe('Execute', () => {
     app = express();
     const config = await loadTestConfig();
     config.vmContextBotsEnabled = true;
+    config.storeBotInput = true;
     await initApp(app, config);
 
     const testSetup = await createTestProject({

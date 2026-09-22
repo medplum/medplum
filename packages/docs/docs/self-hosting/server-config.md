@@ -765,9 +765,9 @@ Optional flag to enable custom functions in Bots.
 
 ### storeBotInput
 
-Optional flag to write the input of every bot invocation to binary storage (e.g. S3) under `bot/<projectId>/<yyyy>/<mm>/<dd>/`, for debugging and analytics. Set to `false` to disable.
+Optional flag to write the input of every bot invocation to binary storage (e.g. S3) under `bot/<projectId>/<yyyy>/<mm>/<dd>/`, for debugging and analytics.
 
-**Default:** `true`
+**Default:** `false`
 
 ### AWS Secrets
 

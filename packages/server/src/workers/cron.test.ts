@@ -837,6 +837,7 @@ describe('Cron across linked projects', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.storeBotInput = true;
     await initAppServices(config);
 
     const shared = await createTestProject({ withClient: true, withRepo: true });

@@ -52,6 +52,7 @@ describe('Execute', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.storeBotInput = true;
     await initApp(app, config);
     accessToken = await initTestAuth();
 

@@ -34,7 +34,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.accurateCountThreshold ??= 1_000_000;
   config.maxSearchOffset ??= 10_000;
   config.defaultBotRuntimeVersion ??= 'awslambda';
-  config.storeBotInput ??= true;
+  config.storeBotInput ??= false;
   config.defaultProjectFeatures ??= [];
   config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';

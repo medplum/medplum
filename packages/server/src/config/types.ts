@@ -71,7 +71,7 @@ export interface MedplumServerConfig {
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
   botCustomFunctionsEnabled?: boolean;
-  /** Write each bot invocation's input to binary storage (e.g. S3) for debugging and analytics. Default is `true`. */
+  /** Write each bot invocation's input to binary storage (e.g. S3) for debugging and analytics. Default is `false`. */
   storeBotInput?: boolean;
   logRequests?: boolean;
   logAuditEvents?: boolean;
