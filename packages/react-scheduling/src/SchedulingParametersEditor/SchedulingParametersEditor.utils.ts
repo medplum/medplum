@@ -291,12 +291,11 @@ export function getSchedulingParameterWarnings(
 
   // A grid anchored to UTC survives a daylight saving change only when moving it by an hour lands it back on
   // itself, which needs an interval that divides into 60. At 90 or 120 every local start time moves instead.
-  // Skipped where the interval does not divide into a day, since `alignment-uneven` already covers that and
-  // the daily restart is the larger problem.
+  // Raised alongside `alignment-uneven` rather than deferring to it: a clinic booking office hours may never
+  // meet the midnight restart, and would still be surprised by the shift.
   if (
     alignmentInterval !== undefined &&
     alignmentInterval > 0 &&
-    MINUTES_PER_DAY % alignmentInterval === 0 &&
     MINUTES_PER_HOUR % alignmentInterval !== 0 &&
     (values.alignmentTimezone ?? SCHEDULING_PARAMETER_DEFAULTS.alignmentTimezone) === 'Etc/UTC'
   ) {

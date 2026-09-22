@@ -828,11 +828,11 @@ describe('scheduling parameter validation', () => {
     expect(ids).not.toContain('alignment-dst-shift');
   });
 
-  test('leaves an interval that does not divide into a day to the uneven warning alone', () => {
+  test('raises both the uneven and the daylight saving warning, since either alone can be the one that bites', () => {
     const ids = getSchedulingParameterWarnings({ alignmentInterval: 7 }, {}).map((warning) => warning.id);
 
     expect(ids).toContain('alignment-uneven');
-    expect(ids).not.toContain('alignment-dst-shift');
+    expect(ids).toContain('alignment-dst-shift');
   });
 
   test('says nothing about the interval when it matches the duration', () => {
