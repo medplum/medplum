@@ -194,10 +194,9 @@ async function setupCallbackSubscriber(): Promise<void> {
  * Registers a pending callback and returns a promise that resolves with the agent
  * response once it arrives on the shared callback channel, or rejects on timeout.
  *
- * The first call lazily creates a single Redis subscriber for this process and
- * subscribes it to the hostname-keyed channel returned by {@link getAgentCallbackChannel}.
- * All subsequent calls reuse that subscriber, so connection count is O(1) per
- * server process rather than O(N) per in-flight push.
+ * Requires {@link ensureCallbackSubscriber} to have run. Responses are demultiplexed
+ * by callback id off the one subscriber this process holds, so connection count is
+ * O(1) per server process rather than O(N) per in-flight push.
  *
  * @param callbackId - The fully-qualified callback id (see {@link buildAgentCallbackId}).
  * @param timeoutMs - Milliseconds to wait before rejecting with a timeout.
