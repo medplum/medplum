@@ -68,7 +68,7 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
     profile ? { practitioner: getReferenceString(profile) } : undefined,
     { enabled: opened && !!profile }
   );
-  const [anyBillingOrganization] = useSearchOne(
+  const [anyBillingOrganization, billingOrganizationLoading] = useSearchOne(
     'Organization',
     { identifier: BILLING_ORGANIZATION_IDENTIFIER },
     { enabled: opened }
@@ -120,7 +120,7 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
                 patient={patient}
                 defaultBillingOrganization={practitionerRole?.organization}
                 canPickBillingOrganization={!!anyBillingOrganization}
-                providerLoading={practitionerRoleLoading}
+                providerLoading={practitionerRoleLoading || billingOrganizationLoading}
               />
             ))}
         </Stack>
