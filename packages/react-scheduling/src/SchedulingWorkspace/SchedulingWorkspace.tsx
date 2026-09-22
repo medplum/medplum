@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, CloseButton, Drawer, Group, Title, useMantineTheme } from '@mantine/core';
+import { Alert, CloseButton, Group, Title, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   getExtensionValue,
@@ -9,7 +9,7 @@ import {
   normalizeErrorString,
   SchedulingScheduleColorURI,
 } from '@medplum/core';
-import type { Appointment, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Extension, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -56,6 +56,26 @@ export interface SchedulingWorkspaceProps {
    * from, for a host coding them against its own terminology.
    */
   readonly appointmentCancellationReasonValueSet?: string;
+  /**
+   * Lets the booking form take a typed time and length, placing a visit the scheduling
+   * rules would refuse: over occupied or blocked time, past the configured capacity,
+   * or at a time or length the visit type does not offer.
+   *
+   * Passing it draws the fields; it enforces nothing. Which users get it is the host
+   * application's responsibility.
+   *
+   * Such a booking is sent as a transaction, so the appointment and its Slots commit
+   * together on projects with the `transaction-bundles` feature enabled. Without it they
+   * are applied as a plain batch, where an appointment that failed to write would leave
+   * Slots holding no visit.
+   * @see https://www.medplum.com/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions
+   */
+  readonly canBypassSchedulingRules?: boolean;
+  /**
+   * Extensions to put on every appointment booked from this workspace. See
+   * {@link AppointmentProposalFormProps.appointmentExtensions}.
+   */
+  readonly appointmentExtensions?: readonly Extension[];
 }
 
 /**
@@ -68,9 +88,11 @@ export interface SchedulingWorkspaceProps {
  *   The form writes the booking and announces what it wrote, which is what puts the
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
- * - Shows what is booked: clicking an appointment opens {@link AppointmentDetails} in a
- *   drawer over the calendar, describing the visit and offering to cancel it. Cancelling
- *   is what takes the time back off the calendar, again without a host supplying anything.
+ * - Shows what is booked: clicking an appointment opens {@link AppointmentDetails} in the
+ *   same pane the booking form uses, describing the visit and offering to cancel it.
+ *   Cancelling is what takes the time back off the calendar, again without a host
+ *   supplying anything. The pane holds one or the other, never both: opening either
+ *   closes whatever was open beside the calendar.
  * - Highlights the time last chosen, wherever it was chosen: the click that opened the
  *   pane, then whatever the form's time search settles on, and nothing while the form
  *   holds no time. The calendar is never moved to reach it — a highlight off the week
@@ -80,7 +102,14 @@ export interface SchedulingWorkspaceProps {
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
  */
 export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Element {
-  const { procedureBinding, diagnosisBinding, onBooked, appointmentCancellationReasonValueSet } = props;
+  const {
+    procedureBinding,
+    diagnosisBinding,
+    onBooked,
+    appointmentCancellationReasonValueSet,
+    canBypassSchedulingRules,
+    appointmentExtensions,
+  } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
 
@@ -182,6 +211,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
   const startBooking = useCallback((interval: DateTimeRange): void => {
+    setSelectedAppointmentId(undefined);
     setBookingSelection(interval);
     setHighlight(interval);
   }, []);
@@ -204,11 +234,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     [closeBooking, onBooked]
   );
 
-  const selectAppointment = useCallback((appointment: Appointment): void => {
-    if (appointment.id) {
-      setSelectedAppointmentId(appointment.id);
-    }
-  }, []);
+  const selectAppointment = useCallback(
+    (appointment: Appointment): void => {
+      if (appointment.id) {
+        closeBooking();
+        setSelectedAppointmentId(appointment.id);
+      }
+    },
+    [closeBooking]
+  );
 
   const closeAppointment = useCallback((): void => setSelectedAppointmentId(undefined), []);
 
@@ -241,6 +275,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const displayError = resourcesError ?? schedulesLoadingError;
 
+  // The pane beside the calendar shows one thing at a time. Opening either side already
+  // closes the other, so this only decides which wins if they ever both hold something.
+  const showBooking = bookingSelection !== undefined && openAppointment === undefined;
+
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
       <div className={classes.sidebar}>
@@ -263,23 +301,21 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         />
         <CalendarTimezoneNotice className={classes.timezoneNotice} timezones={timezones} anyUnknown={anyUnknown} />
       </div>
-      <Drawer
-        opened={openAppointment !== undefined}
-        onClose={closeAppointment}
-        position="right"
-        title="Appointment details"
-        closeButtonProps={{ 'aria-label': 'Close appointment details' }}
-      >
-        {openAppointment && (
+      {openAppointment && (
+        <section key={openAppointment.id} className={classes.pane} aria-label="Appointment details">
+          <Group justify="space-between" wrap="nowrap" mb="sm">
+            <Title order={4}>Appointment details</Title>
+            <CloseButton aria-label="Close appointment details" onClick={closeAppointment} />
+          </Group>
           <AppointmentDetails
             appointment={openAppointment}
             cancellationReasonValueSet={appointmentCancellationReasonValueSet}
             onCancelled={props.onCancelled}
           />
-        )}
-      </Drawer>
-      {bookingSelection && (
-        <div className={cx(classes.bookingPane, { [classes.bookingPaneWide]: timeFinderOpen })}>
+        </section>
+      )}
+      {showBooking && (
+        <section className={cx(classes.pane, { [classes.paneWide]: timeFinderOpen })} aria-label="Book appointment">
           <Group justify="space-between" wrap="nowrap" mb="sm">
             <Title order={4}>Book appointment</Title>
             <CloseButton aria-label="Close booking form" onClick={closeBooking} />
@@ -289,11 +325,13 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             defaultStart={bookingSelection.start}
             procedureBinding={procedureBinding}
             diagnosisBinding={diagnosisBinding}
+            canBypassSchedulingRules={canBypassSchedulingRules}
+            appointmentExtensions={appointmentExtensions}
             onToggleTimeFinder={setTimeFinderOpen}
             onChangeTime={setHighlight}
             onBooked={finishBooking}
           />
-        </div>
+        </section>
       )}
     </div>
   );

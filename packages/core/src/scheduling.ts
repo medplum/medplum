@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
+  Appointment,
   CodeableConcept,
   Duration,
   Extension,
   HealthcareService,
+  Location,
   Reference,
   Resource,
   Schedule,
@@ -69,6 +71,20 @@ export const SchedulingMedicalNecessityURI = 'https://medplum.com/fhir/Structure
 export const SchedulingSlotCapacityURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSlotCapacity';
 
 /**
+ * This extension marks an `Appointment` created without the scheduling rules being
+ * applied: the time may be occupied or blocked, past the configured capacity, off the
+ * configured start interval, or any length at all.
+ *
+ * Such an appointment is written through the FHIR CRUD API rather than `$book`, so
+ * nothing else about it says that it was never checked. This records only that.
+ */
+export const SchedulingUnvalidatedBookingURI =
+  'https://medplum.com/fhir/StructureDefinition/SchedulingUnvalidatedBooking';
+
+/** Extension URI marking which `Appointment.supportingInformation` entry is the site. */
+export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSite';
+
+/**
  * Extension URI holding a `Reference<HealthcareService>` on a `serviceType` CodeableConcept.
  *
  * In R5/R6, `serviceType` attributes change from `CodeableConcept[]` to
@@ -106,8 +122,8 @@ export function isDayOfWeek(value: string | undefined): value is DayOfWeek {
 /**
  * Returns whether a Schedule or HealthcareService has a SchedulingParameters extension.
  *
- * Unscoped: on a Schedule, where the extension repeats once per service, this reports that some
- * service is configured rather than any particular one. Ask `getScheduleParameters` about a service.
+ * On a Schedule the extension repeats once per service, so this reports only that some service is
+ * configured; ask `getScheduleSchedulingParameters` about a particular one.
  * @param resource - Schedule or HealthcareService to inspect
  * @returns True if the resource has a SchedulingParameters extension
  */
@@ -133,10 +149,10 @@ export function getSchedulingRequirements(service: HealthcareService | undefined
   return requirements;
 }
 
-// Scheduling matches a `service` reference on resourceType and id, so a stored reference carrying a version
-// suffix still names the service. Match the same way: a reference the server honours but this module missed
-// would read as belonging to another service, and `setScheduleParameter` would then add a second
-// SchedulingParameters extension for it, which the scheduling operations reject outright.
+// Compare resourceType and id only, as the server does: a stored reference may carry a version suffix and
+// still name the same service. If that reference failed to match, `setScheduleSchedulingParameter` would
+// see no parameters for the service and append a second SchedulingParameters extension for it, which the
+// scheduling operations reject outright.
 function isServiceReference(reference: Reference | undefined, serviceReference: string): boolean {
   if (!reference?.reference) {
     return false;
@@ -156,100 +172,256 @@ function matchesServiceSchedulingParameters(extension: Extension, serviceReferen
   );
 }
 
-/**
- * Finds the SchedulingParameters extensions a Schedule carries for a HealthcareService.
- *
- * Kept internal, since `getScheduleParameters` and its write pair reach a parameter without exposing
- * how SchedulingParameters nests. More than one extension can match, and matching is expected to widen
- * further, so every caller here treats the result as a list rather than a single container.
- * @param schedule - Schedule to inspect
- * @param service - HealthcareService referenced by the desired parameters
- * @returns Every matching SchedulingParameters extension, in document order
- */
-function getScheduleParameterExtensions(schedule: Schedule, service: WithId<HealthcareService>): Extension[] {
+// Internal, and loose where the exported wrappers are strict: `service` is undefined only when the
+// resource is a HealthcareService carrying its own parameters. Keep this and the read/write helpers
+// below unexported. Nothing here rejects `(schedule, undefined)` or `(service, service)`; both would
+// quietly match the wrong extensions, and the current exported wrappers are what make them
+// unrepresentable. The deprecated wrappers stay as loose as the signatures they preserve.
+function getSchedulingParameterExtensions(
+  resource: Schedule | HealthcareService,
+  service: WithId<HealthcareService> | undefined
+): Extension[] {
+  if (!service) {
+    return resource.extension?.filter((extension) => extension.url === SchedulingParametersURI) ?? [];
+  }
   const reference = getReferenceString(service);
-  return schedule.extension?.filter((extension) => matchesServiceSchedulingParameters(extension, reference)) ?? [];
+  return resource.extension?.filter((extension) => matchesServiceSchedulingParameters(extension, reference)) ?? [];
 }
 
 /**
- * Reads one scheduling parameter a Schedule sets for a HealthcareService, taking precedence over the
- * service-level parameter of the same name. Pairs with `setScheduleParameter` and `clearScheduleParameter`.
+ * The sub-extension urls a `SchedulingParameters` extension may carry, apart from the `service` pointer a
+ * Schedule's parameters are matched by, which these helpers maintain rather than expose.
+ */
+export type SchedulingParameterUrl =
+  | 'availability'
+  | 'duration'
+  | 'bufferBefore'
+  | 'bufferAfter'
+  | 'alignmentInterval'
+  | 'alignmentOffset'
+  | 'alignmentTimezone'
+  | 'timezone'
+  | 'slotCapacity';
+
+/**
+ * The sub-extension urls a HealthcareService's own `SchedulingParameters` may carry. `availability` is
+ * excluded because scheduling reads a service's hours from `HealthcareService.availableTime` and rejects
+ * the sub-extension outright.
+ */
+export type HealthcareServiceSchedulingParameterUrl = Exclude<SchedulingParameterUrl, 'availability'>;
+
+/** A `SchedulingParameters` sub-extension a Schedule may carry. */
+export type SchedulingParameterExtension = Extension & { url: SchedulingParameterUrl };
+
+/** A `SchedulingParameters` sub-extension a HealthcareService may carry. */
+export type HealthcareServiceSchedulingParameterExtension = Extension & {
+  url: HealthcareServiceSchedulingParameterUrl;
+};
+
+/**
+ * Reads one scheduling parameter a Schedule sets for a HealthcareService, which overrides the
+ * service-level parameter of the same name.
  *
- * The result is a list rather than a single extension because a Schedule may carry more than one
- * SchedulingParameters extension matching the service, and because a parameter may legitimately repeat.
+ * This is the raw sub-extension as stored. The server resolves what a calendar actually schedules by,
+ * applying defaults and service-level inheritance, in its own `getScheduleSchedulingParameters`.
  * @param schedule - Schedule to inspect
- * @param service - HealthcareService referenced by the parameters
+ * @param service - HealthcareService the parameters are scoped to
  * @param url - Url of the SchedulingParameters sub-extension to read, for example `availability`
  * @returns Every matching sub-extension, in document order
+ */
+export function getScheduleSchedulingParameters(
+  schedule: Schedule,
+  service: WithId<HealthcareService>,
+  url: SchedulingParameterUrl
+): Extension[] {
+  return readParameter(schedule, service, url);
+}
+
+/**
+ * Reads one scheduling parameter a HealthcareService sets for itself.
+ *
+ * This is the raw sub-extension as stored. The server resolves what the service actually schedules by,
+ * applying defaults, in its own `getHealthcareServiceSchedulingParameters`.
+ * @param service - HealthcareService to inspect
+ * @param url - Url of the SchedulingParameters sub-extension to read, for example `duration`
+ * @returns Every matching sub-extension, in document order
+ */
+export function getHealthcareServiceSchedulingParameters(
+  service: HealthcareService,
+  url: HealthcareServiceSchedulingParameterUrl
+): Extension[] {
+  return readParameter(service, undefined, url);
+}
+
+/**
+ * Immutably sets one scheduling parameter a Schedule overrides for a HealthcareService, replacing whatever
+ * that calendar already holds at the sub-extension's url.
+ * @param schedule - Schedule to update
+ * @param service - HealthcareService the parameters are scoped to
+ * @param subextension - SchedulingParameters sub-extension to set
+ * @returns A cloned Schedule containing the parameter
+ */
+export function setScheduleSchedulingParameter<T extends Schedule>(
+  schedule: T,
+  service: WithId<HealthcareService>,
+  subextension: SchedulingParameterExtension
+): T {
+  return setParameter(schedule, service, subextension);
+}
+
+/**
+ * Immutably sets one scheduling parameter on a HealthcareService, replacing whatever it already holds at
+ * the sub-extension's url.
+ * @param service - HealthcareService to update
+ * @param subextension - SchedulingParameters sub-extension to set
+ * @returns A cloned HealthcareService containing the parameter
+ */
+export function setHealthcareServiceSchedulingParameter<T extends HealthcareService>(
+  service: T,
+  subextension: HealthcareServiceSchedulingParameterExtension
+): T {
+  return setParameter(service, undefined, subextension);
+}
+
+/**
+ * Immutably clears one scheduling parameter a Schedule overrides for a HealthcareService, dropping that
+ * calendar back to the service-level parameter of the same name.
+ * @param schedule - Schedule to update
+ * @param service - HealthcareService the parameters are scoped to
+ * @param url - Url of the SchedulingParameters sub-extension to remove, for example `availability`
+ * @returns A cloned Schedule without the matching parameter
+ */
+export function clearScheduleSchedulingParameter<T extends Schedule>(
+  schedule: T,
+  service: WithId<HealthcareService>,
+  url: SchedulingParameterUrl
+): T {
+  return clearParameter(schedule, service, url);
+}
+
+/**
+ * Immutably clears one scheduling parameter a HealthcareService sets for itself, dropping it back to
+ * whatever scheduling defaults that parameter to.
+ * @param service - HealthcareService to update
+ * @param url - Url of the SchedulingParameters sub-extension to remove, for example `duration`
+ * @returns A cloned HealthcareService without the matching parameter
+ */
+export function clearHealthcareServiceSchedulingParameter<T extends HealthcareService>(
+  service: T,
+  url: HealthcareServiceSchedulingParameterUrl
+): T {
+  return clearParameter(service, undefined, url);
+}
+
+/**
+ * Reads one scheduling parameter a Schedule sets for a HealthcareService.
+ * @param schedule - Schedule to inspect
+ * @param service - HealthcareService the parameters are scoped to
+ * @param url - Url of the SchedulingParameters sub-extension to read, for example `availability`
+ * @returns Every matching sub-extension, in document order
+ * @deprecated Use getScheduleSchedulingParameters() instead.
  */
 export function getScheduleParameters(
   schedule: Schedule,
   service: WithId<HealthcareService>,
   url: string
 ): Extension[] {
-  return getScheduleParameterExtensions(schedule, service).flatMap((parameters) => getExtensions(parameters, url));
+  return readParameter(schedule, service, url);
 }
 
 /**
- * Immutably sets one scheduling parameter on a Schedule for a HealthcareService, so that calendar keeps
- * it in place of the service-level parameter of the same name. Whatever the Schedule already holds at the
- * sub-extension's url is replaced, and the SchedulingParameters extension is created if the Schedule has
- * none for the service yet.
- *
- * Untyped by design, taking any sub-extension of the shape the parameter calls for, for example
- * `{ url: 'bufferBefore', valueDuration: { value: 10, unit: 'min' } }`. A parameter whose value is a nested
- * structure rather than a single `value[x]` is worth a typed wrapper over this; `availability` has one in
- * `@medplum/react-scheduling`. Pairs with `clearScheduleParameter` and `getScheduleParameters`.
+ * Immutably sets one scheduling parameter a Schedule overrides for a HealthcareService.
  * @param schedule - Schedule to update
- * @param service - HealthcareService referenced by the parameters
+ * @param service - HealthcareService the parameters are scoped to
  * @param subextension - SchedulingParameters sub-extension to set
  * @returns A cloned Schedule containing the parameter
+ * @deprecated Use setScheduleSchedulingParameter() instead.
  */
 export function setScheduleParameter(
   schedule: Schedule,
   service: WithId<HealthcareService>,
   subextension: Extension
 ): Schedule {
-  // Start from a cleared clone so a Schedule carrying more than one matching
-  // SchedulingParameters extension cannot keep a stale value behind.
-  const updated = clearScheduleParameter(schedule, service, subextension.url);
-  const serviceReference = createReference(service);
+  return setParameter(schedule, service, subextension);
+}
+
+/**
+ * Immutably clears one scheduling parameter a Schedule overrides for a HealthcareService.
+ * @param schedule - Schedule to update
+ * @param service - HealthcareService the parameters are scoped to
+ * @param url - Url of the SchedulingParameters sub-extension to remove, for example `availability`
+ * @returns A cloned Schedule without the matching parameter
+ * @deprecated Use clearScheduleSchedulingParameter() instead.
+ */
+export function clearScheduleParameter(schedule: Schedule, service: WithId<HealthcareService>, url: string): Schedule {
+  return clearParameter(schedule, service, url);
+}
+
+function readParameter(
+  resource: Schedule | HealthcareService,
+  service: WithId<HealthcareService> | undefined,
+  url: string
+): Extension[] {
+  return getSchedulingParameterExtensions(resource, service).flatMap((parameters) => getExtensions(parameters, url));
+}
+
+function setParameter<T extends Schedule | HealthcareService>(
+  resource: T,
+  service: WithId<HealthcareService> | undefined,
+  subextension: Extension
+): T {
+  // Note where the value sits before clearing removes it, so that replacing one leaves the sub-extension
+  // where it was rather than moving it to the end, which would show up as churn in the resource timeline.
+  const previousIndex =
+    getSchedulingParameterExtensions(resource, service)[0]?.extension?.findIndex(
+      (existing) => existing.url === subextension.url
+    ) ?? -1;
+
+  // Clear first: a resource carrying more than one matching container would otherwise keep a stale value.
+  const updated = clearParameter(resource, service, subextension.url);
 
   updated.extension ??= [];
 
-  let parameters = updated.extension.find((extension) =>
-    matchesServiceSchedulingParameters(extension, serviceReference.reference)
-  );
+  let parameters = getSchedulingParameterExtensions(updated, service)[0];
 
   if (!parameters) {
-    parameters = {
-      url: SchedulingParametersURI,
-      extension: [{ url: 'service', valueReference: serviceReference }],
-    };
+    parameters = service
+      ? { url: SchedulingParametersURI, extension: [{ url: 'service', valueReference: createReference(service) }] }
+      : { url: SchedulingParametersURI };
     updated.extension.push(parameters);
   }
 
-  parameters.extension = [...(parameters.extension ?? []), subextension];
+  const subextensions = [...(parameters.extension ?? [])];
+  subextensions.splice(previousIndex < 0 ? subextensions.length : previousIndex, 0, subextension);
+  parameters.extension = subextensions;
 
   return updated;
 }
 
-/**
- * Immutably clears one scheduling parameter a Schedule sets for a HealthcareService, dropping that
- * calendar back to the service-level parameter of the same name. Pairs with `setScheduleParameter`
- * and `getScheduleParameters`.
- * @param schedule - Schedule to update
- * @param service - HealthcareService referenced by the parameters
- * @param url - Url of the SchedulingParameters sub-extension to remove, for example `availability`
- * @returns A cloned Schedule without the matching parameter
- */
-export function clearScheduleParameter(schedule: Schedule, service: WithId<HealthcareService>, url: string): Schedule {
-  const updated = deepClone(schedule);
+function clearParameter<T extends Schedule | HealthcareService>(
+  resource: T,
+  service: WithId<HealthcareService> | undefined,
+  url: string
+): T {
+  const updated = deepClone(resource);
 
-  for (const parameters of getScheduleParameterExtensions(updated, service)) {
+  for (const parameters of getSchedulingParameterExtensions(updated, service)) {
     if (parameters.extension) {
       parameters.extension = parameters.extension.filter((subextension) => subextension.url !== url);
     }
+  }
+
+  if (!updated.extension) {
+    return updated;
+  }
+
+  // An extension with neither a value nor sub-extensions violates FHIR `ext-1`.
+  updated.extension = updated.extension.filter(
+    (extension) => extension.url !== SchedulingParametersURI || !!extension.extension?.length
+  );
+
+  if (updated.extension.length === 0) {
+    delete updated.extension;
   }
 
   return updated;
@@ -269,15 +441,14 @@ export function getSchedulingTimezone(
   schedule?: Schedule,
   actor?: Resource
 ): string | undefined {
-  const scheduleTimezone = (schedule ? getScheduleParameters(schedule, service, 'timezone') : [])
+  const scheduleTimezone = (schedule ? getScheduleSchedulingParameters(schedule, service, 'timezone') : [])
     .map((subextension) => subextension.valueCode)
     .find(isDefined);
   if (scheduleTimezone) {
     return scheduleTimezone;
   }
 
-  // A HealthcareService's parameters are about itself, so there is no service reference to match on.
-  const serviceTimezone = getExtensions(service, [SchedulingParametersURI, 'timezone'])
+  const serviceTimezone = getHealthcareServiceSchedulingParameters(service, 'timezone')
     .map((subextension) => subextension.valueCode)
     .find(isDefined);
   if (serviceTimezone) {
@@ -344,6 +515,37 @@ export function extractServiceTypeReferences(
 }
 
 /**
+ * Builds the `supportingInformation` entry recording the site an appointment is held at.
+ *
+ * A site and a room are both `Location`, so the site is recorded here rather than as a
+ * participant: `Appointment.location` answers the room, and {@link getAppointmentSite}
+ * the site. Anything writing an appointment outside the booking form should record the
+ * site through this, so that it is identifiable among the other `supportingInformation`
+ * entries.
+ *
+ * @param site - The site the appointment is held at.
+ * @returns The reference, stamped with {@link SchedulingSiteURI}.
+ */
+export function toAppointmentSiteReference(site: WithId<Location>): Reference<Location> {
+  return { ...createReference(site), extension: [{ url: SchedulingSiteURI, valueBoolean: true }] };
+}
+
+/**
+ * Reads the site an appointment is held at.
+ *
+ * Finds the entry {@link toAppointmentSiteReference} stamped.
+ *
+ * @param appointment - The appointment to read.
+ * @returns The site, or undefined for an appointment holding none.
+ */
+export function getAppointmentSite(appointment: Appointment): Reference<Location> | undefined {
+  return appointment.supportingInformation?.find(
+    (reference): reference is Reference<Location> =>
+      reference.reference?.startsWith('Location/') === true && getExtensionValue(reference, SchedulingSiteURI) === true
+  );
+}
+
+/**
  * The duration units SchedulingParameters accepts, and what each is worth in
  * minutes.
  */
@@ -368,4 +570,13 @@ export function schedulingDurationToMinutes(duration: Duration | undefined): num
   }
   const perUnit = duration?.unit === undefined ? undefined : MINUTES_PER_UNIT[duration.unit];
   return perUnit === undefined ? undefined : value * perUnit;
+}
+
+/**
+ * Converts minutes to a SchedulingParameters duration, the inverse of `schedulingDurationToMinutes`.
+ * @param minutes - The length in minutes.
+ * @returns A duration scheduling accepts.
+ */
+export function minutesToSchedulingDuration(minutes: number): Duration {
+  return { value: minutes, unit: 'min' };
 }

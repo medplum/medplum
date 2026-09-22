@@ -101,6 +101,7 @@ export interface MedplumServerConfig {
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;
   defaultLoginRateLimit?: number;
+  defaultMfaRateLimit?: number;
   /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
   defaultFhirQuota?: number;
   /** Milliseconds of delay added per quota unit in async context, in lieu of consuming quota units. */

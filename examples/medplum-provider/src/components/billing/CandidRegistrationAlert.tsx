@@ -7,10 +7,6 @@ import type { CandidProviderRegistration } from '../../hooks/useCandidProviderRe
 
 export interface CandidRegistrationAlertProps {
   readonly registration: CandidProviderRegistration;
-  /**
-   * What saving registers when Candid does not have this provider yet; undefined when the
-   * candid-create-provider bot is not deployed and saving registers nothing.
-   */
   readonly registersAs?: string;
 }
 

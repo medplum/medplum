@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Checkbox, Group, Loader, Pill, Stack, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Checkbox, Group, Loader, NumberInput, Pill, Stack, Text, TextInput } from '@mantine/core';
+import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   createReference,
@@ -16,15 +17,25 @@ import {
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
   SchedulingMedicalNecessityURI,
+  toAppointmentSiteReference,
 } from '@medplum/core';
-import type { Appointment, HealthcareService, Location, Patient, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  Extension,
+  HealthcareService,
+  Location,
+  Patient,
+  ValueSetExpansionContains,
+} from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { CalendarDateInput, ResourceInput, ResourceName, ValueSetAutocomplete } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle, IconCalendarSearch, IconCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
+import { resolveBookingGeometry } from '../bookingGeometry';
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
@@ -45,10 +56,20 @@ import {
   getSelectionError,
   getUnsatisfiableRows,
 } from './AppointmentFinder.schedules';
-import { getAppointmentActors, getDurationMinutes, isViewerTimezone } from './AppointmentFinder.times';
+import {
+  formatTimezoneLabel,
+  getAppointmentActors,
+  getDurationMinutes,
+  getNativeInputType,
+  isViewerTimezone,
+  parseZonedDateTimeInput,
+} from './AppointmentFinder.times';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
+import { buildElevatedBooking } from './buildElevatedBooking';
+import type { BookingConflict } from './findConflicts';
+import { describeConflict, findBookingConflicts } from './findConflicts';
 import { useDaySearch } from './useDaySearch';
 
 // Excludes what a room is rather than admitting what a site is: `physicalType` is
@@ -67,6 +88,10 @@ const PATIENT_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
 // No month-wide scan exists, so every day is offered and the search answers.
 const NO_MARKED_DATES: Date[] = [];
 
+// Long enough that typing a time does not search on every keystroke, short enough
+// that the warning is there before the user reaches the book button.
+const CONFLICT_DEBOUNCE_MS = 400;
+
 export interface AppointmentProposalFormProps {
   /** Pre-fills where the visit is, for a host that already knows. */
   readonly defaultLocation?: WithId<Location>;
@@ -75,9 +100,8 @@ export interface AppointmentProposalFormProps {
   /** Pre-fills who the visit is for, for a host launching from a patient's chart. */
   readonly defaultPatient?: WithId<Patient>;
   /**
-   * The day the time search opens on. Defaults to today.
-   *
-   * A day, not a time: only a time `$find` offered can be chosen.
+   * The day the time search opens on, and the day a typed time starts out on.
+   * Defaults to today.
    */
   readonly defaultStart?: Date;
   /**
@@ -115,7 +139,20 @@ export interface AppointmentProposalFormProps {
    * Resolving marks the form booked, so it stops offering to book until an answer
    * changes; rejecting shows the reason as the booking's refusal, every answer kept.
    */
-  readonly onBook: (proposal: Appointment) => void | Promise<void>;
+  readonly onBook: (proposal: Appointment, options: BookOptions) => void | Promise<void>;
+  /** Extensions to put on every appointment this form books. */
+  readonly appointmentExtensions?: readonly Extension[];
+  /**
+   * Allows for manual entry of a time and length, bypassing the `$find` search and
+   * `$book` endpoint.
+   */
+  readonly canBypassSchedulingRules?: boolean;
+}
+
+/** What `onBook` is told about the proposal it was handed. */
+export interface BookOptions {
+  /** True when the time was typed (& unvalidated) rather than chosen from the search. */
+  readonly manual: boolean;
 }
 
 /**
@@ -131,6 +168,7 @@ export interface AppointmentProposalFormProps {
  * @returns The form.
  */
 export function AppointmentProposalForm(props: AppointmentProposalFormProps): JSX.Element {
+  const medplum = useMedplum();
   const {
     defaultLocation,
     defaultService,
@@ -143,6 +181,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
     diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
     onBook,
+    canBypassSchedulingRules,
+    appointmentExtensions,
   } = props;
 
   const [location, setLocation] = useState<WithId<Location> | undefined>(defaultLocation);
@@ -160,6 +200,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [booking, setBooking] = useState(false);
   const [booked, setBooked] = useState(false);
   const [bookError, setBookError] = useState<unknown>(undefined);
+  const [manualChoice, setManualChoice] = useState<Appointment | undefined>(undefined);
+  const [manualDateTime, setManualDateTime] = useState('');
+  const [manualDurationMinutes, setManualDurationMinutes] = useState<number | undefined>(undefined);
+  const [conflicts, setConflicts] = useState<readonly BookingConflict[]>([]);
+
+  const manual = chosen !== undefined && chosen === manualChoice;
+
+  // Settles once the time and length fields stop moving; only the conflict lookup waits.
+  const [debouncedChoice] = useDebouncedValue(manualChoice, CONFLICT_DEBOUNCE_MS);
 
   const selectionError = useMemo(() => getSelectionError(selections), [selections]);
 
@@ -181,17 +230,30 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // request per keystroke.
   const combinations = useMemo(() => (searching ? getActorCombinations(selections) : []), [searching, selections]);
 
+  const candidates = useMemo(() => getSelectedCandidates(selections), [selections]);
+
   // `$find` applies each Schedule's own parameters, so the actors in one search need not
   // agree on a timezone. The first one is taken as the exemplar for what to display:
   // the times themselves are real instants either way, only their labelling is at stake.
   const timezone = useMemo(() => {
-    const [first] = getSelectedCandidates(selections);
+    const [first] = candidates;
     return service ? getSchedulingTimezone(service, first?.schedule, first?.actorResource) : undefined;
-  }, [service, selections]);
+  }, [service, candidates]);
 
-  // A proposal carries the Slots it was found for, so it cannot outlive the days it
-  // was offered from.
-  const clearChosen = useCallback((): void => setChosen(undefined), []);
+  const clearManualTime = useCallback((): void => {
+    setManualChoice(undefined);
+    setManualDateTime('');
+    setManualDurationMinutes(undefined);
+    setConflicts([]);
+  }, []);
+
+  // A proposal carries the Slots it was found for, so it cannot outlive the days it was
+  // offered from. A typed time carries none: dropping it here would take the proposal
+  // away while its fields, and their warnings, stayed on screen saying otherwise.
+  const clearChosen = useCallback(
+    (): void => setChosen((current) => (current === manualChoice ? current : undefined)),
+    [manualChoice]
+  );
 
   // All actor resources, keyed by their reference.
   const actorResources = useMemo(() => getSelectedActorResources(selections), [selections]);
@@ -250,9 +312,14 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       // a resource changes it would hold whoever is named inside the proposal, and
       // `$book` cannot catch that: the proposal is internally consistent.
       setChosen(undefined);
+      // A different calendar can configure a different length, and nobody asked for
+      // the one that happened to be on screen. The typed time goes with it: it was
+      // proposed against these schedules, and a field still holding it would read as
+      // a time that is going to be booked.
+      clearManualTime();
       resetDaySearch();
     },
-    [resetDaySearch]
+    [clearManualTime, resetDaySearch]
   );
 
   function chooseService(next: WithId<HealthcareService> | undefined): void {
@@ -281,14 +348,95 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   function clearResources(): void {
     setSelections({});
     setChosen(undefined);
+    clearManualTime();
     setActorFieldsKey((key) => key + 1);
     resetDaySearch();
   }
 
   function chooseTime(next: Appointment): void {
     setChosen(next);
+    setConflicts([]);
     setBooked(false);
   }
+
+  const configuredDurationMinutes = useMemo(
+    () => (service ? resolveBookingGeometry(service, candidates[0]?.schedule).duration : undefined),
+    [service, candidates]
+  );
+
+  // State holds the edit rather than the value, so a different visit type falls back to
+  // its own default instead of keeping the last length typed.
+  const effectiveDurationMinutes = manualDurationMinutes ?? configuredDurationMinutes;
+
+  /**
+   * Takes the typed time and length together and proposes them, or takes the proposal
+   * back down while they are still incomplete.
+   *
+   * @param dateTime - A `YYYY-MM-DDTHH:MM` wall-clock value, read in the visit's timezone.
+   * @param durationMinutes - How long the visit runs.
+   */
+  function enterManualTime(dateTime: string, durationMinutes: number | undefined): void {
+    // Stale the moment the fields move: what was looked up was about a different time.
+    setConflicts([]);
+    setManualDateTime(dateTime);
+    setManualDurationMinutes(durationMinutes);
+
+    const start = parseZonedDateTimeInput(dateTime, timezone);
+    if (!start || !durationMinutes || durationMinutes <= 0 || !service || candidates.length === 0) {
+      setManualChoice(undefined);
+      // Only ever clears a manual time: a time from the search is not this field's to drop.
+      setChosen((current) => (current === manualChoice ? undefined : current));
+      return;
+    }
+
+    const proposal = buildElevatedBooking({
+      service,
+      schedules: candidates.map((candidate) => candidate.schedule),
+      start,
+      durationMinutes,
+    });
+    setManualChoice(proposal);
+    setChosen(proposal);
+    setBooked(false);
+  }
+
+  // Only a typed time needs this. A time the search offered was found by intersecting
+  // the very Slots this would search, so it cannot conflict with them.
+  //
+  // A keystroke moves the proposal and nothing else here, so debouncing that one value
+  // holds the search off until typing settles while a change of visit type or of actors
+  // still looks up at once.
+  useEffect(() => {
+    if (
+      chosen !== debouncedChoice ||
+      !debouncedChoice?.start ||
+      !debouncedChoice.end ||
+      !service ||
+      candidates.length === 0
+    ) {
+      // Nothing to look up; whatever was found last was cleared by the change that got here.
+      return () => {};
+    }
+
+    let active = true;
+    const range = { start: new Date(debouncedChoice.start), end: new Date(debouncedChoice.end) };
+    findBookingConflicts({ medplum, service, candidates, range })
+      .then((found) => {
+        if (active) {
+          setConflicts(found);
+        }
+      })
+      .catch(() => {
+        // Saying nothing beats refusing a booking this user is allowed to make.
+        if (active) {
+          setConflicts([]);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [medplum, chosen, debouncedChoice, service, candidates]);
 
   function choosePatient(next: WithId<Patient> | undefined): void {
     setPatient(next);
@@ -308,7 +456,17 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setBooking(true);
     setBookError(undefined);
     try {
-      await onBook(buildBooking(chosen, patient, requirementValues, requirements));
+      await onBook(
+        buildBooking({
+          proposal: chosen,
+          patient,
+          site: location,
+          values: requirementValues,
+          requirements,
+          extensions: appointmentExtensions,
+        }),
+        { manual }
+      );
       setBooked(true);
     } catch (error) {
       // Left on screen with every answer still filled in: a refusal is usually
@@ -330,6 +488,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           searchCriteria={LOCATION_SEARCH_CRITERIA}
           defaultValue={defaultLocation}
           onChange={chooseLocation}
+          clearable={false}
         />
         <AppointmentServiceSelect
           key={serviceFieldKey}
@@ -385,6 +544,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           defaultValue={defaultPatient}
           itemComponent={patientItem}
           onChange={choosePatient}
+          clearable={false}
         />
 
         {/* Each field is shown only for a visit type whose eligibility asks for it. */}
@@ -449,6 +609,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
       {searching && (
         <Stack className={classes.results} gap="lg">
+          {canBypassSchedulingRules && (
+            <ManualTime
+              dateTime={manualDateTime}
+              durationMinutes={effectiveDurationMinutes}
+              timezone={timezone}
+              conflicts={conflicts}
+              onChange={enterManualTime}
+            />
+          )}
           {daySearch.loadingFirstDays && <Loader size="sm" />}
           {daySearch.findRequestError && <Alert color="red">{normalizeErrorString(daySearch.findRequestError)}</Alert>}
           {!daySearch.loadingFirstDays &&
@@ -509,8 +678,8 @@ interface ChosenTimeProps {
 /**
  * The chosen time, and under it the action that found it.
  *
- * An input rather than plain text: overrides are not implemented, but when they are, a
- * permitted user gets this same field in this same place, editable and with a warning.
+ * Read-only whichever way the time was arrived at: a time offered by the search and a
+ * time typed into {@link ManualTime} both land here.
  *
  * @param props - The React props.
  * @returns The chosen time, once there is one, and the action.
@@ -578,6 +747,65 @@ function BlockerMessage(props: BlockerMessageProps): JSX.Element {
         {message}
       </Text>
     </Group>
+  );
+}
+
+interface ManualTimeProps {
+  /** A `YYYY-MM-DDTHH:MM` wall-clock value, read in the visit's timezone. */
+  readonly dateTime: string;
+  readonly durationMinutes: number | undefined;
+  /** IANA timezone the visit is held in. */
+  readonly timezone: string | undefined;
+  readonly conflicts: readonly BookingConflict[];
+  readonly onChange: (dateTime: string, durationMinutes: number | undefined) => void;
+}
+
+/**
+ * Fields prompting the user for a datetime and a duration, used to manually choose
+ * when an appointment should be scheduled and for how long.
+ * @param props - The React props.
+ * @returns The fields, and what the time entered clashes with.
+ */
+function ManualTime(props: ManualTimeProps): JSX.Element {
+  const { dateTime, durationMinutes, timezone, conflicts, onChange } = props;
+
+  return (
+    <Stack gap={4}>
+      <Text fw={500} size="sm">
+        Or enter a time
+      </Text>
+      <Group align="flex-start" gap="xs" wrap="nowrap">
+        <TextInput
+          label="Date & time"
+          type={getNativeInputType('datetime-local')}
+          flex={1}
+          value={dateTime}
+          onChange={(event) => onChange(event.currentTarget.value, durationMinutes)}
+        />
+        <NumberInput
+          label="Minutes"
+          min={1}
+          allowDecimal={false}
+          w={110}
+          value={durationMinutes ?? ''}
+          onChange={(value) => onChange(dateTime, typeof value === 'number' ? value : undefined)}
+        />
+      </Group>
+
+      {/* The visit is held where it is held, not where the person booking it is
+          sitting, and a typed time is read there. */}
+      {!isViewerTimezone(timezone) && timezone && (
+        <Text size="xs" c="dimmed">
+          Times are {formatTimezoneLabel(timezone)}.
+        </Text>
+      )}
+
+      {conflicts.map((conflict) => (
+        <Text key={`${conflict.schedule}-${conflict.kind}`} size="xs" c="orange.8">
+          {describeConflict(conflict)}
+        </Text>
+      ))}
+    </Stack>
   );
 }
 
@@ -685,25 +913,33 @@ function RequirementCodePill(props: RequirementCodePillProps): JSX.Element {
   );
 }
 
+interface BuildBookingOptions {
+  /** The time that was chosen, as `$find` offered it. */
+  readonly proposal: Appointment;
+  readonly patient: WithId<Patient>;
+  /** The site it is held at: the facility, not the room. */
+  readonly site: WithId<Location> | undefined;
+  /** The codes and attestation given. */
+  readonly values: BookingRequirementValues;
+  /** What the visit type requires, from its eligibility codes. */
+  readonly requirements: ReadonlySet<SchedulingRequirement>;
+  /** Extensions the host asked to be carried on the appointment. */
+  readonly extensions: readonly Extension[] | undefined;
+}
+
 /**
- * Puts the patient, and anything the visit type required, onto the proposal that will be booked.
+ * Puts the patient, the site, anything the visit type required, and whatever the host
+ * wants carried onto the proposal that will be booked.
  *
  * Records a value only where the visit type asked for one: a field nobody was shown holds
  * whatever it was left at, and writing that would put an answer on the booking that was
  * never given.
  *
- * @param proposal - The time that was chosen, as `$find` offered it.
- * @param patient - Who the visit is for.
- * @param values - The codes and attestation given.
- * @param requirements - What the visit type requires, from its eligibility codes.
+ * @param options - The proposal, and everything to record on it.
  * @returns The appointment to book.
  */
-function buildBooking(
-  proposal: Appointment,
-  patient: WithId<Patient>,
-  values: BookingRequirementValues,
-  requirements: ReadonlySet<SchedulingRequirement>
-): Appointment {
+function buildBooking(options: BuildBookingOptions): Appointment {
+  const { proposal, patient, site, values, requirements, extensions } = options;
   const patientReference = getReferenceString(patient);
   const procedure = requirements.has(REQUIRES_PROCEDURE_CODE) ? values.procedure : [];
   const diagnosis = requirements.has(REQUIRES_DIAGNOSIS_CODE) ? values.diagnosis : [];
@@ -714,10 +950,15 @@ function buildBooking(
     ...(requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE)
       ? [{ url: SchedulingMedicalNecessityURI, valueBoolean: values.medicalNecessity }]
       : []),
+    ...(extensions ?? []),
   ];
+  const supportingInformation = site
+    ? [...(proposal.supportingInformation ?? []), toAppointmentSiteReference(site)]
+    : undefined;
 
   return {
     ...proposal,
+    created: new Date().toISOString(),
     participant: [
       // A proposal knows nothing about patients, but a host may have put one on
       // the appointment it handed over, and naming them twice books them twice.
@@ -727,6 +968,7 @@ function buildBooking(
     ...(serviceType.length > 0 && { serviceType }),
     ...(reasonCode.length > 0 && { reasonCode }),
     ...(extension.length > 0 && { extension }),
+    ...(supportingInformation && { supportingInformation }),
   };
 }
 
