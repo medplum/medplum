@@ -24,9 +24,10 @@ export function usePatientActionsMenu(patientArg: Patient | Reference<Patient> |
     </Menu.Item>
   );
 
-  const actionsModals = patient ? (
-    <PatientEditModal patient={patient} opened={editOpened} onClose={editHandlers.close} />
-  ) : null;
+  const actionsModals =
+    patient && editOpened ? (
+      <PatientEditModal patient={patient} opened={editOpened} onClose={editHandlers.close} />
+    ) : null;
 
   return { headerMenuItems, actionsModals, openEditModal: editHandlers.open };
 }
