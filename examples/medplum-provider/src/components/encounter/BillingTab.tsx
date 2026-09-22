@@ -109,7 +109,8 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   }, [medplum, patient]);
 
   // Default the billing organization: an existing draft claim records the previous choice;
-  // otherwise use the organization the practitioner bills under (PractitionerRole).
+  // otherwise use the organization the practitioner bills under (PractitionerRole), looked up the
+  // same way the visit's insurance eligibility check does. The picker stays editable either way.
   useEffect(() => {
     const resolveBillingOrganization = async (): Promise<Reference<Organization> | undefined> => {
       if (claim?.provider?.reference?.startsWith('Organization/')) {
@@ -120,7 +121,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       }
       const role = await medplum.searchOne('PractitionerRole', {
         practitioner: getReferenceString(practitioner),
-        active: 'true',
       });
       return role?.organization;
     };
