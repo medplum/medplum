@@ -36,6 +36,13 @@ describe('utils', () => {
     expect(config.defaultMfaRateLimit).toBe(10);
   });
 
+  test('addDefaults disables storeBotInput by default', () => {
+    const config = addDefaults({
+      baseUrl: 'https://example.com',
+    } as any);
+    expect(config.storeBotInput).toBe(false);
+  });
+
   test('addDefaults preserves existing maxSearchOffset', () => {
     const config = addDefaults({
       baseUrl: 'https://example.com',
