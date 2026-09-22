@@ -359,6 +359,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             onToggleTimeFinder={setTimeFinderOpen}
             onChangeTime={setHighlight}
             onBooked={finishBooking}
+            defaultLocation={selectedLocation}
+            defaultService={selectedService}
           />
         </section>
       )}
