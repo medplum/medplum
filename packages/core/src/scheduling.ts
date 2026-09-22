@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
+  Appointment,
   CodeableConcept,
   Duration,
   Extension,
   HealthcareService,
+  Location,
   Reference,
   Resource,
   Schedule,
@@ -78,6 +80,9 @@ export const SchedulingSlotCapacityURI = 'https://medplum.com/fhir/StructureDefi
  */
 export const SchedulingUnvalidatedBookingURI =
   'https://medplum.com/fhir/StructureDefinition/SchedulingUnvalidatedBooking';
+
+/** Extension URI marking which `Appointment.supportingInformation` entry is the site. */
+export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSite';
 
 /**
  * Extension URI holding a `Reference<HealthcareService>` on a `serviceType` CodeableConcept.
@@ -507,6 +512,37 @@ export function extractServiceTypeReferences(
   return serviceType
     .map((concept) => getExtensionValue(concept, ServiceTypeReferenceURI) as Reference<HealthcareService> | undefined)
     .filter(isDefined);
+}
+
+/**
+ * Builds the `supportingInformation` entry recording the site an appointment is held at.
+ *
+ * A site and a room are both `Location`, so the site is recorded here rather than as a
+ * participant: `Appointment.location` answers the room, and {@link getAppointmentSite}
+ * the site. Anything writing an appointment outside the booking form should record the
+ * site through this, so that it is identifiable among the other `supportingInformation`
+ * entries.
+ *
+ * @param site - The site the appointment is held at.
+ * @returns The reference, stamped with {@link SchedulingSiteURI}.
+ */
+export function toAppointmentSiteReference(site: WithId<Location>): Reference<Location> {
+  return { ...createReference(site), extension: [{ url: SchedulingSiteURI, valueBoolean: true }] };
+}
+
+/**
+ * Reads the site an appointment is held at.
+ *
+ * Finds the entry {@link toAppointmentSiteReference} stamped.
+ *
+ * @param appointment - The appointment to read.
+ * @returns The site, or undefined for an appointment holding none.
+ */
+export function getAppointmentSite(appointment: Appointment): Reference<Location> | undefined {
+  return appointment.supportingInformation?.find(
+    (reference): reference is Reference<Location> =>
+      reference.reference?.startsWith('Location/') === true && getExtensionValue(reference, SchedulingSiteURI) === true
+  );
 }
 
 /**
