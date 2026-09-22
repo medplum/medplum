@@ -541,8 +541,7 @@ export function toAppointmentSiteReference(site: WithId<Location>): Reference<Lo
 export function getAppointmentSite(appointment: Appointment): Reference<Location> | undefined {
   return appointment.supportingInformation?.find(
     (reference): reference is Reference<Location> =>
-      reference.reference?.startsWith('Location/') === true &&
-      getExtensionValue(reference, SchedulingSiteURI) === true
+      reference.reference?.startsWith('Location/') === true && getExtensionValue(reference, SchedulingSiteURI) === true
   );
 }
 
