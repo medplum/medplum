@@ -7,8 +7,7 @@ import { Meta } from '@storybook/addon-docs/blocks';
 # SchedulingParametersEditor
 
 Edits scheduling parameters at either level the `SchedulingParameters` extension sits on: the parameters a
-visit service type sets for itself, along with whether it can be booked at all, or the ones a Schedule
-overrides for that service.
+visit service type sets for itself, or the ones a Schedule overrides for that service.
 
 Every calendar offering the service follows these unless it overrides a parameter of its own. Working hours
 are not here: they belong to [ScheduleAvailabilityEditor](?path=/docs/medplum-scheduleavailabilityeditor--docs),
@@ -49,7 +48,7 @@ parameters: listing the service in `Schedule.serviceType` is the caller's to do,
 service's override to edit.
 
 The stories are split the same way, into a **HealthcareService** folder and a **Schedule** folder, each
-showing what only that level does. The levels differ in four ways:
+showing what only that level does. The levels differ in three ways:
 
 - **Fields offered.** Each level hides the fields the
   [extension docs](https://www.medplum.com/docs/scheduling/defining-availability#the-scheduling-parameters-extension)
@@ -61,8 +60,6 @@ showing what only that level does. The levels differ in four ways:
 - **Warnings.** On a Schedule they judge the values in effect, the override layered over the service, so a
   capacity override is checked against the buffers it inherits. A warning about values the calendar does not
   set is left to the service's editor, since the calendar cannot fix it.
-- **Active.** Only the service level shows it. `Schedule.active` switches off the whole calendar, which is
-  more than one service's override decides.
 
 A service may be a draft with no `id`, so a create flow can seed it, edit its parameters, and create it from
 `onSave`. `onSave` hands back the same type it was given.
@@ -174,6 +171,10 @@ the write settles.
 **It does not create a resource.** It edits a draft service's parameters, but creating it, like adding a
 service to a Schedule, is the caller's.
 
+**It does not change whether a service is bookable.** `active` lives next to the extension rather than in
+it, and the Schedule level has no equivalent to offer, so the switch belongs with the other native-field
+controls rather than here.
+
 **It does not show resolved values.** Each field shows what its level stores, and the placeholder shows what
 takes effect when it stores nothing.
 
@@ -192,9 +193,3 @@ itself only when the interval divides into 60. A 30-minute grid is unaffected; a
 every start time shift. The fix is an interval that divides into 60, or an `alignmentTimezone` that observes
 the same change, which the form offers once the visit type already stores a time zone, and otherwise has to
 be set through the API.
-
-## Deactivating
-
-Turning off **Active** writes `active: false`, which stops `$find`, `$book` and `$hold`. Existing
-appointments are kept and can still be cancelled, but an appointment currently on hold can no longer be
-confirmed. The form states all three, and the save button relabels so the change does not read as routine.

@@ -1,20 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Alert,
-  Anchor,
-  Badge,
-  Button,
-  Divider,
-  Group,
-  List,
-  Paper,
-  Stack,
-  Switch,
-  Text,
-  Tooltip,
-  VisuallyHidden,
-} from '@mantine/core';
+import { Alert, Anchor, Button, Group, Paper, Stack, Text, Tooltip, VisuallyHidden } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { IconAlertTriangle } from '@tabler/icons-react';
@@ -64,7 +50,7 @@ export interface ScheduleSchedulingParametersEditorProps extends CommonProps {
 }
 
 /**
- * Props for editing the parameters a visit service type sets for itself, and whether it can be booked at all.
+ * Props for editing the parameters a visit service type sets for itself.
  * @param schedule - Omitted, which is what selects this mode.
  * @param service - The visit service type, which may be a draft not yet created.
  * @param onSave - Called with the updated HealthcareService, of the same type as `service`, when the user saves.
@@ -152,8 +138,8 @@ function WarningText(props: { readonly warning: SchedulingParameterWarning; read
 }
 
 /**
- * Edits scheduling parameters, either the ones a visit service type sets for itself along with whether it can
- * be booked at all, or the ones a Schedule overrides for that service.
+ * Edits scheduling parameters, either the ones a visit service type sets for itself or the ones a Schedule
+ * overrides for that service.
  *
  * Working hours belong to ScheduleAvailabilityEditor.
  *
@@ -171,23 +157,15 @@ export function SchedulingParametersEditor<T extends HealthcareService = Healthc
   const [level] = useState(() => getLevelConfig(props));
   const { initial } = level;
   const [values, setValues] = useState(initial);
-  // Absent `active` means active, as scheduling reads it.
-  const [active, setActive] = useState(service.active !== false);
   const [saving, setSaving] = useState(false);
   const reasonId = useId();
   const fieldIdPrefix = useId();
 
   const serviceName = service.name ?? 'this visit service type';
-  const deactivating = !editingSchedule && active !== (service.active !== false);
-
-  let saveLabel = 'Save Settings';
-  if (deactivating) {
-    saveLabel = active ? 'Save and reactivate' : 'Save and deactivate';
-  }
 
   const errors = validateSchedulingParameters(values);
   // Blocking is limited to fields the user changed: a value stored out of range through the API would
-  // otherwise lock someone out of the whole form, deactivating included.
+  // otherwise lock someone out of the whole form.
   const blocking = getBlockingErrors(errors, values, initial);
   const blocked = Object.keys(blocking).length > 0;
   const blockedReason = 'Fix the highlighted fields before saving.';
@@ -205,7 +183,7 @@ export function SchedulingParametersEditor<T extends HealthcareService = Healthc
       if (props.schedule) {
         await props.onSave(setScheduleSchedulingParameterValues(props.schedule, props.service, values));
       } else {
-        await props.onSave({ ...setHealthcareServiceSchedulingParameterValues(props.service, values), active });
+        await props.onSave(setHealthcareServiceSchedulingParameterValues(props.service, values));
       }
     } catch (err) {
       // Reporting a failed write is the caller's; this only keeps the rejection out of the event handler.
@@ -236,7 +214,7 @@ export function SchedulingParametersEditor<T extends HealthcareService = Healthc
         aria-describedby={blocked ? reasonId : undefined}
         data-testid="scheduling-parameters-save"
       >
-        {saveLabel}
+        Save Settings
       </Button>
     </Tooltip>
   );
@@ -276,50 +254,6 @@ export function SchedulingParametersEditor<T extends HealthcareService = Healthc
           </Stack>
         )}
       </Paper>
-
-      {/* Schedule.active switches off the whole calendar, which is more than one service's override decides. */}
-      {!editingSchedule && (
-        <Paper withBorder radius="md" p="md" data-testid="scheduling-parameters-status">
-          <Group gap="sm" wrap="nowrap">
-            <Switch
-              checked={active}
-              onChange={(e) => setActive(e.currentTarget.checked)}
-              color="green.6"
-              withThumbIndicator={false}
-              aria-label={`${serviceName} is active`}
-              data-testid="scheduling-parameters-active"
-            />
-            <Text fw={500}>Active</Text>
-            <Badge color={active ? 'green' : 'gray'} variant="light">
-              {active ? 'Bookable' : 'Not bookable'}
-            </Badge>
-          </Group>
-
-          {!active && (
-            <>
-              <Divider my="lg" />
-              <Alert
-                color="yellow"
-                variant="light"
-                icon={<IconAlertTriangle />}
-                data-testid="scheduling-parameters-deactivate-warning"
-              >
-                <List size="sm">
-                  <List.Item>New bookings stop on every calendar offering {serviceName}.</List.Item>
-                  <List.Item>Existing appointments are kept, and can still be cancelled.</List.Item>
-                  <List.Item>Appointments currently on hold can no longer be confirmed.</List.Item>
-                </List>
-              </Alert>
-            </>
-          )}
-
-          {active && service.active === false && (
-            <Text c="dimmed" size="sm" mt="md">
-              Booking resumes as soon as this is saved.
-            </Text>
-          )}
-        </Paper>
-      )}
 
       {blocked && (
         <VisuallyHidden id={reasonId} data-testid="scheduling-parameters-blocked">

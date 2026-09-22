@@ -26,8 +26,6 @@ export default {
   decorators: [withDocument],
 } as Meta;
 
-const InactiveService: WithId<HealthcareService> = { ...FullyConfiguredService, active: false };
-
 const InjectionClinic = clearHealthcareServiceSchedulingParameter(
   buildSchedulableService({
     id: 'overbooked',
@@ -121,14 +119,6 @@ export const DefaultsOnly = (): JSX.Element => (
 DefaultsOnly.parameters = {
   heading:
     "A visit type that sets nothing: every field shows scheduling's default, and neither time zone field is offered",
-};
-
-export const Inactive = (): JSX.Element => (
-  <SchedulingParametersEditor service={InactiveService} onSave={action('onSave')} />
-);
-Inactive.parameters = {
-  heading:
-    'A deactivated visit type. The Active switch is on this level only, and turning it back on relabels the save',
 };
 
 export const OverbookingWithBuffers = (): JSX.Element => (

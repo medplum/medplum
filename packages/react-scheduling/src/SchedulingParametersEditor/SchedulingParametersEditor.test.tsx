@@ -199,11 +199,9 @@ describe('SchedulingParametersEditor', () => {
     const { saved } = renderEditor(service);
 
     expect(saveButton()).not.toHaveAttribute('aria-disabled');
-    fireEvent.click(screen.getByTestId('scheduling-parameters-active'));
     fireEvent.click(saveButton());
 
     await waitFor(() => expect(saved).toHaveLength(1));
-    expect(saved[0].active).toBe(false);
   });
 
   test('warns that capacity above one is defeated by buffers, and still saves', async () => {
@@ -253,32 +251,15 @@ describe('SchedulingParametersEditor', () => {
     expect(getHealthcareServiceSchedulingParameterValues(saved[0]).duration).toBeUndefined();
   });
 
-  test('deactivating names every consequence, including the one nobody expects', async () => {
-    const { saved } = renderEditor(FullyConfiguredService);
-
-    fireEvent.click(screen.getByTestId('scheduling-parameters-active'));
-
-    const warning = await screen.findByTestId('scheduling-parameters-deactivate-warning');
-    expect(warning).toHaveTextContent('New bookings stop');
-    expect(warning).toHaveTextContent('can still be cancelled');
-    expect(warning).toHaveTextContent('on hold can no longer be confirmed');
-    expect(saveButton()).toHaveTextContent('Save and deactivate');
-
-    fireEvent.click(saveButton());
-    await waitFor(() => expect(saved).toHaveLength(1));
-    expect(saved[0].active).toBe(false);
-  });
-
-  test('reactivating writes active explicitly, since an absent flag already means active', async () => {
+  test('leaves active alone, since booking is not a scheduling parameter', async () => {
     const inactive: WithId<HealthcareService> = { ...FullyConfiguredService, active: false };
     const { saved } = renderEditor(inactive);
 
-    fireEvent.click(screen.getByTestId('scheduling-parameters-active'));
-    expect(saveButton()).toHaveTextContent('Save and reactivate');
+    expect(missingField('active')).toBeNull();
     fireEvent.click(saveButton());
 
     await waitFor(() => expect(saved).toHaveLength(1));
-    expect(saved[0].active).toBe(true);
+    expect(saved[0].active).toBe(false);
   });
 
   interface StoredZones {
@@ -632,10 +613,9 @@ describe('SchedulingParametersEditor on a Schedule', () => {
     expect(getScheduleSchedulingParameterValues(saved[0], service).alignmentInterval).toBeUndefined();
   });
 
-  test('has no Active switch, and never writes Schedule.active', async () => {
+  test('never writes Schedule.active', async () => {
     const { saved } = renderScheduleEditor({ ...scheduleWith({}), active: false });
 
-    expect(screen.queryByTestId('scheduling-parameters-status')).toBeNull();
     fireEvent.click(saveButton());
 
     await waitFor(() => expect(saved).toHaveLength(1));
