@@ -59,7 +59,8 @@ showing what only that level does. The levels differ in three ways:
   the service sets none.
 - **Warnings.** On a Schedule they judge the values in effect, the override layered over the service, so a
   capacity override is checked against the buffers it inherits. A warning about values the calendar does not
-  set is left to the service's editor, since the calendar cannot fix it.
+  set is left to the service's editor, since the calendar cannot fix it. A Schedule also gets one of its own,
+  below.
 
 A service may be a draft with no `id`, so a create flow can seed it, edit its parameters, and create it from
 `onSave`. `onSave` hands back the same type it was given.
@@ -156,6 +157,17 @@ A sub-extension carrying no value counts as unset: nothing is shown, and the nex
 Clearing `alignmentTimezone` is worth understanding. Start times go back to being counted from UTC midnight,
 so local start times shift by an hour either side of a daylight saving change, which is the shift the
 parameter exists to prevent.
+
+## Overrides that break booking across calendars
+
+Calendars booked together must agree on `duration`, `alignmentInterval`, `alignmentOffset` and
+`alignmentTimezone`, which is why a Schedule is offered none of the four unless it already overrides one.
+Where it does, the form warns that the calendar cannot be booked alongside calendars following the visit
+type, and the warning names every field out of step and jumps to the first. Matching the visit type's value
+counts as agreeing, so only a genuine difference warns, and clearing the field clears the warning.
+
+Buffers and capacity are deliberately not covered. Calendars need not agree on those, and an empty field
+already names what it inherits, so an override that differs is legible without being flagged.
 
 ## Seeded once
 

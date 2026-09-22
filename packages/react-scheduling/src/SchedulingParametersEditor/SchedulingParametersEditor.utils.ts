@@ -42,6 +42,22 @@ export const HIDDEN_PARAMETERS: Record<SchedulingParameterLevel, readonly Schedu
   schedule: ['duration', 'alignmentInterval', 'alignmentOffset', 'alignmentTimezone'],
 };
 
+/**
+ * The parameters every Schedule booked together must agree on, with the label the form gives each. A calendar
+ * setting one to anything but what the visit type hands down drops out of that set.
+ * @see https://www.medplum.com/docs/scheduling/defining-availability#the-scheduling-parameters-extension
+ */
+const CROSS_SCHEDULE_PARAMETERS: readonly { key: SchedulingParameter; label: string }[] = [
+  { key: 'duration', label: 'Duration' },
+  { key: 'alignmentInterval', label: 'Interval' },
+  { key: 'alignmentOffset', label: 'Offset' },
+  { key: 'alignmentTimezone', label: 'Alignment time zone' },
+];
+
+function listOf(labels: readonly string[]): string {
+  return labels.length < 2 ? (labels[0] ?? '') : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
+}
+
 function withInherited(
   values: SchedulingParameterValues,
   inherited: SchedulingParameterValues
@@ -254,6 +270,27 @@ export function getSchedulingParameterWarnings(
         : 'Duration is not set, so this visit type can only be booked on calendars that set their own duration for this service.',
       focus: { field: 'duration', text: 'Duration' },
     });
+  }
+
+  if (inherited) {
+    // Compared against what a calendar following the visit type would use, which is the visit type's value
+    // where it sets one, since that is what this calendar has to match to be booked alongside them.
+    const mismatched = CROSS_SCHEDULE_PARAMETERS.filter(
+      ({ key }) => stored[key] !== undefined && stored[key] !== (inherited[key] ?? SCHEDULING_PARAMETER_DEFAULTS[key])
+    );
+    if (mismatched.length > 0) {
+      const [first] = mismatched;
+      warnings.push({
+        id: 'cross-schedule-mismatch',
+        inputs: mismatched.map(({ key }) => key),
+        focus: { field: first.key, text: first.label },
+        message:
+          `${listOf(mismatched.map(({ label }) => label))} ${mismatched.length > 1 ? 'differ' : 'differs'} from ` +
+          'the visit type, and calendars booked together must agree on these, so this one cannot be booked ' +
+          `alongside calendars that follow the visit type. Clear the ${mismatched.length > 1 ? 'fields' : 'field'} ` +
+          'to inherit.',
+      });
+    }
   }
 
   if (slotCapacity !== undefined && slotCapacity > 1 && ((bufferBefore ?? 0) > 0 || (bufferAfter ?? 0) > 0)) {

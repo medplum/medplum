@@ -622,6 +622,18 @@ describe('SchedulingParametersEditor on a Schedule', () => {
     expect(saved[0].active).toBe(false);
   });
 
+  test('flags an override of a parameter every calendar must agree on, and clears it when cleared', async () => {
+    renderScheduleEditor(scheduleWith({ alignmentInterval: 15 }));
+
+    const warning = await screen.findByTestId('scheduling-parameters-warning-cross-schedule-mismatch');
+    expect(warning).toHaveTextContent('cannot be booked alongside');
+
+    setField('alignmentInterval', '30');
+    await waitFor(() =>
+      expect(screen.queryByTestId('scheduling-parameters-warning-cross-schedule-mismatch')).toBeNull()
+    );
+  });
+
   test('writes only the overrides entered, leaving availability and other services alone', async () => {
     let schedule = setScheduleSchedulingParameter(scheduleWith({ bufferBefore: 20 }), service, availability);
     schedule = setScheduleSchedulingParameterValues(schedule, otherService, { slotCapacity: 4 });
@@ -833,6 +845,49 @@ describe('scheduling parameter validation', () => {
 
     expect(ids).toContain('alignment-uneven');
     expect(ids).toContain('alignment-dst-shift');
+  });
+
+  describe('a calendar override of a parameter every schedule must agree on', () => {
+    const inherited = { duration: 30, alignmentInterval: 30, alignmentOffset: 0 };
+    const ids = (values: object): string[] =>
+      getSchedulingParameterWarnings(values, {}, inherited).map((warning) => warning.id);
+    const mismatch = (values: object): string | undefined =>
+      getSchedulingParameterWarnings(values, {}, inherited).find((warning) => warning.id === 'cross-schedule-mismatch')
+        ?.message;
+
+    test('warns when the calendar sets a duration of its own', () => {
+      expect(mismatch({ duration: 45 })).toContain('Duration differs from the visit type');
+      expect(mismatch({ duration: 45 })).toContain('cannot be booked alongside');
+    });
+
+    test('says nothing when the override repeats what the visit type already sets', () => {
+      expect(ids({ duration: 30, alignmentInterval: 30 })).not.toContain('cross-schedule-mismatch');
+    });
+
+    test('compares against the default where the visit type sets nothing', () => {
+      expect(mismatch({ alignmentTimezone: 'America/Denver' })).toContain('Alignment time zone differs');
+      expect(ids({ alignmentOffset: 0 })).not.toContain('cross-schedule-mismatch');
+    });
+
+    test('names every mismatched field, and jumps to the first', () => {
+      const warning = getSchedulingParameterWarnings({ duration: 45, alignmentInterval: 15 }, {}, inherited).find(
+        (candidate) => candidate.id === 'cross-schedule-mismatch'
+      );
+
+      expect(warning?.message).toContain('Duration and Interval differ from the visit type');
+      expect(warning?.message).toContain('Clear the fields');
+      expect(warning?.focus).toEqual({ field: 'duration', text: 'Duration' });
+    });
+
+    test('says nothing about buffers or capacity, which calendars need not agree on', () => {
+      expect(ids({ bufferBefore: 20, slotCapacity: 2 })).not.toContain('cross-schedule-mismatch');
+    });
+
+    test('is not raised on the visit type itself, which has nothing to be out of step with', () => {
+      expect(getSchedulingParameterWarnings({ duration: 45 }, {}).map((warning) => warning.id)).not.toContain(
+        'cross-schedule-mismatch'
+      );
+    });
   });
 
   test('says nothing about the interval when it matches the duration', () => {

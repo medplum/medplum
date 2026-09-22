@@ -86,7 +86,7 @@ export const OverridingTheGrid = (): JSX.Element => (
 );
 OverridingTheGrid.parameters = {
   heading:
-    'A calendar already overriding its interval, so that field is shown and can be cleared. Offset, which it does not override, stays hidden',
+    'A calendar already overriding its interval, so that field is shown and can be cleared. Offset, which it does not override, stays hidden, and the interval disagreeing with the visit type is warned about',
 };
 
 export const CapacityAgainstInheritedBuffers = (): JSX.Element => (
