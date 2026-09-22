@@ -328,14 +328,11 @@ describe('EncounterCoverageEligibilityModal', () => {
       await setup();
 
       await waitFor(() => {
-        expect(medplum.searchOne).toHaveBeenCalledWith(
-          'PractitionerRole',
-          {
-            practitioner: `Practitioner/${DrAliceSmith.id}`,
-            active: 'true',
-            'organization.identifier': `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`,
-          }
-        );
+        expect(medplum.searchOne).toHaveBeenCalledWith('PractitionerRole', {
+          practitioner: `Practitioner/${DrAliceSmith.id}`,
+          active: 'true',
+          'organization.identifier': `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`,
+        });
       });
     });
 
