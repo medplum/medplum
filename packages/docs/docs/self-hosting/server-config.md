@@ -763,6 +763,12 @@ Optional flag to enable custom functions in Bots.
 
 **Default:** `false`
 
+### storeBotInput
+
+Optional flag to write the input of every bot invocation to binary storage (e.g. S3) under `bot/<projectId>/<yyyy>/<mm>/<dd>/`, for debugging and analytics. Set to `false` to disable.
+
+**Default:** `true`
+
 ### AWS Secrets
 
 Postgres and Redis connection details have special cases due to the way CDK exposes them.
