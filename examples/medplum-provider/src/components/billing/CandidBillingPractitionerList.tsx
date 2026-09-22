@@ -20,12 +20,12 @@ const DEFAULT_SEARCH: SearchRequest = {
   offset: 0,
 };
 
-export interface BillingPractitionerListProps {
+export interface CandidBillingPractitionerListProps {
   readonly savedVersion: number;
   readonly onSelectPractitioner: (practitioner: WithId<Practitioner>, roles: WithId<PractitionerRole>[]) => void;
 }
 
-export function BillingPractitionerList(props: BillingPractitionerListProps): JSX.Element {
+export function CandidBillingPractitionerList(props: CandidBillingPractitionerListProps): JSX.Element {
   const { savedVersion, onSelectPractitioner } = props;
   const medplum = useMedplum();
   const [search, setSearch] = useState<SearchRequest>(DEFAULT_SEARCH);

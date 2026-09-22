@@ -57,20 +57,19 @@
   padding-block: 15px;
 }
 
-/* Header text style for headers that show a plain title (no pill tabs). Matches
-   the pill-tab text style (14px / weight 450) so a header that reads "Recent" or
-   "Patients" sits at the same optical weight as a header that reads
-   "My Tasks" / "All Tasks" pill-tab pair.
+/* Header text style for headers that show a plain title (no pill tabs). Reads as
+   the section title of the list, so it is a step larger and heavier than the row
+   text below it.
 
-   `padding-inline-start` matches the internal horizontal padding of a pill
-   tab, so when this element lives in a `pl="xs"` header bar it lines up
-   horizontally with the text of an adjacent pill tab. */
+   `padding-inline-start` lines the title up with the text of the rows: the header
+   bar has `p="md"`, while a row's text sits at `.list` padding (xs) plus the
+   item's own 0.5rem content padding. */
 .headerText {
-  font-size: var(--mantine-font-size-sm);
-  font-weight: 450;
+  font-size: var(--mantine-font-size-md);
+  font-weight: 600;
   color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
   line-height: 1.2;
-  padding-inline-start: var(--mantine-spacing-xs);
+  padding-inline-start: calc(var(--mantine-spacing-xs) + 0.5rem - var(--mantine-spacing-md));
 }
 
 /* Pill-style Tabs used in list headers. CSS-module-scoped — the `:global()`
