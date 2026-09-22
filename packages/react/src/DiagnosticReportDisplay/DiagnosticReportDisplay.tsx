@@ -9,6 +9,7 @@ import {
   formatHumanName,
   formatObservationValue,
   getDisplayString,
+  getHealthGorillaObservationUnit,
   isReference,
 } from '@medplum/core';
 import type {
@@ -17,7 +18,6 @@ import type {
   DiagnosticReport,
   Observation,
   ObservationComponent,
-  ObservationReferenceRange,
   Organization,
   OrganizationContact,
   Patient,
@@ -344,7 +344,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
           <ObservationValueDisplay value={observation} />
         </td>
         <td>
-          <ReferenceRangeDisplay value={observation.referenceRange} />
+          <ReferenceRangeDisplay observation={observation} />
         </td>
         <td>
           {observation.interpretation && observation.interpretation.length > 0 && (
@@ -403,18 +403,30 @@ function ObservationValueDisplay(props: ObservationValueDisplayProps): JSX.Eleme
 }
 
 interface ReferenceRangeProps {
-  readonly value?: ObservationReferenceRange[];
+  readonly observation: Observation | ObservationComponent;
 }
 
+/**
+ * Renders an observation's reference range, followed by its unit if Health Gorilla carried
+ * one in its proprietary extension (see getHealthGorillaObservationUnit) - Quest's own reports
+ * always print that unit trailing the reference range, alone if there's no other range text
+ * (e.g. "titer") or appended to it (e.g. "See Note: titer"), never attached to the value.
+ * @param props - The observation whose reference range (and unit, if any) to display.
+ * @returns The reference range display, or null if there's neither a range nor a unit.
+ */
 function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
-  const range = props.value && props.value.length > 0 && props.value[0];
-  if (!range) {
+  const range = props.observation.referenceRange?.[0];
+  const unit = getHealthGorillaObservationUnit(props.observation);
+  if (!range && !unit) {
     return null;
   }
-  if (range.text) {
-    return <>{range.text}</>;
-  }
-  return <RangeDisplay value={range} />;
+  return (
+    <>
+      {range && (range.text ? range.text : <RangeDisplay value={range} />)}
+      {range && unit && ' '}
+      {unit}
+    </>
+  );
 }
 
 /**

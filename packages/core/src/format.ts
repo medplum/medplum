@@ -543,11 +543,7 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
   } else {
     const valueString = ensureString(obs.valueString);
     if (valueString) {
-      const normalized = normalizeObxTemplateValue(valueString);
-      // "DNR" is matched exactly by isDoNotReportObservation to hide the row entirely -
-      // never append a unit to it, or that check silently stops suppressing the row.
-      const unit = normalized !== 'DNR' ? getHealthGorillaObservationUnit(obs) : undefined;
-      result.push(unit ? `${normalized} ${unit}` : normalized);
+      result.push(normalizeObxTemplateValue(valueString));
     }
   }
 
@@ -612,11 +608,13 @@ const HEALTH_GORILLA_OBSERVATION_UNIT_EXTENSION_URL =
 /**
  * Health Gorilla carries an OBX-6 unit (e.g. "titer", "%") that doesn't fit valueQuantity -
  * the value itself isn't numeric (e.g. "1:80") - in a proprietary extension instead of on the
- * value. Nothing else reads that extension, so the unit silently never renders anywhere.
+ * value. Quest's own reports always print this unit trailing the reference range (alone if
+ * there's no other range text, e.g. "titer", or appended to it, e.g. "See Note: titer") -
+ * never attached to the value - so callers should render it there, not in the value display.
  * @param obs - A FHIR Observation resource or component.
  * @returns The unit string, or undefined if the observation doesn't carry one.
  */
-function getHealthGorillaObservationUnit(obs: Observation | ObservationComponent): string | undefined {
+export function getHealthGorillaObservationUnit(obs: Observation | ObservationComponent): string | undefined {
   const extension = obs.extension?.find((e) => e.url === HEALTH_GORILLA_OBSERVATION_UNIT_EXTENSION_URL);
   return ensureString(extension?.valueString);
 }

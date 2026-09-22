@@ -294,6 +294,42 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.queryByText('Previously reported as 167 mg/dL on 2/3/2023, 8:40:14 PM')).toBeNull();
   });
 
+  test('Renders reference range unit from Health Gorilla extension', async () => {
+    const healthGorillaUnitExtension = [
+      { url: 'https://www.healthgorilla.com/fhir/StructureDefinition/observation-unit', valueString: 'titer' },
+    ];
+    const withExistingRange = await medplum.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'ANA TITER' },
+      valueString: '1:320',
+      referenceRange: [{ text: 'See Note:' }],
+      extension: healthGorillaUnitExtension,
+    });
+    const withoutExistingRange = await medplum.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'REDUCING SUBSTANCES' },
+      valueString: '1/2',
+      extension: healthGorillaUnitExtension,
+    });
+    const report = await medplum.createResource<DiagnosticReport>({
+      resourceType: 'DiagnosticReport',
+      status: 'final',
+      code: { text: 'Unit extension test' },
+      result: [createReference(withExistingRange), createReference(withoutExistingRange)],
+    });
+
+    await act(async () => {
+      setup({ value: report });
+    });
+
+    // Unit trails existing reference range text, matching Quest's own report layout.
+    expect(screen.getByText('See Note: titer')).not.toBeNull();
+    // Unit renders alone when there's no other reference range text.
+    expect(screen.getByText('titer')).not.toBeNull();
+  });
+
   test('Renders specimen note', async () => {
     await act(async () => {
       setup({ value: syntheaReport });
