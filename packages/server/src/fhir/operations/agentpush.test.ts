@@ -21,7 +21,7 @@ import { loadTestConfig } from '../../config/loader';
 import * as pubsub from '../../pubsub';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 import type { AgentPushParameters } from './agentpush';
-import { getCallbackChannelFromId } from './utils/agentcallback';
+import { getAgentCallbackChannel } from './utils/agentcallback';
 import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
 
 describe('Agent Push', () => {
@@ -321,7 +321,7 @@ describe('Agent Push', () => {
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
     await pubsub.publish(
-      getCallbackChannelFromId(transmitRequest.callback as string),
+      getAgentCallbackChannel(),
       JSON.stringify({
         ...transmitRequest,
         type: 'agent:transmit:response',
@@ -386,7 +386,7 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
     await pubsub.publish(
-      getCallbackChannelFromId(transmitRequest.callback as string),
+      getAgentCallbackChannel(),
       JSON.stringify({
         ...transmitRequest,
         type: 'agent:transmit:response',
@@ -451,7 +451,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
     await pubsub.publish(
-      getCallbackChannelFromId(transmitRequest.callback as string),
+      getAgentCallbackChannel(),
       JSON.stringify({
         ...transmitRequest,
         type: 'agent:transmit:response',
@@ -515,7 +515,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
     await pubsub.publish(
-      getCallbackChannelFromId(transmitRequest.callback as string),
+      getAgentCallbackChannel(),
       JSON.stringify({
         ...transmitRequest,
         type: 'agent:transmit:response',
