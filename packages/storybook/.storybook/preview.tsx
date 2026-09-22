@@ -28,6 +28,10 @@ export const parameters = {
   docs: {
     codePanel: true,
   },
+  chromatic: {
+    // Don't flag visual diffs based on `<Loader/>` animations
+    ignoreSelectors: ['.mantine-Loader-root'],
+  },
 };
 
 export const globalTypes = {

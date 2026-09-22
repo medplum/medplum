@@ -64,7 +64,7 @@
     "raw-loader": "4.0.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "marked": "18.0.12",
+    "marked": "18.0.13",
     "react-intersection-observer": "11.0.1",
     "typescript": "6.0.3",
     "url-loader": "4.1.1"

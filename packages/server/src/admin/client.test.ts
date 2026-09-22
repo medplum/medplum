@@ -102,4 +102,73 @@ describe('Client admin', () => {
 
     expect(projectId).toBe(project.id);
   });
+
+  test('Cannot override server-controlled fields', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Bob',
+        lastName: 'Jones',
+        projectName: 'Bob Project',
+        email: `bob${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Attempt to override "meta" and "resourceType" via the request body
+    const otherProjectId = randomUUID();
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/client')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        name: 'Bob client',
+        resourceType: 'Patient',
+        meta: {
+          project: otherProjectId,
+          tag: [{ system: 'http://example.com', code: 'test' }],
+        },
+      });
+    expect(res).toHaveStatus(201);
+    expect(res.body.resourceType).toBe('ClientApplication');
+    expect(res.body.secret).toHaveLength(64);
+
+    // The client stays in the caller's project, and the caller-supplied tag is preserved
+    expect(res.body.meta.project).toBe(project.id);
+    expect(res.body.meta.tag).toStrictEqual([{ system: 'http://example.com', code: 'test' }]);
+
+    // The project admin can still read the client
+    const res2 = await request(app)
+      .get('/fhir/R4/ClientApplication/' + res.body.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2).toHaveStatus(200);
+    expect(res2.body.id).toBe(res.body.id);
+
+    // ...and still find it by search
+    const res3 = await request(app)
+      .get('/fhir/R4/ClientApplication?name=Bob client')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3).toHaveStatus(200);
+    expect(res3.body.entry?.map((e: BundleEntry<ClientApplication>) => e.resource?.id)).toContain(res.body.id);
+  });
+
+  test('Create client with caller-supplied secret', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Dave',
+        lastName: 'Jones',
+        projectName: 'Dave Project',
+        email: `dave${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/client')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({ name: 'Dave client', secret: 'dave-client-secret' });
+    expect(res).toHaveStatus(201);
+    expect(res.body.secret).toBe('dave-client-secret');
+    expect(res.body.meta.project).toBe(project.id);
+  });
 });
