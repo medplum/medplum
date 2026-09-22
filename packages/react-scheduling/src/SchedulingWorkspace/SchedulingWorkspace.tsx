@@ -149,12 +149,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setCandidatesLoading(true);
     Promise.all(
       BOOKABLE_ACTOR_TYPES.map(async (actorType) => {
+        // We search for a large number of schedule candidates here because we
+        // do client-side filtering based on locations in the list. Follow up:
+        // https://github.com/medplum/medplum/issues/10618
         const candidates = await searchScheduleCandidates(medplum, selectedService, {
           actorType,
           query: '',
           location: selectedLocation,
           signal: controller.signal,
-          count: 100,
+          count: 250,
         });
         return [actorType, candidates] as const;
       })

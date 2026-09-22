@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MantineThemeColors } from '@mantine/core';
-import { Divider, Stack, Text } from '@mantine/core';
+import { Box, Divider, Stack, Text } from '@mantine/core';
 import { IconMapPinFilled } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { Fragment } from 'react';
@@ -77,7 +77,9 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
 
       {filters && (
         <>
-          {filters}
+          <Box mb="xs" role="group" aria-label="Filter calendars">
+            {filters}
+          </Box>
           <Divider />
         </>
       )}

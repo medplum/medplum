@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Stack } from '@mantine/core';
+import { Stack } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService, Location } from '@medplum/fhirtypes';
 import { ResourceInput } from '@medplum/react';
@@ -78,29 +78,25 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
 
   return (
     <Stack gap="xs">
-      <Box>
-        <ResourceInput<WithId<Location>>
-          resourceType="Location"
-          name="location"
-          label="Location"
-          placeholder="All locations"
-          searchCriteria={LOCATION_SEARCH_CRITERIA}
-          defaultValue={location}
-          onChange={selectLocation}
-          clearable={false}
-        />
-      </Box>
-      <Box>
-        <AppointmentServiceSelect
-          key={serviceFieldKey}
-          label="Visit Type"
-          placeholder="All visit types"
-          required={false}
-          location={location}
-          defaultValue={service}
-          onChange={selectService}
-        />
-      </Box>
+      <ResourceInput<WithId<Location>>
+        resourceType="Location"
+        name="location"
+        label="Location"
+        placeholder="All locations"
+        searchCriteria={LOCATION_SEARCH_CRITERIA}
+        defaultValue={location}
+        onChange={selectLocation}
+        clearable={false}
+      />
+      <AppointmentServiceSelect
+        key={serviceFieldKey}
+        label="Visit Type"
+        placeholder="All visit types"
+        required={false}
+        location={location}
+        defaultValue={service}
+        onChange={selectService}
+      />
     </Stack>
   );
 }
