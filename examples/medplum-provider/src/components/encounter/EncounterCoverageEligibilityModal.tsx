@@ -9,7 +9,7 @@ import {
   Flex,
   Group,
   Loader,
-  Modal,
+  Popover,
   Select,
   SimpleGrid,
   Skeleton,
@@ -18,22 +18,27 @@ import {
   Title,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference, formatDateTime, getReferenceString } from '@medplum/core';
+import { createReference, formatDateTime, getDisplayString, getReferenceString } from '@medplum/core';
 import type {
   Coverage,
   CoverageEligibilityRequest,
   CoverageEligibilityResponse,
   Organization,
   Patient,
+  Practitioner,
   Reference,
 } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile, useResource, useSearchOne } from '@medplum/react';
+import { Modal, ResourceInput, useMedplum, useMedplumProfile, useResource, useSearchOne } from '@medplum/react';
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { BILLING_ORGANIZATION_IDENTIFIER_VALUE, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM } from '../../utils/billing';
 import { isSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
+import { BillingOrganizationOption } from '../billing/BillingOrganizationOption';
 import { BenefitsTable } from '../insurance/BenefitsTable';
+
+const BILLING_ORGANIZATION_IDENTIFIER = `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`;
 
 interface EncounterCoverageEligibilityModalProps {
   patient: Reference<Patient> | Patient;
@@ -41,13 +46,33 @@ interface EncounterCoverageEligibilityModalProps {
   onClose: () => void;
 }
 
+/**
+ * Shows the patient's active insurance coverages on a visit and runs eligibility checks against them.
+ * The eligibility request's provider defaults to the organization on the signed-in practitioner's
+ * PractitionerRole. When the project has billing organizations, the Check Eligibility button first opens a
+ * picker to bill the check under one of them, or as the practitioner themselves when left empty.
+ * @param props - The EncounterCoverageEligibilityModal React props.
+ * @returns The EncounterCoverageEligibilityModal React node.
+ */
 export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligibilityModalProps): JSX.Element {
   const { patient: patientRef, opened, onClose } = props;
   const medplum = useMedplum();
+  const profile = useMedplumProfile();
   const patient: Patient | undefined = useResource(patientRef);
   const [coverages, setCoverages] = useState<Coverage[]>([]);
   const [coverageLoading, setCoverageLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const [practitionerRole, practitionerRoleLoading] = useSearchOne(
+    'PractitionerRole',
+    profile ? { practitioner: getReferenceString(profile) } : undefined,
+    { enabled: opened && !!profile }
+  );
+  const [anyBillingOrganization] = useSearchOne(
+    'Organization',
+    { identifier: BILLING_ORGANIZATION_IDENTIFIER },
+    { enabled: opened }
+  );
 
   useEffect(() => {
     if (!opened || !patient?.id) {
@@ -89,7 +114,14 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
           {coverages
             .filter((c) => c.id === selectedId)
             .map((coverage) => (
-              <CoverageCard key={coverage.id} coverage={coverage} patient={patient} />
+              <CoverageCard
+                key={coverage.id}
+                coverage={coverage}
+                patient={patient}
+                defaultBillingOrganization={practitionerRole?.organization}
+                canPickBillingOrganization={!!anyBillingOrganization}
+                providerLoading={practitionerRoleLoading}
+              />
             ))}
         </Stack>
       )}
@@ -97,21 +129,33 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
   );
 }
 
+/**
+ * Props for CoverageCard.
+ * @param coverage - The coverage shown and checked.
+ * @param patient - The patient the coverage belongs to.
+ * @param defaultBillingOrganization - The organization on the practitioner's role, billed unless changed.
+ * @param canPickBillingOrganization - Whether the project has billing organizations to choose from.
+ * @param providerLoading - Whether the default billing organization is still being resolved.
+ */
 interface CoverageCardProps {
   coverage: Coverage;
   patient: Reference<Patient> | Patient;
+  defaultBillingOrganization: Reference<Organization> | undefined;
+  canPickBillingOrganization: boolean;
+  providerLoading: boolean;
 }
 
 function CoverageCard(props: CoverageCardProps): JSX.Element {
-  const { coverage, patient: patientRef } = props;
+  const {
+    coverage,
+    patient: patientRef,
+    defaultBillingOrganization,
+    canPickBillingOrganization,
+    providerLoading,
+  } = props;
   const patient = useResource(patientRef);
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const [practitionerRole] = useSearchOne(
-    'PractitionerRole',
-    profile ? { practitioner: getReferenceString(profile) } : undefined,
-    { enabled: !!profile }
-  );
   const [benefitsOpened, { toggle: toggleBenefits }] = useDisclosure(false);
   const [eligibilityResponse, setEligibilityResponse] = useState<CoverageEligibilityResponse | undefined>();
   const [latestRequest, setLatestRequest] = useState<CoverageEligibilityRequest | undefined>();
@@ -151,10 +195,12 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
     fetchLatestRequestAndResponse().catch(showErrorNotification);
   }, [fetchLatestRequestAndResponse]);
 
-  const handleCheckEligibility = async (): Promise<void> => {
-    if (!practitionerRole || !coverage || !patient) {
+  const handleCheckEligibility = async (billingOrganization: Reference<Organization> | undefined): Promise<void> => {
+    if (!profile || !coverage || !patient) {
       return;
     }
+    const provider: Reference<Organization | Practitioner> =
+      billingOrganization ?? createReference(profile as Practitioner);
     setCheckingEligibility(true);
     try {
       const requestBody: CoverageEligibilityRequest = {
@@ -164,7 +210,7 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
         created: new Date().toISOString(),
         patient: createReference(patient),
         insurer: coverage.payor?.[0] as Reference<Organization>,
-        provider: practitionerRole.organization,
+        provider,
         insurance: [{ focal: true, coverage: createReference(coverage) }],
       };
       const savedRequest = await medplum.createResource(requestBody);
@@ -192,9 +238,14 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
           </Text>
         </Box>
         <Group gap="xs" style={{ flexShrink: 0 }}>
-          <Button size="xs" variant="light" color="blue" loading={checkingEligibility} onClick={handleCheckEligibility}>
-            Check Eligibility
-          </Button>
+          <CheckEligibilityButton
+            loading={checkingEligibility}
+            disabled={providerLoading || !profile}
+            practitionerName={profile ? getDisplayString(profile) : undefined}
+            defaultBillingOrganization={defaultBillingOrganization}
+            canPickBillingOrganization={canPickBillingOrganization}
+            onCheck={(billingOrganization) => handleCheckEligibility(billingOrganization).catch(showErrorNotification)}
+          />
           <Badge color={getStatusColor(coverage.status)} variant="light">
             {capitalize(coverage.status ?? 'unknown')}
           </Badge>
@@ -258,6 +309,119 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
         </Collapse>
       </Box>
     </Stack>
+  );
+}
+
+/**
+ * Props for CheckEligibilityButton.
+ * @param loading - Whether a check is running.
+ * @param disabled - Whether the button is disabled.
+ * @param practitionerName - The signed-in practitioner's name, shown as the alternative to an organization.
+ * @param defaultBillingOrganization - The organization billed when the picker is not offered.
+ * @param canPickBillingOrganization - Whether to offer the billing organization picker before running.
+ * @param onCheck - Runs the check under the given billing organization, or the practitioner when undefined.
+ */
+interface CheckEligibilityButtonProps {
+  loading: boolean;
+  disabled: boolean;
+  practitionerName: string | undefined;
+  defaultBillingOrganization: Reference<Organization> | undefined;
+  canPickBillingOrganization: boolean;
+  onCheck: (billingOrganization: Reference<Organization> | undefined) => void;
+}
+
+/**
+ * The Check Eligibility action. Without billing organizations it runs the check right away under the default
+ * organization. With them, it opens a popover to pick a billing organization first. The picker opens empty
+ * every time, and running with nothing picked bills under the practitioner themselves. The popover ignores
+ * outside clicks because the organization dropdown renders in a portal; Cancel or Escape dismisses it.
+ * @param props - The CheckEligibilityButton React props.
+ * @returns The CheckEligibilityButton React node.
+ */
+function CheckEligibilityButton(props: CheckEligibilityButtonProps): JSX.Element {
+  const { loading, disabled, practitionerName, defaultBillingOrganization, canPickBillingOrganization, onCheck } =
+    props;
+  const [pickerOpened, setPickerOpened] = useState(false);
+  const [chosenOrganization, setChosenOrganization] = useState<Organization>();
+
+  const openPicker = (): void => {
+    setChosenOrganization(undefined);
+    setPickerOpened(true);
+  };
+
+  if (!canPickBillingOrganization) {
+    return (
+      <Button
+        size="xs"
+        variant="light"
+        color="blue"
+        loading={loading}
+        disabled={disabled}
+        onClick={() => onCheck(defaultBillingOrganization)}
+      >
+        Check Eligibility
+      </Button>
+    );
+  }
+
+  return (
+    <Popover
+      opened={pickerOpened}
+      onChange={setPickerOpened}
+      position="bottom-end"
+      width={340}
+      shadow="md"
+      closeOnClickOutside={false}
+      withinPortal={false}
+    >
+      <Popover.Target>
+        <Button
+          size="xs"
+          variant="light"
+          color="blue"
+          loading={loading}
+          disabled={disabled}
+          rightSection={<IconChevronDown size={14} />}
+          onClick={openPicker}
+        >
+          Check Eligibility
+        </Button>
+      </Popover.Target>
+      <Popover.Dropdown>
+        <Stack gap="sm">
+          <Box>
+            <ResourceInput<Organization>
+              label="Billing organization"
+              name="billing-organization"
+              resourceType="Organization"
+              placeholder="Select organization to run check"
+              searchCriteria={{ identifier: BILLING_ORGANIZATION_IDENTIFIER }}
+              itemComponent={BillingOrganizationOption}
+              onChange={setChosenOrganization}
+            />
+            <Text size="xs" c="dimmed" mt={4}>
+              {chosenOrganization
+                ? `The check runs under ${getDisplayString(chosenOrganization)}.`
+                : `Leave empty to run the check as ${practitionerName ?? 'the practitioner'}.`}
+            </Text>
+          </Box>
+          <Group justify="flex-end" gap="xs">
+            <Button size="xs" variant="subtle" color="gray" onClick={() => setPickerOpened(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="xs"
+              onClick={() => {
+                setPickerOpened(false);
+                onCheck(toReference(chosenOrganization));
+              }}
+            >
+              {chosenOrganization ? 'Run as Organization' : 'Run as Practitioner'}
+            </Button>
+          </Group>
+        </Stack>
+      </Popover.Dropdown>
+    </Popover>
   );
 }
 
@@ -341,4 +505,13 @@ function getStatusColor(status: string | undefined): string {
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
+ * Reference to a billing organization the user picked, or undefined when nothing is picked.
+ * @param organization - The picked organization, or undefined when empty.
+ * @returns The reference, or undefined.
+ */
+function toReference(organization: Organization | undefined): Reference<Organization> | undefined {
+  return organization ? createReference(organization) : undefined;
 }

@@ -2,17 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type {
   Coverage,
   CoverageEligibilityRequest,
   CoverageEligibilityResponse,
+  Organization,
   PractitionerRole,
 } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient, TestOrganization } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { JSX } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { BILLING_ORGANIZATION_IDENTIFIER_VALUE, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM } from '../../utils/billing';
 import { EncounterCoverageEligibilityModal } from './EncounterCoverageEligibilityModal';
 
 const mockCoverage: WithId<Coverage> = {
@@ -40,6 +44,13 @@ const mockPractitionerRole: WithId<PractitionerRole> = {
   organization: { reference: `Organization/${TestOrganization.id}` },
 };
 
+const mockBillingOrganization: WithId<Organization> = {
+  resourceType: 'Organization',
+  id: 'billing-org-123',
+  name: 'Springfield Billing Group',
+  identifier: [{ system: MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM, value: BILLING_ORGANIZATION_IDENTIFIER_VALUE }],
+};
+
 const mockEligibilityRequest: WithId<CoverageEligibilityRequest> = {
   resourceType: 'CoverageEligibilityRequest',
   id: 'req-123',
@@ -63,12 +74,25 @@ const mockEligibilityResponse: WithId<CoverageEligibilityResponse> = {
   request: { reference: `CoverageEligibilityRequest/${mockEligibilityRequest.id}` },
 };
 
-// useSearchOne calls medplum.searchOne; direct medplum.searchResources calls cover
-// Coverage, CoverageEligibilityRequest, and CoverageEligibilityResponse.
-function mockSearchOne(medplum: MockClient, opts: { practitionerRole?: PractitionerRole | undefined } = {}): void {
+/**
+ * Stubs medplum.searchOne, which backs useSearchOne for the PractitionerRole lookup and the billing organization
+ * probe. Coverage, CoverageEligibilityRequest, CoverageEligibilityResponse and the billing organization
+ * autocomplete go through medplum.searchResources instead, stubbed by mockSearchResources.
+ * @param medplum - The mock client to stub.
+ * @param opts - What the stub returns.
+ * @param opts.practitionerRole - The signed-in practitioner's PractitionerRole, if any.
+ * @param opts.billingOrganization - A billing Organization, when the project has one.
+ */
+function mockSearchOne(
+  medplum: MockClient,
+  opts: { practitionerRole?: PractitionerRole | undefined; billingOrganization?: Organization | undefined } = {}
+): void {
   vi.spyOn(medplum, 'searchOne').mockImplementation((async (resourceType: string) => {
     if (resourceType === 'PractitionerRole') {
       return opts.practitionerRole ?? undefined;
+    }
+    if (resourceType === 'Organization') {
+      return opts.billingOrganization ?? undefined;
     }
     return undefined;
   }) as any);
@@ -80,11 +104,15 @@ function mockSearchResources(
     coverages?: Coverage[];
     eligibilityRequests?: CoverageEligibilityRequest[];
     eligibilityResponses?: CoverageEligibilityResponse[];
+    organizations?: Organization[];
   } = {}
 ): void {
   vi.spyOn(medplum, 'searchResources').mockImplementation((async (resourceType: string) => {
     if (resourceType === 'Coverage') {
       return opts.coverages ?? [];
+    }
+    if (resourceType === 'Organization') {
+      return opts.organizations ?? [];
     }
     if (resourceType === 'CoverageEligibilityRequest') {
       return opts.eligibilityRequests ?? [];
@@ -104,16 +132,26 @@ describe('EncounterCoverageEligibilityModal', () => {
     vi.clearAllMocks();
   });
 
-  const setup = async (props: Partial<Parameters<typeof EncounterCoverageEligibilityModal>[0]> = {}): Promise<void> => {
+  type ModalProps = Parameters<typeof EncounterCoverageEligibilityModal>[0];
+
+  const renderModal = (props: Partial<ModalProps>): JSX.Element => (
+    <MedplumProvider medplum={medplum}>
+      <MantineProvider>
+        <EncounterCoverageEligibilityModal patient={HomerSimpson} opened={true} onClose={vi.fn()} {...props} />
+      </MantineProvider>
+    </MedplumProvider>
+  );
+
+  const setup = async (props: Partial<ModalProps> = {}): Promise<(next: Partial<ModalProps>) => Promise<void>> => {
+    let rerender!: ReturnType<typeof render>['rerender'];
     await act(async () => {
-      render(
-        <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <EncounterCoverageEligibilityModal patient={HomerSimpson} opened={true} onClose={vi.fn()} {...props} />
-          </MantineProvider>
-        </MedplumProvider>
-      );
+      rerender = render(renderModal(props)).rerender;
     });
+    return async (next) => {
+      await act(async () => {
+        rerender(renderModal({ ...props, ...next }));
+      });
+    };
   };
 
   describe('modal visibility', () => {
@@ -275,10 +313,150 @@ describe('EncounterCoverageEligibilityModal', () => {
 
       await waitFor(() => {
         expect(medplum.createResource).toHaveBeenCalledWith(
-          expect.objectContaining({ resourceType: 'CoverageEligibilityRequest' })
+          expect.objectContaining({
+            resourceType: 'CoverageEligibilityRequest',
+            provider: { reference: `Organization/${TestOrganization.id}` },
+          })
         );
         expect(medplum.post).toHaveBeenCalledWith(
           medplum.fhirUrl('CoverageEligibilityRequest', mockEligibilityRequest.id, '$submit')
+        );
+      });
+    });
+
+    test('uses the practitioner as provider when there is no PractitionerRole', async () => {
+      mockSearchOne(medplum);
+      const user = userEvent.setup();
+      await setup();
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Check Eligibility' })).toBeEnabled();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
+
+      await waitFor(() => {
+        expect(medplum.createResource).toHaveBeenCalledWith(
+          expect.objectContaining({ provider: createReference(DrAliceSmith) })
+        );
+      });
+    });
+  });
+
+  describe('billing organization', () => {
+    beforeEach(() => {
+      vi.spyOn(medplum, 'createResource').mockResolvedValue(mockEligibilityRequest);
+      vi.spyOn(medplum, 'post').mockResolvedValue(mockEligibilityResponse);
+    });
+
+    test('runs the check directly when the project has no billing organization', async () => {
+      const user = userEvent.setup();
+      mockSearchResources(medplum, { coverages: [mockCoverage] });
+      mockSearchOne(medplum, { practitionerRole: mockPractitionerRole });
+      await setup();
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Check Eligibility' })).toBeEnabled();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
+
+      expect(screen.queryByText('Billing organization')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(medplum.createResource).toHaveBeenCalledWith(
+          expect.objectContaining({ provider: { reference: `Organization/${TestOrganization.id}` } })
+        );
+      });
+    });
+
+    test('opens an empty picker and runs as the practitioner when nothing is picked', async () => {
+      const user = userEvent.setup();
+      mockSearchResources(medplum, { coverages: [mockCoverage] });
+      mockSearchOne(medplum, { practitionerRole: mockPractitionerRole, billingOrganization: mockBillingOrganization });
+      await setup();
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Check Eligibility' })).toBeEnabled();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
+      expect(await screen.findByText('Billing organization')).toBeInTheDocument();
+      expect(screen.getByText('Leave empty to run the check as Alice Smith.')).toBeInTheDocument();
+      expect(screen.queryByText(TestOrganization.name as string)).not.toBeInTheDocument();
+      expect(medplum.createResource).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: 'Run as Practitioner', hidden: true }));
+      await waitFor(() => {
+        expect(medplum.createResource).toHaveBeenCalledWith(
+          expect.objectContaining({ provider: createReference(DrAliceSmith) })
+        );
+        expect(screen.queryByText('Billing organization')).not.toBeInTheDocument();
+      });
+    });
+
+    test('uses the picked billing organization as provider', async () => {
+      const user = userEvent.setup();
+      mockSearchResources(medplum, { coverages: [mockCoverage], organizations: [mockBillingOrganization] });
+      mockSearchOne(medplum, { billingOrganization: mockBillingOrganization });
+      await setup();
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Check Eligibility' })).toBeEnabled();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
+      await user.type(await screen.findByRole('searchbox'), 'Springfield');
+      await user.click(await screen.findByText('Springfield Billing Group'));
+      expect(screen.getByText('The check runs under Springfield Billing Group.')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Run as Organization', hidden: true }));
+
+      await waitFor(() => {
+        expect(medplum.createResource).toHaveBeenCalledWith(
+          expect.objectContaining({ provider: createReference(mockBillingOrganization) })
+        );
+      });
+    });
+
+    test('runs as the practitioner when nothing is picked and there is no PractitionerRole', async () => {
+      const user = userEvent.setup();
+      mockSearchResources(medplum, { coverages: [mockCoverage] });
+      mockSearchOne(medplum, { billingOrganization: mockBillingOrganization });
+      await setup();
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Check Eligibility' })).toBeEnabled();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
+      await user.click(await screen.findByRole('button', { name: 'Run as Practitioner', hidden: true }));
+
+      await waitFor(() => {
+        expect(medplum.createResource).toHaveBeenCalledWith(
+          expect.objectContaining({ provider: createReference(DrAliceSmith) })
+        );
+      });
+    });
+
+    test('opens empty again after a pick was abandoned', async () => {
+      const user = userEvent.setup();
+      mockSearchResources(medplum, { coverages: [mockCoverage], organizations: [mockBillingOrganization] });
+      mockSearchOne(medplum, { practitionerRole: mockPractitionerRole, billingOrganization: mockBillingOrganization });
+      await setup();
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Check Eligibility' })).toBeEnabled();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
+      await user.type(await screen.findByRole('searchbox'), 'Springfield');
+      await user.click(await screen.findByText('Springfield Billing Group'));
+      expect(screen.getByText('The check runs under Springfield Billing Group.')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Cancel', hidden: true }));
+      await waitFor(() => {
+        expect(screen.queryByText('Billing organization')).not.toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
+      await screen.findByText('Billing organization');
+      expect(screen.queryByText('Springfield Billing Group')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Run as Practitioner', hidden: true }));
+      await waitFor(() => {
+        expect(medplum.createResource).toHaveBeenCalledWith(
+          expect.objectContaining({ provider: createReference(DrAliceSmith) })
         );
       });
     });
