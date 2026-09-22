@@ -209,12 +209,12 @@ describe('CoveragePage', () => {
       }
       setup(uhc.id, undefined, '?_count=2');
 
+      const requestPath = `/Patient/${patient.id}/Coverage/${uhc.id}/CoverageEligibilityRequest/`;
+      await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(requestPath));
       await user.click(await screen.findByRole('button', { name: '2' }));
 
       await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('_offset=2'));
-      expect(screen.getByTestId('location')).toHaveTextContent(
-        `/Patient/${patient.id}/Coverage/${uhc.id}/CoverageEligibilityRequest/`
-      );
+      await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(requestPath));
     });
   });
 
