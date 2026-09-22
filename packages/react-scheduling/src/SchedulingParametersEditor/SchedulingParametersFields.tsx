@@ -100,10 +100,15 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
     setValue(key, Number.isNaN(value) ? undefined : value);
   }
 
-  function minutesField(key: NumericParameter, label: string, min: number, description?: string): JSX.Element | null {
+  function minutesField(
+    key: NumericParameter,
+    label: string,
+    options: { min: number; description?: string }
+  ): JSX.Element | null {
     if (!shows(key)) {
       return null;
     }
+    const { min, description } = options;
     return (
       <NumberInput
         key={key}
@@ -191,18 +196,16 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
   return (
     <Stack gap="xl">
       {group('Length and spacing', [
-        minutesField('duration', 'Duration', 1),
-        minutesField('bufferBefore', 'Buffer before', 0),
-        minutesField('bufferAfter', 'Buffer after', 0),
+        minutesField('duration', 'Duration', { min: 1 }),
+        minutesField('bufferBefore', 'Buffer before', { min: 0 }),
+        minutesField('bufferAfter', 'Buffer after', { min: 0 }),
       ])}
       {group('Start times', [
-        minutesField('alignmentInterval', 'Interval', 1, 'Start times are this far apart'),
-        minutesField(
-          'alignmentOffset',
-          'Offset',
-          0,
-          'Pushes every start later, so 5 turns 9:00 and 9:30 into 9:05 and 9:35'
-        ),
+        minutesField('alignmentInterval', 'Interval', { min: 1, description: 'Start times are this far apart' }),
+        minutesField('alignmentOffset', 'Offset', {
+          min: 0,
+          description: 'Pushes every start later, so 5 turns 9:00 and 9:30 into 9:05 and 9:35',
+        }),
         timezoneField('alignmentTimezone', 'Alignment time zone', 'Whose midnight the start times are counted from'),
       ])}
       {group('Booking', [
