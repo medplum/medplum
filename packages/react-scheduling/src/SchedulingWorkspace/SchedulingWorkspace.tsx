@@ -262,11 +262,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const selectAppointment = useCallback(
     (appointment: Appointment): void => {
       if (appointment.id) {
+        if (appointment.id !== selectedAppointmentId) {
+          setRescheduleFinderOpen(false);
+        }
         closeBooking();
         setSelectedAppointmentId(appointment.id);
       }
     },
-    [closeBooking]
+    [closeBooking, selectedAppointmentId]
   );
 
   const closeAppointment = useCallback((): void => {
