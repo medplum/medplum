@@ -28,10 +28,16 @@ export type SchedulingParameterLevel = 'service' | 'schedule';
 export type SchedulingParameter = keyof SchedulingParameterValues;
 
 /**
- * The parameters the scheduling docs recommend against setting at each level. Calendars booked together must
- * agree on duration and the alignment grid, and a visit type offered in several places has no one time zone.
+ * The parameters a level offers a field for only once it already stores one. Most of these follow the
+ * scheduling docs: calendars booked together must agree on duration and the alignment grid, so a Schedule is
+ * steered away from all four, and a visit type offered in several places has no one `timezone`.
+ *
+ * `alignmentTimezone` on a service is the exception, and is not here because the docs discourage it. They
+ * recommend setting it on the HealthcareService. It is held back so that a visit type's two time zone fields
+ * appear together, since showing either one shows both: offering this one unconditionally would pull
+ * `timezone` on screen with it, against the docs.
  */
-export const DISCOURAGED_PARAMETERS: Record<SchedulingParameterLevel, readonly SchedulingParameter[]> = {
+export const HIDDEN_PARAMETERS: Record<SchedulingParameterLevel, readonly SchedulingParameter[]> = {
   service: ['timezone', 'alignmentTimezone'],
   schedule: ['duration', 'alignmentInterval', 'alignmentOffset', 'alignmentTimezone'],
 };
@@ -45,8 +51,8 @@ function withInherited(
 }
 
 /**
- * The fields to offer at a level. A discouraged parameter is offered only when the level already stores it,
- * so a stored value is never in force unseen and can always be cleared.
+ * The fields to offer at a level. A hidden parameter is offered only when the level already stores it, so a
+ * stored value is never in force unseen and can always be cleared.
  * @param level - Where the parameters are stored.
  * @param initial - The parameters the form loaded.
  * @returns The parameters to render a field for.
@@ -55,9 +61,9 @@ export function getVisibleParameters(
   level: SchedulingParameterLevel,
   initial: SchedulingParameterValues
 ): Set<SchedulingParameter> {
-  const discouraged = DISCOURAGED_PARAMETERS[level];
+  const hidden = HIDDEN_PARAMETERS[level];
   const visible = new Set<SchedulingParameter>(
-    FLAT_PARAMETERS.filter((key) => !discouraged.includes(key) || initial[key] !== undefined)
+    FLAT_PARAMETERS.filter((key) => !hidden.includes(key) || initial[key] !== undefined)
   );
   // A visit type offers both time zones or neither.
   if (level === 'service' && (visible.has('timezone') || visible.has('alignmentTimezone'))) {

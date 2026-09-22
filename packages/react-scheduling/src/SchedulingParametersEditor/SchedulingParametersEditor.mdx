@@ -141,10 +141,10 @@ parameter removes the `SchedulingParameters` extension rather than leaving an em
 
 ## Time zones on a service
 
-Neither `timezone` nor `alignmentTimezone` belongs on a visit type by default. A visit type is booked across
-calendars that may sit in different places, so `timezone` belongs on each Schedule or on its actor.
-`alignmentTimezone` is left unset, which counts start times from UTC midnight, the one anchor every calendar
-already agrees on. A visit type storing neither is therefore offered neither field.
+`timezone` does not belong on a visit type. It is booked across calendars that may sit in different places,
+so the zone belongs on each Schedule or on its actor. `alignmentTimezone` is a different matter, and the
+scheduling docs recommend setting it here, but the form holds it back until the visit type stores one so that
+both time zone fields can appear together. A visit type storing neither is therefore offered neither field.
 
 Scheduling does honor either one stored on a HealthcareService, so a stored value is shown rather than left
 to act unseen. A visit type storing either shows both fields, each a searchable picker over the time zones
