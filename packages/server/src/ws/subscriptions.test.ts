@@ -607,11 +607,11 @@ describe('WebSocket Subscription', () => {
         .expectClosed();
     }));
 
-  test('Receives v1 sub event payload', () =>
+  test('Receives sub event payload', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
-        name: [{ given: ['V1'], family: 'Test' }],
+        name: [{ given: ['SubEvent'], family: 'Test' }],
       });
 
       const subscription = await repo.createResource<Subscription>({
@@ -644,9 +644,8 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive = (await isSubscriptionActive(project.id, 'Patient', `Subscription/${subscription.id}`)) === 1;
           }
-          // Publish a v1 payload (array of [resource, subscriptionId, options] tuples)
-          const v1Payload = [[patient, subscription.id, { includeResource: true }]];
-          await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(v1Payload));
+          const payload = { resource: patient, events: [[subscription.id, { includeResource: true }]] };
+          await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(payload));
         })
         .expectJson((msg: Bundle): boolean => {
           if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
@@ -663,74 +662,7 @@ describe('WebSocket Subscription', () => {
           if (focus?.reference !== getReferenceString(patient)) {
             return false;
           }
-          // v1 payload with includeResource should include the resource entry
-          const patientEntry = msg.entry?.[1] as BundleEntry<Patient> | undefined;
-          if (patientEntry?.resource?.id !== patient.id) {
-            return false;
-          }
-          return true;
-        })
-        .close()
-        .expectClosed();
-    }));
-
-  test('Receives v2 sub event payload', () =>
-    withTestContext(async () => {
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['V2'], family: 'Test' }],
-      });
-
-      const subscription = await repo.createResource<Subscription>({
-        resourceType: 'Subscription',
-        reason: 'test',
-        status: 'active',
-        criteria: 'Patient',
-        channel: { type: 'websocket' },
-      });
-
-      const res = await request(server)
-        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
-        .set('Authorization', 'Bearer ' + accessToken);
-
-      const token = (res.body as FhirParameters).parameter?.[0]?.valueString as string;
-
-      await request(server)
-        .ws('/ws/subscriptions-r4')
-        .sendJson({ type: 'bind-with-token', payload: { token } })
-        .expectJson((actual) => {
-          expect(actual).toMatchObject({
-            resourceType: 'Bundle',
-            type: 'history',
-            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
-          });
-        })
-        .exec(async () => {
-          let subActive = false;
-          while (!subActive) {
-            await sleep(0);
-            subActive = (await isSubscriptionActive(project.id, 'Patient', `Subscription/${subscription.id}`)) === 1;
-          }
-          // Publish a v2 payload ({ resource, events: [[subscriptionId, options]] })
-          const v2Payload = { resource: patient, events: [[subscription.id, { includeResource: true }]] };
-          await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(v2Payload));
-        })
-        .expectJson((msg: Bundle): boolean => {
-          if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
-            return false;
-          }
-          const status = msg.entry[0].resource;
-          if (status.type !== 'event-notification') {
-            return false;
-          }
-          if (status.subscription?.reference !== `Subscription/${subscription.id}`) {
-            return false;
-          }
-          const focus = status.notificationEvent?.[0]?.focus;
-          if (focus?.reference !== getReferenceString(patient)) {
-            return false;
-          }
-          // v2 payload with includeResource should include the resource entry
+          // includeResource should include the resource entry
           const patientEntry = msg.entry?.[1] as BundleEntry<Patient> | undefined;
           if (patientEntry?.resource?.id !== patient.id) {
             return false;
@@ -822,7 +754,7 @@ describe('WebSocket Subscription', () => {
       ]);
     }));
 
-  test('V2 payload with multiple subscriptions fires all events', () =>
+  test('Payload with multiple subscriptions fires all events', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
@@ -888,15 +820,15 @@ describe('WebSocket Subscription', () => {
             sub1Active = (await isSubscriptionActive(project.id, 'Patient', `Subscription/${subscription1.id}`)) === 1;
             sub2Active = (await isSubscriptionActive(project.id, 'Patient', `Subscription/${subscription2.id}`)) === 1;
           }
-          // Publish a single v2 payload with both subscriptions in the events array
-          const v2Payload = {
+          // Publish a single payload with both subscriptions in the events array
+          const payload = {
             resource: patient,
             events: [
               [subscription1.id, { includeResource: true }],
               [subscription2.id, { includeResource: true }],
             ],
           };
-          await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(v2Payload));
+          await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(payload));
         })
         // Expect first event-notification
         .expectJson((msg: Bundle): boolean => {
