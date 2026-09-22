@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import type { Device, HealthcareServiceAvailableTime, Location, Schedule } from '@medplum/fhirtypes';
+import type { Appointment, Device, HealthcareServiceAvailableTime, Location, Schedule } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MargeSimpson } from '@medplum/mock';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
@@ -18,6 +18,7 @@ export default {
 const roomOne = {
   resourceType: 'Location',
   id: 'location-room-1',
+  name: 'Exam Room 1',
 } satisfies Location;
 
 const roomOneSchedule = {
@@ -36,6 +37,7 @@ const roomOneSchedule = {
 const ultrasoundMachine = {
   resourceType: 'Device',
   id: 'ultrasound-machine-1',
+  deviceName: [{ name: 'Ultrasound 1', type: 'user-friendly-name' }],
 } satisfies Device;
 
 const ultrasoundMachineSchedule = {
@@ -350,6 +352,53 @@ export const WithHoursOfAvailability = (): JSX.Element => {
         }
         availableTime={availableTime}
       />
+    </div>
+  );
+};
+
+/**
+ * An appointment held on several schedules at once is drawn one time, with a chip
+ * naming each of the calendars it is on.
+ * @returns The story.
+ */
+export const SharedAppointments = (): JSX.Element => {
+  const shortAppointment = {
+    resourceType: 'Appointment',
+    id: 'appt-shared-short',
+    status: 'booked',
+    start: '2020-05-05T17:00:00Z',
+    end: '2020-05-05T17:30:00Z',
+    participant: [
+      { status: 'accepted', actor: createReference(DrAliceSmith) },
+      { status: 'accepted', actor: createReference(roomOne) },
+      { status: 'accepted', actor: createReference(ultrasoundMachine) },
+      { status: 'accepted', actor: createReference(HomerSimpson) },
+    ],
+  } satisfies Appointment;
+
+  const longAppointment = {
+    resourceType: 'Appointment',
+    id: 'appt-shared-long',
+    status: 'booked',
+    start: '2020-05-06T17:00:00Z',
+    end: '2020-05-06T18:00:00Z',
+    participant: [
+      { status: 'accepted', actor: createReference(DrAliceSmith) },
+      { status: 'accepted', actor: createReference(roomOne) },
+      { status: 'accepted', actor: createReference(MargeSimpson) },
+    ],
+  } satisfies Appointment;
+
+  const sources: MultiCalendarSource[] = [
+    { schedule: DrAliceSmithSchedule, slots: [], appointments: [shortAppointment, longAppointment] },
+    { schedule: roomOneSchedule, slots: [], appointments: [shortAppointment, longAppointment] },
+    // A source can be named directly, for actors the Schedule does not name itself
+    { schedule: ultrasoundMachineSchedule, label: 'Ultrasound', slots: [], appointments: [shortAppointment] },
+  ];
+
+  return (
+    <div style={{ height: 600, padding: '1em' }}>
+      <MultiCalendar sources={sources} />
     </div>
   );
 };
