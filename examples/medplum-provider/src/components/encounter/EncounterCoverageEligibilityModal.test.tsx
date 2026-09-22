@@ -324,6 +324,21 @@ describe('EncounterCoverageEligibilityModal', () => {
       });
     });
 
+    test('looks up only the active PractitionerRole at a billing organization', async () => {
+      await setup();
+
+      await waitFor(() => {
+        expect(medplum.searchOne).toHaveBeenCalledWith(
+          'PractitionerRole',
+          {
+            practitioner: `Practitioner/${DrAliceSmith.id}`,
+            active: 'true',
+            'organization.identifier': `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`,
+          }
+        );
+      });
+    });
+
     test('uses the practitioner as provider when there is no PractitionerRole', async () => {
       mockSearchOne(medplum);
       const user = userEvent.setup();

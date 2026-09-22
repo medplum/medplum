@@ -48,8 +48,8 @@ interface EncounterCoverageEligibilityModalProps {
 
 /**
  * Shows the patient's active insurance coverages on a visit and runs eligibility checks against them.
- * The eligibility request's provider defaults to the organization on the signed-in practitioner's
- * PractitionerRole. When the project has billing organizations, the Check Eligibility button first opens a
+ * The eligibility request's provider defaults to the billing organization on the signed-in practitioner's active
+ * PractitionerRole; roles at non-billing organizations are ignored. When the project has billing organizations, the Check Eligibility button first opens a
  * picker to bill the check under one of them, or as the practitioner themselves when left empty.
  * @param props - The EncounterCoverageEligibilityModal React props.
  * @returns The EncounterCoverageEligibilityModal React node.
@@ -65,7 +65,13 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
 
   const [practitionerRole, practitionerRoleLoading] = useSearchOne(
     'PractitionerRole',
-    profile ? { practitioner: getReferenceString(profile) } : undefined,
+    profile
+      ? {
+          practitioner: getReferenceString(profile),
+          active: 'true',
+          'organization.identifier': BILLING_ORGANIZATION_IDENTIFIER,
+        }
+      : undefined,
     { enabled: opened && !!profile }
   );
   const [anyBillingOrganization, billingOrganizationLoading] = useSearchOne(
