@@ -84,3 +84,8 @@
 .indicator {
   --indicator-right: calc(0.25rem * var(--mantine-scale)) !important;
 }
+
+/* Halve the default icon-to-label gap on the Add button without restyling the Mantine button. */
+.addButton :global(.mantine-Button-section[data-position='left']) {
+  margin-inline-end: calc(var(--mantine-spacing-xs) * 0.5);
+}

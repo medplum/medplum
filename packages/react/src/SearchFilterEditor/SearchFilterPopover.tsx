@@ -138,7 +138,14 @@ export function SearchFilterPopover(props: SearchFilterPopoverProps): JSX.Elemen
           ))}
         </div>
         <div className={classes.footer}>
-          <Button size="compact-sm" variant="subtle" color="blue" leftSection={<IconCirclePlus size={14} />} onClick={addRow}>
+          <Button
+            className={classes.addButton}
+            size="compact-sm"
+            variant="subtle"
+            color="blue"
+            leftSection={<IconCirclePlus size={16} />}
+            onClick={addRow}
+          >
             Add condition
           </Button>
         </div>

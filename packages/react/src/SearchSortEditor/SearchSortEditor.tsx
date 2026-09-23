@@ -189,6 +189,7 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
         </div>
         <div className={classes.footer}>
           <Button
+            className={classes.addButton}
             size="compact-sm"
             variant="subtle"
             color="blue"
