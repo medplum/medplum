@@ -4,9 +4,9 @@ import { readJson } from '@medplum/definitions';
 import type {
   Account,
   Address,
-  AuditEvent,
   Appointment,
   AppointmentParticipant,
+  AuditEvent,
   Binary,
   Bundle,
   CarePlan,
