@@ -92,4 +92,18 @@ describe('CalendarsPanel', () => {
     expect(screen.queryByText('No devices found')).not.toBeInTheDocument();
     expect(screen.queryByText('No rooms found')).not.toBeInTheDocument();
   });
+
+  test('renders whatever filters it is handed, above the sections', () => {
+    setup({ filters: <div>the filters</div> });
+    expect(screen.getByRole('group', { name: 'Filter calendars' })).toBeInTheDocument();
+    expect(screen.getByText('the filters')).toBeInTheDocument();
+    expect(screen.getByText('the filters').compareDocumentPosition(screen.getByText('Providers & Staff'))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+  });
+
+  test('leaves the filters out entirely when none are handed over', () => {
+    setup();
+    expect(screen.queryByRole('group', { name: 'Filter calendars' })).not.toBeInTheDocument();
+  });
 });

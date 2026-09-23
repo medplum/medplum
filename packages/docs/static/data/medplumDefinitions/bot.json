@@ -343,6 +343,22 @@
       "inherited": false
     },
     {
+      "name": "rawBody",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "Bot.rawBody",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Whether public webhooks provide the original UTF-8 JSON text in BotEvent.input instead of parsed JSON. Defaults to false. Set to true for webhook signature verification.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "streamingEnabled",
       "depth": 1,
       "types": [

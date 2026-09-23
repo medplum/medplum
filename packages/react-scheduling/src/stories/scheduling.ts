@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
+  clearHealthcareServiceSchedulingParameter,
   CPT,
   createReference,
   deepClone,
@@ -12,7 +13,7 @@ import {
   SCHEDULING_REQUIREMENT_CODES,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
-  setScheduleParameter,
+  setScheduleSchedulingParameter,
   SNOMED,
   TimezoneExtensionURI,
 } from '@medplum/core';
@@ -130,6 +131,11 @@ export interface SchedulableServiceOptions {
   readonly locationIds?: readonly string[];
   /** What booking it is blocked on, recorded as eligibility codes. */
   readonly requirements?: readonly SchedulingRequirement[];
+  readonly bufferBeforeMinutes?: number;
+  readonly bufferAfterMinutes?: number;
+  readonly alignmentOffsetMinutes?: number;
+  readonly slotCapacity?: number;
+  readonly active?: boolean;
 }
 
 /**
@@ -153,18 +159,54 @@ export function buildSchedulableService(options: SchedulableServiceOptions): Wit
         code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code }] },
       })),
     }),
+    ...(options.active !== undefined && { active: options.active }),
     extension: [
       {
         url: SchedulingParametersURI,
         extension: [
           { url: 'duration', valueDuration: { value: options.durationMinutes, unit: 'min' } },
           { url: 'alignmentInterval', valueDuration: { value: options.alignmentMinutes, unit: 'min' } },
+          // Emitted only when asked for, so a fixture silent about a parameter builds a service that sets none.
+          ...(options.bufferBeforeMinutes !== undefined
+            ? [{ url: 'bufferBefore', valueDuration: { value: options.bufferBeforeMinutes, unit: 'min' } }]
+            : []),
+          ...(options.bufferAfterMinutes !== undefined
+            ? [{ url: 'bufferAfter', valueDuration: { value: options.bufferAfterMinutes, unit: 'min' } }]
+            : []),
+          ...(options.alignmentOffsetMinutes !== undefined
+            ? [{ url: 'alignmentOffset', valueDuration: { value: options.alignmentOffsetMinutes, unit: 'min' } }]
+            : []),
+          ...(options.slotCapacity !== undefined
+            ? [{ url: 'slotCapacity', valuePositiveInt: options.slotCapacity }]
+            : []),
           { url: 'timezone', valueCode: 'America/New_York' },
         ],
       },
     ],
   };
 }
+
+/** Every flat scheduling parameter except `timezone`, which belongs to each calendar or its actor. */
+export const FullyConfiguredService = clearHealthcareServiceSchedulingParameter(
+  buildSchedulableService({
+    id: 'fully-configured',
+    name: 'Established Patient Visit',
+    category: 'Office visit',
+    durationMinutes: 30,
+    alignmentMinutes: 30,
+    bufferBeforeMinutes: 5,
+    bufferAfterMinutes: 10,
+    alignmentOffsetMinutes: 0,
+    slotCapacity: 1,
+  }),
+  'timezone'
+);
+
+export const UnconfiguredService: WithId<HealthcareService> = {
+  resourceType: 'HealthcareService',
+  id: 'unconfigured',
+  name: 'Unconfigured Visit',
+};
 
 export const UltrasoundImagingService = buildSchedulableService({
   id: 'ultrasound-imaging',
@@ -317,11 +359,11 @@ export const DrRiveraSchedule = buildSchedule('schedule-dr-rivera', 'Practitione
  * itself names. One calendar somewhere else is what the workspace's timezone notice is for,
  * so without it the fixtures could only ever show the notice to a reader outside Eastern.
  */
-export const DrOkaforSchedule = setScheduleParameter(
+export const DrOkaforSchedule = setScheduleSchedulingParameter(
   buildSchedule('schedule-dr-okafor', 'Practitioner/dr-okafor', 'Dr. Tunde Okafor'),
   UltrasoundImagingService,
   { url: 'timezone', valueCode: 'America/Chicago' }
-) as WithId<Schedule>;
+);
 export const ImagingBenchSchedules: WithId<Schedule>[] = IMAGING_BENCH.map((member) =>
   buildSchedule(`schedule-${member.id}`, `Practitioner/${member.id}`, benchDisplay(member))
 );

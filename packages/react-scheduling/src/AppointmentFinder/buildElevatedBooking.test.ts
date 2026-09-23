@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { SchedulingParameterUrl, WithId } from '@medplum/core';
 import {
   getReferenceString,
   SchedulingSlotCapacityURI,
   SchedulingUnvalidatedBookingURI,
-  setScheduleParameter,
+  setScheduleSchedulingParameter,
 } from '@medplum/core';
 import type { Appointment, Bundle, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -14,8 +14,8 @@ import { buildElevatedBooking, writeElevatedBooking } from './buildElevatedBooki
 
 const START = new Date('2026-08-17T14:07:00.000Z');
 
-function withParameter(schedule: WithId<Schedule>, url: string, value: object): WithId<Schedule> {
-  return setScheduleParameter(schedule, UltrasoundImagingService, { url, ...value }) as WithId<Schedule>;
+function withParameter(schedule: WithId<Schedule>, url: SchedulingParameterUrl, value: object): WithId<Schedule> {
+  return setScheduleSchedulingParameter(schedule, UltrasoundImagingService, { url, ...value });
 }
 
 function busySlots(proposal: Appointment): Slot[] {
