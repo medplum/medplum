@@ -27,6 +27,7 @@ import type {
   Device,
   Extension,
   HealthcareService,
+  HealthcareServiceAvailableTime,
   Identifier,
   Location,
   Patient,
@@ -38,6 +39,10 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import { getBrowserTimezone } from '../AppointmentFinder/AppointmentFinder.times';
+import {
+  getHealthcareServiceSchedulingParameterValues,
+  setHealthcareServiceSchedulingParameterValues,
+} from '../parameterValues';
 
 /** Who an appointment can be held on, as FHIR allows. */
 export type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
@@ -640,6 +645,94 @@ export const SchedulingFixtures = [
   ExamRoomASchedule,
   ExamRoomBSchedule,
   SatelliteRoomSchedule,
+];
+
+/** A visit type nobody offers any more, turned off rather than deleted. */
+export const DiscontinuedService = buildSchedulableService({
+  id: 'discontinued-consult',
+  name: 'Discontinued Consult',
+  category: 'Office visit',
+  durationMinutes: 30,
+  alignmentMinutes: 30,
+  active: false,
+});
+
+type AvailableDays = NonNullable<HealthcareServiceAvailableTime['daysOfWeek']>;
+
+function weeklyHours(days: AvailableDays, start: string, end: string): HealthcareServiceAvailableTime {
+  return { daysOfWeek: days, availableStartTime: start, availableEndTime: end };
+}
+
+const WEEKDAYS: AvailableDays = ['mon', 'tue', 'wed', 'thu', 'fri'];
+
+/** Offered at both clinics, with prep and turnover time, and a lunch break in its hours. */
+export const InitialConsultationService: WithId<HealthcareService> = {
+  ...buildSchedulableService({
+    id: 'initial-consultation',
+    name: 'Initial Consultation',
+    category: 'Office visit',
+    durationMinutes: 60,
+    alignmentMinutes: 30,
+    bufferBeforeMinutes: 10,
+    bufferAfterMinutes: 15,
+    slotCapacity: 1,
+    locationIds: ['main-clinic', 'satellite-clinic'],
+  }),
+  availableTime: [weeklyHours(WEEKDAYS, '08:00:00', '12:00:00'), weeklyHours(WEEKDAYS, '13:00:00', '17:00:00')],
+};
+
+/** One session a week that several patients book into together. */
+export const GroupEducationService: WithId<HealthcareService> = {
+  ...buildSchedulableService({
+    id: 'group-education',
+    name: 'Group Education Class',
+    category: 'Education',
+    durationMinutes: 90,
+    alignmentMinutes: 90,
+    slotCapacity: 8,
+    locationIds: ['main-clinic'],
+  }),
+  availableTime: [weeklyHours(['wed'], '14:00:00', '15:30:00')],
+};
+
+// The booking fixtures leave these without hours, which the booking tests rely on; configuration shows them with
+// the weekly hours and buffers a clinic would set.
+const ConfiguredTelehealthService: WithId<HealthcareService> = {
+  ...setHealthcareServiceSchedulingParameterValues(TelehealthService, {
+    ...getHealthcareServiceSchedulingParameterValues(TelehealthService),
+    bufferAfter: 5,
+    slotCapacity: 1,
+  }),
+  availableTime: [weeklyHours(WEEKDAYS, '07:30:00', '18:00:00'), weeklyHours(['sat'], '09:00:00', '12:00:00')],
+};
+
+const ConfiguredUltrasoundService: WithId<HealthcareService> = {
+  ...setHealthcareServiceSchedulingParameterValues(UltrasoundImagingService, {
+    ...getHealthcareServiceSchedulingParameterValues(UltrasoundImagingService),
+    bufferBefore: 5,
+    bufferAfter: 10,
+  }),
+  availableTime: [weeklyHours(['mon', 'tue', 'thu'], '09:00:00', '16:00:00')],
+};
+
+const CONFIGURED_SERVICES = new Map<string, Resource>([
+  [TelehealthService.id, ConfiguredTelehealthService],
+  [UltrasoundImagingService.id, ConfiguredUltrasoundService],
+]);
+
+/**
+ * The clinic as an administrator configuring it sees it: `SchedulingFixtures`, with its visit types filled out
+ * the way a clinic would set them, more visit types covering service facilities, split hours, and group
+ * capacity, and the ones booking hides because they have no duration or are turned off.
+ *
+ * Kept out of `SchedulingFixtures`, whose tests read the whole list.
+ */
+export const ConfigFixtures = [
+  ...SchedulingFixtures.map((resource) => (resource.id && CONFIGURED_SERVICES.get(resource.id)) || resource),
+  InitialConsultationService,
+  GroupEducationService,
+  UnconfiguredService,
+  DiscontinuedService,
 ];
 
 /**
