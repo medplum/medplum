@@ -40,7 +40,22 @@
 }
 
 .dragOver {
-  box-shadow: inset 0 2px 0 0 var(--mantine-color-blue-5);
+  position: relative;
+}
+
+/*
+ * A straight 1px guide at the drop point. Insetting it 10px past the item's edge (the item sits 6px
+ * inside the dropdown, the search input 16px) lines it up with the search input's width, and the
+ * pseudo-element keeps it flat instead of tracing the item's rounded corners.
+ */
+.dragOver::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  height: 1px;
+  background-color: var(--mantine-color-gray-6);
 }
 
 .grip {
