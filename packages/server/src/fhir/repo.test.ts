@@ -45,6 +45,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { GLOBAL_SHARD_ID } from './sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorageKey } from '../storage/base';
 import { getBinaryStorage } from '../storage/loader';
@@ -118,8 +119,8 @@ describe('FHIR Repo', () => {
     }
 
     beforeAll(() => {
-      readerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-      writerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      readerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID), 'query');
+      writerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID), 'query');
     });
 
     beforeEach(() => {

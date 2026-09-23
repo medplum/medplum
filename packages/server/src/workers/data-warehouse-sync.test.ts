@@ -16,7 +16,7 @@
 
 import type { Queue } from 'bullmq';
 import { Worker } from 'bullmq';
-import type { PoolClient } from 'pg';
+import type { ShardPoolClient } from '../sharding/sharding-types';
 import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { closeWorkers, initWorkers } from '.';
@@ -307,7 +307,7 @@ describe('data-warehouse sync worker', () => {
   describe('processDataWarehouseSyncJob', () => {
     beforeEach(() => {
       vi.spyOn(database, 'getDatabasePool').mockReturnValue({} as ReturnType<typeof database.getDatabasePool>);
-      vi.spyOn(database, 'withPoolClient').mockImplementation(async (callback) => callback({} as PoolClient));
+      vi.spyOn(database, 'withPoolClient').mockImplementation(async (callback) => callback({ shardId: 'global' } as ShardPoolClient));
       vi.spyOn(database, 'acquireAdvisoryLock').mockResolvedValue(true);
       vi.spyOn(database, 'releaseAdvisoryLock').mockResolvedValue(undefined);
     });

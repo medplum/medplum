@@ -4,6 +4,7 @@ import type { Pool } from 'pg';
 import { vi } from 'vitest';
 import { loadTestConfig } from './config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from './database';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import type { PgQueryable } from './fhir/sql';
 import { getPostDeployVersion, markPostDeployMigrationCompleted } from './migration-sql';
 import type { CustomPostDeployMigration } from './migrations/data/types';
@@ -47,7 +48,7 @@ describe('markPostDeployMigrationCompleted', () => {
     const config = await loadTestConfig();
     await initDatabase(config);
 
-    client = getDatabasePool(DatabaseMode.WRITER);
+    client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     const result = await client.query<{ id: number }>(
       `INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion", "firstBoot") VALUES (2, 0, $1, true)
         ON CONFLICT("id") DO UPDATE SET "id" = EXCLUDED."id", "version" = EXCLUDED."version", "dataVersion" = EXCLUDED."dataVersion"

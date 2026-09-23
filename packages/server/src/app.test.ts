@@ -15,7 +15,13 @@ import { globalLogger } from './logger';
 import { generateAccessToken } from './oauth/keys';
 import { getRateLimitRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
-import { createTestProject, deleteRedisKeys, getSuperAdminAccessToken, initTestAuth } from './test.setup';
+import {
+  createTestProject,
+  deleteRedisKeys,
+  getSuperAdminAccessToken,
+  initTestAuth,
+  TEST_SHARD_ID,
+} from './test.setup';
 
 describe('App', () => {
   let stdOutSpy: MockInstance;
@@ -477,7 +483,7 @@ describe('App', () => {
 
     const loggerError = vi.spyOn(globalLogger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
-    getDatabasePool(DatabaseMode.WRITER).emit('error', error);
+    getDatabasePool(DatabaseMode.WRITER, TEST_SHARD_ID).emit('error', error);
     expect(loggerError).toHaveBeenCalledWith('Database connection error', error);
     expect(await shutdownApp()).toBeUndefined();
   });

@@ -12,6 +12,7 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { GLOBAL_SHARD_ID } from './sharding';
 import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
 
 const app = express();
@@ -30,8 +31,8 @@ function spyOnDatabasePools(): {
   writerSpy: MockInstance;
   restore: () => void;
 } {
-  const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-  const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+  const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID), 'query');
+  const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID), 'query');
   return {
     readerSpy,
     writerSpy,

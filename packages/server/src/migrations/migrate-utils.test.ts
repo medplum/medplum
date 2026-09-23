@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { indexDefinitionsEqual } from './migrate';
 import {
   doubleEscapeSingleQuotes,
@@ -68,7 +69,7 @@ describe('migration-utils', () => {
   });
 
   test('getColumns', async () => {
-    const client = await getDatabasePool(DatabaseMode.WRITER);
+    const client = await getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     const result = await getColumns(client, 'DatabaseMigration');
     expect(result).toEqual([
       {
@@ -104,7 +105,7 @@ describe('migration-utils', () => {
 
   describe('getFunctionDefinition', () => {
     test('getFunctionDefinition', async () => {
-      const client = await getDatabasePool(DatabaseMode.WRITER);
+      const client = await getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
       const result = await getFunctionDefinition(client, 'token_array_to_text');
       expect(result).toEqual({
         name: 'token_array_to_text',
@@ -113,7 +114,7 @@ describe('migration-utils', () => {
     });
 
     test('getFunctionDefinition', async () => {
-      const client = await getDatabasePool(DatabaseMode.WRITER);
+      const client = await getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
       const result = await getFunctionDefinition(client, 'non_existent_function');
       expect(result).toBeUndefined();
     });

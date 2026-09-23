@@ -20,6 +20,7 @@ import type {
   PostDeployJobData,
   PostDeployJobRunResult,
   PostDeployMigration,
+  PrepareJobDataContext,
 } from '../migrations/data/types';
 import { executeMigrationActions } from '../migrations/migrate';
 import {
@@ -292,17 +293,14 @@ function getAsyncJobOutputFromMigrationActionResults(results: MigrationActionRes
   };
 }
 
-export function prepareCustomMigrationJobData(
-  shardId: string,
-  asyncJob: WithId<AsyncJob>
-): CustomPostDeployMigrationJobData {
-  const ctx = tryGetRequestContext();
+export function prepareCustomMigrationJobData(ctx: PrepareJobDataContext): CustomPostDeployMigrationJobData {
+  const reqCtx = tryGetRequestContext();
   return {
-    target: { kind: 'shard', shardId },
-    tracking: getAsyncJobTracking(asyncJob),
+    target: { kind: 'shard', shardId: ctx.shardId },
+    tracking: getAsyncJobTracking(ctx.asyncJob),
     type: 'custom',
-    requestId: ctx?.requestId,
-    traceId: ctx?.traceId,
+    requestId: reqCtx?.requestId,
+    traceId: reqCtx?.traceId,
   };
 }
 
@@ -311,14 +309,14 @@ export function prepareDynamicMigrationJobData(
   asyncJob: WithId<AsyncJob>,
   migrationActions: PhasalMigration
 ): DynamicPostDeployJobData {
-  const ctx = tryGetRequestContext();
+  const reqCtx = tryGetRequestContext();
   return {
     target: { kind: 'shard', shardId },
     tracking: getAsyncJobTracking(asyncJob),
     type: 'dynamic',
     migrationActions,
-    requestId: ctx?.requestId,
-    traceId: ctx?.traceId,
+    requestId: reqCtx?.requestId,
+    traceId: reqCtx?.traceId,
   };
 }
 

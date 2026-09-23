@@ -8,6 +8,7 @@ import { initAppServices, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import type { ArrayColumnPaddingConfig, MedplumServerConfig } from '../../config/types';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { createTestProject, withTestContext } from '../../test.setup';
 import type { SystemRepository } from '../repo';
 import { getProjectSystemRepo, Repository } from '../repo';
@@ -171,7 +172,7 @@ describe('Repository Row Builder', () => {
           code: { coding: [{ system: 'http://loinc.org', code: '72166-2', display: 'Test Observation' }] },
         });
 
-        const db = getDatabasePool(DatabaseMode.READER);
+        const db = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
         const results = await db.query('SELECT "__identifier" FROM "Observation" WHERE "id" = $1', [res.id]);
         if (shouldPad) {
           expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
@@ -209,7 +210,7 @@ describe('Repository Row Builder', () => {
           author: [{ reference: authorRefs[0] }, { reference: authorRefs[1] }, { reference: authorRefs[2] }],
         });
 
-        const db = getDatabasePool(DatabaseMode.READER);
+        const db = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
         const results = await db.query('SELECT "author" FROM "DocumentReference" WHERE "id" = $1', [doc.id]);
         expect(results.rows).toStrictEqual([{ author: expected }]);
       }));
@@ -233,7 +234,7 @@ describe('Repository Row Builder', () => {
           author: [{ reference: a }, { reference: b }],
         });
 
-        const db = getDatabasePool(DatabaseMode.READER);
+        const db = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
         const r1 = await db.query('SELECT "author" FROM "DocumentReference" WHERE "id" = $1', [doc1.id]);
         const r2 = await db.query('SELECT "author" FROM "DocumentReference" WHERE "id" = $1', [doc2.id]);
         expect(r1.rows).toStrictEqual([{ author: expected }]);
@@ -265,7 +266,7 @@ describe('Repository Row Builder', () => {
           ],
         });
 
-        const db = getDatabasePool(DatabaseMode.READER);
+        const db = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
         const results = await db.query('SELECT "componentValueQuantity" FROM "Observation" WHERE "id" = $1', [obs.id]);
         expect(results.rows).toStrictEqual([{ componentValueQuantity: expected }]);
       }));
