@@ -33,9 +33,10 @@ npm run convert -- --input /path/to/ccdas --org-id <organization-uuid> --seed
 - `--input <dir>` CCDA XML folder (required)
 - `--output <dir>` bundle output (default: `<input>/fhir-output`)
 - `--tag <code>` batch tag code (default: slug of input's parent dir, e.g. `example-clinic`)
-- `--org-id <uuid>` the project's existing Organization id; all org references point directly at it
-  (no default; without it, org references fall back to name-based conditional references and the
-  `$set-accounts` step is skipped)
+- `--org-id <uuid>` the project's existing Organization id; all org references point directly at it,
+  and every emitted resource except Practitioners is stamped with `meta.accounts = [Organization/<id>]`
+  so org-restricted access policies can see the import (no default; without it, org references fall
+  back to name-based conditional references and nothing is stamped)
 - `--seed` after generating, execute batch bundles as **async batches** (`Prefer: respond-async`,
   see [Processing Async Bundles](https://www.medplum.com/docs/fhir-datastore/processing-async-bundles)):
   entries run in a background job and do not consume the per-user FHIR interaction quota — a
@@ -44,12 +45,12 @@ npm run convert -- --input /path/to/ccdas --org-id <organization-uuid> --seed
   batch-response Bundle downloaded from the job's results Binary. Credentials come from
   `MEDPLUM_BASE_URL` / `MEDPLUM_CLIENT_ID` / `MEDPLUM_CLIENT_SECRET` (a ClientApplication in the
   target project; see `.env.defaults`). Per-entry failures are reported; all writes are idempotent
-  so re-running is safe.
-  After a fully successful seed, runs `Patient/$set-accounts` (accounts=[`Organization/<ORG_ID>`],
-  propagate=true, async) on every imported patient so org-restricted access policies can see the
-  imported compartment resources. **The ClientApplication membership must be a project admin** —
-  `$set-accounts` is admin-only. Diff-based and idempotent; Practitioners are not in the patient
-  compartment and are not stamped.
+  so re-running is safe. **The ClientApplication membership must be a project admin** — that is
+  what allows `meta.accounts` to be set on write (`Repository.canWriteAccount`, extended mode).
+  `Patient/$set-accounts` with `propagate` is deliberately not used: it charges 100 FHIR quota
+  points per compartment resource even when run async, so a patient with more than ~500
+  resources can never finish inside the default 50,000-points-per-minute quota, and a re-run
+  re-writes every compartment resource and hits the same limit.
 - `ORG_ID_OVERRIDES` / `PRACTITIONER_ID_OVERRIDES` in-file maps for pinning specific resources.
 
 ## Outputs per input file

@@ -18,3 +18,9 @@ tsconfig.tsbuildinfo
 
 # JetBrains
 .idea/
+
+# Local migration data — never commit source CCDAs or generated bundles
+ccda/
+fhir-output/
+failed/
+*.xml

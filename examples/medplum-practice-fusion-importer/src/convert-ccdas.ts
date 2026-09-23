@@ -100,14 +100,17 @@ loadEnv();
 //   --seed    after generating, execute the batch bundles against a Medplum
 //             project via the FHIR async request pattern (Prefer: respond-async)
 //             — entries run in a background job and skip the per-user FHIR
-//             quota that 429s large synchronous batches. After a fully
-//             successful seed, runs Patient/$set-accounts (propagate) to stamp
-//             the ORG_ID Organization on every imported patient's compartment,
-//             making the data visible to org-restricted access policies.
+//             quota that 429s large synchronous batches. When --org-id is set,
+//             every emitted resource carries meta.accounts = [Organization/<id>]
+//             so the data is visible to org-restricted access policies as soon
+//             as it is written (project-admin membership required to set
+//             meta.accounts; Patient/$set-accounts with propagate is NOT used —
+//             it charges 100 FHIR quota points per compartment resource even
+//             when run async, and 429s on patients with >~500 resources).
 //             Credentials: MEDPLUM_BASE_URL (default https://api.medplum.com/),
 //             MEDPLUM_CLIENT_ID, MEDPLUM_CLIENT_SECRET env vars (or a .env file).
 //             The ClientApplication must belong to the target project and its
-//             membership must be a project admin ($set-accounts is admin-only).
+//             membership must be a project admin (required to set meta.accounts).
 // ---------------------------------------------------------------------------
 
 function argValue(flag: string): string | undefined {
@@ -135,7 +138,8 @@ const IMPORT_ID_SYSTEM = 'urn:ccda-import-id';
 const ORG_ID_OVERRIDES: Record<string, string> = {};
 
 /**
- * The existing Organization in the target project that all organization references point to.
+ * The existing Organization in the target project that all organization references point to,
+ * and that every emitted resource (except Practitioners) is stamped with as meta.accounts.
  * Override per clinic with --org-id <uuid>. When set, references are direct (Organization/<id>)
  * instead of name-based conditional references — required when the project org's name does not
  * match the name in the CCDA (e.g. the project's org resource uses a legal name while the
@@ -1204,6 +1208,15 @@ function postProcess(
       ...resource.meta,
       tag: [BATCH_TAG, { system: 'urn:ccda-import:source', code: fileBase }],
     };
+    // Stamp the clinic Organization as the account so org-restricted access policies can see the
+    // import. Honored because the seeding membership is a project admin and MedplumClient sends
+    // X-Medplum: extended; compartment resources would otherwise inherit it from the Patient on
+    // write anyway. Practitioners are shared across clinics and stay unstamped.
+    if (ORG_ID && resource.resourceType !== 'Practitioner') {
+      const account = { reference: `Organization/${ORG_ID}` };
+      resource.meta.account = account;
+      resource.meta.accounts = [account];
+    }
   }
   for (const resource of output) {
     replaceReferenceTargets(resource, importRefs);
@@ -1481,52 +1494,6 @@ async function executeBatchAsync(medplum: MedplumClient, bundle: Bundle): Promis
   return JSON.parse(await (await medplum.download(resultsRef)).text()) as Bundle;
 }
 
-/**
- * Stamp the clinic Organization onto each imported patient's meta.accounts and propagate through
- * the patient compartment ($set-accounts, docs/api/fhir/operations/set-accounts), so users whose
- * access policies are restricted to that Organization can see the imported resources.
- * Requires the seeding ClientApplication's ProjectMembership to have admin: true (the operation
- * is project-admin-only). Diff-based and idempotent — safe on re-runs. Async per patient because
- * propagation updates every compartment resource (~750 for the biggest patient).
- * @param medplum - Authenticated Medplum client (project admin membership).
- */
-async function setPatientAccounts(medplum: MedplumClient): Promise<void> {
-  if (!ORG_ID) {
-    console.log('\nSkipping Patient/$set-accounts — no --org-id given.');
-    return;
-  }
-  const orgRef = `Organization/${ORG_ID}`;
-  const patients = await medplum.searchResources('Patient', `_tag=${BATCH_TAG.system}|${BATCH_TAG.code}&_count=1000`);
-  console.log(`\nSetting accounts (${orgRef}, propagate) on ${patients.length} imported patient(s) ...`);
-  let failures = 0;
-  for (const patient of patients) {
-    const body = JSON.stringify({
-      resourceType: 'Parameters',
-      parameter: [
-        { name: 'accounts', valueReference: { reference: orgRef } },
-        { name: 'propagate', valueBoolean: true },
-      ],
-    });
-    const url = medplum.fhirUrl('Patient', patient.id, '$set-accounts').toString();
-    const name = patient.name?.[0] ? [...(patient.name[0].given ?? []), patient.name[0].family].join(' ') : patient.id;
-    try {
-      const job = await runAsyncJob(medplum, url, body);
-      const updated = job.output?.parameter?.find((p) => p.name === 'resourcesUpdated')?.valueInteger;
-      console.log(`  ${name}: accounts set, ${updated ?? '?'} resource(s) updated`);
-    } catch (err: any) {
-      failures++;
-      console.log(`  ${name}: FAILED — ${err.message}`);
-    }
-  }
-  if (failures > 0) {
-    console.log(
-      '\n$set-accounts failed for some patients (is the ClientApplication membership a project admin?). ' +
-        'Fix the cause and re-run with --seed — the operation is idempotent.'
-    );
-    process.exit(1);
-  }
-}
-
 async function seedProject(): Promise<void> {
   const baseUrl = SEED_BASE_URL;
   const clientId = SEED_CLIENT_ID;
@@ -1577,10 +1544,8 @@ async function seedProject(): Promise<void> {
       (failed > 0 ? ' Fix the cause and re-run with --seed — all writes are idempotent.' : '')
   );
   if (failed > 0) {
-    console.log('Skipping $set-accounts — fix the failures and re-run --seed first.');
     process.exit(1);
   }
-  await setPatientAccounts(medplum);
 }
 
 if (SEED) {
