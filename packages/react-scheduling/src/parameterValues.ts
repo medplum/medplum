@@ -62,7 +62,8 @@ const DURATION_PARAMETERS = [
 /** The parameters carrying an IANA timezone identifier. */
 const CODE_PARAMETERS = ['timezone', 'alignmentTimezone'] as const satisfies (keyof SchedulingParameterValues)[];
 
-const FLAT_PARAMETERS = [...DURATION_PARAMETERS, ...CODE_PARAMETERS, 'slotCapacity'] as const;
+/** Every flat parameter, which is every key of `SchedulingParameterValues`. */
+export const FLAT_PARAMETERS = [...DURATION_PARAMETERS, ...CODE_PARAMETERS, 'slotCapacity'] as const;
 
 type FlatParameter = (typeof FLAT_PARAMETERS)[number];
 type DurationParameter = (typeof DURATION_PARAMETERS)[number];

@@ -1,18 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
+  Appointment,
   CodeableConcept,
   Duration,
   Extension,
   HealthcareService,
+  Location,
   Reference,
   Resource,
   Schedule,
 } from '@medplum/fhirtypes';
+import { isReference } from './types';
 import type { WithId } from './utils';
 import {
   createReference,
   deepClone,
+  flatMapFilter,
   getExtension,
   getExtensions,
   getExtensionValue,
@@ -78,6 +82,9 @@ export const SchedulingSlotCapacityURI = 'https://medplum.com/fhir/StructureDefi
  */
 export const SchedulingUnvalidatedBookingURI =
   'https://medplum.com/fhir/StructureDefinition/SchedulingUnvalidatedBooking';
+
+/** Extension URI marking which `Appointment.supportingInformation` entry is the site. */
+export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSite';
 
 /**
  * Extension URI holding a `Reference<HealthcareService>` on a `serviceType` CodeableConcept.
@@ -365,15 +372,15 @@ function setParameter<T extends Schedule | HealthcareService>(
   service: WithId<HealthcareService> | undefined,
   subextension: Extension
 ): T {
-  // Note where the value sits before clearing removes it, so that replacing one leaves the sub-extension
-  // where it was rather than moving it to the end, which would show up as churn in the resource timeline.
+  // Replace in place: moving the sub-extension to the end shows up as churn in the resource history.
   const previousIndex =
     getSchedulingParameterExtensions(resource, service)[0]?.extension?.findIndex(
       (existing) => existing.url === subextension.url
     ) ?? -1;
 
-  // Clear first: a resource carrying more than one matching container would otherwise keep a stale value.
-  const updated = clearParameter(resource, service, subextension.url);
+  // Remove from every matching container, or a second one keeps a stale value. Prune only after
+  // re-inserting, so a container holding just this parameter is not deleted and re-appended at the end.
+  const updated = removeParameter(resource, service, subextension.url);
 
   updated.extension ??= [];
 
@@ -390,10 +397,18 @@ function setParameter<T extends Schedule | HealthcareService>(
   subextensions.splice(previousIndex < 0 ? subextensions.length : previousIndex, 0, subextension);
   parameters.extension = subextensions;
 
-  return updated;
+  return pruneEmptyParameters(updated);
 }
 
 function clearParameter<T extends Schedule | HealthcareService>(
+  resource: T,
+  service: WithId<HealthcareService> | undefined,
+  url: string
+): T {
+  return pruneEmptyParameters(removeParameter(resource, service, url));
+}
+
+function removeParameter<T extends Schedule | HealthcareService>(
   resource: T,
   service: WithId<HealthcareService> | undefined,
   url: string
@@ -406,20 +421,27 @@ function clearParameter<T extends Schedule | HealthcareService>(
     }
   }
 
-  if (!updated.extension) {
-    return updated;
+  return updated;
+}
+
+// An empty SchedulingParameters extension violates FHIR `ext-1`, and one holding only a Schedule's `service`
+// pointer overrides nothing; either would keep `hasSchedulingParameters` reporting the resource configured.
+function pruneEmptyParameters<T extends Schedule | HealthcareService>(resource: T): T {
+  if (!resource.extension) {
+    return resource;
   }
 
-  // An extension with neither a value nor sub-extensions violates FHIR `ext-1`.
-  updated.extension = updated.extension.filter(
-    (extension) => extension.url !== SchedulingParametersURI || !!extension.extension?.length
+  resource.extension = resource.extension.filter(
+    (extension) =>
+      extension.url !== SchedulingParametersURI ||
+      !!extension.extension?.some((subextension) => subextension.url !== 'service')
   );
 
-  if (updated.extension.length === 0) {
-    delete updated.extension;
+  if (resource.extension.length === 0) {
+    delete resource.extension;
   }
 
-  return updated;
+  return resource;
 }
 
 /**
@@ -500,13 +522,48 @@ export function serviceTypeIncludesService(
  */
 export function extractServiceTypeReferences(
   serviceType: CodeableConcept[] | undefined
-): Reference<HealthcareService>[] {
+): (Reference<HealthcareService> & { reference: string })[] {
   if (!serviceType?.length) {
     return [];
   }
-  return serviceType
-    .map((concept) => getExtensionValue(concept, ServiceTypeReferenceURI) as Reference<HealthcareService> | undefined)
-    .filter(isDefined);
+  return flatMapFilter(serviceType, (concept) => {
+    const value = getExtensionValue(concept, ServiceTypeReferenceURI);
+    // We expect that `value` is always a Reference<HealthcareService>, but the
+    // extension shape may not be validated by a FHIR Profile, so we perform a
+    // safety check here. This also makes Typescript safe without a cast.
+    return isReference<HealthcareService>(value, 'HealthcareService') ? value : undefined;
+  });
+}
+
+/**
+ * Builds the `supportingInformation` entry recording the site an appointment is held at.
+ *
+ * A site and a room are both `Location`, so the site is recorded here rather than as a
+ * participant: `Appointment.location` answers the room, and {@link getAppointmentSite}
+ * the site. Anything writing an appointment outside the booking form should record the
+ * site through this, so that it is identifiable among the other `supportingInformation`
+ * entries.
+ *
+ * @param site - The site the appointment is held at.
+ * @returns The reference, stamped with {@link SchedulingSiteURI}.
+ */
+export function toAppointmentSiteReference(site: WithId<Location>): Reference<Location> {
+  return { ...createReference(site), extension: [{ url: SchedulingSiteURI, valueBoolean: true }] };
+}
+
+/**
+ * Reads the site an appointment is held at.
+ *
+ * Finds the entry {@link toAppointmentSiteReference} stamped.
+ *
+ * @param appointment - The appointment to read.
+ * @returns The site, or undefined for an appointment holding none.
+ */
+export function getAppointmentSite(appointment: Appointment): Reference<Location> | undefined {
+  return appointment.supportingInformation?.find(
+    (reference): reference is Reference<Location> =>
+      reference.reference?.startsWith('Location/') === true && getExtensionValue(reference, SchedulingSiteURI) === true
+  );
 }
 
 /**

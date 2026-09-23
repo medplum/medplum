@@ -30,6 +30,8 @@ export interface AppointmentServiceSelectProps {
   /** A chosen site, which narrows the services on offer to the ones held there. */
   readonly location?: WithId<Location> | Reference<Location>;
   readonly label?: string;
+  readonly placeholder?: string;
+  readonly required?: boolean;
   readonly error?: string;
   readonly disabled?: boolean;
 }
@@ -48,7 +50,16 @@ export interface AppointmentServiceSelectProps {
  * @returns The service field.
  */
 export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): JSX.Element {
-  const { location, defaultValue, onChange, label = 'Visit type', error, disabled } = props;
+  const {
+    location,
+    defaultValue,
+    onChange,
+    label = 'Visit type',
+    placeholder = 'Search visit types',
+    required,
+    error,
+    disabled,
+  } = props;
   const medplum = useMedplum();
 
   const locationReference = location && getReferenceString(location);
@@ -86,8 +97,8 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
     <AsyncAutocomplete<WithId<HealthcareService>>
       name="service"
       label={label}
-      placeholder="Search visit types"
-      required
+      placeholder={placeholder}
+      required={required}
       maxValues={1}
       error={error}
       disabled={disabled}
