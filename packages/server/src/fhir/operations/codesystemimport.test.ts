@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { createTestProject, getSuperAdminAccessToken, initTestAuth } from '../../test.setup';
+import { createTestProject, getSuperAdminAccessToken, initTestAuth, TEST_SHARD_ID } from '../../test.setup';
 import { Column, Condition, SelectQuery } from '../sql';
 import { selectCoding } from './utils/terminology';
 
@@ -579,8 +579,10 @@ describe('CodeSystem $import', () => {
   });
 });
 
+const shardId = TEST_SHARD_ID;
+
 async function assertCodeExists(system: string | undefined, code: string): Promise<any> {
-  const db = getDatabasePool(DatabaseMode.READER);
+  const db = getDatabasePool(DatabaseMode.READER, shardId);
   const coding = await selectCoding(system as string, code)
     .column('isSynonym')
     .where('synonymOf', '=', null)
@@ -590,7 +592,7 @@ async function assertCodeExists(system: string | undefined, code: string): Promi
 }
 
 async function assertCodeMissing(system: string | undefined, code: string): Promise<void> {
-  const db = getDatabasePool(DatabaseMode.READER);
+  const db = getDatabasePool(DatabaseMode.READER, shardId);
   const coding = await selectCoding(system as string, code).execute(db);
   expect(coding).toHaveLength(0);
 }
@@ -601,7 +603,7 @@ async function assertPropertyExists(
   property: string,
   value: string
 ): Promise<any> {
-  const db = getDatabasePool(DatabaseMode.READER);
+  const db = getDatabasePool(DatabaseMode.READER, shardId);
   const query = new SelectQuery('Coding_Property');
   const codingTable = query.getNextJoinAlias();
   query.join(

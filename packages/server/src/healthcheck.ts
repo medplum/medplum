@@ -5,6 +5,7 @@ import type { Request, Response } from 'express';
 import os from 'node:os';
 import type { PoolClient } from 'pg';
 import { DatabaseMode, getDatabasePool } from './database';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import type { RecordMetricOptions } from './otel/otel';
 import { setGauge } from './otel/otel';
 import type { RedisWithoutDuplicate } from './redis';
@@ -17,31 +18,11 @@ const METRIC_IN_SECS_OPTIONS = { ...BASE_METRIC_OPTIONS, options: { unit: 's' } 
 let readerConn: PoolClient | undefined;
 let writerConn: PoolClient | undefined;
 
-export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
-  writerConn ??= await getReservedDatabaseConnection(DatabaseMode.WRITER);
-  let startTime = Date.now();
-  const postgresWriterOk = await testPostgres(writerConn);
-  const writerRoundtripMs = Date.now() - startTime;
-  setGauge('medplum.db.healthcheckRTT', writerRoundtripMs / 1000, {
-    ...METRIC_IN_SECS_OPTIONS,
-    attributes: { ...METRIC_IN_SECS_OPTIONS.attributes, dbInstanceType: 'writer' },
-  });
+type ShardConns = { writer: PoolClient; reader: PoolClient | undefined };
+const shardConns: Record<string, ShardConns> = {};
 
-  let postgresReaderOk: boolean | undefined;
-  if (hasSeparateReaderPool()) {
-    try {
-      readerConn ??= await getReservedDatabaseConnection(DatabaseMode.READER);
-      startTime = Date.now();
-      postgresReaderOk = await testPostgres(readerConn);
-    } catch {
-      postgresReaderOk = false;
-    }
-    const readerRoundtripMs = Date.now() - startTime;
-    setGauge('medplum.db.healthcheckRTT', readerRoundtripMs / 1000, {
-      ...METRIC_IN_SECS_OPTIONS,
-      attributes: { ...METRIC_IN_SECS_OPTIONS.attributes, dbInstanceType: 'reader' },
-    });
-  }
+export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
+  const globalShardResults = await checkShard(GLOBAL_SHARD_ID);
 
   const redisChecks = getAllRedisInstances();
   const redisResults = await Promise.all(
@@ -62,20 +43,17 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
     redisResult[label] = ok;
   }
 
+  // SHARDING only the global shard is shown in the healthcheck response, TBD if other shards should be included
   res.json({
     ok: true,
     version: MEDPLUM_VERSION,
     platform: process.platform,
     runtime: process.version,
-    postgres: postgresWriterOk,
-    postgresReader: postgresReaderOk,
+    postgres: globalShardResults.writerOk,
+    postgresReader: globalShardResults.readerOk,
     redis: redisResult.default,
     redisInstances: redisResult,
   });
-}
-
-async function getReservedDatabaseConnection(mode: DatabaseMode): Promise<PoolClient> {
-  return getDatabasePool(mode).connect();
 }
 
 export function cleanupReservedDatabaseConnections(): void {
@@ -85,8 +63,46 @@ export function cleanupReservedDatabaseConnections(): void {
   readerConn = undefined;
 }
 
-function hasSeparateReaderPool(): boolean {
-  return getDatabasePool(DatabaseMode.WRITER) !== getDatabasePool(DatabaseMode.READER);
+type ShardCheckResult = {
+  shardId: string;
+  writerOk: boolean;
+  readerOk?: boolean;
+};
+
+async function checkShard(shardId: string): Promise<ShardCheckResult> {
+  let conns: ShardConns = shardConns[shardId];
+  if (!conns) {
+    const writerPool = await getDatabasePool(DatabaseMode.WRITER, shardId);
+    const readerPool = await getDatabasePool(DatabaseMode.READER, shardId);
+    shardConns[shardId] = conns = {
+      writer: await writerPool.connect(),
+      reader: readerPool !== writerPool ? await readerPool.connect() : undefined,
+    };
+  }
+
+  let startTime = Date.now();
+  const writerOk = await testPostgres(conns.writer);
+  const writerRoundtripMs = Date.now() - startTime;
+  setGauge('medplum.db.healthcheckRTT', writerRoundtripMs / 1000, {
+    ...METRIC_IN_SECS_OPTIONS,
+    attributes: { ...METRIC_IN_SECS_OPTIONS.attributes, dbInstanceType: 'writer', shardId },
+  });
+
+  let readerOk: boolean | undefined;
+  if (conns.reader) {
+    try {
+      startTime = Date.now();
+      readerOk = await testPostgres(conns.reader);
+    } catch {
+      readerOk = false;
+    }
+    const readerRoundtripMs = Date.now() - startTime;
+    setGauge('medplum.db.healthcheckRTT', readerRoundtripMs / 1000, {
+      ...METRIC_IN_SECS_OPTIONS,
+      attributes: { ...METRIC_IN_SECS_OPTIONS.attributes, dbInstanceType: 'reader', shardId },
+    });
+  }
+  return { shardId, writerOk, readerOk };
 }
 
 async function testPostgres(pool: PoolClient): Promise<boolean> {

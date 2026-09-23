@@ -36,6 +36,7 @@
     "FHIR",
     "Fhircast",
     "fhirquota",
+    "healthcheck",
     "Medplum",
     "orangebot",
     "reindexing",

@@ -112,24 +112,32 @@ superAdminRouter.post('/valuesets', [shardIdValidator(), validateRequest], async
 // POST to /admin/super/structuredefinitions
 // to rebuild the "StructureDefinition" table.
 // Run this after any changes to the built-in StructureDefinitions.
-superAdminRouter.post('/structuredefinitions', [shardIdValidator(), validateRequest], async (req: Request, res: Response) => {
-  requireSuperAdmin();
-  requireAsync(req);
+superAdminRouter.post(
+  '/structuredefinitions',
+  [shardIdValidator(), validateRequest],
+  async (req: Request, res: Response) => {
+    requireSuperAdmin();
+    requireAsync(req);
 
-  const systemRepo = getShardSystemRepo(getShardId(req.body));
-  await sendAsyncResponse(req, res, async () => rebuildR4StructureDefinitions(systemRepo));
-});
+    const systemRepo = getShardSystemRepo(getShardId(req.body));
+    await sendAsyncResponse(req, res, async () => rebuildR4StructureDefinitions(systemRepo));
+  }
+);
 
 // POST to /admin/super/searchparameters
 // to rebuild the "SearchParameter" table.
 // Run this after any changes to the built-in SearchParameters.
-superAdminRouter.post('/searchparameters', [shardIdValidator(), validateRequest], async (req: Request, res: Response) => {
-  requireSuperAdmin();
-  requireAsync(req);
+superAdminRouter.post(
+  '/searchparameters',
+  [shardIdValidator(), validateRequest],
+  async (req: Request, res: Response) => {
+    requireSuperAdmin();
+    requireAsync(req);
 
-  const systemRepo = getShardSystemRepo(getShardId(req.body));
-  await sendAsyncResponse(req, res, async () => rebuildR4SearchParameters(systemRepo));
-});
+    const systemRepo = getShardSystemRepo(getShardId(req.body));
+    await sendAsyncResponse(req, res, async () => rebuildR4SearchParameters(systemRepo));
+  }
+);
 
 // POST to /admin/super/reindex
 // to reindex a single resource type.
@@ -375,38 +383,50 @@ superAdminRouter.post(
 
 // POST to /admin/super/rebuildprojectid
 // to rebuild the projectId column on all resource types.
-superAdminRouter.post('/rebuildprojectid', [shardIdValidator(), validateRequest], async (req: Request, res: Response) => {
-  requireSuperAdmin();
-  requireAsync(req);
+superAdminRouter.post(
+  '/rebuildprojectid',
+  [shardIdValidator(), validateRequest],
+  async (req: Request, res: Response) => {
+    requireSuperAdmin();
+    requireAsync(req);
 
-  await sendAsyncResponse(req, res, async () => {
-    const resourceTypes = getResourceTypes();
-    for (const resourceType of resourceTypes) {
-      await getDatabasePool(DatabaseMode.WRITER, getShardId(req.body)).query(
-        `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
-      );
-    }
-  });
-});
+    await sendAsyncResponse(req, res, async () => {
+      const resourceTypes = getResourceTypes();
+      for (const resourceType of resourceTypes) {
+        await getDatabasePool(DatabaseMode.WRITER, getShardId(req.body)).query(
+          `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
+        );
+      }
+    });
+  }
+);
 
-superAdminRouter.get('/migrations', [shardIdValidator('query'), validateRequest], async (req: Request, res: Response) => {
-  requireSuperAdmin();
+superAdminRouter.get(
+  '/migrations',
+  [shardIdValidator('query'), validateRequest],
+  async (req: Request, res: Response) => {
+    requireSuperAdmin();
 
-  const postDeployMigrations = getPostDeployMigrationVersions();
-  const conn = getDatabasePool(DatabaseMode.WRITER, getShardId(req.query));
-  const pendingPostDeployMigration = await getPendingPostDeployMigration(conn);
+    const postDeployMigrations = getPostDeployMigrationVersions();
+    const conn = getDatabasePool(DatabaseMode.WRITER, getShardId(req.query));
+    const pendingPostDeployMigration = await getPendingPostDeployMigration(conn);
 
-  res.json({
-    postDeployMigrations,
-    pendingPostDeployMigration,
-  });
-});
+    res.json({
+      postDeployMigrations,
+      pendingPostDeployMigration,
+    });
+  }
+);
 
 // POST to /admin/super/migrate
 // to run the pending post-deploy migration, if any.
 superAdminRouter.post(
   '/migrate',
-  [shardIdValidator(), body('dataVersion').isInt().withMessage('dataVersion must be an integer').optional(), validateRequest],
+  [
+    shardIdValidator(),
+    body('dataVersion').isInt().withMessage('dataVersion must be an integer').optional(),
+    validateRequest,
+  ],
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
@@ -659,7 +679,7 @@ superAdminRouter.post(
       .join(', ')});`;
 
     const startTime = Date.now();
-    await getDatabasePool(DatabaseMode.WRITER, getShardId(req.body)).query(query); // shardId will be an input to this route
+    await getDatabasePool(DatabaseMode.WRITER, getShardId(req.body)).query(query);
     globalLogger.info('[Super Admin]: Table settings updated', {
       tableName: req.body.tableName,
       settings: req.body.settings,

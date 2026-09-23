@@ -4,10 +4,11 @@ import type { WithId } from '@medplum/core';
 import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest } from '@medplum/core';
 import type { AsyncJob } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
+import type { MedplumShardConfig } from '../config/types';
 import { DatabaseMode, getDatabasePool, withPoolClient } from '../database';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import { getAllShards } from '../fhir/sharding';
 import type { PgQueryable } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
@@ -176,7 +177,7 @@ export async function queuePostDeployMigration(
   // but that could lead to race conditions if the queued job happened to be
   // picked up before the transaction was committed.
   // globalLogger.info('Adding post-deploy migration job', { version, asyncJob: getReferenceString(asyncJob) });
-  const jobData = migration.prepareJobData(asyncJob);
+  const jobData = migration.prepareJobData({ asyncJob, shardId: systemRepo.shardId });
   const result = await addPostDeployMigrationJobData(jobData, { deduplication: { id: `v${version}` } });
   if (!result) {
     globalLogger.error('Unable to add post-deploy migration job', {
@@ -203,18 +204,19 @@ export async function withLongRunningDatabaseClient<TResult>(
 }
 
 export async function maybeAutoRunPendingPostDeployMigration(): Promise<void> {
-  for (const [shardId] of Object.entries(getConfig().shards)) {
-    await maybeAutoRunPendingPostDeployMigrationOnShard(shardId);
+  for (const shardConfig of getAllShards()) {
+    await maybeAutoRunPendingPostDeployMigrationOnShard(shardConfig);
   }
 }
 
 export async function maybeAutoRunPendingPostDeployMigrationOnShard(
-  shardId: string
+  shardConfig: MedplumShardConfig
 ): Promise<WithId<AsyncJob> | undefined> {
-  const shardConfig = getConfig().shards[shardId];
   const isDisabled =
     shardConfig.database.runMigrations === false || shardConfig.database.disableRunPostDeployMigrations;
-  const pendingPostDeployMigration = await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER, shardId));
+  const pendingPostDeployMigration = await getPendingPostDeployMigration(
+    getDatabasePool(DatabaseMode.WRITER, shardConfig.id)
+  );
 
   if (!isDisabled && pendingPostDeployMigration === MigrationVersion.UNKNOWN) {
     //throwing here seems extreme since it stops the server from starting
@@ -234,7 +236,7 @@ export async function maybeAutoRunPendingPostDeployMigrationOnShard(
     return undefined;
   }
 
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will eventually be a parameter to this function
+  const systemRepo = getShardSystemRepo(shardConfig.id);
   globalLogger.debug('Auto-queueing pending post-deploy migration', { version: `v${pendingPostDeployMigration}` });
   return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
 }

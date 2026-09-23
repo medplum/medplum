@@ -129,7 +129,6 @@ type DefaultConfigKeys =
   | 'aiRealtimeTranscriptionUrl'
   | 'asyncDelayScaling'
   | 'serverScopedSubscriptionsEnabled'
-  | 'shards'
   | 'defaultShardId';
 
 const integerKeys = new Set([
