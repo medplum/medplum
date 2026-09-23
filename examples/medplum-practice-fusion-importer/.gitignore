@@ -24,3 +24,4 @@ ccda/
 fhir-output/
 failed/
 *.xml
+ccda*/
