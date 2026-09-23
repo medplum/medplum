@@ -30,9 +30,21 @@
   flex-wrap: wrap;
 }
 
-/* Second-line value aligned under the field select (past the conjunction cell + gap). */
-.rowMulti .value {
+/* On the two-line layout the field and operator share the width equally, matching the value line. */
+.rowMulti .field,
+.rowMulti .operator {
+  flex: 1 1 0;
+}
+
+/*
+ * The second line holds the value (aligned under the field, past the conjunction cell + gap) and a
+ * hidden delete-button spacer, so its right edge lines up with the operator's above.
+ */
+.secondLine {
   flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding-left: calc(64px + 8px);
 }
 

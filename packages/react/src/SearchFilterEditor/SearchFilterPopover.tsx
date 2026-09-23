@@ -197,6 +197,36 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
     </ActionIcon>
   );
 
+  // A hidden twin of the delete button reserves the same space on the second line, so the value
+  // input's right edge lines up with the operator's above it.
+  const deleteSpacer = (
+    <ActionIcon
+      variant="subtle"
+      radius="xl"
+      ml={4}
+      aria-hidden
+      tabIndex={-1}
+      style={{ visibility: 'hidden', pointerEvents: 'none' }}
+    >
+      <IconX size={16} stroke={2} />
+    </ActionIcon>
+  );
+
+  const valueInput = (
+    <div className={classes.value}>
+      {searchParam && value.operator && (
+        <SearchFilterValueInput
+          key={`filter-${props.index}-value-${value.code}-${value.operator}`}
+          name={`filter-${props.index}-value`}
+          resourceType={props.resourceType}
+          searchParam={searchParam}
+          defaultValue={value.value}
+          onChange={(newValue) => props.onChange({ code: value.code, operator: value.operator, value: newValue })}
+        />
+      )}
+    </div>
+  );
+
   return (
     <div className={multiInput ? `${classes.row} ${classes.rowMulti}` : classes.row}>
       <Text className={classes.conjunction}>{props.index === 0 ? 'Where' : 'and'}</Text>
@@ -220,20 +250,20 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
         value={value.operator ?? null}
         onChange={(op) => props.onChange({ code: value.code, operator: (op as Operator) ?? undefined, value: '' })}
       />
-      {multiInput && deleteButton}
-      <div className={classes.value}>
-        {searchParam && value.operator && (
-          <SearchFilterValueInput
-            key={`filter-${props.index}-value-${value.code}-${value.operator}`}
-            name={`filter-${props.index}-value`}
-            resourceType={props.resourceType}
-            searchParam={searchParam}
-            defaultValue={value.value}
-            onChange={(newValue) => props.onChange({ code: value.code, operator: value.operator, value: newValue })}
-          />
-        )}
-      </div>
-      {!multiInput && deleteButton}
+      {multiInput ? (
+        <>
+          {deleteButton}
+          <div className={classes.secondLine}>
+            {valueInput}
+            {deleteSpacer}
+          </div>
+        </>
+      ) : (
+        <>
+          {valueInput}
+          {deleteButton}
+        </>
+      )}
     </div>
   );
 }
