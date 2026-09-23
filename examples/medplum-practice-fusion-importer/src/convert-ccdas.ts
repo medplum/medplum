@@ -92,7 +92,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { config as loadEnv } from 'dotenv';
 
 loadEnv();
@@ -140,7 +140,9 @@ if (!INPUT_DIR) {
 const OUTPUT_DIR = argValue('--output') ?? join(INPUT_DIR, 'fhir-output');
 const TAG_CODE =
   argValue('--tag') ??
-  (INPUT_DIR.split('/').filter(Boolean).slice(-2, -1)[0] ?? 'pf-migration').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  (resolve(INPUT_DIR).split('/').filter(Boolean).slice(-2, -1)[0] ?? 'pf-migration')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-');
 const SEED = process.argv.includes('--seed');
 const PURGE = process.argv.includes('--purge');
 
@@ -1707,6 +1709,7 @@ async function purgeImport(medplum: MedplumClient): Promise<void> {
   const pending = new Set<ResourceType>(PURGEABLE_TYPES);
   let deleted = 0;
   let failed = 0;
+  let found = 0;
   while (pending.size > 0) {
     const types = [...pending];
     const searchBundle: Bundle = {
@@ -1729,6 +1732,7 @@ async function purgeImport(medplum: MedplumClient): Promise<void> {
       }
       const ids = (page.entry ?? []).map((e) => e.resource?.id).filter((id): id is string => Boolean(id));
       targets.push(...ids.map((id) => `${type}/${id}`));
+      found += ids.length;
       if (ids.length < 1000) {
         pending.delete(type); // this round deletes the remainder
       }
@@ -1750,6 +1754,15 @@ async function purgeImport(medplum: MedplumClient): Promise<void> {
       failed += chunk.length - ok;
       console.log(`  deleted ${ok}/${chunk.length}`);
     }
+  }
+  if (found === 0) {
+    // A purge that matches nothing almost always means the wrong tag: seeding now would duplicate
+    // the previous import rather than replace it, so stop before --seed runs.
+    console.error(
+      `\nNothing is tagged ${tag} in the project. Pass --tag matching the previous import ` +
+        '(the meta.tag code on its resources, e.g. pf-migration) or drop --purge for a first import.'
+    );
+    process.exit(1);
   }
   console.log(`Purge complete: ${deleted} deleted, ${failed} failed.`);
   if (failed > 0) {
