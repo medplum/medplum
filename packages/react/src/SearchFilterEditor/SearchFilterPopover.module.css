@@ -16,7 +16,7 @@
   padding-right: var(--mantine-spacing-xs);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--mantine-spacing-md);
 }
 
 .row {
