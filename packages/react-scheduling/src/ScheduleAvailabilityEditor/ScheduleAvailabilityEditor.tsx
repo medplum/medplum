@@ -15,7 +15,7 @@ import {
   VisuallyHidden,
 } from '@mantine/core';
 import type { DayOfWeek, WithId } from '@medplum/core';
-import { clearScheduleParameter, getScheduleParameters } from '@medplum/core';
+import { clearScheduleSchedulingParameter, getScheduleSchedulingParameters } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { IconMinus, IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -250,7 +250,7 @@ export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProp
   // always on when editing the service default, where there is nothing to
   // inherit and so nothing to switch off.
   const [overriding, setOverriding] = useState(() =>
-    schedule ? getScheduleParameters(schedule, service, 'availability').length > 0 : true
+    schedule ? getScheduleSchedulingParameters(schedule, service, 'availability').length > 0 : true
   );
   // Seeded from the hours in effect rather than a blank week:
   // `getEffectiveAvailability` falls back to the service default on its own, and
@@ -302,7 +302,7 @@ export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProp
       if (props.schedule) {
         const updated = overriding
           ? setScheduleAvailability(props.schedule, service, fromWeeklyAvailability(weekly))
-          : clearScheduleParameter(props.schedule, service, 'availability');
+          : clearScheduleSchedulingParameter(props.schedule, service, 'availability');
         await props.onSave(updated);
       } else {
         await props.onSave({ ...service, availableTime: fromWeeklyAvailability(weekly) });

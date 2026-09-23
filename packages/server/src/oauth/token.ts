@@ -508,6 +508,12 @@ export async function exchangeExternalAuthToken(
     membershipId,
   });
 
+  // Token exchange carries the same proof as the external auth callback, so verify on the
+  // same terms.
+  await systemRepo.patchResource<User>('User', resolveId(login.user) as string, [
+    { op: 'add', path: '/emailVerified', value: true },
+  ]);
+
   await sendTokenResponse(req, res, login, client);
 }
 

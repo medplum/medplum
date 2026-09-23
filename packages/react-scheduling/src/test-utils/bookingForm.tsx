@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
 import { formatDate } from '@medplum/core';
-import type { Patient } from '@medplum/fhirtypes';
+import type { Coding, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { MockInstance } from 'vitest';
 import {
+  AuthorizationFixtures,
+  DiagnosisCodes,
   ElderJordanPatient,
   PatientFixtures,
+  ProcedureCodes,
   SchedulingFixtures,
   SubClinicProviderFixtures,
   SurgicalFixtures,
@@ -27,6 +30,7 @@ export async function setupBookingClient(): Promise<MockClient> {
   for (const resource of [
     ...SchedulingFixtures,
     ...SurgicalFixtures,
+    ...AuthorizationFixtures,
     ...SubClinicProviderFixtures,
     ...PatientFixtures,
   ]) {
@@ -35,14 +39,100 @@ export async function setupBookingClient(): Promise<MockClient> {
   return medplum;
 }
 
+/**
+ * A field of the booking form, by the label above it.
+ *
+ * Scoped to the booking pane, because the workspace's sidebar carries filters
+ * with the same labels as some of the booking form's fields. Falls back to the
+ * whole document for the tests that render the form on its own.
+ *
+ * @param label - Matches the label above the field.
+ * @returns The field's search box.
+ */
 export function field(label: RegExp): HTMLElement {
-  return screen.getByRole('searchbox', { name: label });
+  const pane = screen.queryByRole('region', { name: 'Book appointment' });
+  return within(pane ?? document.body).getByRole('searchbox', { name: label });
 }
 
+/**
+ * Chooses the imaging visit type, scoped to the field's own dropdown.
+ *
+ * The workspace names its visit types in the sidebar too, so an unscoped query for
+ * the name would match the filter row as well as the option.
+ */
 export async function chooseImagingService(): Promise<void> {
-  await typeInAutocomplete(field(/visit type/i), 'Ultrasound');
-  await clickAutocompleteOption('Ultrasound Imaging');
+  const listbox = await searchField(/visit type/i, 'Ultrasound');
+  await act(async () => {
+    fireEvent.click(within(listbox).getByText('Ultrasound Imaging'));
+  });
   await settleAutocomplete();
+}
+
+/**
+ * Names the visit type a practice designated as needing prior authorization.
+ */
+export async function chooseAuthorizedService(): Promise<void> {
+  const listbox = await searchField(/visit type/i, 'Infusion');
+  await act(async () => {
+    fireEvent.click(within(listbox).getByText('Infusion Therapy'));
+  });
+  await settleAutocomplete();
+}
+
+/**
+ * Gives one of the codes a prior authorization needs, by searching it and taking it off the list.
+ *
+ * Searching by code is what a scheduler does, and it is what tells two codes apart when their
+ * descriptions share a long prefix. See {@link createCode} for the other way in, the code typed
+ * over the top of a value set that never carried it.
+ *
+ * @param label - Matches the label above the field.
+ * @param coding - The code to give, as the value set holds it.
+ */
+export async function enterCode(label: RegExp, coding: Coding): Promise<void> {
+  const listbox = await searchField(label, coding.code as string);
+  await act(async () => {
+    fireEvent.click(within(listbox).getByText(coding.display as string));
+  });
+  await settleAutocomplete();
+}
+
+/**
+ * Gives a code by typing it and taking the "+ Create" row, rather than picking one off the list.
+ *
+ * What a scheduler does for a code their terminology has not got: the value set is a starting
+ * point for these fields, not the bounds of what can be billed against.
+ *
+ * @param label - Matches the label above the field.
+ * @param code - The code to type.
+ */
+export async function createCode(label: RegExp, code: string): Promise<void> {
+  await typeInAutocomplete(field(label), code);
+  await clickAutocompleteOption(`+ Create ${code}`);
+  await settleAutocomplete();
+}
+
+/**
+ * The box attesting the supporting documentation was verified.
+ * @returns The checkbox.
+ */
+export function medicalNecessityBox(): HTMLElement {
+  return screen.getByRole('checkbox', { name: /medical necessity/i });
+}
+
+/** Ticks the box attesting the supporting documentation was verified. */
+export async function confirmMedicalNecessity(): Promise<void> {
+  await act(async () => {
+    fireEvent.click(medicalNecessityBox());
+  });
+  await settleAutocomplete();
+}
+
+/** Gives one of each code and the attestation, which is all a designated visit type needs. */
+export async function enterAuthorizationDetails(): Promise<void> {
+  await enterCode(/procedure code/i, ProcedureCodes[0]);
+  await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+  await confirmMedicalNecessity();
 }
 
 /**
@@ -83,30 +173,22 @@ export async function searchField(label: RegExp, query: string): Promise<HTMLEle
   return listbox;
 }
 
-export async function chooseActor(role: RegExp, query: string, name: string): Promise<void> {
-  const listbox = await searchField(role, query);
+/**
+ * Adds another row to one actor type, for a second one the visit needs.
+ * @param lowercaseLabel - The actor type as the form writes it, e.g. `provider`.
+ */
+export async function addActorRow(lowercaseLabel: string): Promise<void> {
+  const button = screen.getByRole('button', { name: `Add another ${lowercaseLabel}` });
   await act(async () => {
-    fireEvent.click(within(listbox).getByText(name));
+    fireEvent.click(button);
   });
   await settleAutocomplete();
 }
 
-/**
- * Takes one chosen value back out of the field holding it: the only way to change the
- * visit type, which takes its search box away while full.
- *
- * @param name - The value currently chosen.
- */
-export async function removePill(name: string): Promise<void> {
-  // Scoped to the pill, since a named resource is also on the slot card and in the
-  // chosen time's description. Mantine's remove button is `aria-hidden`.
-  const pill = screen.queryAllByText(name).find((node) => node.className.includes('Pill'));
-  const remove = pill?.parentElement?.querySelector('button');
-  if (!remove) {
-    throw new Error(`No remove button on the ${name} pill`);
-  }
+export async function chooseActor(role: RegExp, query: string, name: string): Promise<void> {
+  const listbox = await searchField(role, query);
   await act(async () => {
-    fireEvent.click(remove);
+    fireEvent.click(within(listbox).getByText(name));
   });
   await settleAutocomplete();
 }
@@ -240,13 +322,26 @@ export async function chooseSecondOfferedTime(): Promise<void> {
 }
 
 /**
+ * Matches the pill holding one code.
+ *
+ * A code pill leads with the code and continues with its description, so it is matched on the code
+ * it starts with rather than on the whole of what it reads.
+ *
+ * @param coding - The code the pill should be holding.
+ * @returns A matcher for that pill.
+ */
+export function codePill(coding: Coding): RegExp {
+  return new RegExp(`^${(coding.code as string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} `);
+}
+
+/**
  * Whether a field is holding a value, read off the pill rather than the state: the
  * fields ignore `defaultValue` after mount, so a cleared form could still show one.
  *
  * @param name - The value's label.
  * @returns Whether a pill is showing it.
  */
-export function hasPill(name: string): boolean {
+export function hasPill(name: string | RegExp): boolean {
   return screen.queryAllByText(name).some((node) => node.className.includes('Pill'));
 }
 
@@ -368,6 +463,21 @@ export async function choosePatient(query: string, detail: string): Promise<void
 export async function fillBooking(): Promise<void> {
   await chooseImagingService();
   await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+  await openTimeFinder();
+  await chooseFirstOfferedTime();
+  await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+}
+
+/**
+ * Answers everything a booking of a designated visit type needs except the fields its
+ * eligibility asks for.
+ *
+ * They are left out so that a test can find the form holding every other answer, which is what
+ * proves those fields are the thing blocking it.
+ */
+export async function fillAuthorizedBooking(): Promise<void> {
+  await chooseAuthorizedService();
+  await chooseActor(/provider/i, 'chen', 'Dr. Wei Chen');
   await openTimeFinder();
   await chooseFirstOfferedTime();
   await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));

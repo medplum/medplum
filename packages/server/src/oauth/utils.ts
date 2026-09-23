@@ -40,10 +40,13 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
+import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '../auth/mfalimit';
 import { getConfig } from '../config/loader';
+import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import type { Repository, SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { SmartScope } from '../fhir/smart';
 import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
@@ -295,56 +298,59 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
  * @returns The updated login resource.
  */
 export async function verifyMfaToken(login: Login, token: string): Promise<Login> {
-  if (login.revoked) {
-    throw new OperationOutcomeError(badRequest('Login revoked'));
-  }
+  assertMfaLoginActive(login);
 
-  if (login.granted) {
-    throw new OperationOutcomeError(badRequest('Login granted'));
-  }
-
-  if (login.mfaVerified) {
-    throw new OperationOutcomeError(badRequest('Login already verified'));
+  if (login.emailMfa && new Date(login.emailMfa.expiresAt).getTime() < Date.now()) {
+    throw new OperationOutcomeError(badRequest('MFA code expired'));
   }
 
   const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.readReference(login.user as Reference<User>);
 
-  // Email-based MFA: the token is the 6-digit code that was emailed to the
-  // user. login.emailMfa holds a bcrypt hash of that code and its expiration;
-  // clear it on success.
-  if (login.emailMfa) {
-    if (new Date(login.emailMfa.expiresAt).getTime() < Date.now()) {
-      throw new OperationOutcomeError(badRequest('MFA code expired'));
-    }
-    if (await bcrypt.compare(token, login.emailMfa.codeHash)) {
-      // Entering the emailed code proves the user controls the email address.
-      if (!user.emailVerified) {
-        await systemRepo.updateResource<User>({ ...user, emailVerified: true });
-      }
-      return systemRepo.updateResource<Login>({
-        ...login,
-        mfaVerified: true,
-        emailMfa: undefined,
-      });
-    }
-  }
-
-  // TOTP authenticator application
   const secret = user.mfaSecret;
-  if (!secret) {
+  if (!login.emailMfa && !secret) {
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
-  authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-  if (!authenticator.verify({ token, secret })) {
+  const loginAttempts = await reserveMfaAttempt(login);
+  let emailCodeVerified = false;
+  let verified = false;
+
+  // Email-based MFA: the token is the 6-digit code that was emailed to the
+  // user. login.emailMfa holds a bcrypt hash of that code and its expiration;
+  // clear it on success.
+
+  if (login.emailMfa) {
+    emailCodeVerified = await bcrypt.compare(token, login.emailMfa.codeHash);
+    verified = emailCodeVerified;
+  }
+
+  // TOTP authenticator application
+  if (!verified && secret) {
+    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+    verified = authenticator.verify({ token, secret });
+  }
+
+  if (!verified) {
+    if (loginAttempts >= MFA_LOGIN_ATTEMPT_LIMIT) {
+      await systemRepo.patchResource<Login>('Login', login.id as string, [
+        { op: 'add', path: '/revoked', value: true },
+      ]);
+    }
     throw new OperationOutcomeError(badRequest('Invalid MFA token'));
   }
 
-  return systemRepo.updateResource<Login>({
+  if (emailCodeVerified && !user.emailVerified) {
+    await systemRepo.patchResource<User>('User', user.id, [{ op: 'add', path: '/emailVerified', value: true }]);
+  }
+
+  const result = await systemRepo.updateResource<Login>({
     ...login,
     mfaVerified: true,
+    emailMfa: emailCodeVerified ? undefined : login.emailMfa, // clear emailMfa on successful verification
   });
+  await tryReleaseMfaAttempt(getLogger(), login);
+  return result;
 }
 
 /**
@@ -1124,7 +1130,7 @@ export async function getLoginForBasicAuth(req: Request, token: string): Promise
 }
 
 async function makeAuthResult(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   req: Request | IncomingMessage | undefined,
   login: Login,
   project: WithId<Project>,
@@ -1331,7 +1337,10 @@ async function tryExternalAuthLogin(
     }
 
     // Search for the profile
-    const profile = await systemRepo.searchOne<ProfileResource>(searchRequest);
+    // SHARDING there's no project context here and feels like a legitimate gap in
+    // the current external auth flow. Will need to require projectId be in the request path
+    const projectSystemRepo = getShardSystemRepo(TODO_SHARD_ID);
+    const profile = await projectSystemRepo.searchOne<ProfileResource>(searchRequest);
     if (!profile) {
       return undefined;
     }

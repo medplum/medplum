@@ -71,6 +71,8 @@ export interface MedplumServerConfig {
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
   botCustomFunctionsEnabled?: boolean;
+  /** Write each bot invocation's input to binary storage (e.g. S3) for debugging and analytics. Default is `true`. */
+  storeBotInput?: boolean;
   logRequests?: boolean;
   logAuditEvents?: boolean;
   saveAuditEvents?: boolean;
@@ -100,6 +102,7 @@ export interface MedplumServerConfig {
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;
   defaultLoginRateLimit?: number;
+  defaultMfaRateLimit?: number;
   /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
   defaultFhirQuota?: number;
   /** Milliseconds of delay added per quota unit in async context, in lieu of consuming quota units. */
