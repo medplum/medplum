@@ -96,6 +96,8 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--mantine-spacing-sm);
+  /* Extra right inset so the "N shown" count sits md from the edge. */
+  padding-right: var(--mantine-spacing-md);
   border-top: 1px solid var(--mantine-color-gray-2);
 }
 
