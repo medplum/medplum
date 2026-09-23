@@ -178,7 +178,7 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
                   color="gray"
                   radius="xl"
                   aria-label={`delete-sort-${index}`}
-                  ml={4}
+                  ml={2}
                   onClick={() => deleteRule(index)}
                 >
                   <IconX size={16} stroke={2} color="var(--mantine-color-gray-7)" />
@@ -193,10 +193,11 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
             size="compact-sm"
             variant="subtle"
             color="blue"
-            leftSection={<IconCirclePlus size={14} />}
+            leftSection={<IconCirclePlus size={16} />}
+            fw={500}
             onClick={addRule}
           >
-            Add another sort
+            Add Sort
           </Button>
         </div>
       </Popover.Dropdown>

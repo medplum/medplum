@@ -144,9 +144,10 @@ export function SearchFilterPopover(props: SearchFilterPopoverProps): JSX.Elemen
             variant="subtle"
             color="blue"
             leftSection={<IconCirclePlus size={16} />}
+            fw={500}
             onClick={addRow}
           >
-            Add condition
+            Add Filter
           </Button>
         </div>
       </Popover.Dropdown>
@@ -197,7 +198,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
       color="gray"
       radius="xl"
       aria-label={`delete-filter-${props.index}`}
-      ml={4}
+      ml={2}
       onClick={props.onDelete}
     >
       <IconX size={16} stroke={2} color="var(--mantine-color-gray-7)" />
@@ -210,7 +211,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
     <ActionIcon
       variant="subtle"
       radius="xl"
-      ml={4}
+      ml={2}
       aria-hidden
       tabIndex={-1}
       style={{ visibility: 'hidden', pointerEvents: 'none' }}
