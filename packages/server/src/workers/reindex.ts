@@ -170,7 +170,10 @@ export class ReindexJob {
 
   private async maybeSkipJob(): Promise<boolean> {
     const asyncJob = this.asyncJobExecutor.getAsyncJob();
-    if (Boolean(asyncJob.dataVersion) && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER)))) {
+    if (
+      Boolean(asyncJob.dataVersion) &&
+      (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER, this.systemRepo.shardId)))
+    ) {
       this.logger.info('Skipping reindex post-deploy migration since server is in firstBoot mode', {
         asyncJob: getReferenceString(asyncJob),
         version: `v${asyncJob.dataVersion}`,
@@ -577,22 +580,25 @@ export interface ReindexJobOptions {
 }
 
 export async function addReindexJob(
+  shardId: string,
   resourceTypes: ResourceType[],
   asyncJob: WithId<AsyncJob>,
   options?: ReindexJobOptions
 ): Promise<Job<ReindexJobData>> {
-  const jobData = prepareReindexJobData(resourceTypes, asyncJob, options);
+  const jobData = prepareReindexJobData(shardId, resourceTypes, asyncJob, options);
   return addReindexJobData(jobData);
 }
 
 /**
  * Prepares a current reindex payload.
+ * @param shardId - The ID of the shard where the reindex job will run.
  * @param resourceTypes - The resource types to reindex.
  * @param asyncJob - The tracking AsyncJob.
  * @param options - Optional reindex tuning parameters.
  * @returns The durable reindex job payload.
  */
 export function prepareReindexJobData(
+  shardId: string,
   resourceTypes: ResourceType[],
   asyncJob: WithId<AsyncJob>,
   options?: ReindexJobOptions
@@ -603,7 +609,7 @@ export function prepareReindexJobData(
   const endTimestamp = new Date(startTime + 1000 * 60 * endTimestampBufferMinutes).toISOString();
 
   return {
-    target: { kind: 'shard', shardId: TODO_SHARD_ID }, // Will be an input to this function
+    target: { kind: 'shard', shardId },
     tracking: getAsyncJobTracking(asyncJob),
     type: 'reindex',
     minReindexWorkerVersion: REINDEX_WORKER_VERSION,

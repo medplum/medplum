@@ -177,6 +177,7 @@ async function runDynamicMigration(
   const asyncJob = exec.getAsyncJob();
   const results: MigrationActionResult[] = [];
   try {
+    const shardId = 'target' in job.data ? job.data.target.shardId : TODO_SHARD_ID;
     await withLongRunningDatabaseClient(async (client) => {
       if (job.data.migrationActions.preDeploy.length) {
         await executeMigrationActions(client, results, job.data.migrationActions.preDeploy);
@@ -184,7 +185,7 @@ async function runDynamicMigration(
       if (job.data.migrationActions.postDeploy.length) {
         await executeMigrationActions(client, results, job.data.migrationActions.postDeploy);
       }
-    });
+    }, shardId);
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(output);
   } catch (err: any) {
@@ -220,7 +221,8 @@ export async function runCustomMigration(
   }
   const asyncJob = exec.getAsyncJob();
 
-  if (jobData.skipInFirstBootMode && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER)))) {
+  const shardId = 'target' in jobData ? jobData.target.shardId : TODO_SHARD_ID;
+  if (jobData.skipInFirstBootMode && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER, shardId)))) {
     globalLogger.info('Skipping custom post-deploy migration since server is in firstBoot mode', {
       asyncJob: getReferenceString(asyncJob),
       version: `v${asyncJob.dataVersion}`,
@@ -236,7 +238,7 @@ export async function runCustomMigration(
   try {
     await withLongRunningDatabaseClient(async (client) => {
       await callback(client, results, job, jobData);
-    });
+    }, shardId);
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(output);
   } catch (err: any) {
@@ -290,10 +292,13 @@ function getAsyncJobOutputFromMigrationActionResults(results: MigrationActionRes
   };
 }
 
-export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): CustomPostDeployMigrationJobData {
+export function prepareCustomMigrationJobData(
+  shardId: string,
+  asyncJob: WithId<AsyncJob>
+): CustomPostDeployMigrationJobData {
   const ctx = tryGetRequestContext();
   return {
-    target: { kind: 'shard', shardId: TODO_SHARD_ID },
+    target: { kind: 'shard', shardId },
     tracking: getAsyncJobTracking(asyncJob),
     type: 'custom',
     requestId: ctx?.requestId,
@@ -302,12 +307,13 @@ export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): Custo
 }
 
 export function prepareDynamicMigrationJobData(
+  shardId: string,
   asyncJob: WithId<AsyncJob>,
   migrationActions: PhasalMigration
 ): DynamicPostDeployJobData {
   const ctx = tryGetRequestContext();
   return {
-    target: { kind: 'shard', shardId: TODO_SHARD_ID },
+    target: { kind: 'shard', shardId },
     tracking: getAsyncJobTracking(asyncJob),
     type: 'dynamic',
     migrationActions,

@@ -12,9 +12,10 @@ import {
   validateResourceType,
 } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
-import { body, checkExact, validationResult } from 'express-validator';
+import type { ValidationChain } from 'express-validator';
+import { body, checkExact, query, validationResult } from 'express-validator';
 import { assert } from 'node:console';
 import { setPassword } from '../auth/setpassword';
 import { LAMBDA_NAME_REGEX_PATTERN } from '../cloud/aws/deploy';
@@ -26,7 +27,7 @@ import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/as
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getShardSystemRepo, Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { isValidPostgresIdentifier } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
@@ -55,39 +56,78 @@ export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_cost_delay: 'float',
 } as const satisfies Record<string, 'float' | 'int'>;
 
+/** If sharding isn't being used, shardId not a required input */
+let shardIdRequired: boolean | undefined;
+
+function shardIdValidator(source?: 'body' | 'query'): ValidationChain {
+  shardIdRequired ??= getConfig().shards !== undefined;
+  const src = source === 'query' ? query : body;
+  const chain = src('shardId');
+  if (!shardIdRequired) {
+    return chain.optional().isString().withMessage('shardId must be a string');
+  }
+  return chain.isString().withMessage('shardId is required');
+}
+
+function getShardId(bodyOrQuery: any): string {
+  const shardId = bodyOrQuery.shardId as unknown;
+  if (!shardId) {
+    shardIdRequired ??= getConfig().shards !== undefined;
+    if (!shardIdRequired) {
+      return GLOBAL_SHARD_ID;
+    }
+    throw new Error('shardId accessed without validation');
+  }
+
+  if (typeof shardId !== 'string') {
+    throw new Error('shardId must be a string');
+  }
+
+  return shardId;
+}
+
+function validateRequest(req: Request, res: Response, next: NextFunction): void {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    sendOutcome(res, invalidRequest(errors));
+    return;
+  }
+  next();
+}
+
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
 
 // POST to /admin/super/valuesets
 // to rebuild the terminology tables.
 // Run this after changes to how ValueSet elements are defined.
-superAdminRouter.post('/valuesets', async (req: Request, res: Response) => {
+superAdminRouter.post('/valuesets', [shardIdValidator(), validateRequest], async (req: Request, res: Response) => {
   requireSuperAdmin();
   requireAsync(req);
 
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
+  const systemRepo = getShardSystemRepo(getShardId(req.body));
   await sendAsyncResponse(req, res, async () => rebuildR4ValueSets(systemRepo));
 });
 
 // POST to /admin/super/structuredefinitions
 // to rebuild the "StructureDefinition" table.
 // Run this after any changes to the built-in StructureDefinitions.
-superAdminRouter.post('/structuredefinitions', async (req: Request, res: Response) => {
+superAdminRouter.post('/structuredefinitions', [shardIdValidator(), validateRequest], async (req: Request, res: Response) => {
   requireSuperAdmin();
   requireAsync(req);
 
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
+  const systemRepo = getShardSystemRepo(getShardId(req.body));
   await sendAsyncResponse(req, res, async () => rebuildR4StructureDefinitions(systemRepo));
 });
 
 // POST to /admin/super/searchparameters
 // to rebuild the "SearchParameter" table.
 // Run this after any changes to the built-in SearchParameters.
-superAdminRouter.post('/searchparameters', async (req: Request, res: Response) => {
+superAdminRouter.post('/searchparameters', [shardIdValidator(), validateRequest], async (req: Request, res: Response) => {
   requireSuperAdmin();
   requireAsync(req);
 
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
+  const systemRepo = getShardSystemRepo(getShardId(req.body));
   await sendAsyncResponse(req, res, async () => rebuildR4SearchParameters(systemRepo));
 });
 
@@ -96,7 +136,7 @@ superAdminRouter.post('/searchparameters', async (req: Request, res: Response) =
 // Run this after major changes to how search columns are constructed.
 superAdminRouter.post(
   '/reindex',
-
+  [shardIdValidator()],
   [
     body('reindexType')
       .isIn(['outdated', 'all', 'specific'])
@@ -137,16 +177,11 @@ superAdminRouter.post(
       .optional()
       .isInt({ min: 1, max: 20 })
       .withMessage('maxIterationAttempts must be an integer from 1 to 20'),
+    validateRequest,
   ],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
-      return;
-    }
 
     let resourceTypes: string[];
     if (req.body.resourceType === '*') {
@@ -163,8 +198,6 @@ superAdminRouter.post(
     if (filter) {
       searchFilter = parseSearchRequest((resourceTypes[0] ?? '') + '?' + filter);
     }
-
-    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
 
     const reindexType = req.body.reindexType as 'outdated' | 'all' | 'specific';
     let maxResourceVersion: number | undefined;
@@ -218,10 +251,13 @@ superAdminRouter.post(
     // replace the search, if any, with queryForUrl
     asyncJobUrl.search = getQueryString(queryForUrl);
 
-    const exec = new AsyncJobExecutor(systemRepo);
+    const targetShardId = getShardId(req.body);
+    // SHARDING: For "system" driven operations, locate the system repository on the global shard.
+    const asyncJobSystemRepo = getShardSystemRepo(GLOBAL_SHARD_ID);
+    const exec = new AsyncJobExecutor(asyncJobSystemRepo);
     await exec.init(asyncJobUrl.toString());
     await exec.run(async (asyncJob) => {
-      await addReindexJob(resourceTypes as ResourceType[], asyncJob, opts);
+      await addReindexJob(targetShardId, resourceTypes as ResourceType[], asyncJob, opts);
     });
 
     const { baseUrl } = getConfig();
@@ -240,16 +276,11 @@ superAdminRouter.post(
       .withMessage('deleteConcurrency must be an integer from 1 to 5'),
     body('dryRun').optional().isBoolean().withMessage('dryRun must be a boolean').toBoolean(),
     checkExact(),
+    validateRequest,
   ],
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
-      return;
-    }
 
     const options: LambdaCleanerOptions = {
       nameRegex: LAMBDA_NAME_REGEX_PATTERN,
@@ -295,15 +326,10 @@ superAdminRouter.post(
       .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
       .isByteLength({ max: MAX_PASSWORD_LENGTH })
       .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
+    validateRequest,
   ],
   async (req: Request, res: Response) => {
     const { repo } = requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
-      return;
-    }
 
     const user = await getUserByEmail(req.body.email, req.body.projectId);
     if (!user) {
@@ -323,15 +349,10 @@ superAdminRouter.post(
   [
     body('resourceType').isIn(['AuditEvent', 'Login']).withMessage('Invalid resource type'),
     body('before').isISO8601().withMessage('Invalid before date'),
+    validateRequest,
   ],
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
-      return;
-    }
 
     await ctx.repo.purgeResources(req.body.resourceType, req.body.before);
     sendOutcome(res, allOk);
@@ -342,15 +363,9 @@ superAdminRouter.post(
 // to remove bot id jobs from queue.
 superAdminRouter.post(
   '/removebotidjobsfromqueue',
-  [body('botId').notEmpty().withMessage('Bot ID is required')],
+  [body('botId').notEmpty().withMessage('Bot ID is required'), validateRequest],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
-      return;
-    }
 
     await removeBullMQJobByKey(req.body.botId);
 
@@ -360,25 +375,25 @@ superAdminRouter.post(
 
 // POST to /admin/super/rebuildprojectid
 // to rebuild the projectId column on all resource types.
-superAdminRouter.post('/rebuildprojectid', async (req: Request, res: Response) => {
+superAdminRouter.post('/rebuildprojectid', [shardIdValidator(), validateRequest], async (req: Request, res: Response) => {
   requireSuperAdmin();
   requireAsync(req);
 
   await sendAsyncResponse(req, res, async () => {
     const resourceTypes = getResourceTypes();
     for (const resourceType of resourceTypes) {
-      await getDatabasePool(DatabaseMode.WRITER).query(
+      await getDatabasePool(DatabaseMode.WRITER, getShardId(req.body)).query(
         `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
       );
     }
   });
 });
 
-superAdminRouter.get('/migrations', async (req: Request, res: Response) => {
+superAdminRouter.get('/migrations', [shardIdValidator('query'), validateRequest], async (req: Request, res: Response) => {
   requireSuperAdmin();
 
   const postDeployMigrations = getPostDeployMigrationVersions();
-  const conn = getDatabasePool(DatabaseMode.WRITER);
+  const conn = getDatabasePool(DatabaseMode.WRITER, getShardId(req.query));
   const pendingPostDeployMigration = await getPendingPostDeployMigration(conn);
 
   res.json({
@@ -391,19 +406,16 @@ superAdminRouter.get('/migrations', async (req: Request, res: Response) => {
 // to run the pending post-deploy migration, if any.
 superAdminRouter.post(
   '/migrate',
-  [body('dataVersion').isInt().withMessage('dataVersion must be an integer').optional()],
+  [shardIdValidator(), body('dataVersion').isInt().withMessage('dataVersion must be an integer').optional(), validateRequest],
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
 
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
-      return;
-    }
-
     const { baseUrl } = getConfig();
-    const dataMigrationJob = await maybeStartPostDeployMigration(req?.body?.dataVersion as number | undefined);
+    const dataMigrationJob = await maybeStartPostDeployMigration(
+      getShardId(req.body),
+      req?.body?.dataVersion as number | undefined
+    );
     // If there is no migration job to run, return allOk
     if (!dataMigrationJob) {
       sendOutcome(res, allOk);
@@ -414,39 +426,44 @@ superAdminRouter.post(
   }
 );
 
-superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Response) => {
-  const ctx = requireSuperAdmin();
-  requireAsync(req);
+superAdminRouter.post(
+  '/reconcile-db-schema-drift',
+  [shardIdValidator(), validateRequest],
+  async (req: Request, res: Response) => {
+    const ctx = requireSuperAdmin();
+    requireAsync(req);
 
-  const migrationActions = await generateMigrationActions({
-    dbClient: getDatabasePool(DatabaseMode.WRITER),
-    dropUnmatchedIndexes: true,
-  });
+    const migrationActions = await generateMigrationActions({
+      dbClient: getDatabasePool(DatabaseMode.WRITER, getShardId(req.body)),
+      dropUnmatchedIndexes: true,
+    });
 
-  const allActions = [...migrationActions.preDeploy, ...migrationActions.postDeploy];
+    const allActions = [...migrationActions.preDeploy, ...migrationActions.postDeploy];
 
-  if (allActions.length === 0) {
-    // Nothing to do
-    sendOutcome(res, allOk);
-    return;
+    if (allActions.length === 0) {
+      sendOutcome(res, allOk);
+      return;
+    }
+
+    const shardId = getShardId(req.body);
+    const exec = new AsyncJobExecutor(ctx.repo);
+    await exec.init(req.originalUrl);
+    await exec.run(async (asyncJob) => {
+      const jobData = prepareDynamicMigrationJobData(shardId, asyncJob, migrationActions);
+      await addPostDeployMigrationJobData(jobData);
+    });
+
+    const { baseUrl } = getConfig();
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
   }
-
-  const exec = new AsyncJobExecutor(ctx.repo);
-  await exec.init(req.originalUrl);
-  await exec.run(async (asyncJob) => {
-    const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
-    await addPostDeployMigrationJobData(jobData);
-  });
-
-  const { baseUrl } = getConfig();
-  sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
-});
+);
 
 // POST to /admin/super/rebuild-index
 // to rebuild one or more PostgreSQL indexes without blocking writes.
 superAdminRouter.post(
   '/rebuild-index',
   [
+    shardIdValidator(),
     body('targets').isArray({ min: 1, max: 10 }).withMessage('targets must be an array containing 1 to 10 items'),
     body('targets.*')
       .isObject({ strict: true })
@@ -469,17 +486,13 @@ superAdminRouter.post(
       .custom(isValidPostgresIdentifier)
       .withMessage('Invalid index name'),
     checkExact(),
+    validateRequest,
   ],
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
 
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
-      return;
-    }
-
+    const shardId = getShardId(req.body);
     const targets = req.body.targets as RebuildIndexTarget[];
     const migrationActions = {
       preDeploy: [],
@@ -502,7 +515,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(ctx.systemRepo);
     await exec.init(`${req.originalUrl}?${requestParams}`);
     await exec.run(async (asyncJob) => {
-      const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+      const jobData = prepareDynamicMigrationJobData(shardId, asyncJob, migrationActions);
       await addPostDeployMigrationJobData(jobData);
     });
 
@@ -518,6 +531,7 @@ type RebuildIndexTarget = { table: string } | { index: string };
 superAdminRouter.post(
   '/drop-invalid-indexes',
   [
+    shardIdValidator(),
     body('targets').isArray({ min: 1, max: 10 }).withMessage('targets must be an array containing 1 to 10 items'),
     body('targets.*')
       .isObject({ strict: true })
@@ -538,16 +552,11 @@ superAdminRouter.post(
       .custom(isValidPostgresIdentifier)
       .withMessage('Invalid index name'),
     checkExact(),
+    validateRequest,
   ],
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
-      return;
-    }
 
     const targets = req.body.targets as DropInvalidIndexTarget[];
     const migrationActions = {
@@ -564,10 +573,11 @@ superAdminRouter.post(
       requestParams.append('index', `${target.schema}.${target.index}`);
     }
 
+    const shardId = getShardId(req.body);
     const exec = new AsyncJobExecutor(ctx.systemRepo);
     await exec.init(`${req.originalUrl}?${requestParams}`);
     await exec.run(async (asyncJob) => {
-      const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+      const jobData = prepareDynamicMigrationJobData(shardId, asyncJob, migrationActions);
       await addPostDeployMigrationJobData(jobData);
     });
 
@@ -584,18 +594,15 @@ type DropInvalidIndexTarget = { schema: string; index: string };
 // WARNING: This is unsafe and may break everything if you are not careful.
 superAdminRouter.post(
   '/setdataversion',
-  [body('dataVersion').isInt().withMessage('dataVersion must be an integer')],
+  [shardIdValidator(), body('dataVersion').isInt().withMessage('dataVersion must be an integer'), validateRequest],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
 
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
-      return;
-    }
-
     assert(req.body.dataVersion !== undefined);
-    await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), req.body.dataVersion);
+    await markPostDeployMigrationCompleted(
+      getDatabasePool(DatabaseMode.WRITER, getShardId(req.body)),
+      req.body.dataVersion
+    );
 
     sendOutcome(res, allOk);
   }
@@ -606,6 +613,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/tablesettings',
   [
+    shardIdValidator(),
     body('tableName')
       .isString()
       .withMessage('Table name must be a string')
@@ -640,15 +648,10 @@ superAdminRouter.post(
       }
     }),
     checkExact(),
+    validateRequest,
   ],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
-      return;
-    }
 
     // DDL queries cannot be parameterized. See https://www.postgresql.org/docs/18/plpgsql-statements.html
     const query = `ALTER TABLE "${req.body.tableName}" SET (${Object.entries(req.body.settings)
@@ -656,7 +659,7 @@ superAdminRouter.post(
       .join(', ')});`;
 
     const startTime = Date.now();
-    await getDatabasePool(DatabaseMode.WRITER).query(query); // shardId will be an input to this route
+    await getDatabasePool(DatabaseMode.WRITER, getShardId(req.body)).query(query); // shardId will be an input to this route
     globalLogger.info('[Super Admin]: Table settings updated', {
       tableName: req.body.tableName,
       settings: req.body.settings,
@@ -672,6 +675,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/vacuum',
   [
+    shardIdValidator(),
     body('tableNames').isArray().withMessage('Table names must be an array of strings').optional(),
     body('tableNames.*')
       .isString()
@@ -682,16 +686,11 @@ superAdminRouter.post(
     body('analyze').isBoolean().optional().default(false),
     body('vacuum').isBoolean().optional().default(true),
     checkExact(),
+    validateRequest,
   ],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
-      return;
-    }
 
     const vacuum = req.body.vacuum ?? true;
 
@@ -706,7 +705,7 @@ superAdminRouter.post(
 
     await sendAsyncResponse(req, res, async () => {
       const startTime = Date.now();
-      await getDatabasePool(DatabaseMode.WRITER).query(query); // shardId will be an input to this route
+      await getDatabasePool(DatabaseMode.WRITER, getShardId(req.body)).query(query); // shardId will be an input to this route
       globalLogger.info('[Super Admin]: Vacuum completed', {
         tableNames: req.body.tableNames,
         vacuum,
@@ -727,13 +726,13 @@ superAdminRouter.post(
 
 // POST to /admin/super/reloadcron
 // to clear out the cron queue and reload all cron strings from cron bots
-superAdminRouter.post('/reloadcron', async (req: Request, res: Response) => {
+superAdminRouter.post('/reloadcron', [shardIdValidator(), validateRequest], async (req: Request, res: Response) => {
   requireSuperAdmin();
   requireAsync(req);
 
   await sendAsyncResponse(req, res, async () => {
     const startTime = Date.now();
-    await reloadCronBots(PLACEHOLDER_SHARD_ID);
+    await reloadCronBots(getShardId(req.body));
     globalLogger.info('[Super Admin]: Cron bots reloaded', {
       durationMs: Date.now() - startTime,
     });

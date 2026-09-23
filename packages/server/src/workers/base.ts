@@ -62,6 +62,8 @@ export type AsyncJobTracking =
       readonly asyncJobId: string;
     };
 
+// TODO this is too self-referential since nothing blocks system resources (without meta.project)
+// from being created on any particular shard...
 export function getAsyncJobTracking(asyncJob: WithId<Resource>): AsyncJobTracking {
   return asyncJob.meta?.project
     ? { owner: 'project', projectId: asyncJob.meta.project, asyncJobId: asyncJob.id }
