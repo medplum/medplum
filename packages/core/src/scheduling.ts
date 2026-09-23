@@ -11,10 +11,12 @@ import type {
   Resource,
   Schedule,
 } from '@medplum/fhirtypes';
+import { isReference } from './types';
 import type { WithId } from './utils';
 import {
   createReference,
   deepClone,
+  flatMapFilter,
   getExtension,
   getExtensions,
   getExtensionValue,
@@ -520,13 +522,17 @@ export function serviceTypeIncludesService(
  */
 export function extractServiceTypeReferences(
   serviceType: CodeableConcept[] | undefined
-): Reference<HealthcareService>[] {
+): (Reference<HealthcareService> & { reference: string })[] {
   if (!serviceType?.length) {
     return [];
   }
-  return serviceType
-    .map((concept) => getExtensionValue(concept, ServiceTypeReferenceURI) as Reference<HealthcareService> | undefined)
-    .filter(isDefined);
+  return flatMapFilter(serviceType, (concept) => {
+    const value = getExtensionValue(concept, ServiceTypeReferenceURI);
+    // We expect that `value` is always a Reference<HealthcareService>, but the
+    // extension shape may not be validated by a FHIR Profile, so we perform a
+    // safety check here. This also makes Typescript safe without a cast.
+    return isReference<HealthcareService>(value, 'HealthcareService') ? value : undefined;
+  });
 }
 
 /**

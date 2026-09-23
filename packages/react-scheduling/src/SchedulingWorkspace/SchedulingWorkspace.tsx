@@ -20,6 +20,7 @@ import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBooking
 import { AppointmentBookingForm } from '../AppointmentFinder/AppointmentBookingForm';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
+import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
 import { resolveThemeColor } from '../colors';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
@@ -57,6 +58,7 @@ export interface SchedulingWorkspaceProps {
   readonly diagnosisBinding?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
+  readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
   /**
    * Overrides the value set the appointment detail view offers cancellation reasons
    * from, for a host coding them against its own terminology.
@@ -95,10 +97,8 @@ export interface SchedulingWorkspaceProps {
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
  * - Shows what is booked: clicking an appointment opens {@link AppointmentDetails} in the
- *   same pane the booking form uses, describing the visit and offering to cancel it.
- *   Cancelling is what takes the time back off the calendar, again without a host
- *   supplying anything. The pane holds one or the other, never both: opening either
- *   closes whatever was open beside the calendar.
+ *   same pane the booking form uses, describing the visit and offering to cancel or
+ *   reschedule it.
  * - Highlights the time last chosen, wherever it was chosen: the click that opened the
  *   pane, then whatever the form's time search settles on, and nothing while the form
  *   holds no time. The calendar is never moved to reach it — a highlight off the week
@@ -141,6 +141,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // What the calendar highlights
   const [highlight, setHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
+  const [rescheduleFinderOpen, setRescheduleFinderOpen] = useState(false);
 
   // Finds all bookable Schedules, with one search per bookable actor type.
   useEffect(() => {
@@ -261,14 +262,20 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const selectAppointment = useCallback(
     (appointment: Appointment): void => {
       if (appointment.id) {
+        if (appointment.id !== selectedAppointmentId) {
+          setRescheduleFinderOpen(false);
+        }
         closeBooking();
         setSelectedAppointmentId(appointment.id);
       }
     },
-    [closeBooking]
+    [closeBooking, selectedAppointmentId]
   );
 
-  const closeAppointment = useCallback((): void => setSelectedAppointmentId(undefined), []);
+  const closeAppointment = useCallback((): void => {
+    setSelectedAppointmentId(undefined);
+    setRescheduleFinderOpen(false);
+  }, []);
 
   const openAppointment = useMemo((): WithId<Appointment> | undefined => {
     if (selectedAppointmentId) {
@@ -331,7 +338,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         <CalendarTimezoneNotice className={classes.timezoneNotice} timezones={timezones} anyUnknown={anyUnknown} />
       </div>
       {openAppointment && (
-        <section key={openAppointment.id} className={classes.pane} aria-label="Appointment details">
+        <section
+          key={openAppointment.id}
+          className={cx(classes.pane, { [classes.paneWide]: rescheduleFinderOpen })}
+          aria-label="Appointment details"
+        >
           <Group justify="space-between" wrap="nowrap" mb="sm">
             <Title order={4}>Appointment details</Title>
             <CloseButton aria-label="Close appointment details" onClick={closeAppointment} />
@@ -340,6 +351,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             appointment={openAppointment}
             cancellationReasonValueSet={appointmentCancellationReasonValueSet}
             onCancelled={props.onCancelled}
+            onRescheduled={props.onRescheduled}
+            onToggleTimeFinder={setRescheduleFinderOpen}
           />
         </section>
       )}

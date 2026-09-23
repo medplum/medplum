@@ -137,6 +137,13 @@ export interface MedplumServerConfig {
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
 
+  /**
+   * Whether writes create resource cache entries (default 'true').
+   * When 'false', writes only update cache entries that already exist, and entries are created only
+   * when a read misses the cache. This prevents bulk writes from filling the cache.
+   */
+  cacheResourcesOnWrite?: boolean;
+
   /** Flag to enable pre-commit subscriptions for the interceptor pattern (default: false) */
   preCommitSubscriptionsEnabled?: boolean;
 

@@ -40,6 +40,7 @@ import orderSetBundleData from '../../data/order-set-example-bundle.json';
 import patientBundleData from '../../data/patient-david-james-williams.json';
 import visitBundleData from '../../data/simple-initial-visit-bundle.json';
 import { showErrorNotification } from '../../utils/notifications';
+import { deleteExistingDefinitions } from './deleteExistingDefinitions';
 import classes from './GetStartedPage.module.css';
 import { buildOrderSetImportNotification } from './orderSetImportNotification';
 
@@ -76,6 +77,9 @@ export function GetStartedPage(): JSX.Element {
   const handleImportVisit = useCallback(async () => {
     setImportingVisit(true);
     try {
+      // Remove any earlier copy of the template so re-importing does not leave duplicates behind.
+      const removedCount = await deleteExistingDefinitions(medplum, visitBundleData as Bundle);
+
       // The visit bundle is already a transaction bundle
       const result = await medplum.executeBatch(visitBundleData as Bundle);
 
@@ -85,7 +89,9 @@ export function GetStartedPage(): JSX.Element {
       showNotification({
         color: 'green',
         title: 'Success',
-        message: `Imported ${resourceCount} resources for Simple Initial Visit template`,
+        message:
+          `Imported ${resourceCount} resources for Simple Initial Visit + Billing template` +
+          (removedCount > 0 ? ` (replaced ${removedCount} existing)` : ''),
       });
     } catch (error) {
       showErrorNotification(error);
@@ -242,7 +248,7 @@ export function GetStartedPage(): JSX.Element {
                         Sample Care Template
                       </Text>
                       <Text fw={600} size="lg">
-                        Simple Initial Visit
+                        Simple Initial Visit + Billing
                       </Text>
                     </Stack>
                   </Group>
@@ -252,7 +258,8 @@ export function GetStartedPage(): JSX.Element {
                   </Text>
                   <Text size="xs" c="dimmed" mb="sm">
                     Note: a Care Template (aka PlanDefinition FHIR resource) is optional, but tasks from it will be
-                    automatically added to a visit if one is selected.
+                    automatically added to a visit if one is selected. Importing again replaces any existing copy of
+                    this template.
                   </Text>
                 </Stack>
                 <Button

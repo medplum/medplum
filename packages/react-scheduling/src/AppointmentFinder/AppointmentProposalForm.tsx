@@ -6,6 +6,7 @@ import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   createReference,
   formatDate,
+  getDisplayString,
   getIdentifier,
   getIdentifierByType,
   getReferenceString,
@@ -25,6 +26,7 @@ import type {
   HealthcareService,
   Location,
   Patient,
+  Reference,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
@@ -89,13 +91,44 @@ const NO_MARKED_DATES: Date[] = [];
 // that the warning is there before the user reaches the book button.
 const CONFLICT_DEBOUNCE_MS = 400;
 
+/**
+ * What the proposal the form assembles is for, which decides what it asks for.
+ *
+ * `book` gathers everything a new visit is written with: who it is for, and whatever
+ * its visit type requires. `reschedule` gathers only what decides the time, because
+ * `Appointment/[id]/$reschedule` moves a visit already on file and writes nothing else
+ * about it — asking for details it would drop is asking for them under false pretences.
+ *
+ * The visit type goes the same way: in `reschedule` mode a `defaultService` is shown
+ * rather than asked for, since the operation is measured against it but will not change
+ * it. Without one it is still asked, because the search cannot run without a visit type.
+ */
+export type AppointmentProposalMode = 'book' | 'reschedule';
+
 export interface AppointmentProposalFormProps {
+  /** What the proposal is for. Defaults to booking a new visit. */
+  readonly mode?: AppointmentProposalMode;
   /** Pre-fills where the visit is, for a host that already knows. */
   readonly defaultLocation?: WithId<Location>;
   /** Pre-fills the visit type, for a deep link or a reschedule. */
   readonly defaultService?: WithId<HealthcareService>;
   /** Pre-fills who the visit is for, for a host launching from a patient's chart. */
   readonly defaultPatient?: WithId<Patient>;
+  /**
+   * Pre-fills who and what the visit is held on, for a host that already knows — the
+   * actors an appointment being moved is currently held on, say.
+   *
+   * Read once, at mount: the fields own what they are asked for afterwards.
+   */
+  readonly defaultSelections?: ActorSelections;
+  /**
+   * An appointment whose own times are not to count as taken.
+   *
+   * For a form searching on behalf of an appointment that already exists: without it,
+   * the time it holds blocks every search that keeps any of the actors holding it, and
+   * moving a visit to a different room at the same hour finds nothing.
+   */
+  readonly ignoreAppointment?: Reference<Appointment> | WithId<Appointment>;
   /**
    * The day the time search opens on, and the day a typed time starts out on.
    * Defaults to today.
@@ -131,12 +164,15 @@ export interface AppointmentProposalFormProps {
   /** The ValueSet the diagnosis code field binds to. Defaults to the full ICD-10-CM value set. */
   readonly diagnosisBinding?: string;
   /**
-   * Performs the booking with the proposal the form assembled.
+   * Writes the proposal the form assembled.
    *
-   * Resolving marks the form booked, so it stops offering to book until an answer
-   * changes; rejecting shows the reason as the booking's refusal, every answer kept.
+   * Resolving marks the form written, so it stops offering to write until an answer
+   * changes; rejecting shows the reason as the write's refusal, every answer kept.
+   *
+   * In `book` mode the proposal carries the patient and the visit type's required
+   * codes; in `reschedule` mode it is the time as `$find` offered it, untouched.
    */
-  readonly onBook: (proposal: Appointment, options: BookOptions) => void | Promise<void>;
+  readonly onSubmit: (proposal: Appointment, options: BookOptions) => void | Promise<void>;
   /** Extensions to put on every appointment this form books. */
   readonly appointmentExtensions?: readonly Extension[];
   /**
@@ -154,12 +190,13 @@ export interface BookOptions {
 
 /**
  * Gathers what a visit is held on, finds a time every one of them is free, and
- * hands the proposal out to be booked.
+ * hands the proposal out to be written.
  *
- * Writes nothing and announces nothing: `onBook` owns that. Mount this to do
+ * Writes nothing and announces nothing: `onSubmit` owns that. Mount this to do
  * something other than `$book` with the proposal — hold it through `$hold`, or
  * write it inside a transaction of your own. {@link AppointmentBookingForm} is the
- * one that books.
+ * one that books, and {@link AppointmentRescheduleForm} the one that moves a visit
+ * already on file.
  *
  * @param props - The React props.
  * @returns The form.
@@ -167,9 +204,12 @@ export interface BookOptions {
 export function AppointmentProposalForm(props: AppointmentProposalFormProps): JSX.Element {
   const medplum = useMedplum();
   const {
+    mode = 'book',
     defaultLocation,
     defaultService,
     defaultPatient,
+    defaultSelections,
+    ignoreAppointment,
     defaultStart,
     mrnSystem,
     onToggleTimeFinder,
@@ -177,14 +217,14 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     onChangeTime,
     procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
     diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
-    onBook,
+    onSubmit,
     canBypassSchedulingRules,
     appointmentExtensions,
   } = props;
 
   const [location, setLocation] = useState<WithId<Location> | undefined>(defaultLocation);
   const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultService);
-  const [selections, setSelections] = useState<ActorSelections>({});
+  const [selections, setSelections] = useState<ActorSelections>(defaultSelections ?? {});
   const [month, setMonth] = useState<Date | undefined>(defaultStart);
   const [finding, setFinding] = useState(false);
   const [chosen, setChosen] = useState<Appointment | undefined>(undefined);
@@ -194,9 +234,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
   const [patient, setPatient] = useState<WithId<Patient> | undefined>(defaultPatient);
   const [requirementValues, setRequirementValues] = useState<BookingRequirementValues>(EMPTY_REQUIREMENT_VALUES);
-  const [booking, setBooking] = useState(false);
-  const [booked, setBooked] = useState(false);
-  const [bookError, setBookError] = useState<unknown>(undefined);
+  const [writing, setWriting] = useState(false);
+  const [written, setWritten] = useState(false);
+  const [writeError, setWriteError] = useState<unknown>(undefined);
   const [manualChoice, setManualChoice] = useState<Appointment | undefined>(undefined);
   const [manualDateTime, setManualDateTime] = useState('');
   const [manualDurationMinutes, setManualDurationMinutes] = useState<number | undefined>(undefined);
@@ -209,9 +249,20 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const selectionError = useMemo(() => getSelectionError(selections), [selections]);
 
+  // Only a booking writes the patient and the visit type's codes, so only a booking
+  // asks for them: `$reschedule` takes a time and the schedules to hold it on.
+  const takesDetails = mode === 'book';
+
+  // A move is measured against the visit type but never writes it: changing it would leave
+  // the visit's required codes, its authorization, and whatever was applied when it was
+  // booked keyed to a type it no longer has — a new booking, not a move. Shown rather than
+  // asked, unless the appointment records no visit type at all: there is nothing to
+  // contradict then, and the search needs one before it can run.
+  const fixedService = mode === 'reschedule' && defaultService !== undefined;
+
   // Each field is asked for on its own, by a visit type whose eligibility names it.
   const requirements = useMemo(() => getSchedulingRequirements(service), [service]);
-  const requirementsOutstanding = !hasRequiredValues(requirementValues, requirements);
+  const detailsOutstanding = takesDetails && (!patient || !hasRequiredValues(requirementValues, requirements));
 
   // The button above says the search is blocked; this says which rows blocked it.
   const actorErrors = useMemo(() => {
@@ -261,6 +312,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     timezone,
     defaultStart,
     actorResources,
+    ignoreAppointment,
     onResultsReplaced: clearChosen,
   });
   const { reset: resetDaySearch } = daySearch;
@@ -329,7 +381,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   function chooseLocation(next: WithId<Location> | undefined): void {
     setLocation(next);
     clearResources();
-    if (service && !isServiceKeptAtLocation(service, next)) {
+    // A fixed visit type is not the site's to drop: the appointment is on file for it
+    // whatever site is being searched, and a site that cannot hold it simply offers no
+    // actors. Dropping it would put the field back, editable.
+    if (!fixedService && service && !isServiceKeptAtLocation(service, next)) {
       setService(undefined);
       onChangeService?.(undefined);
       setServiceFieldKey((key) => key + 1);
@@ -353,7 +408,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   function chooseTime(next: Appointment): void {
     setChosen(next);
     setConflicts([]);
-    setBooked(false);
+    setWritten(false);
   }
 
   const configuredDurationMinutes = useMemo(
@@ -394,7 +449,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     });
     setManualChoice(proposal);
     setChosen(proposal);
-    setBooked(false);
+    setWritten(false);
   }
 
   // Only a typed time needs this. A time the search offered was found by intersecting
@@ -437,40 +492,47 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   function choosePatient(next: WithId<Patient> | undefined): void {
     setPatient(next);
-    setBooked(false);
+    setWritten(false);
   }
 
   function chooseRequirementValues(next: BookingRequirementValues): void {
     setRequirementValues(next);
-    setBooked(false);
+    setWritten(false);
   }
 
-  async function bookAppointment(): Promise<void> {
-    if (!chosen || !patient || requirementsOutstanding) {
+  async function handleSubmit(): Promise<void> {
+    if (!chosen || detailsOutstanding) {
       return;
     }
 
-    setBooking(true);
-    setBookError(undefined);
+    setWriting(true);
+    setWriteError(undefined);
     try {
-      await onBook(
-        buildBooking({
+      if (takesDetails) {
+        if (!patient) {
+          throw new Error('No patient specified for booking');
+        }
+        const booking = buildBooking({
           proposal: chosen,
           patient,
-          site: location,
           values: requirementValues,
+          site: location,
           requirements,
           extensions: appointmentExtensions,
-        }),
-        { manual }
-      );
-      setBooked(true);
+        });
+        await onSubmit(booking, { manual });
+      } else {
+        // A reschedule updates a subset of fields, and does not collect all
+        // the other fields that an original booking requires.
+        await onSubmit(chosen, { manual });
+      }
+      setWritten(true);
     } catch (error) {
       // Left on screen with every answer still filled in: a refusal is usually
       // somebody else taking the time, and the next attempt is one field away.
-      setBookError(error);
+      setWriteError(error);
     } finally {
-      setBooking(false);
+      setWriting(false);
     }
   }
 
@@ -487,15 +549,28 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           onChange={chooseLocation}
           clearable={false}
         />
-        <AppointmentServiceSelect
-          key={serviceFieldKey}
-          location={location}
-          // From state, not the prop: `defaultService` on a remount would put back
-          // the visit type the remount was clearing.
-          defaultValue={service}
-          onChange={chooseService}
-          required
-        />
+
+        {fixedService && service ? (
+          <TextInput
+            label="Visit type"
+            readOnly
+            disabled
+            value={getDisplayString(service)}
+            // Mantine puts the description above the input by default.
+            inputWrapperOrder={['label', 'input', 'description']}
+            description="Changing the visit type needs a new booking."
+          />
+        ) : (
+          <AppointmentServiceSelect
+            key={serviceFieldKey}
+            location={location}
+            // From state, not the prop: `defaultService` on a remount would put back
+            // the visit type the remount was clearing.
+            defaultValue={service}
+            onChange={chooseService}
+            required
+          />
+        )}
 
         <AppointmentActorSelections
           key={`actors-${actorFieldsKey}`}
@@ -532,21 +607,23 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           </Stack>
         )}
 
-        <ResourceInput<WithId<Patient>>
-          resourceType="Patient"
-          name="patient"
-          label="Patient"
-          placeholder="Search patients by name"
-          required
-          searchCriteria={PATIENT_SEARCH_CRITERIA}
-          defaultValue={defaultPatient}
-          itemComponent={patientItem}
-          onChange={choosePatient}
-          clearable={false}
-        />
+        {takesDetails && (
+          <ResourceInput<WithId<Patient>>
+            resourceType="Patient"
+            name="patient"
+            label="Patient"
+            placeholder="Search patients by name"
+            required
+            searchCriteria={PATIENT_SEARCH_CRITERIA}
+            defaultValue={defaultPatient}
+            itemComponent={patientItem}
+            onChange={choosePatient}
+            clearable={false}
+          />
+        )}
 
         {/* Each field is shown only for a visit type whose eligibility asks for it. */}
-        {service && requirements.size > 0 && (
+        {takesDetails && service && requirements.size > 0 && (
           <Fragment key={service.id}>
             {requirements.has(REQUIRES_PROCEDURE_CODE) && (
               <ValueSetAutocomplete
@@ -594,14 +671,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           </Fragment>
         )}
 
-        {bookError !== undefined && <Alert color="red">{normalizeErrorString(bookError)}</Alert>}
-        <Button
-          fullWidth
-          disabled={!chosen || !patient || booked || requirementsOutstanding}
-          loading={booking}
-          onClick={bookAppointment}
-        >
-          Book appointment
+        {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
+        <Button fullWidth disabled={!chosen || written || detailsOutstanding} loading={writing} onClick={handleSubmit}>
+          {mode === 'reschedule' ? 'Reschedule appointment' : 'Book appointment'}
         </Button>
       </Stack>
 

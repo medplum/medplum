@@ -62,6 +62,7 @@ import { getRepoForLogin } from './accesspolicy';
 import type { SystemRepository } from './repo';
 import { getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
+import { getResourceCacheEntry } from './repository/resource-cache';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
@@ -320,6 +321,36 @@ describe('FHIR Repo', () => {
     // Re-read resource; should get the updated data
     auditEvent = await systemRepo.readResource('AuditEvent', auditEvent.id);
     expect(updatedEvent.outcomeDesc).toStrictEqual(auditEvent.outcomeDesc);
+  });
+
+  test('Only caches on read when cacheResourcesOnWrite is disabled', async () => {
+    const prevCacheResourcesOnWrite = getConfig().cacheResourcesOnWrite;
+    getConfig().cacheResourcesOnWrite = false;
+    try {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: testProject.id },
+      });
+      await expect(getResourceCacheEntry('Patient', patient.id)).resolves.toBeUndefined();
+
+      await systemRepo.readResource('Patient', patient.id);
+      await expect(getResourceCacheEntry('Patient', patient.id)).resolves.toBeDefined();
+
+      const updated = await systemRepo.updateResource<Patient>({ ...patient, active: true });
+      const cacheEntry = await getResourceCacheEntry<Patient>('Patient', patient.id);
+      expect(cacheEntry?.resource.meta?.versionId).toStrictEqual(updated.meta?.versionId);
+
+      // Cache-only resources must still be written to the cache
+      const login = await systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        authMethod: 'client',
+        user: { reference: 'ClientApplication/' + randomUUID() },
+        authTime: new Date().toISOString(),
+      });
+      await expect(getResourceCacheEntry('Login', login.id)).resolves.toBeDefined();
+    } finally {
+      getConfig().cacheResourcesOnWrite = prevCacheResourcesOnWrite;
+    }
   });
 
   test('Repo read malformed reference', async () => {
