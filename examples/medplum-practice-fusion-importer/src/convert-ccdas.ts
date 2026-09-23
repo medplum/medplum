@@ -17,7 +17,14 @@
  *     Composition.author retargeted to the custodian Organization.
  *  6. Resource ids are regenerated on every run (mapId falls through to generateId for
  *     Practice Fusion root+extension ids). Remapped to deterministic ids so re-runs are
- *     idempotent, and Practitioners/Patients keyed by NPI/identifier dedupe across files.
+ *     idempotent: Practitioners/Patients/Organizations are keyed by NPI/identifier/name (dedupe
+ *     across files); everything else is keyed by the Practice Fusion source-record ids the
+ *     converter keeps as identifiers (those unique within the document — panel/concern-act ids
+ *     shared by members are excluded), so importing a newer export of the same patients updates
+ *     records in place instead of duplicating them, whatever the filenames or entry order.
+ *     Resources with no source id fall back to a content hash under the patient, then to file
+ *     position. The converter drops the source ids of MedicationRequests and AllergyIntolerances;
+ *     the script recovers them from the source entries (see fixMedications/fixAllergyCategories).
  *     Plain `PUT Type/<new-id>` is super-admin-only on Medplum (Repository.canSetId,
  *     server/src/fhir/repo.ts), so each resource carries its deterministic id as an
  *     urn:ccda-import-id identifier and is upserted via conditional update on it;
@@ -65,7 +72,7 @@ import {
   mapCcdaCodeToCodeableConcept,
   mapCcdaToFhirDateTime,
 } from '@medplum/ccda';
-import type { Ccda, CcdaAct, CcdaAuthor, CcdaEntry } from '@medplum/ccda';
+import type { Ccda, CcdaAct, CcdaAuthor, CcdaEntry, CcdaId } from '@medplum/ccda';
 import { ContentType, MedplumClient } from '@medplum/core';
 import type {
   Address,
@@ -80,6 +87,7 @@ import type {
   PractitionerRole,
   Reference,
   Resource,
+  ResourceType,
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import { createHash } from 'node:crypto';
@@ -97,6 +105,12 @@ loadEnv();
 //   --output  directory for generated bundles (default: <input>/fhir-output)
 //   --tag     meta.tag batch code for this migration (default: slug of the
 //             input directory's parent folder, e.g. 'example-clinic')
+//   --purge   before seeding, delete every resource a previous run of this
+//             import tag created, except Patients and Practitioners (identity-
+//             keyed, stable across exports, possibly referenced elsewhere).
+//             Use once when re-importing a newer export of the same patients,
+//             or to switch from an earlier id scheme. Runs entirely as async
+//             batch entries (searches and deletes), so no FHIR quota is used.
 //   --seed    after generating, execute the batch bundles against a Medplum
 //             project via the FHIR async request pattern (Prefer: respond-async)
 //             — entries run in a background job and skip the per-user FHIR
@@ -128,6 +142,7 @@ const TAG_CODE =
   argValue('--tag') ??
   (INPUT_DIR.split('/').filter(Boolean).slice(-2, -1)[0] ?? 'pf-migration').toLowerCase().replace(/[^a-z0-9]+/g, '-');
 const SEED = process.argv.includes('--seed');
+const PURGE = process.argv.includes('--purge');
 
 const BATCH_TAG = { system: 'urn:ccda-import', code: TAG_CODE };
 const NPI_SYSTEM = 'http://hl7.org/fhir/sid/us-npi';
@@ -309,9 +324,36 @@ function mapAuthorName(author: CcdaAuthor | undefined): string | undefined {
   return [...(name.given ?? []), name.family].join(' ');
 }
 
+/**
+ * The entry's Practice Fusion record id (first root+extension id) as a FHIR identifier.
+ * Root-only and nullFlavor ids carry no record identity and are skipped.
+ * @param ids - The CCDA entry's id elements.
+ * @returns The identifier, or undefined if the entry has no root+extension id.
+ */
+function toSourceIdentifier(ids: CcdaId[] | undefined): Identifier | undefined {
+  const id = ids?.find((i) => i['@_root'] && i['@_extension']);
+  return id ? { system: `urn:oid:${id['@_root']}`, value: id['@_extension'] } : undefined;
+}
+
+/**
+ * Add a source identifier to a resource unless an equal one is already present.
+ * @param resource - The resource to modify in place.
+ * @param identifier - The source identifier to add.
+ * @param fixes - Log lines; appended to when the identifier is added.
+ */
+function addSourceIdentifier(resource: Resource, identifier: Identifier, fixes: string[]): void {
+  const withIdent = resource as { identifier?: Identifier[] };
+  if (!withIdent.identifier?.some((i) => i.system === identifier.system && i.value === identifier.value)) {
+    withIdent.identifier = [...(withIdent.identifier ?? []), identifier];
+    fixes.push('source record id recovered (converter drops it)');
+  }
+}
+
 interface MedEntryInfo {
   npi?: string;
   name?: string;
+  /** Practice Fusion record id — the converter does not keep it on MedicationRequest. */
+  sourceId?: Identifier;
   /**
    * True when the entry has a supply entryRelationship — i.e. it went through the
    * e-prescribing/fill-tracking workflow. Entries without one are recorded/patient-reported
@@ -340,7 +382,7 @@ function collectMedicationEntryInfo(ccda: Ccda): Map<string, MedEntryInfo> {
           const name = mapAuthorName(author);
           // supply is not declared on CcdaEntryRelationship but survives parsing
           const hasSupply = (sub.entryRelationship ?? []).some((er) => Boolean((er as { supply?: unknown }).supply));
-          result.set(textRef, { npi, name, hasSupply });
+          result.set(textRef, { npi, name, hasSupply, sourceId: toSourceIdentifier(sub.id) });
         }
       }
     }
@@ -367,14 +409,11 @@ function buildServiceRequests(acts: CcdaAct[], patient: Patient, fileBase: strin
     } else if (authorName) {
       requester = { display: authorName };
     }
-    const sourceId = act.id?.[0];
+    const sourceId = toSourceIdentifier(act.id);
     return {
       resourceType: 'ServiceRequest',
       id: `sr-${fileBase}-${i}`, // placeholder; replaced with a deterministic id in postProcess
-      identifier:
-        sourceId?.['@_extension'] && sourceId['@_root']
-          ? [{ system: `urn:oid:${sourceId['@_root']}`, value: sourceId['@_extension'] }]
-          : undefined,
+      identifier: sourceId ? [sourceId] : undefined,
       status: SR_STATUS_MAP[act.statusCode?.['@_code'] ?? ''] ?? 'unknown',
       intent: SR_INTENT_MAP[act['@_moodCode']] ?? 'order',
       category: textRef?.startsWith('#APLAB')
@@ -393,6 +432,7 @@ function buildServiceRequests(acts: CcdaAct[], patient: Patient, fileBase: strin
 interface AllergySourceInfo {
   valueCode?: string; // allergy-type code from observation.value (e.g. 416098002 drug allergy)
   narrativeName?: string; // allergen display from the section narrative table row
+  sourceId?: Identifier; // Practice Fusion record id — the converter does not keep it on AllergyIntolerance
 }
 
 /**
@@ -421,6 +461,7 @@ function collectAllergyInfo(ccda: Ccda, xml: string): Map<string, AllergySourceI
           result.set(textRef, {
             valueCode: (obs?.value as { '@_code'?: string } | undefined)?.['@_code'],
             narrativeName: narrativeNames.get(textRef),
+            sourceId: toSourceIdentifier(act.id),
           });
         }
       }
@@ -438,6 +479,9 @@ function fixAllergyCategories(resources: Resource[], allergyInfo: Map<string, Al
     const allergy = resource;
     const textRef = allergy.extension?.find((e) => e.url === CCDA_NARRATIVE_REF_URL)?.valueString;
     const info = textRef ? allergyInfo.get(textRef) : undefined;
+    if (info?.sourceId) {
+      addSourceIdentifier(allergy, info.sourceId, fixes);
+    }
     const mapping = info?.valueCode ? ALLERGY_TYPE_MAP[info.valueCode] : undefined;
     const label = allergy.code?.coding?.[0]?.display ?? info?.narrativeName ?? 'allergy';
     if (mapping?.category) {
@@ -490,6 +534,103 @@ function fixSystemUris(node: unknown): void {
 function deterministicId(key: string): string {
   const h = createHash('sha256').update(`ccda-import:${key}`).digest('hex');
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+
+/**
+ * Source-record identifiers on a resource (system|value), excluding the import id and NPI systems.
+ * @param resource - The resource to read.
+ * @returns The identifier keys.
+ */
+function sourceIdentifiers(resource: Resource): string[] {
+  const ids = (resource as { identifier?: Identifier[] | Identifier }).identifier;
+  let list: Identifier[] = [];
+  if (Array.isArray(ids)) {
+    list = ids;
+  } else if (ids) {
+    list = [ids];
+  }
+  return list
+    .filter((i) => i.system && i.value && i.system !== IMPORT_ID_SYSTEM && i.system !== NPI_SYSTEM)
+    .map((i) => `${i.system}|${i.value}`);
+}
+
+/** Fields that identify a clinical record when it has no source id (never status/ids/references). */
+const CONTENT_KEY_FIELDS = [
+  'code',
+  'category',
+  'effectiveDateTime',
+  'effectivePeriod',
+  'onsetDateTime',
+  'authoredOn',
+  'period',
+  'valueQuantity',
+  'valueString',
+  'valueCodeableConcept',
+  'component',
+  'medicationCodeableConcept',
+  'dosageInstruction',
+] as const;
+
+interface KeySourceCounts {
+  source: number;
+  content: number;
+  index: number;
+}
+
+/**
+ * Deterministic-id key for a resource with no cross-file identity (everything but
+ * Patient/Practitioner/Organization). Preference order:
+ *  1. Practice Fusion source-record ids that are unique within this document — stable across
+ *     exports, so a newer export of the same patient updates the record in place. Ids shared by
+ *     several resources of the same type (lab panel ids on their member results, a problem
+ *     concern act on its problem observations) are excluded.
+ *  2. Composition: one per patient per import.
+ *  3. A hash of the record's identifying content under the patient (code, dates, values).
+ *  4. Position in the file — the only option that changes when the export changes.
+ * @param resource - The resource to key.
+ * @param fileBase - Source file name without extension (position fallback).
+ * @param index - Occurrence index of this resource type in the file (position fallback).
+ * @param patientKey - Identity key of the document's patient, if any.
+ * @param sourceIdCounts - Occurrences of each 'Type:system|value' source id in the document.
+ * @param counts - Tally of which key source was used, for logging.
+ * @returns The key to hash into the deterministic id.
+ */
+function fileScopedKey(
+  resource: Resource,
+  fileBase: string,
+  index: number,
+  patientKey: string | undefined,
+  sourceIdCounts: Map<string, number>,
+  counts: KeySourceCounts
+): string {
+  const rt = resource.resourceType;
+  const unique = sourceIdentifiers(resource)
+    .filter((sid) => sourceIdCounts.get(`${rt}:${sid}`) === 1)
+    .sort();
+  if (unique.length > 0) {
+    counts.source++;
+    return `${rt}:src:${unique.join(',')}`;
+  }
+  if (rt === 'Composition' && patientKey) {
+    counts.content++;
+    return `Composition:patient:${patientKey}`;
+  }
+  if (patientKey) {
+    const content: Record<string, unknown> = {};
+    for (const field of CONTENT_KEY_FIELDS) {
+      const value = (resource as unknown as Record<string, unknown>)[field];
+      if (value !== undefined) {
+        content[field] = value;
+      }
+    }
+    if (Object.keys(content).length > 0) {
+      counts.content++;
+      const digest = createHash('sha256').update(JSON.stringify(content)).digest('hex').slice(0, 32);
+      return `${rt}:content:${patientKey}:${digest}`;
+    }
+  }
+  counts.index++;
+  return `${fileBase}:${rt}:${index}`;
 }
 
 function getNpi(resource: Resource): string | undefined {
@@ -706,6 +847,9 @@ function fixMedications(
     }
     const textRef = resource.extension?.find((e) => e.url === CCDA_NARRATIVE_REF_URL)?.valueString;
     const source = textRef ? entryInfo.get(textRef) : undefined;
+    if (source?.sourceId) {
+      addSourceIdentifier(resource, source.sourceId, fixes);
+    }
     // requester is a recommended element (docs/medications) — recover from the source author
     if (!resource.requester) {
       if (source?.npi) {
@@ -949,6 +1093,21 @@ function postProcess(
     );
   }
 
+  // Source-record ids per type in this document; ids seen more than once (panel/concern-act ids
+  // copied onto their members) cannot identify a single record and are excluded from keys.
+  const patient = resources.find((r) => r.resourceType === 'Patient' && !junkIds.has(r.id));
+  const patientKey = patient ? identityKey(patient) : undefined;
+  const sourceIdCounts = new Map<string, number>();
+  for (const resource of resources) {
+    if (!junkIds.has(resource.id)) {
+      for (const sid of sourceIdentifiers(resource)) {
+        const k = `${resource.resourceType}:${sid}`;
+        sourceIdCounts.set(k, (sourceIdCounts.get(k) ?? 0) + 1);
+      }
+    }
+  }
+  const keySources: KeySourceCounts = { source: 0, content: 0, index: 0 };
+
   // Dedup + assign deterministic ids
   const typeCounters = new Map<string, number>();
   const usedKeys = new Set<string>();
@@ -974,10 +1133,10 @@ function postProcess(
     const keeper = (key ? canonicalByKey.get(key) : undefined) ?? resource;
     const resourceOldId = resource.id as string;
     const keeperOldId = keeper.id as string;
-    // Deterministic id: identity key if present, else file + type + occurrence index
+    // Deterministic id: identity key if present, else source-record id / content / file position
     const count = typeCounters.get(resource.resourceType) ?? 0;
     typeCounters.set(resource.resourceType, count + 1);
-    let idKey = key ?? `${fileBase}:${resource.resourceType}:${count}`;
+    let idKey = key ?? fileScopedKey(resource, fileBase, count, patientKey, sourceIdCounts, keySources);
     while (usedKeys.has(idKey)) {
       idKey += ':dup';
     }
@@ -1221,6 +1380,10 @@ function postProcess(
   for (const resource of output) {
     replaceReferenceTargets(resource, importRefs);
   }
+  dedupNotes.push(
+    `ids keyed by: ${keySources.source} source record id, ${keySources.content} content/patient, ` +
+      `${keySources.index} file position (identity-keyed resources not counted)`
+  );
   if (valuelessIdentifiers > 0) {
     dedupNotes.push(`stripped ${valuelessIdentifiers} valueless identifier(s) (source id nullFlavor UNK)`);
   }
@@ -1494,21 +1657,113 @@ async function executeBatchAsync(medplum: MedplumClient, bundle: Bundle): Promis
   return JSON.parse(await (await medplum.download(resultsRef)).text()) as Bundle;
 }
 
-async function seedProject(): Promise<void> {
-  const baseUrl = SEED_BASE_URL;
-  const clientId = SEED_CLIENT_ID;
-  const clientSecret = SEED_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
+/** Resource types the import can emit besides Patient/Practitioner (which --purge never touches). */
+const PURGEABLE_TYPES: ResourceType[] = [
+  'Composition',
+  'Encounter',
+  'Observation',
+  'Condition',
+  'MedicationRequest',
+  'AllergyIntolerance',
+  'ServiceRequest',
+  'CarePlan',
+  'Procedure',
+  'Immunization',
+  'Goal',
+  'CareTeam',
+  'RelatedPerson',
+  'PractitionerRole',
+];
+
+/**
+ * Log in with the ClientApplication credentials from the environment.
+ * @returns An authenticated client.
+ */
+async function loginClient(): Promise<MedplumClient> {
+  if (!SEED_CLIENT_ID || !SEED_CLIENT_SECRET) {
     console.error(
-      '\n--seed requires credentials: set the MEDPLUM_CLIENT_ID / MEDPLUM_CLIENT_SECRET env vars ' +
-        '(a ClientApplication in the target project; see .env.defaults). Nothing was uploaded.'
+      '\n--seed / --purge require credentials: set the MEDPLUM_CLIENT_ID / MEDPLUM_CLIENT_SECRET env vars ' +
+        '(a ClientApplication in the target project; see .env.defaults). Nothing was changed.'
     );
     process.exit(1);
   }
+  const medplum = new MedplumClient({ baseUrl: SEED_BASE_URL, fetch });
+  await medplum.startClientLogin(SEED_CLIENT_ID, SEED_CLIENT_SECRET);
+  return medplum;
+}
 
-  const medplum = new MedplumClient({ baseUrl, fetch });
-  await medplum.startClientLogin(clientId, clientSecret);
-  console.log(`\nSeeding ${baseUrl} (tag ${BATCH_TAG.system}|${BATCH_TAG.code}) ...`);
+/**
+ * Delete everything a previous run of this import tag created, except Patients and Practitioners
+ * (identity-keyed and stable across exports, so the new import updates them in place; they may
+ * also be referenced by data created since). Searches and deletes both run as async batch
+ * entries, so the per-user FHIR quota is not consumed. Each round searches the first page per
+ * type and deletes it, repeating until no type returns matches — no offsets, so there is no
+ * maxSearchOffset cap.
+ * @param medplum - Authenticated Medplum client (project admin membership).
+ */
+async function purgeImport(medplum: MedplumClient): Promise<void> {
+  const tag = `${BATCH_TAG.system}|${BATCH_TAG.code}`;
+  console.log(`\nPurging previous import (tag ${tag}) — Patients and Practitioners are kept ...`);
+  const pending = new Set<ResourceType>(PURGEABLE_TYPES);
+  let deleted = 0;
+  let failed = 0;
+  while (pending.size > 0) {
+    const types = [...pending];
+    const searchBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: types.map((type) => ({
+        request: { method: 'GET', url: `${type}?_tag=${encodeURIComponent(tag)}&_count=1000` },
+      })),
+    };
+    const searchResponse = await executeBatchAsync(medplum, searchBundle);
+    const targets: string[] = [];
+    types.forEach((type, i) => {
+      const entry = searchResponse.entry?.[i];
+      const page = entry?.resource?.resourceType === 'Bundle' ? entry.resource : undefined;
+      if (!page) {
+        console.log(`  ${type}: search FAILED ${entry?.response?.status ?? '?'} — skipped`);
+        failed++;
+        pending.delete(type);
+        return;
+      }
+      const ids = (page.entry ?? []).map((e) => e.resource?.id).filter((id): id is string => Boolean(id));
+      targets.push(...ids.map((id) => `${type}/${id}`));
+      if (ids.length < 1000) {
+        pending.delete(type); // this round deletes the remainder
+      }
+    });
+    if (targets.length === 0) {
+      break;
+    }
+    for (let i = 0; i < targets.length; i += 1000) {
+      const chunk = targets.slice(i, i + 1000);
+      const deleteBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: chunk.map((url) => ({ request: { method: 'DELETE', url } })),
+      };
+      const response = await executeBatchAsync(medplum, deleteBundle);
+      const statuses = (response.entry ?? []).map((e) => e.response?.status ?? '');
+      const ok = statuses.filter((st) => st.startsWith('2') || st.startsWith('404') || st.startsWith('410')).length;
+      deleted += ok;
+      failed += chunk.length - ok;
+      console.log(`  deleted ${ok}/${chunk.length}`);
+    }
+  }
+  console.log(`Purge complete: ${deleted} deleted, ${failed} failed.`);
+  if (failed > 0) {
+    console.log('Fix the cause and re-run with --purge (idempotent).');
+    process.exit(1);
+  }
+}
+
+/**
+ * Execute every generated batch bundle against the target project.
+ * @param medplum - Authenticated Medplum client (project admin membership).
+ */
+async function seedProject(medplum: MedplumClient): Promise<void> {
+  console.log(`\nSeeding ${SEED_BASE_URL} (tag ${BATCH_TAG.system}|${BATCH_TAG.code}) ...`);
 
   const batchFileNames = readdirSync(OUTPUT_DIR)
     .filter((f) => f.includes('.batch'))
@@ -1548,8 +1803,14 @@ async function seedProject(): Promise<void> {
   }
 }
 
-if (SEED) {
-  await seedProject();
+if (SEED || PURGE) {
+  const medplum = await loginClient();
+  if (PURGE) {
+    await purgeImport(medplum);
+  }
+  if (SEED) {
+    await seedProject(medplum);
+  }
 } else {
   console.log('Review the bundles above, then seed with: --seed (set MEDPLUM_CLIENT_ID / MEDPLUM_CLIENT_SECRET)');
 }

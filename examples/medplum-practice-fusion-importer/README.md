@@ -26,7 +26,32 @@ npm run validate -- --output /path/to/ccdas/fhir-output
 
 # Convert and then seed the bundles into the target project
 npm run convert -- --input /path/to/ccdas --org-id <organization-uuid> --seed
+
+# Re-import a newer export of the same patients: purge the previous import first (keeps
+# Patients and Practitioners), then seed. Use the same --tag as the original import.
+npm run convert -- --input /path/to/new-ccdas --org-id <organization-uuid> --purge --seed
 ```
+
+## Re-importing and idempotency
+
+Every resource is upserted by a deterministic id derived from a stable key, so running the same
+export twice is a no-op and a **newer export of the same patients updates records in place**:
+
+- Patients, Practitioners and Organizations are keyed by identifier / NPI (or name) — stable
+  across exports and across files.
+- Everything else (Encounters, Observations, Conditions, MedicationRequests, AllergyIntolerances,
+  ServiceRequests, CarePlans) is keyed by its **Practice Fusion source-record id** (the
+  `<id root=… extension=…/>` on the entry, which the converter keeps as an identifier; the
+  script recovers the ones the converter drops for medications and allergies). Only ids unique
+  within the document count — lab-panel ids copied onto member results and problem-concern act ids
+  are excluded. Filenames and entry order do not matter.
+- Records with no source id fall back to a content hash under the patient, then to file position.
+  In the reference dataset every emitted resource had a source id or content key.
+
+Two caveats: a re-export never deletes anything — records removed in Practice Fusion stay in the
+project (the `urn:ccda-import:source|<file>` tag tells you which run created them) — and data
+imported with an **earlier version of this script** (position-based ids) must be purged with
+`--purge` before the new export is seeded, or it will be duplicated.
 
 ## CLI / config
 
@@ -37,6 +62,11 @@ npm run convert -- --input /path/to/ccdas --org-id <organization-uuid> --seed
   and every emitted resource except Practitioners is stamped with `meta.accounts = [Organization/<id>]`
   so org-restricted access policies can see the import (no default; without it, org references fall
   back to name-based conditional references and nothing is stamped)
+- `--purge` before seeding, delete every resource a previous run of this import tag created,
+  except Patients and Practitioners (identity-keyed, stable across exports, and possibly
+  referenced by data created since). Searches and deletes run as async batch entries, so no FHIR
+  quota is consumed. Use it once when re-importing a newer export, or when migrating from the
+  earlier position-based id scheme.
 - `--seed` after generating, execute batch bundles as **async batches** (`Prefer: respond-async`,
   see [Processing Async Bundles](https://www.medplum.com/docs/fhir-datastore/processing-async-bundles)):
   entries run in a background job and do not consume the per-user FHIR interaction quota — a
@@ -104,8 +134,10 @@ urn:ccda-import-id|<deterministic-id>` upsert with no body id, or POST + ifNoneE
      the custodian Organization when the device was sole author.
    - Dedup by identity key (Practitioner: NPI, else full name; Patient: first identifier;
      Organization: name), canonical-name copy wins (see step 0), identifiers merged.
-   - **Deterministic ids**: SHA-256 of identity key or `file:type:index` → re-runs byte-identical,
-     upserts idempotent, cross-file dedup (one practitioner in 7 files → 1 resource). Each id
+   - **Deterministic ids**: SHA-256 of the identity key (Patient/Practitioner/Organization), else
+     the document-unique Practice Fusion source-record ids, else a content hash under the patient,
+     else `file:type:index` (see "Re-importing and idempotency") → re-runs byte-identical, upserts
+     idempotent, cross-file dedup (one practitioner in 7 files → 1 resource). Each id
      travels as an `urn:ccda-import-id` identifier on the resource; the batch entry is a
      conditional update on it and internal references are conditional references by the same
      identifier (server ids end up server-generated).
@@ -161,8 +193,9 @@ urn:ccda-import-id|<deterministic-id>` upsert with no body id, or POST + ifNoneE
   (displays retain the recorder's name).
 - AsyncJob-based seeding has no server-side retry (worker `attempts: 1`); if a job dies the
   script reports the file as FAILED — re-run `--seed` (idempotent) to resubmit.
-- Deterministic ids incorporate the source filename — renaming files between runs would re-create
-  file-scoped resources (identity-keyed ones are safe).
+- Records without a Practice Fusion source id are keyed by content, so if such a record's code,
+  date or value changes between exports it is re-created rather than updated (the old copy stays,
+  tagged with the run that created it). Records removed upstream are never deleted.
 
 ## Verification
 
