@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Loader } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { extractServiceTypeReferences, isDefined, resolveId } from '@medplum/core';
+import { extractServiceTypeReferences, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
 import type { Appointment, Bundle, Parameters, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -12,6 +12,9 @@ import { readAppointmentWrite } from './AppointmentFinder.writes';
 import type { AppointmentProposalFormProps } from './AppointmentProposalForm';
 import { AppointmentProposalForm } from './AppointmentProposalForm';
 import { useRescheduleDefaults } from './useRescheduleDefaults';
+
+/** Joins names the way a sentence listing all of them would. */
+const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
 
 /** What a reschedule wrote, as `Appointment/[id]/$reschedule` returned it. */
 export type AppointmentReschedule = AppointmentWrite;
@@ -138,14 +141,29 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
     return <Loader size="sm" />;
   }
 
+  if (defaults.error) {
+    // If we failed to read the HealthcareService, or one of the Slots or Schedules currently
+    // linked to the Appointment, the `$reschedule` operation will fail. Put up a blocking error.
+    return (
+      <Alert
+        color="red"
+        title="Part of what this appointment is booked on could not be read, and so it cannot be rescheduled."
+      >
+        {normalizeErrorString(defaults.error)}
+      </Alert>
+    );
+  }
+
+  const droppedNames = listAll.format(
+    defaults.droppedActors.map((actor) => actor.display ?? actor.reference).filter(isDefined)
+  );
+
   return (
     <>
-      {defaults.incomplete && (
-        // A move writes the actors it is given, so one missing from the fields below is
-        // one about to be dropped off the visit. Not a wrapper around the form either
-        // way: an unasked-for element between a host and the form would lay it out.
+      {defaults.droppedActors.length > 0 && (
         <Alert color="yellow" mb="sm">
-          Some of what this visit is held on could not be read back. Check who is named below before moving it.
+          The following participants are not schedulable for this visit type and will be removed from this appointment
+          if you continue: {droppedNames}
         </Alert>
       )}
       <AppointmentProposalForm

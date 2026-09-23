@@ -1,13 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
 import type { MockInstance } from 'vitest';
 import { installFindStub } from '../stories/mockFind';
 import { installRescheduleStub } from '../stories/mockReschedule';
-import { RiveraImagingAppointment, RiveraImagingHeldSlots } from '../stories/scheduling';
+import {
+  DrRiveraSchedule,
+  ExamRoomASchedule,
+  RiveraImagingAppointment,
+  RiveraImagingHeldSlots,
+} from '../stories/scheduling';
 import { installAutocompleteTimers, removePill, settleAutocomplete } from '../test-utils/asyncAutocomplete';
 import {
   chooseActor,
@@ -133,12 +139,49 @@ describe('AppointmentRescheduleForm', () => {
       expect(hasPill(/Rivera/)).toBe(true);
       expect(hasPill(/Ultrasound 1/)).toBe(true);
       expect(hasPill(/Exam Room A/)).toBe(true);
-      expect(screen.queryByText(/could not be read back/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/will be removed/i)).not.toBeInTheDocument();
     });
 
-    test('Says so when part of what holds the visit cannot be read back', async () => {
-      // An actor left out of the fields is an actor a move would drop off the visit, so
-      // a Slot or Schedule that cannot be read is called out rather than quietly skipped.
+    test('Names who a move would take off the visit, and still offers the move', async () => {
+      // A schedule that can no longer be offered back cannot be moved with the visit, and
+      // `$reschedule` drops the actors of the schedules it moves off. Refusing outright
+      // would leave the visit stuck, so it is said out loud instead.
+      await medplum.updateResource({ ...ExamRoomASchedule, active: false });
+      const post = vi.spyOn(medplum, 'post');
+
+      await setup(medplum);
+
+      expect(
+        screen.getByText(/will be removed from this appointment if you continue: Exam Room A/i)
+      ).toBeInTheDocument();
+      expect(hasPill(/Exam Room A/)).toBe(false);
+      expect(hasPill(/Rivera/)).toBe(true);
+
+      await moveToAnotherTime();
+
+      expect(parameterValues(lastRescheduleParameters(post), 'schedule')).not.toContain(
+        `Schedule/${ExamRoomASchedule.id}`
+      );
+      expect(onRescheduled).toHaveBeenCalledTimes(1);
+    });
+
+    test('Keeps an actor that cannot be read, under the name its schedule gives it', async () => {
+      // A move is written against the schedule, not the actor, so a deleted or hidden
+      // actor costs nothing but its name.
+      await medplum.updateResource({
+        ...DrRiveraSchedule,
+        actor: [{ reference: 'Practitioner/nobody-can-read', display: 'Dr. Unreadable' }],
+      });
+
+      await setup(medplum);
+
+      expect(hasPill(/Dr. Unreadable/)).toBe(true);
+      expect(screen.queryByText(/will be removed/i)).not.toBeInTheDocument();
+    });
+
+    test('Refuses to open when a Slot the visit holds cannot be read', async () => {
+      // `$reschedule` reads every Slot the visit holds, and the Schedules they name, and
+      // refuses the move when any is missing — so no time picked here would be accepted.
       const partial: WithId<Appointment> = {
         ...APPOINTMENT,
         id: 'appt-partly-readable',
@@ -148,9 +191,9 @@ describe('AppointmentRescheduleForm', () => {
 
       await setup(medplum, { appointment: partial });
 
-      expect(screen.getByText(/could not be read back/i)).toBeInTheDocument();
-      // And what could be read is still offered.
-      expect(hasPill(/Rivera/)).toBe(true);
+      expect(screen.getByText(/could not be read, and so it cannot be rescheduled/i)).toBeInTheDocument();
+      expect(screen.getByText(/not found/i)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /reschedule appointment/i })).not.toBeInTheDocument();
     });
 
     test('Shows the visit type it is on file for, rather than offering to change it', async () => {
@@ -185,6 +228,24 @@ describe('AppointmentRescheduleForm', () => {
       expect(
         screen.getByText('This appointment does not have a visit type, and so cannot be rescheduled.')
       ).toBeInTheDocument();
+    });
+
+    test('Refuses to open when the visit type on file cannot be read', async () => {
+      // `$reschedule` reads the same reference and would refuse any move, so offering a
+      // different visit type in its place would only lead to a refusal.
+      const unreadable: WithId<Appointment> = {
+        ...APPOINTMENT,
+        id: 'appt-unreadable-service',
+        serviceType: toServiceTypeCodeableConcepts({ resourceType: 'HealthcareService', id: 'nobody-can-read' }),
+      };
+      await medplum.createResource(unreadable);
+
+      await setup(medplum, { appointment: unreadable });
+
+      expect(screen.getByText(/could not be read, and so it cannot be rescheduled/i)).toBeInTheDocument();
+      expect(screen.getByText(/not found/i)).toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: /visit type/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /reschedule appointment/i })).not.toBeInTheDocument();
     });
   });
 

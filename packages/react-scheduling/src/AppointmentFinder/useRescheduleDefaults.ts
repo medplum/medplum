@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { extractServiceTypeReferences, isDefined } from '@medplum/core';
+import { extractServiceTypeReferences, getDisplayString, isDefined } from '@medplum/core';
 import type { Appointment, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
-import type { SchedulingActorResource, SchedulingActorType } from '../actors';
+import type { SchedulingActor, SchedulingActorResource, SchedulingActorType } from '../actors';
 import { getActorType, isBookableActorType } from '../actors';
 import type { ActorRequirement, ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { createActorRequirement, getCandidateActor, toScheduleCandidate } from './AppointmentFinder.schedules';
@@ -19,19 +19,28 @@ const KEY_SEPARATOR = '\n';
 
 const NO_SELECTIONS: ActorSelections = {};
 
+const NO_ACTORS: readonly SchedulingActor[] = [];
+
 export interface RescheduleDefaults {
   /** The visit type the appointment is on file under, where it records one. */
   readonly service: WithId<HealthcareService> | undefined;
   /** Who and what it is held on now, arranged into the rows a form asks for them in. */
   readonly selections: ActorSelections;
   /**
-   * True when some of what the visit is held on could not be offered back.
+   * Actors the visit is held on whose schedules cannot be offered back, named where they
+   * could be read.
    *
-   * A Slot or Schedule this viewer cannot read, or a Schedule the visit type no longer
-   * names, leaves its actor out of the rows above — and a move writes the actors it is
-   * given, so one left out is one dropped off the visit. Worth saying out loud.
+   * A Schedule that is inactive, no longer names the visit type, or is held on an actor
+   * this form does not book leaves its actors out of the rows above — and a move writes
+   * the actors it is given, so these are about to be dropped off the visit.
    */
-  readonly incomplete: boolean;
+  readonly droppedActors: readonly SchedulingActor[];
+  /**
+   * Set when the visit type, or a Slot or Schedule the visit is held on, could not be read.
+   *
+   * `$reschedule` reads those same references, so no move from here would be accepted.
+   */
+  readonly error: unknown;
   /**
    * True until the reads settle.
    *
@@ -49,12 +58,12 @@ export interface RescheduleDefaults {
  * name the Schedules — the appointment's own participants would not say which of an
  * actor's schedules is the one being moved off.
  *
- * Nothing here is required: whatever cannot be read is simply not pre-filled, and the
- * viewer answers it themselves.
+ * An actor that cannot be read keeps its schedule, shown under the name the schedule
+ * gives it: the move is written against the schedule, not the actor.
  *
  * @param appointment - The appointment being moved.
- * @returns Its visit type and actors, whether they are still being read, and whether
- * anything holding the visit could not be read back at all.
+ * @returns Its visit type and actors, whether they are still being read, who a move
+ * would drop off it, and why it could not be read, where it could not.
  */
 export function useRescheduleDefaults(appointment: WithId<Appointment>): RescheduleDefaults {
   const medplum = useMedplum();
@@ -75,16 +84,12 @@ export function useRescheduleDefaults(appointment: WithId<Appointment>): Resched
     loadDefaults(medplum, serviceReference, slotReferences, controller.signal)
       .then((defaults) => {
         if (!controller.signal.aborted) {
-          setLoaded({ key, ...defaults });
+          setLoaded({ key, ...defaults, error: undefined });
         }
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (!controller.signal.aborted) {
-          // If we didn't read the slots, it can result in the form not pre-filling all
-          // the participants, which can result in actors being inadvertently dropped.
-          // Mark as "incomplete" in that scenario.
-          const incomplete = slotReferences.length > 0;
-          setLoaded({ key, service: undefined, selections: NO_SELECTIONS, incomplete });
+          setLoaded({ key, service: undefined, selections: NO_SELECTIONS, droppedActors: NO_ACTORS, error });
         }
       });
 
@@ -96,7 +101,8 @@ export function useRescheduleDefaults(appointment: WithId<Appointment>): Resched
   return {
     service: stale ? undefined : loaded.service,
     selections: stale ? NO_SELECTIONS : loaded.selections,
-    incomplete: !stale && loaded.incomplete,
+    droppedActors: stale ? NO_ACTORS : loaded.droppedActors,
+    error: stale ? undefined : loaded.error,
     loading: stale,
   };
 }
@@ -106,7 +112,8 @@ interface LoadedDefaults {
   readonly key: string | undefined;
   readonly service: WithId<HealthcareService> | undefined;
   readonly selections: ActorSelections;
-  readonly incomplete: boolean;
+  readonly droppedActors: readonly SchedulingActor[];
+  readonly error: unknown;
 }
 
 /**
@@ -117,37 +124,38 @@ const NOTHING_LOADED: LoadedDefaults = {
   key: undefined,
   service: undefined,
   selections: NO_SELECTIONS,
-  incomplete: false,
+  droppedActors: NO_ACTORS,
+  error: undefined,
 };
 
 /**
- * Reads the visit type and the held schedules, whichever of them can be read.
+ * Reads the visit type and the held schedules.
  * @param medplum - The Medplum client.
  * @param serviceReference - The HealthcareService the appointment names, or empty for one naming none.
  * @param slotReferences - The Slots the appointment holds.
  * @param signal - Abort signal.
- * @returns The defaults to open a form on.
+ * @returns The defaults to open a form on. Rejects when the visit type, or a Slot or
+ * Schedule the visit is held on, cannot be read.
  */
 async function loadDefaults(
   medplum: MedplumClient,
   serviceReference: string,
   slotReferences: readonly string[],
   signal: AbortSignal
-): Promise<Omit<RescheduleDefaults, 'loading'>> {
-  const [service, held] = await Promise.all([
+): Promise<Omit<RescheduleDefaults, 'loading' | 'error'>> {
+  const [service, schedules] = await Promise.all([
     serviceReference
-      ? medplum.readReference<HealthcareService>({ reference: serviceReference }, { signal }).catch(() => undefined)
+      ? medplum.readReference<HealthcareService>({ reference: serviceReference }, { signal })
       : undefined,
     loadHeldSchedules(medplum, slotReferences, signal),
   ]);
 
-  const candidates = await loadScheduleCandidates(medplum, held.schedules, service, { signal });
+  const actors = await loadActors(medplum, schedules, signal);
+  const candidates = schedules.map((schedule) => toScheduleCandidate(schedule, service, actors)).filter(isDefined);
   return {
     service,
     selections: toActorSelections(candidates),
-    // A schedule that could not be read, and one the visit type no longer names, come
-    // out the same way: an actor holding the visit that no row above names.
-    incomplete: !held.complete || candidates.length < held.schedules.length,
+    droppedActors: getDroppedActors(schedules, candidates, actors),
   };
 }
 
@@ -160,55 +168,38 @@ async function loadDefaults(
  * @param medplum - The Medplum client.
  * @param slotReferences - The Slots the appointment holds.
  * @param signal - Abort signal.
- * @returns The schedules, in the order the slots name them, and whether every Slot and
- * Schedule the appointment named could be read.
+ * @returns The schedules, in the order the slots name them.
  */
 async function loadHeldSchedules(
   medplum: MedplumClient,
   slotReferences: readonly string[],
   signal: AbortSignal
-): Promise<{ schedules: WithId<Schedule>[]; complete: boolean }> {
+): Promise<WithId<Schedule>[]> {
   const slots = await Promise.all(
-    slotReferences.map(async (reference) =>
-      medplum.readReference<Slot>({ reference }, { signal }).catch(() => undefined)
-    )
+    slotReferences.map((reference) => medplum.readReference<Slot>({ reference }, { signal }))
   );
 
-  const scheduleReferences = [...new Set(slots.filter(isDefined).map((slot) => slot.schedule.reference))].filter(
-    isDefined
-  );
+  const scheduleReferences = [...new Set(slots.map((slot) => slot.schedule.reference))].filter(isDefined);
 
-  const schedules = await Promise.all(
-    scheduleReferences.map(async (reference) =>
-      medplum.readReference<Schedule>({ reference }, { signal }).catch(() => undefined)
-    )
-  );
-
-  const read = schedules.filter(isDefined);
-  return { schedules: read, complete: slots.every(isDefined) && read.length === scheduleReferences.length };
+  return Promise.all(scheduleReferences.map((reference) => medplum.readReference<Schedule>({ reference }, { signal })));
 }
 
 /**
- * Pairs schedules already in hand with the actors they are held on.
+ * Reads the actors the schedules are held on.
  *
- * For schedules arrived at some other way than by the search above — the ones the Slots
- * of an appointment being moved name, say. An actor that cannot be read costs its
- * schedule nothing but the name it would have been shown under.
+ * One that cannot be read is left out, which costs its schedule nothing but the name it
+ * would have been shown under.
  *
  * @param medplum - The Medplum client.
- * @param schedules - The schedules to pair up.
- * @param service - The service they are wanted for, or undefined to keep every schedule.
- *   One that is not bookable for the service is left out, as the search leaves it out.
- * @param options - Optional parameters
- * @param options.signal - An AbortSignal
- * @returns The candidates, in the order the schedules were given.
+ * @param schedules - The schedules whose actors to read.
+ * @param signal - Abort signal.
+ * @returns The actors that could be read, by reference.
  */
-async function loadScheduleCandidates(
+async function loadActors(
   medplum: MedplumClient,
   schedules: readonly WithId<Schedule>[],
-  service: WithId<HealthcareService> | undefined,
-  options?: { readonly signal?: AbortSignal }
-): Promise<ScheduleCandidate[]> {
+  signal: AbortSignal
+): Promise<Map<string, SchedulingActorResource>> {
   const references = [
     ...new Set(schedules.flatMap((schedule) => schedule.actor.map((actor) => actor.reference)).filter(isDefined)),
   ];
@@ -217,15 +208,45 @@ async function loadScheduleCandidates(
   await Promise.all(
     references.map(async (reference) => {
       const actor = await medplum
-        .readReference<SchedulingActorResource>({ reference }, { signal: options?.signal })
+        .readReference<SchedulingActorResource>({ reference }, { signal })
         .catch(() => undefined);
       if (actor) {
         actorsByReference.set(reference, actor);
       }
     })
   );
+  return actorsByReference;
+}
 
-  return schedules.map((schedule) => toScheduleCandidate(schedule, service, actorsByReference)).filter(isDefined);
+/**
+ * The actors a move would take off the visit: those on a held schedule that could not
+ * be offered back. These actors will be dropped when `$reschedule` is invoked.
+ *
+ * This can happen if the Schedule is inactive, is no longer eligible for booking against
+ * this visit's service type, or is held on an actor this form does not book.
+ *
+ * @param schedules - The schedules the visit is held on.
+ * @param candidates - The ones among them that were offered back.
+ * @param actors - The actors that could be read, by reference, to name them by.
+ * @returns The actors, deduped, with their names filled in where they could be read.
+ */
+function getDroppedActors(
+  schedules: readonly WithId<Schedule>[],
+  candidates: readonly ScheduleCandidate[],
+  actors: ReadonlyMap<string, SchedulingActorResource>
+): SchedulingActor[] {
+  const offered = new Set(candidates.map((candidate) => candidate.schedule.id));
+  const kept = new Set(candidates.map((candidate) => getCandidateActor(candidate).reference));
+
+  const dropped = new Map<string, SchedulingActor>();
+  const notOffered = schedules.filter((schedule) => !offered.has(schedule.id));
+  for (const actor of notOffered.flatMap((schedule) => schedule.actor)) {
+    if (actor.reference && !kept.has(actor.reference)) {
+      const resource = actors.get(actor.reference);
+      dropped.set(actor.reference, { ...actor, display: resource ? getDisplayString(resource) : actor.display });
+    }
+  }
+  return [...dropped.values()];
 }
 
 /**
@@ -234,7 +255,7 @@ async function loadScheduleCandidates(
  * Rows of one actor type are ANDed, which is what a set of actors already holding a
  * visit between them means: every one of them attends.
  *
- * @param candidates - The candidates to arrange, as {@link loadScheduleCandidates} returns them.
+ * @param candidates - The candidates to arrange, as {@link toScheduleCandidate} returns them.
  * @returns What to ask for, per actor type.
  */
 function toActorSelections(candidates: readonly ScheduleCandidate[]): ActorSelections {

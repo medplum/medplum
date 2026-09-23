@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ServiceTypeReferenceURI } from '@medplum/core';
-import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
+import type { Appointment, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { RenderResult } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -12,11 +12,27 @@ import { installValueSetStub } from '../../stories/mockValueSet';
 import { renderWithMedplum, screen, userEvent, waitFor } from '../../test-utils/render';
 import { AppointmentDetails } from './AppointmentDetails';
 
+const SERVICE: WithId<HealthcareService> = {
+  resourceType: 'HealthcareService',
+  id: 'ultrasound-imaging',
+  name: 'Ultrasound Imaging',
+};
+
+const HELD_SCHEDULE: WithId<Schedule> = {
+  resourceType: 'Schedule',
+  id: 'schedule-dr-rivera',
+  active: true,
+  actor: [{ reference: 'Practitioner/dr-rivera', display: 'Dr. Maya Rivera' }],
+  serviceType: [
+    { extension: [{ url: ServiceTypeReferenceURI, valueReference: { reference: `HealthcareService/${SERVICE.id}` } }] },
+  ],
+};
+
 const HELD_SLOT: WithId<Slot> = {
   resourceType: 'Slot',
   id: 'slot-rivera-tue',
   status: 'busy',
-  schedule: { reference: 'Schedule/schedule-dr-rivera' },
+  schedule: { reference: `Schedule/${HELD_SCHEDULE.id}` },
   start: '2020-05-05T17:00:00Z',
   end: '2020-05-05T17:30:00Z',
 };
@@ -33,7 +49,7 @@ const BOOKED_APPOINTMENT: WithId<Appointment> = {
       extension: [
         {
           url: ServiceTypeReferenceURI,
-          valueReference: { reference: 'HealthcareService/123' },
+          valueReference: { reference: `HealthcareService/${SERVICE.id}` },
         },
       ],
     },
@@ -53,6 +69,8 @@ let restoreValueSet: () => void;
 
 beforeEach(async () => {
   medplum = new MockClient();
+  await medplum.createResource(SERVICE);
+  await medplum.createResource(HELD_SCHEDULE);
   await medplum.createResource(HELD_SLOT);
   await medplum.createResource(BOOKED_APPOINTMENT);
   restoreCancel = installCancelStub(medplum);
@@ -323,7 +341,7 @@ describe('AppointmentDetails', () => {
     await userEvent.click(rescheduleButton() as HTMLElement);
 
     expect(screen.getByRole('heading', { name: 'Reschedule appointment' })).toBeInTheDocument();
-    expect(await screen.findByRole('searchbox', { name: /visit type/i })).toBeInTheDocument();
+    expect(await screen.findByRole('textbox', { name: /visit type/i })).toHaveValue('Ultrasound Imaging');
     expect(cancelButton()).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Back' }));
