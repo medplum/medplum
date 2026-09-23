@@ -1851,6 +1851,80 @@ async function dryRun(medplum: MedplumClient): Promise<void> {
     for (const [rt, n] of [...byType].sort()) {
       console.log(`    ${rt}: ${n}`);
     }
+    await dryRunPatients(medplum, files, tag);
+  }
+}
+
+/**
+ * Patients are never purged, so check how the bundles' Patients line up with the project: which
+ * already exist (updated in place via their import id), which are new, and whether the project
+ * holds several Patients under the tag that share a source identifier (duplicates from earlier
+ * runs that a purge will not remove).
+ * @param medplum - Authenticated Medplum client.
+ * @param files - Batch bundle file names in OUTPUT_DIR.
+ * @param tag - The import tag (system|code).
+ */
+async function dryRunPatients(medplum: MedplumClient, files: string[], tag: string): Promise<void> {
+  const importIds: string[] = [];
+  for (const file of files) {
+    const bundle = JSON.parse(readFileSync(join(OUTPUT_DIR, file), 'utf8')) as Bundle;
+    for (const entry of bundle.entry ?? []) {
+      if (entry.resource?.resourceType === 'Patient') {
+        const importId = entry.resource.identifier?.find((i) => i.system === IMPORT_ID_SYSTEM)?.value;
+        if (importId) {
+          importIds.push(importId);
+        }
+      }
+    }
+  }
+  const lookup: Bundle = {
+    resourceType: 'Bundle',
+    type: 'batch',
+    entry: [
+      ...importIds.map((id) => ({
+        request: { method: 'GET' as const, url: `Patient?identifier=${IMPORT_ID_SYSTEM}|${id}&_summary=count` },
+      })),
+      {
+        request: {
+          method: 'GET' as const,
+          url: `Patient?_tag=${encodeURIComponent(tag)}&_elements=identifier&_count=1000`,
+        },
+      },
+    ],
+  };
+  const response = await executeBatchAsync(medplum, lookup);
+  let existing = 0;
+  for (let i = 0; i < importIds.length; i++) {
+    const page = response.entry?.[i]?.resource;
+    if (page?.resourceType === 'Bundle' && (page.total ?? 0) > 0) {
+      existing++;
+    }
+  }
+  console.log(
+    `\n  Patients in bundles: ${importIds.length} — ${existing} already in the project (updated in place), ` +
+      `${importIds.length - existing} new`
+  );
+  const tagged = response.entry?.[importIds.length]?.resource;
+  if (tagged?.resourceType === 'Bundle') {
+    const bySource = new Map<string, number>();
+    for (const e of tagged.entry ?? []) {
+      const p = e.resource;
+      if (p?.resourceType === 'Patient') {
+        for (const ident of p.identifier ?? []) {
+          if (ident.system && ident.value && ident.system !== IMPORT_ID_SYSTEM) {
+            const k = `${ident.system}|${ident.value}`;
+            bySource.set(k, (bySource.get(k) ?? 0) + 1);
+          }
+        }
+      }
+    }
+    const dupGroups = [...bySource.values()].filter((n) => n > 1).length;
+    const total = tagged.entry?.length ?? 0;
+    const dupNote = dupGroups > 0 ? ' (DUPLICATES — purge does not remove Patients)' : '';
+    console.log(
+      `  Patients in project under tag: ${total} — ${total - existing} not in these bundles (left as-is); ` +
+        `${dupGroups} source identifier(s) shared by more than one Patient${dupNote}`
+    );
   }
 }
 
