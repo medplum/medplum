@@ -4,7 +4,7 @@ import { ActionIcon, Button, Indicator, Popover, Select } from '@mantine/core';
 import type { SearchRequest, SortRule } from '@medplum/core';
 import { deepClone, getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
-import { IconArrowsSort, IconPlus, IconX } from '@tabler/icons-react';
+import { IconArrowsSort, IconCirclePlus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { buildSearchParamFieldLabel, isMetaSearchParam } from '../SearchControl/SearchUtils';
@@ -192,7 +192,7 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
             size="compact-sm"
             variant="subtle"
             color="blue"
-            leftSection={<IconPlus size={14} />}
+            leftSection={<IconCirclePlus size={14} />}
             onClick={addRule}
           >
             Add another sort

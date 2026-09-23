@@ -4,7 +4,7 @@ import { ActionIcon, Button, Indicator, Popover, Select, Text } from '@mantine/c
 import type { Filter, SearchRequest } from '@medplum/core';
 import { Operator, deepClone, getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
-import { IconFilter2Plus, IconPlus, IconX } from '@tabler/icons-react';
+import { IconCirclePlus, IconFilter2Plus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -138,7 +138,7 @@ export function SearchFilterPopover(props: SearchFilterPopoverProps): JSX.Elemen
           ))}
         </div>
         <div className={classes.footer}>
-          <Button size="compact-sm" variant="subtle" color="blue" leftSection={<IconPlus size={14} />} onClick={addRow}>
+          <Button size="compact-sm" variant="subtle" color="blue" leftSection={<IconCirclePlus size={14} />} onClick={addRow}>
             Add condition
           </Button>
         </div>
