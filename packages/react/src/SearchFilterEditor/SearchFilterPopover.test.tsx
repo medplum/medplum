@@ -28,7 +28,7 @@ async function openPopover(): Promise<void> {
   await act(async () => {
     fireEvent.click(screen.getByText('Filters'));
   });
-  await screen.findByText('Add condition');
+  await screen.findByText('Add Filter');
 }
 
 describe('SearchFilterPopover', () => {
@@ -36,7 +36,7 @@ describe('SearchFilterPopover', () => {
     await setup({ resourceType: 'Patient' });
     await openPopover();
     expect(screen.getByText('No filters applied')).toBeInTheDocument();
-    expect(screen.getByText('Add condition')).toBeInTheDocument();
+    expect(screen.getByText('Add Filter')).toBeInTheDocument();
   });
 
   test('Shows the active filter count and existing conditions', async () => {
@@ -49,11 +49,11 @@ describe('SearchFilterPopover', () => {
     expect(screen.getByLabelText('filter-0-field', { selector: 'input' })).toHaveValue('Name');
   });
 
-  test('Add condition adds an empty row', async () => {
+  test('Add Filter adds an empty row', async () => {
     await setup({ resourceType: 'Patient' });
     await openPopover();
     await act(async () => {
-      fireEvent.click(screen.getByText('Add condition'));
+      fireEvent.click(screen.getByText('Add Filter'));
     });
     expect(screen.getByLabelText('filter-0-field', { selector: 'input' })).toBeInTheDocument();
   });
@@ -77,7 +77,7 @@ describe('SearchFilterPopover', () => {
     await openPopover();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Add condition'));
+      fireEvent.click(screen.getByText('Add Filter'));
     });
 
     await act(async () => {
@@ -118,7 +118,7 @@ describe('SearchFilterPopover', () => {
       );
     });
 
-    expect(await screen.findByText('Add condition')).toBeInTheDocument();
+    expect(await screen.findByText('Add Filter')).toBeInTheDocument();
     expect(screen.getByLabelText('filter-0-field', { selector: 'input' })).toHaveValue('Name');
   });
 });

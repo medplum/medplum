@@ -24,7 +24,7 @@ async function openPopover(): Promise<void> {
   await act(async () => {
     fireEvent.click(screen.getByText('Sort'));
   });
-  await screen.findByText('Add another sort');
+  await screen.findByText('Add Sort');
 }
 
 describe('SearchSortEditor', () => {
@@ -32,7 +32,7 @@ describe('SearchSortEditor', () => {
     await setup({ resourceType: 'Patient' });
     await openPopover();
     expect(screen.getByText('No sort applied')).toBeInTheDocument();
-    expect(screen.getByText('Add another sort')).toBeInTheDocument();
+    expect(screen.getByText('Add Sort')).toBeInTheDocument();
   });
 
   test('Hides the indicator dot for no sort and the default (Last Updated, newest first)', async () => {
@@ -62,11 +62,11 @@ describe('SearchSortEditor', () => {
     expect(screen.getByLabelText('sort-0-direction', { selector: 'input' })).toHaveValue('Newest → Oldest');
   });
 
-  test('Add another sort adds an empty row', async () => {
+  test('Add Sort adds an empty row', async () => {
     await setup({ resourceType: 'Patient' });
     await openPopover();
     await act(async () => {
-      fireEvent.click(screen.getByText('Add another sort'));
+      fireEvent.click(screen.getByText('Add Sort'));
     });
     expect(screen.getByLabelText('sort-0-field', { selector: 'input' })).toBeInTheDocument();
   });
@@ -75,7 +75,7 @@ describe('SearchSortEditor', () => {
     const { onChange } = await setup({ resourceType: 'Patient' });
     await openPopover();
     await act(async () => {
-      fireEvent.click(screen.getByText('Add another sort'));
+      fireEvent.click(screen.getByText('Add Sort'));
     });
     await act(async () => {
       fireEvent.click(screen.getByLabelText('sort-0-field', { selector: 'input' }));

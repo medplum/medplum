@@ -149,6 +149,11 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
           {rules.map((rule, index) => {
             const searchParam = rule.code ? searchParams[rule.code] : undefined;
             const labels = getDirectionLabels(searchParam);
+            // Blank until a field is chosen; otherwise default to ascending.
+            let directionValue: 'asc' | 'desc' | null = null;
+            if (rule.code) {
+              directionValue = rule.descending ? 'desc' : 'asc';
+            }
             return (
               <div className={classes.row} key={`sort-row-${index}`}>
                 <Select
@@ -165,12 +170,14 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
                   comboboxProps={{ withinPortal: false }}
                   className={classes.direction}
                   aria-label={`sort-${index}-direction`}
+                  placeholder="Order"
+                  disabled={!rule.code}
                   allowDeselect={false}
                   data={[
                     { value: 'asc', label: labels.asc },
                     { value: 'desc', label: labels.desc },
                   ]}
-                  value={rule.descending ? 'desc' : 'asc'}
+                  value={directionValue}
                   onChange={(dir) => updateRule(index, { code: rule.code, descending: dir === 'desc' })}
                 />
                 <ActionIcon
