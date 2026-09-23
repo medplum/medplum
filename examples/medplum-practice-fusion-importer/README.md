@@ -27,9 +27,11 @@ npm run validate -- --output /path/to/ccdas/fhir-output
 # Convert and then seed the bundles into the target project
 npm run convert -- --input /path/to/ccdas --org-id <organization-uuid> --seed
 
-# Re-import a newer export of the same patients: purge the previous import first (keeps
-# Patients and Practitioners), then seed. Use the same --tag as the original import.
-npm run convert -- --input /path/to/new-ccdas --org-id <organization-uuid> --purge --seed
+# Re-import a newer export of the same patients: purge the previous import's data for those
+# patients first (keeps Patients, Practitioners and other patients' data), then seed. Use the
+# same --tag as the original import. Check with --dry-run before doing it for real.
+npm run convert -- --input /path/to/new-ccdas --org-id <organization-uuid> --tag <tag> --purge --seed --dry-run
+npm run convert -- --input /path/to/new-ccdas --org-id <organization-uuid> --tag <tag> --purge --seed
 ```
 
 ## Re-importing and idempotency
@@ -62,11 +64,19 @@ imported with an **earlier version of this script** (position-based ids) must be
   and every emitted resource except Practitioners is stamped with `meta.accounts = [Organization/<id>]`
   so org-restricted access policies can see the import (no default; without it, org references fall
   back to name-based conditional references and nothing is stamped)
-- `--purge` before seeding, delete every resource a previous run of this import tag created,
-  except Patients and Practitioners (identity-keyed, stable across exports, and possibly
-  referenced by data created since). Searches and deletes run as async batch entries, so no FHIR
-  quota is consumed. Use it once when re-importing a newer export, or when migrating from the
-  earlier position-based id scheme.
+- `--purge` before seeding, delete what a previous run of this import tag created **for the
+  patients in the current bundles** (a re-export usually covers a subset of patients; other
+  patients' data is untouched). Patients and Practitioners are never deleted — identity-keyed,
+  stable across exports, and possibly referenced by data created since. Tagged Compositions with
+  no subject (left by earlier versions of this script, which did not set `Composition.subject`) are
+  removed as orphans. Searches and deletes run as async batch entries, so no FHIR quota is
+  consumed. Exits non-zero if nothing matches the tag, since that almost always means the wrong
+  `--tag` and seeding would duplicate rather than replace.
+- `--dry-run` with `--purge` and/or `--seed`: log in and report what would happen — per-type counts
+  the purge would delete for these patients (and how much tagged data belongs to other patients and
+  is kept), whether `--org-id` resolves, what the bundles would write, how many bundle Patients
+  already exist, and whether Patients under the tag share a source identifier (duplicates a purge
+  cannot remove) — without changing anything.
 - `--seed` after generating, execute batch bundles as **async batches** (`Prefer: respond-async`,
   see [Processing Async Bundles](https://www.medplum.com/docs/fhir-datastore/processing-async-bundles)):
   entries run in a background job and do not consume the per-user FHIR interaction quota — a
@@ -131,7 +141,9 @@ urn:ccda-import-id|<deterministic-id>` upsert with no body id, or POST + ifNoneE
 6. **postProcess** (the bulk of the logic):
    - Drop nameless junk Practitioners (authoring-device artifacts; one patient had 562 from
      author-less lab observations); strip references to them; `Composition.author` retargeted to
-     the custodian Organization when the device was sole author.
+     the custodian Organization when the device was sole author. `Composition.subject` set to the
+     document's Patient (the converter leaves it unset, so the document would otherwise sit outside
+     the patient compartment).
    - Dedup by identity key (Practitioner: NPI, else full name; Patient: first identifier;
      Organization: name), canonical-name copy wins (see step 0), identifiers merged.
    - **Deterministic ids**: SHA-256 of the identity key (Patient/Practitioner/Organization), else
