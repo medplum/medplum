@@ -108,3 +108,8 @@
 .staticButton[data-active] {
   transform: none !important;
 }
+
+/* Halve the default icon-to-label gap on the Reset button, matching the Add condition/sort buttons. */
+.addButton :global(.mantine-Button-section[data-position='left']) {
+  margin-inline-end: calc(var(--mantine-spacing-xs) * 0.5);
+}

@@ -258,11 +258,12 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
         </div>
         <div className={classes.footer}>
           <Button
-            className={classes.staticButton}
+            className={`${classes.staticButton} ${classes.addButton}`}
             size="compact-sm"
             variant="subtle"
             color="gray"
-            leftSection={<IconArrowBackUp size={14} />}
+            leftSection={<IconArrowBackUp size={16} />}
+            fw={500}
             onClick={resetDefault}
           >
             Reset default
