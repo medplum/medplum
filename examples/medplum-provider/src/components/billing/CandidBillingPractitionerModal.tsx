@@ -1,19 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Input, Skeleton, Stack, Text, TextInput, Tooltip } from '@mantine/core';
+import { Button, Input, Skeleton, Stack, TextInput, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { createReference, formatAddress, getIdentifier, normalizeErrorString } from '@medplum/core';
+import { createReference, getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Address, HumanName, Organization, Practitioner, PractitionerRole, Reference } from '@medplum/fhirtypes';
-import type { AsyncAutocompleteOption } from '@medplum/react';
-import {
-  AddressInput,
-  HumanNameInput,
-  Modal,
-  ResourceAvatar,
-  ResourceInput,
-  useMedplum,
-  useResource,
-} from '@medplum/react';
+import { AddressInput, HumanNameInput, Modal, ResourceInput, useMedplum, useResource } from '@medplum/react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useCandidProviderContracts } from '../../hooks/useCandidProviderContracts';
@@ -33,28 +24,11 @@ import {
 } from '../../utils/billing';
 import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
+import { BillingOrganizationOption } from './BillingOrganizationOption';
 import { CandidContractAlert } from './CandidContractAlert';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
 const FORM_ID = 'billing-practitioner-form';
-
-function OrganizationItem(props: AsyncAutocompleteOption<Organization>): JSX.Element {
-  const { label, resource } = props;
-  const address = resource.address?.[0];
-  return (
-    <Group wrap="nowrap">
-      <ResourceAvatar value={resource} />
-      <div>
-        <Text>{label}</Text>
-        {address && (
-          <Text size="xs" c="dimmed">
-            {formatAddress(address)}
-          </Text>
-        )}
-      </div>
-    </Group>
-  );
-}
 
 /**
  * Props for the practitioner billing modal. `practitioner` is the one to edit (undefined keeps the modal
@@ -352,7 +326,7 @@ function CandidBillingPractitionerForm(props: CandidBillingPractitionerFormProps
               identifier: `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`,
             }}
             defaultValue={selectedRole?.organization}
-            itemComponent={OrganizationItem}
+            itemComponent={BillingOrganizationOption}
             onChange={setOrganization}
           />
           <Input.Description mt={4}>

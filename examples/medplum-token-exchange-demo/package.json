@@ -21,8 +21,8 @@
   "devDependencies": {
     "@medplum/core": "5.1.39",
     "@medplum/eslint-config": "5.1.39",
-    "@types/node": "22.20.2",
-    "dotenv": "17.4.2",
+    "@types/node": "22.20.3",
+    "dotenv": "18.0.0",
     "tsx": "4.23.13",
     "typescript": "6.0.3"
   },
