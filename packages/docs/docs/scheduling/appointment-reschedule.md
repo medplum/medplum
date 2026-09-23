@@ -69,7 +69,7 @@ The Appointment being rescheduled is identified by the `id` in the URL.
 
 These are the same `schedule` values you passed to [`$find`](/docs/scheduling/appointment-find), plus the `start` of the proposal you picked from its results.
 
-You must include all `Schedule` references that should be set on the appointment; schedules already recorded on the Appointment that are not submitted will be removed by this operation.0
+You must include all `Schedule` references that should be set on the appointment; schedules already recorded on the Appointment that are not submitted will be removed by this operation.
 
 :::info
 
@@ -93,7 +93,7 @@ Everything else is left exactly as it was — `serviceType`, `reasonCode`, `comm
 Three things deserve specific mention:
 
 - **`status` is not an input.** The appointment lifecycle belongs to [`$hold`](/docs/scheduling/appointment-hold), [`$confirm`](/docs/scheduling/appointment-confirm), and [`$cancel`](/docs/scheduling/appointment-cancel), each of which validates its own transition. `$reschedule` changes *when and where* an appointment happens, never *whether* it happens. A `booked` appointment stays booked; a `pending` one stays pending and keeps holding its new time with `busy-tentative` Slots.
-- **`serviceType` is not an input.** What a visit *is* dose not change during a move. The requirements a visit type carries — the procedure and diagnosis codes it is booked with, which live in `Appointment.serviceType` alongside the service reference, any prior authorization, anything a `PlanDefinition` applied when it was booked — are all keyed to that type, and none of them are re-applied by a reschedule. Changing the type is a new booking: cancel and rebook. The stored `serviceType` is therefore read and never written, which also means the codes booked with the appointment survive the move untouched.
+- **`serviceType` is not an input.** What a visit *is* does not change during a move. The requirements a visit type carries — the procedure and diagnosis codes it is booked with, which live in `Appointment.serviceType` alongside the service reference, any prior authorization, anything a `PlanDefinition` applied when it was booked — are all keyed to that type, and none of them are re-applied by a reschedule. Changing the type is a new booking: cancel and rebook. The stored `serviceType` is therefore read and never written, which also means the codes booked with the appointment survive the move untouched.
 - **`participant` is reconciled, not submitted.** The actors of the Schedules being moved away from are swapped for the actors of the Schedules in the request. Everyone else — the patient, related persons, secondary practitioners — is preserved untouched, and an actor that appears on both the old and new Schedules keeps its existing entry along with any `status` it had already responded with.
 
 ### Slots are derived, not submitted

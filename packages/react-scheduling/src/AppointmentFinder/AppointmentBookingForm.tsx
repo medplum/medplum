@@ -14,7 +14,10 @@ import { writeElevatedBooking } from './buildElevatedBooking';
 /** What a booking wrote, as `Appointment/$book` returned it. */
 export type AppointmentBooking = AppointmentWrite;
 
-export interface AppointmentBookingFormProps extends Omit<AppointmentProposalFormProps, 'onSubmit' | 'mode'> {
+export interface AppointmentBookingFormProps extends Omit<
+  AppointmentProposalFormProps,
+  'onSubmit' | 'mode' | 'ignoreAppointment'
+> {
   /**
    * Called with what the booking wrote.
    *
