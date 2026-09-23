@@ -111,6 +111,10 @@ loadEnv();
 //             Use once when re-importing a newer export of the same patients,
 //             or to switch from an earlier id scheme. Runs entirely as async
 //             batch entries (searches and deletes), so no FHIR quota is used.
+//   --dry-run with --purge and/or --seed: log in and report what would happen —
+//             per-type counts under the tag that --purge would delete, whether
+//             --org-id resolves, and what the generated bundles would write —
+//             without changing anything in the project.
 //   --seed    after generating, execute the batch bundles against a Medplum
 //             project via the FHIR async request pattern (Prefer: respond-async)
 //             — entries run in a background job and skip the per-user FHIR
@@ -145,6 +149,7 @@ const TAG_CODE =
     .replace(/[^a-z0-9]+/g, '-');
 const SEED = process.argv.includes('--seed');
 const PURGE = process.argv.includes('--purge');
+const DRY_RUN = process.argv.includes('--dry-run');
 
 const BATCH_TAG = { system: 'urn:ccda-import', code: TAG_CODE };
 const NPI_SYSTEM = 'http://hl7.org/fhir/sid/us-npi';
@@ -1772,6 +1777,84 @@ async function purgeImport(medplum: MedplumClient): Promise<void> {
 }
 
 /**
+ * Report what --purge and --seed would do against the project without changing anything:
+ * per-type counts of resources carrying the import tag (the purge targets; Patients and
+ * Practitioners are listed as kept), whether --org-id resolves to an Organization, and the
+ * entries the generated bundles would write. Count searches run as async batch entries.
+ * @param medplum - Authenticated Medplum client.
+ */
+async function dryRun(medplum: MedplumClient): Promise<void> {
+  const tag = `${BATCH_TAG.system}|${BATCH_TAG.code}`;
+  console.log(`\nDRY RUN against ${SEED_BASE_URL} — nothing will be changed.`);
+  if (ORG_ID) {
+    try {
+      await medplum.readResource('Organization', ORG_ID);
+      console.log(`  --org-id ${ORG_ID}: Organization found`);
+    } catch {
+      console.log(`  --org-id ${ORG_ID}: NOT FOUND — org references and meta.accounts would dangle`);
+    }
+  }
+  const types: ResourceType[] = [...PURGEABLE_TYPES, 'Patient', 'Practitioner'];
+  const countBundle: Bundle = {
+    resourceType: 'Bundle',
+    type: 'batch',
+    entry: types.map((type) => ({
+      request: { method: 'GET', url: `${type}?_tag=${encodeURIComponent(tag)}&_summary=count` },
+    })),
+  };
+  const response = await executeBatchAsync(medplum, countBundle);
+  console.log(`\n  In the project under tag ${tag}:`);
+  let purgeTotal = 0;
+  types.forEach((type, i) => {
+    const entry = response.entry?.[i];
+    const page = entry?.resource?.resourceType === 'Bundle' ? entry.resource : undefined;
+    const total = page?.total;
+    if (total === undefined) {
+      console.log(`    ${type}: count FAILED ${entry?.response?.status ?? '?'}`);
+      return;
+    }
+    const kept = type === 'Patient' || type === 'Practitioner';
+    if (!kept) {
+      purgeTotal += total;
+    }
+    if (total > 0 || !kept) {
+      let action = '';
+      if (PURGE) {
+        action = kept ? ' (kept)' : ' -> would be deleted';
+      }
+      console.log(`    ${type}: ${total}${action}`);
+    }
+  });
+  if (PURGE) {
+    console.log(`  --purge would delete ${purgeTotal} resource(s).`);
+  }
+  if (SEED) {
+    const files = readdirSync(OUTPUT_DIR).filter((f) => f.includes('.batch'));
+    const byType = new Map<string, number>();
+    let creates = 0;
+    let updates = 0;
+    for (const file of files) {
+      const bundle = JSON.parse(readFileSync(join(OUTPUT_DIR, file), 'utf8')) as Bundle;
+      for (const entry of bundle.entry ?? []) {
+        const rt = entry.resource?.resourceType ?? '?';
+        byType.set(rt, (byType.get(rt) ?? 0) + 1);
+        if (entry.request?.method === 'POST') {
+          creates++;
+        } else {
+          updates++;
+        }
+      }
+    }
+    console.log(
+      `\n  --seed would submit ${files.length} batch bundle(s): ${updates} conditional update(s), ${creates} conditional create(s)`
+    );
+    for (const [rt, n] of [...byType].sort()) {
+      console.log(`    ${rt}: ${n}`);
+    }
+  }
+}
+
+/**
  * Execute every generated batch bundle against the target project.
  * @param medplum - Authenticated Medplum client (project admin membership).
  */
@@ -1818,11 +1901,15 @@ async function seedProject(medplum: MedplumClient): Promise<void> {
 
 if (SEED || PURGE) {
   const medplum = await loginClient();
-  if (PURGE) {
-    await purgeImport(medplum);
-  }
-  if (SEED) {
-    await seedProject(medplum);
+  if (DRY_RUN) {
+    await dryRun(medplum);
+  } else {
+    if (PURGE) {
+      await purgeImport(medplum);
+    }
+    if (SEED) {
+      await seedProject(medplum);
+    }
   }
 } else {
   console.log('Review the bundles above, then seed with: --seed (set MEDPLUM_CLIENT_ID / MEDPLUM_CLIENT_SECRET)');
