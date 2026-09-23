@@ -161,6 +161,7 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
                 <ActionIcon
                   variant="subtle"
                   color="gray"
+                  radius="xl"
                   aria-label={`delete-sort-${index}`}
                   ml={4}
                   onClick={() => deleteRule(index)}

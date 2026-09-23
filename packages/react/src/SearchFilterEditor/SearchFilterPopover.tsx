@@ -188,6 +188,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
     <ActionIcon
       variant="subtle"
       color="gray"
+      radius="xl"
       aria-label={`delete-filter-${props.index}`}
       ml={4}
       onClick={props.onDelete}
