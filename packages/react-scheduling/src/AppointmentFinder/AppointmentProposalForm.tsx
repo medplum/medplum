@@ -518,7 +518,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           values: requirementValues,
           site: location,
           requirements,
-          extensions: appointmentExtensions });
+          extensions: appointmentExtensions,
+        });
         await onSubmit(booking, { manual });
       } else {
         // A reschedule updates a subset of fields, and does not collect all
