@@ -5,8 +5,10 @@ import { metrics } from '@opentelemetry/api';
 import type { Queue } from 'bullmq';
 import os from 'node:os';
 import v8 from 'node:v8';
+import { getConfig } from '../config/loader';
 import type { WorkerName } from '../config/types';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { heartbeat } from '../heartbeat';
 import { getBatchQueue } from '../workers/batch';
 import { getCronQueue } from '../workers/cron';
@@ -148,41 +150,16 @@ function isOtelMetricsEnabled(): boolean {
   return !!process.env.OTLP_METRICS_ENDPOINT;
 }
 
+const shardIdsToCheck: string[] = [GLOBAL_SHARD_ID];
 export function initOtelHeartbeat(): void {
   if (otelHeartbeatListener) {
     return;
   }
+  for (const [shardId] of Object.entries(getConfig().shards ?? {})) {
+    shardIdsToCheck.push(shardId);
+  }
   otelHeartbeatListener = async () => {
-    const writerPool = getDatabasePool(DatabaseMode.WRITER);
-    const readerPool = getDatabasePool(DatabaseMode.READER);
-
-    setGauge('medplum.db.totalConnections', writerPool.totalCount, {
-      ...BASE_METRIC_OPTIONS,
-      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
-    });
-    setGauge('medplum.db.idleConnections', writerPool.idleCount, {
-      ...BASE_METRIC_OPTIONS,
-      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
-    });
-    setGauge('medplum.db.queriesAwaitingClient', writerPool.waitingCount, {
-      ...BASE_METRIC_OPTIONS,
-      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
-    });
-
-    if (writerPool !== readerPool) {
-      setGauge('medplum.db.totalConnections', readerPool.totalCount, {
-        ...BASE_METRIC_OPTIONS,
-        attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
-      });
-      setGauge('medplum.db.idleConnections', readerPool.idleCount, {
-        ...BASE_METRIC_OPTIONS,
-        attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
-      });
-      setGauge('medplum.db.queriesAwaitingClient', readerPool.waitingCount, {
-        ...BASE_METRIC_OPTIONS,
-        attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
-      });
-    }
+    await Promise.all(shardIdsToCheck.map((shardId) => recordShardMetrics(shardId)));
 
     const heapStats = v8.getHeapStatistics();
     setGauge('medplum.node.usedHeapSize', heapStats.used_heap_size, BASE_METRIC_OPTIONS);
@@ -208,6 +185,41 @@ export function initOtelHeartbeat(): void {
     }
   };
   heartbeat.addEventListener('heartbeat', otelHeartbeatListener);
+}
+
+async function recordShardMetrics(shardId: string): Promise<void> {
+  const writerPool = getDatabasePool(DatabaseMode.WRITER, shardId);
+  const readerPool = getDatabasePool(DatabaseMode.READER, shardId);
+
+  const writerAttrs = { ...BASE_METRIC_OPTIONS.attributes, shardId, dbInstanceType: 'writer' };
+  setGauge('medplum.db.totalConnections', writerPool.totalCount, {
+    ...BASE_METRIC_OPTIONS,
+    attributes: writerAttrs,
+  });
+  setGauge('medplum.db.idleConnections', writerPool.idleCount, {
+    ...BASE_METRIC_OPTIONS,
+    attributes: writerAttrs,
+  });
+  setGauge('medplum.db.queriesAwaitingClient', writerPool.waitingCount, {
+    ...BASE_METRIC_OPTIONS,
+    attributes: writerAttrs,
+  });
+
+  if (writerPool !== readerPool) {
+    const readerAttrs = { ...BASE_METRIC_OPTIONS.attributes, shardId, dbInstanceType: 'reader' };
+    setGauge('medplum.db.totalConnections', readerPool.totalCount, {
+      ...BASE_METRIC_OPTIONS,
+      attributes: readerAttrs,
+    });
+    setGauge('medplum.db.idleConnections', readerPool.idleCount, {
+      ...BASE_METRIC_OPTIONS,
+      attributes: readerAttrs,
+    });
+    setGauge('medplum.db.queriesAwaitingClient', readerPool.waitingCount, {
+      ...BASE_METRIC_OPTIONS,
+      attributes: readerAttrs,
+    });
+  }
 }
 
 export function cleanupOtelHeartbeat(): void {

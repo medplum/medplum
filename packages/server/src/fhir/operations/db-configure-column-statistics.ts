@@ -6,7 +6,7 @@ import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool, withPoolClient } from '../../database';
 import { isValidPostgresIdentifier } from '../sql';
 import { makeOperationDefinition } from './definitions';
-import { makeOperationDefinitionParameter as param, parseInputParameters } from './utils/parameters';
+import { getShardIdParam, makeOperationDefinitionParameter as param, parseInputParameters } from './utils/parameters';
 
 const UpdateOperation = makeOperationDefinition(
   { scope: 'system' },
@@ -14,6 +14,7 @@ const UpdateOperation = makeOperationDefinition(
     name: 'db-configure-column-statistics',
     code: 'db-configure-column-statistics',
     parameter: [
+      param('in', 'shardId', 'string', 0, '1'),
       param('in', 'tableName', 'string', 1, '1'),
       param('in', 'columnNames', 'string', 1, '*'),
       param('in', 'resetToDefault', 'boolean', 1, '1'),
@@ -25,11 +26,13 @@ const UpdateOperation = makeOperationDefinition(
 export async function configureColumnStatisticsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
   const params = parseInputParameters<{
+    shardId?: string;
     tableName: string;
     columnNames: string[];
     resetToDefault: boolean;
     newStatisticsTarget?: number;
   }>(UpdateOperation, req);
+  const shardId = getShardIdParam(params);
 
   if (!isValidPostgresIdentifier(params.tableName)) {
     throw new OperationOutcomeError(badRequest('Invalid tableName'));
@@ -59,23 +62,26 @@ export async function configureColumnStatisticsHandler(req: FhirRequest): Promis
     newStatisticsTarget = params.newStatisticsTarget;
   }
 
-  await withPoolClient(async (client) => {
-    await client.query('BEGIN');
-    try {
-      for (const columnName of params.columnNames) {
-        // table and column names cannot be parameterized, so string interpolate after validating inputs
-        await client.query(
-          `ALTER TABLE "${params.tableName}" ALTER COLUMN "${columnName}" SET STATISTICS ${newStatisticsTarget}`
-        );
+  await withPoolClient(
+    async (client) => {
+      await client.query('BEGIN');
+      try {
+        for (const columnName of params.columnNames) {
+          // table and column names cannot be parameterized, so string interpolate after validating inputs
+          await client.query(
+            `ALTER TABLE "${params.tableName}" ALTER COLUMN "${columnName}" SET STATISTICS ${newStatisticsTarget}`
+          );
+        }
+        await client.query('COMMIT');
+      } catch (err) {
+        // suppress ROLLBACK errors so the original error propagates; withPoolClient
+        // discards the client regardless
+        await client.query('ROLLBACK').catch(() => undefined);
+        throw err;
       }
-      await client.query('COMMIT');
-    } catch (err) {
-      // suppress ROLLBACK errors so the original error propagates; withPoolClient
-      // discards the client regardless
-      await client.query('ROLLBACK').catch(() => undefined);
-      throw err;
-    }
-  }, getDatabasePool(DatabaseMode.WRITER)); // shardId will be an input to this route
+    },
+    getDatabasePool(DatabaseMode.WRITER, shardId)
+  );
 
   return [allOk];
 }

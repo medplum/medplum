@@ -22,7 +22,7 @@ import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
 import { cdsRouter } from './cds/routes';
 import { getConfig } from './config/loader';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import {
   attachRequestContext,
   AuthenticatedRequestContext,
@@ -46,7 +46,7 @@ import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
 import { drainStdout, getLogger, globalLogger } from './logger';
 import { mcpRouter } from './mcp/routes';
-import { maybeAutoRunPendingPostDeployMigration } from './migrations/migration-utils';
+import { maybeAutoRunPendingPostDeployMigrationOnAllShards } from './migrations/migration-utils';
 import { initKeys } from './oauth/keys';
 import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
@@ -177,7 +177,7 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 
-export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
+export async function initApp(app: Express, config: ServerConfig): Promise<http.Server> {
   if (process.env.NODE_ENV !== 'test') {
     await warnIfNewerVersionAvailable('server', { base: config.baseUrl });
   }
@@ -284,7 +284,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   return server;
 }
 
-export async function initAppServices(config: MedplumServerConfig): Promise<void> {
+export async function initAppServices(config: ServerConfig): Promise<void> {
   loadStructureDefinitions(config);
   initRedis(config);
   await initDatabase(config);
@@ -295,7 +295,7 @@ export async function initAppServices(config: MedplumServerConfig): Promise<void
   initHeartbeat(config);
   initOtelHeartbeat();
   initServerRegistryHeartbeatListener();
-  await maybeAutoRunPendingPostDeployMigration();
+  await maybeAutoRunPendingPostDeployMigrationOnAllShards();
 }
 
 export async function shutdownApp(): Promise<void> {

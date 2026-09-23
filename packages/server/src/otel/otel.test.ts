@@ -3,10 +3,11 @@
 import { sleep } from '@medplum/core';
 import type { Meter } from '@opentelemetry/api';
 import { metrics } from '@opentelemetry/api';
-import type { Pool } from 'pg';
 import { vi } from 'vitest';
 import * as databaseModule from '../database';
 import { heartbeat } from '../heartbeat';
+import type { ShardPool } from '../sharding/sharding-types';
+import { TEST_SHARD_ID } from '../test.setup';
 import * as batchModule from '../workers/batch';
 import * as cronModule from '../workers/cron';
 import * as downloadModule from '../workers/download';
@@ -203,8 +204,9 @@ describe('OpenTelemetry', () => {
     const getDatabasePoolSpy = vi.spyOn(databaseModule, 'getDatabasePool').mockImplementation(
       () =>
         ({
+          shardId: TEST_SHARD_ID,
           query: async () => undefined,
-        }) as unknown as Pool
+        }) as unknown as ShardPool
     );
 
     initOtelHeartbeat();
@@ -241,8 +243,9 @@ describe('OpenTelemetry', () => {
     const getDatabasePoolSpy = vi.spyOn(databaseModule, 'getDatabasePool').mockImplementation(
       () =>
         ({
+          shardId: TEST_SHARD_ID,
           query: async () => undefined,
-        }) as unknown as Pool
+        }) as unknown as ShardPool
     );
 
     // Initialize heartbeat with valid queues first

@@ -8,6 +8,7 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getSuperAdminAccessToken, waitForAsyncJob } from '../../test.setup';
+import { GLOBAL_SHARD_ID } from '../sharding';
 
 describe('db-configure-indexes', () => {
   const app = express();
@@ -23,13 +24,13 @@ describe('db-configure-indexes', () => {
     accessToken = await getSuperAdminAccessToken();
 
     // Create a test table
-    const client = getDatabasePool(DatabaseMode.WRITER);
-    await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
-    await client.query(`CREATE TABLE ${escapedTableName} (aaa UUID[], bbb TEXT[])`);
-    await client.query(
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
+    await pool.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
+    await pool.query(`CREATE TABLE ${escapedTableName} (aaa UUID[], bbb TEXT[])`);
+    await pool.query(
       `CREATE INDEX CONCURRENTLY "${tableName}_aaa_idx" ON ${escapedTableName} USING gin (aaa) WITH (fastupdate = ye, gin_pending_list_limit = 1024)`
     );
-    await client.query(`CREATE INDEX CONCURRENTLY "${tableName}_bbb_idx" ON ${escapedTableName} USING gin (bbb)`);
+    await pool.query(`CREATE INDEX CONCURRENTLY "${tableName}_bbb_idx" ON ${escapedTableName} USING gin (bbb)`);
   });
 
   afterAll(async () => {

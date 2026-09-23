@@ -3,6 +3,8 @@
 
 import { OperationOutcomeError } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
+import { getConfig } from '../config/loader';
+import type { MedplumShardConfig } from '../config/types';
 import { getLogger } from '../logger';
 
 /**
@@ -29,6 +31,25 @@ export const TODO_SHARD_ID = 'todo';
 
 export function isReservedShardId(shardId: string): boolean {
   return shardId === GLOBAL_SHARD_ID || shardId === PLACEHOLDER_SHARD_ID || shardId === TODO_SHARD_ID;
+}
+
+export function isShardingEnabled(): boolean {
+  return getConfig().shards !== undefined;
+}
+
+export function getGlobalShardConfig(): MedplumShardConfig {
+  const config = getConfig();
+  return { id: GLOBAL_SHARD_ID, database: config.database, readonlyDatabase: config.readonlyDatabase };
+}
+
+export function* getAllShards(): Generator<MedplumShardConfig> {
+  yield getGlobalShardConfig();
+  const shards = getConfig().shards;
+  if (shards) {
+    for (const [_id, config] of Object.entries(shards)) {
+      yield config;
+    }
+  }
 }
 
 export type ShardRouting = { kind: 'global-only' } | { kind: 'project-shard'; shardId: string };
