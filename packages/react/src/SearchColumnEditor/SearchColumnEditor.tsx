@@ -88,12 +88,13 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
   // The fields the page loaded with, used by "Reset default".
   const defaultFields = useRef<string[]>([...visibleFields]);
 
-  // Drag state: which row initiated a handle drag, which row is being dragged, and the drop target.
-  const [handleIndex, setHandleIndex] = useState<number | null>(null);
+  // Pointer-drag state: the row being dragged and the current drop target. Pointer dragging (rather
+  // than native HTML5 drag) lets CSS keep the grabbing cursor while the row moves.
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
-  // Mirrors dragIndex so onDrop can read the source synchronously, before a re-render lands.
+  // Refs mirror the indices so the pointerup handler reads them synchronously, before a re-render lands.
   const dragIndexRef = useRef<number | null>(null);
+  const overIndexRef = useRef<number | null>(null);
 
   const visibleSet = useMemo(() => new Set(visibleFields), [visibleFields]);
   const visibleCount = order.filter((name) => visibleSet.has(name)).length;
@@ -142,10 +143,27 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
   }
 
   function clearDrag(): void {
-    setHandleIndex(null);
     setDragIndex(null);
     setOverIndex(null);
     dragIndexRef.current = null;
+    overIndexRef.current = null;
+  }
+
+  function startDrag(index: number): void {
+    dragIndexRef.current = index;
+    overIndexRef.current = index;
+    setDragIndex(index);
+    // Listen on the document so releasing anywhere (including outside the menu) ends the drag.
+    const onPointerUp = (): void => {
+      const from = dragIndexRef.current;
+      const to = overIndexRef.current;
+      if (from !== null && to !== null && from !== to) {
+        reorder(from, to);
+      }
+      clearDrag();
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+    document.addEventListener('pointerup', onPointerUp);
   }
 
   return (
@@ -203,7 +221,6 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
                 className={rowClass}
                 role="button"
                 tabIndex={0}
-                draggable={handleIndex === index}
                 aria-label={`column-${name}`}
                 onClick={() => toggleColumn(name)}
                 onKeyDown={(e) => {
@@ -212,35 +229,18 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
                     toggleColumn(name);
                   }
                 }}
-                onDragStart={(e) => {
-                  dragIndexRef.current = index;
-                  setDragIndex(index);
-                  if (e.dataTransfer) {
-                    e.dataTransfer.effectAllowed = 'move';
+                onPointerMove={() => {
+                  if (dragIndexRef.current !== null && overIndexRef.current !== index) {
+                    overIndexRef.current = index;
+                    setOverIndex(index);
                   }
                 }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  if (e.dataTransfer) {
-                    e.dataTransfer.dropEffect = 'move';
-                  }
-                  setOverIndex(index);
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const from = dragIndexRef.current;
-                  if (from !== null && from !== index) {
-                    reorder(from, index);
-                  }
-                  clearDrag();
-                }}
-                onDragEnd={clearDrag}
               >
                 <span
                   className={classes.grip}
                   aria-hidden="true"
-                  onPointerDown={() => setHandleIndex(index)}
-                  onPointerUp={() => setHandleIndex(null)}
+                  data-testid={`column-grip-${name}`}
+                  onPointerDown={() => startDrag(index)}
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                 >

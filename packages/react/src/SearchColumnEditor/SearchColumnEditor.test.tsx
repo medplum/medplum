@@ -129,12 +129,11 @@ describe('SearchColumnEditor', () => {
     await openMenu();
 
     // Drag "gender" (index 2) onto "name" (index 0): gender moves to the front.
-    const gender = screen.getByLabelText('column-gender');
     const name = screen.getByLabelText('column-name');
     await act(async () => {
-      fireEvent.dragStart(gender);
-      fireEvent.dragOver(name);
-      fireEvent.drop(name);
+      fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
+      fireEvent.pointerMove(name);
+      fireEvent.pointerUp(name);
     });
 
     const last = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
@@ -147,10 +146,9 @@ describe('SearchColumnEditor', () => {
 
     // Reorder, then immediately toggle a column with one click - no drag guard should swallow it.
     await act(async () => {
-      fireEvent.dragStart(screen.getByLabelText('column-gender'));
-      fireEvent.dragOver(screen.getByLabelText('column-name'));
-      fireEvent.drop(screen.getByLabelText('column-name'));
-      fireEvent.dragEnd(screen.getByLabelText('column-gender'));
+      fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
+      fireEvent.pointerMove(screen.getByLabelText('column-name'));
+      fireEvent.pointerUp(screen.getByLabelText('column-name'));
     });
     const callsAfterDrag = onChange.mock.calls.length;
 
