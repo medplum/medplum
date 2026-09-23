@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { sleep } from '@medplum/core';
 import type { Job } from 'bullmq';
 import type { PoolClient } from 'pg';
+import { getConfig } from '../../config/loader';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { globalLogger } from '../../logger';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import { moveToDelayedAndThrow, queueRegistry } from '../../workers/utils';
 import * as fns from '../migrate-functions';
+import { withLongRunningDatabaseClient } from '../migration-utils';
 import type { MigrationActionResult } from '../types';
 import type { CustomPostDeployMigration, CustomPostDeployMigrationJobData } from './types';
 
@@ -16,14 +18,11 @@ export const migration: CustomPostDeployMigration = {
   run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),
 };
 
-/**
- * Job data for this migration. The backfill is self-resuming without it -- the qualifying
- * predicate is indexed, so an interrupted run finds exactly the remaining work -- but recording
- * the table in flight lets a graceful shutdown pick up where it left off instead of re-checking
- * every table.
- */
-interface ProjectIdBackfillJobData extends CustomPostDeployMigrationJobData {
+export interface ProjectIdBackfillJobData extends CustomPostDeployMigrationJobData {
+  readonly completedResourceTypes?: string[];
   readonly resumeFromResourceType?: string;
+  readonly resumeFromResourceId?: string;
+  readonly resumePhase?: 'backfill' | 'index';
 }
 
 interface ReferenceTableDefinition {
@@ -207,131 +206,508 @@ const REFERENCE_TABLES: ReferenceTableDefinition[] = [
   { resourceType: 'Cron', indexName: 'Cron_Refs_projectId_code_targetId_idx', createIndexSql: `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Cron_Refs_projectId_code_targetId_idx" ON "Cron_References" ("projectId", "code", "targetId") INCLUDE ("resourceId")` },
 ];
 
-/** Reference rows updated per statement. Bounds how long any single row lock is held. */
-const BACKFILL_BATCH_SIZE = 5000;
-
-/** Pause between batches, to leave IO headroom on the writer for live traffic. */
-const BATCH_DELAY_MS = 100;
-
+const BACKFILL_CONCURRENCY = 6;
+/**
+ * Rows one range statement aims to touch, which controls the duration the row locks are held.
+ * This should be on the order of a few seconds.
+ */
+const TARGET_ROWS_PER_RANGE = 25_000;
+const MAX_RANGES_PER_TABLE = 4096;
 /**
  * Bound on the delete-then-backfill passes made over one table. Two passes suffice unless
  * resources are being purged continuously; the bound only stops a pathological workload from
  * keeping the migration on one table indefinitely.
  */
 const MAX_BACKFILL_PASSES = 3;
+const SLOW_RANGE_WARN_MS = 30_000;
+
+/**
+ * Hard stop for a single range statement. Worker connections are otherwise timeout-free, so a plan
+ * that degrades to a full table scan per range would run unobserved. Cleared before the index
+ * phase, which legitimately runs for hours.
+ *
+ * Generous on purpose. A correctly planned range was measured at 462s on a 20M-row table under the
+ * checkpoint pressure of a bulk load, and a migration generating this much WAL creates exactly
+ * that pressure. Timing out is not a delay here: the range is abandoned, its rows stay NULL, and
+ * the table fails to converge, which fails the job. The seq-scan-per-range case this guards
+ * against is orders of magnitude slower still, so the wide margin costs nothing.
+ */
+const RANGE_STATEMENT_TIMEOUT = '20min';
+
+/** Fraction of the writer pool this migration is willing to occupy. */
+const MAX_POOL_SHARE = 0.25;
+
+export interface BackfillOverrides {
+  readonly concurrency?: number;
+  readonly clients?: PoolClient[];
+  readonly rangeTargetRows?: number;
+}
+
+/** A half-open `[lower, upper)` slice of the `resourceId` key space. */
+export interface ResourceIdRange {
+  readonly lower?: string;
+  readonly upper?: string;
+}
 
 export async function callback(
   client: PoolClient,
   results: MigrationActionResult[],
   job: Job<CustomPostDeployMigrationJobData> | undefined,
-  jobData: CustomPostDeployMigrationJobData
+  jobData: CustomPostDeployMigrationJobData,
+  overrides: BackfillOverrides = {}
 ): Promise<void> {
   const tables = await sortBySize(client, REFERENCE_TABLES);
+  const data = jobData as ProjectIdBackfillJobData;
 
-  // Make sure all the new NULL values don't mess up index stats
-  await analyzeMissingProjectIdStats(client, results, tables, job, jobData);
+  await withWorkers(overrides, async (workers) => {
+    const control = new BackfillControl(job, jobData);
 
-  // Resume where a graceful shutdown left off, wrapping around so that tables ordered before the
-  // resume point are still visited, since table sizes can change between runs
-  const resumeFrom = (jobData as ProjectIdBackfillJobData).resumeFromResourceType;
-  const startIndex = Math.max(
-    0,
-    tables.findIndex((t) => t.resourceType === resumeFrom)
+    // Phase A: Build stats for the new column so backfill queries use the best plans
+    await analyzeMissingProjectIdStats(client, workers, results, tables, control);
+
+    // Phase B: Backfill each table in sequence, with key ranges within a table in parallel.
+    const backfill =
+      data.resumePhase === 'index'
+        ? { touched: new Set<string>(), completed: data.completedResourceTypes ?? [], unfinished: [] as string[] }
+        : await backfillTables(client, workers, results, tables, control, data, overrides);
+
+    // Phase C: Build indexes for all tables
+    await createReferenceIndexes(workers, results, tables, backfill.touched, control, {
+      resumePhase: backfill.unfinished.length > 0 ? 'backfill' : 'index',
+      completedResourceTypes: backfill.completed,
+    });
+
+    if (backfill.unfinished.length > 0) {
+      throw new Error(`Backfill of reference table projectId did not converge for: ${backfill.unfinished.join(', ')}`);
+    }
+  });
+}
+
+/**
+ * Holds the worker connections for the duration of `fn`.
+ *
+ * `withLongRunningDatabaseClient` rather than `pool.connect()` because these sessions run with no
+ * statement timeout: returning one to the shared pool with a plain `release()` would hand a live
+ * request handler a timeout-free session. Nesting also makes release LIFO and strictly after `fn`
+ * settles, so no connection closes while a sibling still has a query in flight.
+ * @param overrides - Test seams; `clients` bypasses the pool entirely.
+ * @param fn - Receives the worker connections.
+ * @returns The result of `fn`.
+ */
+async function withWorkers<T>(overrides: BackfillOverrides, fn: (workers: PoolClient[]) => Promise<T>): Promise<T> {
+  if (overrides.clients) {
+    return fn(overrides.clients);
+  }
+
+  const pool = getDatabasePool(DatabaseMode.WRITER);
+  let maxConnections = 50;
+  try {
+    maxConnections = getConfig().database.maxConnections ?? 50;
+  } catch {
+    // Config not loaded; the conservative default already applies
+  }
+  const count = Math.max(
+    1,
+    Math.min(overrides.concurrency ?? BACKFILL_CONCURRENCY, Math.floor(maxConnections * MAX_POOL_SHARE))
   );
 
-  const unfinished: string[] = [];
-  for (let i = 0; i < tables.length; i++) {
-    const table = tables[(startIndex + i) % tables.length];
-    await checkForQueueClosing(job, jobData, table.resourceType);
-    if ((await backfillTable(client, results, table, job, jobData)) > 0) {
-      unfinished.push(`${table.resourceType}_References`);
+  return withBackfillClients(count, async (workers) => {
+    // `connectionTimeoutMillis` is unset, so oversubscribing the writer pool stalls API request
+    // handlers silently rather than failing fast.
+    globalLogger.info('Acquired reference backfill worker connections', {
+      workers: workers.length,
+      maxConnections,
+      totalCount: pool.totalCount,
+      idleCount: pool.idleCount,
+      waitingCount: pool.waitingCount,
+    });
+    return fn(workers);
+  });
+}
+
+async function withBackfillClients<T>(
+  count: number,
+  fn: (clients: PoolClient[]) => Promise<T>,
+  acquired: PoolClient[] = []
+): Promise<T> {
+  if (acquired.length >= count) {
+    return fn(acquired);
+  }
+  return withLongRunningDatabaseClient(
+    async (client) => withBackfillClients(count, fn, [...acquired, client]),
+    DatabaseMode.WRITER
+  );
+}
+
+/**
+ * Owns stopping and failing for the whole run.
+ *
+ * Workers never throw `DelayedError` and never call `job.updateData`: N workers doing so would
+ * produce N conflicting resume points and let the error escape while siblings still hold in-flight
+ * queries. Workers only latch state here; the driver acts on it once every worker has settled.
+ */
+class BackfillControl {
+  private readonly job: Job<CustomPostDeployMigrationJobData> | undefined;
+  private readonly jobData: CustomPostDeployMigrationJobData;
+  private closing = false;
+  private error: unknown;
+
+  constructor(job: Job<CustomPostDeployMigrationJobData> | undefined, jobData: CustomPostDeployMigrationJobData) {
+    this.job = job;
+    this.jobData = jobData;
+  }
+
+  shouldStop(): boolean {
+    if (!this.closing && this.job && queueRegistry.isClosing(this.job.queueName)) {
+      this.closing = true;
+    }
+    return this.closing || this.error !== undefined;
+  }
+
+  recordError(err: unknown): void {
+    this.error ??= err ?? new Error('Reference projectId backfill failed');
+    this.shouldStop();
+  }
+
+  /**
+   * Driver-only. Call once every worker of a sub-phase has settled, so that "no worker is still
+   * touching the database" is a precondition of delaying or rethrowing.
+   * @param checkpoint - Resume state to record if the queue is closing.
+   */
+  async settlePhase(checkpoint: Partial<ProjectIdBackfillJobData>): Promise<void> {
+    if (this.shouldStop() && this.closing && this.job) {
+      const nextJobData: ProjectIdBackfillJobData = { ...this.jobData, ...checkpoint };
+      await this.job.updateData(nextJobData);
+      await moveToDelayedAndThrow(this.job, 'Reference projectId backfill delayed since queue is closing');
+    }
+    if (this.error !== undefined) {
+      throw this.error;
+    }
+  }
+}
+
+interface RangeRunOutcome {
+  /** Rows affected across every completed range. */
+  readonly rows: number;
+  /** Slowest single range, surfaced so the AsyncJob output carries the seq-scan signal. */
+  readonly maxRangeMs: number;
+  /** Ranges abandoned after hitting `statement_timeout` twice. */
+  readonly abandoned: number;
+  /** Lower bound of the lowest range not proven complete, or undefined if all completed. */
+  readonly checkpoint?: string;
+}
+
+/**
+ * Runs `task` over every range, pulling from a shared queue so a slow range does not idle a worker.
+ *
+ * `Promise.allSettled`, never `all`: the driver must not proceed while a sibling still has a query
+ * in flight on a connection it is about to reuse.
+ * @param workers - Connections to fan out across.
+ * @param ranges - Ranges to cover, in ascending key order.
+ * @param control - Stop/error latch.
+ * @param task - Runs one range; returns rows affected, or undefined if the range was abandoned.
+ * @returns Aggregated counts and the resume checkpoint.
+ */
+async function runRanges(
+  workers: PoolClient[],
+  ranges: ResourceIdRange[],
+  control: BackfillControl,
+  task: (client: PoolClient, range: ResourceIdRange) => Promise<number | undefined>
+): Promise<RangeRunOutcome> {
+  const completed = new Array<boolean>(ranges.length).fill(false);
+  let rows = 0;
+  let maxRangeMs = 0;
+  let abandoned = 0;
+  let next = 0;
+
+  const settled = await Promise.allSettled(
+    Array.from({ length: Math.min(workers.length, ranges.length) }, async (_unused, workerIndex) => {
+      const client = workers[workerIndex];
+      while (!control.shouldStop()) {
+        const index = next++;
+        if (index >= ranges.length) {
+          return;
+        }
+        const start = Date.now();
+        let affected: number | undefined;
+        try {
+          affected = await task(client, ranges[index]);
+        } catch (err) {
+          control.recordError(err);
+          return;
+        }
+        const durationMs = Date.now() - start;
+        maxRangeMs = Math.max(maxRangeMs, durationMs);
+        if (affected === undefined) {
+          abandoned++;
+        } else {
+          rows += affected;
+          completed[index] = true;
+        }
+        if (durationMs >= SLOW_RANGE_WARN_MS) {
+          globalLogger.warn('Slow reference backfill range', { durationMs, index, ranges: ranges.length });
+        }
+      }
+    })
+  );
+  for (const result of settled) {
+    if (result.status === 'rejected') {
+      control.recordError(result.reason);
     }
   }
 
-  if (unfinished.length > 0) {
-    throw new Error(`Backfill of reference table projectId did not converge for: ${unfinished.join(', ')}`);
+  // Every range below the first incomplete one is proven done, so its lower bound is a safe
+  // restart point. Ranges above it that did complete are simply redone.
+  const firstIncomplete = completed.indexOf(false);
+  return { rows, maxRangeMs, abandoned, checkpoint: firstIncomplete < 0 ? undefined : ranges[firstIncomplete].lower };
+}
+
+/**
+ * Runs `task` once per table across the workers, keeping each table's action results local and
+ * splicing them back in table order.
+ *
+ * Pushing to the shared array from concurrent tasks would make the order of `results` depend on
+ * which table finished first.
+ * @param workers - Connections to fan out across.
+ * @param tables - Tables to process.
+ * @param results - Shared action results, appended to in table order once all tables settle.
+ * @param control - Stop/error latch.
+ * @param task - Runs one table, pushing to its own local results array.
+ */
+async function runPerTable(
+  workers: PoolClient[],
+  tables: ReferenceTableDefinition[],
+  results: MigrationActionResult[],
+  control: BackfillControl,
+  task: (client: PoolClient, table: ReferenceTableDefinition, localResults: MigrationActionResult[]) => Promise<void>
+): Promise<void> {
+  const localResults = tables.map((): MigrationActionResult[] => []);
+  let next = 0;
+
+  const settled = await Promise.allSettled(
+    Array.from({ length: Math.min(workers.length, tables.length) }, async (_unused, workerIndex) => {
+      const client = workers[workerIndex];
+      while (!control.shouldStop()) {
+        const index = next++;
+        if (index >= tables.length) {
+          return;
+        }
+        try {
+          await task(client, tables[index], localResults[index]);
+        } catch (err) {
+          control.recordError(err);
+          return;
+        }
+      }
+    })
+  );
+  for (const result of settled) {
+    if (result.status === 'rejected') {
+      control.recordError(result.reason);
+    }
+  }
+  for (const local of localResults) {
+    results.push(...local);
   }
 }
 
 async function analyzeMissingProjectIdStats(
   client: PoolClient,
+  workers: PoolClient[],
   results: MigrationActionResult[],
   tables: ReferenceTableDefinition[],
-  job: Job<CustomPostDeployMigrationJobData> | undefined,
-  jobData: CustomPostDeployMigrationJobData
+  control: BackfillControl
 ): Promise<void> {
   const existing = await client.query<{ tablename: string }>(
     `SELECT tablename FROM pg_stats WHERE tablename = ANY($1::text[]) AND attname = 'projectId'`,
     [tables.map((t) => `${t.resourceType}_References`)]
   );
   const hasStats = new Set(existing.rows.map((row) => row.tablename));
+  const pending = tables.filter((table) => !hasStats.has(`${table.resourceType}_References`));
 
   const start = Date.now();
-  let analyzed = 0;
-  for (const table of tables) {
-    const tableName = `${table.resourceType}_References`;
-    if (hasStats.has(tableName)) {
-      continue;
-    }
-    await checkForQueueClosing(job, jobData, table.resourceType);
-    await client.query(`ANALYZE ${escapeTableName(tableName)} ("projectId")`);
-    analyzed++;
-  }
+  await runPerTable(workers, pending, [], control, async (worker, table) => {
+    await worker.query(`ANALYZE ${escapeTableName(table.resourceType + '_References')} ("projectId")`);
+  });
 
   results.push({
     name: 'Analyze reference table "projectId" columns',
     durationMs: Date.now() - start,
-    analyzed,
-    skipped: tables.length - analyzed,
+    analyzed: pending.length,
+    skipped: tables.length - pending.length,
   });
+  await control.settlePhase({ resumePhase: 'backfill' });
+}
+
+async function backfillTables(
+  client: PoolClient,
+  workers: PoolClient[],
+  results: MigrationActionResult[],
+  tables: ReferenceTableDefinition[],
+  control: BackfillControl,
+  data: ProjectIdBackfillJobData,
+  overrides: BackfillOverrides
+): Promise<{ touched: Set<string>; completed: string[]; unfinished: string[] }> {
+  // Ranges are bounded to roughly a second each, but a plan that degrades to a full table scan
+  // per range would run unobserved on these otherwise timeout-free connections.
+  await setOnWorkers(workers, `SET statement_timeout TO '${RANGE_STATEMENT_TIMEOUT}'`);
+  try {
+    const completed = new Set(data.completedResourceTypes ?? []);
+    const touched = new Set<string>();
+    const unfinished: string[] = [];
+    let resumeFromResourceId = data.resumeFromResourceId;
+
+    for (const table of tables) {
+      if (completed.has(table.resourceType)) {
+        continue;
+      }
+      // The checkpoint only bounds redone work within the table that was in flight.
+      const resumeFrom = table.resourceType === data.resumeFromResourceType ? resumeFromResourceId : undefined;
+      resumeFromResourceId = undefined;
+
+      const outcome = await backfillTable(client, workers, results, table, control, {
+        completedResourceTypes: [...completed],
+        resumeFromResourceId: resumeFrom,
+        overrides,
+      });
+      if (outcome.touched) {
+        touched.add(table.resourceType);
+      }
+      if (outcome.unfinished > 0) {
+        unfinished.push(`${table.resourceType}_References`);
+      } else {
+        completed.add(table.resourceType);
+      }
+    }
+    return { touched, completed: [...completed], unfinished };
+  } finally {
+    // The index phase legitimately runs for hours. A connection already torn down by a shutdown
+    // in progress must not replace the DelayedError on its way out.
+    try {
+      await setOnWorkers(workers, `SET statement_timeout TO 0`);
+    } catch (err) {
+      globalLogger.warn('Could not clear statement timeout on backfill workers', { err });
+    }
+  }
+}
+
+interface BackfillTableContext {
+  readonly completedResourceTypes: string[];
+  readonly resumeFromResourceId?: string;
+  readonly overrides: BackfillOverrides;
 }
 
 async function backfillTable(
   client: PoolClient,
+  workers: PoolClient[],
   results: MigrationActionResult[],
   table: ReferenceTableDefinition,
-  job: Job<CustomPostDeployMigrationJobData> | undefined,
-  jobData: CustomPostDeployMigrationJobData
-): Promise<number> {
-  const { resourceType, indexName, createIndexSql } = table;
+  control: BackfillControl,
+  context: BackfillTableContext
+): Promise<{ touched: boolean; unfinished: number }> {
+  const { resourceType } = table;
   const tableName = `${resourceType}_References`;
-
-  await fns.idempotentCreateIndex(client, results, indexName, createIndexSql);
 
   if (!(await hasNullProjectId(client, tableName))) {
     // Already backfilled, either by a previous run of this migration or by ordinary writes
-    return 0;
+    return { touched: false, unfinished: 0 };
   }
 
   const start = Date.now();
+  const { overrides } = context;
+  let ranges = computeRanges(await estimateRowCount(client, tableName), overrides.rangeTargetRows);
+  if (context.resumeFromResourceId !== undefined) {
+    const resumeFrom = context.resumeFromResourceId;
+    ranges = ranges.filter((range) => range.upper === undefined || range.upper > resumeFrom);
+  }
+
+  // Keyed ranges only pay off if both sides of the join plan as index scans. The range bound
+  // makes the reference table a primary key range scan on its own, but the planner reliably
+  // prefers to hash join against a sequential scan of the resource table, which turns one scan of
+  // it into one per range. Disabling seq scans is a cost penalty rather than a prohibition, so no
+  // plan becomes impossible -- only more expensive than the index path it was passed over for.
+  // A single unbounded statement matches every row, which is what a seq scan is for, so it is
+  // left alone.
+  const seqscanDisabled = ranges.length > 1;
+
+  const checkpoint = (resumeFromResourceId: string | undefined): Partial<ProjectIdBackfillJobData> => ({
+    resumePhase: 'backfill',
+    resumeFromResourceType: resourceType,
+    completedResourceTypes: context.completedResourceTypes,
+    resumeFromResourceId,
+  });
 
   let orphansDeleted = 0;
   let updated = 0;
   let remaining = 0;
   let rowsWithoutProject = 0;
-  for (let pass = 0; pass < MAX_BACKFILL_PASSES; pass++) {
-    updated += await backfillNullProjectIds(client, resourceType, tableName, job, jobData);
+  let maxRangeMs = 0;
+  let abandoned = 0;
+  let passes = 0;
+  try {
+    // Inside the try so that a failure partway through the workers still hits the restore below
+    if (seqscanDisabled) {
+      await setOnWorkers(workers, `SET enable_seqscan = off`);
+    }
 
-    // Fix stats so the queries below can be planned as narrow index scans rather than table scans
-    await analyzeProjectIdColumn(client, results, tableName);
+    for (let pass = 0; pass < MAX_BACKFILL_PASSES; pass++) {
+      passes++;
 
-    orphansDeleted += await deleteOrphanedRows(client, resourceType, tableName, job, jobData);
-    ({ remaining, rowsWithoutProject } = await countNullProjectIds(client, resourceType, tableName));
-    if (remaining === rowsWithoutProject) {
-      // Every row this migration can reach has been backfilled; another pass would find nothing
-      break;
+      const backfilled = await runRanges(workers, ranges, control, (worker, range) =>
+        runRangeStatement(worker, backfillSql(resourceType, tableName, range), range, seqscanDisabled)
+      );
+      updated += backfilled.rows;
+      maxRangeMs = Math.max(maxRangeMs, backfilled.maxRangeMs);
+      abandoned += backfilled.abandoned;
+      await control.settlePhase(checkpoint(backfilled.checkpoint));
+
+      // Refresh stats with no worker touching the table, so the SHARE UPDATE EXCLUSIVE lock is
+      // uncontended. `projectId IS NULL` is now near-zero selective, which keeps the sweep
+      // and the count below from being a full table scan.
+      await fns.query(client, results, `ANALYZE ${escapeTableName(tableName)} ("projectId")`);
+
+      const swept = await runRanges(workers, ranges, control, (worker, range) =>
+        runRangeStatement(worker, orphanSweepSql(resourceType, tableName, range), range, seqscanDisabled)
+      );
+      orphansDeleted += swept.rows;
+      maxRangeMs = Math.max(maxRangeMs, swept.maxRangeMs);
+      abandoned += swept.abandoned;
+      await control.settlePhase(checkpoint(swept.checkpoint));
+
+      ({ remaining, rowsWithoutProject } = await countNullProjectIds(client, resourceType, tableName));
+      if (remaining === rowsWithoutProject) {
+        // Every row this migration can reach has been backfilled; another pass would find nothing
+        break;
+      }
+    }
+  } finally {
+    // The setting is per session, so it has to come back on before the next table plans its own
+    if (seqscanDisabled) {
+      try {
+        await setOnWorkers(workers, `SET enable_seqscan = on`);
+      } catch (err) {
+        globalLogger.warn('Could not re-enable sequential scans on backfill workers', { err });
+      }
     }
   }
 
   const unfinished = remaining - rowsWithoutProject;
-  results.push({
+  const result: MigrationActionResult = {
     name: `Backfill "${tableName}"."projectId"`,
     durationMs: Date.now() - start,
     updated,
     orphansDeleted,
     remaining,
     rowsWithoutProject,
-  });
+    ranges: ranges.length,
+    passes,
+    maxRangeMs,
+  };
+  if (abandoned > 0) {
+    result.abandonedRanges = abandoned;
+  }
+  results.push(result);
+
   const details = { tableName, updated, orphansDeleted, remaining, rowsWithoutProject };
   if (unfinished > 0) {
     globalLogger.warn('Backfill of reference table projectId did not converge', details);
@@ -343,94 +719,262 @@ async function backfillTable(
     globalLogger.info('Backfilled reference table projectId', details);
   }
 
-  // Rebuild index to fix NULL-dominated structure and ensure visibility map is up to date
-  await fns.query(client, results, `VACUUM (ANALYZE) ${escapeTableName(tableName)}`);
-  await fns.reindexConcurrently(client, results, 'INDEX', indexName);
-
-  return unfinished;
+  return { touched: true, unfinished };
 }
 
-async function deleteOrphanedRows(
-  client: PoolClient,
-  resourceType: string,
-  tableName: string,
-  job: Job<CustomPostDeployMigrationJobData> | undefined,
-  jobData: CustomPostDeployMigrationJobData
-): Promise<number> {
-  const sql = `
-    WITH batch AS (
-      SELECT r."resourceId", r."targetId", r.code
-      FROM ${escapeTableName(tableName)} r
-      WHERE r."projectId" IS NULL
-        AND NOT EXISTS (SELECT 1 FROM ${escapeTableName(resourceType)} p WHERE p.id = r."resourceId")
-      LIMIT $1
-    )
-    DELETE FROM ${escapeTableName(tableName)} r
-    USING batch b
-    WHERE r."resourceId" = b."resourceId" AND r."targetId" = b."targetId" AND r.code = b.code
-    RETURNING r."resourceId"`;
+/**
+ * Splits the `resourceId` key space into contiguous ranges of roughly `targetRows` rows each.
+ *
+ * The ranges must tile the space exactly: an overlap hands two workers the same rows in opposite
+ * orders, and a gap silently leaves rows NULL. Hence `ranges[i].upper === ranges[i + 1].lower`,
+ * with the outermost bounds left open rather than clamped to a representable uuid.
+ * @param rowEstimate - Estimated rows in the table; 0 or negative yields a single range.
+ * @param targetRows - Rows each range aims to cover.
+ * @returns The ranges, in ascending key order.
+ */
+export function computeRanges(rowEstimate: number, targetRows = TARGET_ROWS_PER_RANGE): ResourceIdRange[] {
+  const rows = Number.isFinite(rowEstimate) ? rowEstimate : 0;
+  const rangeCount = Math.min(MAX_RANGES_PER_TABLE, Math.max(1, Math.ceil(rows / targetRows) || 1));
+  const ranges: ResourceIdRange[] = [];
+  for (let i = 0; i < rangeCount; i++) {
+    ranges.push({
+      lower: i === 0 ? undefined : uuidPartition(i, rangeCount),
+      upper: i === rangeCount - 1 ? undefined : uuidPartition(i + 1, rangeCount),
+    });
+  }
+  return ranges;
+}
 
-  let deleted = 0;
-  for (;;) {
-    await checkForQueueClosing(job, jobData, resourceType);
-    const result = await client.query(sql, [BACKFILL_BATCH_SIZE]);
-    if (!result.rowCount) {
-      return deleted;
+export function uuidPartition(index: number, total: number): string {
+  if (!Number.isInteger(index) || !Number.isInteger(total) || index <= 0 || index >= total) {
+    throw new Error(`Cannot compute uuid boundary ${index} of ${total}`);
+  }
+  const partition = ((1n << 128n) * BigInt(index)) / BigInt(total);
+  const hex = partition.toString(16).padStart(32, '0');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+interface RangeStatement {
+  readonly sql: string;
+  readonly params: string[];
+}
+
+function backfillSql(resourceType: string, tableName: string, range: ResourceIdRange): RangeStatement {
+  const bounds = rangePredicate(range);
+  return {
+    sql: `UPDATE ${escapeTableName(tableName)} r
+    SET "projectId" = p."projectId"
+    FROM ${escapeTableName(resourceType)} p
+    WHERE p.id = r."resourceId"
+      AND r."projectId" IS NULL
+      AND p."projectId" IS NOT NULL
+      ${bounds.sql}`,
+    params: bounds.params,
+  };
+}
+
+/**
+ * Builds the orphan sweep for one key range.
+ *
+ * The sweep must be range-scoped: with no index on `projectId` during the backfill, a whole-table
+ * `WHERE "projectId" IS NULL` degrades to a sequential scan.
+ * @param resourceType - The resource type owning the table.
+ * @param tableName - The reference table name.
+ * @param range - The key range to cover.
+ * @returns The statement and its parameters.
+ */
+function orphanSweepSql(resourceType: string, tableName: string, range: ResourceIdRange): RangeStatement {
+  const bounds = rangePredicate(range);
+  return {
+    sql: `DELETE FROM ${escapeTableName(tableName)} r
+    WHERE r."projectId" IS NULL
+      ${bounds.sql}
+      AND NOT EXISTS (SELECT 1 FROM ${escapeTableName(resourceType)} p WHERE p.id = r."resourceId")`,
+    params: bounds.params,
+  };
+}
+
+/**
+ * Renders a range as simple `>=` / `<` bounds on `r."resourceId"`.
+ *
+ * Emitting the bounds that exist rather than `($1 IS NULL OR ...)` keeps the predicate a simple
+ * bound the planner can turn into a primary key range scan.
+ * @param range - The range to render.
+ * @param paramOffset - Number of parameters already consumed by the statement.
+ * @returns The SQL fragment and its parameters.
+ */
+function rangePredicate(range: ResourceIdRange, paramOffset = 0): RangeStatement {
+  const clauses: string[] = [];
+  const params: string[] = [];
+  if (range.lower !== undefined) {
+    params.push(range.lower);
+    clauses.push(`AND r."resourceId" >= $${paramOffset + params.length}::uuid`);
+  }
+  if (range.upper !== undefined) {
+    params.push(range.upper);
+    clauses.push(`AND r."resourceId" < $${paramOffset + params.length}::uuid`);
+  }
+  return { sql: clauses.join('\n      '), params };
+}
+
+/** SQLSTATE raised on `statement_timeout`. */
+const queryCanceled = '57014';
+
+/**
+ * Runs one range statement, retrying transient conflicts and surviving a pathological plan.
+ *
+ * An abandoned range is reported rather than thrown: its rows stay NULL, so the table fails the
+ * convergence check below and the job still fails, but with a full accounting of what was left
+ * behind instead of whichever worker happened to time out first.
+ * @param client - The worker connection.
+ * @param statement - The statement to run.
+ * @param range - The range being covered, for diagnostics.
+ * @param seqscanDisabled - Whether the table is already running with `enable_seqscan` off.
+ * @returns Rows affected, or undefined if the range was abandoned after timing out.
+ */
+async function runRangeStatement(
+  client: PoolClient,
+  statement: RangeStatement,
+  range: ResourceIdRange,
+  seqscanDisabled: boolean
+): Promise<number | undefined> {
+  try {
+    return await runWithSerializationRetries(client, statement);
+  } catch (err) {
+    if (getSqlState(err) !== queryCanceled) {
+      throw err;
     }
-    deleted += result.rowCount;
-    await sleep(BATCH_DELAY_MS);
+    if (seqscanDisabled) {
+      // Already running the plan a retry would fall back to, so it would time out the same way
+      globalLogger.error('Abandoning reference backfill range after timeout', { range });
+      return undefined;
+    }
+    globalLogger.warn('Reference backfill range timed out; retrying without sequential scans', { range });
+    await client.query(`SET enable_seqscan = off`);
+    try {
+      return await runWithSerializationRetries(client, statement);
+    } catch (retryErr) {
+      if (getSqlState(retryErr) !== queryCanceled) {
+        throw retryErr;
+      }
+      globalLogger.error('Abandoning reference backfill range after repeated timeouts', { range });
+      return undefined;
+    } finally {
+      // Back to the setting the rest of this table is running under
+      await client.query(`SET enable_seqscan = on`);
+    }
   }
 }
 
-async function backfillNullProjectIds(
-  client: PoolClient,
-  resourceType: string,
-  tableName: string,
-  job: Job<CustomPostDeployMigrationJobData> | undefined,
-  jobData: CustomPostDeployMigrationJobData
-): Promise<number> {
-  const sql = `
-    WITH batch AS (
-      SELECT r."resourceId", r."targetId", r.code
-      FROM ${escapeTableName(tableName)} r
-      WHERE r."projectId" IS NULL
-        AND EXISTS (
-          SELECT 1 FROM ${escapeTableName(resourceType)} p
-          WHERE p.id = r."resourceId" AND p."projectId" IS NOT NULL
-        )
-      LIMIT $1
-    )
-    UPDATE ${escapeTableName(tableName)} r
-    SET "projectId" = p."projectId"
-    FROM batch b
-    JOIN ${escapeTableName(resourceType)} p ON p.id = b."resourceId"
-    WHERE r."resourceId" = b."resourceId" AND r."targetId" = b."targetId" AND r.code = b.code
-    RETURNING r."resourceId"`;
-
-  let updated = 0;
-  for (;;) {
-    await checkForQueueClosing(job, jobData, resourceType);
-    const result = await client.query(sql, [BACKFILL_BATCH_SIZE]);
-    if (!result.rowCount) {
-      return updated;
+const retryAttempts = 5;
+const retryableCodes = [
+  '40001', // serialization error
+  '40P01', // deadlock
+];
+async function runWithSerializationRetries(client: PoolClient, statement: RangeStatement): Promise<number> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const result = await client.query(statement.sql, statement.params);
+      return result.rowCount ?? 0;
+    } catch (err) {
+      const sqlState = getSqlState(err);
+      if (attempt >= retryAttempts || sqlState === undefined || !retryableCodes.includes(sqlState)) {
+        throw err;
+      }
+      globalLogger.warn('Retrying reference backfill range', { sqlState, attempt });
     }
-    updated += result.rowCount;
-    await sleep(BATCH_DELAY_MS);
+  }
+}
+
+function getSqlState(err: unknown): string | undefined {
+  return err instanceof Error && 'code' in err && typeof err.code === 'string' ? err.code : undefined;
+}
+
+async function setOnWorkers(workers: PoolClient[], sql: string): Promise<void> {
+  for (const worker of workers) {
+    await worker.query(sql);
   }
 }
 
 /**
- * Refreshes the `projectId` statistics for a single reference table.
- * @param client - The database client.
- * @param results - The list of action results to push operations performed.
- * @param tableName - The reference table name.
+ * Builds the `projectId` index on every table, and vacuums the ones the backfill rewrote.
+ *
+ * Deferring index creation to here is most of the speedup: creating it first makes every UPDATE
+ * maintain a wide, randomly ordered index that is then rebuilt anyway. Running it across tables
+ * concurrently is safe on PG>=14, where `CREATE INDEX CONCURRENTLY` sets `PROC_IN_SAFE_IC` and
+ * `VACUUM` sets `PROC_IN_VACUUM`, so neither is waited on by the other's snapshot wait. Both take
+ * SHARE UPDATE EXCLUSIVE, so they conflict only on the same table, which the sequence below
+ * orders. A multi-second range UPDATE is a locker of its table and would stall that table's
+ * build, which is exactly why this is a separate phase rather than part of the per-table work.
+ * @param workers - Connections to fan out across.
+ * @param results - Shared action results.
+ * @param tables - All reference tables.
+ * @param touched - Resource types whose rows this run actually rewrote.
+ * @param control - Stop/error latch.
+ * @param checkpoint - Resume state to record if the queue closes during this phase.
  */
-async function analyzeProjectIdColumn(
-  client: PoolClient,
+async function createReferenceIndexes(
+  workers: PoolClient[],
   results: MigrationActionResult[],
-  tableName: string
+  tables: ReferenceTableDefinition[],
+  touched: Set<string>,
+  control: BackfillControl,
+  checkpoint: Partial<ProjectIdBackfillJobData>
 ): Promise<void> {
-  await fns.query(client, results, `ANALYZE ${escapeTableName(tableName)} ("projectId")`);
+  await runPerTable(workers, tables, results, control, async (client, table, localResults) => {
+    if (touched.has(table.resourceType)) {
+      // Fix the NULL-dominated page structure and refresh the visibility map before the build
+      await fns.query(client, localResults, `VACUUM (ANALYZE) ${escapeTableName(table.resourceType + '_References')}`);
+    }
+    // `idempotentCreateIndex` drops a leftover invalid index with a plain DROP INDEX, which takes
+    // ACCESS EXCLUSIVE on a hot table; do it concurrently instead.
+    if (await isInvalidIndex(client, table.indexName)) {
+      await fns.dropInvalidIndexConcurrently(client, localResults, 'public', table.indexName);
+    }
+    await fns.idempotentCreateIndex(client, localResults, table.indexName, table.createIndexSql);
+  });
+  await control.settlePhase(checkpoint);
+}
+
+async function isInvalidIndex(client: PoolClient, indexName: string): Promise<boolean> {
+  const result = await client.query<{ is_valid: boolean }>(
+    `SELECT i.indisvalid AS is_valid
+     FROM pg_index i
+     JOIN pg_class c ON c.oid = i.indexrelid
+     JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE n.nspname = 'public' AND c.relname = $1`,
+    [indexName]
+  );
+  return result.rows.length > 0 && !result.rows[0].is_valid;
+}
+
+/**
+ * Estimates the row count of a table from the catalog.
+ *
+ * Read lazily, just before the table is backfilled, so it reflects both the phase A `ANALYZE` and
+ * any growth over what may be a multi-hour run.
+ * @param client - The database client.
+ * @param tableName - The reference table name.
+ * @returns The estimated row count, or 0 if nothing is known.
+ */
+async function estimateRowCount(client: PoolClient, tableName: string): Promise<number> {
+  const result = await client.query<{ reltuples: string; relpages: string }>(
+    `SELECT reltuples::bigint AS reltuples, relpages::bigint AS relpages
+     FROM pg_class c
+     JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE n.nspname = 'public' AND c.relname = $1`,
+    [tableName]
+  );
+  if (result.rows.length === 0) {
+    return 0;
+  }
+  const reltuples = Number.parseInt(result.rows[0].reltuples, 10);
+  if (reltuples >= 0) {
+    return reltuples;
+  }
+  // PG>=14 reports -1 for a relation that has never been analyzed or vacuumed
+  const relpages = Number.parseInt(result.rows[0].relpages, 10);
+  return relpages > 0 ? relpages * 100 : 0;
 }
 
 async function hasNullProjectId(client: PoolClient, tableName: string): Promise<boolean> {
@@ -438,16 +982,6 @@ async function hasNullProjectId(client: PoolClient, tableName: string): Promise<
   return Boolean(result.rowCount);
 }
 
-/**
- * Counts the rows still awaiting a `projectId`, separating out those that can never get one.
- *
- * A row whose resource has no project of its own is not work this migration failed to do; it is
- * work that cannot be done, so it must not be mistaken for a backfill that did not converge.
- * @param client - The database client.
- * @param resourceType - The resource type owning the table.
- * @param tableName - The reference table name.
- * @returns The number of rows left NULL, and how many of those have no project to be backfilled from.
- */
 async function countNullProjectIds(
   client: PoolClient,
   resourceType: string,
@@ -472,7 +1006,10 @@ async function countNullProjectIds(
 
 async function sortBySize(client: PoolClient, tables: ReferenceTableDefinition[]): Promise<ReferenceTableDefinition[]> {
   const result = await client.query<{ relname: string; bytes: string }>(
-    `SELECT relname, pg_total_relation_size(oid) AS bytes FROM pg_class WHERE relname = ANY($1::text[])`,
+    `SELECT c.relname, pg_total_relation_size(c.oid) AS bytes
+     FROM pg_class c
+     JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE n.nspname = 'public' AND c.relname = ANY($1::text[])`,
     [tables.map((t) => `${t.resourceType}_References`)]
   );
   const sizes = new Map(result.rows.map((row) => [row.relname, Number.parseInt(row.bytes, 10)]));
@@ -481,19 +1018,6 @@ async function sortBySize(client: PoolClient, tables: ReferenceTableDefinition[]
       (sizes.get(`${a.resourceType}_References`) ?? 0) - (sizes.get(`${b.resourceType}_References`) ?? 0) ||
       a.resourceType.localeCompare(b.resourceType)
   );
-}
-
-async function checkForQueueClosing(
-  job: Job<CustomPostDeployMigrationJobData> | undefined,
-  jobData: CustomPostDeployMigrationJobData,
-  resourceType: string
-): Promise<void> {
-  if (!job || !queueRegistry.isClosing(job.queueName)) {
-    return;
-  }
-  const nextJobData: ProjectIdBackfillJobData = { ...jobData, resumeFromResourceType: resourceType };
-  await job.updateData(nextJobData);
-  await moveToDelayedAndThrow(job, 'Reference projectId backfill delayed since queue is closing');
 }
 
 function escapeTableName(tableName: string): string {

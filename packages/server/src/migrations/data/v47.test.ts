@@ -10,13 +10,53 @@ import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { createTestProject, withTestContext } from '../../test.setup';
+import { createTestProject, withQueryInterceptor, withTestContext } from '../../test.setup';
 import { queueRegistry } from '../../workers/utils';
 import type { MigrationActionResult } from '../types';
 import type { CustomPostDeployMigrationJobData } from './types';
-import { callback as migrationFn } from './v47';
+import type { BackfillOverrides, ProjectIdBackfillJobData } from './v47';
+import { computeRanges, callback as migrationFn, uuidPartition } from './v47';
 
-describe('v45', () => {
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+describe('v47 key ranges', () => {
+  // Ranges are what let workers run without coordinating: an overlap hands two of them the same
+  // rows in opposite orders, and a gap silently leaves rows NULL. Neither shows up as a failure
+  // anywhere else, so the tiling is checked directly.
+  test.each([0, -1, 1, 25_000])('gives %i estimated rows a single fully open range', (rowEstimate) => {
+    expect(computeRanges(rowEstimate)).toEqual([{ lower: undefined, upper: undefined }]);
+  });
+
+  test('tiles the uuid space with no gaps and no overlaps', () => {
+    const ranges = computeRanges(1_000_000, 25_000);
+    expect(ranges).toHaveLength(40);
+
+    // 2^128 is not a representable uuid, and ffffffff-...-ffffffff is a legal resourceId that a
+    // `<` bound would exclude, so the outermost bounds are open rather than clamped
+    expect(ranges[0].lower).toBeUndefined();
+    expect(ranges[ranges.length - 1].upper).toBeUndefined();
+
+    for (let i = 0; i < ranges.length - 1; i++) {
+      expect(ranges[i].upper).toMatch(UUID_PATTERN);
+      expect(ranges[i].upper).toBe(ranges[i + 1].lower);
+      expect((ranges[i + 1].lower as string) > (ranges[i].lower ?? '')).toBe(true);
+    }
+  });
+
+  test('caps the number of ranges so a bad estimate cannot explode the statement count', () => {
+    expect(computeRanges(Number.MAX_SAFE_INTEGER, 1)).toHaveLength(4096);
+  });
+
+  test('spreads boundaries evenly across the key space', () => {
+    expect(uuidPartition(1, 2)).toBe('80000000-0000-0000-0000-000000000000');
+    expect(uuidPartition(1, 4)).toBe('40000000-0000-0000-0000-000000000000');
+    expect(uuidPartition(3, 4)).toBe('c0000000-0000-0000-0000-000000000000');
+    expect(() => uuidPartition(0, 4)).toThrow(/uuid boundary/);
+    expect(() => uuidPartition(4, 4)).toThrow(/uuid boundary/);
+  });
+});
+
+describe('v47', () => {
   let client: PoolClient;
 
   beforeAll(async () => {
@@ -32,11 +72,27 @@ describe('v45', () => {
 
   const jobData = { type: 'custom', asyncJobId: randomUUID() } as const;
 
-  async function run(job?: Job<CustomPostDeployMigrationJobData>): Promise<MigrationActionResult[]> {
+  /**
+   * Runs the migration against the single client these tests spy on, so every statement the
+   * migration issues is observable. Concurrency and range sizing are seams the production caller
+   * does not use; `runCustomMigration` invokes the callback with four arguments.
+   * @param job - The BullMQ job, when the test needs shutdown handling.
+   * @param overrides - Concurrency, worker connections, and range sizing.
+   * @param data - Job data, for exercising resume state.
+   * @returns The migration action results.
+   */
+  async function run(
+    job?: Job<CustomPostDeployMigrationJobData>,
+    overrides: BackfillOverrides = {},
+    data: CustomPostDeployMigrationJobData = jobData
+  ): Promise<MigrationActionResult[]> {
     const results: MigrationActionResult[] = [];
-    await migrationFn(client, results, job, jobData);
+    await migrationFn(client, results, job, data, { concurrency: 1, clients: [client], ...overrides });
     return results;
   }
+
+  /** Forces exactly one range per table, whatever other test files left in the shared tables. */
+  const SINGLE_RANGE: BackfillOverrides = { rangeTargetRows: Number.MAX_SAFE_INTEGER };
 
   function interceptBackfillUpdate(onBackfill: () => void | Promise<void>): () => void {
     const originalQuery = client.query.bind(client);
@@ -181,7 +237,7 @@ describe('v45', () => {
       const { statements, restore } = captureSql();
       let results: MigrationActionResult[];
       try {
-        results = await run();
+        results = await run(undefined, SINGLE_RANGE);
       } finally {
         restore();
       }
@@ -210,7 +266,7 @@ describe('v45', () => {
 
       const { statements, restore } = captureSql();
       try {
-        await run();
+        await run(undefined, SINGLE_RANGE);
       } finally {
         restore();
       }
@@ -291,5 +347,196 @@ describe('v45', () => {
         spy.mockRestore();
         await client.query(`DELETE FROM "Observation_References" WHERE "resourceId" = $1`, [obs.id]);
       }
+    }));
+
+  test('backfills every row when key ranges run in parallel', () =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({ withRepo: true });
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const ids: string[] = [];
+      for (let i = 0; i < 20; i++) {
+        const obs = await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
+          subject: createReference(patient),
+        });
+        ids.push(obs.id);
+      }
+      await client.query(
+        `UPDATE "Observation_References" SET "projectId" = NULL WHERE "resourceId" = ANY($1::uuid[])`,
+        [ids]
+      );
+
+      const pool = getDatabasePool(DatabaseMode.WRITER);
+      const workers = [await pool.connect(), await pool.connect(), await pool.connect()];
+      const rangesPerWorker = workers.map(() => 0);
+      let results: MigrationActionResult[];
+      try {
+        workers.forEach((worker, i) => {
+          const original = worker.query.bind(worker);
+          vi.spyOn(worker, 'query').mockImplementation((async (...args: any[]) => {
+            const sql = typeof args[0] === 'string' ? args[0] : args[0]?.text;
+            if (typeof sql === 'string' && sql.includes('UPDATE "Observation_References"')) {
+              rangesPerWorker[i]++;
+            }
+            return (original as any)(...args);
+          }) as typeof worker.query);
+        });
+        // One row per range spreads the resources over many ranges claimed concurrently
+        results = await run(undefined, { concurrency: workers.length, clients: workers, rangeTargetRows: 1 });
+      } finally {
+        for (const worker of workers) {
+          worker.release(true);
+        }
+      }
+
+      // A gap between ranges would leave rows NULL, which is self-detecting: the table then fails
+      // to converge and `run` throws before reaching this point
+      expect(results.find((r) => r.name === 'Backfill "Observation_References"."projectId"')?.ranges).toBeGreaterThan(
+        1
+      );
+      // Every worker pulled ranges, rather than one of them doing all the work
+      expect(rangesPerWorker.every((count) => count > 0)).toBe(true);
+      const rows = await client.query<{ projectId: string | null }>(
+        `SELECT "projectId" FROM "Observation_References" WHERE "resourceId" = ANY($1::uuid[])`,
+        [ids]
+      );
+      expect(rows.rows).toHaveLength(ids.length * 2); // patient and subject per observation
+      expect(rows.rows.every((r) => r.projectId === project.id)).toBe(true);
+    }));
+
+  test('disables sequential scans while a table runs as keyed ranges', () =>
+    withTestContext(async () => {
+      await createNulledObservation();
+
+      const { statements, restore } = captureSql();
+      let results: MigrationActionResult[];
+      try {
+        // One row per range forces the keyed-range path rather than a single whole-table statement
+        results = await run(undefined, { rangeTargetRows: 1 });
+      } finally {
+        restore();
+      }
+
+      expect(observationResult(results)?.ranges).toBeGreaterThan(1);
+      // The range bound makes the reference table a primary key range scan on its own, but the
+      // planner still seq scans the resource table once per range unless told not to
+      const disabled = statements.indexOf('SET enable_seqscan = off');
+      const firstRange = statements.findIndex((sql) => sql.includes('UPDATE "Observation_References"'));
+      expect(disabled).toBeGreaterThanOrEqual(0);
+      expect(disabled).toBeLessThan(firstRange);
+      // The setting is per session, so it has to come back off before the next table plans its own
+      expect(statements.lastIndexOf('SET enable_seqscan = on')).toBeGreaterThan(firstRange);
+    }));
+
+  test('leaves sequential scans enabled for a single whole-table statement', () =>
+    withTestContext(async () => {
+      await createNulledObservation();
+
+      const { statements, restore } = captureSql();
+      let results: MigrationActionResult[];
+      try {
+        results = await run(undefined, SINGLE_RANGE);
+      } finally {
+        restore();
+      }
+
+      // An unbounded statement matches every row, which is what a sequential scan is for
+      expect(observationResult(results)?.ranges).toBe(1);
+      expect(statements).not.toContain('SET enable_seqscan = off');
+    }));
+
+  test('delays the job exactly once when the queue closes with several workers in flight', () =>
+    withTestContext(async () => {
+      await createNulledObservation();
+
+      let closing = false;
+      const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => closing);
+      const job = {
+        id: '1',
+        queueName: 'TestQueue',
+        token: 'token',
+        updateData: vi.fn(),
+        moveToDelayed: vi.fn(),
+      } as unknown as Job<CustomPostDeployMigrationJobData>;
+
+      const pool = getDatabasePool(DatabaseMode.WRITER);
+      const workers = [await pool.connect(), await pool.connect(), await pool.connect()];
+      try {
+        // The interceptor has to sit on the prototype to see the workers' own connections
+        await withQueryInterceptor(
+          (sql) => {
+            if (sql?.includes('UPDATE "Observation_References"')) {
+              closing = true;
+            }
+            return undefined;
+          },
+          async () => {
+            await expect(
+              run(job, { concurrency: workers.length, clients: workers, rangeTargetRows: 1 })
+            ).rejects.toThrow(DelayedError);
+          }
+        );
+
+        // Only the driver delays the job, and only once every worker has settled. Workers doing it
+        // themselves would write conflicting resume points and throw with queries still in flight.
+        expect(job.updateData).toHaveBeenCalledTimes(1);
+        expect(job.updateData).toHaveBeenCalledWith(expect.objectContaining({ resumeFromResourceType: 'Observation' }));
+        expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
+      } finally {
+        for (const worker of workers) {
+          worker.release(true);
+        }
+        isClosingSpy.mockRestore();
+      }
+    }));
+
+  test('does not revisit a table a previous attempt proved complete', () =>
+    withTestContext(async () => {
+      const obs = await createNulledObservation();
+      const resumeData: ProjectIdBackfillJobData = { ...jobData, completedResourceTypes: ['Observation'] };
+
+      const { statements, restore } = captureSql();
+      try {
+        await run(undefined, SINGLE_RANGE, resumeData);
+      } finally {
+        restore();
+        await client.query(`DELETE FROM "Observation_References" WHERE "resourceId" = $1`, [obs.id]);
+      }
+
+      // Without the `projectId` index in place, re-proving a finished table costs a full scan of it
+      expect(statements.some((sql) => sql.includes('UPDATE "Observation_References"'))).toBe(false);
+    }));
+
+  test('touches no rows when resuming in the index phase', () =>
+    withTestContext(async () => {
+      const obs = await createNulledObservation();
+      const resumeData: ProjectIdBackfillJobData = { ...jobData, resumePhase: 'index' };
+
+      const { statements, restore } = captureSql();
+      try {
+        await run(undefined, SINGLE_RANGE, resumeData);
+      } finally {
+        restore();
+        await client.query(`DELETE FROM "Observation_References" WHERE "resourceId" = $1`, [obs.id]);
+      }
+
+      expect(statements.some((sql) => sql.includes('UPDATE "Observation_References"'))).toBe(false);
+      expect(statements.some((sql) => sql.includes('DELETE FROM "Observation_References"'))).toBe(false);
+    }));
+
+  test('returns every worker connection it checked out', () =>
+    withTestContext(async () => {
+      await createNulledObservation();
+      const pool = getDatabasePool(DatabaseMode.WRITER);
+      const before = pool.totalCount;
+
+      // No `clients` override, so the migration acquires and releases its own connections.
+      // `connectionTimeoutMillis` is unset, so a leak would stall request handlers silently.
+      await migrationFn(client, [], undefined, jobData, { concurrency: 2, ...SINGLE_RANGE });
+
+      expect(pool.waitingCount).toBe(0);
+      expect(pool.totalCount).toBeLessThanOrEqual(before);
     }));
 });

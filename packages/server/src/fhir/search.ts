@@ -1892,17 +1892,13 @@ function nextChainedTable(link: ChainedSearchLink): string {
  *
  * Unlike every other join in a chained search, this one carries no project filter. It cannot yet:
  * `"<ResourceType>_References"."projectId"` is still NULL for rows written before data migration
- * v45, and widening the filter to admit NULL makes the covering
+ * v47, and widening the filter to admit NULL makes the covering
  * `(projectId, code, targetId)` index unusable -- Postgres will not build a BitmapOr for
  * `"projectId" IN (...) OR "projectId" IS NULL`, so it falls back to scanning the table. That is
  * worse than no filter at all, which at least leaves the index-only scans on the primary key and
  * the `(targetId, code)` index intact.
  *
- * Omitting it is safe. A reference row can only reach a result through the resource tables joined
- * at both of its ends, and those joins are project-filtered, so a row belonging to another project
- * widens the candidate set but never the result set.
- *
- * TODO: once v45 is known to have completed on every deployment, add the project filter here (as
+ * TODO: once v47 is known to have completed on every deployment, add the project filter here (as
  * a plain `IN`, with no NULL arm) so that chained search can range scan on the `(projectId, code)`
  * prefix instead of driving the reference table from its join key.
  * @param currentTable - The "current" table in the chained search construction, assumed to be a resource table.
