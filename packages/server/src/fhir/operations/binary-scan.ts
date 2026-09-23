@@ -39,8 +39,8 @@ export const SCAN_REQUESTED = 'SCAN_REQUESTED';
 type ScanResult = Pick<OperationOutcomeIssue, 'severity' | 'code'> & { text: string };
 
 /**
- * Scan results that re-scanning would not change. GuardDuty bills every on-demand scan and does not
- * dedupe, so these short-circuit. `FAILED` and `ACCESS_DENIED` can be transient, so they are re-sent.
+ * Results a re-scan would not change; GuardDuty bills every on-demand scan without deduping.
+ * `FAILED` and `ACCESS_DENIED` can be transient, so those are re-sent.
  */
 const FINAL_RESULTS: Record<string, ScanResult> = {
   NO_THREATS_FOUND: { severity: 'information', code: 'informational', text: 'No threats found' },
@@ -92,8 +92,8 @@ export async function binaryScanHandler(req: FhirRequest): Promise<FhirResponse>
     return [allOk, buildOutputParameters(operation, scanOutcome(SCAN_REQUESTED, pending))];
   }
 
-  // PutObjectTagging replaces the whole tag set, and the bucket policy only lets GuardDuty write the
-  // status tag, so the marker write must drop it. The marker goes first so GuardDuty preserves it.
+  // PutObjectTagging replaces the whole set and only GuardDuty may write the status tag, so the stale
+  // status is dropped. Write before sending: a write after could erase a result GuardDuty already tagged.
   const otherTags = Object.fromEntries(
     Object.entries(tags).filter(([k]) => k !== MALWARE_SCAN_STATUS_TAG && k !== MALWARE_SCAN_REQUESTED_TAG)
   );
