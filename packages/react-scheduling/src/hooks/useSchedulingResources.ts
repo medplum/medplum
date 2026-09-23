@@ -234,9 +234,11 @@ export function useSchedulingAppointments(
       return;
     }
 
-    // Ignore appointments that don't involve any of these schedules' actors, mirroring
-    // the `actor` filter used by the search below.
     if (!appointment.participant.some((p) => p.actor?.reference && actorRefs.includes(p.actor.reference))) {
+      // No actor on the appointment matches our actors; remove it from our
+      // state. (This catches `$reschedule` operations or similar that remove a
+      // participant from an existing appointment).
+      setAppointments((state) => state?.filter((existing) => existing.id !== appointment.id));
       return;
     }
 
