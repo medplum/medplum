@@ -157,7 +157,10 @@ export class AsyncJobExecutor {
       getLogger().info('Marking post-deploy migration complete', {
         version: `v${completedDataVersion}`,
       });
-      await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), completedDataVersion);
+      await markPostDeployMigrationCompleted(
+        getDatabasePool(DatabaseMode.WRITER, this.repo.shardId),
+        completedDataVersion
+      );
       this.resource = updatedJob = await this.repo.getSystemRepo().updateResource(updatedJob);
       await maybeAutoRunPendingPostDeployMigration();
       return updatedJob;
