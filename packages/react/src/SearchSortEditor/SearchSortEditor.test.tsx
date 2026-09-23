@@ -35,6 +35,26 @@ describe('SearchSortEditor', () => {
     expect(screen.getByText('Add another sort')).toBeInTheDocument();
   });
 
+  test('Hides the indicator dot for no sort and the default (Last Updated, newest first)', async () => {
+    await setup({ resourceType: 'Patient' });
+    expect(document.querySelector('.mantine-Indicator-indicator')).toBeNull();
+  });
+
+  test('Hides the indicator dot when sorted by the default Last Updated descending', async () => {
+    await setup({ resourceType: 'Patient', sortRules: [{ code: '_lastUpdated', descending: true }] });
+    expect(document.querySelector('.mantine-Indicator-indicator')).toBeNull();
+  });
+
+  test('Shows the indicator dot for a non-default sort', async () => {
+    await setup({ resourceType: 'Patient', sortRules: [{ code: 'birthdate', descending: true }] });
+    expect(document.querySelector('.mantine-Indicator-indicator')).not.toBeNull();
+  });
+
+  test('Shows the indicator dot for Last Updated ascending (not the default)', async () => {
+    await setup({ resourceType: 'Patient', sortRules: [{ code: '_lastUpdated', descending: false }] });
+    expect(document.querySelector('.mantine-Indicator-indicator')).not.toBeNull();
+  });
+
   test('Shows an existing sort rule with its direction', async () => {
     await setup({ resourceType: 'Patient', sortRules: [{ code: 'birthdate', descending: true }] });
     await openPopover();

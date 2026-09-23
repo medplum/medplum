@@ -19,6 +19,19 @@ export interface SearchSortEditorProps {
   readonly iconSize?: number;
 }
 
+/** The table's implicit default order (newest first) that the Sort indicator should not flag. */
+const DEFAULT_SORT_CODE = '_lastUpdated';
+
+/**
+ * Returns true when the sort is the table default — no rules, or the single implicit
+ * "Last Updated, newest first" rule — so the Sort button shows no active-sort indicator.
+ * @param rules - The current sort rules.
+ * @returns True if the sort matches the default order.
+ */
+function isDefaultSort(rules: readonly SortRule[]): boolean {
+  return rules.length === 0 || (rules.length === 1 && rules[0].code === DEFAULT_SORT_CODE && !!rules[0].descending);
+}
+
 /**
  * Direction labels vary by the search parameter type so they read naturally, mirroring the
  * per-column sort menu (e.g. dates sort oldest/newest, numbers smallest/largest, text A→Z).
@@ -100,7 +113,9 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
     setRules([...rules, { code: '', descending: false }]);
   }
 
-  const activeCount = (search.sortRules ?? []).length;
+  // The Sort button flags only a non-default order. An empty sort, or the table's implicit default
+  // (Last Updated, newest first), leaves the indicator dot off.
+  const showIndicator = !isDefaultSort(search.sortRules ?? []);
 
   return (
     <Popover
@@ -114,7 +129,7 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
       closeOnClickOutside
     >
       <Popover.Target>
-        <Indicator className={classes.indicator} disabled={activeCount === 0} color="blue" size={8} offset={6}>
+        <Indicator className={classes.indicator} disabled={!showIndicator} color="blue" size={8} offset={6}>
           <Button
             className={props.buttonClassName}
             data-opened={opened || undefined}
