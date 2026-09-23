@@ -6,6 +6,7 @@ import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import type { MedplumServerConfig } from './config/types';
 import { DatabaseMode, getDatabasePool } from './database';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import type { OutputAction } from './fhir/operations/db-configure-indexes';
 import { configureGinIndexes, vacuumTable } from './fhir/operations/db-configure-indexes';
 import type { SystemRepository } from './fhir/repo';
@@ -28,7 +29,7 @@ import { deleteRedisKeys, withTestContext } from './test.setup';
 async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: SystemRepository): Promise<void> {
   const lastVersion = getLatestPostDeployMigrationVersion();
 
-  const pendingMigration = await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER));
+  const pendingMigration = await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID));
   if (pendingMigration === MigrationVersion.UNKNOWN) {
     throw new Error('Post-deploy migration version is unknown');
   }
@@ -49,7 +50,7 @@ async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: System
 async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository, version: number): Promise<void> {
   const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
-  const jobData = migration.prepareJobData(asyncJob);
+  const jobData = migration.prepareJobData({ shardId: GLOBAL_SHARD_ID, asyncJob });
   globalLogger.write(`${new Date().toISOString()} - Starting post-deploy migration v${version}`);
   const result = await migration.run(systemRepo, undefined, jobData);
   globalLogger.write(`${new Date().toISOString()} - Post-deploy migration v${version} result: ${result}`);
@@ -114,7 +115,7 @@ describe('Seed', () => {
       expect(seedDatabaseSpy).toHaveBeenCalledTimes(1);
 
       // Make sure all database migrations have run
-      const pool = getDatabasePool(DatabaseMode.WRITER);
+      const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
 
       const preDeployVersion = await getPreDeployVersion(pool);
       expect(preDeployVersion).toBeGreaterThanOrEqual(67);

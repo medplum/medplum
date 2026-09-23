@@ -8,6 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { getCacheRedis } from '../../redis';
 import {
   createTestProject,
@@ -308,7 +309,7 @@ async function existsInDatabase(tableName: string, id: string | undefined): Prom
   const rows = await new SelectQuery(tableName)
     .column('id')
     .where('id', '=', id)
-    .execute(getDatabasePool(DatabaseMode.READER));
+    .execute(getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID));
   return rows.length > 0;
 }
 
@@ -316,6 +317,6 @@ async function existsInLookupTable(tableName: string, id: string | undefined): P
   const rows = await new SelectQuery(tableName)
     .column('resourceId')
     .where('resourceId', '=', id)
-    .execute(getDatabasePool(DatabaseMode.READER));
+    .execute(getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID));
   return rows.length > 0;
 }

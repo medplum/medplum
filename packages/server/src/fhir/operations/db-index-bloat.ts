@@ -4,6 +4,7 @@ import { allOk, badRequest, EMPTY, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import type { PgQueryable } from '../sql';
 import { isValidPostgresIdentifier } from '../sql';
 import { makeOperationDefinition } from './definitions';
@@ -94,7 +95,7 @@ export async function dbIndexBloatHandler(req: FhirRequest): Promise<FhirRespons
   const minIndexSize = params.minIndexSize ?? DEFAULT_MIN_INDEX_SIZE;
   validateThresholds(minBloatPercent, minIndexSize);
 
-  const client = getDatabasePool(DatabaseMode.WRITER);
+  const client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
   const [btreeIndexes, ginIndexes] = await Promise.all([
     getBtreeIndexBloat(client, minIndexSize, tableNames),
     getGinIndexDensity(client, minIndexSize, tableNames),

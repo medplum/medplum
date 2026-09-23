@@ -21,6 +21,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { ConceptMap, ConceptMapGroupUnmapped, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { Column, Condition, SelectQuery } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { findTerminologyResource } from './utils/terminology';
@@ -137,7 +138,7 @@ async function findConceptMappings(
     query.where(new Column('target', 'system'), '=', params.targetsystem);
   }
 
-  const db = getDatabasePool(DatabaseMode.READER);
+  const db = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
   const results = await query.execute(db);
 
   return parseDatabaseRows(results);

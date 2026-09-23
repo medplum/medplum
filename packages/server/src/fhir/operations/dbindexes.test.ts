@@ -8,6 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { getSuperAdminAccessToken } from '../../test.setup';
 
 describe('dbgetginindexes', () => {
@@ -21,7 +22,7 @@ describe('dbgetginindexes', () => {
     accessToken = await getSuperAdminAccessToken();
 
     // Create a test table
-    const client = getDatabasePool(DatabaseMode.WRITER);
+    const client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
     await client.query(`CREATE TABLE ${escapedTableName} (aaa UUID[], bbb TEXT[])`);
     await client.query(

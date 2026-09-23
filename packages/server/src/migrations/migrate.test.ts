@@ -5,6 +5,7 @@ import { escapeIdentifier } from 'pg';
 import type { Mock, MockInstance } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import {
   buildCreateTables,
@@ -58,7 +59,7 @@ describe('Generator', () => {
     test('generates migration without errors', async () => {
       await expect(
         generateMigrationActions({
-          dbClient: getDatabasePool(DatabaseMode.WRITER),
+          dbClient: getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID),
           dropUnmatchedIndexes: false,
           analyzeResourceTables: true,
         })
@@ -67,7 +68,7 @@ describe('Generator', () => {
 
     test('returns PhasalMigration with preDeploy and postDeploy arrays', async () => {
       const result = await generateMigrationActions({
-        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dbClient: getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID),
         dropUnmatchedIndexes: false,
         analyzeResourceTables: false,
       });
@@ -111,7 +112,7 @@ describe('Generator', () => {
       });
 
       const result = await generateMigrationActions({
-        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dbClient: getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID),
       });
 
       expect(result.preDeploy).toContainEqual(expect.objectContaining({ type: 'CREATE_TABLE' }));
@@ -461,7 +462,7 @@ describe('Generator', () => {
       };
 
       const result = generateIndexesActions(startTable, targetTable, {
-        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dbClient: getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID),
         dropUnmatchedIndexes: true,
       });
 
@@ -513,7 +514,7 @@ describe('Generator', () => {
       };
 
       const result = generateIndexesActions(startTable, targetTable, {
-        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dbClient: getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID),
         dropUnmatchedIndexes: true,
       });
 

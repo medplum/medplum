@@ -6,6 +6,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { findTerminologyResource, selectCoding } from './utils/terminology';
@@ -105,7 +106,7 @@ export async function validateCodings(
     } else {
       query.where('synonymOf', '=', null);
     }
-    const db = getDatabasePool(DatabaseMode.READER);
+    const db = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
     result = await query.execute(db);
   }
 

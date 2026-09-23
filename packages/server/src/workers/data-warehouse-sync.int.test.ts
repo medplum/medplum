@@ -25,6 +25,7 @@ import type * as DataWarehouseConfigModule from '../data-warehouse/config';
 import * as dataWarehouseConfig from '../data-warehouse/config';
 import { toIcebergTableName } from '../data-warehouse/config';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import type { DataWarehouseSyncJobData } from './data-warehouse-sync';
 import { processDataWarehouseSyncJob } from './data-warehouse-sync';
 
@@ -72,7 +73,7 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
     baseConfig = await loadTestConfig();
     await initDatabase(baseConfig);
 
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     await pool.query(`DROP SCHEMA IF EXISTS ${TEST_SCHEMA} CASCADE`);
     await pool.query(`CREATE SCHEMA ${TEST_SCHEMA}`);
     await pool.query(`
@@ -99,7 +100,7 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
   }, 10_000);
 
   afterAll(async () => {
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     await pool.query(`DROP SCHEMA IF EXISTS ${TEST_SCHEMA} CASCADE`);
     await closeDatabase();
     if (outDir) {

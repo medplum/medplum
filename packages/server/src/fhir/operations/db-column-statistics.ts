@@ -4,6 +4,7 @@ import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import type { PgQueryable } from '../sql';
 import { isValidPostgresIdentifier } from '../sql';
@@ -58,7 +59,7 @@ export async function getColumnStatisticsHandler(req: FhirRequest): Promise<Fhir
   }
 
   const defaultStatisticsTarget = await getDefaultStatisticsTarget();
-  const client = getDatabasePool(DatabaseMode.WRITER);
+  const client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
   let columns: ColumnInfo[] | undefined;
   const output: { defaultStatisticsTarget: number; table?: { tableName: string; column: ColumnInfo[] } } = {
     defaultStatisticsTarget,
@@ -76,7 +77,7 @@ export async function getColumnStatisticsHandler(req: FhirRequest): Promise<Fhir
 }
 
 async function getDefaultStatisticsTarget(): Promise<number> {
-  const client = getDatabasePool(DatabaseMode.WRITER);
+  const client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
   const defaultStatisticsTarget = await client.query('SELECT setting FROM pg_settings WHERE name = $1', [
     'default_statistics_target',
   ]);

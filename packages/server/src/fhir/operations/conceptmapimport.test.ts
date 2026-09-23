@@ -10,6 +10,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { createTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
 import { Column, Condition, SelectQuery } from '../sql';
@@ -62,7 +63,7 @@ describe('importConceptMap()', () => {
       ],
     };
 
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     const db = await pool.connect();
     await importConceptMapResource(db, resource);
     db.release();
@@ -127,7 +128,7 @@ describe('importConceptMap()', () => {
       ],
     };
 
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     const db = await pool.connect();
     await importConceptMapResource(db, resource);
     db.release();
@@ -254,7 +255,7 @@ describe('ConceptMap/$import', () => {
       } satisfies Parameters);
     expect(res).toHaveStatus(200);
 
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
 
     const results = await getMappingRows(pool, conceptMap);
     expect(results).toHaveLength(1);
@@ -346,7 +347,7 @@ describe('ConceptMap/$import', () => {
       } satisfies Parameters);
     expect(res).toHaveStatus(403);
 
-    const results = await getMappingRows(getDatabasePool(DatabaseMode.READER), conceptMap);
+    const results = await getMappingRows(getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID), conceptMap);
     expect(results).toHaveLength(0);
   });
 
@@ -488,7 +489,7 @@ describe('ConceptMap/$import', () => {
       ],
     });
 
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
     const results = await getMappingRows(pool, conceptMap);
     expect(results).toHaveLength(1);
   });
@@ -505,7 +506,7 @@ describe('ConceptMap/$import', () => {
       status: 'active',
     });
 
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
     const results = await getMappingRows(pool, map);
     expect(results).toHaveLength(0);
   });
@@ -533,7 +534,7 @@ describe('ConceptMap/$import', () => {
     };
 
     const map = await repo.createResource(resource);
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
 
     const initial = await getMappingRows(pool, map);
     expect(initial).toHaveLength(2);

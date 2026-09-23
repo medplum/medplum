@@ -9,6 +9,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
 import { DatabaseMode, getDatabasePool } from '../../../database';
+import { GLOBAL_SHARD_ID } from '../../sharding';
 import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
 import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
@@ -157,7 +158,7 @@ export class AsyncJobExecutor {
       getLogger().info('Marking post-deploy migration complete', {
         version: `v${completedDataVersion}`,
       });
-      await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), completedDataVersion);
+      await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID), completedDataVersion);
       this.resource = updatedJob = await this.repo.getSystemRepo().updateResource(updatedJob);
       await maybeAutoRunPendingPostDeployMigration();
       return updatedJob;

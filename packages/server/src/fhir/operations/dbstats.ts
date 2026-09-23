@@ -4,6 +4,7 @@ import { allOk } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -36,7 +37,7 @@ export async function dbStatsHandler(req: FhirRequest): Promise<FhirResponse> {
 
   const params = parseInputParameters<{ tableNames?: string }>(operation, req);
 
-  const client = getDatabasePool(DatabaseMode.WRITER);
+  const client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
 
   const tableNames = params.tableNames?.split(',').map((name) => name.trim());
 

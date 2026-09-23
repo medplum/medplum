@@ -6,6 +6,7 @@
 import { S3TablesWarehouseDestination } from '../cloud/aws/data-warehouse-destination';
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { InsertQuery } from '../fhir/sql';
 import { buildFakeIcebergColumnStatsSetupQueries } from './__test__/fake-iceberg-column-stats';
 import type { WarehouseSourceTable } from './config';
@@ -107,7 +108,7 @@ describe('syncData (integration)', () => {
     username = db.username ?? '';
     password = db.password ?? '';
 
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     // One row at/before watermark (filtered out) and one after (exported on first sync).
     await createHistoryTable(pool, PATIENT_HISTORY_TABLE, [
       {
@@ -140,7 +141,7 @@ describe('syncData (integration)', () => {
   }, 10_000);
 
   afterAll(async () => {
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     await pool.query(`DROP TABLE IF EXISTS "${PATIENT_HISTORY_TABLE}"`);
     await pool.query(`DROP TABLE IF EXISTS "${OBSERVATION_HISTORY_TABLE}"`);
     await closeDatabase();
@@ -187,7 +188,7 @@ describe('syncData (integration)', () => {
     expect(secondResult.tables.map((t) => t.rowsInserted)).toStrictEqual([0, 0]);
 
     // when — insert new history rows after the advanced watermarks, then sync again
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     await new InsertQuery(PATIENT_HISTORY_TABLE, [
       {
         id: patient1.id,

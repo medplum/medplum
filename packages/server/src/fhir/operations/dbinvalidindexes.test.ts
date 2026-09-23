@@ -6,6 +6,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { getSuperAdminAccessToken } from '../../test.setup';
 
 describe('$db-invalid-indexes', () => {
@@ -21,12 +22,12 @@ describe('$db-invalid-indexes', () => {
   });
 
   afterEach(async () => {
-    const client = getDatabasePool(DatabaseMode.WRITER);
+    const client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     await client.query(`REINDEX INDEX CONCURRENTLY "CarePlan_replaces_idx"`);
   });
 
   test('Success', async () => {
-    const client = getDatabasePool(DatabaseMode.WRITER);
+    const client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     await client.query(
       `UPDATE pg_index SET indislive = false 
       FROM pg_class WHERE pg_class.oid = pg_index.indexrelid 

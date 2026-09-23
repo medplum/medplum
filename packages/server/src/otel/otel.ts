@@ -7,6 +7,7 @@ import os from 'node:os';
 import v8 from 'node:v8';
 import type { WorkerName } from '../config/types';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { heartbeat } from '../heartbeat';
 import { getBatchQueue } from '../workers/batch';
 import { getCronQueue } from '../workers/cron';
@@ -153,8 +154,8 @@ export function initOtelHeartbeat(): void {
     return;
   }
   otelHeartbeatListener = async () => {
-    const writerPool = getDatabasePool(DatabaseMode.WRITER);
-    const readerPool = getDatabasePool(DatabaseMode.READER);
+    const writerPool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
+    const readerPool = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
 
     setGauge('medplum.db.totalConnections', writerPool.totalCount, {
       ...BASE_METRIC_OPTIONS,

@@ -5,6 +5,7 @@ import type { Request, Response } from 'express';
 import os from 'node:os';
 import type { PoolClient } from 'pg';
 import { DatabaseMode, getDatabasePool } from './database';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import type { RecordMetricOptions } from './otel/otel';
 import { setGauge } from './otel/otel';
 import type { RedisWithoutDuplicate } from './redis';
@@ -75,7 +76,7 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
 }
 
 async function getReservedDatabaseConnection(mode: DatabaseMode): Promise<PoolClient> {
-  return getDatabasePool(mode).connect();
+  return getDatabasePool(mode, GLOBAL_SHARD_ID).connect();
 }
 
 export function cleanupReservedDatabaseConnections(): void {
@@ -86,7 +87,7 @@ export function cleanupReservedDatabaseConnections(): void {
 }
 
 function hasSeparateReaderPool(): boolean {
-  return getDatabasePool(DatabaseMode.WRITER) !== getDatabasePool(DatabaseMode.READER);
+  return getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID) !== getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
 }
 
 async function testPostgres(pool: PoolClient): Promise<boolean> {

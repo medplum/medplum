@@ -18,6 +18,7 @@ import {
   releaseAdvisoryLock,
   withPoolClient,
 } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
@@ -260,7 +261,7 @@ export async function processDataWarehouseSyncJob(
      * use the _writer_ database pool for the lock, even though we use the reader for sync,
      * as we can have many readers
      */
-  }, getDatabasePool(DatabaseMode.WRITER));
+  }, getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID));
 }
 
 export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOptions {

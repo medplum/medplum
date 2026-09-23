@@ -5,6 +5,7 @@ import { escapeIdentifier } from 'pg';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import type { PgQueryable } from '../fhir/sql';
 import { Column, SelectQuery, UpdateQuery } from '../fhir/sql';
 import {
@@ -57,7 +58,7 @@ describe('migrate-functions', () => {
   beforeAll(async () => {
     config = await loadTestConfig();
     await initDatabase(config);
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     client = await pool.connect();
   });
 

@@ -7,7 +7,6 @@ import { getConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool, withPoolClient } from '../database';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import type { PgQueryable } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
@@ -167,7 +166,8 @@ export async function preparePostDeployMigrationAsyncJob(
 
 export async function queuePostDeployMigration(
   systemRepo: SystemRepository,
-  version: number
+  version: number,
+  shardId: string
 ): Promise<WithId<AsyncJob>> {
   const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
@@ -176,7 +176,7 @@ export async function queuePostDeployMigration(
   // but that could lead to race conditions if the queued job happened to be
   // picked up before the transaction was committed.
   // globalLogger.info('Adding post-deploy migration job', { version, asyncJob: getReferenceString(asyncJob) });
-  const jobData = migration.prepareJobData(asyncJob);
+  const jobData = migration.prepareJobData({ shardId, asyncJob });
   const result = await addPostDeployMigrationJobData(jobData, { deduplication: { id: `v${version}` } });
   if (!result) {
     globalLogger.error('Unable to add post-deploy migration job', {
@@ -234,9 +234,9 @@ export async function maybeAutoRunPendingPostDeployMigrationOnShard(
     return undefined;
   }
 
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will eventually be a parameter to this function
+  const systemRepo = getShardSystemRepo(shardId);
   globalLogger.debug('Auto-queueing pending post-deploy migration', { version: `v${pendingPostDeployMigration}` });
-  return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
+  return queuePostDeployMigration(systemRepo, pendingPostDeployMigration, shardId);
 }
 
 /**
@@ -300,5 +300,5 @@ export async function maybeStartPostDeployMigration(
   }
 
   const systemRepo = getShardSystemRepo(shardId);
-  return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
+  return queuePostDeployMigration(systemRepo, pendingPostDeployMigration, shardId);
 }

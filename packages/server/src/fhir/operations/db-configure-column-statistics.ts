@@ -4,6 +4,7 @@ import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool, withPoolClient } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { isValidPostgresIdentifier } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import { makeOperationDefinitionParameter as param, parseInputParameters } from './utils/parameters';
@@ -75,7 +76,7 @@ export async function configureColumnStatisticsHandler(req: FhirRequest): Promis
       await client.query('ROLLBACK').catch(() => undefined);
       throw err;
     }
-  }, getDatabasePool(DatabaseMode.WRITER)); // shardId will be an input to this route
+  }, getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID));
 
   return [allOk];
 }

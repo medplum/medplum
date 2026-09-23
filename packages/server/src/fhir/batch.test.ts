@@ -21,7 +21,7 @@ import type { Job } from 'bullmq';
 import { DelayedError } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import type { PoolClient } from 'pg';
+import type { ShardPoolClient } from '../sharding/sharding-types';
 import type { RateLimiterRes } from 'rate-limiter-flexible';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import request from 'supertest';
@@ -2065,14 +2065,14 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
     // We wrap the writer pool so that the FIRST COMMIT on a connection that opened a SERIALIZABLE
     // transaction throws 40001 (leaving the real transaction open so withTransaction's rollback
     // path discards the attempt's writes, exactly as a real 40001 at COMMIT would).
-    const writerPool = getDatabasePool(DatabaseMode.WRITER);
+    const writerPool = getDatabasePool(DatabaseMode.WRITER, 'global');
     const originalConnect = writerPool.connect.bind(writerPool);
 
     let serializableBegins = 0;
     let commitFailuresInjected = 0;
 
     vi.spyOn(writerPool, 'connect').mockImplementation(async (...args: any[]) => {
-      const client = (await (originalConnect as any)(...args)) as PoolClient;
+      const client = (await (originalConnect as any)(...args)) as ShardPoolClient;
       const originalQuery = client.query.bind(client);
       let clientOpenedSerializableTx = false;
 

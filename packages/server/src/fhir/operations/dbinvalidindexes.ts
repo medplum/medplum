@@ -4,6 +4,7 @@ import { allOk } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters } from './utils/parameters';
 
@@ -70,7 +71,7 @@ WHERE
 ORDER BY
     n.nspname, c.relname, i.indexrelid::regclass`;
 
-  const client = getDatabasePool(DatabaseMode.WRITER);
+  const client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
   const results = await client.query<{
     schema_name: string;
     table_name: string;

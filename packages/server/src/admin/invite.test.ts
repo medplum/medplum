@@ -34,6 +34,7 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
 import {
@@ -127,7 +128,7 @@ describe('Admin Invite', () => {
     const rows = await new SelectQuery('User')
       .column('content')
       .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+      .execute(getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID));
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -182,7 +183,7 @@ describe('Admin Invite', () => {
     const rows = await new SelectQuery('User')
       .column('content')
       .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+      .execute(getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID));
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -232,7 +233,7 @@ describe('Admin Invite', () => {
     const rows = await new SelectQuery('User')
       .column('content')
       .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+      .execute(getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID));
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -284,7 +285,7 @@ describe('Admin Invite', () => {
     const rows = await new SelectQuery('User')
       .column('content')
       .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+      .execute(getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID));
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -419,7 +420,7 @@ describe('Admin Invite', () => {
     const rows = await new SelectQuery('User')
       .column('projectId')
       .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+      .execute(getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID));
     expect(rows[0].projectId).toStrictEqual(project.id);
   });
 
@@ -604,7 +605,7 @@ describe('Admin Invite', () => {
     const rows = await new SelectQuery('User')
       .column('projectId')
       .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+      .execute(getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID));
     expect(rows[0].projectId).toStrictEqual(project.id);
   });
 

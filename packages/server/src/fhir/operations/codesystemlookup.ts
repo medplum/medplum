@@ -6,6 +6,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { CodeSystem, CodeSystemProperty, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { Column, Condition } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -96,7 +97,7 @@ export async function lookupCoding(
     .column(new Column(propertyTable, 'value'))
     .column(new Column(target, 'display', undefined, 'targetDisplay'));
 
-  const db = getDatabasePool(DatabaseMode.READER);
+  const db = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
   const result = await lookup.execute(db);
   if (!result.length) {
     throw new OperationOutcomeError(notFound);

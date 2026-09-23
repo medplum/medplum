@@ -11,6 +11,7 @@ import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { getCacheRedis } from '../../redis';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
@@ -1143,8 +1144,8 @@ describe('GraphQL', () => {
   });
 
   test('Uses reader instance when available', async () => {
-    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID), 'query');
+    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID), 'query');
 
     const res = await request(app)
       .post('/fhir/R4/$graphql')
@@ -1157,8 +1158,8 @@ describe('GraphQL', () => {
   });
 
   test('GraphQL in batch users writer', async () => {
-    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID), 'query');
+    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID), 'query');
 
     const batch: Bundle = {
       resourceType: 'Bundle',

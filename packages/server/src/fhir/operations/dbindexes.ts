@@ -4,6 +4,7 @@ import { allOk, badRequest, EMPTY, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import type { PgQueryable } from '../sql';
 import { isValidPostgresIdentifier, replaceNullWithUndefinedInRows, SqlBuilder } from '../sql';
@@ -57,7 +58,7 @@ export async function dbIndexesHandler(req: FhirRequest): Promise<FhirResponse> 
   }
 
   const defaultGinPendingListLimit = await getDefaultGinPendingListLimit();
-  const client = getDatabasePool(DatabaseMode.WRITER);
+  const client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
 
   let index: GinIndexInfo[] | undefined;
   if (tableNames.length > 0) {
@@ -72,7 +73,7 @@ export async function dbIndexesHandler(req: FhirRequest): Promise<FhirResponse> 
 }
 
 async function getDefaultGinPendingListLimit(): Promise<number> {
-  const client = getDatabasePool(DatabaseMode.WRITER);
+  const client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
   const defaultStatisticsTarget = await client.query('SELECT setting FROM pg_settings WHERE name = $1', [
     'gin_pending_list_limit',
   ]);

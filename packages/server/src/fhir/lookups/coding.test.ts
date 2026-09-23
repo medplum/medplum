@@ -4,6 +4,7 @@ import type { CodeSystem } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { withTestContext } from '../../test.setup';
 import { getTestProjectSystemRepo } from '../repository/test-utils';
 
@@ -35,7 +36,7 @@ describe('Coding lookup table', () => {
 
       const systemResource = await systemRepo.createResource(codeSystem);
 
-      const db = getDatabasePool(DatabaseMode.READER);
+      const db = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
       const results = await db.query('SELECT id, code, display FROM "Coding" WHERE system = $1', [systemResource.id]);
       expect(results.rows.map((r) => `${r.code} (${r.display})`)).toContainExactly([
         'AB (Ambulance)',
@@ -70,7 +71,7 @@ describe('Coding lookup table', () => {
 
       const systemResource = await systemRepo.createResource(codeSystem);
 
-      const db = getDatabasePool(DatabaseMode.READER);
+      const db = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
       const results = await db.query('SELECT code, display FROM "Coding" WHERE system = $1', [systemResource.id]);
       expect(results.rows.map((r) => `${r.code} (${r.display})`)).toContainExactly([
         'AB (Ambulance)',

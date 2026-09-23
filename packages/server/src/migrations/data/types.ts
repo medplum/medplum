@@ -24,11 +24,16 @@ interface LegacyPostDeployJobData {
   readonly asyncJobId: string;
 }
 
+export interface PrepareJobDataContext {
+  shardId: string;
+  asyncJob: WithId<AsyncJob>;
+}
+
 export type PostDeployJobRunResult = 'finished' | 'interrupted' | 'ineligible';
 export interface PostDeployMigration<T extends PostDeployJobData = PostDeployJobData> {
   readonly type: T['type'];
   /** Prepares the job data needed to run the migration */
-  prepareJobData(asyncJob: WithId<AsyncJob>): T;
+  prepareJobData(ctx: PrepareJobDataContext): T;
   /**
    * Runs the migration. Is responsible for updating AsyncJob.status and AsyncJob.output,
    * generally through usage `AsyncJobExecutor`
