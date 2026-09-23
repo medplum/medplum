@@ -185,8 +185,14 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
   const multiInput = !!value.operator && searchParam?.type === 'reference' && searchParam.target?.length !== 1;
 
   const deleteButton = (
-    <ActionIcon variant="subtle" color="gray" aria-label={`delete-filter-${props.index}`} onClick={props.onDelete}>
-      <IconX size={16} stroke={1.5} />
+    <ActionIcon
+      variant="subtle"
+      color="gray"
+      aria-label={`delete-filter-${props.index}`}
+      ml={4}
+      onClick={props.onDelete}
+    >
+      <IconX size={16} stroke={2} color="var(--mantine-color-gray-7)" />
     </ActionIcon>
   );
 

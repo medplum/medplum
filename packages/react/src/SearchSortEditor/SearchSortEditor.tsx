@@ -162,9 +162,10 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
                   variant="subtle"
                   color="gray"
                   aria-label={`delete-sort-${index}`}
+                  ml={4}
                   onClick={() => deleteRule(index)}
                 >
-                  <IconX size={16} stroke={1.5} />
+                  <IconX size={16} stroke={2} color="var(--mantine-color-gray-7)" />
                 </ActionIcon>
               </div>
             );
