@@ -284,7 +284,7 @@ describe('Export', () => {
 
       const exporter = new BulkExporter(systemRepo);
       await exporter.start('http://example.com');
-      await exporter.writeResource(patient, { dedupe: false });
+      await exporter.writeResource(patient, { skipDedupe: true });
       const stream = exporter.writers.Patient['stream'];
       // Wait for the storage pipeline to attach its own listeners before sampling
       await vi.waitFor(() => expect(stream.listenerCount('error')).toBeGreaterThan(0));
@@ -296,7 +296,7 @@ describe('Export', () => {
         return false;
       });
       for (let i = 0; i < 20; i++) {
-        await exporter.writeResource(patient, { dedupe: false });
+        await exporter.writeResource(patient, { skipDedupe: true });
       }
       expect(writeSpy).toHaveBeenCalledTimes(20);
       expect(stream.listenerCount('error')).toBe(baseline);

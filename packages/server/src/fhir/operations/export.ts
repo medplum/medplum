@@ -103,7 +103,7 @@ export async function exportResourceType<T extends Resource>(
   };
   await repo.processAllResources(searchRequest, async (resource) => {
     // Cursor pagination yields each resource exactly once, so skip the exporter's dedupe tracking
-    await exporter.writeResource(resource, { dedupe: false });
+    await exporter.writeResource(resource, { skipDedupe: true });
   });
 
   // Close writer and free memory for this resource type immediately

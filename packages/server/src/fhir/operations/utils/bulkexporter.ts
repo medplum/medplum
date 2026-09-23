@@ -108,9 +108,9 @@ export class BulkExporter {
     }
   }
 
-  async writeResource(resource: WithId<Resource>, options?: { dedupe?: boolean }): Promise<void> {
+  async writeResource(resource: WithId<Resource>, options?: { skipDedupe?: boolean }): Promise<void> {
     const resourceType = resource.resourceType;
-    if (options?.dedupe === false) {
+    if (options?.skipDedupe) {
       const writer = await this.getWriter(resourceType);
       await writer.write(resource);
       return;
