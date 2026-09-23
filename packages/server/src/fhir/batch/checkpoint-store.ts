@@ -211,10 +211,9 @@ export class BatchCheckpointStore {
   }
 }
 
-/** The JSON-safe on-disk form of {@link BatchInitialState}. */
+/** The JSON-safe on-disk form of {@link BatchInitialState}. e.g. use array instead of set for resourceTypes. */
 interface PersistedInitialState extends Omit<BatchInitialState, 'bundleInfo'> {
-  // TODO{v5.2} make resourceTypes required
-  bundleInfo: Omit<BundlePreprocessInfo, 'resourceTypes'> & { resourceTypes?: ResourceType[] };
+  bundleInfo: Omit<BundlePreprocessInfo, 'resourceTypes'> & { resourceTypes: ResourceType[] };
 }
 
 interface RunWithConcurrencyOptions {
