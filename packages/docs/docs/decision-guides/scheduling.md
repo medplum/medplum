@@ -141,6 +141,7 @@ Decide which resources consume time and which merely describe eligibility or loc
 | Clinician availability | Use a Practitioner actor. Use PractitionerRole for service/jurisdiction eligibility rather than splitting the person's calendar by license. |
 | Individually bookable room or device | Give the Location or Device its own Schedule and include it in the appointment search and booking. |
 | Facility or jurisdiction used for filtering | Model the association for candidate selection; do not assume a Location reference reserves time or checks capacity. |
+| Record the appointment's site | Store a Location reference in `Appointment.supportingInformation` using `toAppointmentSiteReference` from `@medplum/core`; read it with `getAppointmentSite`. This identifies the site separately from a booked room and does not reserve capacity. |
 | Same person at several sites | Keep the actor consistent and vary service-specific availability. Separate calendars can otherwise permit conflicting bookings. |
 | Resources needed for different phases | Define a separate orchestration design. A concurrent multi-Schedule appointment uses a common booking interval, not independently timed resource phases. |
 
@@ -182,6 +183,7 @@ Decide who may see schedules and patient details, book for someone else, change 
 | :--- | :--- |
 | Patient self-service | Grant only the resource access required by the supported operations and the patient's workflow. Test with patient credentials, including denied access cases. |
 | Delegated staff booking | Scope access by role and organization. Preserve the initiating user and reason for delegated or exceptional actions in the audit design. |
+| Rescheduling permission | In addition to booking access, `$reschedule` needs Appointment read/update and Slot read/delete access. The existing Slots and their Schedules must be readable. Test these permissions explicitly; permission to book does not imply permission to move an appointment. |
 | Required business checks beyond access rules | Route booking through a controlled server-side workflow, and restrict alternate write paths that could bypass those checks. |
 | Sensitive group or cross-team appointments | Review resource-level visibility before putting multiple patients or teams on a shared Appointment. |
 
@@ -276,7 +278,7 @@ For a patient appointment, add the selected Patient to the proposal's participan
 
 #### 3.9 Conflicts, Refresh, and Controlled Overrides
 
-Decide how the user experiences a changed result and who can bypass ordinary scheduling rules. `$find` is a snapshot, not a reservation. `$book` and `$hold` recheck availability transactionally, including capacity and buffers.
+Decide how the user experiences a changed result and who can bypass ordinary scheduling rules. `$find` is a snapshot, not a reservation. `$book`, `$hold`, and `$reschedule` recheck availability transactionally, including capacity and buffers.
 
 **Questions:**
 
@@ -308,11 +310,15 @@ Decide which changes are allowed after booking, how reasons are recorded, and wh
 | Situation | Approach |
 | :--- | :--- |
 | Cancel a booked or pending appointment | Use `$cancel`, optionally with a structured `cancelationReason`. It preserves the cancelled Appointment and deletes its linked Slots, including buffers, atomically. |
-| Move time or resources | Check the operations available in your server version. Without an in-place reschedule operation, cancel-and-book needs explicit failure/recovery handling and creates a new Appointment identity. It is not an atomic move. |
+| Find a replacement time or resource | Pass `ignore-appointment=Appointment/{id}` to `$find` to exclude this appointment's Slots, including buffers, from availability calculations. Other appointments still block. Commit the move with `$reschedule`; `$book` and `$hold` do not ignore the original Slots. |
+| Move time or resources | Use [`$reschedule`](/docs/scheduling/appointment-reschedule) for a booked or pending Appointment. Supply the new `start` and the complete set of destination Schedules. It preserves Appointment identity and status, reconciles scheduled participants, and replaces Slots atomically. If the new time is unavailable, the original booking remains intact. |
+| Change visit type | `$reschedule` retains the original service type and requires exactly one HealthcareService reference on the stored Appointment. Changing visit type requires cancel-and-book, with explicit failure/recovery handling and a new Appointment identity. |
 | Link a replacement appointment | Use an explicit application linkage or Provenance model. R4 `Appointment.basedOn` references ServiceRequest, not another Appointment. |
 | Arrival and encounter creation | Define application transitions and create the Encounter at the chosen event, linking through `Encounter.appointment`. Make automation safe to retry. |
 | Participant accept/decline | Use `Appointment.participant.status` and, where needed, AppointmentResponse. Keep response handling distinct from the overall Appointment status. |
 | No-show or completion | Define the operational rule and accountable actor. `$book` does not automatically manage later clinical states. |
+
+Confirm that your server version supports `$reschedule` before choosing this workflow. It derives duration and buffers from the scheduling configuration; omitted Schedules are removed from the appointment. Patients and other non-scheduled participants are preserved. Slot IDs change, so integrations must handle Slot deletion and creation. Site metadata in `supportingInformation` stays unchanged; a move to another site needs an explicit metadata update in the application's workflow.
 
 Do not equate an SMS acknowledgment with confirmation of a held booking, or mutate only `Appointment.start`/`end` to reschedule while leaving its Slots behind. Notify dependent systems whenever the time, actors, or status changes.
 
