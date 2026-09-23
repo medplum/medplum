@@ -18,6 +18,8 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly disabled?: boolean;
   readonly label?: AsyncAutocompleteProps<T>['label'];
   readonly error?: AsyncAutocompleteProps<T>['error'];
+  /** Render the options dropdown inside the DOM tree (not a portal); defaults to portalled. */
+  readonly withinPortal?: boolean;
 }
 
 /**
@@ -49,6 +51,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       disabled={props.disabled}
       label={props.label}
       error={props.error}
+      withinPortal={props.withinPortal}
       maxValues={1}
     />
   );

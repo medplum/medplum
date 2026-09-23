@@ -25,6 +25,8 @@ export interface ReferenceInputProps<T extends Resource = Resource> {
    * of the OS-native `<select>`. Used by the search filter editor. Defaults to 'native'.
    */
   readonly targetTypeSelectVariant?: 'native' | 'combobox';
+  /** Render the dropdowns inside the DOM tree (not a portal); defaults to portalled. */
+  readonly withinPortal?: boolean;
 }
 
 interface BaseTargetType {
@@ -170,6 +172,7 @@ export function ReferenceInput<T extends Resource = Resource>(props: ReferenceIn
               allowDeselect={false}
               defaultValue={targetType?.value}
               autoFocus={props.autoFocus}
+              comboboxProps={props.withinPortal === false ? { withinPortal: false } : undefined}
               onChange={(newValue) => {
                 const newTargetType = targetTypes.find((tt) => tt.value === newValue);
                 setTargetType(newTargetType);
@@ -207,6 +210,7 @@ export function ReferenceInput<T extends Resource = Resource>(props: ReferenceIn
             }}
             name={props.name + '-resourceType'}
             placeholder="Resource Type"
+            withinPortal={props.withinPortal}
           />
         )}
         <ResourceInput
@@ -218,6 +222,7 @@ export function ReferenceInput<T extends Resource = Resource>(props: ReferenceIn
           searchCriteria={searchCriteria}
           onChange={setValueHelper}
           disabled={props.disabled}
+          withinPortal={props.withinPortal}
         />
       </Group>
     </>
