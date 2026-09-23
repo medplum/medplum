@@ -12,9 +12,11 @@ import {
   getReferenceString,
   isDefined,
   isResource,
+  MEDPLUM_VERSION,
   OperationOutcomeError,
   Operator,
   resolveId,
+  SchedulingBookedByOperationURI,
   SchedulingSlotCapacityURI,
   TimezoneExtensionURI,
 } from '@medplum/core';
@@ -1030,6 +1032,11 @@ export async function createProposedAppointment(
       badRequest('Proposed appointment must not have Slot references', `${getPath(proposedAppointment)}.slot`)
     );
   }
+
+  appointment.extension = [
+    ...(appointment.extension ?? []).filter((ext) => ext.url !== SchedulingBookedByOperationURI),
+    { url: SchedulingBookedByOperationURI, valueString: MEDPLUM_VERSION },
+  ];
 
   stampBookingCapacity(slots, schedulingParametersGroup);
   customizer(appointment, slots);

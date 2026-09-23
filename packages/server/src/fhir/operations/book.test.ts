@@ -5,7 +5,9 @@ import {
   createReference,
   getReferenceString,
   isDefined,
+  MEDPLUM_VERSION,
   parseSearchRequest,
+  SchedulingBookedByOperationURI,
   SchedulingSlotCapacityURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
@@ -271,6 +273,10 @@ describe('Appointment/$book', () => {
       start,
       end,
     });
+    expect(appointments[0].extension).toContainEqual({
+      url: SchedulingBookedByOperationURI,
+      valueString: MEDPLUM_VERSION,
+    });
 
     // The return bundle has two "busy" slots
     const slots = entries.filter(isSlot);
@@ -288,6 +294,51 @@ describe('Appointment/$book', () => {
     expect(appointments[0].slot?.map((slot) => slot.reference)).toContainExactly(
       slots.map((slot) => `Slot/${slot.id}`)
     );
+  });
+
+  test('replaces a client-supplied booked-by-operation extension', async () => {
+    const schedule = await makeSchedule({ actor: practitioner1 });
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              extension: [{ url: SchedulingBookedByOperationURI, valueString: '0.0.0-fake' }],
+              serviceType: toServiceTypeCodeableConcepts(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response).toHaveStatus(201);
+    const appointment = ((response.body as Bundle).entry ?? [])
+      .map((entry) => entry.resource)
+      .filter(isDefined)
+      .find(isAppointment);
+    expect(appointment?.extension?.filter((ext) => ext.url === SchedulingBookedByOperationURI)).toStrictEqual([
+      { url: SchedulingBookedByOperationURI, valueString: MEDPLUM_VERSION },
+    ]);
   });
 
   test('with mismatched slot starts', async () => {
