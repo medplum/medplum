@@ -69,6 +69,13 @@
   cursor: grabbing;
 }
 
+/* While a row is being dragged, force the grabbing cursor across the whole list instead of letting
+   it fall back to the default arrow as the pointer moves off the grip. */
+.dragActive,
+.dragActive * {
+  cursor: grabbing !important;
+}
+
 .label {
   flex: 1 1 auto;
   min-width: 0;

@@ -183,7 +183,7 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
             onChange={(e) => setQuery(e.currentTarget.value)}
           />
         </div>
-        <div className={classes.body}>
+        <div className={dragIndex !== null ? `${classes.body} ${classes.dragActive}` : classes.body}>
           {order.map((name, index) => {
             const label = buildSearchParamFieldLabel(name);
             if (query && !label.toLowerCase().includes(query.toLowerCase())) {
