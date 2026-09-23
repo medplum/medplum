@@ -29,7 +29,7 @@ The `$cancel` operation is still allowed for Appointments whose Slots reference 
 
 ### Who is affected
 
-Users of `$find` / `$book` / `$hold` / `$reschedule` with Schedule resources that have the `active` property set exactly to `false`.
+Users of `$find` / `$book` / `$hold` / `$confirm` / `$reschedule` with Schedule resources that have the `active` property set exactly to `false`.
 
 ### Migration
 
