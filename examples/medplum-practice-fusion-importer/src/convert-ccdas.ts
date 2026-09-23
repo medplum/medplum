@@ -1063,6 +1063,14 @@ function postProcess(
     }
   }
 
+  // The converter leaves Composition.subject unset, so the document is not in the patient
+  // compartment (invisible to patient-scoped searches and compartment-based access policies).
+  const documentPatient = resources.find((r) => r.resourceType === 'Patient');
+  if (composition?.resourceType === 'Composition' && !composition.subject && documentPatient) {
+    composition.subject = { reference: `Patient/${documentPatient.id}` };
+    dedupNotes.push('Composition.subject set to the document patient (converter leaves it unset)');
+  }
+
   // Pre-pass: choose the canonical copy per identity key by majority vote on the name.
   // Practice Fusion stamps the supervising provider's NPI on staff-recorded entries, so a
   // first-occurrence winner can carry the wrong person's name (e.g. a nurse's name on the
@@ -1699,47 +1707,156 @@ async function loginClient(): Promise<MedplumClient> {
   return medplum;
 }
 
+/** Purgeable types without a `patient` search parameter — matched by tag alone. */
+const NON_PATIENT_TYPES: ResourceType[] = ['PractitionerRole'];
+
 /**
- * Delete everything a previous run of this import tag created, except Patients and Practitioners
- * (identity-keyed and stable across exports, so the new import updates them in place; they may
- * also be referenced by data created since). Searches and deletes both run as async batch
- * entries, so the per-user FHIR quota is not consumed. Each round searches the first page per
- * type and deletes it, repeating until no type returns matches — no offsets, so there is no
- * maxSearchOffset cap.
+ * Generated batch bundle file names in OUTPUT_DIR, in seeding order.
+ * @returns The file names.
+ */
+function batchFiles(): string[] {
+  return readdirSync(OUTPUT_DIR)
+    .filter((f) => f.includes('.batch'))
+    .sort();
+}
+
+interface BundlePatients {
+  /** Import ids of every Patient in the generated bundles. */
+  importIds: string[];
+  /** Import id -> server id, for the Patients that already exist in the project. */
+  serverIds: Map<string, string>;
+}
+
+/**
+ * Resolve the bundles' Patients against the project by their import identifier.
+ * @param medplum - Authenticated Medplum client.
+ * @param files - Batch bundle file names in OUTPUT_DIR.
+ * @returns The bundle Patients and which of them already exist.
+ */
+async function resolveBundlePatients(medplum: MedplumClient, files: string[]): Promise<BundlePatients> {
+  const importIds: string[] = [];
+  for (const file of files) {
+    const bundle = JSON.parse(readFileSync(join(OUTPUT_DIR, file), 'utf8')) as Bundle;
+    for (const entry of bundle.entry ?? []) {
+      if (entry.resource?.resourceType === 'Patient') {
+        const importId = entry.resource.identifier?.find((i) => i.system === IMPORT_ID_SYSTEM)?.value;
+        if (importId) {
+          importIds.push(importId);
+        }
+      }
+    }
+  }
+  const serverIds = new Map<string, string>();
+  if (importIds.length > 0) {
+    const lookup: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: importIds.map((id) => ({
+        request: { method: 'GET', url: `Patient?identifier=${IMPORT_ID_SYSTEM}|${id}&_elements=id&_count=2` },
+      })),
+    };
+    const response = await executeBatchAsync(medplum, lookup);
+    importIds.forEach((importId, i) => {
+      const page = response.entry?.[i]?.resource;
+      const hit = page?.resourceType === 'Bundle' ? page.entry?.[0]?.resource : undefined;
+      if (hit?.id) {
+        serverIds.set(importId, hit.id);
+      }
+    });
+  }
+  return { importIds, serverIds };
+}
+
+/**
+ * Search URL for resources of a type carrying the import tag, scoped to one patient's data when
+ * the type has a `patient` search parameter.
+ * @param type - Resource type.
+ * @param tag - Import tag (system|code).
+ * @param patientId - Server id of the patient, or undefined for tag-only types.
+ * @param extra - Additional query string (e.g. `_count=1000` or `_summary=count`).
+ * @param orphan - Match only resources with no subject (Compositions written by earlier versions
+ * of this script, which left Composition.subject unset and so belong to no patient compartment).
+ * @returns The relative search URL.
+ */
+function taggedSearchUrl(
+  type: ResourceType,
+  tag: string,
+  patientId: string | undefined,
+  extra: string,
+  orphan = false
+): string {
+  const scope = patientId ? `&patient=Patient/${patientId}` : '';
+  const missing = orphan ? '&subject:missing=true' : '';
+  return `${type}?_tag=${encodeURIComponent(tag)}${scope}${missing}&${extra}`;
+}
+
+interface PurgeQuery {
+  type: ResourceType;
+  patientId?: string;
+  orphan?: boolean;
+}
+
+/**
+ * Delete what a previous run of this import tag created **for the patients in the current
+ * bundles** — a re-export usually covers a subset of patients, and other patients' data must
+ * survive. Patients and Practitioners themselves are never deleted (identity-keyed and stable
+ * across exports, so the new import updates them in place; they may also be referenced by data
+ * created since). Searches and deletes both run as async batch entries, so the per-user FHIR
+ * quota is not consumed. Each round fetches the first page per (type, patient) and deletes it,
+ * repeating until nothing matches — no offsets, so no maxSearchOffset cap.
  * @param medplum - Authenticated Medplum client (project admin membership).
  */
 async function purgeImport(medplum: MedplumClient): Promise<void> {
   const tag = `${BATCH_TAG.system}|${BATCH_TAG.code}`;
-  console.log(`\nPurging previous import (tag ${tag}) — Patients and Practitioners are kept ...`);
-  const pending = new Set<ResourceType>(PURGEABLE_TYPES);
+  const files = batchFiles();
+  const patients = await resolveBundlePatients(medplum, files);
+  const patientIds = [...patients.serverIds.values()];
+  console.log(
+    `\nPurging previous import (tag ${tag}) for the ${patientIds.length} patient(s) in this import that already ` +
+      `exist in the project (${patients.importIds.length} in the bundles). Patients, Practitioners and other ` +
+      `patients' data are kept ...`
+  );
+  // Pending searches: one per (type, patient) for patient-scoped types, one per tag-only type.
+  const pending = new Map<string, PurgeQuery>();
+  for (const type of PURGEABLE_TYPES) {
+    if (NON_PATIENT_TYPES.includes(type)) {
+      pending.set(type, { type });
+    } else {
+      for (const patientId of patientIds) {
+        pending.set(`${type}|${patientId}`, { type, patientId });
+      }
+    }
+  }
+  // Compositions from earlier versions have no subject and belong to no patient: orphans, removed.
+  pending.set('Composition|orphan', { type: 'Composition', orphan: true });
   let deleted = 0;
   let failed = 0;
   let found = 0;
   while (pending.size > 0) {
-    const types = [...pending];
+    const searches = [...pending.entries()];
     const searchBundle: Bundle = {
       resourceType: 'Bundle',
       type: 'batch',
-      entry: types.map((type) => ({
-        request: { method: 'GET', url: `${type}?_tag=${encodeURIComponent(tag)}&_count=1000` },
+      entry: searches.map(([, q]) => ({
+        request: { method: 'GET', url: taggedSearchUrl(q.type, tag, q.patientId, '_count=1000', q.orphan) },
       })),
     };
     const searchResponse = await executeBatchAsync(medplum, searchBundle);
     const targets: string[] = [];
-    types.forEach((type, i) => {
+    searches.forEach(([key, q], i) => {
       const entry = searchResponse.entry?.[i];
       const page = entry?.resource?.resourceType === 'Bundle' ? entry.resource : undefined;
       if (!page) {
-        console.log(`  ${type}: search FAILED ${entry?.response?.status ?? '?'} — skipped`);
+        console.log(`  ${q.type}: search FAILED ${entry?.response?.status ?? '?'} — skipped`);
         failed++;
-        pending.delete(type);
+        pending.delete(key);
         return;
       }
       const ids = (page.entry ?? []).map((e) => e.resource?.id).filter((id): id is string => Boolean(id));
-      targets.push(...ids.map((id) => `${type}/${id}`));
+      targets.push(...ids.map((id) => `${q.type}/${id}`));
       found += ids.length;
       if (ids.length < 1000) {
-        pending.delete(type); // this round deletes the remainder
+        pending.delete(key); // this round deletes the remainder
       }
     });
     if (targets.length === 0) {
@@ -1764,8 +1881,8 @@ async function purgeImport(medplum: MedplumClient): Promise<void> {
     // A purge that matches nothing almost always means the wrong tag: seeding now would duplicate
     // the previous import rather than replace it, so stop before --seed runs.
     console.error(
-      `\nNothing is tagged ${tag} in the project. Pass --tag matching the previous import ` +
-        '(the meta.tag code on its resources, e.g. pf-migration) or drop --purge for a first import.'
+      `\nNothing tagged ${tag} belongs to these patients in the project. Pass --tag matching the previous ` +
+        'import (the meta.tag code on its resources, e.g. pf-migration) or drop --purge for a first import.'
     );
     process.exit(1);
   }
@@ -1777,10 +1894,12 @@ async function purgeImport(medplum: MedplumClient): Promise<void> {
 }
 
 /**
- * Report what --purge and --seed would do against the project without changing anything:
- * per-type counts of resources carrying the import tag (the purge targets; Patients and
- * Practitioners are listed as kept), whether --org-id resolves to an Organization, and the
- * entries the generated bundles would write. Count searches run as async batch entries.
+ * Report what --purge and --seed would do against the project without changing anything: what
+ * the purge would delete per type for the patients in this import (and how much tagged data
+ * belongs to other patients and is left alone), whether --org-id resolves, the entries the
+ * bundles would write, which bundle Patients already exist, and whether Patients under the tag
+ * share a source identifier (duplicates from earlier runs, which a purge never removes). All
+ * project reads run as async batch entries.
  * @param medplum - Authenticated Medplum client.
  */
 async function dryRun(medplum: MedplumClient): Promise<void> {
@@ -1794,42 +1913,101 @@ async function dryRun(medplum: MedplumClient): Promise<void> {
       console.log(`  --org-id ${ORG_ID}: NOT FOUND — org references and meta.accounts would dangle`);
     }
   }
-  const types: ResourceType[] = [...PURGEABLE_TYPES, 'Patient', 'Practitioner'];
+  const files = batchFiles();
+  const patients = await resolveBundlePatients(medplum, files);
+  const patientIds = [...patients.serverIds.values()];
+
+  // One count search per type overall, plus one per (type, patient) for the purge scope.
+  const counts: PurgeQuery[] = [];
+  const allTypes: ResourceType[] = [...PURGEABLE_TYPES, 'Patient', 'Practitioner'];
+  for (const type of allTypes) {
+    counts.push({ type });
+  }
+  for (const type of PURGEABLE_TYPES) {
+    if (!NON_PATIENT_TYPES.includes(type)) {
+      for (const patientId of patientIds) {
+        counts.push({ type, patientId });
+      }
+    }
+  }
+  counts.push({ type: 'Composition', orphan: true });
   const countBundle: Bundle = {
     resourceType: 'Bundle',
     type: 'batch',
-    entry: types.map((type) => ({
-      request: { method: 'GET', url: `${type}?_tag=${encodeURIComponent(tag)}&_summary=count` },
-    })),
+    entry: [
+      ...counts.map((q) => ({
+        request: {
+          method: 'GET' as const,
+          url: taggedSearchUrl(q.type, tag, q.patientId, '_summary=count', q.orphan),
+        },
+      })),
+      {
+        request: {
+          method: 'GET' as const,
+          url: `Patient?_tag=${encodeURIComponent(tag)}&_elements=identifier&_count=1000`,
+        },
+      },
+    ],
   };
   const response = await executeBatchAsync(medplum, countBundle);
-  console.log(`\n  In the project under tag ${tag}:`);
-  let purgeTotal = 0;
-  types.forEach((type, i) => {
-    const entry = response.entry?.[i];
-    const page = entry?.resource?.resourceType === 'Bundle' ? entry.resource : undefined;
-    const total = page?.total;
-    if (total === undefined) {
-      console.log(`    ${type}: count FAILED ${entry?.response?.status ?? '?'}`);
+  const total = new Map<ResourceType, number>();
+  const inScope = new Map<ResourceType, number>();
+  let orphanCompositions = 0;
+  counts.forEach((q, i) => {
+    const page = response.entry?.[i]?.resource;
+    const n = page?.resourceType === 'Bundle' ? page.total : undefined;
+    if (n === undefined) {
       return;
     }
-    const kept = type === 'Patient' || type === 'Practitioner';
-    if (!kept) {
-      purgeTotal += total;
-    }
-    if (total > 0 || !kept) {
-      let action = '';
-      if (PURGE) {
-        action = kept ? ' (kept)' : ' -> would be deleted';
+    if (q.orphan) {
+      orphanCompositions = n;
+      inScope.set(q.type, (inScope.get(q.type) ?? 0) + n);
+    } else if (q.patientId) {
+      inScope.set(q.type, (inScope.get(q.type) ?? 0) + n);
+    } else {
+      total.set(q.type, n);
+      if (NON_PATIENT_TYPES.includes(q.type)) {
+        inScope.set(q.type, n);
       }
-      console.log(`    ${type}: ${total}${action}`);
     }
   });
-  if (PURGE) {
-    console.log(`  --purge would delete ${purgeTotal} resource(s).`);
+  console.log(`\n  In the project under tag ${tag} (${patientIds.length} of this import's patients found):`);
+  let purgeTotal = 0;
+  let otherTotal = 0;
+  for (const type of allTypes) {
+    const all = total.get(type);
+    if (all === undefined) {
+      console.log(`    ${type}: count FAILED`);
+      continue;
+    }
+    const kept = type === 'Patient' || type === 'Practitioner';
+    if (kept) {
+      if (all > 0) {
+        console.log(`    ${type}: ${all} (kept)`);
+      }
+      continue;
+    }
+    const scoped = inScope.get(type) ?? 0;
+    purgeTotal += scoped;
+    otherTotal += all - scoped;
+    if (all > 0) {
+      const action = PURGE ? ' -> would be deleted' : '';
+      console.log(`    ${type}: ${scoped} for these patients${action}; ${all - scoped} for other patients (kept)`);
+    }
   }
+  if (orphanCompositions > 0) {
+    console.log(
+      `    (${orphanCompositions} of the Compositions have no subject — written by an earlier version of this ` +
+        `script, so they belong to no patient; counted above as deletable)`
+    );
+  }
+  if (PURGE) {
+    console.log(
+      `  --purge would delete ${purgeTotal} resource(s) and leave ${otherTotal} belonging to other patients.`
+    );
+  }
+
   if (SEED) {
-    const files = readdirSync(OUTPUT_DIR).filter((f) => f.includes('.batch'));
     const byType = new Map<string, number>();
     let creates = 0;
     let updates = 0;
@@ -1851,60 +2029,13 @@ async function dryRun(medplum: MedplumClient): Promise<void> {
     for (const [rt, n] of [...byType].sort()) {
       console.log(`    ${rt}: ${n}`);
     }
-    await dryRunPatients(medplum, files, tag);
+    console.log(
+      `\n  Patients in bundles: ${patients.importIds.length} — ${patientIds.length} already in the project ` +
+        `(updated in place), ${patients.importIds.length - patientIds.length} new`
+    );
   }
-}
 
-/**
- * Patients are never purged, so check how the bundles' Patients line up with the project: which
- * already exist (updated in place via their import id), which are new, and whether the project
- * holds several Patients under the tag that share a source identifier (duplicates from earlier
- * runs that a purge will not remove).
- * @param medplum - Authenticated Medplum client.
- * @param files - Batch bundle file names in OUTPUT_DIR.
- * @param tag - The import tag (system|code).
- */
-async function dryRunPatients(medplum: MedplumClient, files: string[], tag: string): Promise<void> {
-  const importIds: string[] = [];
-  for (const file of files) {
-    const bundle = JSON.parse(readFileSync(join(OUTPUT_DIR, file), 'utf8')) as Bundle;
-    for (const entry of bundle.entry ?? []) {
-      if (entry.resource?.resourceType === 'Patient') {
-        const importId = entry.resource.identifier?.find((i) => i.system === IMPORT_ID_SYSTEM)?.value;
-        if (importId) {
-          importIds.push(importId);
-        }
-      }
-    }
-  }
-  const lookup: Bundle = {
-    resourceType: 'Bundle',
-    type: 'batch',
-    entry: [
-      ...importIds.map((id) => ({
-        request: { method: 'GET' as const, url: `Patient?identifier=${IMPORT_ID_SYSTEM}|${id}&_summary=count` },
-      })),
-      {
-        request: {
-          method: 'GET' as const,
-          url: `Patient?_tag=${encodeURIComponent(tag)}&_elements=identifier&_count=1000`,
-        },
-      },
-    ],
-  };
-  const response = await executeBatchAsync(medplum, lookup);
-  let existing = 0;
-  for (let i = 0; i < importIds.length; i++) {
-    const page = response.entry?.[i]?.resource;
-    if (page?.resourceType === 'Bundle' && (page.total ?? 0) > 0) {
-      existing++;
-    }
-  }
-  console.log(
-    `\n  Patients in bundles: ${importIds.length} — ${existing} already in the project (updated in place), ` +
-      `${importIds.length - existing} new`
-  );
-  const tagged = response.entry?.[importIds.length]?.resource;
+  const tagged = response.entry?.[counts.length]?.resource;
   if (tagged?.resourceType === 'Bundle') {
     const bySource = new Map<string, number>();
     for (const e of tagged.entry ?? []) {
@@ -1919,11 +2050,11 @@ async function dryRunPatients(medplum: MedplumClient, files: string[], tag: stri
       }
     }
     const dupGroups = [...bySource.values()].filter((n) => n > 1).length;
-    const total = tagged.entry?.length ?? 0;
-    const dupNote = dupGroups > 0 ? ' (DUPLICATES — purge does not remove Patients)' : '';
+    const taggedTotal = tagged.entry?.length ?? 0;
+    const dupNote = dupGroups > 0 ? ' (DUPLICATES — purge never removes Patients)' : '';
     console.log(
-      `  Patients in project under tag: ${total} — ${total - existing} not in these bundles (left as-is); ` +
-        `${dupGroups} source identifier(s) shared by more than one Patient${dupNote}`
+      `  Patients in project under tag: ${taggedTotal} — ${taggedTotal - patientIds.length} not in this import ` +
+        `(their data is left as-is); ${dupGroups} source identifier(s) shared by more than one Patient${dupNote}`
     );
   }
 }
