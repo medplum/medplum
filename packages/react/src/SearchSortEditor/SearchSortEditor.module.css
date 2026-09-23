@@ -35,7 +35,7 @@
 }
 
 .footer {
-  padding: 6px 12px;
+  padding: var(--mantine-spacing-sm);
   border-top: 1px solid var(--mantine-color-gray-2);
 }
 
@@ -53,5 +53,5 @@
 
 /* Halve the default icon-to-label gap on the Add button without restyling the Mantine button. */
 .addButton :global(.mantine-Button-section[data-position='left']) {
-  margin-inline-end: calc(var(--mantine-spacing-xs) * 0.5);
+  margin-inline-end: calc(var(--mantine-spacing-xs) * 0.6);
 }
