@@ -9,6 +9,13 @@ on:
 
 name: 'Vouch - Sync CODEOWNERS'
 
+# GITHUB_TOKEN here only reads (gh api contents, gh search prs); every write
+# goes through the App token. Scoped at the top level because the sync job
+# declares no permissions of its own.
+permissions:
+  contents: read
+  pull-requests: read
+
 concurrency:
   group: vouch-manage
   cancel-in-progress: false

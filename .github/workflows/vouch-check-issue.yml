@@ -4,12 +4,15 @@ on:
 
 name: 'Vouch - Check Issue'
 
-permissions:
-  issues: write
+# Deny by default; the one job that closes and locks issues asks for the write
+# itself, so a job added later does not inherit it.
+permissions: {}
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     steps:
       # require-vouch is false: only explicitly denounced (blocked) users get
       # closed here. Everyone else may file issues freely, per medplum's

@@ -23,6 +23,11 @@ on:
 
 name: "Vouch - Check PR (shared)"
 
+# Deny by default. Job-level permissions replace this rather than merging with
+# it, so each job below grants exactly what it needs and anything added later
+# starts from nothing.
+permissions: {}
+
 env:
   COMMUNITY_PR_LABEL: open-to-community
   VOUCHED_PR_LABEL: vouched
