@@ -11,6 +11,7 @@ import {
   REQUIRES_DIAGNOSIS_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
+  SchedulingMedicalNecessityURI,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
   setScheduleSchedulingParameter,
@@ -1004,6 +1005,35 @@ export const DrBrownAppointments: WithId<Appointment>[] = DrBrownSlots.map((slot
   ],
 }));
 
+export const ChenInfusionHeldSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-chen-infusion-thu',
+  status: 'busy',
+  start: '2020-05-07T14:00:00Z',
+  end: '2020-05-07T15:00:00Z',
+  schedule: createReference(DrChenInfusionSchedule),
+};
+
+/**
+ * An infusion on Dr. Chen's calendar, booked for a visit type asking for procedure and diagnosis
+ * codes and a medical necessity attestation, with all three given.
+ */
+export const ChenInfusionAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-chen-infusion-thu',
+  status: 'booked',
+  start: ChenInfusionHeldSlot.start,
+  end: ChenInfusionHeldSlot.end,
+  serviceType: [...toServiceTypeCodeableConcepts(InfusionService), { coding: [ProcedureCodes[0]] }],
+  reasonCode: [{ coding: [DiagnosisCodes[0]] }],
+  extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
+  slot: [createReference(ChenInfusionHeldSlot)],
+  participant: [
+    { status: 'accepted', actor: createReference(ElderJordanPatient) },
+    { status: 'accepted', actor: createReference(DrChenPractitioner) },
+  ],
+};
+
 export const CalendarWeekFixtures = [
   RiveraImagingAppointment,
   ...RiveraImagingHeldSlots,
@@ -1016,4 +1046,9 @@ export const CalendarWeekFixtures = [
   DrBrownSchedule,
   ...DrBrownSlots,
   ...DrBrownAppointments,
+  DrChenPractitioner,
+  InfusionService,
+  DrChenInfusionSchedule,
+  ChenInfusionHeldSlot,
+  ChenInfusionAppointment,
 ];
