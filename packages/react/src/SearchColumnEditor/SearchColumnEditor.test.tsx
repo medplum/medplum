@@ -24,7 +24,7 @@ async function openMenu(): Promise<void> {
   await act(async () => {
     fireEvent.click(screen.getByText('Columns'));
   });
-  await screen.findByText('Reset default');
+  await screen.findByText('Reset Default');
 }
 
 describe('SearchColumnEditor', () => {
@@ -97,7 +97,7 @@ describe('SearchColumnEditor', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Columns'));
     });
-    await screen.findByText('Reset default');
+    await screen.findByText('Reset Default');
     await act(async () => {
       fireEvent.click(screen.getByLabelText('column-birthDate'));
     });
@@ -118,7 +118,7 @@ describe('SearchColumnEditor', () => {
       fireEvent.click(screen.getByLabelText('column-name'));
     });
     await act(async () => {
-      fireEvent.click(screen.getByText('Reset default'));
+      fireEvent.click(screen.getByText('Reset Default'));
     });
     const last = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
     expect(last.fields).toEqual(['name', 'birthDate']);

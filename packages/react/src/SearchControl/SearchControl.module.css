@@ -93,6 +93,8 @@
   width: 1px;
   white-space: nowrap;
   vertical-align: middle;
+  /* The whole cell toggles the checkbox, not just the input. */
+  cursor: pointer;
 }
 
 /* Flex centering avoids the inline vertical-align rounding that left the checkbox off-center. */
@@ -111,9 +113,9 @@
 .control,
 .staticColumnTitle {
   /* Shorter block (4 vs the cell's 9 padding) leaves >8px below the button so the menu overlaps the divider. */
-  padding: 4px 8px;
+  padding: 4px 6px;
   /* Offset the left padding so the header text left-aligns with the row content below. */
-  margin-left: -8px;
+  margin-left: -6px;
 }
 
 .control {

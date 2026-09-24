@@ -250,9 +250,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
   function handleSingleCheckboxClick(e: ChangeEvent, id: string): void {
     e.stopPropagation();
+    setRowSelected(id, (e.target as HTMLInputElement).checked);
+  }
 
-    const el = e.target as HTMLInputElement;
-    const checked = el.checked;
+  function setRowSelected(id: string, checked: boolean): void {
     const newSelected = { ...stateRef.current.selected };
     if (checked) {
       newSelected[id] = true;
@@ -264,9 +265,25 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
   function handleAllCheckboxClick(e: ChangeEvent): void {
     e.stopPropagation();
+    setAllSelected((e.target as HTMLInputElement).checked);
+  }
 
-    const el = e.target as HTMLInputElement;
-    const checked = el.checked;
+  /**
+   * Makes the whole checkbox cell a hit target: a click in the cell but outside the input (its
+   * padding, the wrapper, the icon) toggles the checkbox. Clicks on the input itself are left to its
+   * own change handler, so they are not toggled twice.
+   * @param e - The click event on the cell.
+   * @param toggle - Toggles the cell's checkbox.
+   */
+  function handleCheckboxCellClick(e: MouseEvent, toggle: () => void): void {
+    e.stopPropagation();
+    if ((e.target as Element).closest('input, label')) {
+      return;
+    }
+    toggle();
+  }
+
+  function setAllSelected(checked: boolean): void {
     const newSelected = {} as { [id: string]: boolean };
     const searchResponse = stateRef.current.searchResponse;
     if (checked && searchResponse?.entry) {
@@ -500,7 +517,12 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             <Table.Thead>
               <Table.Tr>
                 {checkboxColumn && (
-                  <Table.Th className={classes.checkboxCell}>
+                  <Table.Th
+                    className={classes.checkboxCell}
+                    data-checkbox-cell
+                    data-testid="all-checkbox-cell"
+                    onClick={(e) => handleCheckboxCellClick(e, () => setAllSelected(!isAllSelected()))}
+                  >
                     <div className={classes.checkboxWrap}>
                       <Checkbox
                         size="xs"
@@ -582,7 +604,16 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                       }}
                     >
                       {checkboxColumn && (
-                        <Table.Td className={classes.checkboxCell}>
+                        <Table.Td
+                          className={classes.checkboxCell}
+                          data-checkbox-cell
+                          data-testid="row-checkbox-cell"
+                          onClick={(e) =>
+                            handleCheckboxCellClick(e, () =>
+                              setRowSelected(resource.id as string, !stateRef.current.selected[resource.id as string])
+                            )
+                          }
+                        >
                           <div className={classes.checkboxWrap}>
                             <Checkbox
                               size="xs"

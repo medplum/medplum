@@ -24,12 +24,18 @@ export function isAuxClick(e: MouseEvent): boolean {
 }
 
 /**
- * Returns true if the element is a checkbox or a table cell containing a checkbox.
+ * Returns true if the element is a checkbox, a table cell containing a checkbox, or anything inside
+ * a cell tagged `data-checkbox-cell`. The tag keeps the check working whatever the checkbox's
+ * internal structure is (e.g. a Mantine Checkbox's wrapper and icon elements).
  * Table cells containing checkboxes are commonly accidentally clicked.
  * @param el - The HTML DOM element.
- * @returns True if the element is a checkbox or a table cell containing a checkbox.
+ * @returns True if the element is a checkbox or part of a checkbox cell.
  */
 export function isCheckboxCell(el: Element): boolean {
+  if (el.closest('[data-checkbox-cell]')) {
+    return true;
+  }
+
   if (isCheckboxElement(el)) {
     return true;
   }

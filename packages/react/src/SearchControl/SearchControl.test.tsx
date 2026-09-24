@@ -962,6 +962,104 @@ describe('SearchControl', () => {
     expect(screen.queryByText('Open Patient')).not.toBeInTheDocument();
   });
 
+  describe('Checkbox cell hit target', () => {
+    async function setupCheckboxes(): Promise<{
+      onClick: ReturnType<typeof vi.fn>;
+      onAuxClick: ReturnType<typeof vi.fn>;
+    }> {
+      const onClick = vi.fn();
+      const onAuxClick = vi.fn();
+      await setup({ search: simpsonSearch, checkboxesEnabled: true, onClick, onAuxClick });
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+      return { onClick, onAuxClick };
+    }
+
+    function rowCheckbox(): HTMLInputElement {
+      return screen.getAllByTestId('row-checkbox')[0] as HTMLInputElement;
+    }
+
+    test('Clicking the input toggles once and does not fire row click', async () => {
+      const { onClick, onAuxClick } = await setupCheckboxes();
+      await act(async () => {
+        fireEvent.click(rowCheckbox());
+      });
+      expect(rowCheckbox().checked).toBe(true);
+      expect(onClick).not.toHaveBeenCalled();
+      expect(onAuxClick).not.toHaveBeenCalled();
+    });
+
+    test('Clicking the cell padding toggles the checkbox', async () => {
+      const { onClick, onAuxClick } = await setupCheckboxes();
+      const cell = screen.getAllByTestId('row-checkbox-cell')[0];
+      await act(async () => {
+        fireEvent.click(cell);
+      });
+      expect(rowCheckbox().checked).toBe(true);
+      await act(async () => {
+        fireEvent.click(cell);
+      });
+      expect(rowCheckbox().checked).toBe(false);
+      expect(onClick).not.toHaveBeenCalled();
+      expect(onAuxClick).not.toHaveBeenCalled();
+    });
+
+    test('Clicking the wrapper div toggles the checkbox', async () => {
+      const { onClick } = await setupCheckboxes();
+      const wrapper = screen.getAllByTestId('row-checkbox-cell')[0].firstElementChild as Element;
+      await act(async () => {
+        fireEvent.click(wrapper);
+      });
+      expect(rowCheckbox().checked).toBe(true);
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    test('Clicking the Mantine icon toggles the checkbox', async () => {
+      const { onClick } = await setupCheckboxes();
+      const icon = screen.getAllByTestId('row-checkbox-cell')[0].querySelector('svg') as Element;
+      expect(icon).toBeTruthy();
+      await act(async () => {
+        fireEvent.click(icon);
+      });
+      expect(rowCheckbox().checked).toBe(true);
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    test('Middle-click in the checkbox cell does not fire onAuxClick', async () => {
+      const { onAuxClick } = await setupCheckboxes();
+      await act(async () => {
+        fireEvent(
+          screen.getAllByTestId('row-checkbox-cell')[0],
+          new MouseEvent('auxclick', { bubbles: true, button: 1 })
+        );
+      });
+      expect(onAuxClick).not.toHaveBeenCalled();
+    });
+
+    test('Clicking the header cell padding toggles select-all', async () => {
+      await setupCheckboxes();
+      const headerCell = screen.getByTestId('all-checkbox-cell');
+      await act(async () => {
+        fireEvent.click(headerCell);
+      });
+      expect((screen.getByTestId('all-checkbox')).checked).toBe(true);
+      expect(rowCheckbox().checked).toBe(true);
+      await act(async () => {
+        fireEvent.click(headerCell);
+      });
+      expect((screen.getByTestId('all-checkbox')).checked).toBe(false);
+      expect(rowCheckbox().checked).toBe(false);
+    });
+
+    test('Row clicks outside the checkbox cell still fire onClick', async () => {
+      const { onClick } = await setupCheckboxes();
+      await act(async () => {
+        fireEvent.click(screen.getByText('Homer Simpson'));
+      });
+      expect(onClick).toHaveBeenCalledTimes(1);
+      expect(rowCheckbox().checked).toBe(false);
+    });
+  });
+
   test('Columns editor opens', async () => {
     const props: SearchControlProps = {
       search: {

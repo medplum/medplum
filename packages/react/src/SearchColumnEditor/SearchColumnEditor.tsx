@@ -4,7 +4,7 @@ import { Button, Popover, Text, TextInput } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import { getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
-import { IconArrowBackUp, IconCheck, IconColumns3, IconGripVertical, IconSearch } from '@tabler/icons-react';
+import { IconRotate2, IconCheck, IconColumns3, IconGripVertical, IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useRef, useState } from 'react';
 import { buildSearchParamFieldLabel, isMetaSearchParam } from '../SearchControl/SearchUtils';
@@ -262,11 +262,11 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
             size="compact-sm"
             variant="subtle"
             color="gray"
-            leftSection={<IconArrowBackUp size={16} />}
+            leftSection={<IconRotate2 size={16} />}
             fw={500}
             onClick={resetDefault}
           >
-            Reset default
+            Reset Default
           </Button>
           <Text size="sm" c="dimmed">
             {visibleCount} shown
