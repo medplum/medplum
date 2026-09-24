@@ -2,18 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
 import { formatDate } from '@medplum/core';
-import type { Patient } from '@medplum/fhirtypes';
+import type { Coding, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { MockInstance } from 'vitest';
 import {
+  AuthorizationFixtures,
+  DiagnosisCodes,
   ElderJordanPatient,
   PatientFixtures,
+  ProcedureCodes,
   SchedulingFixtures,
   SubClinicProviderFixtures,
   SurgicalFixtures,
 } from '../stories/scheduling';
 import { clickAutocompleteOption, settleAutocomplete, typeInAutocomplete } from './asyncAutocomplete';
-import { stubChainedActorSearch } from './chainedActorSearch';
 import { act, fireEvent, screen, within } from './render';
 
 // Drives the booking form the way a user does, for the tests of both the proposal
@@ -28,23 +30,109 @@ export async function setupBookingClient(): Promise<MockClient> {
   for (const resource of [
     ...SchedulingFixtures,
     ...SurgicalFixtures,
+    ...AuthorizationFixtures,
     ...SubClinicProviderFixtures,
     ...PatientFixtures,
   ]) {
     await medplum.createResource(resource);
   }
-  stubChainedActorSearch(medplum);
   return medplum;
 }
 
+/**
+ * A field of the booking form, by the label above it.
+ *
+ * Scoped to the booking pane, because the workspace's sidebar carries filters
+ * with the same labels as some of the booking form's fields. Falls back to the
+ * whole document for the tests that render the form on its own.
+ *
+ * @param label - Matches the label above the field.
+ * @returns The field's search box.
+ */
 export function field(label: RegExp): HTMLElement {
-  return screen.getByRole('searchbox', { name: label });
+  const pane = screen.queryByRole('region', { name: 'Book appointment' });
+  return within(pane ?? document.body).getByRole('searchbox', { name: label });
 }
 
+/**
+ * Chooses the imaging visit type, scoped to the field's own dropdown.
+ *
+ * The workspace names its visit types in the sidebar too, so an unscoped query for
+ * the name would match the filter row as well as the option.
+ */
 export async function chooseImagingService(): Promise<void> {
-  await typeInAutocomplete(field(/visit type/i), 'Ultrasound');
-  await clickAutocompleteOption('Ultrasound Imaging');
+  const listbox = await searchField(/visit type/i, 'Ultrasound');
+  await act(async () => {
+    fireEvent.click(within(listbox).getByText('Ultrasound Imaging'));
+  });
   await settleAutocomplete();
+}
+
+/**
+ * Names the visit type a practice designated as needing prior authorization.
+ */
+export async function chooseAuthorizedService(): Promise<void> {
+  const listbox = await searchField(/visit type/i, 'Infusion');
+  await act(async () => {
+    fireEvent.click(within(listbox).getByText('Infusion Therapy'));
+  });
+  await settleAutocomplete();
+}
+
+/**
+ * Gives one of the codes a prior authorization needs, by searching it and taking it off the list.
+ *
+ * Searching by code is what a scheduler does, and it is what tells two codes apart when their
+ * descriptions share a long prefix. See {@link createCode} for the other way in, the code typed
+ * over the top of a value set that never carried it.
+ *
+ * @param label - Matches the label above the field.
+ * @param coding - The code to give, as the value set holds it.
+ */
+export async function enterCode(label: RegExp, coding: Coding): Promise<void> {
+  const listbox = await searchField(label, coding.code as string);
+  await act(async () => {
+    fireEvent.click(within(listbox).getByText(coding.display as string));
+  });
+  await settleAutocomplete();
+}
+
+/**
+ * Gives a code by typing it and taking the "+ Create" row, rather than picking one off the list.
+ *
+ * What a scheduler does for a code their terminology has not got: the value set is a starting
+ * point for these fields, not the bounds of what can be billed against.
+ *
+ * @param label - Matches the label above the field.
+ * @param code - The code to type.
+ */
+export async function createCode(label: RegExp, code: string): Promise<void> {
+  await typeInAutocomplete(field(label), code);
+  await clickAutocompleteOption(`+ Create ${code}`);
+  await settleAutocomplete();
+}
+
+/**
+ * The box attesting the supporting documentation was verified.
+ * @returns The checkbox.
+ */
+export function medicalNecessityBox(): HTMLElement {
+  return screen.getByRole('checkbox', { name: /medical necessity/i });
+}
+
+/** Ticks the box attesting the supporting documentation was verified. */
+export async function confirmMedicalNecessity(): Promise<void> {
+  await act(async () => {
+    fireEvent.click(medicalNecessityBox());
+  });
+  await settleAutocomplete();
+}
+
+/** Gives one of each code and the attestation, which is all a designated visit type needs. */
+export async function enterAuthorizationDetails(): Promise<void> {
+  await enterCode(/procedure code/i, ProcedureCodes[0]);
+  await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+  await confirmMedicalNecessity();
 }
 
 /**
@@ -85,30 +173,22 @@ export async function searchField(label: RegExp, query: string): Promise<HTMLEle
   return listbox;
 }
 
-export async function chooseActor(role: RegExp, query: string, name: string): Promise<void> {
-  const listbox = await searchField(role, query);
+/**
+ * Adds another row to one actor type, for a second one the visit needs.
+ * @param lowercaseLabel - The actor type as the form writes it, e.g. `provider`.
+ */
+export async function addActorRow(lowercaseLabel: string): Promise<void> {
+  const button = screen.getByRole('button', { name: `Add another ${lowercaseLabel}` });
   await act(async () => {
-    fireEvent.click(within(listbox).getByText(name));
+    fireEvent.click(button);
   });
   await settleAutocomplete();
 }
 
-/**
- * Takes one chosen value back out of the field holding it: the only way to change the
- * visit type, which takes its search box away while full.
- *
- * @param name - The value currently chosen.
- */
-export async function removePill(name: string): Promise<void> {
-  // Scoped to the pill, since a named resource is also on the slot card and in the
-  // chosen time's description. Mantine's remove button is `aria-hidden`.
-  const pill = screen.queryAllByText(name).find((node) => node.className.includes('Pill'));
-  const remove = pill?.parentElement?.querySelector('button');
-  if (!remove) {
-    throw new Error(`No remove button on the ${name} pill`);
-  }
+export async function chooseActor(role: RegExp, query: string, name: string): Promise<void> {
+  const listbox = await searchField(role, query);
   await act(async () => {
-    fireEvent.click(remove);
+    fireEvent.click(within(listbox).getByText(name));
   });
   await settleAutocomplete();
 }
@@ -135,12 +215,83 @@ export async function openTimeFinder(): Promise<void> {
 }
 
 /**
+ * A day in the time search's calendar.
+ * @param dayOfMonth - The number the cell is labelled with.
+ * @returns The button for that day.
+ */
+export function dayCell(dayOfMonth: string): HTMLElement {
+  return screen.getByRole('button', { name: dayOfMonth });
+}
+
+/**
  * Clicks a day in the time search's calendar.
  * @param dayOfMonth - The number the cell is labelled with.
  */
 export async function chooseDay(dayOfMonth: string): Promise<void> {
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: dayOfMonth }));
+    fireEvent.click(dayCell(dayOfMonth));
+  });
+  await settleAutocomplete();
+}
+
+/**
+ * Drags across the calendar, which asks for the stretch of days the drag covered.
+ *
+ * Only the two ends are travelled: a drag asks for the days between where it began and
+ * where it was let go, so the days passed over on the way change nothing but the band
+ * drawn mid-drag, which `CalendarDateInput` proves for itself. Don't restore a step per
+ * day here — it costs a render each and settles nothing.
+ *
+ * One step per act, though, because the day a drag has reached is read back out of
+ * state on the next render: a press and a move inside one act would leave the move
+ * looking at a drag that had not begun, and the release would ask for a single day.
+ * The release goes to the window, where the calendar listens for it — a drag is let go
+ * of wherever the pointer has got to, which need not be a day.
+ *
+ * @param from - The number the cell the drag begins on is labelled with.
+ * @param to - The number the cell it is let go on is labelled with.
+ */
+export async function dragDays(from: string, to: string): Promise<void> {
+  await act(async () => {
+    fireEvent.pointerDown(dayCell(from));
+  });
+  await act(async () => {
+    fireEvent.pointerOver(dayCell(to));
+  });
+  await act(async () => {
+    fireEvent.pointerUp(window);
+  });
+  await settleAutocomplete();
+}
+
+/**
+ * Shift-clicks a day, which moves the nearer end of the days on show to it.
+ *
+ * Fires only the click, which is what carries the shift: surviving the press that a
+ * real shift-click follows (the same press that would otherwise start a drag) is
+ * `CalendarDateInput`'s own concern, and is covered by its own tests.
+ *
+ * @param dayOfMonth - The number the cell is labelled with.
+ */
+export async function shiftChooseDay(dayOfMonth: string): Promise<void> {
+  await act(async () => {
+    fireEvent.click(dayCell(dayOfMonth), { shiftKey: true });
+  });
+  await settleAutocomplete();
+}
+
+/** Pages the calendar on to the next month. */
+export async function showNextMonth(): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /next month/i }));
+  });
+  await settleAutocomplete();
+}
+
+/** Asks for the next couple of days under the ones already on screen. */
+export async function showMoreDays(): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /show more days/i }));
   });
   await settleAutocomplete();
 }
@@ -171,13 +322,26 @@ export async function chooseSecondOfferedTime(): Promise<void> {
 }
 
 /**
+ * Matches the pill holding one code.
+ *
+ * A code pill leads with the code and continues with its description, so it is matched on the code
+ * it starts with rather than on the whole of what it reads.
+ *
+ * @param coding - The code the pill should be holding.
+ * @returns A matcher for that pill.
+ */
+export function codePill(coding: Coding): RegExp {
+  return new RegExp(`^${(coding.code as string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} `);
+}
+
+/**
  * Whether a field is holding a value, read off the pill rather than the state: the
  * fields ignore `defaultValue` after mount, so a cleared form could still show one.
  *
  * @param name - The value's label.
  * @returns Whether a pill is showing it.
  */
-export function hasPill(name: string): boolean {
+export function hasPill(name: string | RegExp): boolean {
   return screen.queryAllByText(name).some((node) => node.className.includes('Pill'));
 }
 
@@ -207,16 +371,42 @@ export function isBefore(first: Element, second: Element): boolean {
 }
 
 /**
+ * Every `$find` the form has asked for, in the order it asked.
+ * @param get - A spy on the client's `get`.
+ * @returns The request urls.
+ */
+export function findRequests(get: MockInstance<MedplumClient['get']>): string[] {
+  return get.mock.calls
+    .map(([url]) => String(url))
+    .filter((url) => url.includes('Appointment/$find') || url.includes('Appointment/%24find'));
+}
+
+/**
+ * What the most recent `$find` asked for.
+ * @param get - A spy on the client's `get`.
+ * @returns The search parameters, or undefined when nothing was asked.
+ */
+export function lastFindParams(get: MockInstance<MedplumClient['get']>): URLSearchParams | undefined {
+  const last = findRequests(get).at(-1);
+  return last ? new URL(last, 'https://example.com').searchParams : undefined;
+}
+
+/**
  * The `start` the most recent `$find` asked for.
  * @param get - A spy on the client's `get`.
  * @returns The `start` parameter, or undefined when nothing was asked.
  */
 export function lastFindStart(get: MockInstance<MedplumClient['get']>): string | undefined {
-  const urls = get.mock.calls
-    .map(([url]) => String(url))
-    .filter((url) => url.includes('Appointment/$find') || url.includes('Appointment/%24find'));
-  const last = urls.at(-1);
-  return last ? (new URL(last, 'https://example.com').searchParams.get('start') ?? undefined) : undefined;
+  return lastFindParams(get)?.get('start') ?? undefined;
+}
+
+/**
+ * The `end` of the window the last `$find` asked for.
+ * @param get - The spy on the client's `get`.
+ * @returns The `end` search parameter, or undefined when nothing was searched.
+ */
+export function lastFindEnd(get: MockInstance<MedplumClient['get']>): string | undefined {
+  return lastFindParams(get)?.get('end') ?? undefined;
 }
 
 /**
@@ -273,6 +463,21 @@ export async function choosePatient(query: string, detail: string): Promise<void
 export async function fillBooking(): Promise<void> {
   await chooseImagingService();
   await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+  await openTimeFinder();
+  await chooseFirstOfferedTime();
+  await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+}
+
+/**
+ * Answers everything a booking of a designated visit type needs except the fields its
+ * eligibility asks for.
+ *
+ * They are left out so that a test can find the form holding every other answer, which is what
+ * proves those fields are the thing blocking it.
+ */
+export async function fillAuthorizedBooking(): Promise<void> {
+  await chooseAuthorizedService();
+  await chooseActor(/provider/i, 'chen', 'Dr. Wei Chen');
   await openTimeFinder();
   await chooseFirstOfferedTime();
   await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));

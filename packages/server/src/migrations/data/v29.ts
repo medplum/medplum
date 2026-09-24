@@ -13,9 +13,9 @@ export const migration: ReindexPostDeployMigration = {
   type: 'reindex',
   prepareJobData(asyncJob: WithId<AsyncJob>) {
     const resourceTypes: ResourceType[] = ['ConceptMap'];
-    return prepareReindexJobData(resourceTypes, asyncJob.id, { maxResourceVersion });
+    return prepareReindexJobData(resourceTypes, asyncJob, { maxResourceVersion });
   },
-  run: async (repo, job, jobData) => {
-    return new ReindexJob(repo).execute(job, jobData);
+  run: async (_repo, job, jobData) => {
+    return (await ReindexJob.create(jobData)).execute(job);
   },
 };

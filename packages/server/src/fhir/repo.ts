@@ -47,10 +47,10 @@ import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  AuditEventEntityDetail,
   Binary,
   Bundle,
   BundleEntry,
-  ClientApplication,
   Meta,
   OperationDefinition,
   OperationDefinitionParameter,
@@ -86,11 +86,13 @@ import {
   CreateInteraction,
   DeleteInteraction,
   HistoryInteraction,
+  isReadOnlyAction,
   logAuditEvent,
   PatchInteraction,
   ReadInteraction,
   RestfulOperationType,
   SearchInteraction,
+  searchResultsDetail,
   UpdateInteraction,
   VreadInteraction,
 } from '../util/auditevent';
@@ -119,6 +121,7 @@ import type {
 } from './repository/repository-connection';
 import type { ConnectionEntry } from './repository/repository-connections';
 import { RepositoryConnections } from './repository/repository-connections';
+import type { RepositoryContext } from './repository/repository-context';
 import type { CacheEntry } from './repository/resource-cache';
 import {
   deleteResourceCacheEntries,
@@ -140,114 +143,10 @@ import { rewriteAttachments, RewriteMode } from './rewrite';
 import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { lookupTables } from './searchparameter';
-import { GLOBAL_SHARD_ID, normalizeShardId, resolveShardId, shardRoutingError } from './sharding';
+import type { ShardRouting } from './sharding';
+import { GLOBAL_SHARD_ID, normalizeShardId, resolveShardId, shardRoutingError, TODO_SHARD_ID } from './sharding';
 import type { Expression, PgQueryable } from './sql';
 import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
-
-/**
- * The RepositoryContext interface defines standard metadata for repository actions.
- * In practice, there will be one Repository per HTTP request.
- * And the RepositoryContext represents the context of that request,
- * such as "who is the current user?" and "what is the current project?"
- */
-export interface RepositoryContext {
-  /**
-   * The shard ID for this repository, i.e. where its project-scoped resources live.
-   * Defaults to GLOBAL_SHARD_ID if not specified. See {@link normalizeShardId}.
-   */
-  shardId?: string;
-
-  /**
-   * The current author reference.
-   * This should be a FHIR reference string (i.e., "resourceType/id").
-   * Where resource type is ClientApplication, Patient, Practitioner, etc.
-   * This value will be included in every resource as meta.author.
-   */
-  author: Reference;
-
-  /**
-   * Optional individual, device, or organization for whom the change was made.
-   * This value will be included in every resource as meta.onBehalfOf.
-   */
-  onBehalfOf?: Reference;
-
-  /**
-   * The authenticating ClientApplication for the current login, when present.
-   * This is the application that obtained the access token, which may differ
-   * from the acting `author` (e.g. when using `X-Medplum-On-Behalf-Of`, or for
-   * a SMART on FHIR app acting on behalf of a user). It is recorded as an
-   * additional non-requestor `agent[]` participant on per-interaction AuditEvents
-   * so the audit trail captures which client performed an action.
-   * Absent on the pure `client_credentials` / system paths.
-   */
-  client?: Reference<ClientApplication>;
-
-  remoteAddress?: string;
-
-  /**
-   * Projects that the Repository is allowed to access.
-   * This should include the ID/UUID of the current project, but may also include other accessory Projects.
-   * If this is undefined, the current user is a server user (e.g. Super Admin)
-   * The usual case has two elements: the user's Project and the base R4 Project
-   * The user's "primary" Project will be the first element in the array (i.e. projects[0])
-   * This value will be included in every resource as meta.project.
-   */
-  projects?: WithId<Project>[];
-
-  /** Current Project of the authenticated user, or none for the system repository. */
-  currentProject?: WithId<Project>;
-
-  /**
-   * Optional compartment restriction.
-   * If the compartments array is provided,
-   * all queries will be restricted to those compartments.
-   */
-  accessPolicy?: AccessPolicy;
-
-  /**
-   * Optional flag for system administrators,
-   * which grants system-level access.
-   */
-  superAdmin?: boolean;
-
-  /**
-   * Optional flag for project administrators,
-   * which grants additional project-level access.
-   */
-  projectAdmin?: boolean;
-
-  /**
-   * Optional flag to validate resources in strict mode.
-   * Strict mode validates resources against StructureDefinition resources,
-   * which includes strict date validation, backbone elements, and more.
-   * Non-strict mode uses the official FHIR JSONSchema definition, which is
-   * significantly more relaxed.
-   */
-  strictMode?: boolean;
-
-  /**
-   * Optional flag to validate references on write operations.
-   * If enabled, the repository will check that all references are valid,
-   * and that the current user has access to the referenced resource.
-   */
-  checkReferencesOnWrite?: boolean;
-
-  validateTerminology?: boolean;
-
-  /**
-   * Optional flag to include Medplum extended meta fields.
-   * Medplum tracks additional metadata for each resource, such as:
-   * 1) "author" - Reference to the last user who modified the resource.
-   * 2) "project" - Reference to the project that owns the resource.
-   * 3) "compartment" - References to all compartments the resource is in.
-   */
-  extendedMode?: boolean;
-
-  /**
-   * Optional flag to skip scheduling background jobs for writes.
-   */
-  skipBackgroundJobs?: boolean;
-}
 
 export interface InteractionOptions {
   verbose?: boolean;
@@ -280,6 +179,44 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
     // but repeated construction from the same context must not append duplicates.
     context.projects.push(syntheticR4Project);
   }
+}
+
+/**
+ * Returns the project IDs a caller may read for the given resource type.
+ *
+ * Linked projects are readable only when they export the resource type, and project admin
+ * resource types never cross a link at all.
+ * @param projects - Projects the caller may access; the first is the caller's own.
+ * @param resourceType - The resource type being read.
+ * @returns The permitted project IDs, or undefined if all projects are permitted.
+ */
+export function getPermittedProjectIds(
+  projects: WithId<Project>[] | undefined,
+  resourceType: string
+): string[] | undefined {
+  if (!projects?.length) {
+    // The caller is system-level, so all projects are permitted.
+    return undefined;
+  }
+
+  const projectIds = [projects[0].id]; // Always include the first project
+
+  if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType)) {
+    // If the resource type is a project admin resource, only include the current project (the first project)
+    return projectIds;
+  }
+
+  for (let i = 1; i < projects.length; i++) {
+    const project = projects[i];
+    if (
+      resourceType === 'Project' || // When searching for projects, include all projects
+      !project.exportedResourceType?.length || // Include projects that do not specify exported resource types
+      project.exportedResourceType?.includes(resourceType as ResourceType) // Include projects that export resourceType
+    ) {
+      projectIds.push(project.id);
+    }
+  }
+  return projectIds;
 }
 
 /**
@@ -333,8 +270,10 @@ export class Repository extends FhirRepository implements Disposable {
    *                Login.preAuthorizedCodeHash (https://github.com/medplum/medplum/pull/9231)
    *                Project.link (https://github.com/medplum/medplum/pull/9159)
    * 16. 06/30/26 - Added search param: Provenance-activity (https://github.com/medplum/medplum/pull/9709)
+   * 17. 08/27/26 - Added search param: PractitionerRole-davinci-pdex-network
+   * 18. 09/23/26 - Added search param: Login-project (https://github.com/medplum/medplum/issues/10634)
    */
-  static readonly VERSION: number = 16;
+  static readonly VERSION: number = 18;
 
   /**
    * Constructs a new Repository instance.
@@ -350,9 +289,16 @@ export class Repository extends FhirRepository implements Disposable {
   constructor(context: RepositoryContext, connections?: RepositoryConnections, transaction?: TransactionBinding) {
     super();
 
+    if (context.projects?.length === 0) {
+      throw new Error('Repository context.projects must be undefined or have at least one project');
+    }
     addSyntheticR4ProjectIfMissing(context);
     this.context = context;
-    this._normalizedShardId = normalizeShardId(context.shardId);
+    if (context.routing.kind === 'global-only') {
+      this._normalizedShardId = normalizeShardId(GLOBAL_SHARD_ID);
+    } else {
+      this._normalizedShardId = normalizeShardId(context.routing.shardId);
+    }
     this.ownsConnections = connections === undefined;
     this.connections = connections ?? new RepositoryConnections();
     // `transaction` is not validated for liveness here: it legitimately outlives its
@@ -389,7 +335,7 @@ export class Repository extends FhirRepository implements Disposable {
    */
   private connectionFor(options: RepositoryAccessOptions): { entry: ConnectionEntry; scope: ConnectionScope } {
     const { source } = options;
-    const shardId = resolveShardId(this.shardId, normalizeResourceTypes(options.resourceTypes), source);
+    const shardId = resolveShardId(this.context.routing, normalizeResourceTypes(options.resourceTypes), source);
     this.assertShardReachable(shardId, source);
     const entry = this.connections.entryFor(shardId, source);
     return { entry, scope: this.scopeFor(entry) };
@@ -471,9 +417,9 @@ export class Repository extends FhirRepository implements Disposable {
 
     let systemRepo: SystemRepository;
     if (this.connections.hasConnection()) {
-      systemRepo = createSystemRepository(this.shardId, this.connections, this.transaction, contextDefaults);
+      systemRepo = createSystemRepository(this.context.routing, this.connections, this.transaction, contextDefaults);
     } else {
-      systemRepo = createSystemRepository(this.shardId, undefined, undefined, contextDefaults);
+      systemRepo = createSystemRepository(this.context.routing, undefined, undefined, contextDefaults);
     }
     return systemRepo;
   }
@@ -497,20 +443,11 @@ export class Repository extends FhirRepository implements Disposable {
   async recordFhirQuota(points: number): Promise<void> {
     this.assertUsable();
     const ctx = tryGetRequestContext();
-    const limiter = this.isSuperAdmin() ? undefined : ctx?.fhirRateLimiter;
-    if (ctx instanceof AuthenticatedRequestContext && ctx.isAsync) {
-      // Do not enforce rate limits in async context; instead, slow down the consumer
-      // in proportion to the weight of the operation being performed
-      const delay = points * getConfig().asyncDelayScaling;
-      if (this.inOwnTransaction()) {
-        // Don't hold the transaction open, but shift the delay to after the transaction commits
-        await this.postCommit(() => sleep(delay));
-      } else {
-        await sleep(delay);
-      }
-    } else {
-      await limiter?.consume(points);
-    }
+    const limiter =
+      this.isSuperAdmin() || (ctx instanceof AuthenticatedRequestContext && ctx.isAsync)
+        ? undefined
+        : ctx?.fhirRateLimiter;
+    await limiter?.consume(points);
   }
 
   async sqlRead<R extends QueryResultRow = any>(
@@ -574,7 +511,7 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   currentProject(): WithId<Project> | undefined {
-    return this.context.currentProject;
+    return this.context.projects?.[0];
   }
 
   effectiveAccessPolicy(): Readonly<AccessPolicy> | undefined {
@@ -592,8 +529,8 @@ export class Repository extends FhirRepository implements Disposable {
     if (!projectId) {
       return undefined;
     }
-    if (projectId === this.context.currentProject?.id) {
-      return this.context.currentProject;
+    if (projectId === this.currentProject()?.id) {
+      return this.currentProject();
     }
     return this.getSystemRepo().readResource<Project>('Project', projectId);
   }
@@ -727,7 +664,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (!this.inOwnTransaction()) {
       // Only set cache entry if not in a transaction
-      await this.setCacheEntry(resource);
+      await this.setCacheEntry(resource, { force: true });
     }
 
     return this.authorizeBinarySecurityContext(resource);
@@ -1215,7 +1152,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     // Skip writing AuditEvents to cache, since they are written in high volume but are seldom read by ID
     if (resource.resourceType !== 'AuditEvent') {
-      await this.setCacheEntry(resource);
+      await this.setCacheEntry(resource, { force: this.isCacheOnly(resource) });
     } else if (!create) {
       // Explicitly remove old AuditEvents from cache on update, to prevent stale reads from cache
       await this.deleteCacheEntry(resource.resourceType, resource.id);
@@ -1607,7 +1544,7 @@ export class Repository extends FhirRepository implements Disposable {
       throw new OperationOutcomeError(badRequest('Expunge request contains too many IDs'));
     }
 
-    const projectId = this.isSuperAdmin() ? undefined : this.context.currentProject?.id;
+    const projectId = this.isSuperAdmin() ? undefined : this.currentProject()?.id;
     const deletedIds = await this.withTransaction<string[]>(
       async (txRepo) => {
         const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id');
@@ -1696,7 +1633,11 @@ export class Repository extends FhirRepository implements Disposable {
       // Resource type validation is performed in the searchImpl function
       const result = await searchImpl(this, searchRequest, options);
       const durationMs = Date.now() - startTime;
-      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
+      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, {
+        searchRequest,
+        entityDetail: searchResultsDetail(result.entry?.map((e) => e.resource as WithId<Resource>)),
+        durationMs,
+      });
       return result;
     } catch (err) {
       const durationMs = Date.now() - startTime;
@@ -1752,6 +1693,7 @@ export class Repository extends FhirRepository implements Disposable {
         };
         this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, {
           searchRequest: refSearch,
+          entityDetail: searchResultsDetail(result[ref]),
           durationMs,
         });
       }
@@ -1791,30 +1733,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @returns The permitted project IDs or undefined if all projects are permitted
    */
   private getPermittedProjectIds(resourceType: string): string[] | undefined {
-    if (!this.context.projects?.length) {
-      // The repository is system-level, so all projects are permitted.
-      return undefined;
-    }
-
-    const projectIds = [this.context.projects[0].id]; // Always include the first project
-
-    if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType)) {
-      // If the resource type is a project admin resource, only include the current project (the first project)
-      return projectIds;
-    }
-
-    for (let i = 1; i < this.context.projects.length; i++) {
-      const project = this.context.projects[i];
-      if (
-        resourceType === 'Project' || // When searching for projects, include all projects
-        project.id === this.context.currentProject?.id || // Always include the current project (usually the same as the first project)
-        !project.exportedResourceType?.length || // Include projects that do not specify exported resource types
-        project.exportedResourceType?.includes(resourceType as ResourceType) // Include projects that export resourceType
-      ) {
-        projectIds.push(project.id);
-      }
-    }
-    return projectIds;
+    return getPermittedProjectIds(this.context.projects, resourceType);
   }
 
   /**
@@ -2007,7 +1926,7 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   supportsRangeSearch(): boolean {
-    return Boolean(getConfig().rangeSearch || this.context.currentProject?.features?.includes('range-search'));
+    return Boolean(getConfig().rangeSearch || this.currentProject()?.features?.includes('range-search'));
   }
 
   /**
@@ -2361,7 +2280,7 @@ export class Repository extends FhirRepository implements Disposable {
     return input;
   }
 
-  isSuperAdmin(): boolean {
+  isSuperAdmin(): this is SuperAdminRepository {
     return !!this.context.superAdmin;
   }
 
@@ -2377,6 +2296,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param options -
    * @param options.resource - Optional resource to associate with the AuditEvent.
    * @param options.searchRequest - Optional search parameters to associate with the AuditEvent.
+   * @param options.entityDetail - Optional tagged value pairs to record as detail on the AuditEvent's entity.
    * @param options.durationMs - Duration of the operation, used for generating metrics.
    */
   private logEvent(
@@ -2386,18 +2306,20 @@ export class Repository extends FhirRepository implements Disposable {
     options?: {
       resource?: Resource | Reference;
       searchRequest?: SearchRequest;
+      entityDetail?: AuditEventEntityDetail[];
       durationMs?: number;
     }
   ): void {
     const resource = options?.resource;
     const isSystem = this.context.author.reference === 'system';
+    const resourceType = isResource(resource) ? resource?.resourceType : undefined;
 
     if (options?.durationMs !== undefined && outcome === AuditEventOutcome.Success) {
       const duration = options.durationMs / 1000; // Report duration in whole seconds
       recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
         attributes: {
           system: isSystem,
-          resourceType: isResource(resource) ? resource?.resourceType : undefined,
+          resourceType,
         },
       });
     }
@@ -2409,8 +2331,8 @@ export class Repository extends FhirRepository implements Disposable {
       },
     });
 
-    if (isSystem) {
-      // Don't log system events.
+    if (isSystem && (isReadOnlyAction(subtype) || resourceType === 'AuditEvent')) {
+      // Don't log system read or audit events
       return;
     }
     let outcomeDesc: string | undefined = undefined;
@@ -2433,6 +2355,7 @@ export class Repository extends FhirRepository implements Disposable {
         description: outcomeDesc,
         resource,
         searchQuery: query,
+        entityDetail: options?.entityDetail,
         durationMs: options?.durationMs,
         client: this.context.client,
       }
@@ -2595,19 +2518,21 @@ export class Repository extends FhirRepository implements Disposable {
   /**
    * Writes a cache entry to Redis.
    * @param resource - The resource to cache.
+   * @param options - Optional write options.
+   * @param options.force - Create the entry even if it does not already exist.
    */
-  private async setCacheEntry(resource: WithId<Resource>): Promise<void> {
+  private async setCacheEntry(resource: WithId<Resource>, options?: { force?: boolean }): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.inOwnTransaction()) {
       const cachedResource = deepClone(resource);
       await this.postCommit(() => {
-        return this.setCacheEntry(cachedResource);
+        return this.setCacheEntry(cachedResource, options);
       });
       return;
     }
 
     this.recordCacheAccess('write', resource.resourceType, 'repo.setCacheEntry');
-    await setResourceCacheEntry(resource);
+    await setResourceCacheEntry(resource, options);
   }
 
   /**
@@ -2745,31 +2670,40 @@ export class Repository extends FhirRepository implements Disposable {
   }
 }
 
-export class SystemRepository extends Repository {}
+declare const superAdminRepository: unique symbol;
+export type SuperAdminRepository = Repository & {
+  readonly [superAdminRepository]: true;
+};
+
+declare const systemRepository: unique symbol;
+export type SystemRepository = SuperAdminRepository & {
+  readonly [systemRepository]: true;
+};
 
 type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJobs'>;
 
 /**
  * Creates a SystemRepository for the specified shard.
- * @param shardId - The shard ID.
+ * @param routing - Shard routing information.
  * @param connections - Optional connection set to share, for transaction support.
  * @param transaction - Optional transaction binding to inherit from the sharing repository.
  * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository instance.
  */
 function createSystemRepository(
-  shardId: string,
+  routing: ShardRouting,
   connections?: RepositoryConnections,
   transaction?: TransactionBinding,
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
-  return new SystemRepository(
+  const repo = new Repository(
     {
       ...contextDefaults,
-      shardId,
+      routing,
       superAdmin: true,
       strictMode: true,
       extendedMode: true,
+      accessPolicy: undefined,
       author: {
         reference: 'system',
       },
@@ -2778,6 +2712,26 @@ function createSystemRepository(
     connections,
     transaction
   );
+
+  return asSystemRepository(repo);
+}
+
+function asSystemRepository(repo: Repository): SystemRepository {
+  if (!repo.isSuperAdmin()) {
+    throw new Error('System repository is not a super admin');
+  }
+  const context = repo.getConfig();
+  if (context.author.reference !== 'system') {
+    throw new Error('Repository author is not the system');
+  }
+  if (context.accessPolicy) {
+    throw new Error('System repository cannot have access policy');
+  }
+  if (context.projects) {
+    throw new Error('System repository cannot have projects');
+  }
+
+  return repo as SystemRepository;
 }
 
 /*
@@ -2802,15 +2756,10 @@ mostly intended for system-level, super-admin triggered operations against a par
  * - Looking up Users, Logins, ClientApplications
  * - Cross-project operations by super admins
  *
- * @param connection - Optional repository connection to use in new Repository.
- * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository for the global shard.
  */
-export function getGlobalSystemRepo(
-  connection?: RepositoryConnection,
-  contextDefaults?: SystemRepositoryContextDefaults
-): SystemRepository {
-  return getShardSystemRepo(GLOBAL_SHARD_ID, connection, contextDefaults);
+export function getGlobalSystemRepo(): SystemRepository {
+  return createSystemRepository({ kind: 'global-only' });
 }
 
 /**
@@ -2829,7 +2778,7 @@ export function getShardSystemRepo(
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
   return createSystemRepository(
-    shardId,
+    { kind: 'project-shard', shardId },
     connection && new RepositoryConnections(connection),
     undefined,
     contextDefaults
@@ -2839,8 +2788,8 @@ export function getShardSystemRepo(
 /**
  * Returns a SystemRepository for the specified project's shard.
  *
- * Note: This is a passthrough to `getGlobalSystemRepo` to facilitate
- * future sharding support.
+ * Note: resolves to getShardSystemRepo(TODO_SHARD_ID) until realproject-shard
+ * routing is implemented.
  *
  * @param _projectId - The project's ID, reference, or resource.
  * @returns A SystemRepository for the project's shard.
@@ -2851,7 +2800,7 @@ export async function getProjectSystemRepo(
   // Eventually, this will resolve the project's shard and return
   // a SystemRepository for that shard.
   // But for now, all projects are on the global shard.
-  return getGlobalSystemRepo();
+  return getShardSystemRepo(TODO_SHARD_ID);
 }
 
 const patchOperationDefinition: OperationDefinition = {

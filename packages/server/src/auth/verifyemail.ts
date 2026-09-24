@@ -11,6 +11,12 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
+import {
+  consumeSecurityRequest,
+  getSecurityRequestExpiration,
+  isSecurityRequestExpired,
+  supersedePriorSecurityRequests,
+} from './securityrequest';
 
 export const verifyEmailValidator = makeValidationMiddleware([
   body('id').isUUID().withMessage('Invalid request ID'),
@@ -31,17 +37,26 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
     return;
   }
 
+  if (isSecurityRequestExpired(securityRequest)) {
+    sendOutcome(res, badRequest('Expired'));
+    return;
+  }
+
   if (!timingSafeEqualStr(securityRequest.secret, req.body.secret)) {
     sendOutcome(res, badRequest('Incorrect secret'));
     return;
   }
 
-  const user = await systemRepo.readReference(securityRequest.user);
-
   await systemRepo.withTransaction(
     async (txRepo) => {
-      await txRepo.updateResource<User>({ ...user, emailVerified: true });
-      await txRepo.updateResource<UserSecurityRequest>({ ...securityRequest, used: true });
+      // Consume the request first, so that concurrent requests carrying the same token
+      // cannot both get through
+      await consumeSecurityRequest(txRepo, securityRequest);
+      // Patch so that only this field is written: the User is read inside the transaction,
+      // so a concurrent change elsewhere on the resource is not reverted by a stale copy.
+      await txRepo.patchResource<User>('User', resolveId(securityRequest.user) as string, [
+        { op: 'add', path: '/emailVerified', value: true },
+      ]);
     },
     { resourceTypes: ['User', 'UserSecurityRequest'], source: 'verifyEmailHandler' }
   );
@@ -64,9 +79,12 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
  */
 export async function verifyEmail(
   systemRepo: SystemRepository,
-  user: User,
+  user: WithId<User>,
   redirectUri?: string
 ): Promise<WithId<UserSecurityRequest>> {
+  // Invalidate any prior verification requests, so that only the newest link works
+  await supersedePriorSecurityRequests(systemRepo, user, 'verify-email');
+
   // Create the email verification request
   return systemRepo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',
@@ -74,6 +92,7 @@ export async function verifyEmail(
     type: 'verify-email',
     user: createReference(user),
     secret: generateSecret(16),
+    expiresAt: getSecurityRequestExpiration('verify-email'),
     redirectUri,
   });
 }

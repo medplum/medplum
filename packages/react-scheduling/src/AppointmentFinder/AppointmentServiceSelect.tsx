@@ -5,7 +5,7 @@ import { formatCodeableConcept, getDisplayString, getReferenceString, hasSchedul
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { AsyncAutocomplete } from '@medplum/react';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
@@ -18,7 +18,11 @@ const SERVICE_PAGE_SIZE = 25;
  * it makes each response its own first page by name, and the true first page is
  * contained in the union of the two.
  */
-const SERVICE_SEARCH_CRITERIA = { _count: String(SERVICE_PAGE_SIZE), _sort: 'name' };
+const SERVICE_SEARCH_CRITERIA = {
+  'active:not': 'false',
+  _count: String(SERVICE_PAGE_SIZE),
+  _sort: 'name',
+};
 
 export interface AppointmentServiceSelectProps {
   readonly defaultValue?: WithId<HealthcareService>;
@@ -26,6 +30,8 @@ export interface AppointmentServiceSelectProps {
   /** A chosen site, which narrows the services on offer to the ones held there. */
   readonly location?: WithId<Location> | Reference<Location>;
   readonly label?: string;
+  readonly placeholder?: string;
+  readonly required?: boolean;
   readonly error?: string;
   readonly disabled?: boolean;
 }
@@ -44,11 +50,19 @@ export interface AppointmentServiceSelectProps {
  * @returns The service field.
  */
 export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): JSX.Element {
-  const { location, defaultValue, onChange, label = 'Visit type', error, disabled } = props;
+  const {
+    location,
+    defaultValue,
+    onChange,
+    label = 'Visit type',
+    placeholder = 'Search visit types',
+    required,
+    error,
+    disabled,
+  } = props;
   const medplum = useMedplum();
 
   const locationReference = location && getReferenceString(location);
-  const locationResource = useResource(location);
 
   const loadOptions = useCallback(
     async (input: string, signal: AbortSignal): Promise<WithId<HealthcareService>[]> => {
@@ -83,13 +97,8 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
     <AsyncAutocomplete<WithId<HealthcareService>>
       name="service"
       label={label}
-      placeholder="Search visit types"
-      description={
-        locationResource
-          ? `Showing visit types offered at ${getDisplayString(locationResource)}, plus those not tied to a site.`
-          : undefined
-      }
-      required
+      placeholder={placeholder}
+      required={required}
       maxValues={1}
       error={error}
       disabled={disabled}

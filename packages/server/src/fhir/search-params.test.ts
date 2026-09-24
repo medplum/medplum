@@ -1,13 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, getReferenceString, Operator } from '@medplum/core';
-import type { Appointment, DiagnosticReport, Flag, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  DiagnosticReport,
+  Flag,
+  Login,
+  Organization,
+  Patient,
+  Practitioner,
+  PractitionerRole,
+  Slot,
+  User,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { createTestProject, withTestContext } from '../test.setup';
-import { Repository } from './repo';
+import type { Repository } from './repo';
+import { getGlobalSystemRepo } from './repo';
 
 describe('Medplum Custom Search Parameters', () => {
   let config: MedplumServerConfig;
@@ -19,12 +31,7 @@ describe('Medplum Custom Search Parameters', () => {
   });
 
   beforeEach(async () => {
-    const { project } = await createTestProject();
-    repo = new Repository({
-      strictMode: true,
-      projects: [project],
-      author: { reference: 'User/' + randomUUID() },
-    });
+    ({ repo } = await createTestProject({ withRepo: true }));
   });
 
   afterAll(async () => {
@@ -369,5 +376,84 @@ describe('Medplum Custom Search Parameters', () => {
 
       expect(result.entry).toHaveLength(1);
       expect(result.entry?.[0]?.resource).toMatchObject(practitioner1);
+    }));
+
+  test('Search for PractitionerRole by network', () =>
+    withTestContext(async () => {
+      const network1 = await repo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: 'Network One',
+      });
+      const network2 = await repo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: 'Network Two',
+      });
+
+      const role1 = await repo.createResource<PractitionerRole>({
+        resourceType: 'PractitionerRole',
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/network-reference',
+            valueReference: createReference(network1),
+          },
+        ],
+      });
+
+      const role2 = await repo.createResource<PractitionerRole>({
+        resourceType: 'PractitionerRole',
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/network-reference',
+            valueReference: createReference(network2),
+          },
+        ],
+      });
+      expect(role2).toBeDefined();
+
+      const result = await repo.search({
+        resourceType: 'PractitionerRole',
+        filters: [{ code: 'network', operator: Operator.EQUALS, value: getReferenceString(network1) }],
+      });
+
+      expect(result.entry).toHaveLength(1);
+      expect(result.entry?.[0]?.resource).toMatchObject(role1);
+    }));
+
+  test('Search for Login by project', () =>
+    withTestContext(async () => {
+      const systemRepo = getGlobalSystemRepo();
+      const { project: project1 } = await createTestProject();
+      const { project: project2 } = await createTestProject();
+      const user = await systemRepo.createResource<User>({
+        resourceType: 'User',
+        firstName: 'Test',
+        lastName: 'User',
+        email: randomUUID() + '@example.com',
+      });
+
+      const login1 = await systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+        user: createReference(user),
+        project: createReference(project1),
+      });
+
+      const login2 = await systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+        user: createReference(user),
+        project: createReference(project2),
+      });
+      expect(login2).toBeDefined();
+
+      const result = await systemRepo.search<Login>({
+        resourceType: 'Login',
+        filters: [{ code: 'project', operator: Operator.EQUALS, value: getReferenceString(project1) }],
+      });
+
+      expect(result.entry).toHaveLength(1);
+      expect(result.entry?.[0]?.resource?.id).toBe(login1.id);
     }));
 });

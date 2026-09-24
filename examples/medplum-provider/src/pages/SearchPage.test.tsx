@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Communication, Patient, Task, UserConfiguration } from '@medplum/fhirtypes';
+import type { Communication, Observation, Task, UserConfiguration } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -35,6 +35,7 @@ describe('SearchPage', () => {
             <MantineProvider>
               <Notifications />
               <Routes>
+                <Route path="/" element={<SearchPage />} />
                 <Route path="/:resourceType" element={<SearchPage />} />
                 <Route path="/:resourceType/new" element={<div>New Resource</div>} />
                 <Route path="/Patient/:patientId/:resourceType/:id" element={<div>Patient Resource</div>} />
@@ -64,8 +65,9 @@ describe('SearchPage', () => {
 
   test('Uses default resource type from localStorage', async () => {
     localStorage.setItem('defaultResourceType', 'Practitioner');
-    await setup('/Practitioner');
+    await setup('/');
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+    expect(localStorage.getItem('Practitioner-defaultSearch')).toBeTruthy();
   });
 
   test('Uses default resource type from UserConfiguration', async () => {
@@ -73,8 +75,15 @@ describe('SearchPage', () => {
       resourceType: 'UserConfiguration',
       option: [{ id: 'defaultResourceType', valueString: 'ServiceRequest' }],
     };
-    await setup('/ServiceRequest', medplum, userConfig);
+    await setup('/', medplum, userConfig);
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+    expect(localStorage.getItem('ServiceRequest-defaultSearch')).toBeTruthy();
+  });
+
+  test('Defaults to Task when no default resource type', async () => {
+    await setup('/');
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+    expect(localStorage.getItem('Task-defaultSearch')).toBeTruthy();
   });
 
   test('Saves and retrieves last search from localStorage', async () => {
@@ -100,13 +109,18 @@ describe('SearchPage', () => {
       resourceType: 'Task',
       filters: [{ code: 'status', operator: 'eq', value: 'in-progress' }],
     };
+    localStorage.setItem('defaultResourceType', 'Task');
     localStorage.setItem('Task-defaultSearch', JSON.stringify(previousSearch));
 
-    await setup('/Task');
+    // Filters from the last search are only applied when the URL has no resource type
+    await setup('/');
 
     await waitFor(() => {
       expect(screen.getByTestId('search-control')).toBeInTheDocument();
     });
+
+    const savedSearch = JSON.parse(localStorage.getItem('Task-defaultSearch') as string);
+    expect(savedSearch.filters).toEqual([{ code: 'status', operator: 'eq', value: 'in-progress' }]);
   });
 
   test('Retrieves sort rules from last search', async () => {
@@ -138,28 +152,22 @@ describe('SearchPage', () => {
   });
 
   test('Navigates to resource with patient reference on click', async () => {
-    // Create a task with a patient reference
-    const patient: Patient = {
-      resourceType: 'Patient',
-      id: 'patient-123',
-      name: [{ family: 'Test', given: ['Patient'] }],
+    const communication: Communication = {
+      resourceType: 'Communication',
+      id: 'comm-123',
+      status: 'completed',
+      sender: { reference: 'Patient/patient-456' },
     };
-    await medplum.createResource(patient);
+    await medplum.createResource(communication);
 
-    const task: Task = {
-      resourceType: 'Task',
-      id: 'task-456',
-      status: 'in-progress',
-      intent: 'order',
-      for: { reference: 'Patient/patient-123', display: 'Test Patient' },
-    };
-    await medplum.createResource(task);
+    await setup('/Communication');
+    await screen.findByTestId('search-control');
 
-    await setup('/Task');
-
-    await waitFor(() => {
-      expect(screen.getByTestId('search-control')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getAllByTestId('search-control-row')[0]);
     });
+
+    expect(await screen.findByText('Patient Resource')).toBeInTheDocument();
   });
 
   test('Navigates to resource without patient reference on click', async () => {
@@ -172,40 +180,52 @@ describe('SearchPage', () => {
     await medplum.createResource(task);
 
     await setup('/Task');
+    await screen.findByTestId('search-control');
 
-    await waitFor(() => {
-      expect(screen.getByTestId('search-control')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getAllByTestId('search-control-row')[0]);
     });
+
+    expect(await screen.findByText('Resource Detail')).toBeInTheDocument();
   });
 
   test('Handles resource with subject reference to Patient', async () => {
-    const task: Task = {
-      resourceType: 'Task',
-      id: 'task-subject',
-      status: 'in-progress',
-      intent: 'order',
+    const observation: Observation = {
+      resourceType: 'Observation',
+      id: 'obs-subject',
+      status: 'final',
+      code: { text: 'test' },
+      subject: { reference: 'Patient/patient-123' },
     };
-    await medplum.createResource(task);
+    await medplum.createResource(observation);
 
-    await setup('/Task');
-    await waitFor(() => {
-      expect(screen.getByTestId('search-control')).toBeInTheDocument();
+    await setup('/Observation');
+    await screen.findByTestId('search-control');
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByTestId('search-control-row')[0]);
     });
+
+    expect(await screen.findByText('Patient Resource')).toBeInTheDocument();
   });
 
-  test('Handles Communication with sender reference to Patient', async () => {
+  test('Handles Communication with non-patient sender reference', async () => {
     const communication: Communication = {
       resourceType: 'Communication',
-      id: 'comm-123',
+      id: 'comm-456',
       status: 'completed',
-      sender: { reference: 'Patient/patient-456' },
+      sender: { reference: 'Practitioner/practitioner-123' },
     };
     await medplum.createResource(communication);
 
     await setup('/Communication');
-    await waitFor(() => {
-      expect(screen.getByTestId('search-control')).toBeInTheDocument();
+    await screen.findByTestId('search-control');
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByTestId('search-control-row')[0]);
     });
+
+    expect(await screen.findByText('Resource Detail')).toBeInTheDocument();
   });
 
   test('New button navigates to new resource page', async () => {
@@ -221,19 +241,6 @@ describe('SearchPage', () => {
     });
   });
 
-  test('Handles resource click navigation', async () => {
-    window.open = vi.fn();
-
-    await setup('/Task');
-    await waitFor(() => {
-      expect(screen.getByTestId('search-control')).toBeInTheDocument();
-    });
-
-    // Verify SearchControl is rendered and functional
-    const searchControl = screen.getByTestId('search-control');
-    expect(searchControl).toBeInTheDocument();
-  });
-
   test('SearchControl supports checkbox selection', async () => {
     await setup('/Task');
     const searchControl = await screen.findByTestId('search-control');
@@ -241,19 +248,20 @@ describe('SearchPage', () => {
   });
 
   test('Handles onChange for search definition updates', async () => {
-    await setup('/Task');
+    await medplum.createResource<Task>({ resourceType: 'Task', status: 'draft', intent: 'order' });
+    await medplum.createResource<Task>({ resourceType: 'Task', status: 'draft', intent: 'order' });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('search-control')).toBeInTheDocument();
+    await setup('/Task?_count=1');
+    expect(await screen.findByLabelText('Next page')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Next page'));
     });
 
-    // Test pagination which triggers onChange
-    const nextPageButton = screen.queryByLabelText('Next page');
-    if (nextPageButton) {
-      await act(async () => {
-        fireEvent.click(nextPageButton);
-      });
-    }
+    await waitFor(() => {
+      const savedSearch = JSON.parse(localStorage.getItem('Task-defaultSearch') as string);
+      expect(savedSearch.offset).toBe(1);
+    });
   });
 
   test('Renders with default fields when not specified', async () => {
@@ -279,17 +287,47 @@ describe('SearchPage', () => {
     );
   });
 
+  test('Navigates away on invalid resource type', async () => {
+    // Simulate the server responding without a schema for the unknown type
+    vi.spyOn(medplum, 'requestSchema').mockResolvedValue(undefined);
+
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <MemoryRouter initialEntries={['/NotAResourceType']} initialIndex={0}>
+            <MantineProvider>
+              <Notifications />
+              <Routes>
+                <Route path="/" element={<div>Home</div>} />
+                <Route path="/:resourceType" element={<SearchPage />} />
+              </Routes>
+            </MantineProvider>
+          </MemoryRouter>
+        </MedplumProvider>
+      );
+    });
+
+    expect(await screen.findByText('Home')).toBeInTheDocument();
+  });
+
   test('Handles auxClick to open resource in new tab', async () => {
     window.open = vi.fn();
 
-    await setup('/Task');
+    const task: Task = {
+      resourceType: 'Task',
+      id: 'task-aux',
+      status: 'draft',
+      intent: 'order',
+    };
+    await medplum.createResource(task);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('search-control')).toBeInTheDocument();
+    await setup('/Task');
+    await screen.findByTestId('search-control');
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByTestId('search-control-row')[0], { ctrlKey: true });
     });
 
-    // The onAuxClick handler should be available on resource rows
-    const searchControl = screen.getByTestId('search-control');
-    expect(searchControl).toBeInTheDocument();
+    expect(window.open).toHaveBeenCalledWith(expect.stringContaining('/Task/'), '_blank');
   });
 });

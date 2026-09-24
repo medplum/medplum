@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, Operator, resolveId } from '@medplum/core';
+import { badRequest, createReference, Operator, resolveId } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -199,7 +199,7 @@ describe('New patient', () => {
       systemRepo.patchResource('Project', projectId, [{ op: 'remove', path: '/defaultPatientAccessPolicy' }])
     );
 
-    // Register a new user in the project
+    // Registration should be rejected up front without a default policy
     const res4 = await request(app)
       .post('/auth/newuser')
       .type('json')
@@ -213,13 +213,7 @@ describe('New patient', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
-    expect(res4).toHaveStatus(200);
-
-    // Patient registration should fail without a default policy
-    const res5 = await request(app).post('/auth/newpatient').type('json').send({
-      login: res4.body.login,
-      projectId,
-    });
-    expect(res5).toHaveStatus(400);
+    expect(res4).toHaveStatus(400);
+    expect(res4.body).toMatchObject(badRequest('Project does not allow open registration'));
   });
 });

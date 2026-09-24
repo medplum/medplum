@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { platform } from 'node:os';
 import { resolve } from 'node:path';
 import { buildManifest } from './upgrader-test-utils';
-import { downloadRelease, getReleaseBinPath, parseDownloadUrl } from './upgrader-utils';
+import { downloadRelease, getReleaseBinPath, getUpgraderLogPath, parseDownloadUrl } from './upgrader-utils';
 
 const ALL_PLATFORMS_LIST = ['win32', 'linux', 'darwin'];
 const VALID_PLATFORMS_LIST = ['win32', 'linux'];
@@ -257,4 +257,18 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
       fetchSpy.mockRestore();
     });
   });
+});
+
+test('getUpgraderLogPath -- timestamped per call, not per process', () => {
+  vi.useFakeTimers();
+  try {
+    vi.setSystemTime(new Date('2026-08-27T00:00:25.946Z'));
+    expect(getUpgraderLogPath()).toStrictEqual(resolve(__dirname, 'upgrader-logs-2026-08-27T00-00-25.946Z.txt'));
+
+    // A second upgrade from the same long-lived agent must land in its own file
+    vi.setSystemTime(new Date('2026-08-30T07:19:34.120Z'));
+    expect(getUpgraderLogPath()).toStrictEqual(resolve(__dirname, 'upgrader-logs-2026-08-30T07-19-34.120Z.txt'));
+  } finally {
+    vi.useRealTimers();
+  }
 });

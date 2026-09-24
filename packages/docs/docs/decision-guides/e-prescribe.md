@@ -1,7 +1,7 @@
 ---
 title: E-Prescribe Decision Guide
 sidebar_label: E-Prescribe
-sidebar_position: 7
+sidebar_position: 4
 download_slug: e-prescribe
 ---
 

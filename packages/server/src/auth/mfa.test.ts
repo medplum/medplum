@@ -14,6 +14,7 @@ import { authenticator } from 'otplib';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { MFA_LOGIN_EXPIRATION_MS, MFA_USER_ATTEMPT_LIMIT } from '../constants';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { rotateLoginRefreshSecret } from '../oauth/token';
 import { withTestContext } from '../test.setup';
@@ -111,6 +112,22 @@ async function enrollEmailMfa(accessToken: string): Promise<void> {
   if (res.status !== 200) {
     throw new Error('Failed to enroll in email MFA: ' + JSON.stringify(res.body));
   }
+}
+
+/**
+ * Enrolls the authenticated user in TOTP MFA.
+ * @param accessToken - The user's access token.
+ * @returns The TOTP secret.
+ */
+async function enrollTotpMfa(accessToken: string): Promise<string> {
+  const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+  const secret = new URL(status.body.enrollUri).searchParams.get('secret') as string;
+  await request(app)
+    .post('/auth/mfa/enroll')
+    .set('Authorization', `Bearer ${accessToken}`)
+    .send({ token: authenticator.generate(secret) })
+    .expect(200);
+  return secret;
 }
 
 describe('MFA', () => {
@@ -260,6 +277,80 @@ describe('MFA', () => {
     expect(res13).toHaveStatus(200);
     expect(res13.body.login).toBeDefined();
     expect(res13.body.code).toBeDefined();
+  });
+
+  test('Rejects an expired MFA login', async () => {
+    const email = `expired-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const { accessToken } = await withTestContext(() =>
+      registerNew({ firstName: 'Expired', lastName: 'MFA', projectName: `Expired ${randomUUID()}`, email, password })
+    );
+    const secret = await enrollTotpMfa(accessToken);
+
+    const loginRes = await request(app).post('/auth/login').send({ email, password, scope: 'openid' });
+    await withTestContext(async () => {
+      const systemRepo = getGlobalSystemRepo();
+      const login = await systemRepo.readResource<Login>('Login', loginRes.body.login);
+      await systemRepo.updateResource<Login>({
+        ...login,
+        authTime: new Date(Date.now() - MFA_LOGIN_EXPIRATION_MS).toISOString(),
+      });
+    });
+
+    const verifyRes = await request(app)
+      .post('/auth/mfa/verify')
+      .send({ login: loginRes.body.login, token: authenticator.generate(secret) });
+    expect(verifyRes).toHaveStatus(400);
+    expect(verifyRes.body).toMatchObject(badRequest('Login expired'));
+  });
+
+  test('Revokes a login after five failed MFA attempts', async () => {
+    const email = `limited-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const { accessToken } = await withTestContext(() =>
+      registerNew({ firstName: 'Limited', lastName: 'MFA', projectName: `Limited ${randomUUID()}`, email, password })
+    );
+    await enrollTotpMfa(accessToken);
+    const loginRes = await request(app).post('/auth/login').send({ email, password, scope: 'openid' });
+
+    for (let i = 0; i < 5; i++) {
+      const res = await request(app)
+        .post('/auth/mfa/verify')
+        .send({ login: loginRes.body.login, token: 'INVALID_TOKEN' });
+      expect(res).toHaveStatus(400);
+    }
+
+    const login = await getGlobalSystemRepo().readResource<Login>('Login', loginRes.body.login);
+    expect(login.revoked).toBe(true);
+  });
+
+  test("Limits MFA failures across a user's logins", async () => {
+    const email = `user-limited-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'User Limited',
+        lastName: 'MFA',
+        projectName: `User Limited ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+    await enrollTotpMfa(accessToken);
+
+    for (let i = 0; i < MFA_USER_ATTEMPT_LIMIT; i++) {
+      const loginRes = await request(app).post('/auth/login').send({ email, password, scope: 'openid' });
+      const res = await request(app)
+        .post('/auth/mfa/verify')
+        .send({ login: loginRes.body.login, token: 'INVALID_TOKEN' });
+      expect(res).toHaveStatus(400);
+    }
+
+    const loginRes = await request(app).post('/auth/login').send({ email, password, scope: 'openid' });
+    const blocked = await request(app)
+      .post('/auth/mfa/verify')
+      .send({ login: loginRes.body.login, token: 'INVALID_TOKEN' });
+    expect(blocked).toHaveStatus(429);
   });
 
   test('Disable end-to-end', async () => {

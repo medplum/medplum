@@ -73,12 +73,7 @@ export const DrAliceSmithPreviousVersion: WithId<Practitioner> = {
 export const DrAliceSmithSchedule: WithId<Schedule> = {
   resourceType: 'Schedule',
   id: 'alice-smith-schedule',
-  actor: [
-    {
-      reference: `Practitioner/${MOCK_ALICE_PRACTITIONER_ID}`,
-      display: 'Dr. Alice Smith',
-    },
-  ],
+  actor: [createReference(DrAliceSmith)],
 };
 
 export const makeDrAliceSmithSlots = lazy((): WithId<Slot>[] => {

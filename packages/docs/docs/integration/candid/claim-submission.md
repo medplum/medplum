@@ -57,6 +57,7 @@ flowchart TD
 | `patient` | Reference to the Patient | Yes |
 | `provider` | Reference to the billing provider: an Organization for organization billing (the common case), or a Practitioner for individual billing | Yes |
 | `careTeam` | Care team member with role `primary` (system: `http://terminology.hl7.org/CodeSystem/claimcareteamrole`) referencing the rendering Practitioner | Yes* |
+| `careTeam` | Optional: care team member with role `referral` referencing the referring Practitioner. Required by some payers (e.g. Medicare MNT). The Practitioner can be a contained resource with just a name and NPI — no stored resource needed for external referrers. | No |
 | `billablePeriod.start` | Preferred date of service when service lines carry no individual `servicedDate` | No |
 | `created` | Fallback date of service when `billablePeriod.start` is also absent | No |
 | `insurance[0].coverage` | Reference to the Coverage resource | Yes |
@@ -71,7 +72,7 @@ Each `Claim.item` (service line) requires:
 |-------|-------------|----------|
 | `productOrService` | CPT code (system: `http://www.ama-assn.org/go/cpt`) | Yes |
 | `servicedDate` | Date of service for this line. Falls back to `Claim.billablePeriod.start`, then `Claim.created` | No |
-| `unitPrice` | Charge amount in USD | Yes |
+| `unitPrice` | Charge amount in USD. Optional if a chargemaster entry exists in Candid for the CPT code — Candid will use the chargemaster amount and ignore this value if present. | No |
 | `quantity` | Number of units | Yes |
 | `locationCodeableConcept` | Place of service code (system: `https://www.cms.gov/Medicare/Coding/place-of-service-codes`). If omitted, the encounter defaults to `11` (Office). | No |
 | `encounter` | Reference to the Encounter resource | Yes |
@@ -120,6 +121,8 @@ The bot resolves the payer in Candid's directory using these identifiers in prio
 | 3 | CHC payer ID | `https://www.joincandidhealth.com/chc-payerid` | Name search filtered by ID |
 
 At least one identifier is required. `name` is also required (used in the name search for options 2 and 3). The bot hard-fails if no match is found in Candid's directory.
+
+Use the [Payer Directory](/docs/integration/candid/payer-directory) to look up payers and save them as Organizations with the Candid payer UUID already populated.
 
 ### Coverage (Insured)
 
@@ -395,5 +398,7 @@ Once the operation is invoked, the bot runs the following steps:
 
 ## Related Resources
 
+- [Payer Directory](/docs/integration/candid/payer-directory)
+- [Eligibility Check](/docs/integration/candid/eligibility-check)
 - [Candid Health API Documentation](https://docs.joincandidhealth.com/introduction/overview)
 - [Billing Documentation](/docs/billing)

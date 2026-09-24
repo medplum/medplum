@@ -43,6 +43,29 @@ describe('ComponentPreview', () => {
     await waitFor(() => expect(screen.getByRole('tabpanel')).toHaveTextContent('Arrow preview'));
   });
 
+  test('Resolves Tooltip inside a chart to the Recharts tooltip', async () => {
+    const chartCode = `function Chart() {
+  const data = [{ x: 1, y: 2 }, { x: 2, y: 3 }];
+  return (
+    <Card>
+      <Text>Mini chart</Text>
+      <LineChart width={400} height={200} data={data}>
+        <XAxis dataKey="x" />
+        <YAxis />
+        <Tooltip />
+        <Line dataKey="y" isAnimationActive={false} />
+      </LineChart>
+    </Card>
+  );
+}
+`;
+    setup(<ComponentPreview code={chartCode} />);
+
+    await waitFor(() => expect(screen.getByRole('tabpanel')).toHaveTextContent('Mini chart'));
+    expect(screen.getByRole('tabpanel')).not.toHaveTextContent('Tooltip component children');
+    expect(screen.queryByText('Component failed to render')).not.toBeInTheDocument();
+  });
+
   test('Shows the untransformed source on the Code tab', async () => {
     setup(<ComponentPreview code={simpleCode} />);
 

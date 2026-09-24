@@ -8,7 +8,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { ActiveSubscriptionEntry } from '../../pubsub';
 import { getActiveSubsKey } from '../../pubsub';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
-import { initTestAuth } from '../../test.setup';
+import { getSuperAdminAccessToken, initTestAuth } from '../../test.setup';
 
 describe('$clear-all-ws-subs', () => {
   const app = express();
@@ -35,7 +35,7 @@ describe('$clear-all-ws-subs', () => {
   });
 
   test('Rejects invalid projectId', async () => {
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    const accessToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post('/fhir/R4/$clear-all-ws-subs')
@@ -88,7 +88,7 @@ describe('$clear-all-ws-subs', () => {
     expect(await cacheRedis.exists(`Subscription/${sub2Id}`)).toBe(1);
     expect(await pubSubRedis.scard(userKey)).toBe(2);
 
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    const accessToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post('/fhir/R4/$clear-all-ws-subs')
@@ -155,7 +155,7 @@ describe('$clear-all-ws-subs', () => {
     await pubSubRedis.sadd(userKey, `Subscription/${sub1Id}`, `Subscription/${sub2Id}`);
 
     try {
-      const accessToken = await initTestAuth({ project: { superAdmin: true } });
+      const accessToken = await getSuperAdminAccessToken();
 
       const res = await request(app)
         .post('/fhir/R4/$clear-all-ws-subs')

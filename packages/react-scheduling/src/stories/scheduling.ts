@@ -1,24 +1,46 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
-import { HL7_V2_0203, SchedulingParametersURI, ServiceTypeReferenceURI, SNOMED } from '@medplum/core';
+import type { SchedulingRequirement, WithId } from '@medplum/core';
+import {
+  clearHealthcareServiceSchedulingParameter,
+  CPT,
+  createReference,
+  deepClone,
+  getReferenceString,
+  HL7_V2_0203,
+  REQUIRES_DIAGNOSIS_CODE,
+  SCHEDULING_ELIGIBILITY_SYSTEM,
+  SCHEDULING_REQUIREMENT_CODES,
+  SchedulingParametersURI,
+  ServiceTypeReferenceURI,
+  setScheduleSchedulingParameter,
+  SNOMED,
+  TimezoneExtensionURI,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type {
   Appointment,
   AppointmentParticipant,
   Bundle,
   CodeableConcept,
+  Coding,
   Device,
+  Extension,
   HealthcareService,
   Identifier,
   Location,
   Patient,
   Practitioner,
   PractitionerRole,
+  Reference,
+  Resource,
   Schedule,
+  Slot,
 } from '@medplum/fhirtypes';
+import { getBrowserTimezone } from '../AppointmentFinder/AppointmentFinder.times';
 
 /** Who an appointment can be held on, as FHIR allows. */
-type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
+export type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
 
 /**
  * Fixtures for the scheduling components: one imaging service bookable against
@@ -109,6 +131,13 @@ export interface SchedulableServiceOptions {
   readonly alignmentMinutes: number;
   /** The sites holding it, omitted entirely by a visit type held nowhere in particular. */
   readonly locationIds?: readonly string[];
+  /** What booking it is blocked on, recorded as eligibility codes. */
+  readonly requirements?: readonly SchedulingRequirement[];
+  readonly bufferBeforeMinutes?: number;
+  readonly bufferAfterMinutes?: number;
+  readonly alignmentOffsetMinutes?: number;
+  readonly slotCapacity?: number;
+  readonly active?: boolean;
 }
 
 /**
@@ -127,18 +156,59 @@ export function buildSchedulableService(options: SchedulableServiceOptions): Wit
       location: locationIds.map((locationId) => ({ reference: `Location/${locationId}` })),
     }),
     type: [{ coding: [{ system: APPOINTMENT_TYPE_SYSTEM, code: options.id }], text: options.category }],
+    ...(options.requirements?.length && {
+      eligibility: options.requirements.map((code) => ({
+        code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code }] },
+      })),
+    }),
+    ...(options.active !== undefined && { active: options.active }),
     extension: [
       {
         url: SchedulingParametersURI,
         extension: [
           { url: 'duration', valueDuration: { value: options.durationMinutes, unit: 'min' } },
           { url: 'alignmentInterval', valueDuration: { value: options.alignmentMinutes, unit: 'min' } },
+          // Emitted only when asked for, so a fixture silent about a parameter builds a service that sets none.
+          ...(options.bufferBeforeMinutes !== undefined
+            ? [{ url: 'bufferBefore', valueDuration: { value: options.bufferBeforeMinutes, unit: 'min' } }]
+            : []),
+          ...(options.bufferAfterMinutes !== undefined
+            ? [{ url: 'bufferAfter', valueDuration: { value: options.bufferAfterMinutes, unit: 'min' } }]
+            : []),
+          ...(options.alignmentOffsetMinutes !== undefined
+            ? [{ url: 'alignmentOffset', valueDuration: { value: options.alignmentOffsetMinutes, unit: 'min' } }]
+            : []),
+          ...(options.slotCapacity !== undefined
+            ? [{ url: 'slotCapacity', valuePositiveInt: options.slotCapacity }]
+            : []),
           { url: 'timezone', valueCode: 'America/New_York' },
         ],
       },
     ],
   };
 }
+
+/** Every flat scheduling parameter except `timezone`, which belongs to each calendar or its actor. */
+export const FullyConfiguredService = clearHealthcareServiceSchedulingParameter(
+  buildSchedulableService({
+    id: 'fully-configured',
+    name: 'Established Patient Visit',
+    category: 'Office visit',
+    durationMinutes: 30,
+    alignmentMinutes: 30,
+    bufferBeforeMinutes: 5,
+    bufferAfterMinutes: 10,
+    alignmentOffsetMinutes: 0,
+    slotCapacity: 1,
+  }),
+  'timezone'
+);
+
+export const UnconfiguredService: WithId<HealthcareService> = {
+  resourceType: 'HealthcareService',
+  id: 'unconfigured',
+  name: 'Unconfigured Visit',
+};
 
 export const UltrasoundImagingService = buildSchedulableService({
   id: 'ultrasound-imaging',
@@ -175,13 +245,60 @@ export const DrRiveraPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'dr-rivera',
   name: [{ given: ['Maya'], family: 'Rivera', prefix: ['Dr.'] }],
+  // The zone a calendar is drawn in is read off its actor, so the provider carries it too.
+  extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
 };
 
 export const DrOkaforPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'dr-okafor',
   name: [{ given: ['Tunde'], family: 'Okafor', prefix: ['Dr.'] }],
+  // Central, matching the override on his Schedule: a second zone for the notice to name.
+  extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/Chicago' }],
 };
+
+/**
+ * The rest of the ultrasound bench, as {@link ImagingBenchFixtures}.
+ *
+ * Rivera and Okafor each carry something that needs explaining — a zone
+ * override, an appointment already on the books — which is why they are written
+ * out above. These carry nothing, and exist so a field has a pool deep enough to
+ * pick alternatives from: "either of these two, and any of those four" needs
+ * more names than a case study does.
+ *
+ * **Kept out of `SchedulingFixtures` on purpose.** Several tests read the whole
+ * list of providers the imaging service offers, and that list is their subject;
+ * a story wanting the bench opts in, the way it opts into the surgical team.
+ *
+ * Deliberately without a PractitionerRole. Nothing then records where they
+ * practice, and the site filter keeps a provider it cannot place — so they are
+ * offered at every location rather than only at the one a role happens to name.
+ */
+const IMAGING_BENCH = [
+  { id: 'dr-abara', given: 'Grace', family: 'Abara' },
+  { id: 'dr-haddad', given: 'Noor', family: 'Haddad' },
+  { id: 'dr-moreau', given: 'Lucas', family: 'Moreau' },
+  { id: 'dr-raman', given: 'Priya', family: 'Raman' },
+] as const;
+
+/**
+ * Names one of the bench as a schedule's actor names them.
+ * @param member - The entry to name.
+ * @returns The display name.
+ */
+function benchDisplay(member: (typeof IMAGING_BENCH)[number]): string {
+  return `Dr. ${member.given} ${member.family}`;
+}
+
+export const ImagingBenchPractitioners: WithId<Practitioner>[] = IMAGING_BENCH.map((member) => ({
+  resourceType: 'Practitioner',
+  id: member.id,
+  name: [{ given: [member.given], family: member.family, prefix: ['Dr.'] }],
+  // No timezone extension, deliberately. The workspace raises its notice off the
+  // zones the selected actors declare, so a bench that declared one would keep the
+  // notice up after Rivera and Okafor are deselected — and those two are the whole
+  // point of `FromADifferentTimezone`. Silent here, like the rooms and devices.
+}));
 
 export const Ultrasound1Device: WithId<Device> = {
   resourceType: 'Device',
@@ -202,6 +319,9 @@ interface ScheduledService {
 
 const IMAGING: ScheduledService = { id: 'ultrasound-imaging', name: 'Ultrasound Imaging' };
 const SURGERY: ScheduledService = { id: 'bariatric-surgery', name: 'Bariatric Surgery' };
+const INFUSION: ScheduledService = { id: 'infusion-therapy', name: 'Infusion Therapy' };
+const IRON_INFUSION: ScheduledService = { id: 'iron-infusion', name: 'Iron Infusion' };
+const TELEHEALTH: ScheduledService = { id: 'telehealth-consult', name: 'Telehealth Consult' };
 
 function buildSchedule(
   id: string,
@@ -224,8 +344,33 @@ function buildSchedule(
   };
 }
 
+/**
+ * Keys resources by the reference a proposed appointment names them by, which is
+ * the shape `groupAppointmentsByDay` and `getAppointmentActors` read them from.
+ *
+ * @param resources - The resources a caller has already read.
+ * @returns The resources, keyed by reference.
+ */
+export function indexByReference<T extends WithId<Resource>>(resources: readonly T[]): Map<string, T> {
+  return new Map(resources.map((resource) => [getReferenceString(resource), resource]));
+}
+
 export const DrRiveraSchedule = buildSchedule('schedule-dr-rivera', 'Practitioner/dr-rivera', 'Dr. Maya Rivera');
-export const DrOkaforSchedule = buildSchedule('schedule-dr-okafor', 'Practitioner/dr-okafor', 'Dr. Tunde Okafor');
+
+/*
+ * Dr. Okafor keeps this calendar in Central time, overriding the Eastern zone the service
+ * itself names. One calendar somewhere else is what the workspace's timezone notice is for,
+ * so without it the fixtures could only ever show the notice to a reader outside Eastern.
+ */
+export const DrOkaforSchedule = setScheduleSchedulingParameter(
+  buildSchedule('schedule-dr-okafor', 'Practitioner/dr-okafor', 'Dr. Tunde Okafor'),
+  UltrasoundImagingService,
+  { url: 'timezone', valueCode: 'America/Chicago' }
+);
+export const ImagingBenchSchedules: WithId<Schedule>[] = IMAGING_BENCH.map((member) =>
+  buildSchedule(`schedule-${member.id}`, `Practitioner/${member.id}`, benchDisplay(member))
+);
+
 export const Ultrasound1Schedule = buildSchedule(
   'schedule-ultrasound-1',
   'Device/ultrasound-1',
@@ -236,6 +381,8 @@ export const Ultrasound2Schedule = buildSchedule(
   'Device/ultrasound-2',
   'Ultrasound 2 (Main Campus)'
 );
+export const ImagingBenchFixtures = [...ImagingBenchPractitioners, ...ImagingBenchSchedules];
+
 export const ExamRoomASchedule = buildSchedule('schedule-exam-room-a', 'Location/exam-room-a', 'Exam Room A');
 export const ExamRoomBSchedule = buildSchedule('schedule-exam-room-b', 'Location/exam-room-b', 'Exam Room B');
 export const SatelliteRoomSchedule = buildSchedule(
@@ -254,6 +401,92 @@ export const SatelliteRoomSchedule = buildSchedule(
  * whether that human is eligible at all.
  */
 const PRACTITIONER_ROLE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/practitioner-role';
+
+/** A project's own curated code value sets, which is what the code fields bind to. */
+export const PROCEDURE_VALUE_SET = 'http://example.com/ValueSet/billable-procedures';
+export const DIAGNOSIS_VALUE_SET = 'http://example.com/ValueSet/billable-diagnoses';
+
+export const ProcedureCodes: Coding[] = [
+  {
+    system: CPT,
+    code: '96365',
+    display: 'Intravenous infusion, for therapy, prophylaxis, or diagnosis; initial, up to 1 hour',
+  },
+  {
+    system: CPT,
+    code: '96366',
+    display: 'Intravenous infusion, for therapy, prophylaxis, or diagnosis; each additional hour',
+  },
+  { system: CPT, code: '96360', display: 'Intravenous infusion, hydration; initial, 31 minutes to 1 hour' },
+  { system: CPT, code: '96361', display: 'Intravenous infusion, hydration; each additional hour' },
+  {
+    system: CPT,
+    code: '96372',
+    display: 'Therapeutic, prophylactic, or diagnostic injection; subcutaneous or intramuscular',
+  },
+  {
+    system: CPT,
+    code: '96374',
+    display: 'Therapeutic, prophylactic, or diagnostic injection; intravenous push, single or initial substance',
+  },
+  {
+    system: CPT,
+    code: '96375',
+    display: 'Therapeutic, prophylactic, or diagnostic injection; each additional sequential intravenous push',
+  },
+  {
+    system: CPT,
+    code: '96401',
+    display: 'Chemotherapy administration, subcutaneous or intramuscular; non-hormonal anti-neoplastic',
+  },
+  {
+    system: CPT,
+    code: '96413',
+    display: 'Chemotherapy administration, intravenous infusion technique; up to 1 hour, single or initial substance',
+  },
+  {
+    system: CPT,
+    code: '96415',
+    display: 'Chemotherapy administration, intravenous infusion technique; each additional hour',
+  },
+  {
+    system: CPT,
+    code: '96417',
+    display: 'Chemotherapy administration, intravenous infusion technique; each additional sequential infusion',
+  },
+  { system: CPT, code: '20605', display: 'Arthrocentesis, aspiration and/or injection, intermediate joint or bursa' },
+  { system: CPT, code: '20610', display: 'Arthrocentesis, aspiration and/or injection, major joint or bursa' },
+  { system: CPT, code: '11900', display: 'Injection, intralesional; up to and including 7 lesions' },
+  { system: CPT, code: '36415', display: 'Collection of venous blood by venipuncture' },
+];
+
+// ICD-10-CM rather than ICD-10, which is what a US practice bills under: what the field records is
+// whatever the value set said, so the two must be able to differ.
+const ICD10CM = 'http://hl7.org/fhir/sid/icd-10-cm';
+
+export const DiagnosisCodes: Coding[] = [
+  { system: ICD10CM, code: 'D63.1', display: 'Anemia in chronic kidney disease' },
+  { system: ICD10CM, code: 'E86.0', display: 'Dehydration' },
+  { system: ICD10CM, code: 'D50.9', display: 'Iron deficiency anemia, unspecified' },
+  { system: ICD10CM, code: 'D51.0', display: 'Vitamin B12 deficiency anemia due to intrinsic factor deficiency' },
+  { system: ICD10CM, code: 'Z51.11', display: 'Encounter for antineoplastic chemotherapy' },
+  { system: ICD10CM, code: 'N18.30', display: 'Chronic kidney disease, stage 3 unspecified' },
+  { system: ICD10CM, code: 'E11.9', display: 'Type 2 diabetes mellitus without complications' },
+  { system: ICD10CM, code: 'K50.90', display: "Crohn's disease, unspecified, without complications" },
+  { system: ICD10CM, code: 'K51.90', display: 'Ulcerative colitis, unspecified, without complications' },
+  { system: ICD10CM, code: 'M06.9', display: 'Rheumatoid arthritis, unspecified' },
+  { system: ICD10CM, code: 'M17.11', display: 'Unilateral primary osteoarthritis, right knee' },
+  { system: ICD10CM, code: 'G35', display: 'Multiple sclerosis' },
+  { system: ICD10CM, code: 'L40.0', display: 'Psoriasis vulgaris' },
+  { system: ICD10CM, code: 'J45.909', display: 'Unspecified asthma, uncomplicated' },
+  { system: ICD10CM, code: 'D69.6', display: 'Thrombocytopenia, unspecified' },
+];
+
+/** Both value sets, for a test or story standing up a project that imported them. */
+export const AuthorizationValueSets: Record<string, Coding[]> = {
+  [PROCEDURE_VALUE_SET]: ProcedureCodes,
+  [DIAGNOSIS_VALUE_SET]: DiagnosisCodes,
+};
 
 export const SurgeryService = buildSchedulableService({
   id: 'bariatric-surgery',
@@ -315,6 +548,61 @@ export const DrChenSchedule = buildSchedule('schedule-dr-chen', 'Practitioner/dr
 export const DrKimSchedule = buildSchedule('schedule-dr-kim', 'Practitioner/dr-kim', 'Dr. James Kim', SURGERY);
 export const OperatingRoom3Schedule = buildSchedule('schedule-or-3', 'Location/or-3', 'Operating Room 3', SURGERY);
 
+/**
+ * A visit type the practice designated as needing prior authorization, which is what makes the
+ * booking form ask for codes. Requires all three, since a practice billing for an injection needs
+ * each.
+ */
+export const InfusionService = buildSchedulableService({
+  id: 'infusion-therapy',
+  name: 'Infusion Therapy',
+  category: 'Treatment',
+  durationMinutes: 60,
+  alignmentMinutes: 30,
+  locationIds: ['main-clinic'],
+  requirements: SCHEDULING_REQUIREMENT_CODES,
+});
+
+/**
+ * A visit type asking for a diagnosis code and nothing else.
+ *
+ * A separate visit type rather than a variant of {@link InfusionService}, so that the two are told
+ * apart in the visit type field: one visit type cannot require different things in different
+ * stories. Iron is the one drug this practice infuses, so the procedure is settled by the visit
+ * type and only the diagnosis is still open at booking.
+ */
+export const IronInfusionService = buildSchedulableService({
+  id: 'iron-infusion',
+  name: 'Iron Infusion',
+  category: 'Treatment',
+  durationMinutes: 60,
+  alignmentMinutes: 30,
+  locationIds: ['main-clinic'],
+  requirements: [REQUIRES_DIAGNOSIS_CODE],
+});
+
+export const DrChenInfusionSchedule = buildSchedule(
+  'schedule-dr-chen-infusion',
+  'Practitioner/dr-chen',
+  'Dr. Wei Chen',
+  INFUSION
+);
+
+export const DrChenIronInfusionSchedule = buildSchedule(
+  'schedule-dr-chen-iron-infusion',
+  'Practitioner/dr-chen',
+  'Dr. Wei Chen',
+  IRON_INFUSION
+);
+
+/** The designated visit types and somewhere to book them, on top of {@link SurgicalFixtures}. */
+export const AuthorizationFixtures = [
+  InfusionService,
+  DrChenInfusionSchedule,
+  IronInfusionService,
+  DrChenIronInfusionSchedule,
+];
+
 export const SurgicalFixtures = [
   SurgeryService,
   OperatingRoom3,
@@ -353,6 +641,45 @@ export const SchedulingFixtures = [
   ExamRoomBSchedule,
   SatelliteRoomSchedule,
 ];
+
+/**
+ * Moves a set of fixtures onto the viewer's own clock.
+ *
+ * The fixtures are kept in Eastern and Central time, so anything rendered from them is
+ * read from somewhere else — times labelled with their zone, and the calendar's notice
+ * naming the clock it is drawn on. This is for showing the other case, where there is
+ * nothing to disambiguate and none of that appears.
+ *
+ * @param resources - The fixtures to move. Cloned rather than changed.
+ * @returns The same fixtures, with every zone they declare replaced by the viewer's.
+ */
+export function inViewerTimezone(resources: readonly Resource[]): Resource[] {
+  const timezone = getBrowserTimezone();
+  return resources.map((resource) => {
+    const clone = deepClone(resource);
+    if ('extension' in clone) {
+      setTimezones(clone.extension, timezone);
+    }
+    return clone;
+  });
+}
+
+/**
+ * Rewrites every extension naming a timezone, at whatever depth it sits: an actor
+ * declares its zone at the top level, while a service or a schedule declares one inside
+ * its `SchedulingParameters`.
+ *
+ * @param extensions - The extensions to walk, changed in place.
+ * @param timezone - The zone to write.
+ */
+function setTimezones(extensions: Extension[] | undefined, timezone: string): void {
+  for (const extension of extensions ?? []) {
+    if (extension.url === TimezoneExtensionURI || extension.url === 'timezone') {
+      extension.valueCode = timezone;
+    }
+    setTimezones(extension.extension, timezone);
+  }
+}
 
 export interface ProposedAppointmentOptions {
   readonly start: string;
@@ -486,3 +813,196 @@ export const UntypedMrnPatient = buildPatient('sam-whitfield', 'Sam', 'Whitfield
 });
 
 export const PatientFixtures = [ElderJordanPatient, YoungerJordanPatient, UntypedMrnPatient];
+
+/**
+ * Appointments and Slots for the calendar view, dated within the week of Monday,
+ * May 4 2020 — the date `MockDateWrapper` freezes the clock to, so `timeGridWeek`
+ * always renders Sun May 3 through Sat May 9.
+ */
+
+/**
+ * The times {@link RiveraImagingAppointment} holds, one per schedule it is held on.
+ *
+ * Slots link an appointment to every Schedule it is booked against and mark the time
+ * as unavailable on those schedules. These explicit links name the schedules, not
+ * `Appointment.participants`.
+ */
+export const RiveraImagingHeldSlots: WithId<Slot>[] = (
+  [
+    ['slot-rivera-imaging-tue', DrRiveraSchedule],
+    ['slot-ultrasound-1-imaging-tue', Ultrasound1Schedule],
+    ['slot-exam-room-a-imaging-tue', ExamRoomASchedule],
+  ] as const
+).map(([id, schedule]) => ({
+  resourceType: 'Slot',
+  id,
+  status: 'busy',
+  start: '2020-05-05T17:00:00Z',
+  end: '2020-05-05T17:30:00Z',
+  schedule: createReference(schedule),
+}));
+
+/**
+ * A same-day imaging visit needing the provider, the device, and the room together.
+ *
+ * Carries a `Patient` participant even though nothing here books against one: the
+ * calendar titles an appointment event with the patient's name, so without one it
+ * would just read "No Patient".
+ */
+export const RiveraImagingAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-rivera-imaging-tue',
+  status: 'booked',
+  start: '2020-05-05T17:00:00Z',
+  end: '2020-05-05T17:30:00Z',
+  serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
+  slot: RiveraImagingHeldSlots.map(createReference),
+  participant: [
+    { status: 'accepted', actor: { reference: 'Patient/pt-cooper', display: 'Miles Cooper' } },
+    { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
+    { status: 'accepted', actor: createReference(Ultrasound1Device) },
+    { status: 'accepted', actor: createReference(ExamRoomA) },
+  ],
+};
+
+/**
+ * The times {@link OkaforImagingAppointment} holds, one per schedule it is held on.
+ *
+ * A booked visit holds a Slot on every schedule it is booked against, and it is those
+ * Slots — not the appointment's participants — that say which of an actor's schedules
+ * the visit is on. Moving the visit reads them back.
+ */
+export const OkaforImagingHeldSlots: WithId<Slot>[] = (
+  [
+    ['slot-okafor-imaging-wed', DrOkaforSchedule],
+    ['slot-ultrasound-2-imaging-wed', Ultrasound2Schedule],
+    ['slot-exam-room-b-imaging-wed', ExamRoomBSchedule],
+  ] as const
+).map(([id, schedule]) => ({
+  resourceType: 'Slot',
+  id,
+  status: 'busy',
+  start: '2020-05-06T18:00:00Z',
+  end: '2020-05-06T18:30:00Z',
+  schedule: createReference(schedule),
+}));
+
+export const OkaforImagingAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-okafor-imaging-wed',
+  status: 'booked',
+  start: '2020-05-06T18:00:00Z',
+  end: '2020-05-06T18:30:00Z',
+  serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
+  participant: [
+    { status: 'accepted', actor: { reference: 'Patient/pt-alvarez', display: 'Renee Alvarez' } },
+    { status: 'accepted', actor: createReference(DrOkaforPractitioner) },
+    { status: 'accepted', actor: createReference(Ultrasound2Device) },
+    { status: 'accepted', actor: createReference(ExamRoomB) },
+  ],
+  slot: OkaforImagingHeldSlots.map(createReference),
+};
+
+/** Open availability outside the booked visits, on the pinned "today." */
+export const RiveraFreeSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-rivera-free-mon',
+  status: 'free',
+  start: '2020-05-04T14:00:00Z',
+  end: '2020-05-04T16:00:00Z',
+  schedule: createReference(DrRiveraSchedule),
+  comment: 'Open for same-day imaging consults',
+};
+
+/** Blocked time, shown distinctly from a booked appointment. */
+export const ExamRoomABlockedSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-exam-room-a-blocked-thu',
+  status: 'busy-unavailable',
+  start: '2020-05-07T15:00:00Z',
+  end: '2020-05-07T17:00:00Z',
+  schedule: createReference(ExamRoomASchedule),
+  comment: 'Equipment maintenance',
+};
+
+/** Availability at the satellite site, for when the location filter is switched. */
+export const SatelliteRoomFreeSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-satellite-room-free-fri',
+  status: 'free',
+  start: '2020-05-08T13:00:00Z',
+  end: '2020-05-08T15:00:00Z',
+  schedule: createReference(SatelliteRoomSchedule),
+};
+
+/**
+ * Create a Practitioner performing a series of Telehealth visits with
+ * patients and no other resources
+ */
+
+function addMinutes(date: Date, minutes: number): Date {
+  return new Date(date.valueOf() + minutes * 60 * 1000);
+}
+
+// A Practitioner who performs Telehealth visits
+export const DrBrownPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-brown',
+  name: [{ given: ['Olivia'], family: 'Brown', prefix: ['Dr.'] }],
+};
+
+export const DrBrownSchedule = buildSchedule(
+  'schedule-dr-brown',
+  'Practitioner/dr-brown',
+  'Dr. Olivia Brown',
+  TELEHEALTH
+);
+
+const patientRefs: Reference<Patient>[] = [
+  { reference: 'Patient/pt-jones', display: 'Liam Jones' },
+  { reference: 'Patient/pt-garcia', display: 'Eliana Garcia' },
+  { reference: 'Patient/pt-miller', display: 'Elijah Miller' },
+];
+
+export const DrBrownSlots: WithId<Slot>[] = (
+  [
+    ['brown-1', '2020-05-05T20:00:00Z'],
+    ['brown-2', '2020-05-05T20:20:00Z'],
+    ['brown-3', '2020-05-05T20:40:00Z'],
+  ] as const
+).map(([id, start]) => ({
+  resourceType: 'Slot',
+  id,
+  status: 'busy',
+  schedule: createReference(DrBrownSchedule),
+  start,
+  end: addMinutes(new Date(start), 20).toISOString(),
+}));
+
+export const DrBrownAppointments: WithId<Appointment>[] = DrBrownSlots.map((slot, idx) => ({
+  resourceType: 'Appointment',
+  id: `appointment-${slot.id}`,
+  status: 'booked',
+  start: slot.start,
+  end: slot.end,
+  serviceType: toServiceTypeCodeableConcepts(TelehealthService),
+  slot: [createReference(slot)],
+  participant: [
+    { status: 'accepted', actor: createReference(DrBrownPractitioner) },
+    { status: 'accepted', actor: patientRefs[idx] },
+  ],
+}));
+
+export const CalendarWeekFixtures = [
+  RiveraImagingAppointment,
+  ...RiveraImagingHeldSlots,
+  OkaforImagingAppointment,
+  ...OkaforImagingHeldSlots,
+  RiveraFreeSlot,
+  ExamRoomABlockedSlot,
+  SatelliteRoomFreeSlot,
+  DrBrownPractitioner,
+  DrBrownSchedule,
+  ...DrBrownSlots,
+  ...DrBrownAppointments,
+];

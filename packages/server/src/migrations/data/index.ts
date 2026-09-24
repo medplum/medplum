@@ -52,3 +52,7 @@ export * as v40 from './v40';
 export * as v41 from './v41';
 export * as v42 from './v42';
 export * as v43 from './v43';
+export * as v44 from './v44';
+export * as v45 from './v45';
+export * as v46 from './v46';
+export * as v47 from './v47';

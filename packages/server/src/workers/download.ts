@@ -18,11 +18,13 @@ import { Readable } from 'node:stream';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
-import { parseTraceparent } from '../traceparent';
+import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
+import type { ProjectJobTarget } from './base';
+import { getJobSystemRepo, getProjectJobTarget } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
@@ -38,6 +40,7 @@ import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetr
  */
 
 export interface DownloadJobData {
+  readonly target?: ProjectJobTarget; // PENDING{v5.2} make target required and tighten up based on that throughout
   readonly resourceType: ResourceType;
   readonly id: string;
   readonly url: string;
@@ -130,6 +133,7 @@ export async function addDownloadJobs(
     }
 
     await addDownloadJobData({
+      target: getProjectJobTarget(resource),
       resourceType: resource.resourceType,
       id: resource.id,
       url,
@@ -209,7 +213,7 @@ async function addDownloadJobData(job: DownloadJobData): Promise<void> {
  * @param job - The download job details.
  */
 export async function execDownloadJob<T extends Resource = Resource>(job: Job<DownloadJobData>): Promise<void> {
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in future
+  const systemRepo = job.data.target ? await getJobSystemRepo(job.data.target) : getShardSystemRepo(TODO_SHARD_ID);
   const log = getLogger();
   const { resourceType, id, url } = job.data;
 
@@ -244,8 +248,9 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
   const traceId = job.data.traceId;
   if (traceId) {
     headers['x-trace-id'] = traceId;
-    if (parseTraceparent(traceId)) {
-      headers['traceparent'] = traceId;
+    const traceparent = buildTraceparent(traceId);
+    if (traceparent) {
+      headers['traceparent'] = traceparent;
     }
   }
 

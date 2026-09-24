@@ -6,17 +6,15 @@ import type { WithId } from '@medplum/core';
 import { getReferenceString, isReference, isResourceWithId } from '@medplum/core';
 import type { Appointment, HealthcareService, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react';
-import { Calendar, getEffectiveAvailability } from '@medplum/react-scheduling';
+import type { DateTimeRange } from '@medplum/react-scheduling';
+import { Calendar, getEffectiveAvailability, useSchedulingResources } from '@medplum/react-scheduling';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
-import { useSchedulingResources } from '../../hooks/useSchedulingResources';
-import type { Range } from '../../types/scheduling';
 import { encounterUrl } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import { mergeOverlappingSlots } from '../../utils/slots';
 import { FindPane } from './FindPane';
 import classes from './ScheduleDetails.module.css';
 
@@ -31,15 +29,17 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
 
   const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
   const [appointmentDetailsOpened, appointmentDetailsHandlers] = useDisclosure(false);
-  const [range, setRange] = useState<Range | undefined>(undefined);
+  const [range, setRange] = useState<DateTimeRange | undefined>(undefined);
 
-  const [appointmentSlot, setAppointmentSlot] = useState<Range>();
+  const [appointmentSlot, setAppointmentSlot] = useState<DateTimeRange>();
   const [appointmentDetails, setAppointmentDetails] = useState<WithId<Appointment> | undefined>(undefined);
   const [healthcareService, setHealthcareService] = useState<WithId<HealthcareService> | undefined>(undefined);
 
   const availableTime = getEffectiveAvailability(healthcareService, schedule);
 
-  const { slots, appointments, loading } = useSchedulingResources([schedule], range);
+  const { slots, appointments, loading } = useSchedulingResources([schedule], range, {
+    onError: showErrorNotification,
+  });
 
   const practitioner = schedule.actor.find((actor) => isReference<Practitioner>(actor, 'Practitioner'));
 
@@ -58,7 +58,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
   // When a date/time interval is selected, set the event object and open the
   // create appointment modal
   const handleSelectInterval = useCallback(
-    (slot: Range) => {
+    (slot: DateTimeRange) => {
       if (!practitioner) {
         showErrorNotification("Can't create visit without associated Practitioner");
         return;
@@ -129,15 +129,11 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     [medplum, navigate, handleSelectAppointment]
   );
 
-  // Omit any "entered-in-error" slots; merge overlapping blocks into
-  // contiguous blocks to reduce visual noise
-  const finalSlots = useMemo(() => {
-    const filtered = (slots ?? []).filter((slot) => slot.status !== 'entered-in-error');
-    return mergeOverlappingSlots(filtered);
-  }, [slots]);
+  // Omit any "entered-in-error" slots
+  const filteredSlots = useMemo(() => (slots ?? []).filter((slot) => slot.status !== 'entered-in-error'), [slots]);
 
   // Omit any "cancelled" appointments
-  const finalAppointments = useMemo(
+  const filteredAppointments = useMemo(
     () => (appointments ?? []).filter((appointment) => appointment.status !== 'cancelled'),
     [appointments]
   );
@@ -152,8 +148,8 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
               onSelectInterval={handleSelectInterval}
               onSelectAppointment={handleSelectAppointment}
               onSelectSlot={handleSelectSlot}
-              slots={finalSlots}
-              appointments={finalAppointments}
+              slots={filteredSlots}
+              appointments={filteredAppointments}
               onRangeChange={setRange}
               onDoubleClickAppointment={handleDoubleClickAppointment}
               availableTime={availableTime}

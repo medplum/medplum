@@ -190,6 +190,39 @@ describe('Email API Routes', () => {
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
+  test('Misconfigured project SMTP returns bad request', async () => {
+    mockCreateTransport.mockClear();
+    mockSendMail.mockClear();
+
+    const accessToken = await initTestAuth({
+      membership: { admin: true },
+      project: {
+        secret: [
+          { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+          { name: 'smtpUsername', valueString: 'projectuser' },
+          { name: 'smtpPassword', valueString: 'projectpass' },
+          { name: 'smtpFromAddress', valueString: 'support@project.example.com' },
+        ],
+      },
+    });
+    const res = await request(app)
+      .post(`/email/v1/send`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        to: 'alice@example.com',
+        subject: 'Subject',
+        text: 'Body',
+      });
+
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Project SMTP configuration is incomplete or invalid');
+    expect(mockCreateTransport).not.toHaveBeenCalled();
+    expect(mockSendMail).not.toHaveBeenCalled();
+    expect(mockSESv2Client.send.callCount).toBe(0);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
+  });
+
   test('Handle SES error', async () => {
     mockSESv2Client.on(SendEmailCommand).rejects(new Error('BadRequestException: Illegal address'));
 

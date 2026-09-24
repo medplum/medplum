@@ -1,0 +1,163 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  min-width: 0;
+  padding-block: 4rem;
+  scroll-margin-top: var(--solutions-anchor-offset);
+}
+
+/* Divider between stacked sections in the content column. */
+.section + .section {
+  border-top: 1px solid var(--landing-divider);
+}
+
+.header {
+  margin-bottom: 3rem;
+}
+
+.eyebrowRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+.iconTile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  background: var(--oc-grape-0);
+  border-radius: 10px;
+  color: var(--oc-grape-8);
+}
+
+[data-theme='dark'] .iconTile {
+  background: var(--oc-grape-1);
+}
+
+/* Chunky eyebrow — the former category title, now sitting above the headline. */
+.eyebrow {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--oc-grape-8);
+}
+
+[data-theme='dark'] .eyebrow {
+  color: var(--oc-grape-4);
+}
+
+/* The former tagline, promoted to the section headline. Runs full width of the
+   content column (like the homepage section headings) rather than a narrow block. */
+.headline {
+  font-size: var(--landing-section-size);
+  font-weight: var(--landing-section-weight);
+  line-height: var(--landing-section-leading);
+  letter-spacing: var(--landing-section-tracking);
+  text-wrap-style: balance;
+  color: var(--landing-color-heading);
+  margin: 0 0 1rem;
+}
+
+.description {
+  font-size: var(--landing-lead-size);
+  line-height: var(--landing-lead-leading);
+  font-weight: var(--landing-lead-weight);
+  color: var(--landing-color-body-alt);
+  margin: 0;
+  max-width: 68ch;
+}
+
+.customers {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+}
+
+/* Grape link with a chevron, used both inline in the description and in the
+   accelerator callout; it takes its size from whichever block it sits in. */
+.inlineLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--oc-grape-8);
+  white-space: nowrap;
+}
+
+.inlineLink:hover {
+  color: var(--oc-grape-9);
+  text-decoration: none;
+}
+
+[data-theme='dark'] .inlineLink {
+  color: var(--oc-grape-4);
+}
+
+.accelerator {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1rem 1.5rem;
+  border: 1px solid var(--landing-border);
+  border-radius: var(--landing-radius-card);
+  background: var(--landing-surface-muted);
+  font-size: 0.9375rem;
+}
+
+.acceleratorIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--oc-grape-0);
+  color: var(--oc-grape-8);
+}
+
+[data-theme='dark'] .acceleratorIcon {
+  background: var(--oc-grape-1);
+}
+
+.acceleratorText {
+  line-height: 1.55;
+  color: var(--landing-color-body);
+  margin: 0;
+  flex: 1;
+}
+
+@media screen and (max-width: 996px) {
+  /* The page layout gives up its gutter once the vertical nav collapses, so each
+     section takes it over (see solutions.module.css). */
+  .section {
+    padding-block: 3rem;
+    padding-inline: var(--layout-gutter);
+  }
+
+  .customers {
+    gap: 3rem;
+  }
+
+  .accelerator {
+    flex-wrap: wrap;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .headline {
+    font-size: 1.75rem;
+  }
+
+  .description {
+    max-width: 100%;
+  }
+}

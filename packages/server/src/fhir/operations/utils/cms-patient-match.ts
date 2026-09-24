@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { evalFhirPathTyped, HTTP_HL7_ORG, isString, toTypedValue } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
+import { foldText } from '../../../util/text';
 
 const SSN_IDENTIFIER_SYSTEM = `${HTTP_HL7_ORG}/fhir/sid/us-ssn`;
 const ITIN_IDENTIFIER_SYSTEM = `${HTTP_HL7_ORG}/fhir/sid/us-itin`;
@@ -241,11 +242,7 @@ export function hasGenerationalSuffixConflict(p1: Patient, p2: Patient): boolean
  * @returns The folded string (may be empty).
  */
 export function foldString(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '');
+  return foldText(value).replace(/[^a-z0-9]/g, '');
 }
 
 function extractGenerationalSuffixes(patient: Patient): Set<string> {
