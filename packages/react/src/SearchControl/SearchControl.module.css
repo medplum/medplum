@@ -4,7 +4,6 @@
   text-align: left;
 }
 
-/* Scoped to the table so the toolbar and pagination stay put when columns overflow horizontally. */
 .tableScroll {
   overflow-x: auto;
 }
@@ -14,18 +13,11 @@
   --table-border-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
 }
 
-/* Mantine drops the final row's bottom border; re-add it so the table closes with a divider. */
 .table tbody tr:last-of-type > td,
 .table tbody tr:last-of-type > th {
   border-bottom: 1px solid var(--table-border-color);
 }
 
-/*
- * Give the header cells more vertical padding (7 -> 9, symmetric so the button stays centered) and
- * shrink the header button block by the same amount (see .control below). Net row height and the 8px
- * button/menu gap are unchanged, but the extra space below the button lets the sort/filter menu clear
- * the row divider and overlap it instead of landing ~1px below it (which read as a doubled border line).
- */
 .table thead th {
   padding-top: 9px;
   padding-bottom: 9px;
@@ -35,29 +27,21 @@
   border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
 }
 
-/* Outline borders use dark-4 in dark mode, Mantine's own outline/input border shade. */
 .actionIcon {
   border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
   transition: border-color 150ms ease;
 }
 
-/* data-expanded is set by Mantine's Menu.Target, so the "…" button keeps its hover border while open. */
 .actionIcon:hover,
 .actionIcon[data-opened],
 .actionIcon[data-expanded] {
   border-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
 }
 
-/* Suppress Mantine's press-down transform on the toolbar action-icon buttons. */
 .toolbar :global(.mantine-ActionIcon-root):active {
   transform: none !important;
 }
 
-/*
- * Shared by every SearchControl menu (the "…" actions menu, column-header menus and the row
- * right-click menu): rounded items and a hover that sinks below the dropdown in dark mode, matching
- * the provider app's menus.
- */
 .menuDropdown :global(.mantine-Menu-item) {
   border-radius: var(--mantine-radius-sm);
 }
@@ -67,12 +51,10 @@
   background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
 }
 
-/* Wraps a custom menu item's icon so it can inherit a default color. */
 .menuActionIcon {
   display: flex;
 }
 
-/* dimmed is gray-6 in light mode and dark-2 in dark mode. */
 .actionIcon svg {
   color: var(--mantine-color-dimmed);
 }
@@ -83,16 +65,10 @@
   }
 }
 
-/* Keeps the right-clicked row highlighted while its context menu is open. */
 .trActive {
   background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
 }
 
-.th {
-  padding: 0 !important;
-}
-
-/* Reference cell link: matches the person-name text (no link color) and underlines only on hover. */
 .nameLink {
   color: var(--mantine-color-text);
   text-decoration: none;
@@ -102,16 +78,13 @@
   text-decoration: underline;
 }
 
-/* width:1px collapses the auto-layout column to just the checkbox plus its cell padding. */
 .checkboxCell {
   width: 1px;
   white-space: nowrap;
   vertical-align: middle;
-  /* The whole cell toggles the checkbox, not just the input. */
   cursor: pointer;
 }
 
-/* Flex centering avoids the inline vertical-align rounding that left the checkbox off-center. */
 .checkboxWrap {
   display: flex;
   align-items: center;
@@ -123,12 +96,9 @@
   margin: 0;
 }
 
-/* Block padding keeps the header row the same height as the body rows despite the smaller text. */
 .control,
 .staticColumnTitle {
-  /* Shorter block (4 vs the cell's 9 padding) leaves >8px below the button so the menu overlaps the divider. */
   padding: 4px 6px;
-  /* Offset the left padding so the header text left-aligns with the row content below. */
   margin-left: -6px;
 }
 
@@ -137,7 +107,6 @@
   border-radius: var(--mantine-radius-sm);
   color: var(--mantine-color-dimmed);
 
-  /* data-expanded is set by Mantine's Menu.Target so the header keeps its hover state while open. */
   &:hover,
   &[data-expanded] {
     background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
@@ -149,7 +118,6 @@
   border-radius: var(--mantine-radius-xl);
   transition: border-color 150ms ease;
 
-  /* !important overrides Mantine's logical padding and the inline height it derives from `size`. */
   padding-left: 10px !important;
   padding-right: 12px !important;
   --button-height: 32px !important;

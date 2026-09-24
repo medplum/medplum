@@ -67,8 +67,6 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
 
   const searchParams = useMemo(() => getSearchParameters(search.resourceType) ?? {}, [search.resourceType]);
 
-  // Reset the working copy from the current search each time the popover opens, so it reflects
-  // sort rules applied elsewhere without clobbering in-progress edits while open.
   function toggle(): void {
     if (!opened) {
       setRules(deepClone(search.sortRules ?? []));
@@ -113,8 +111,6 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
     setRules([...rules, { code: '', descending: false }]);
   }
 
-  // The Sort button flags only a non-default order. An empty sort, or the table's implicit default
-  // (Last Updated, newest first), leaves the indicator dot off.
   const showIndicator = !isDefaultSort(search.sortRules ?? []);
 
   return (
@@ -149,7 +145,6 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
           {rules.map((rule, index) => {
             const searchParam = rule.code ? searchParams[rule.code] : undefined;
             const labels = getDirectionLabels(searchParam);
-            // Blank until a field is chosen; otherwise default to ascending.
             let directionValue: 'asc' | 'desc' | null = null;
             if (rule.code) {
               directionValue = rule.descending ? 'desc' : 'asc';

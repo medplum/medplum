@@ -31,11 +31,9 @@
 }
 
 .item:hover {
-  /* Sinks below the dropdown in dark mode, like the SearchControl menus. */
   background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-8));
 }
 
-/* The row currently being dragged is dimmed; the row under the cursor gets a top guide line. */
 .dragging {
   opacity: 0.4;
 }
@@ -44,11 +42,6 @@
   position: relative;
 }
 
-/*
- * A straight 1px guide at the drop point. Insetting it 10px past the item's edge (the item sits 6px
- * inside the dropdown, the search input 16px) lines it up with the search input's width, and the
- * pseudo-element keeps it flat instead of tracing the item's rounded corners.
- */
 .dragOver::before {
   content: '';
   position: absolute;
@@ -59,19 +52,23 @@
   background-color: var(--mantine-color-blue-6);
 }
 
+.dragOverBelow::before {
+  top: auto;
+  bottom: 0;
+}
+
 .grip {
   display: flex;
   align-items: center;
   color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3));
   cursor: grab;
+  touch-action: none;
 }
 
 .grip:active {
   cursor: grabbing;
 }
 
-/* While a row is being dragged, force the grabbing cursor across the whole list instead of letting
-   it fall back to the default arrow as the pointer moves off the grip. */
 .dragActive,
 .dragActive * {
   cursor: grabbing !important;
@@ -97,12 +94,10 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--mantine-spacing-sm);
-  /* Extra right inset so the "N shown" count sits md from the edge. */
   padding-right: var(--mantine-spacing-md);
   border-top: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
 }
 
-/* Suppress Mantine's press-down transform so the button does not shift on mousedown/active. */
 .staticButton,
 .staticButton:active,
 .staticButton:focus,
@@ -110,7 +105,6 @@
   transform: none !important;
 }
 
-/* Halve the default icon-to-label gap on the Reset button, matching the Add condition/sort buttons. */
 .addButton :global(.mantine-Button-section[data-position='left']) {
   margin-inline-end: calc(var(--mantine-spacing-xs) * 0.5);
 }

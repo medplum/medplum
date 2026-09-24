@@ -128,7 +128,6 @@ describe('SearchColumnEditor', () => {
     const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
     await openMenu();
 
-    // Drag "gender" (index 2) onto "name" (index 0): gender moves to the front.
     const name = screen.getByLabelText('column-name');
     await act(async () => {
       fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
@@ -144,7 +143,6 @@ describe('SearchColumnEditor', () => {
     const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
     await openMenu();
 
-    // Reorder, then immediately toggle a column with one click - no drag guard should swallow it.
     await act(async () => {
       fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
       fireEvent.pointerMove(screen.getByLabelText('column-name'));
@@ -159,5 +157,103 @@ describe('SearchColumnEditor', () => {
     expect(onChange.mock.calls.length).toBe(callsAfterDrag + 1);
     const last = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
     expect(last.fields).not.toContain('birthDate');
+  });
+
+  test('Dragging down moves the column after the target and shows the guide below it', async () => {
+    const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
+    await openMenu();
+
+    const gender = screen.getByLabelText('column-gender');
+    await act(async () => {
+      fireEvent.pointerDown(screen.getByTestId('column-grip-name'));
+      fireEvent.pointerMove(gender);
+    });
+    expect(gender.className).toContain('dragOverBelow');
+
+    await act(async () => {
+      fireEvent.pointerUp(gender);
+    });
+    const last = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
+    expect(last.fields).toEqual(['birthDate', 'gender', 'name']);
+  });
+
+  test('A cancelled drag ends without reordering', async () => {
+    const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
+    await openMenu();
+
+    const name = screen.getByLabelText('column-name');
+    await act(async () => {
+      fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
+      fireEvent.pointerMove(name);
+      fireEvent(document, new Event('pointercancel'));
+    });
+    expect(name.className).not.toContain('dragOver');
+
+    await act(async () => {
+      fireEvent.pointerUp(name);
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  test('Unmounting mid-drag removes the document listeners', async () => {
+    await act(async () => {
+      await medplum.requestSchema('Patient');
+    });
+    const onChange = vi.fn();
+    const { unmount } = render(
+      <MedplumProvider medplum={medplum}>
+        <SearchColumnEditor search={{ resourceType: 'Patient', fields: ['name', 'birthDate'] }} onChange={onChange} />
+      </MedplumProvider>
+    );
+    await openMenu();
+
+    await act(async () => {
+      fireEvent.pointerDown(screen.getByTestId('column-grip-name'));
+      fireEvent.pointerMove(screen.getByLabelText('column-birthDate'));
+    });
+    const removeSpy = vi.spyOn(document, 'removeEventListener');
+    unmount();
+    expect(removeSpy).toHaveBeenCalledWith('pointerup', expect.any(Function));
+    expect(removeSpy).toHaveBeenCalledWith('pointercancel', expect.any(Function));
+    fireEvent(document, new Event('pointerup'));
+    expect(onChange).not.toHaveBeenCalled();
+    removeSpy.mockRestore();
+  });
+
+  test('The last visible column cannot be hidden', async () => {
+    const { onChange } = await setup({ resourceType: 'Patient', fields: ['name'] });
+    await openMenu();
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('column-name'));
+    });
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('visible-name')).toBeInTheDocument();
+  });
+
+  test('Changing the resource type rebuilds the column list and reset default', async () => {
+    await act(async () => {
+      await medplum.requestSchema('Patient');
+      await medplum.requestSchema('Observation');
+    });
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <MedplumProvider medplum={medplum}>
+        <SearchColumnEditor search={{ resourceType: 'Patient', fields: ['name'] }} onChange={onChange} />
+      </MedplumProvider>
+    );
+    rerender(
+      <MedplumProvider medplum={medplum}>
+        <SearchColumnEditor search={{ resourceType: 'Observation', fields: ['code'] }} onChange={onChange} />
+      </MedplumProvider>
+    );
+    await openMenu();
+    expect(screen.getByLabelText('column-code')).toBeInTheDocument();
+    expect(screen.queryByLabelText('column-gender')).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Reset Default'));
+    });
+    const last = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
+    expect(last).toMatchObject({ resourceType: 'Observation', fields: ['code'] });
   });
 });

@@ -119,7 +119,6 @@ describe('SearchControl', () => {
     };
     await setup({ search: { resourceType: 'Practitioner', fields: ['id', 'name'] } }, bundle);
 
-    // The no-`use` name wins; the avatar renders alongside it.
     expect(await screen.findByText('Greg House')).toBeInTheDocument();
     expect(screen.queryByText('Gregory House')).toBeNull();
     expect(document.body.querySelector('.mantine-Avatar-root')).toBeInTheDocument();
@@ -715,7 +714,6 @@ describe('SearchControl', () => {
       await act(async () => {
         resolve();
       });
-      // Let the modal's close transition finish.
       await act(async () => {
         vi.advanceTimersByTime(1000);
       });
@@ -743,6 +741,40 @@ describe('SearchControl', () => {
       expect(screen.getByText('This action cannot be undone.')).toBeInTheDocument();
       expect(confirmButton()).not.toHaveAttribute('data-loading');
       expect(screen.getAllByTestId('row-checkbox').every((el) => (el as HTMLInputElement).checked)).toBe(true);
+    });
+
+    test('A thenable onDelete result is awaited like a Promise', async () => {
+      let resolve: () => void = () => undefined;
+      const thenable: PromiseLike<void> = {
+        then: (onFulfilled) => {
+          resolve = () => onFulfilled?.();
+          return thenable as PromiseLike<never>;
+        },
+      };
+      const onDelete = vi.fn(() => thenable as unknown as Promise<void>);
+      await setupDelete({ onDelete });
+      await clickMenuDelete();
+
+      await act(async () => {
+        fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+      });
+      expect(confirmButton()).toHaveAttribute('data-loading', 'true');
+
+      await act(async () => {
+        resolve();
+      });
+      expect(confirmButton()).not.toHaveAttribute('data-loading');
+    });
+
+    test('The modal title keeps its count while closing', async () => {
+      await setupDelete({ onDelete: vi.fn() });
+      await clickMenuDelete();
+      expect(await screen.findByText('Delete 2 Patients?')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(confirmButton());
+      });
+      expect(screen.queryByText('Delete 0 Patients?')).not.toBeInTheDocument();
     });
   });
 
@@ -940,7 +972,6 @@ describe('SearchControl', () => {
       fireEvent.contextMenu(screen.getByText('Homer Simpson'));
     });
 
-    // The typed label comes from the reference, not the row's Observation resource.
     expect(await screen.findByText('Open Patient in a New Tab')).toBeInTheDocument();
     expect(screen.queryByText('Open Observation in a New Tab')).not.toBeInTheDocument();
   });
@@ -1093,6 +1124,35 @@ describe('SearchControl', () => {
     });
     expect(notCancelled).toBe(true);
     expect(screen.queryByText('Open Patient')).not.toBeInTheDocument();
+  });
+
+  test('A non-relative reference does not open a reference menu', async () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [
+        {
+          resource: {
+            resourceType: 'Observation',
+            id: 'obs1',
+            status: 'final',
+            code: { text: 'Test' },
+            subject: { reference: '#contained', display: 'Contained Patient' },
+          },
+        },
+      ],
+    };
+    await setup({ search: { resourceType: 'Observation', fields: ['subject'] } }, bundle);
+    const row = (await screen.findAllByTestId('search-control-row'))[0];
+    const referenceCell = row.querySelector('td > div') as Element;
+    expect(referenceCell).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.contextMenu(referenceCell);
+    });
+    expect(await screen.findByText('Open Observation')).toBeInTheDocument();
+    expect(screen.queryByText(/#contained/)).not.toBeInTheDocument();
   });
 
   test('Custom getReferenceHref is used for reference cells', async () => {
@@ -1686,7 +1746,6 @@ describe('SearchControl', () => {
       const link = (await screen.findByText('Reports')).closest('a') as HTMLAnchorElement;
       expect(link).toHaveAttribute('href', '/reports');
 
-      // Cmd-click is left to the browser (new tab), so the event is not cancelled.
       let notCancelled = false;
       await act(async () => {
         notCancelled = fireEvent.click(link, { metaKey: true });

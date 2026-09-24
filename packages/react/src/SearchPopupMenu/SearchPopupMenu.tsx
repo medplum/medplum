@@ -51,7 +51,6 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
 
   function onSort(descending: boolean): void {
     const existing = props.search.sortRules ?? [];
-    // With a multi-sort already in place, layer this column onto it rather than replacing the others.
     if (existing.length >= 2) {
       const sortRules = existing.some((rule) => rule.code === code)
         ? existing.map((rule) => (rule.code === code ? { code, descending } : rule))

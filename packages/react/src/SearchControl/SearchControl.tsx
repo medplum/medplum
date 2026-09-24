@@ -47,7 +47,7 @@ import { SearchSortEditor } from '../SearchSortEditor/SearchSortEditor';
 import { isAuxClick, isCheckboxCell, killEvent } from '../utils/dom';
 import { getPaginationControlProps } from '../utils/pagination';
 import type { ResourceContextMenuTarget, SearchControlContextMenuOptions } from './ResourceContextMenu';
-import { useResourceContextMenuController } from './ResourceContextMenu';
+import { ReferenceContextMenuContext, useResourceContextMenuController } from './ResourceContextMenu';
 import classes from './SearchControl.module.css';
 import { getFieldDefinitions } from './SearchControlField';
 import { buildFieldNameString, renderValue, setPage } from './SearchUtils';
@@ -173,6 +173,8 @@ interface SearchControlState {
   readonly deleteConfirmVisible?: boolean;
   /** True while an async `onDelete` is pending. */
   readonly deleting?: boolean;
+  /** The selected count when the delete modal opened, so its copy stays put while it closes. */
+  readonly deleteCount?: number;
   readonly dialogOpenTime?: number;
   /** External request to open the Filters popover with a column's field preselected. */
   readonly requestFilterField?: { readonly code: string; readonly nonce: number };
@@ -207,6 +209,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   useLayoutEffect(() => {
     stateRef.current = state;
   });
+  const deletingRef = useRef(false);
 
   const total = memoizedSearch.total ?? 'accurate';
 
@@ -223,13 +226,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           )
         )
         .then((response) => {
-          setState({ ...stateRef.current, searchResponse: response });
+          setState((s) => ({ ...s, searchResponse: response }));
           if (onLoad) {
             onLoad(new SearchLoadEvent(response));
           }
         })
         .catch((reason) => {
-          setState({ ...stateRef.current, searchResponse: undefined });
+          setState((s) => ({ ...s, searchResponse: undefined }));
           setOutcome(normalizeOperationOutcome(reason));
         });
     },
@@ -237,7 +240,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   );
 
   const refreshResults = useCallback(() => {
-    setState({ ...stateRef.current, searchResponse: undefined });
+    setState((s) => ({ ...s, searchResponse: undefined }));
     loadResults({ cache: 'reload' });
   }, [loadResults]);
 
@@ -245,7 +248,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     loadResults();
   }, [loadResults]);
 
-  const { ContextMenuProvider, openContextMenu, contextMenu } = useResourceContextMenuController(props.rowContextMenu);
+  const { openReferenceContextMenu, openContextMenu, contextMenu } = useResourceContextMenuController(
+    props.rowContextMenu
+  );
 
   /**
    * Builds the context menu target for a row. The link comes from `getResourceHref` when set, else
@@ -276,14 +281,21 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     setRowSelected(id, (e.target as HTMLInputElement).checked);
   }
 
-  function setRowSelected(id: string, checked: boolean): void {
-    const newSelected = { ...stateRef.current.selected };
-    if (checked) {
-      newSelected[id] = true;
-    } else {
-      delete newSelected[id];
-    }
-    setState({ ...stateRef.current, selected: newSelected });
+  /**
+   * Checks or unchecks a row.
+   * @param id - The row's resource ID.
+   * @param checked - The new checked state; toggles the row when omitted.
+   */
+  function setRowSelected(id: string, checked?: boolean): void {
+    setState((s) => {
+      const newSelected = { ...s.selected };
+      if (checked ?? !s.selected[id]) {
+        newSelected[id] = true;
+      } else {
+        delete newSelected[id];
+      }
+      return { ...s, selected: newSelected };
+    });
   }
 
   function handleAllCheckboxClick(e: ChangeEvent): void {
@@ -292,16 +304,17 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   function setAllSelected(checked: boolean): void {
-    const newSelected = {} as { [id: string]: boolean };
-    const searchResponse = stateRef.current.searchResponse;
-    if (checked && searchResponse?.entry) {
-      searchResponse.entry.forEach((entry) => {
-        if (entry.resource?.id) {
-          newSelected[entry.resource.id] = true;
-        }
-      });
-    }
-    setState({ ...stateRef.current, selected: newSelected });
+    setState((s) => {
+      const newSelected = {} as { [id: string]: boolean };
+      if (checked && s.searchResponse?.entry) {
+        s.searchResponse.entry.forEach((entry) => {
+          if (entry.resource?.id) {
+            newSelected[entry.resource.id] = true;
+          }
+        });
+      }
+      return { ...s, selected: newSelected };
+    });
   }
 
   function isAllSelected(): boolean {
@@ -391,7 +404,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const showRefresh = !props.hideRefresh;
   const menuActions = (!isMobile && props.menuActions) || [];
   const toolbarActions = (!isMobile && props.toolbarActions) || [];
-  const deleteCopy = getDeleteCopy(resourceType, selectedCount, props.confirmDelete);
+  const deleteCopy = getDeleteCopy(resourceType, state.deleteCount ?? selectedCount, props.confirmDelete);
 
   /**
    * Calls `onDelete` with the checked IDs. A sync handler closes the modal right away; an async one
@@ -400,31 +413,46 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
    */
   function runDelete(): void {
     const onDelete = props.onDelete;
-    if (!onDelete || stateRef.current.deleting) {
+    if (!onDelete || deletingRef.current) {
       return;
     }
     const ids = Object.keys(stateRef.current.selected);
     const finish = (): void => {
-      const remaining = { ...stateRef.current.selected };
-      for (const id of ids) {
-        delete remaining[id];
-      }
-      setState({ ...stateRef.current, selected: remaining, deleting: false, deleteConfirmVisible: false });
+      deletingRef.current = false;
+      setState((s) => {
+        const remaining = { ...s.selected };
+        for (const id of ids) {
+          delete remaining[id];
+        }
+        return { ...s, selected: remaining, deleting: false, deleteConfirmVisible: false };
+      });
     };
     const result = onDelete(ids);
-    if (result instanceof Promise) {
-      setState({ ...stateRef.current, deleting: true });
-      result.then(finish, () => setState({ ...stateRef.current, deleting: false }));
+    if (isPromiseLike(result)) {
+      deletingRef.current = true;
+      setState((s) => ({ ...s, deleting: true }));
+      result.then(finish, () => {
+        deletingRef.current = false;
+        setState((s) => ({ ...s, deleting: false }));
+      });
     } else {
       finish();
     }
+  }
+
+  function openDeleteConfirm(): void {
+    setState((s) => ({ ...s, deleteConfirmVisible: true, deleteCount: Object.keys(s.selected).length }));
+  }
+
+  function closeDeleteConfirm(): void {
+    setState((s) => ({ ...s, deleteConfirmVisible: false }));
   }
 
   const showActionsMenu =
     !props.hideActionsMenu && (showExport || showDelete || showBulk || showRefresh || menuActions.length > 0);
 
   return (
-    <ContextMenuProvider>
+    <ReferenceContextMenuContext.Provider value={openReferenceContextMenu}>
       <div className={classes.root} data-testid="search-control">
         {!props.hideToolbar && (
           <Group justify="space-between" pb="md" className={classes.toolbar}>
@@ -496,8 +524,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                         onClick={
                           props.onExport
                             ? props.onExport
-                            : () =>
-                                setState({ ...stateRef.current, exportDialogVisible: true, dialogOpenTime: Date.now() })
+                            : () => setState((s) => ({ ...s, exportDialogVisible: true, dialogOpenTime: Date.now() }))
                         }
                       >
                         <Text size="sm">Export</Text>
@@ -522,7 +549,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                           if (props.confirmDelete === false) {
                             runDelete();
                           } else {
-                            setState({ ...stateRef.current, deleteConfirmVisible: true });
+                            openDeleteConfirm();
                           }
                         }}
                       >
@@ -599,10 +626,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                             searchParams={field.searchParams}
                             onChange={(result) => emitSearchChange(result)}
                             onFilterByColumn={(searchParam) =>
-                              setState({
-                                ...stateRef.current,
+                              setState((s) => ({
+                                ...s,
                                 requestFilterField: { code: searchParam.code, nonce: Date.now() },
-                              })
+                              }))
                             }
                           />
                         </Menu>
@@ -645,11 +672,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                           className={classes.checkboxCell}
                           data-checkbox-cell
                           data-testid="row-checkbox-cell"
-                          onClick={(e) =>
-                            handleCheckboxCellClick(e, () =>
-                              setRowSelected(resource.id as string, !stateRef.current.selected[resource.id as string])
-                            )
-                          }
+                          onClick={(e) => handleCheckboxCellClick(e, () => setRowSelected(resource.id as string))}
                         >
                           <div className={classes.checkboxWrap}>
                             <Checkbox
@@ -699,17 +722,14 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           exportCsv={props.onExportCsv}
           exportTransactionBundle={props.onExportTransactionBundle}
           onCancel={() => {
-            setState({
-              ...stateRef.current,
-              exportDialogVisible: false,
-            });
+            setState((s) => ({ ...s, exportDialogVisible: false }));
           }}
         />
         <Modal
           opened={!!state.deleteConfirmVisible}
           onClose={() => {
-            if (!stateRef.current.deleting) {
-              setState({ ...stateRef.current, deleteConfirmVisible: false });
+            if (!deletingRef.current) {
+              closeDeleteConfirm();
             }
           }}
           title={deleteCopy.title}
@@ -718,12 +738,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               <Button color="red" w="100%" loading={!!state.deleting} onClick={runDelete}>
                 {deleteCopy.confirmLabel}
               </Button>
-              <Button
-                variant="outline"
-                w="100%"
-                disabled={!!state.deleting}
-                onClick={() => setState({ ...stateRef.current, deleteConfirmVisible: false })}
-              >
+              <Button variant="outline" w="100%" disabled={!!state.deleting} onClick={closeDeleteConfirm}>
                 Cancel
               </Button>
             </>
@@ -733,7 +748,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         </Modal>
         {contextMenu}
       </div>
-    </ContextMenuProvider>
+    </ReferenceContextMenuContext.Provider>
   );
 }
 
@@ -798,6 +813,10 @@ function handleCheckboxCellClick(e: MouseEvent, toggle: () => void): void {
     return;
   }
   toggle();
+}
+
+function isPromiseLike(value: unknown): value is PromiseLike<void> {
+  return typeof (value as PromiseLike<void> | undefined)?.then === 'function';
 }
 
 function getPage(search: SearchRequest): number {

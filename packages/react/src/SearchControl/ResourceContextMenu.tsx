@@ -4,7 +4,7 @@ import { Menu } from '@mantine/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplumNavigate } from '@medplum/react-hooks';
 import { IconCornerDownRight, IconExternalLink, IconLink } from '@tabler/icons-react';
-import type { JSX, MouseEvent, ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { createContext, useCallback, useContext, useLayoutEffect, useRef, useState } from 'react';
 import classes from './SearchControl.module.css';
 
@@ -42,15 +42,17 @@ export interface ResourceContextMenuTarget {
   readonly onOpenInNewTab?: () => void;
 }
 
-/** Opens the shared context menu at the cursor for the given resource. */
-export type OpenResourceContextMenu = (event: MouseEvent, target: ResourceContextMenuTarget) => void;
+type OpenResourceContextMenu = (event: MouseEvent, target: ResourceContextMenuTarget) => void;
 
-/** Opens the shared context menu at the cursor for a reference cell. */
-export type OpenReferenceContextMenu = (event: MouseEvent, reference: Reference) => void;
+type OpenReferenceContextMenu = (event: MouseEvent, reference: Reference) => void;
 
 const noop: OpenReferenceContextMenu = () => {};
 
-const ReferenceContextMenuContext = createContext<OpenReferenceContextMenu>(noop);
+/**
+ * Supplies {@link useReferenceContextMenu} to reference cells. Its value is the
+ * `openReferenceContextMenu` opener from {@link useResourceContextMenuController}.
+ */
+export const ReferenceContextMenuContext = createContext<OpenReferenceContextMenu>(noop);
 
 /**
  * Returns the opener for the shared context menu, scoped to a reference. Call it from a reference
@@ -75,9 +77,9 @@ interface MenuState {
   readonly visible?: VisibleItems;
 }
 
-export interface ResourceContextMenuController {
-  /** Provider that supplies {@link useReferenceContextMenu} to descendant cells. */
-  readonly ContextMenuProvider: (props: { readonly children: ReactNode }) => JSX.Element;
+interface ResourceContextMenuController {
+  /** Opener for reference cells; pass it to {@link ReferenceContextMenuContext}. */
+  readonly openReferenceContextMenu: OpenReferenceContextMenu;
   /** Open handler for elements rendered directly by the owner (e.g. table rows). */
   readonly openContextMenu: OpenResourceContextMenu;
   /** The menu element; render it once inside the provider. */
@@ -99,19 +101,21 @@ function getVisibleItems(target: ResourceContextMenuTarget, options: SearchContr
   };
 }
 
+const RELATIVE_REFERENCE = /^([A-Z][A-Za-z]+)\/[^/]+$/;
+
 /**
  * Returns the default in-app href for a reference, e.g. "/Practitioner/123".
  * @param reference - The reference.
- * @returns The href, or undefined when the reference has no reference string.
+ * @returns The href.
  */
-function getDefaultReferenceHref(reference: Reference): string | undefined {
-  return reference.reference ? `/${reference.reference}` : undefined;
+function getDefaultReferenceHref(reference: Reference): string {
+  return `/${reference.reference}`;
 }
 
 /**
  * Sets up a single cursor-positioned context menu shared by the table rows and the reference cells.
  * The owner renders {@link ResourceContextMenuController.contextMenu} inside
- * {@link ResourceContextMenuController.ContextMenuProvider} and wires row `onContextMenu` handlers to
+ * {@link ReferenceContextMenuContext} and wires row `onContextMenu` handlers to
  * {@link ResourceContextMenuController.openContextMenu}; descendant cells reach the same menu via
  * {@link useReferenceContextMenu}. When the menu is turned off, or a right-click leaves no items to
  * show, the event is left alone so the browser's own menu appears.
@@ -124,13 +128,11 @@ export function useResourceContextMenuController(
   const navigate = useMedplumNavigate();
   const [state, setState] = useState<MenuState>({ opened: false, x: 0, y: 0 });
 
-  // Read options through a ref so the open handlers, and the provider built from them, stay stable.
   const optionsRef = useRef(options);
   useLayoutEffect(() => {
     optionsRef.current = options;
   });
 
-  // The row the menu is open for keeps its hover background while the cursor is over the menu.
   const activeRowRef = useRef<Element | null>(null);
 
   const clearActiveRow = useCallback(() => {
@@ -167,7 +169,7 @@ export function useResourceContextMenuController(
       if (currentOptions === false) {
         return;
       }
-      const [label] = reference.reference?.split('/') ?? [];
+      const label = RELATIVE_REFERENCE.exec(reference.reference ?? '')?.[1];
       if (!label) {
         return;
       }
@@ -181,15 +183,6 @@ export function useResourceContextMenuController(
     clearActiveRow();
     setState((prev) => ({ ...prev, opened: false }));
   }, [clearActiveRow]);
-
-  const ContextMenuProvider = useCallback(
-    ({ children }: { readonly children: ReactNode }): JSX.Element => (
-      <ReferenceContextMenuContext.Provider value={openReferenceContextMenu}>
-        {children}
-      </ReferenceContextMenuContext.Provider>
-    ),
-    [openReferenceContextMenu]
-  );
 
   const { target, visible } = state;
   const href = target?.href;
@@ -248,5 +241,5 @@ export function useResourceContextMenuController(
     </Menu>
   );
 
-  return { ContextMenuProvider, openContextMenu, contextMenu };
+  return { openReferenceContextMenu, openContextMenu, contextMenu };
 }

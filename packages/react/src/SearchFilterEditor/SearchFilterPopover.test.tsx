@@ -102,6 +102,38 @@ describe('SearchFilterPopover', () => {
     expect(lastArg.filters).toMatchObject([{ code: 'name', operator: Operator.CONTAINS, value: 'Simpson' }]);
   });
 
+  test('Deleting a row keeps the next row showing its own value', async () => {
+    await setup({
+      resourceType: 'Patient',
+      filters: [
+        { code: 'name', operator: Operator.EQUALS, value: 'Smith' },
+        { code: 'name', operator: Operator.EQUALS, value: 'Jones' },
+      ],
+    });
+    await openPopover();
+    expect(screen.getByTestId('filter-0-value')).toHaveValue('Smith');
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('delete-filter-0'));
+    });
+    expect(screen.getByTestId('filter-0-value')).toHaveValue('Jones');
+  });
+
+  test('Editing an incomplete row does not re-run the search', async () => {
+    const { onChange } = await setup({ resourceType: 'Patient' });
+    await openPopover();
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add Filter'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('filter-0-field', { selector: 'input' }));
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Name'));
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   test('requestFilterField opens the popover with the field preselected', async () => {
     await act(async () => {
       await medplum.requestSchema('Patient');

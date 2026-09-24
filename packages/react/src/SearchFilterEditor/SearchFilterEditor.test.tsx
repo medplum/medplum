@@ -25,7 +25,6 @@ async function selectMantineOption(testId: string, optionName: string | RegExp):
   await act(async () => {
     fireEvent.click(screen.getByTestId(testId));
   });
-  // The options render into a portal that the a11y tree treats as hidden.
   await act(async () => {
     fireEvent.click(screen.getByRole('option', { hidden: true, name: optionName }));
   });
@@ -243,7 +242,6 @@ describe('SearchFilterEditor', () => {
       />
     );
 
-    // An unknown code has no matching option, so the field combobox shows nothing (not the raw code).
     expect(screen.getByTestId('filter-0-row-filter-field')).toHaveValue('');
   });
 
@@ -289,7 +287,6 @@ describe('SearchFilterEditor', () => {
       fireEvent.click(screen.getByTestId('filter-0-row-filter-field'));
     });
 
-    // The element field (project/profile) and the meta field (_project/_profile) get distinct labels.
     expect(screen.getByRole('option', { hidden: true, name: 'Project' })).toBeInTheDocument();
     expect(screen.getByRole('option', { hidden: true, name: 'Project (meta)' })).toBeInTheDocument();
     expect(screen.getByRole('option', { hidden: true, name: 'Profile' })).toBeInTheDocument();

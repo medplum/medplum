@@ -5,8 +5,8 @@ import type { SearchRequest } from '@medplum/core';
 import { getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import { IconCheck, IconColumns3, IconGripVertical, IconRotate2, IconSearch } from '@tabler/icons-react';
-import type { JSX } from 'react';
-import { useMemo, useRef, useState } from 'react';
+import type { JSX, PointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildSearchParamFieldLabel, isMetaSearchParam } from '../SearchControl/SearchUtils';
 import classes from './SearchColumnEditor.module.css';
 
@@ -83,18 +83,22 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
 
   const [opened, setOpened] = useState(false);
   const [query, setQuery] = useState('');
-  // Every known column - visible plus every available field/metadata - in display order.
   const [order, setOrder] = useState<string[]>(() => buildColumnOrder(visibleFields, searchParams));
-  // The fields the page loaded with, used by "Reset default".
-  const defaultFields = useRef<string[]>([...visibleFields]);
+  const [defaultFields, setDefaultFields] = useState<string[]>(() => [...visibleFields]);
+  const [orderResourceType, setOrderResourceType] = useState(search.resourceType);
+  if (orderResourceType !== search.resourceType) {
+    setOrderResourceType(search.resourceType);
+    setOrder(buildColumnOrder(visibleFields, searchParams));
+    setDefaultFields([...visibleFields]);
+  }
 
-  // Pointer-drag state: the row being dragged and the current drop target. Pointer dragging (rather
-  // than native HTML5 drag) lets CSS keep the grabbing cursor while the row moves.
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
-  // Refs mirror the indices so the pointerup handler reads them synchronously, before a re-render lands.
   const dragIndexRef = useRef<number | null>(null);
   const overIndexRef = useRef<number | null>(null);
+  const endDragRef = useRef<(() => void) | undefined>(undefined);
+
+  useEffect(() => () => endDragRef.current?.(), []);
 
   const visibleSet = useMemo(() => new Set(visibleFields), [visibleFields]);
   const visibleCount = order.filter((name) => visibleSet.has(name)).length;
@@ -102,7 +106,6 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
   function toggleOpen(): void {
     if (!opened) {
       setQuery('');
-      // Merge any externally-added fields into the known column list before showing the menu.
       setOrder((prev) => {
         const merged = [...prev];
         for (const field of visibleFields) {
@@ -123,6 +126,9 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
   function toggleColumn(name: string): void {
     const nextVisible = new Set(visibleSet);
     if (nextVisible.has(name)) {
+      if (nextVisible.size === 1) {
+        return;
+      }
       nextVisible.delete(name);
     } else {
       nextVisible.add(name);
@@ -137,7 +143,7 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
   }
 
   function resetDefault(): void {
-    const next = [...defaultFields.current];
+    const next = [...defaultFields];
     setOrder(buildColumnOrder(next, searchParams));
     onChange({ ...search, fields: next });
   }
@@ -149,21 +155,35 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
     overIndexRef.current = null;
   }
 
-  function startDrag(index: number): void {
+  function startDrag(e: PointerEvent<HTMLElement>, index: number): void {
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    endDragRef.current?.();
     dragIndexRef.current = index;
     overIndexRef.current = index;
     setDragIndex(index);
-    // Listen on the document so releasing anywhere (including outside the menu) ends the drag.
+    const removeListeners = (): void => {
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointercancel', onPointerCancel);
+      endDragRef.current = undefined;
+    };
     const onPointerUp = (): void => {
       const from = dragIndexRef.current;
       const to = overIndexRef.current;
+      removeListeners();
       if (from !== null && to !== null && from !== to) {
         reorder(from, to);
       }
       clearDrag();
-      document.removeEventListener('pointerup', onPointerUp);
+    };
+    const onPointerCancel = (): void => {
+      removeListeners();
+      clearDrag();
     };
     document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointercancel', onPointerCancel);
+    endDragRef.current = removeListeners;
   }
 
   return (
@@ -212,6 +232,7 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
               classes.item,
               dragIndex === index ? classes.dragging : '',
               overIndex === index && dragIndex !== null && dragIndex !== index ? classes.dragOver : '',
+              overIndex === index && dragIndex !== null && dragIndex < index ? classes.dragOverBelow : '',
             ]
               .filter(Boolean)
               .join(' ');
@@ -240,7 +261,7 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
                   className={classes.grip}
                   aria-hidden="true"
                   data-testid={`column-grip-${name}`}
-                  onPointerDown={() => startDrag(index)}
+                  onPointerDown={(e) => startDrag(e, index)}
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                 >

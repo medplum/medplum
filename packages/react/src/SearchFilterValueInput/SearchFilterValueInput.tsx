@@ -14,6 +14,8 @@ export interface SearchFilterValueInputProps {
   readonly name?: string;
   readonly defaultValue?: string;
   readonly autoFocus?: boolean;
+  /** Render reference dropdowns inside the DOM tree (not a portal); defaults to portalled. */
+  readonly withinPortal?: boolean;
   readonly onChange: (value: string) => void;
 }
 
@@ -29,7 +31,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
           defaultValue={props.defaultValue ? { reference: props.defaultValue } : undefined}
           targetTypes={props.searchParam.target}
           targetTypeSelectVariant="combobox"
-          withinPortal={false}
+          withinPortal={props.withinPortal}
           autoFocus={props.autoFocus}
           onChange={(newReference: Reference | undefined) => {
             if (newReference) {

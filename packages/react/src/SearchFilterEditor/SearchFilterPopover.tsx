@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Button, Indicator, Popover, Select, Text } from '@mantine/core';
 import type { Filter, SearchRequest } from '@medplum/core';
-import { Operator, deepClone, getSearchParameters } from '@medplum/core';
+import { Operator, deepClone, deepEquals, getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import { IconCirclePlus, IconFilter2Plus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -46,42 +46,39 @@ export function SearchFilterPopover(props: SearchFilterPopoverProps): JSX.Elemen
   const iconSize = props.iconSize ?? 16;
 
   const [opened, setOpened] = useState(false);
-  // Local working copy so partially-entered rows (no value yet) can exist without wiping results.
-  const [rows, setRows] = useState<Partial<Filter>[]>(() => deepClone(search.filters ?? []));
+  const [rows, setRows] = useState<FilterRow[]>(() => toRows(deepClone(search.filters ?? [])));
 
   const searchParams = useMemo(() => getSearchParameters(search.resourceType) ?? {}, [search.resourceType]);
 
-  // Respond to an external "Filter by this column" request: open the popover and seed a new
-  // condition with the requested field preselected. The nonce lets the same field re-trigger it.
   const lastNonce = useRef<number | undefined>(undefined);
   useEffect(() => {
     const req = props.requestFilterField;
     if (req && req.nonce !== lastNonce.current) {
       lastNonce.current = req.nonce;
-      setRows([...deepClone(search.filters ?? []), { code: req.code, operator: Operator.EQUALS, value: '' }]);
+      setRows(toRows([...deepClone(search.filters ?? []), { code: req.code, operator: Operator.EQUALS, value: '' }]));
       setOpened(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.requestFilterField]);
 
-  // Reset the working copy from the current search each time the popover opens, so it reflects
-  // filters applied elsewhere without clobbering in-progress edits while open.
   function toggle(): void {
     if (!opened) {
-      setRows(deepClone(search.filters ?? []));
+      setRows(toRows(deepClone(search.filters ?? [])));
     }
     setOpened((o) => !o);
   }
 
-  function emit(nextRows: Partial<Filter>[]): void {
+  function emit(nextRows: FilterRow[]): void {
     setRows(nextRows);
-    const complete = nextRows.filter(isCompleteFilter);
-    onChange(setFilters(search, complete));
+    const complete = nextRows.map((row) => row.filter).filter(isCompleteFilter);
+    if (!deepEquals(complete, search.filters ?? [])) {
+      onChange(setFilters(search, complete));
+    }
   }
 
   function updateRow(index: number, next: Partial<Filter>): void {
     const nextRows = [...rows];
-    nextRows[index] = next;
+    nextRows[index] = { ...nextRows[index], filter: next };
     emit(nextRows);
   }
 
@@ -91,7 +88,7 @@ export function SearchFilterPopover(props: SearchFilterPopoverProps): JSX.Elemen
   }
 
   function addRow(): void {
-    setRows([...rows, {}]);
+    setRows([...rows, ...toRows([{}])]);
   }
 
   const activeCount = (search.filters ?? []).length;
@@ -125,13 +122,14 @@ export function SearchFilterPopover(props: SearchFilterPopoverProps): JSX.Elemen
       <Popover.Dropdown className={classes.dropdown}>
         <div className={classes.body}>
           {rows.length === 0 && <div className={classes.empty}>No filters applied</div>}
-          {rows.map((filter, index) => (
+          {rows.map((row, index) => (
             <FilterConditionRow
-              key={`filter-row-${index}`}
+              key={row.id}
+              rowId={row.id}
               index={index}
               resourceType={search.resourceType}
               searchParams={searchParams}
-              value={filter}
+              value={row.filter}
               onChange={(next) => updateRow(index, next)}
               onDelete={() => deleteRow(index)}
             />
@@ -155,7 +153,19 @@ export function SearchFilterPopover(props: SearchFilterPopoverProps): JSX.Elemen
   );
 }
 
+interface FilterRow {
+  readonly id: number;
+  readonly filter: Partial<Filter>;
+}
+
+let nextFilterRowId = 0;
+
+function toRows(filters: Partial<Filter>[]): FilterRow[] {
+  return filters.map((filter) => ({ id: nextFilterRowId++, filter }));
+}
+
 interface FilterConditionRowProps {
+  readonly rowId: number;
   readonly index: number;
   readonly resourceType: string;
   readonly searchParams: Record<string, SearchParameter>;
@@ -187,9 +197,6 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
   const searchParam = value.code ? searchParams[value.code] : undefined;
   const operators = searchParam && getSearchOperators(searchParam);
 
-  // A reference value with anything other than a single fixed target renders two controls (a resource
-  // type picker plus the value), making the row too wide for the popover. Wrap the value onto a second
-  // line (aligned under the field) so nothing gets cut off.
   const multiInput = !!value.operator && searchParam?.type === 'reference' && searchParam.target?.length !== 1;
 
   const deleteButton = (
@@ -205,8 +212,6 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
     </ActionIcon>
   );
 
-  // A hidden twin of the delete button reserves the same space on the second line, so the value
-  // input's right edge lines up with the operator's above it.
   const deleteSpacer = (
     <ActionIcon
       variant="subtle"
@@ -224,11 +229,12 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
     <div className={classes.value}>
       {searchParam && value.operator && (
         <SearchFilterValueInput
-          key={`filter-${props.index}-value-${value.code}-${value.operator}`}
+          key={`filter-${props.rowId}-value-${value.code}-${value.operator}`}
           name={`filter-${props.index}-value`}
           resourceType={props.resourceType}
           searchParam={searchParam}
           defaultValue={value.value}
+          withinPortal={false}
           onChange={(newValue) => props.onChange({ code: value.code, operator: value.operator, value: newValue })}
         />
       )}

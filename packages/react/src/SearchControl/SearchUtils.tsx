@@ -572,7 +572,6 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
     return formatDateTime(resource.meta?.lastUpdated);
   }
 
-  // The name column of a person-like resource shows a single preferred name with its avatar.
   if (key === 'name' && AVATAR_NAME_RESOURCE_TYPES.has(resource.resourceType)) {
     return renderNameWithAvatar(resource);
   }

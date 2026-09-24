@@ -146,7 +146,6 @@ describe('HomePage', () => {
       fireEvent.click(await screen.findByText('Delete'));
     });
 
-    // Confirm in the modal.
     await act(async () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
     });

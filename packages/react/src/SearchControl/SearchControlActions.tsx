@@ -70,7 +70,6 @@ function useActionHandlers(
       return;
     }
     if (action.href !== undefined) {
-      // Cmd/Ctrl/Shift-click keep the browser's link behavior (new tab/window).
       if (isAuxClick(e) || e.shiftKey) {
         return;
       }
@@ -91,7 +90,6 @@ function useActionHandlers(
 export function SearchControlMenuActionItem(props: ActionRenderProps<SearchControlMenuAction>): JSX.Element {
   const { action } = props;
   const { disabled, href, onClick } = useActionHandlers(action, props.selectedIds);
-  // Icons are dimmed like the built-in items unless the item has its own color.
   const leftSection = action.icon && (
     <span
       className={classes.menuActionIcon}
