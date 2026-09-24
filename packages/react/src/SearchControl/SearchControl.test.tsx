@@ -6,7 +6,7 @@ import type { Bundle, Resource } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import type { SearchControlProps } from './SearchControl';
+import type { SearchControlMenuAction, SearchControlProps, SearchControlToolbarAction } from './SearchControl';
 import { SearchControl } from './SearchControl';
 
 describe('SearchControl', () => {
@@ -1041,12 +1041,12 @@ describe('SearchControl', () => {
       await act(async () => {
         fireEvent.click(headerCell);
       });
-      expect((screen.getByTestId('all-checkbox')).checked).toBe(true);
+      expect(screen.getByTestId('all-checkbox')).toBeChecked();
       expect(rowCheckbox().checked).toBe(true);
       await act(async () => {
         fireEvent.click(headerCell);
       });
-      expect((screen.getByTestId('all-checkbox')).checked).toBe(false);
+      expect(screen.getByTestId('all-checkbox')).not.toBeChecked();
       expect(rowCheckbox().checked).toBe(false);
     });
 
@@ -1428,6 +1428,183 @@ describe('SearchControl', () => {
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
     expect(screen.queryByLabelText('Refresh')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Sync')).toBeInTheDocument();
+  });
+
+  describe('Custom actions', () => {
+    const originalWidth = window.innerWidth;
+
+    afterEach(() => {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
+    });
+
+    async function openMenu(): Promise<void> {
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Actions'));
+      });
+    }
+
+    test('menuActions alone render the actions menu', async () => {
+      const onArchive = vi.fn();
+      await setup({
+        search: simpsonSearch,
+        hideRefresh: true,
+        menuActions: [{ key: 'archive', label: 'Archive', onClick: onArchive }],
+      });
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+      await openMenu();
+      await act(async () => {
+        fireEvent.click(await screen.findByText('Archive'));
+      });
+      expect(onArchive).toHaveBeenCalledWith([]);
+    });
+
+    test('Custom menu items sit after built-ins and before Delete', async () => {
+      await setup({
+        search: simpsonSearch,
+        onBulk: vi.fn(),
+        onDelete: vi.fn(),
+        menuActions: [{ key: 'archive', label: 'Archive', onClick: vi.fn() }],
+      });
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+      await openMenu();
+      await screen.findByText('Archive');
+      const labels = screen.getAllByRole('menuitem', { hidden: true }).map((el) => el.textContent);
+      expect(labels).toEqual(['Refresh', 'Bulk Apply', 'Archive', 'Delete']);
+    });
+
+    test('requiresSelection disables the item until a row is checked, then passes the IDs', async () => {
+      const onArchive = vi.fn();
+      await setup({
+        search: simpsonSearch,
+        checkboxesEnabled: true,
+        menuActions: [{ key: 'archive', label: 'Archive', requiresSelection: true, onClick: onArchive }],
+      });
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+      await openMenu();
+      const item = (await screen.findByText('Archive')).closest('button') as HTMLButtonElement;
+      expect(item).toBeDisabled();
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByTestId('row-checkbox')[0]);
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText('Archive'));
+      });
+      expect(onArchive).toHaveBeenCalledWith([HomerSimpson.id]);
+    });
+
+    test('requiresSelection toolbar action is disabled with no selection', async () => {
+      const onSync = vi.fn();
+      await setup({
+        search: simpsonSearch,
+        toolbarActions: [
+          { key: 'sync', label: 'Sync', icon: <span>sync</span>, requiresSelection: true, onClick: onSync },
+        ],
+      });
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+      expect(screen.getByLabelText('Sync')).toBeDisabled();
+    });
+
+    test('href menu item navigates in-app on plain click and keeps the browser link on Cmd-click', async () => {
+      const navigate = vi.fn();
+      await setup(
+        { search: simpsonSearch, menuActions: [{ key: 'reports', label: 'Reports', href: '/reports' }] },
+        undefined,
+        undefined,
+        navigate
+      );
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+      await openMenu();
+      const link = (await screen.findByText('Reports')).closest('a') as HTMLAnchorElement;
+      expect(link).toHaveAttribute('href', '/reports');
+
+      // Cmd-click is left to the browser (new tab), so the event is not cancelled.
+      let notCancelled = false;
+      await act(async () => {
+        notCancelled = fireEvent.click(link, { metaKey: true });
+      });
+      expect(notCancelled).toBe(true);
+      expect(navigate).not.toHaveBeenCalled();
+
+      await openMenu();
+      await act(async () => {
+        fireEvent.click((await screen.findByText('Reports')).closest('a') as HTMLAnchorElement);
+      });
+      expect(navigate).toHaveBeenCalledWith('/reports');
+    });
+
+    test('href toolbar action renders as a link and navigates in-app', async () => {
+      const navigate = vi.fn();
+      await setup(
+        {
+          search: simpsonSearch,
+          toolbarActions: [{ key: 'reports', label: 'Reports', icon: <span>r</span>, href: '/reports' }],
+        },
+        undefined,
+        undefined,
+        navigate
+      );
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+      const link = screen.getByLabelText('Reports');
+      expect(link.tagName).toBe('A');
+      expect(link).toHaveAttribute('href', '/reports');
+      await act(async () => {
+        fireEvent.click(link);
+      });
+      expect(navigate).toHaveBeenCalledWith('/reports');
+    });
+
+    test('Filled toolbar action uses the filled variant', async () => {
+      await setup({
+        search: simpsonSearch,
+        toolbarActions: [
+          { key: 'sync', label: 'Sync', icon: <span>s</span>, variant: 'filled', color: 'green', onClick: vi.fn() },
+        ],
+      });
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+      expect(screen.getByLabelText('Sync')).toHaveAttribute('data-variant', 'filled');
+    });
+
+    test('hideActionsMenu removes the button even with handlers', async () => {
+      await setup({
+        search: simpsonSearch,
+        onDelete: vi.fn(),
+        onBulk: vi.fn(),
+        menuActions: [{ key: 'archive', label: 'Archive', onClick: vi.fn() }],
+        hideActionsMenu: true,
+      });
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Actions')).not.toBeInTheDocument();
+    });
+
+    test('Custom actions are hidden below 768px', async () => {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 500 });
+      await setup({
+        search: simpsonSearch,
+        toolbarActions: [{ key: 'sync', label: 'Sync', icon: <span>s</span>, onClick: vi.fn() }],
+        menuActions: [{ key: 'archive', label: 'Archive', onClick: vi.fn() }],
+      });
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Sync')).not.toBeInTheDocument();
+
+      await openMenu();
+      expect(await screen.findByText('Refresh')).toBeInTheDocument();
+      expect(screen.queryByText('Archive')).not.toBeInTheDocument();
+    });
+
+    test('Action types reject onClick with href and accept a zero-argument onClick', () => {
+      const zeroArg: SearchControlMenuAction = { key: 'a', label: 'A', onClick: () => undefined };
+      // @ts-expect-error - an action cannot have both onClick and href
+      const both: SearchControlMenuAction = { key: 'b', label: 'B', onClick: () => undefined, href: '/b' };
+      // @ts-expect-error - toolbar actions require an icon
+      const noIcon: SearchControlToolbarAction = { key: 'c', label: 'C', onClick: () => undefined };
+      expect([zeroArg, both, noIcon]).toHaveLength(3);
+    });
   });
 
   describe('Pagination', () => {

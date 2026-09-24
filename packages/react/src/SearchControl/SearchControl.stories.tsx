@@ -3,7 +3,7 @@
 import type { SearchRequest } from '@medplum/core';
 import { Operator } from '@medplum/core';
 import type { Meta } from '@storybook/react';
-import { IconRefresh } from '@tabler/icons-react';
+import { IconArchive, IconHistory, IconRefresh, IconReport } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { SearchControl } from './SearchControl';
@@ -96,6 +96,52 @@ export const ToolbarActions = (): JSX.Element => {
           label: 'Sync with DoseSpot',
           icon: <IconRefresh size={16} />,
           onClick: () => console.log('sync'),
+        },
+      ]}
+      onChange={(e) => setSearch(e.definition)}
+    />
+  );
+};
+
+export const CustomActions = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      onNew={() => console.log('onNew')}
+      onDelete={(ids) => console.log('onDelete', ids)}
+      toolbarActions={[
+        {
+          key: 'sync',
+          label: 'Sync',
+          icon: <IconRefresh size={16} />,
+          onClick: (ids) => console.log('sync', ids),
+        },
+        {
+          key: 'reports',
+          label: 'Reports',
+          icon: <IconReport size={16} />,
+          href: '/reports',
+        },
+      ]}
+      menuActions={[
+        {
+          key: 'archive',
+          label: 'Archive',
+          icon: <IconArchive size={16} />,
+          requiresSelection: true,
+          onClick: (ids) => console.log('archive', ids),
+        },
+        {
+          key: 'audit',
+          label: 'Audit Log',
+          icon: <IconHistory size={16} />,
+          href: '/AuditEvent',
         },
       ]}
       onChange={(e) => setSearch(e.definition)}

@@ -52,7 +52,11 @@ import classes from './SearchControl.module.css';
 import { getFieldDefinitions } from './SearchControlField';
 import { buildFieldNameString, renderValue, setPage } from './SearchUtils';
 
+import type { SearchControlMenuAction, SearchControlToolbarAction } from './SearchControlActions';
+import { SearchControlMenuActionItem, SearchControlToolbarActionButton } from './SearchControlActions';
+
 export type { SearchControlContextMenuOptions } from './ResourceContextMenu';
+export type { SearchControlAction, SearchControlMenuAction, SearchControlToolbarAction } from './SearchControlActions';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -99,33 +103,23 @@ export interface SearchControlAdditionalColumn {
   readonly renderCell: (resource: Resource) => ReactNode;
 }
 
-/**
- * A custom action button rendered in the right-anchored toolbar cluster, styled to match the
- * built-in Refresh and New buttons. Use it to add or replace right-side actions - e.g. a "Sync"
- * button when embedding {@link SearchControl} in a medications view.
- */
-export interface SearchControlToolbarAction {
-  /** Stable React key and aria fallback. */
-  readonly key: string;
-  /** Tooltip text and aria-label. */
-  readonly label: string;
-  /** Icon element, e.g. `<IconRefresh size={16} />` (use size 16 to match the built-in buttons). */
-  readonly icon: ReactNode;
-  readonly onClick: () => void;
-  /** 'outline' (default) is a transparent bordered gray button like Refresh; 'filled' is solid like the New "+". */
-  readonly variant?: 'outline' | 'filled';
-  /** Color for the 'filled' variant (default 'blue'); ignored for 'outline'. */
-  readonly color?: string;
-  readonly disabled?: boolean;
-}
-
 export interface SearchControlProps {
   readonly search: SearchRequest;
   readonly checkboxesEnabled?: boolean;
   /** Additional computed columns rendered after the search-result columns. */
   readonly additionalColumns?: readonly SearchControlAdditionalColumn[];
-  /** Custom action buttons rendered at the left of the right-anchored toolbar cluster. */
+  /**
+   * Custom action buttons rendered at the left of the right-anchored toolbar cluster. Hidden below
+   * 768px, like the built-in Export, Bulk Apply and Delete actions.
+   */
   readonly toolbarActions?: readonly SearchControlToolbarAction[];
+  /**
+   * Custom items in the "…" actions menu, after the built-in items and before Delete. Hidden below
+   * 768px, like the built-in Export, Bulk Apply and Delete actions.
+   */
+  readonly menuActions?: readonly SearchControlMenuAction[];
+  /** Hide the "…" actions menu button, whatever it would contain. */
+  readonly hideActionsMenu?: boolean;
   readonly hideToolbar?: boolean;
   readonly hideFilters?: boolean;
   /** Hide the built-in Refresh button (e.g. to replace it with a custom {@link SearchControlToolbarAction}). */
@@ -375,12 +369,16 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const iconSize = 16;
   const isMobile = window.innerWidth < 768;
 
-  const selectedCount = Object.keys(state.selected).length;
+  const selectedIds = Object.keys(state.selected);
+  const selectedCount = selectedIds.length;
   const showExport = !isMobile && isExportPassed();
   const showDelete = !isMobile && !!props.onDelete;
   const showBulk = !isMobile && !!props.onBulk;
   const showRefresh = !props.hideRefresh;
-  const showActionsMenu = showExport || showDelete || showBulk || showRefresh;
+  const menuActions = (!isMobile && props.menuActions) || [];
+  const toolbarActions = (!isMobile && props.toolbarActions) || [];
+  const showActionsMenu =
+    !props.hideActionsMenu && (showExport || showDelete || showBulk || showRefresh || menuActions.length > 0);
 
   return (
     <ContextMenuProvider>
@@ -423,21 +421,8 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               )}
             </Group>
             <Group gap="xs">
-              {props.toolbarActions?.map((action) => (
-                <Tooltip key={action.key} label={action.label} position="bottom" openDelay={500}>
-                  <ActionIcon
-                    className={action.variant === 'filled' ? undefined : classes.actionIcon}
-                    variant={action.variant === 'filled' ? 'filled' : 'transparent'}
-                    color={action.variant === 'filled' ? (action.color ?? 'blue') : 'gray'}
-                    size={32}
-                    radius="xl"
-                    aria-label={action.label}
-                    disabled={action.disabled}
-                    onClick={action.onClick}
-                  >
-                    {action.icon}
-                  </ActionIcon>
-                </Tooltip>
+              {toolbarActions.map((action) => (
+                <SearchControlToolbarActionButton key={action.key} action={action} selectedIds={selectedIds} />
               ))}
               {showActionsMenu && (
                 <Menu shadow="md" width={200} radius="md" position="bottom-end">
@@ -483,6 +468,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                         <Text size="sm">Bulk Apply</Text>
                       </Menu.Item>
                     )}
+                    {menuActions.map((action) => (
+                      <SearchControlMenuActionItem key={action.key} action={action} selectedIds={selectedIds} />
+                    ))}
                     {showDelete && (
                       <Menu.Item
                         leftSection={<IconTrash size={16} color="var(--mantine-color-dimmed)" />}

@@ -59,6 +59,11 @@
   background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
 }
 
+/* Wraps a custom menu item's icon so it can inherit a default color. */
+.menuActionIcon {
+  display: flex;
+}
+
 .actionIcon svg {
   color: var(--mantine-color-gray-6);
 }
