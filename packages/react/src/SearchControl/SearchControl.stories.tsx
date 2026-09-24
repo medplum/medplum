@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchRequest } from '@medplum/core';
-import { Operator } from '@medplum/core';
+import { calculateAge, Operator } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import { IconArchive, IconHistory, IconRefresh, IconReportAnalytics, IconUserPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -286,35 +287,22 @@ export const DeleteAsync = (): JSX.Element => {
 export const AdditionalColumns = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',
-    fields: ['id', '_lastUpdated', 'name'],
+    fields: ['name', 'birthDate'],
   });
 
   return (
     <SearchControl
       search={search}
-      checkboxesEnabled={true}
-      additionalColumns={[{ name: 'Computed', renderCell: (resource) => `computed-${resource.id}` }]}
+      additionalColumns={[
+        {
+          name: 'Age',
+          renderCell: (resource) => {
+            const birthDate = (resource as Patient).birthDate;
+            return birthDate ? calculateAge(birthDate).years : undefined;
+          },
+        },
+      ]}
       onChange={(e) => setSearch(e.definition)}
-    />
-  );
-};
-
-export const ExtraFields = (): JSX.Element => {
-  const [search, setSearch] = useState<SearchRequest>({
-    resourceType: 'Patient',
-    fields: ['id', '_lastUpdated', 'name', 'birthDate', 'active', 'telecom', 'email', 'phone'],
-  });
-
-  return (
-    <SearchControl
-      search={search}
-      onLoad={(e) => console.log('onLoad', e)}
-      onClick={(e) => console.log('onClick', e)}
-      onAuxClick={(e) => console.log('auxClick', e)}
-      onChange={(e) => {
-        console.log('onChange', e);
-        setSearch(e.definition);
-      }}
     />
   );
 };
