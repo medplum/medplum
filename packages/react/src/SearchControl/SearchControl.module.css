@@ -41,8 +41,10 @@
   transition: border-color 150ms ease;
 }
 
+/* data-expanded is set by Mantine's Menu.Target, so the "…" button keeps its hover border while open. */
 .actionIcon:hover,
-.actionIcon[data-opened] {
+.actionIcon[data-opened],
+.actionIcon[data-expanded] {
   border-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
 }
 
@@ -51,14 +53,18 @@
   transform: none !important;
 }
 
-.actionsMenu :global(.mantine-Menu-item) {
+/*
+ * Shared by every SearchControl menu (the "…" actions menu, column-header menus and the row
+ * right-click menu): rounded items and a hover that sinks below the dropdown in dark mode, matching
+ * the provider app's menus.
+ */
+.menuDropdown :global(.mantine-Menu-item) {
   border-radius: var(--mantine-radius-sm);
 }
 
-.actionsMenu :global(.mantine-Menu-item:hover),
-.actionsMenu :global(.mantine-Menu-item[data-hovered]) {
-  /* In dark mode the hover lifts above the dropdown (dark-6), as Mantine's own menu hover does. */
-  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
+.menuDropdown :global(.mantine-Menu-item:hover),
+.menuDropdown :global(.mantine-Menu-item[data-hovered]) {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
 }
 
 /* Wraps a custom menu item's icon so it can inherit a default color. */

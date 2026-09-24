@@ -5,6 +5,7 @@ import type { SearchRequest } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import { IconFilter2Plus, IconSortAscending, IconSortDescending } from '@tabler/icons-react';
 import type { JSX } from 'react';
+import classes from '../SearchControl/SearchControl.module.css';
 import { setSort } from '../SearchControl/SearchUtils';
 
 export interface SearchPopupMenuProps {
@@ -62,7 +63,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
   }
 
   return (
-    <Menu.Dropdown>
+    <Menu.Dropdown className={classes.menuDropdown}>
       <Menu.Item leftSection={<IconSortAscending size={14} />} onClick={() => onSort(false)}>
         {labels.asc}
       </Menu.Item>

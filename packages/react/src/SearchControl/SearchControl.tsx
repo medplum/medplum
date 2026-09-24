@@ -481,7 +481,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                       <IconDots size={16} />
                     </ActionIcon>
                   </Menu.Target>
-                  <Menu.Dropdown className={classes.actionsMenu}>
+                  <Menu.Dropdown className={classes.menuDropdown}>
                     {showRefresh && (
                       <Menu.Item
                         leftSection={<IconRefresh size={16} color="var(--mantine-color-dimmed)" />}

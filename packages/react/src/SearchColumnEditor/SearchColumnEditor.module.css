@@ -31,7 +31,8 @@
 }
 
 .item:hover {
-  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+  /* Sinks below the dropdown in dark mode, like the SearchControl menus. */
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-8));
 }
 
 /* The row currently being dragged is dimmed; the row under the cursor gets a top guide line. */

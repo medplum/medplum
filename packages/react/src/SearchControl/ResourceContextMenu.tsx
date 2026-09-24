@@ -198,7 +198,7 @@ export function useResourceContextMenuController(
       <Menu.Target>
         <div aria-hidden style={{ position: 'fixed', left: state.x, top: state.y, width: 1, height: 1 }} />
       </Menu.Target>
-      <Menu.Dropdown>
+      <Menu.Dropdown className={classes.menuDropdown}>
         {target && visible && (
           <>
             {visible.open && (
