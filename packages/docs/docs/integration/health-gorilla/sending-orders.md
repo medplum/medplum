@@ -116,6 +116,7 @@ const {
 | `createOrderBundle`             | Creates FHIR resources for the complete order                                                                   |
 | `setPerformingLab`              | Sets which lab will process the tests                                                                           |
 | `setPerformingLabAccountNumber` | Overrides the practice-level lab account number for the order (see [Lab Account Numbers](#lab-account-numbers)) |
+| `setPerformingLabPhysicianAccountNumber` | Overrides the physician-level lab account number for the order (see [Lab Account Numbers](#lab-account-numbers)) |
 | `validateOrder`                 | Checks order for required fields and valid data                                                                 |
 
 #### Example
@@ -252,6 +253,17 @@ Stored as an `identifier` on the `Practitioner` resource with type `AN` and an `
     }
   ]
 }
+```
+
+This storage model supports only one AN per (practitioner, lab) — a second `identifier` with the
+same `assigner` replaces the first on the next practitioner sync, it isn't added alongside it. If a
+practitioner needs to order under multiple physician-level accounts with the same lab (e.g. multiple
+clinic locations), you can override the account number at order time using
+`setPerformingLabPhysicianAccountNumber` from the `useHealthGorillaLabOrder` hook, instead of trying
+to store more than one account on the `Practitioner` resource:
+
+```tsx
+setPerformingLabPhysicianAccountNumber(selectedAccountNumber);
 ```
 
 ### Practice-level account number
