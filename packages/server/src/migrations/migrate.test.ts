@@ -407,17 +407,17 @@ describe('Generator', () => {
         }
       });
 
-      test('date keeps plain btree index and project-scopes range index', () => {
+      test('date project-scopes btree index but leaves range index unscoped', () => {
         const table = getTable('Appointment');
         const columns = getIndexColumns(table);
         expect(columns).toContainEqual(['date']);
         expect(columns).toContainEqual(['projectId', 'date']);
-        expect(columns).toContainEqual(['projectId', '__date', '__dateSort']);
-        expect(columns).not.toContainEqual(['__date', '__dateSort']);
+        expect(columns).toContainEqual(['__date', '__dateSort']);
+        expect(columns).not.toContainEqual(['projectId', '__date', '__dateSort']);
 
         const queries = getCreateTableQueries(table, { includeIfExists: false });
         expect(queries).toContain(
-          'CREATE INDEX "Appointment_projectId___date_sorted_idx" ON "Appointment" USING gist ("projectId", "__date", "__dateSort")'
+          'CREATE INDEX "Appointment___date_sorted_idx" ON "Appointment" USING gist ("__date", "__dateSort")'
         );
         expect(queries).toContain(
           'CREATE INDEX "Appointment___end_sorted_idx" ON "Appointment" USING gist ("__end", "__endSort")'
