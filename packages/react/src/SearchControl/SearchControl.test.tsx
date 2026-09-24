@@ -592,12 +592,18 @@ describe('SearchControl', () => {
       ],
     };
 
-    async function setupDelete(props: Partial<SearchControlProps>, bundle = twoPatients): Promise<void> {
-      await setup({ search: { resourceType: 'Patient', fields: ['name'] }, checkboxesEnabled: true, ...props }, bundle);
+    async function setupDelete(props: Partial<SearchControlProps>, bundle = twoPatients): Promise<MockClient> {
+      const medplum = new MockClient();
+      await setup(
+        { search: { resourceType: 'Patient', fields: ['name'] }, checkboxesEnabled: true, ...props },
+        bundle,
+        medplum
+      );
       expect(await screen.findByText('Ann One')).toBeInTheDocument();
       await act(async () => {
         fireEvent.click(screen.getByTestId('all-checkbox'));
       });
+      return medplum;
     }
 
     async function clickMenuDelete(): Promise<void> {
@@ -764,6 +770,62 @@ describe('SearchControl', () => {
         resolve();
       });
       expect(confirmButton()).not.toHaveAttribute('data-loading');
+    });
+
+    test('Results reload after a sync delete', async () => {
+      const medplum = await setupDelete({ onDelete: vi.fn() });
+      const searchCalls = (medplum.search as ReturnType<typeof vi.fn>).mock.calls.length;
+      await clickMenuDelete();
+
+      await act(async () => {
+        fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+      });
+      expect((medplum.search as ReturnType<typeof vi.fn>).mock.calls.length).toBe(searchCalls + 1);
+      expect((medplum.search as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[2]).toMatchObject({ cache: 'reload' });
+    });
+
+    test('Results reload only after an async delete resolves', async () => {
+      let resolve: () => void = () => undefined;
+      const onDelete = vi.fn(
+        () =>
+          new Promise<void>((r) => {
+            resolve = r;
+          })
+      );
+      const medplum = await setupDelete({ onDelete });
+      const searchCalls = (medplum.search as ReturnType<typeof vi.fn>).mock.calls.length;
+      await clickMenuDelete();
+
+      await act(async () => {
+        fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+      });
+      expect((medplum.search as ReturnType<typeof vi.fn>).mock.calls.length).toBe(searchCalls);
+
+      await act(async () => {
+        resolve();
+      });
+      expect((medplum.search as ReturnType<typeof vi.fn>).mock.calls.length).toBe(searchCalls + 1);
+    });
+
+    test('Results do not reload when an async delete rejects', async () => {
+      let reject: () => void = () => undefined;
+      const onDelete = vi.fn(
+        () =>
+          new Promise<void>((_, r) => {
+            reject = r;
+          })
+      );
+      const medplum = await setupDelete({ onDelete });
+      const searchCalls = (medplum.search as ReturnType<typeof vi.fn>).mock.calls.length;
+      await clickMenuDelete();
+
+      await act(async () => {
+        fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+      });
+      await act(async () => {
+        reject();
+      });
+      expect((medplum.search as ReturnType<typeof vi.fn>).mock.calls.length).toBe(searchCalls);
     });
 
     test('The modal title keeps its count while closing', async () => {

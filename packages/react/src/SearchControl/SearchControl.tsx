@@ -149,7 +149,8 @@ export interface SearchControlProps {
   /**
    * Deletes the checked rows. If it returns a Promise, the confirm button shows a loading state and
    * the modal stays open until it settles; a rejection keeps the modal open for the caller to report
-   * the error. The deleted IDs are cleared from the selection once the delete finishes.
+   * the error. Once the delete finishes, the deleted IDs are cleared from the selection and the
+   * results reload. Return the Promise so the reload waits for the delete to complete.
    */
   readonly onDelete?: (ids: string[]) => void | Promise<void>;
   /**
@@ -426,6 +427,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }
         return { ...s, selected: remaining, deleting: false, deleteConfirmVisible: false };
       });
+      loadResults({ cache: 'reload' });
     };
     const result = onDelete(ids);
     if (isPromiseLike(result)) {
