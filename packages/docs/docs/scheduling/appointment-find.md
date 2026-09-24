@@ -20,6 +20,7 @@ Existing slots from each input Schedule are used to restrict or expand that sche
 - **Patient-facing booking flows**: Show a patient the available time windows for a given provider or location
 - **Availability checks**: Determine whether a provider has open time before attempting to book
 - **Multi-provider scheduling**: Query multiple Schedules and intersect results to find shared availability
+- **Recurring visits**: Find a weekly time that is open for every visit of a series. See [Finding a weekly series](#finding-a-weekly-series)
 
 ## Invoke the `$find` operation
 
@@ -72,17 +73,19 @@ curl -G 'https://api.medplum.com/fhir/R4/Appointment/$find' \
 | `service-type-reference` | `reference(HealthcareService)`   | The HealthcareService describing the type of appointment to be scheduled.                    | Yes      |
 | `schedule`               | `reference(Schedule)`            | A schedule to check for availability. May be passed multiple times with different schedules. | Yes      |
 | `ignore-appointment`     | `reference(Appointment)`         | Compute availability as if this Appointment did not exist. See [Reassigning an existing appointment](#reassigning-an-existing-appointment). | No       |
-| `_count`                 | `integer`                        | Maximum number of Appointment resources to return. Defaults to 20. Maximum is 1000.          | No       |
+| `occurrence-count`       | `positiveInt`                    | Search for a weekly series of this many occurrences, from 2 to 6. See [Finding a weekly series](#finding-a-weekly-series). Defaults to 1, a single time. | No       |
+| `_count`                 | `integer`                        | Maximum number of Appointment resources (or, with `occurrence-count`, series) to return. Defaults to 20. Maximum is 1000. | No       |
 
 ### Constraints
 
 - `start` must be before `end`
-- The search window cannot exceed **31 days**
+- The search window cannot exceed **31 days**, or **7 days** when searching for a series
+- `occurrence-count`, if provided, must be an integer between 1 and 6
 - At least one schedule must be provided
 - Each schedule must have exactly **one actor** reference
 - Each schedule's `serviceType` field must match the requested HealthcareService.type
 - Each schedule's actor (Practitioner, Location, or Device) must have a timezone defined via the `http://hl7.org/fhir/StructureDefinition/timezone` extension
-- `ignore-appointment`, if provided, must reference an Appointment that exists and is readable by the caller
+- `ignore-appointment`, if provided, must reference an Appointment that exists and is readable by the caller, and cannot be combined with an `occurrence-count` of 2 or more
 
 ## Output
 
@@ -211,6 +214,62 @@ moves the appointment in a single transaction.
 
 :::
 
+## Finding a weekly series
+
+Passing `occurrence-count` searches for a **weekly-recurring** series of appointment times instead of single times: a weekday and time of day that is available in every one of up to 6 consecutive weeks. Use it for physical therapy, counseling, or other care plans that repeat weekly for a fixed number of visits. Book the series you choose with [`$book`](/docs/scheduling/appointment-book#booking-a-weekly-series), which books every occurrence or none of them.
+
+```
+[base]/R4/Appointment/$find?start=2026-03-09T09:00:00-04:00&end=2026-03-09T17:00:00-04:00&service-type-reference=HealthcareService/my-healthcareservice-id&schedule=Schedule/my-schedule-id&occurrence-count=6
+```
+
+A series search differs from a single-time search in a few ways:
+
+- `start`/`end` cover only the **first** occurrence, and cannot span more than **7 days**. That's tighter than the usual 31 days because each later occurrence is searched with a window of the same width. To search a later week, call `$find` again with that week's `start`/`end`.
+- `_count` counts series. Each series is one entry of the response.
+- `ignore-appointment` is not supported.
+
+An `occurrence-count` of `1` (or none) is a single-time search.
+
+### Series in the response
+
+Each entry of the response is one series: a nested `collection` Bundle holding its proposed Appointments in occurrence order. Like any `$find` result, they are virtual. Pass a series' Appointments to `$book` together.
+
+```json
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Bundle",
+        "type": "collection",
+        "entry": [
+          { "resource": { "resourceType": "Appointment", "start": "2026-03-09T13:00:00.000Z", "...": "occurrence 1" } },
+          { "resource": { "resourceType": "Appointment", "start": "2026-03-16T13:00:00.000Z", "...": "occurrence 2" } }
+        ]
+      }
+    }
+  ]
+}
+```
+
+The nested Bundle is what groups a series, so proposed occurrences carry nothing else to say they belong together. [`$book`](/docs/scheduling/appointment-book#series-output) tags the series when it is booked.
+
+### How a series is found
+
+A 6-week series spans 35 days, which is longer than the 31-day limit on a single search window. So a series search never evaluates one wide multi-week window. Instead, it searches each occurrence's week separately:
+
+1. Searches `start`/`end` exactly as a single-time search would, producing candidate start times for the first occurrence in chronological order
+2. Searches each later week once, over the window those candidates project into
+3. Keeps a candidate only if the same weekday and local time (in the schedules' shared `alignmentTimezone`) is available in **every** week
+4. Returns the first `_count` candidates that survive every week
+
+Each week is searched once, not once per candidate. The number of availability queries therefore scales with `occurrence-count`, not with how many candidate times the first week has.
+
+Each occurrence is checked in its own calendar day in the alignment timezone, so the series keeps its local time of day across Daylight Saving Time transitions. A series anchored at 9am stays at 9am local time rather than at a fixed UTC offset. A series whose local time doesn't exist in some week, such as 2:30am on the night clocks spring forward, isn't offered. All of this holds **as long as `alignmentTimezone` is set to the schedule's real local timezone**. `alignmentTimezone` defaults to `Etc/UTC` (see [Defining Availability](/docs/scheduling/defining-availability)). In that case the series is fixed in UTC, and its local time will shift by an hour across a DST transition.
+
+Recurrence is intentionally limited in this beta: **weekly only, up to 6 occurrences**. Monthly or yearly cadences, and skipped dates or other exceptions, are not yet supported.
+
 ## Availability Logic
 
 `$find` calculates available windows by:
@@ -247,6 +306,45 @@ See [Defining Availability](/docs/scheduling/defining-availability) for full det
 {
   "resourceType": "OperationOutcome",
   "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Search range cannot exceed 31 days" } }]
+}
+```
+
+### Series Range Exceeds 7 Days
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Search range cannot exceed 7 days" } }]
+}
+```
+
+### Invalid occurrence-count
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "error",
+      "code": "invalid",
+      "details": { "text": "Invalid occurrence-count, must be an integer between 1 and 6" }
+    }
+  ]
+}
+```
+
+### `ignore-appointment` with `occurrence-count`
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "error",
+      "code": "invalid",
+      "details": { "text": "ignore-appointment cannot be combined with occurrence-count" }
+    }
+  ]
 }
 ```
 

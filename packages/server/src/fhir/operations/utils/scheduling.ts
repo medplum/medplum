@@ -36,6 +36,7 @@ import type { LayeredDict } from '../../../util/layereddict';
 import type { WithPath } from '../../../util/withpath';
 import { copyPaths, filterWithPaths, getPath, withPath } from '../../../util/withpath';
 import type { Repository } from '../../repo';
+import { linkToOriginatingAppointment } from './recurrence';
 import type { SchedulingParameters } from './scheduling-parameters';
 import { getHealthcareServiceSchedulingParameters, getScheduleSchedulingParameters } from './scheduling-parameters';
 import { uniqueOn } from './terminology';
@@ -1027,33 +1028,79 @@ export async function createProposedAppointment(
   proposedAppointment: WithPath<Appointment>,
   customizer: (appointment: Appointment, slots: Slot[]) => void
 ): Promise<Bundle<Appointment | Slot>> {
-  const [appointment, slots, healthcareService, schedulingParametersGroup] = await validateProposedAppointment(
-    repo,
-    proposedAppointment
+  return createProposedAppointments(repo, [proposedAppointment], ([{ appointment, slots }]) => {
+    customizer(appointment, slots);
+    return [appointment];
+  });
+}
+
+export type ValidatedOccurrence = {
+  appointment: Appointment;
+  slots: Slot[];
+  /** The scheduling parameters of each of the occurrence's schedules. */
+  schedulingParameters: LayeredDict<SchedulingParameters & { timezone: string }>[];
+};
+
+/**
+ * Books proposed Appointments all or none, each validated on its own, in one serializable
+ * transaction. They are created in the order given, and each after the first is linked back to
+ * the first via R5's `originatingAppointment`.
+ *
+ * @param repo - The Repository to operate with.
+ * @param proposedAppointments - The proposed Appointments to book.
+ * @param customizer - Given every validated Appointment in order, returns the Appointments to
+ *   create in their place. It may also mutate the Slots.
+ * @returns A transaction-response Bundle containing every created Appointment and Slot.
+ */
+export async function createProposedAppointments(
+  repo: Repository,
+  proposedAppointments: WithPath<Appointment>[],
+  customizer: (occurrences: ValidatedOccurrence[]) => Appointment[]
+): Promise<Bundle<Appointment | Slot>> {
+  const validated = await Promise.all(
+    proposedAppointments.map((proposedAppointment) => validateProposedAppointment(repo, proposedAppointment))
   );
 
-  // We will write this attribute later, check that we aren't clobbering something that was submitted
-  if (appointment.slot) {
-    throw new OperationOutcomeError(
-      badRequest('Proposed appointment must not have Slot references', `${getPath(proposedAppointment)}.slot`)
-    );
+  for (const [idx, [appointment, slots, , schedulingParametersGroup]] of validated.entries()) {
+    // We will write this attribute later, check that we aren't clobbering something that was submitted
+    if (appointment.slot) {
+      throw new OperationOutcomeError(
+        badRequest('Proposed appointment must not have Slot references', `${getPath(proposedAppointments[idx])}.slot`)
+      );
+    }
+    stampBookingCapacity(slots, schedulingParametersGroup);
   }
 
-  stampBookingCapacity(slots, schedulingParametersGroup);
-  customizer(appointment, slots);
+  const appointments = customizer(
+    validated.map(([appointment, slots, , schedulingParametersGroup]) => ({
+      appointment,
+      slots,
+      schedulingParameters: [...schedulingParametersGroup.values()],
+    }))
+  );
 
   const createdResources = await repo.withTransaction(
     async (txRepo) => {
-      await validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup);
-      const createdSlots = new Array<WithId<Slot>>(slots.length);
-      for (const [i, slot] of slots.entries()) {
-        createdSlots[i] = await txRepo.createResource<Slot>(slot);
+      // Sequential, not `Promise.all`: a transaction is pinned to a single database connection,
+      // which cannot process multiple concurrent queries. Each occurrence is validated only after
+      // the ones before it are created, so occurrences can't overbook each other.
+      const results: (Appointment | Slot)[] = [];
+      let originating: WithId<Appointment> | undefined;
+      for (const [idx, [, slots, healthcareService, schedulingParametersGroup]] of validated.entries()) {
+        await validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup);
+        const createdSlots = new Array<WithId<Slot>>(slots.length);
+        for (const [i, slot] of slots.entries()) {
+          createdSlots[i] = await txRepo.createResource<Slot>(slot);
+        }
+        const appointment = appointments[idx];
+        const createdAppointment = await txRepo.createResource<Appointment>({
+          ...(originating ? linkToOriginatingAppointment(appointment, originating) : appointment),
+          slot: createdSlots.map((slot) => createReference(slot)),
+        });
+        originating ??= createdAppointment;
+        results.push(createdAppointment, ...createdSlots);
       }
-      const createdAppointment = await txRepo.createResource<Appointment>({
-        ...appointment,
-        slot: createdSlots.map((slot) => createReference(slot)),
-      });
-      return [createdAppointment, ...createdSlots];
+      return results;
     },
     { serializable: true, resourceTypes: ['Appointment', 'Slot'], source: 'createProposedAppointment' }
   );

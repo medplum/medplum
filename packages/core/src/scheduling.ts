@@ -11,6 +11,7 @@ import type {
   Resource,
   Schedule,
 } from '@medplum/fhirtypes';
+import { HTTP_HL7_ORG } from './constants';
 import { isReference } from './types';
 import type { WithId } from './utils';
 import {
@@ -112,6 +113,34 @@ export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/S
  */
 export const ServiceTypeReferenceURI = 'https://medplum.com/fhir/service-type-reference';
 export const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/timezone';
+
+/**
+ * R5's `Appointment.recurrenceId`, as the R4 cross-version extension: an occurrence's 1-based
+ * position (valuePositiveInt) in a series booked via `Appointment/$book`. The series it belongs
+ * to is identified by {@link RecurringAppointmentSeriesIdentifierSystem}.
+ */
+export const RecurrenceIdExtensionURI = `${HTTP_HL7_ORG}/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceId`;
+
+/**
+ * R5's `Appointment.recurrenceTemplate`, as the R4 cross-version extension: how a series
+ * recurs, carried by its first occurrence only. Sub-extensions are named for R5's child elements:
+ * - `timezone` (valueCodeableConcept, IANA) - the timezone whose wall-clock time the series keeps
+ * - `recurrenceType` (valueCodeableConcept, UCUM) - only `wk` (weekly) is supported for now
+ * - `occurrenceCount` (valuePositiveInt) - total number of occurrences in the series
+ * - `weeklyTemplate` - the series' weekday (e.g. `monday`: valueBoolean true) and `weekInterval`
+ *   (valuePositiveInt, always 1 for now)
+ */
+export const RecurrenceTemplateExtensionURI = `${HTTP_HL7_ORG}/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceTemplate`;
+
+/**
+ * R5's `Appointment.originatingAppointment`, as the R4 cross-version extension: on each booked
+ * occurrence after the first, a valueReference to the first occurrence, which carries the
+ * series' {@link RecurrenceTemplateExtensionURI}.
+ */
+export const OriginatingAppointmentExtensionURI = `${HTTP_HL7_ORG}/fhir/5.0/StructureDefinition/extension-Appointment.originatingAppointment`;
+
+/** Identifier system for the `Appointment.identifier` shared by every occurrence of one booked recurring series. */
+export const RecurringAppointmentSeriesIdentifierSystem = 'https://medplum.com/fhir/recurring-appointment-series';
 
 export const DAYS_OF_WEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
