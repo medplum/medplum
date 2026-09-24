@@ -10,6 +10,7 @@ import {
 import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
 import type { SchedulingParameterValues } from './parameterValues';
 import {
+  getEffectiveSchedulingParameterValues,
   getHealthcareServiceSchedulingParameterValues,
   getScheduleSchedulingParameterValues,
   setHealthcareServiceSchedulingParameterValues,
@@ -237,5 +238,54 @@ describe('flat scheduling parameters', () => {
 
     expect(getScheduleSchedulingParameterValues(written, other)).toMatchObject({ duration: 15, bufferBefore: 2 });
     expect(getScheduleSchedulingParameterValues(written, visitType).duration).toBe(30);
+  });
+});
+
+describe('getEffectiveSchedulingParameterValues', () => {
+  const calendar: Schedule = { resourceType: 'Schedule', id: 'schedule-1', actor: [{ reference: 'Practitioner/123' }] };
+
+  test('a service that sets nothing gets scheduling defaults, with no duration or timezone', () => {
+    expect(getEffectiveSchedulingParameterValues(service)).toEqual({
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 60,
+      alignmentOffset: 0,
+      slotCapacity: 1,
+      alignmentTimezone: 'Etc/UTC',
+    });
+  });
+
+  test('a value the service sets beats the default', () => {
+    const configured = setHealthcareServiceSchedulingParameterValues(service, { duration: 30, bufferAfter: 10 });
+
+    expect(getEffectiveSchedulingParameterValues(configured)).toMatchObject({
+      duration: 30,
+      bufferAfter: 10,
+      bufferBefore: 0,
+    });
+  });
+
+  test("a calendar's override beats the service, which beats the default", () => {
+    const configured = setHealthcareServiceSchedulingParameterValues(service, { duration: 30, bufferAfter: 10 });
+    const overriding = setScheduleSchedulingParameterValues(calendar, configured, { bufferAfter: 20 });
+
+    expect(getEffectiveSchedulingParameterValues(configured, overriding)).toMatchObject({
+      duration: 30,
+      bufferAfter: 20,
+      bufferBefore: 0,
+    });
+  });
+
+  test("another service's override on the same calendar does not apply", () => {
+    const other: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'service-2', name: 'Follow up' };
+    const overriding = setScheduleSchedulingParameterValues(calendar, other, { bufferAfter: 20 });
+
+    expect(getEffectiveSchedulingParameterValues(service, overriding).bufferAfter).toBe(0);
+  });
+
+  test('a legacy zero alignment interval on a calendar still reads as hourly', () => {
+    const legacy = setScheduleSchedulingParameterValues(calendar, service, { alignmentInterval: 0 });
+
+    expect(getEffectiveSchedulingParameterValues(service, legacy).alignmentInterval).toBe(60);
   });
 });
