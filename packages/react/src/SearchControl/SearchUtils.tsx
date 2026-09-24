@@ -537,14 +537,15 @@ export function isMetaSearchParam(code: string): boolean {
 }
 
 /**
- * Returns a human-readable display label for a search parameter code. Metadata codes are formatted
- * like regular fields, so `_lastUpdated` reads as "Last Updated". Display-only: the search still
- * uses the raw code, so a label matching a same-named element stays a distinct value.
+ * Returns a human-readable display label for a search parameter code. Metadata codes get a
+ * " (meta)" suffix so they never share a label with a same-named element - e.g. `project` reads
+ * "Project" and `_project` reads "Project (meta)" when the Column and Filter popovers list both.
  * @param code - The search parameter code.
  * @returns The display label for the search parameter.
  */
 export function buildSearchParamFieldLabel(code: string): string {
-  return buildFieldNameString(code);
+  const label = buildFieldNameString(code);
+  return isMetaSearchParam(code) ? `${label} (meta)` : label;
 }
 
 /**

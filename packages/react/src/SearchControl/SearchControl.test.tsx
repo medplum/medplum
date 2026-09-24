@@ -1488,7 +1488,7 @@ describe('SearchControl', () => {
     expect(screen.queryByText('Patient')).not.toBeInTheDocument();
   });
 
-  test('Hide filters', async () => {
+  test('Deprecated hideFilters is still accepted and has no effect', async () => {
     const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',

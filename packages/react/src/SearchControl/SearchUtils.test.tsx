@@ -496,11 +496,12 @@ describe('SearchUtils', () => {
     expect(buildFieldNameString('order-detail')).toBe('Order Detail');
   });
 
-  test('buildSearchParamFieldLabel formats metadata readably', () => {
+  test('buildSearchParamFieldLabel marks metadata so it never matches a same-named element', () => {
     expect(buildSearchParamFieldLabel('name')).toBe('Name');
-    expect(buildSearchParamFieldLabel('_lastUpdated')).toBe('Last Updated');
-    expect(buildSearchParamFieldLabel('_project')).toBe('Project');
-    expect(buildSearchParamFieldLabel('_profile')).toBe('Profile');
-    expect(buildSearchParamFieldLabel('_id')).toBe('ID');
+    expect(buildSearchParamFieldLabel('project')).toBe('Project');
+    expect(buildSearchParamFieldLabel('_project')).toBe('Project (meta)');
+    expect(buildSearchParamFieldLabel('_lastUpdated')).toBe('Last Updated (meta)');
+    expect(buildSearchParamFieldLabel('_profile')).toBe('Profile (meta)');
+    expect(buildSearchParamFieldLabel('_id')).toBe('ID (meta)');
   });
 });

@@ -23,7 +23,6 @@ export function PatientImmunizations(props: PatientImmunizationsProps): JSX.Elem
   return (
     <SearchControl
       search={search}
-      hideFilters={true}
       hideToolbar={true}
       onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
       onChange={(e) => {

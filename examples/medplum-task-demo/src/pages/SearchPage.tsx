@@ -74,7 +74,6 @@ export function SearchPage(): JSX.Element {
               onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
               hideToolbar={false}
               onNew={() => setIsNewOpen(true)}
-              hideFilters={true}
               onChange={(e) => {
                 navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
               }}
@@ -86,7 +85,6 @@ export function SearchPage(): JSX.Element {
               onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
               hideToolbar={false}
               onNew={() => setIsNewOpen(true)}
-              hideFilters={true}
               onChange={(e) => {
                 navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
               }}
@@ -98,7 +96,6 @@ export function SearchPage(): JSX.Element {
           search={search}
           onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
           hideToolbar={false}
-          hideFilters={true}
           onChange={(e) => {
             navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
           }}

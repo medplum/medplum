@@ -289,10 +289,11 @@ describe('SearchFilterEditor', () => {
       fireEvent.click(screen.getByTestId('filter-0-row-filter-field'));
     });
 
-    // Both the element field (project/profile) and the meta field (_project/_profile) render with the
-    // same readable label, so each appears at least twice across the Fields and Metadata groups.
-    expect(screen.getAllByRole('option', { hidden: true, name: 'Project' }).length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByRole('option', { hidden: true, name: 'Profile' }).length).toBeGreaterThanOrEqual(2);
+    // The element field (project/profile) and the meta field (_project/_profile) get distinct labels.
+    expect(screen.getByRole('option', { hidden: true, name: 'Project' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { hidden: true, name: 'Project (meta)' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { hidden: true, name: 'Profile' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { hidden: true, name: 'Profile (meta)' })).toBeInTheDocument();
 
     expect(screen.getByText('Fields')).toBeInTheDocument();
     expect(screen.getByText('Metadata')).toBeInTheDocument();

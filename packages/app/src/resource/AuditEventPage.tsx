@@ -25,7 +25,6 @@ export function AuditEventPage(): JSX.Element | null {
         search={search}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
         onChange={(e) => setSearch(e.definition)}
-        hideFilters
       />
     </Document>
   );

@@ -238,7 +238,6 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
         onChange={(e) => setSearch(e.definition)}
         onLoad={handleLoad}
         additionalColumns={additionalColumns}
-        hideFilters
         hideToolbar
       />
     </>

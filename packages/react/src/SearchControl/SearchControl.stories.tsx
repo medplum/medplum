@@ -207,6 +207,22 @@ export const DeleteAsync = (): JSX.Element => {
   );
 };
 
+export const AdditionalColumns = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      additionalColumns={[{ name: 'Computed', renderCell: (resource) => `computed-${resource.id}` }]}
+      onChange={(e) => setSearch(e.definition)}
+    />
+  );
+};
+
 export const ExtraFields = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',
@@ -280,51 +296,6 @@ export const HideToolbar = (): JSX.Element => {
       search={search}
       checkboxesEnabled={true}
       hideToolbar={true}
-      onLoad={(e) => console.log('onLoad', e)}
-      onClick={(e) => console.log('onClick', e)}
-      onAuxClick={(e) => console.log('auxClick', e)}
-      onChange={(e) => {
-        console.log('onChange', e);
-        setSearch(e.definition);
-      }}
-    />
-  );
-};
-
-export const HideFilters = (): JSX.Element => {
-  const [search, setSearch] = useState<SearchRequest>({
-    resourceType: 'Patient',
-    fields: ['id', '_lastUpdated', 'name'],
-  });
-
-  return (
-    <SearchControl
-      search={search}
-      checkboxesEnabled={true}
-      hideFilters={true}
-      onLoad={(e) => console.log('onLoad', e)}
-      onClick={(e) => console.log('onClick', e)}
-      onAuxClick={(e) => console.log('auxClick', e)}
-      onChange={(e) => {
-        console.log('onChange', e);
-        setSearch(e.definition);
-      }}
-    />
-  );
-};
-
-export const HideToolbarAndFilters = (): JSX.Element => {
-  const [search, setSearch] = useState<SearchRequest>({
-    resourceType: 'Patient',
-    fields: ['id', '_lastUpdated', 'name'],
-  });
-
-  return (
-    <SearchControl
-      search={search}
-      checkboxesEnabled={true}
-      hideToolbar={true}
-      hideFilters={true}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
       onAuxClick={(e) => console.log('auxClick', e)}

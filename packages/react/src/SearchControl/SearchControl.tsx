@@ -131,6 +131,10 @@ export interface SearchControlProps {
   /** Hide the "…" actions menu button, whatever it would contain. */
   readonly hideActionsMenu?: boolean;
   readonly hideToolbar?: boolean;
+  /**
+   * @deprecated No longer has any effect: the per-column filter summary row it hid was removed.
+   * Filters are edited from the toolbar's Filters popover. Will be removed in the next major version.
+   */
   readonly hideFilters?: boolean;
   /** Hide the built-in Refresh button (e.g. to replace it with a custom {@link SearchControlToolbarAction}). */
   readonly hideRefresh?: boolean;
@@ -175,9 +179,11 @@ interface SearchControlState {
 }
 
 /**
- * The SearchControl component represents the embeddable search table control.
- * It includes the table, rows, headers, sorting, etc.
- * It does not include the field editor, filter editor, pagination buttons.
+ * Embeddable FHIR search table. Renders a toolbar (column, filter and sort popovers,
+ * result count, custom toolbar actions, an overflow actions menu and an optional New button),
+ * the results table with sortable/filterable headers, optional row checkboxes and a row
+ * context menu, and pagination. The component is controlled: it never mutates `search`;
+ * every change is emitted through `onChange` for the caller to apply.
  * @param props - The SearchControl React props.
  * @returns The SearchControl React node.
  */
@@ -625,7 +631,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 })}
                 {props.additionalColumns?.map((col) => (
                   <Table.Th key={col.name}>
-                    <Text fw={500} c="black" p={2}>
+                    <Text className={classes.staticColumnTitle} size="xs" fw={500} c="gray.6">
                       {col.name}
                     </Text>
                   </Table.Th>

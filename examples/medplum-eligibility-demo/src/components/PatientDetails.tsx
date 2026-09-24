@@ -73,7 +73,6 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
           <SearchControl
             search={coverageSearchRequest}
             onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
-            hideFilters={true}
             hideToolbar={true}
           />
         </Tabs.Panel>

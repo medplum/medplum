@@ -52,7 +52,6 @@ export function PrescriptionPage(): JSX.Element {
                 filters: [{ code: 'prescription', operator: Operator.EQUALS, value: `MedicationRequest/${id}` }],
                 fields: ['id', '_lastUpdated', 'status'],
               }}
-              hideFilters={true}
               hideToolbar={true}
               onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
             />

@@ -42,7 +42,6 @@ export function CandidImportedPayerList(props: CandidImportedPayerListProps): JS
         key={directory.payersVersion}
         search={search}
         additionalColumns={additionalColumns}
-        hideFilters
         onChange={(e) => setSearch(e.definition)}
         onClick={(e) => onSelectPayer(e.resource as WithId<Organization>)}
       />

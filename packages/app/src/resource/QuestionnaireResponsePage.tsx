@@ -32,7 +32,6 @@ export function QuestionnaireResponsePage(): JSX.Element {
         search={search}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
         onChange={(e) => setSearch(e.definition)}
-        hideFilters
         hideToolbar
       />
     </Document>
