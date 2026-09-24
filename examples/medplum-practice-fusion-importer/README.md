@@ -134,6 +134,10 @@ urn:ccda-import-id|<deterministic-id>` upsert with no body id, or POST + ifNoneE
      = never went through e-prescribing) → `intent: plan` + `reportedBoolean: true` (22 across
      batch; validated against supplements/informal names vs. e-prescribed).
    - Observations: valueless `valueQuantity` stripped (35 PDF-attachment lab results).
+   - Family History organizers (one per relative) come out of the converter as Observations with no
+     `code` — invalid, rejected on write, and they take the Composition down with them through
+     `Composition.section.entry`. Dropped, references stripped; the member condition observations
+     are kept (the relative they belong to is lost — needs FamilyMemberHistory support).
    - Patient contact cleanup: phones normalized to bare 10 digits (source `+1(xxx)xxx-xxxx`);
      PF's duplicate all-caps home address consolidated (case/whitespace/line-split-insensitive,
      better-cased copy kept). Two patients keep 2 addresses — theirs differ textually
@@ -194,6 +198,8 @@ urn:ccda-import-id|<deterministic-id>` upsert with no body id, or POST + ifNoneE
 
 ## Known limitations / accepted trade-offs
 
+- Family history: the converter has no FamilyMemberHistory mapping, so the relative (mother, father…)
+  behind each family-history condition is not captured; only the condition observations survive.
 - No DiagnosticReport grouping — converter emits labs as flat Observations (panel structure lost).
 - 326 lab codings carry local (Quest-style) codes without a `system` URI; display/text preserved.
 - Direct org reference dangles silently if `--org-id` is wrong (no server-side existence check);
