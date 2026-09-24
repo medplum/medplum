@@ -87,7 +87,7 @@ export function useSchedulingSlots(
 
   // Keep the calendar's slots in sync with any Slot this client modifies, e.g. the
   // slots created when booking a visit from the FindPane or soft-deleted when cancelling
-  // one from the appointment details drawer.
+  // one from the appointment details pane.
   useResourceModified('Slot', (event) => {
     if (event.operation === 'delete') {
       // Deletes don't carry a resource, only the id of what went away.
@@ -234,9 +234,11 @@ export function useSchedulingAppointments(
       return;
     }
 
-    // Ignore appointments that don't involve any of these schedules' actors, mirroring
-    // the `actor` filter used by the search below.
     if (!appointment.participant.some((p) => p.actor?.reference && actorRefs.includes(p.actor.reference))) {
+      // No actor on the appointment matches our actors; remove it from our
+      // state. (This catches `$reschedule` operations or similar that remove a
+      // participant from an existing appointment).
+      setAppointments((state) => state?.filter((existing) => existing.id !== appointment.id));
       return;
     }
 

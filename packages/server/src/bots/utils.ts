@@ -32,13 +32,13 @@ import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import type { AuthenticatedRequestContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
+import { findProjectMembership } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
-import { findProjectMembership } from '../workers/utils';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
 
 /**

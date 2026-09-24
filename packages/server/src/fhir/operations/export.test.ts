@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import type { BulkDataExportOutput, Observation } from '@medplum/fhirtypes';
+import type { Binary, BulkDataExportOutput, Observation, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -9,7 +9,7 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
 import { getBinaryStorage } from '../../storage/loader';
-import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { createTestProject, initTestAuth, streamToString, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getTestProjectSystemRepo } from '../repository/test-utils';
 import { exportResourceType, exportResources } from './export';
 import { BulkExporter } from './utils/bulkexporter';
@@ -188,8 +188,8 @@ describe('Export', () => {
       expect(exporter.resourceSets.size).toBe(2);
       expect(exporter.resourceSets.has('Patient')).toBe(true);
       expect(exporter.resourceSets.has('Observation')).toBe(true);
-      expect(exporter.resourceSets.get('Patient')?.has(`Patient/${patient.id}`)).toBe(true);
-      expect(exporter.resourceSets.get('Observation')?.has(`Observation/${observation.id}`)).toBe(true);
+      expect(exporter.resourceSets.get('Patient')?.has(patient.id)).toBe(true);
+      expect(exporter.resourceSets.get('Observation')?.has(observation.id)).toBe(true);
 
       // Close writer for Observation (which clears tracking for that type)
       await exporter.closeWriter('Observation');
@@ -198,7 +198,7 @@ describe('Export', () => {
       expect(exporter.resourceSets.size).toBe(1);
       expect(exporter.resourceSets.has('Patient')).toBe(true);
       expect(exporter.resourceSets.has('Observation')).toBe(false);
-      expect(exporter.resourceSets.get('Patient')?.has(`Patient/${patient.id}`)).toBe(true);
+      expect(exporter.resourceSets.get('Patient')?.has(patient.id)).toBe(true);
 
       const { project } = await createTestProject();
       await exporter.close(project);
@@ -233,5 +233,76 @@ describe('Export', () => {
 
       // Verify that tracking was cleared (resourceSets should be empty after close)
       expect(exporter.resourceSets.size).toBe(0);
+    }));
+
+  test('exportResourceType does not track exported resources for dedupe', async () =>
+    withTestContext(async () => {
+      const since = new Date().toISOString();
+      await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'no dedupe' },
+      });
+
+      const exporter = new BulkExporter(systemRepo);
+      await exporter.start('http://example.com');
+      const closeWriter = exporter.closeWriter.bind(exporter);
+      let trackedBeforeClose: boolean | undefined;
+      vi.spyOn(exporter, 'closeWriter').mockImplementation(async (resourceType) => {
+        trackedBeforeClose = exporter.resourceSets.has(resourceType);
+        return closeWriter(resourceType);
+      });
+
+      await exportResourceType(exporter, 'Observation', 1, since);
+      expect(trackedBeforeClose).toBe(false);
+      expect(exporter.writers.Observation).toBeDefined();
+
+      const { project } = await createTestProject();
+      await exporter.close(project);
+    }));
+
+  test('writeResource dedupes by default', async () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+      const exporter = new BulkExporter(systemRepo);
+      await exporter.start('http://example.com');
+      await exporter.writeResource(patient);
+      await exporter.writeResource(patient);
+
+      const { project } = await createTestProject();
+      await exporter.close(project);
+
+      const binary = await systemRepo.readResource<Binary>('Binary', exporter.writers.Patient.binary.id);
+      const content = await streamToString(await getBinaryStorage().readBinary(binary));
+      expect(content.trim().split('\n')).toHaveLength(1);
+    }));
+
+  test('Backpressure waits do not leak stream listeners', async () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+      const exporter = new BulkExporter(systemRepo);
+      await exporter.start('http://example.com');
+      await exporter.writeResource(patient, { skipDedupe: true });
+      const stream = exporter.writers.Patient['stream'];
+      // Wait for the storage pipeline to attach its own listeners before sampling
+      await vi.waitFor(() => expect(stream.listenerCount('error')).toBeGreaterThan(0));
+      const baseline = stream.listenerCount('error');
+
+      // Simulate a full buffer on every write so each one waits for 'drain'
+      const writeSpy = vi.spyOn(stream, 'write').mockImplementation(() => {
+        setImmediate(() => stream.emit('drain'));
+        return false;
+      });
+      for (let i = 0; i < 20; i++) {
+        await exporter.writeResource(patient, { skipDedupe: true });
+      }
+      expect(writeSpy).toHaveBeenCalledTimes(20);
+      expect(stream.listenerCount('error')).toBe(baseline);
+      writeSpy.mockRestore();
+
+      const { project } = await createTestProject();
+      await exporter.close(project);
     }));
 });
