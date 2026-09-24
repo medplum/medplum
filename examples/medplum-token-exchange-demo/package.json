@@ -22,7 +22,6 @@
     "@medplum/core": "5.1.40",
     "@medplum/eslint-config": "5.1.40",
     "@types/node": "22.20.3",
-    "dotenv": "18.0.0",
     "tsx": "4.23.13",
     "typescript": "6.0.3"
   },

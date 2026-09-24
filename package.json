@@ -27,9 +27,6 @@
     "trailingComma": "es5"
   },
   "overrides": {
-    "@metriport/shared": {
-      "@medplum/core": "5.1.40"
-    },
     "@microsoft/api-documenter": {
       "js-yaml": "4.3.1"
     },
