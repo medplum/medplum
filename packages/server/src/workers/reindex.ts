@@ -22,7 +22,7 @@ import { repoAccess } from '../fhir/repository/access-tracker';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
-import type { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
+import type { PostDeployJobData, PostDeployMigration, PrepareJobDataContext } from '../migrations/data/types';
 import { isFirstBootMode } from '../migrations/migration-utils';
 import { getAsyncJobTracking, getJobSystemRepo, getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
@@ -576,32 +576,30 @@ export async function addReindexJob(
   asyncJob: WithId<AsyncJob>,
   options?: ReindexJobOptions
 ): Promise<Job<ReindexJobData>> {
-  const jobData = prepareReindexJobData(shardId, resourceTypes, asyncJob, options);
+  const jobData = prepareReindexJobData({ shardId, asyncJob }, resourceTypes, options);
   return addReindexJobData(jobData);
 }
 
 /**
  * Prepares a current reindex payload.
- * @param shardId - The ID of the shard where the reindex job will run.
+ * @param context - The job context
  * @param resourceTypes - The resource types to reindex.
- * @param asyncJob - The tracking AsyncJob.
  * @param options - Optional reindex tuning parameters.
  * @returns The durable reindex job payload.
  */
 export function prepareReindexJobData(
-  shardId: string,
+  context: PrepareJobDataContext,
   resourceTypes: ResourceType[],
-  asyncJob: WithId<AsyncJob>,
   options?: ReindexJobOptions
 ): ReindexJobData {
-  const ctx = tryGetRequestContext();
+  const requestContext = tryGetRequestContext();
   const startTime = Date.now();
   const endTimestampBufferMinutes = options?.endTimestampBufferMinutes ?? 5;
   const endTimestamp = new Date(startTime + 1000 * 60 * endTimestampBufferMinutes).toISOString();
 
   return {
-    target: { kind: 'shard', shardId },
-    tracking: getAsyncJobTracking(asyncJob),
+    target: { kind: 'shard', shardId: context.shardId },
+    tracking: getAsyncJobTracking(context.asyncJob),
     type: 'reindex',
     minReindexWorkerVersion: REINDEX_WORKER_VERSION,
     resourceTypes,
@@ -616,7 +614,7 @@ export function prepareReindexJobData(
     progressLogThreshold: options?.progressLogThreshold,
     maxIterationAttempts: options?.maxIterationAttempts,
     results: Object.create(null),
-    requestId: ctx?.requestId,
-    traceId: ctx?.traceId,
+    requestId: requestContext?.requestId,
+    traceId: requestContext?.traceId,
   };
 }

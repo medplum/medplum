@@ -469,7 +469,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(ctx.repo);
     await exec.init(req.originalUrl);
     await exec.run(async (asyncJob) => {
-      const jobData = prepareDynamicMigrationJobData(shardId, asyncJob, migrationActions);
+      const jobData = prepareDynamicMigrationJobData({ shardId, asyncJob }, migrationActions);
       await addPostDeployMigrationJobData(jobData);
     });
 
@@ -535,7 +535,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(ctx.systemRepo);
     await exec.init(`${req.originalUrl}?${requestParams}`);
     await exec.run(async (asyncJob) => {
-      const jobData = prepareDynamicMigrationJobData(shardId, asyncJob, migrationActions);
+      const jobData = prepareDynamicMigrationJobData({ shardId, asyncJob }, migrationActions);
       await addPostDeployMigrationJobData(jobData);
     });
 
@@ -597,7 +597,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(ctx.systemRepo);
     await exec.init(`${req.originalUrl}?${requestParams}`);
     await exec.run(async (asyncJob) => {
-      const jobData = prepareDynamicMigrationJobData(shardId, asyncJob, migrationActions);
+      const jobData = prepareDynamicMigrationJobData({ shardId, asyncJob }, migrationActions);
       await addPostDeployMigrationJobData(jobData);
     });
 
