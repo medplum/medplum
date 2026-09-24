@@ -12,6 +12,12 @@ Subscriptions are event-driven notifications, like webhooks, and are commonly us
 - [AuditEvents](https://app.medplum.com/AuditEvent) can be used to see a history of Subscription triggers and are useful in troubleshooting.
 - [Subscription features and fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Asubscriptions) can be seen in detail on Github.
 
+:::warning[Limit of 1,000 active Subscriptions per project]
+
+When a resource changes, the server evaluates at most 1,000 active Subscriptions in the project. If a project has more than 1,000 active Subscriptions, some of them will silently never fire. This commonly happens when a deploy script creates a new Subscription on every run instead of updating the existing one. Use a conditional update to keep one Subscription per purpose, and set unused Subscriptions to `off` or delete them.
+
+:::
+
 **Additional Documentation**
 
 - Use the [subscription](/docs/tags/subscription) tag to quickly find all documentation related to Subscriptions
