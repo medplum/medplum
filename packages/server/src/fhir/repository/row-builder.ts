@@ -12,6 +12,7 @@ import {
   evalFhirPathTyped,
   flatMapFilter,
   getReferenceString,
+  HTTP_TERMINOLOGY_HL7_ORG,
   resolveId,
   SearchParameterType,
   stringify,
@@ -41,7 +42,7 @@ export interface DeleteHistoryContentOptions {
 }
 
 export const ExpungedHistoryTag = {
-  system: 'http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle',
+  system: `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/iso-21089-lifecycle`,
   code: 'destroy',
   display: 'Destroy/Delete Record Lifecycle Event',
 } as const;

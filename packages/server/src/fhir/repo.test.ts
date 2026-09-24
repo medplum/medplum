@@ -64,6 +64,7 @@ import type { SystemRepository } from './repo';
 import { getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
 import { getResourceCacheEntry } from './repository/resource-cache';
+import { ExpungedHistoryTag } from './repository/row-builder';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
@@ -1512,12 +1513,7 @@ describe('FHIR Repo', () => {
           author,
           project: patient.meta?.project,
           deleted: true,
-          tag: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle',
-              code: 'destroy',
-            },
-          ],
+          tag: [ExpungedHistoryTag],
         },
       });
     }
