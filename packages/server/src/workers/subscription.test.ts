@@ -1418,13 +1418,8 @@ describe('Subscription Worker', () => {
   test('Bot subscription by identifier does not match bot in another project', () =>
     withTestContext(async () => {
       // Create a bot with the identifier in a different project
-      const otherProjectDetails = await createTestProject({ withClient: true });
-      const otherRepo = new Repository({
-        extendedMode: true,
-        projects: [otherProjectDetails.project],
-        author: createReference(otherProjectDetails.client),
-        currentProject: otherProjectDetails.project,
-      });
+      const otherProjectDetails = await createTestProject({ withClient: true, withRepo: true });
+      const otherRepo = otherProjectDetails.repo;
       const otherBot = await otherRepo.createResource<Bot>({
         resourceType: 'Bot',
         name: 'Other Project Bot',
@@ -1463,13 +1458,8 @@ describe('Subscription Worker', () => {
   test('Bot subscription by identifier executes the same-project bot when the identifier exists in another project', () =>
     withTestContext(async () => {
       // Create a bot with the same identifier in a different project
-      const otherProjectDetails = await createTestProject({ withClient: true });
-      const otherRepo = new Repository({
-        extendedMode: true,
-        projects: [otherProjectDetails.project],
-        author: createReference(otherProjectDetails.client),
-        currentProject: otherProjectDetails.project,
-      });
+      const otherProjectDetails = await createTestProject({ withClient: true, withRepo: true });
+      const otherRepo = otherProjectDetails.repo;
       const otherBot = await otherRepo.createResource<Bot>({
         resourceType: 'Bot',
         name: 'Other Project Bot',
@@ -1512,6 +1502,86 @@ describe('Subscription Worker', () => {
         channel: {
           type: 'rest-hook',
           endpoint: 'Bot/$execute?identifier=shared-identifier-bot',
+        },
+      });
+
+      const patient = await botRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+      await findAndExecSubscriptionJob(patient, 'create');
+      expect(fetch).not.toHaveBeenCalled();
+
+      const bundle = await botRepo.search<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [
+          {
+            code: 'entity',
+            operator: Operator.EQUALS,
+            value: getReferenceString(subscription),
+          },
+        ],
+      });
+      expect(bundle.entry?.length).toStrictEqual(1);
+      const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
+      expect(auditEvent.outcome).toStrictEqual('0');
+
+      // The executed bot must be the one from the subscription's project
+      const entityRefs = auditEvent.entity?.map((e) => e.what?.reference);
+      expect(entityRefs).toContain(getReferenceString(bot));
+      expect(entityRefs).not.toContain(getReferenceString(otherBot));
+    }));
+
+  test('Bot subscription by identifier using system|value executes the same-project bot when the identifier exists in another project', () =>
+    withTestContext(async () => {
+      // Create a bot with the same identifier in a different project
+      const otherProjectDetails = await createTestProject({ withClient: true, withRepo: true });
+      const otherRepo = otherProjectDetails.repo;
+      const otherBot = await otherRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Other Project Bot',
+        description: 'Other Project Bot',
+        identifier: [{ system: 'https://example.com/bots', value: 'shared-token-bot' }],
+        runtimeVersion: 'awslambda',
+        code: `
+        export async function handler(medplum, event) {
+          return event.input;
+        }
+      `,
+      });
+      expect(otherBot).toBeDefined();
+
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        description: 'Test Bot',
+        identifier: [{ system: 'https://example.com/bots', value: 'shared-token-bot' }],
+        runtimeVersion: 'awslambda',
+        code: `
+        export async function handler(medplum, event) {
+          return event.input;
+        }
+      `,
+      });
+
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: { reference: 'Project/' + bot.meta?.project },
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+
+      const subscription = await botRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'Bot/$execute?identifier=' + encodeURIComponent('https://example.com/bots|shared-token-bot'),
         },
       });
 
