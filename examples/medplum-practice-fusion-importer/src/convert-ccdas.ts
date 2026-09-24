@@ -55,6 +55,11 @@
  *     NPI conditional reference).
  * 15. Patient contact cleanup: phones normalized to bare 10 digits (no +1 or
  *     punctuation); Practice Fusion's duplicate all-caps home address consolidated.
+ * 16. Family History organizers (one per relative) have no FHIR mapping in the converter and come
+ *     out as Observations with only status + hasMember and no code — invalid (Observation.code is
+ *     1..1), rejected by the server, and they take the Composition down with them via
+ *     Composition.section.entry. Dropped, references stripped; the member condition observations
+ *     are kept (which relative they belong to is lost — needs FamilyMemberHistory support).
  *
  * Outputs per input file:
  *   <name>.fhir.json    — post-processed document bundle, pretty-printed (for review)
@@ -904,6 +909,34 @@ function fixMedications(
 }
 
 /**
+ * The converter has no Family History mapping: each Family History organizer (a relative) becomes
+ * an Observation with only status + hasMember and no code — invalid FHIR (Observation.code is
+ * 1..1), rejected by the server, and it takes the patient's Composition down with it through
+ * Composition.section.entry. Drop them and strip references; the member observations (the
+ * conditions themselves) are kept, but which relative they belong to is lost. Proper support needs
+ * FamilyMemberHistory in `@medplum/ccda`.
+ * @param resources - Converter output resources, modified in place.
+ * @returns Number of Observations dropped.
+ */
+function dropCodelessObservations(resources: Resource[]): number {
+  const dropped = new Set<string>();
+  for (let i = resources.length - 1; i >= 0; i--) {
+    const r = resources[i];
+    // Observation.code is typed as required, so check the raw shape.
+    if (r.resourceType === 'Observation' && !(r as { code?: unknown }).code) {
+      dropped.add(`Observation/${r.id}`);
+      resources.splice(i, 1);
+    }
+  }
+  if (dropped.size > 0) {
+    for (const r of resources) {
+      stripReferencesTo(r, dropped);
+    }
+  }
+  return dropped.size;
+}
+
+/**
  * Labs delivered as PDF attachments produce valueQuantity with no value — strip the junk element.
  * @param resources - Converter output resources, modified in place.
  * @returns Number of valueQuantity elements stripped.
@@ -1503,6 +1536,13 @@ for (const file of files) {
   const quantitiesStripped = stripValuelessQuantities(rawResources);
   if (quantitiesStripped > 0) {
     console.log(`  stripped ${quantitiesStripped} valueless valueQuantity element(s) (PDF-attachment lab results)`);
+  }
+  const codeless = dropCodelessObservations(rawResources);
+  if (codeless > 0) {
+    console.log(
+      `  dropped ${codeless} code-less Observation(s) (Family History organizers — converter has no ` +
+        'FamilyMemberHistory mapping); references stripped'
+    );
   }
   for (const fix of fixPatientContactInfo(rawResources)) {
     console.log(`  patient fix — ${fix}`);
