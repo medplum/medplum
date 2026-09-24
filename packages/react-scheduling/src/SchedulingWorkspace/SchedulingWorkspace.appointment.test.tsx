@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM, APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../constants';
 import { installCancelStub } from '../stories/mockCancel';
 import { installValueSetStub } from '../stories/mockValueSet';
-import { DrRiveraPractitioner, SchedulingFixtures } from '../stories/scheduling';
+import { DrRiveraPractitioner, MilesCooperPatient, SchedulingFixtures } from '../stories/scheduling';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
@@ -38,7 +38,7 @@ let restoreValueSet: () => void;
 
 beforeEach(async () => {
   medplum = new MockClient();
-  for (const resource of [...SchedulingFixtures, APPOINTMENT]) {
+  for (const resource of [...SchedulingFixtures, MilesCooperPatient, APPOINTMENT]) {
     await medplum.createResource(resource);
   }
   restoreCancel = installCancelStub(medplum);
@@ -119,7 +119,7 @@ describe('SchedulingWorkspace appointment details', () => {
     await clickAppointment();
 
     const open = within(details() as HTMLElement);
-    expect(open.getByText('Miles Cooper')).toBeInTheDocument();
+    expect(await open.findByText('Miles Cooper')).toBeInTheDocument();
     expect(open.getByText('booked')).toBeInTheDocument();
     expect(open.getByText('Ultrasound Imaging')).toBeInTheDocument();
   });
