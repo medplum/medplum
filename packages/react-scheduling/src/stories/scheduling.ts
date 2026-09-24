@@ -39,6 +39,7 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import { getBrowserTimezone } from '../AppointmentFinder/AppointmentFinder.times';
+import { setScheduleAvailability } from '../availability';
 import {
   getHealthcareServiceSchedulingParameterValues,
   setHealthcareServiceSchedulingParameterValues,
@@ -720,10 +721,116 @@ const CONFIGURED_SERVICES = new Map<string, Resource>([
   [UltrasoundImagingService.id, ConfiguredUltrasoundService],
 ]);
 
+/** Held only at the satellite clinic, so a room at the main clinic can't offer it. */
+export const SatelliteFollowUpService = buildSchedulableService({
+  id: 'satellite-follow-up',
+  name: 'Satellite Follow-up',
+  category: 'Office visit',
+  durationMinutes: 20,
+  alignmentMinutes: 20,
+  locationIds: ['satellite-clinic'],
+});
+
+/** A provider who has left the practice, whose calendar nobody switched off. */
+export const DrLeePractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-lee',
+  name: [{ given: ['Hana'], family: 'Lee', prefix: ['Dr.'] }],
+  active: false,
+};
+
+export const DrLeeSchedule = buildSchedule('schedule-dr-lee', 'Practitioner/dr-lee', 'Dr. Hana Lee');
+
+export const DrNguyenPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-nguyen',
+  name: [{ given: ['Linh'], family: 'Nguyen', prefix: ['Dr.'] }],
+  extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
+};
+
+/**
+ * Offers two visit types, and overrides one of them: turnover after telehealth runs longer for this provider,
+ * who also sees telehealth only on Tuesday and Thursday mornings.
+ */
+export const DrNguyenSchedule = setScheduleAvailability(
+  setScheduleSchedulingParameter(
+    {
+      ...buildSchedule('schedule-dr-nguyen', 'Practitioner/dr-nguyen', 'Dr. Linh Nguyen'),
+      serviceType: [
+        ...toServiceTypeCodeableConcepts(UltrasoundImagingService),
+        ...toServiceTypeCodeableConcepts(TelehealthService),
+      ],
+    },
+    TelehealthService,
+    { url: 'bufferAfter', valueDuration: { value: 10, unit: 'min' } }
+  ),
+  TelehealthService,
+  [{ daysOfWeek: ['tue', 'thu'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
+) as WithId<Schedule>;
+
+/** Retired, and its calendar switched off, so it is hidden until inactive resources are shown. */
+export const Ultrasound3Device: WithId<Device> = {
+  resourceType: 'Device',
+  id: 'ultrasound-3',
+  deviceName: [{ name: 'Ultrasound 3 (Retired)', type: 'user-friendly-name' }],
+  status: 'inactive',
+};
+
+export const Ultrasound3Schedule: WithId<Schedule> = {
+  ...buildSchedule('schedule-ultrasound-3', 'Device/ultrasound-3', 'Ultrasound 3 (Retired)'),
+  active: false,
+};
+
+/** A room with no calendar, so it offers nothing until one is offered from its page. */
+export const ExamRoomC: WithId<Location> = {
+  resourceType: 'Location',
+  id: 'exam-room-c',
+  name: 'Exam Room C',
+  physicalType: physicalType('ro'),
+  partOf: { reference: 'Location/main-clinic' },
+};
+
+/** Booked as a room, but never typed as one, so the service facility picker offers it as a service facility too. */
+export const ProcedureRoom: WithId<Location> = {
+  resourceType: 'Location',
+  id: 'procedure-room',
+  name: 'Procedure Room',
+  partOf: { reference: 'Location/main-clinic' },
+};
+
+export const ProcedureRoomSchedule = buildSchedule(
+  'schedule-procedure-room',
+  'Location/procedure-room',
+  'Procedure Room'
+);
+
+/** Neither she nor Walk-in Clinic sets a time zone, so the hours she offers it in can't be read. */
+export const DrPatelPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-patel',
+  name: [{ given: ['Anika'], family: 'Patel', prefix: ['Dr.'] }],
+};
+
+export const DrPatelSchedule = buildSchedule('schedule-dr-patel', 'Practitioner/dr-patel', 'Dr. Anika Patel', {
+  id: 'walk-in',
+  name: 'Walk-in Clinic',
+});
+
+/** Shared by a provider and a room, which scheduling cannot book. */
+export const SharedSchedule: WithId<Schedule> = {
+  ...buildSchedule('schedule-shared', 'Practitioner/dr-rivera', 'Dr. Maya Rivera'),
+  actor: [
+    { reference: 'Practitioner/dr-rivera', display: 'Dr. Maya Rivera' },
+    { reference: 'Location/exam-room-a', display: 'Exam Room A' },
+  ],
+};
+
 /**
  * The clinic as an administrator configuring it sees it: `SchedulingFixtures`, with its visit types filled out
  * the way a clinic would set them, more visit types covering service facilities, split hours, and group
- * capacity, and the ones booking hides because they have no duration or are turned off.
+ * capacity, and what booking hides. Visit types that have no duration or are turned off, one held only at the
+ * satellite clinic, a provider who left, a retired device, a room with no calendar, a room never typed as one, a
+ * provider with no time zone, and a calendar scheduling cannot book at all.
  *
  * Kept out of `SchedulingFixtures`, whose tests read the whole list.
  */
@@ -733,6 +840,19 @@ export const ConfigFixtures = [
   GroupEducationService,
   UnconfiguredService,
   DiscontinuedService,
+  SatelliteFollowUpService,
+  DrLeePractitioner,
+  DrLeeSchedule,
+  DrNguyenPractitioner,
+  DrNguyenSchedule,
+  Ultrasound3Device,
+  Ultrasound3Schedule,
+  ExamRoomC,
+  ProcedureRoom,
+  ProcedureRoomSchedule,
+  DrPatelPractitioner,
+  DrPatelSchedule,
+  SharedSchedule,
 ];
 
 /**
