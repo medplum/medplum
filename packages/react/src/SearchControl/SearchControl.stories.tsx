@@ -149,6 +149,64 @@ export const CustomActions = (): JSX.Element => {
   );
 };
 
+export const DeleteDefault = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      onDelete={(ids) => console.log('onDelete', ids)}
+      onChange={(e) => setSearch(e.definition)}
+    />
+  );
+};
+
+export const DeleteCustomCopy = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      onDelete={(ids) => console.log('onDelete', ids)}
+      confirmDelete={{
+        title: (count) => `Archive ${count} ${count === 1 ? 'patient' : 'patients'}?`,
+        message: (count) => `${count === 1 ? 'This patient' : 'These patients'} will be hidden from search results.`,
+        confirmLabel: 'Archive',
+      }}
+      onChange={(e) => setSearch(e.definition)}
+    />
+  );
+};
+
+export const DeleteAsync = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      onDelete={async (ids) => {
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 1000);
+        });
+        console.log('onDelete', ids);
+      }}
+      onChange={(e) => setSearch(e.definition)}
+    />
+  );
+};
+
 export const ExtraFields = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',

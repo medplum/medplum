@@ -79,7 +79,8 @@ export function HomePage(): JSX.Element {
         }}
         onDelete={(ids: string[]) => {
           medplum.invalidateSearches(search.resourceType);
-          medplum
+          // Returning the promise keeps the confirm modal loading until the batch settles.
+          return medplum
             .executeBatch({
               resourceType: 'Bundle',
               type: 'batch',
@@ -91,7 +92,11 @@ export function HomePage(): JSX.Element {
               })),
             })
             .then(() => setSearch({ ...search }))
-            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+            .catch((err) => {
+              showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
+              // Rethrow so the modal stays open and the selection is kept.
+              throw err;
+            });
         }}
         onBulk={(ids: string[]) => {
           navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`)?.catch(console.error);

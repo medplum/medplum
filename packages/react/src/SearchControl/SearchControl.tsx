@@ -103,6 +103,16 @@ export interface SearchControlAdditionalColumn {
   readonly renderCell: (resource: Resource) => ReactNode;
 }
 
+/** Custom copy for the SearchControl delete confirmation modal. */
+export interface SearchControlDeleteConfirmation {
+  /** Modal title, or a function of the selected count. Default "Delete 3 Medication Requests?". */
+  readonly title?: string | ((count: number) => string);
+  /** Modal body, or a function of the selected count. Default "This action cannot be undone." */
+  readonly message?: ReactNode | ((count: number) => ReactNode);
+  /** Confirm button label. Default "Delete". */
+  readonly confirmLabel?: string;
+}
+
 export interface SearchControlProps {
   readonly search: SearchRequest;
   readonly checkboxesEnabled?: boolean;
@@ -132,7 +142,18 @@ export interface SearchControlProps {
   readonly onExport?: () => void;
   readonly onExportCsv?: () => void;
   readonly onExportTransactionBundle?: () => void;
-  readonly onDelete?: (ids: string[]) => void;
+  /**
+   * Deletes the checked rows. If it returns a Promise, the confirm button shows a loading state and
+   * the modal stays open until it settles; a rejection keeps the modal open for the caller to report
+   * the error. The deleted IDs are cleared from the selection once the delete finishes.
+   */
+  readonly onDelete?: (ids: string[]) => void | Promise<void>;
+  /**
+   * Asks for confirmation before calling `onDelete` (default true). Pass false to call `onDelete`
+   * straight from the menu - e.g. when the caller runs its own confirmation - or an object to change
+   * the modal copy.
+   */
+  readonly confirmDelete?: boolean | SearchControlDeleteConfirmation;
   readonly onBulk?: (ids: string[]) => void;
   /**
    * Configures the right-click menu on rows and reference cells, or false to turn it off and leave
@@ -146,6 +167,8 @@ interface SearchControlState {
   readonly selected: { [id: string]: boolean };
   readonly exportDialogVisible: boolean;
   readonly deleteConfirmVisible?: boolean;
+  /** True while an async `onDelete` is pending. */
+  readonly deleting?: boolean;
   readonly dialogOpenTime?: number;
   /** External request to open the Filters popover with a column's field preselected. */
   readonly requestFilterField?: { readonly code: string; readonly nonce: number };
@@ -377,6 +400,35 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const showRefresh = !props.hideRefresh;
   const menuActions = (!isMobile && props.menuActions) || [];
   const toolbarActions = (!isMobile && props.toolbarActions) || [];
+  const deleteCopy = getDeleteCopy(resourceType, selectedCount, props.confirmDelete);
+
+  /**
+   * Calls `onDelete` with the checked IDs. A sync handler closes the modal right away; an async one
+   * keeps it open with a loading button until it settles, and stays open if it rejects. Either way
+   * the deleted IDs are cleared from the selection once the delete finishes.
+   */
+  function runDelete(): void {
+    const onDelete = props.onDelete;
+    if (!onDelete || stateRef.current.deleting) {
+      return;
+    }
+    const ids = Object.keys(stateRef.current.selected);
+    const finish = (): void => {
+      const remaining = { ...stateRef.current.selected };
+      for (const id of ids) {
+        delete remaining[id];
+      }
+      setState({ ...stateRef.current, selected: remaining, deleting: false, deleteConfirmVisible: false });
+    };
+    const result = onDelete(ids);
+    if (result instanceof Promise) {
+      setState({ ...stateRef.current, deleting: true });
+      result.then(finish, () => setState({ ...stateRef.current, deleting: false }));
+    } else {
+      finish();
+    }
+  }
+
   const showActionsMenu =
     !props.hideActionsMenu && (showExport || showDelete || showBulk || showRefresh || menuActions.length > 0);
 
@@ -475,7 +527,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                       <Menu.Item
                         leftSection={<IconTrash size={16} color="var(--mantine-color-dimmed)" />}
                         disabled={selectedCount === 0}
-                        onClick={() => setState({ ...stateRef.current, deleteConfirmVisible: true })}
+                        onClick={() => {
+                          if (props.confirmDelete === false) {
+                            runDelete();
+                          } else {
+                            setState({ ...stateRef.current, deleteConfirmVisible: true });
+                          }
+                        }}
                       >
                         <Text size="sm">Delete</Text>
                       </Menu.Item>
@@ -658,23 +716,21 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         />
         <Modal
           opened={!!state.deleteConfirmVisible}
-          onClose={() => setState({ ...stateRef.current, deleteConfirmVisible: false })}
-          title={`Delete ${resourceType}${selectedCount === 1 ? '' : 's'}`}
+          onClose={() => {
+            if (!stateRef.current.deleting) {
+              setState({ ...stateRef.current, deleteConfirmVisible: false });
+            }
+          }}
+          title={deleteCopy.title}
           actions={
             <>
-              <Button
-                color="red"
-                w="100%"
-                onClick={() => {
-                  setState({ ...stateRef.current, deleteConfirmVisible: false });
-                  (props.onDelete as (ids: string[]) => any)(Object.keys(stateRef.current.selected));
-                }}
-              >
-                Delete
+              <Button color="red" w="100%" loading={!!state.deleting} onClick={runDelete}>
+                {deleteCopy.confirmLabel}
               </Button>
               <Button
                 variant="outline"
                 w="100%"
+                disabled={!!state.deleting}
                 onClick={() => setState({ ...stateRef.current, deleteConfirmVisible: false })}
               >
                 Cancel
@@ -682,16 +738,60 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             </>
           }
         >
-          <Text>
-            Are you sure you want to delete {selectedCount === 1 ? 'this' : 'these'} {selectedCount}{' '}
-            {resourceType.toLowerCase()}
-            {selectedCount === 1 ? '' : 's'}? This action cannot be undone.
-          </Text>
+          <Text>{deleteCopy.message}</Text>
         </Modal>
         {contextMenu}
       </div>
     </ContextMenuProvider>
   );
+}
+
+/**
+ * Returns a readable, count-aware label for a resource type, e.g. "Medication Requests".
+ * @param resourceType - The FHIR resource type.
+ * @param count - The number of resources.
+ * @returns The label.
+ */
+function getResourceTypeLabel(resourceType: string, count: number): string {
+  const label = buildFieldNameString(resourceType);
+  if (count === 1) {
+    return label;
+  }
+  if (/[^aeiou]y$/i.test(label)) {
+    return label.slice(0, -1) + 'ies';
+  }
+  if (/(s|x|z|ch|sh)$/i.test(label)) {
+    return label + 'es';
+  }
+  return label + 's';
+}
+
+/**
+ * Resolves the delete confirmation modal copy from the defaults and any caller overrides.
+ * @param resourceType - The FHIR resource type.
+ * @param count - The number of selected resources.
+ * @param confirmDelete - The `confirmDelete` prop.
+ * @returns The modal title, message and confirm label.
+ */
+function getDeleteCopy(
+  resourceType: string,
+  count: number,
+  confirmDelete: SearchControlProps['confirmDelete']
+): { title: string; message: ReactNode; confirmLabel: string } {
+  const custom = typeof confirmDelete === 'object' ? confirmDelete : {};
+  let title = `Delete ${count} ${getResourceTypeLabel(resourceType, count)}?`;
+  if (typeof custom.title === 'function') {
+    title = custom.title(count);
+  } else if (custom.title !== undefined) {
+    title = custom.title;
+  }
+  let message: ReactNode = 'This action cannot be undone.';
+  if (typeof custom.message === 'function') {
+    message = custom.message(count);
+  } else if (custom.message !== undefined) {
+    message = custom.message;
+  }
+  return { title, message, confirmLabel: custom.confirmLabel ?? 'Delete' };
 }
 
 function getPage(search: SearchRequest): number {

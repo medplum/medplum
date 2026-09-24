@@ -582,6 +582,170 @@ describe('SearchControl', () => {
     expect(onDelete).toHaveBeenCalled();
   });
 
+  describe('Delete confirmation', () => {
+    const twoPatients: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 2,
+      entry: [
+        { resource: { resourceType: 'Patient', id: 'p1', name: [{ given: ['Ann'], family: 'One' }] } },
+        { resource: { resourceType: 'Patient', id: 'p2', name: [{ given: ['Bob'], family: 'Two' }] } },
+      ],
+    };
+
+    async function setupDelete(props: Partial<SearchControlProps>, bundle = twoPatients): Promise<void> {
+      await setup({ search: { resourceType: 'Patient', fields: ['name'] }, checkboxesEnabled: true, ...props }, bundle);
+      expect(await screen.findByText('Ann One')).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('all-checkbox'));
+      });
+    }
+
+    async function clickMenuDelete(): Promise<void> {
+      await openActionsMenu();
+      await act(async () => {
+        fireEvent.click(await screen.findByText('Delete'));
+      });
+    }
+
+    function confirmButton(name = 'Delete'): HTMLElement {
+      return screen.getByRole('button', { name });
+    }
+
+    test('Default modal calls onDelete once with the selected IDs and clears the selection', async () => {
+      const onDelete = vi.fn();
+      await setupDelete({ onDelete });
+      await clickMenuDelete();
+
+      expect(await screen.findByText('Delete 2 Patients?')).toBeInTheDocument();
+      expect(screen.getByText('This action cannot be undone.')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(confirmButton());
+      });
+      expect(onDelete).toHaveBeenCalledTimes(1);
+      expect(onDelete).toHaveBeenCalledWith(['p1', 'p2']);
+      expect(screen.getAllByTestId('row-checkbox').every((el) => !(el as HTMLInputElement).checked)).toBe(true);
+    });
+
+    test('Default title uses a readable, pluralized type label', async () => {
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: 1,
+        entry: [
+          {
+            resource: {
+              resourceType: 'MedicationRequest',
+              id: 'm1',
+              status: 'active',
+              intent: 'order',
+              subject: { display: 'x' },
+            },
+          },
+        ],
+      };
+      await setup(
+        {
+          search: { resourceType: 'MedicationRequest', fields: ['status'] },
+          checkboxesEnabled: true,
+          onDelete: vi.fn(),
+        },
+        bundle
+      );
+      expect(await screen.findAllByTestId('row-checkbox')).toHaveLength(1);
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('all-checkbox'));
+      });
+      await clickMenuDelete();
+      expect(await screen.findByText('Delete 1 Medication Request?')).toBeInTheDocument();
+    });
+
+    test('confirmDelete={false} calls onDelete right away with no modal', async () => {
+      const onDelete = vi.fn();
+      await setupDelete({ onDelete, confirmDelete: false });
+      await clickMenuDelete();
+
+      expect(onDelete).toHaveBeenCalledWith(['p1', 'p2']);
+      expect(screen.queryByText('This action cannot be undone.')).not.toBeInTheDocument();
+    });
+
+    test('Custom copy functions receive the selected count', async () => {
+      await setupDelete({
+        onDelete: vi.fn(),
+        confirmDelete: {
+          title: (count) => `Remove ${count} people?`,
+          message: (count) => `They will be gone (${count}).`,
+          confirmLabel: 'Remove',
+        },
+      });
+      await clickMenuDelete();
+
+      expect(await screen.findByText('Remove 2 people?')).toBeInTheDocument();
+      expect(screen.getByText('They will be gone (2).')).toBeInTheDocument();
+      expect(confirmButton('Remove')).toBeInTheDocument();
+    });
+
+    test('Custom copy strings are used as-is', async () => {
+      await setupDelete({ onDelete: vi.fn(), confirmDelete: { title: 'Sure?', message: 'Really.' } });
+      await clickMenuDelete();
+
+      expect(await screen.findByText('Sure?')).toBeInTheDocument();
+      expect(screen.getByText('Really.')).toBeInTheDocument();
+    });
+
+    test('Async onDelete shows loading, then closes and clears the selection', async () => {
+      let resolve: () => void = () => undefined;
+      const onDelete = vi.fn(
+        () =>
+          new Promise<void>((r) => {
+            resolve = r;
+          })
+      );
+      await setupDelete({ onDelete });
+      await clickMenuDelete();
+
+      await act(async () => {
+        fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+      });
+      expect(onDelete).toHaveBeenCalledTimes(1);
+      expect(confirmButton()).toHaveAttribute('data-loading', 'true');
+      expect(screen.getByText('This action cannot be undone.')).toBeInTheDocument();
+
+      await act(async () => {
+        resolve();
+      });
+      // Let the modal's close transition finish.
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(screen.queryByText('This action cannot be undone.')).not.toBeInTheDocument();
+      expect(screen.getAllByTestId('row-checkbox').every((el) => !(el as HTMLInputElement).checked)).toBe(true);
+    });
+
+    test('Async onDelete rejection keeps the modal open and the selection', async () => {
+      let reject: () => void = () => undefined;
+      const onDelete = vi.fn(
+        () =>
+          new Promise<void>((_, r) => {
+            reject = r;
+          })
+      );
+      await setupDelete({ onDelete });
+      await clickMenuDelete();
+
+      await act(async () => {
+        fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+      });
+      await act(async () => {
+        reject();
+      });
+      expect(screen.getByText('This action cannot be undone.')).toBeInTheDocument();
+      expect(confirmButton()).not.toHaveAttribute('data-loading');
+      expect(screen.getAllByTestId('row-checkbox').every((el) => (el as HTMLInputElement).checked)).toBe(true);
+    });
+  });
+
   test('Bulk action', async () => {
     const onBulk = vi.fn();
 
