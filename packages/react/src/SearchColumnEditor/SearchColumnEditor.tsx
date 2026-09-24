@@ -4,7 +4,7 @@ import { Button, Popover, Text, TextInput } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import { getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
-import { IconRotate2, IconCheck, IconColumns3, IconGripVertical, IconSearch } from '@tabler/icons-react';
+import { IconCheck, IconColumns3, IconGripVertical, IconRotate2, IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useRef, useState } from 'react';
 import { buildSearchParamFieldLabel, isMetaSearchParam } from '../SearchControl/SearchUtils';
