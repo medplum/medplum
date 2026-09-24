@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import {
   CPT,
   REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_PROCEDURE_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
   SchedulingMedicalNecessityURI,
@@ -30,6 +31,7 @@ import { installAutocompleteTimers, removePill, settleAutocomplete } from '../..
 import {
   choosePatient,
   codePill,
+  confirmMedicalNecessity,
   enterCode,
   field,
   hasPill,
@@ -59,6 +61,13 @@ const DIAGNOSIS_SERVICE: WithId<HealthcareService> = {
   id: 'iron-infusion',
   name: 'Iron Infusion',
   eligibility: [{ code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code: REQUIRES_DIAGNOSIS_CODE }] } }],
+};
+
+const PROCEDURE_SERVICE: WithId<HealthcareService> = {
+  resourceType: 'HealthcareService',
+  id: 'imaging-with-procedures',
+  name: 'Imaging With Procedures',
+  eligibility: [{ code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code: REQUIRES_PROCEDURE_CODE }] } }],
 };
 
 const HELD_SCHEDULE: WithId<Schedule> = {
@@ -131,6 +140,7 @@ beforeEach(async () => {
   await medplum.createResource(SERVICE);
   await medplum.createResource(AUTHORIZED_SERVICE);
   await medplum.createResource(DIAGNOSIS_SERVICE);
+  await medplum.createResource(PROCEDURE_SERVICE);
   await medplum.createResource(MilesCooperPatient);
   for (const patient of PatientFixtures) {
     await medplum.createResource(patient);
@@ -575,6 +585,141 @@ describe('AppointmentDetails editing', () => {
       },
       ...AUTHORIZED_APPOINTMENT.participant.slice(1),
     ]);
+  });
+
+  test('confirms medical necessity on a visit on file without it, replacing the attestation rather than adding one', async () => {
+    const otherExtension = { url: 'http://example.com/StructureDefinition/unrelated', valueString: 'kept' };
+    const unconfirmed: WithId<Appointment> = {
+      ...AUTHORIZED_APPOINTMENT,
+      extension: [otherExtension, { url: SchedulingMedicalNecessityURI, valueBoolean: false }],
+    };
+    await medplum.createResource(unconfirmed);
+    renderEditable(unconfirmed);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+
+    expect(medicalNecessityBox()).not.toBeChecked();
+    // Required, as at booking.
+    expect(saveButton()).toBeDisabled();
+
+    await confirmMedicalNecessity();
+    expect(saveButton()).toBeEnabled();
+    await clickSave();
+
+    const stored = await medplum.readResource('Appointment', unconfirmed.id);
+    expect(stored.extension).toEqual([otherExtension, { url: SchedulingMedicalNecessityURI, valueBoolean: true }]);
+  });
+
+  test('offers no save once medical necessity is unticked', async () => {
+    renderEditable(AUTHORIZED_APPOINTMENT);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+    await enterCode(/procedure code/i, ProcedureCodes[1]);
+    expect(saveButton()).toBeEnabled();
+
+    await confirmMedicalNecessity();
+
+    expect(medicalNecessityBox()).not.toBeChecked();
+    expect(saveButton()).toBeDisabled();
+  });
+
+  test('adds a patient to an appointment that had none', async () => {
+    const withoutPatient: WithId<Appointment> = {
+      ...BOOKED_APPOINTMENT,
+      id: 'appt-no-patient',
+      participant: BOOKED_APPOINTMENT.participant.filter((p) => !p.actor?.reference?.startsWith('Patient/')),
+    };
+    await medplum.createResource(withoutPatient);
+    renderEditable(withoutPatient);
+
+    await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+    await clickSave();
+
+    const stored = await medplum.readResource('Appointment', withoutPatient.id);
+    expect(stored.participant).toEqual([
+      ...withoutPatient.participant,
+      {
+        actor: { reference: `Patient/${ElderJordanPatient.id}`, display: 'Jordan Reyes' },
+        required: 'required',
+        status: 'needs-action',
+      },
+    ]);
+  });
+
+  test('writes only what the visit type asks for', async () => {
+    // Not this visit type's to change: it asks for no diagnosis codes.
+    const reasonCode = [{ text: 'Follow-up on prior imaging' }];
+    const appointment: WithId<Appointment> = {
+      ...BOOKED_APPOINTMENT,
+      id: 'appt-procedures-only',
+      serviceType: [
+        {
+          text: 'Imaging With Procedures',
+          extension: [
+            {
+              url: ServiceTypeReferenceURI,
+              valueReference: { reference: `HealthcareService/${PROCEDURE_SERVICE.id}` },
+            },
+          ],
+        },
+      ],
+      reasonCode,
+    };
+    await medplum.createResource(appointment);
+    renderEditable(appointment);
+
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+    expect(screen.queryByRole('searchbox', { name: /diagnosis code/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /medical necessity/i })).not.toBeInTheDocument();
+
+    await enterCode(/procedure code/i, ProcedureCodes[0]);
+    await clickSave();
+
+    const stored = await medplum.readResource('Appointment', appointment.id);
+    expect(stored.serviceType).toEqual([appointment.serviceType?.[0], { coding: [ProcedureCodes[0]] }]);
+    expect(stored.reasonCode).toEqual(reasonCode);
+    expect(stored.extension).toBeUndefined();
+  });
+
+  test('asks for everything the visit type requires on a visit that has none of it on file', async () => {
+    const bare: WithId<Appointment> = {
+      ...AUTHORIZED_APPOINTMENT,
+      id: 'appt-infusion-bare',
+      serviceType: AUTHORIZED_APPOINTMENT.serviceType?.slice(0, 1),
+      reasonCode: undefined,
+      extension: undefined,
+    };
+    await medplum.createResource(bare);
+    renderEditable(bare);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+
+    expect(hasPill(codePill(ProcedureCodes[0]))).toBe(false);
+    expect(medicalNecessityBox()).not.toBeChecked();
+    expect(saveButton()).toBeDisabled();
+
+    await enterCode(/procedure code/i, ProcedureCodes[0]);
+    await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+    expect(saveButton()).toBeDisabled();
+    await confirmMedicalNecessity();
+    await clickSave();
+
+    const stored = await medplum.readResource('Appointment', bare.id);
+    expect(stored.serviceType).toEqual(AUTHORIZED_APPOINTMENT.serviceType);
+    expect(stored.reasonCode).toEqual(AUTHORIZED_APPOINTMENT.reasonCode);
+    expect(stored.extension).toEqual(AUTHORIZED_APPOINTMENT.extension);
+  });
+
+  test('offers to save again once something changes after a save', async () => {
+    await medplum.createResource(AUTHORIZED_APPOINTMENT);
+    // The prop is never replaced with the written appointment, as with a host that ignores the update.
+    renderEditable(AUTHORIZED_APPOINTMENT);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+
+    await enterCode(/procedure code/i, ProcedureCodes[1]);
+    await clickSave();
+    expect(saveButton()).toBeDisabled();
+
+    await enterCode(/diagnosis code/i, DiagnosisCodes[1]);
+
+    expect(saveButton()).toBeEnabled();
   });
 
   test('shows a refused save and keeps what was entered', async () => {
