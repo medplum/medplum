@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Avatar, Badge, Group, Text, ThemeIcon, UnstyledButton } from '@mantine/core';
+import { Avatar, Badge, Group, Stack, Text, ThemeIcon, UnstyledButton } from '@mantine/core';
 import type { JSX, ReactNode } from 'react';
 import type { ConfigPanelItem } from './ConfigPanel';
 import classes from './ConfigRow.module.css';
@@ -35,15 +35,21 @@ export function ConfigRow(props: ConfigRowProps): JSX.Element {
         ) : (
           <Avatar src={item.imageUrl} name={item.label} color="initials" radius="xl" size={28} />
         )}
-        {/* Bold as well as tinted: the tint alone is hard to tell from hover in dark mode. */}
-        <Text
-          truncate
-          c={item.inactive ? 'dimmed' : undefined}
-          fw={item.selected ? 600 : undefined}
-          className={classes.label}
-        >
-          {item.label}
-        </Text>
+        <Stack gap={2} className={classes.label}>
+          {/* Bold as well as tinted: the tint alone is hard to tell from hover in dark mode. */}
+          <Text truncate c={item.inactive ? 'dimmed' : undefined} fw={item.selected ? 600 : undefined}>
+            {item.label}
+          </Text>
+          {!!item.notices?.length && (
+            <Group gap={4}>
+              {item.notices.map((notice) => (
+                <Badge key={notice} size="xs" variant="light" color="orange">
+                  {notice}
+                </Badge>
+              ))}
+            </Group>
+          )}
+        </Stack>
         <StatusBadge item={item} />
       </Group>
     </UnstyledButton>

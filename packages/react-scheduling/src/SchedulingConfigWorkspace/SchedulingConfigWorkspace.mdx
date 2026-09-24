@@ -5,9 +5,10 @@ import * as SchedulingConfigWorkspaceStories from './SchedulingConfigWorkspace.s
 
 # SchedulingConfigWorkspace
 
-Where an admin sets up scheduling. Every visit type (`HealthcareService`) is listed down the side; pick one and
-its page opens beside it, showing how it is configured and editing it in place. It is the configuration
-counterpart to `SchedulingWorkspace`, which books. For the data model underneath it, see
+Where an admin sets up scheduling. Every visit type (`HealthcareService`), provider (`Practitioner`), room
+(`Location`), and device (`Device`) is listed down the side; pick one and its page opens beside it, showing how it
+is configured and editing it in place. It is the configuration counterpart to `SchedulingWorkspace`, which books.
+For the data model underneath it, see
 [Defining Availability](https://www.medplum.com/docs/scheduling/defining-availability).
 
 ```tsx
@@ -23,11 +24,26 @@ refused.
 ## What it lists
 
 The sidebar lists what booking leaves out, since that is often what an admin is looking for: visit types with
-no duration in effect, which booking never offers, and visit types that are turned off. Turned-off ones are hidden
-until **Show inactive** is ticked under the filters button, and are then marked **Inactive**.
+no duration in effect, which booking never offers, visit types and actors that are turned off, and providers,
+rooms, and devices with no calendar yet. Turned-off ones are hidden until **Show inactive** is ticked under the
+filters button, and are then marked **Inactive**.
 
-The list is read in pages up to a limit, and says so when it stops short. The **+** beside the section starts a
-new visit type, which is listed once it is saved.
+Calendars (`Schedule`) are not rows of their own: each actor's calendar is part of its page. Rooms are the
+Locations typed as a room or a bed, plus any Location a calendar is held on alone. A row is marked when something
+still needs finishing:
+
+- **No time zone:** some visit type the actor offers resolves no time zone from its calendar, the visit type, or
+  the actor, so its hours can't be read.
+- **Not accepting appointments:** the actor's calendar is turned off.
+- **Not marked as a room:** a Location booked as a room without being typed as one, which the service facility
+  picker offers as a service facility too.
+
+A calendar scheduling can't book, held by more than one actor or by something other than a provider, room, or
+device, is counted below the list rather than listed.
+
+Each section is read in pages up to a limit, and says so when it stops short. A section that can't be read is
+named above the page, and the others still list. The **+** beside Visit types starts a new visit type, which is
+listed once it is saved.
 
 ## A visit type's page
 
@@ -38,15 +54,33 @@ new visit type, which is listed once it is saved.
   warnings as `SchedulingParametersEditor`.
 - **Default availability:** the weekly hours every calendar offering it follows unless it sets its own, edited
   with the same fields as `ScheduleAvailabilityEditor`.
+- **Offered by:** every provider, room, and device whose calendar offers it, with the duration and hours in effect
+  there. Picking one opens that actor's page on this visit type. One that shares no service facility with the
+  visit type is marked as not bookable.
+
+## A provider's, room's, or device's page
+
+- **General:** its name and status.
+- **Visit types:** what its calendar offers. **Accepting appointments** turns the calendar off without losing
+  anything, and appears once there is a calendar. Each visit type offered is an entry showing its duration and
+  hours in effect; opening one shows the calendar's own scheduling parameters and hours for it, each empty field
+  showing what it inherits. At most one entry is open at a time, and an entry with unsaved edits is marked. Every
+  entry starts closed, except when the calendar offers only one visit type, the page was opened from a visit
+  type's Offered by, or a visit type was just offered.
+
+**Offer a visit type** lists every active visit type not offered yet. One held only at service facilities the
+actor isn't at is listed disabled, with the reason. Offering an actor's first visit type creates its calendar when
+the page is saved, and not before. **Stop offering** asks first, naming the settings the calendar holds for that
+visit type, and removes them with it.
 
 ## Saving
 
 Nothing is written as it is typed. A save bar appears while the page differs from what is stored, and Save sends
 only what changed, as one transaction bundle, each update conditional on the version the page opened. When
-another user or system saved the visit type in the meantime, nothing is written over it: the page says so and
+another user or system saved the same resource in the meantime, nothing is written over it: the page says so and
 offers to reload it. A field the editor would reject blocks Save, with the reason; a value already stored out of
 range does not, unless it is edited.
 
-Switching to another visit type with unsaved changes asks before discarding them. Nothing in the workspace
-deletes a resource: a visit type is taken out of use by turning it off, which leaves its existing appointments
+Switching to another row with unsaved changes asks before discarding them. Nothing in the workspace deletes a
+resource: a visit type or a calendar is taken out of use by turning it off, which leaves its existing appointments
 untouched.
