@@ -211,12 +211,6 @@ export interface MedplumServerConfig {
   workers?: MedplumWorkersConfig;
 
   /**
-   * Optional configuration for scheduled data warehouse sync jobs.
-   * Runs incremental in-server data warehouse sync jobs on a fixed cron pattern.
-   */
-  dataWarehouse?: MedplumDataWarehouseConfig;
-
-  /**
    * Optional mTLS certificate header for incoming requests.
    * If set, the server will attempt to extract the client certificate from the specified header.
    * Header name should be all lowercase.
@@ -425,7 +419,6 @@ export type WorkerName =
   | 'post-deploy-migration'
   | 'set-accounts'
   | 'lambda-cleaner'
-  | 'data-warehouse-sync'
   | 'dicom';
 
 export interface MedplumWorkersConfig {
@@ -441,36 +434,6 @@ export interface MedplumWorkersConfig {
    * Only takes effect for workers that are enabled.
    */
   bullmq?: Partial<Record<WorkerName, Partial<MedplumBullmqConfig>>>;
-}
-
-export type MedplumDataWarehouseDestinationType = 's3tables' | 'local';
-
-export interface MedplumDataWarehouseConfig {
-  /**
-   * Enables/disables the scheduled sync worker. Defaults to false.
-   */
-  enabled?: boolean;
-  /**
-   * BullMQ cron pattern used to schedule sync runs.
-   */
-  cron?: string;
-  /** Warehouse export destination type. */
-  destination?: MedplumDataWarehouseDestinationType;
-  /** Required when destination is `s3tables`. */
-  awsS3TableArn?: string;
-  /** Required when destination is `local`. */
-  localBasePath?: string;
-  /** Optional Iceberg namespace used by sync. */
-  namespace?: string;
-  /**
-   * Earliest resource `lastUpdated` timestamp to include in sync (ISO-8601 date or date-time string).
-   * History rows with `lastUpdated` before this value are excluded.
-   */
-  startDate?: string;
-  /** FHIR resource types to include (e.g. `Patient`, `Observation`). When omitted, all types are candidates. */
-  includeResourceTypes?: string[];
-  /** FHIR resource types to exclude from sync. Cannot be set together with `includeResourceTypes`. */
-  excludeResourceTypes?: string[];
 }
 
 export interface MedplumFissionConfig {
