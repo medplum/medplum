@@ -31,7 +31,7 @@
 }
 
 .item:hover {
-  background-color: var(--mantine-color-gray-1);
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
 }
 
 /* The row currently being dragged is dimmed; the row under the cursor gets a top guide line. */
@@ -61,7 +61,7 @@
 .grip {
   display: flex;
   align-items: center;
-  color: var(--mantine-color-gray-5);
+  color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3));
   cursor: grab;
 }
 
@@ -98,7 +98,7 @@
   padding: var(--mantine-spacing-sm);
   /* Extra right inset so the "N shown" count sits md from the edge. */
   padding-right: var(--mantine-spacing-md);
-  border-top: 1px solid var(--mantine-color-gray-2);
+  border-top: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
 }
 
 /* Suppress Mantine's press-down transform so the button does not shift on mousedown/active. */

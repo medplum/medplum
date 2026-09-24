@@ -188,7 +188,7 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
                   ml={2}
                   onClick={() => deleteRule(index)}
                 >
-                  <IconX size={16} stroke={2} color="var(--mantine-color-gray-7)" />
+                  <IconX size={16} stroke={2} className={classes.deleteIcon} />
                 </ActionIcon>
               </div>
             );

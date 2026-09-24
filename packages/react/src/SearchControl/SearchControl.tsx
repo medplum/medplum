@@ -592,7 +592,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   const label = (
                     <UnstyledButton className={classes.control}>
                       <Group gap={4} wrap="nowrap">
-                        <Text size="xs" fw={500} c="gray.6">
+                        <Text size="xs" fw={500} c="dimmed">
                           {buildFieldNameString(field.name)}
                         </Text>
                         {sortRule &&
@@ -622,7 +622,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                           />
                         </Menu>
                       ) : (
-                        <Text className={classes.staticColumnTitle} size="xs" fw={500} c="gray.6">
+                        <Text className={classes.staticColumnTitle} size="xs" fw={500} c="dimmed">
                           {buildFieldNameString(field.name)}
                         </Text>
                       )}
@@ -631,7 +631,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 })}
                 {props.additionalColumns?.map((col) => (
                   <Table.Th key={col.name}>
-                    <Text className={classes.staticColumnTitle} size="xs" fw={500} c="gray.6">
+                    <Text className={classes.staticColumnTitle} size="xs" fw={500} c="dimmed">
                       {col.name}
                     </Text>
                   </Table.Th>

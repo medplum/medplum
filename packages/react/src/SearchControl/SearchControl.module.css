@@ -11,7 +11,7 @@
 
 .table {
   cursor: pointer;
-  --table-border-color: var(--mantine-color-gray-2);
+  --table-border-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
 }
 
 /* Mantine drops the final row's bottom border; re-add it so the table closes with a divider. */
@@ -32,17 +32,18 @@
 }
 
 .toolbar {
-  border-bottom: 1px solid var(--mantine-color-gray-2);
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
 }
 
+/* Outline borders use dark-4 in dark mode, Mantine's own outline/input border shade. */
 .actionIcon {
-  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-6));
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
   transition: border-color 150ms ease;
 }
 
 .actionIcon:hover,
 .actionIcon[data-opened] {
-  border-color: var(--mantine-color-gray-5);
+  border-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
 }
 
 /* Suppress Mantine's press-down transform on the toolbar action-icon buttons. */
@@ -56,7 +57,8 @@
 
 .actionsMenu :global(.mantine-Menu-item:hover),
 .actionsMenu :global(.mantine-Menu-item[data-hovered]) {
-  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+  /* In dark mode the hover lifts above the dropdown (dark-6), as Mantine's own menu hover does. */
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
 }
 
 /* Wraps a custom menu item's icon so it can inherit a default color. */
@@ -64,8 +66,9 @@
   display: flex;
 }
 
+/* dimmed is gray-6 in light mode and dark-2 in dark mode. */
 .actionIcon svg {
-  color: var(--mantine-color-gray-6);
+  color: var(--mantine-color-dimmed);
 }
 
 .tr {
@@ -126,7 +129,7 @@
 .control {
   width: fit-content;
   border-radius: var(--mantine-radius-sm);
-  color: var(--mantine-color-gray-6);
+  color: var(--mantine-color-dimmed);
 
   /* data-expanded is set by Mantine's Menu.Target so the header keeps its hover state while open. */
   &:hover,
@@ -136,7 +139,7 @@
 }
 
 .toolbarButton {
-  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-6));
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
   border-radius: var(--mantine-radius-xl);
   transition: border-color 150ms ease;
 
@@ -145,7 +148,7 @@
   padding-right: 12px !important;
   --button-height: 32px !important;
   font-weight: 450;
-  color: var(--mantine-color-gray-8);
+  color: light-dark(var(--mantine-color-gray-8), var(--mantine-color-dark-0));
 }
 
 .toolbarButton:hover,
@@ -153,12 +156,12 @@
 .toolbarButton:active,
 .toolbarButton[data-opened] {
   background-color: transparent !important;
-  color: var(--mantine-color-gray-8) !important;
+  color: light-dark(var(--mantine-color-gray-8), var(--mantine-color-dark-0)) !important;
 }
 
 .toolbarButton:hover,
 .toolbarButton[data-opened] {
-  border-color: var(--mantine-color-gray-5);
+  border-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
 }
 
 .toolbarButton:active {
@@ -166,9 +169,8 @@
 }
 
 .toolbarButton svg {
-  color: var(--mantine-color-gray-6);
+  color: var(--mantine-color-dimmed);
 }
-
 .toolbarButton :global(.mantine-Button-section[data-position='left']) {
   margin-inline-end: 6px;
 }

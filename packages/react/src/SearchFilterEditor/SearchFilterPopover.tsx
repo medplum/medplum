@@ -201,7 +201,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
       ml={2}
       onClick={props.onDelete}
     >
-      <IconX size={16} stroke={2} color="var(--mantine-color-gray-7)" />
+      <IconX size={16} stroke={2} className={classes.deleteIcon} />
     </ActionIcon>
   );
 
