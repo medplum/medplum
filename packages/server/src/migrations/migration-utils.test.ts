@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, initDatabase } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import {
   getPostDeployMigration,
   MigrationDefinitionNotFoundError,
@@ -21,7 +22,7 @@ describe('withLongRunningDatabaseClient', () => {
   test('should execute callback with long-running database client', async () => {
     const result = await withLongRunningDatabaseClient(async (client) => {
       return client.query<{ result: string }>("SELECT '12-12-2022' as result").then((result) => result.rows[0].result);
-    });
+    }, GLOBAL_SHARD_ID);
     expect(result).toBe('12-12-2022');
   });
 });

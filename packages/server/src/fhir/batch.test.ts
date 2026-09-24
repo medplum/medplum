@@ -15,13 +15,11 @@ import type {
   Practitioner,
   RelatedPerson,
   Task,
-  UserConfiguration,
 } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import type { PoolClient } from 'pg';
 import type { RateLimiterRes } from 'rate-limiter-flexible';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import request from 'supertest';
@@ -31,7 +29,8 @@ import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { generateAccessToken } from '../oauth/keys';
 import * as otelModule from '../otel/otel';
-import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
+import type { ShardPoolClient } from '../sharding/sharding-types';
+import { createTestProject, initTestAuth, TEST_SHARD_ID, waitForAsyncJob } from '../test.setup';
 import type { BatchJobData } from '../workers/batch';
 import { execBatchJob as execBatchJobImpl, getBatchQueue } from '../workers/batch';
 import { queueRegistry } from '../workers/utils';
@@ -1922,7 +1921,7 @@ describe('Batch and Transaction processing', () => {
     const queue = getBatchQueue() as any;
     queue.add.mockClear();
 
-    const { accessToken, login, membership, project } = await createTestProject({
+    const { accessToken, membership, project } = await createTestProject({
       withAccessToken: true,
       withClient: true,
       project: {
@@ -2000,12 +1999,9 @@ describe('Batch and Transaction processing', () => {
       } as RateLimiterRes;
     });
 
-    const jobResult = runInAuthenticatedContext(
-      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
-      undefined,
-      undefined,
-      { async: true },
-      () => execBatchJobImpl(job)
+    const { authState, requestId, traceId } = enqueued;
+    const jobResult = runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () =>
+      execBatchJobImpl(job)
     );
 
     await expect(jobResult).resolves.toBe(undefined);
@@ -2065,14 +2061,14 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
     // We wrap the writer pool so that the FIRST COMMIT on a connection that opened a SERIALIZABLE
     // transaction throws 40001 (leaving the real transaction open so withTransaction's rollback
     // path discards the attempt's writes, exactly as a real 40001 at COMMIT would).
-    const writerPool = getDatabasePool(DatabaseMode.WRITER);
+    const writerPool = getDatabasePool(DatabaseMode.WRITER, TEST_SHARD_ID);
     const originalConnect = writerPool.connect.bind(writerPool);
 
     let serializableBegins = 0;
     let commitFailuresInjected = 0;
 
     vi.spyOn(writerPool, 'connect').mockImplementation(async (...args: any[]) => {
-      const client = (await (originalConnect as any)(...args)) as PoolClient;
+      const client = (await (originalConnect as any)(...args)) as ShardPoolClient;
       const originalQuery = client.query.bind(client);
       let clientOpenedSerializableTx = false;
 

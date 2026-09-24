@@ -15,7 +15,7 @@ import { getCacheRedis } from '../../redis';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
 import * as searchFile from '../search';
-import { PLACEHOLDER_SHARD_ID } from '../sharding';
+import { getNormalizedProjectShardId } from '../sharding';
 
 const app = express();
 let practitioner: Practitioner;
@@ -26,6 +26,7 @@ let serviceRequest: ServiceRequest;
 let encounter1: Encounter;
 let encounter2: Encounter;
 let bobAccessToken: string;
+let shardId: string;
 
 describe('GraphQL', () => {
   beforeAll(async () => {
@@ -43,9 +44,10 @@ describe('GraphQL', () => {
       });
       accessToken = aliceRegistration.accessToken;
       practitioner = aliceRegistration.profile as Practitioner;
+      shardId = getNormalizedProjectShardId(aliceRegistration.project);
 
       const aliceRepo = new Repository({
-        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+        routing: { kind: 'project-shard', shardId },
         author: createReference(aliceRegistration.profile),
         projects: [aliceRegistration.project],
       });
@@ -1143,8 +1145,8 @@ describe('GraphQL', () => {
   });
 
   test('Uses reader instance when available', async () => {
-    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER, shardId), 'query');
+    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, shardId), 'query');
 
     const res = await request(app)
       .post('/fhir/R4/$graphql')
@@ -1157,8 +1159,8 @@ describe('GraphQL', () => {
   });
 
   test('GraphQL in batch users writer', async () => {
-    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER, shardId), 'query');
+    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, shardId), 'query');
 
     const batch: Bundle = {
       resourceType: 'Bundle',

@@ -9,9 +9,9 @@ import { DatabaseMode, getDatabasePool } from './database';
 import type { OutputAction } from './fhir/operations/db-configure-indexes';
 import { configureGinIndexes, vacuumTable } from './fhir/operations/db-configure-indexes';
 import type { SystemRepository } from './fhir/repo';
-import { getShardSystemRepo } from './fhir/repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from './fhir/repo';
 import { repoAccess } from './fhir/repository/access-tracker';
-import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
+import { getAllShards, GLOBAL_SHARD_ID, PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { SelectQuery } from './fhir/sql';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
@@ -28,7 +28,9 @@ import { deleteRedisKeys, withTestContext } from './test.setup';
 async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: SystemRepository): Promise<void> {
   const lastVersion = getLatestPostDeployMigrationVersion();
 
-  const pendingMigration = await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER));
+  const pendingMigration = await getPendingPostDeployMigration(
+    getDatabasePool(DatabaseMode.WRITER, systemRepo.shardId)
+  );
   if (pendingMigration === MigrationVersion.UNKNOWN) {
     throw new Error('Post-deploy migration version is unknown');
   }
@@ -49,7 +51,7 @@ async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: System
 async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository, version: number): Promise<void> {
   const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
-  const jobData = migration.prepareJobData(asyncJob);
+  const jobData = migration.prepareJobData({ shardId: GLOBAL_SHARD_ID, asyncJob });
   globalLogger.write(`${new Date().toISOString()} - Starting post-deploy migration v${version}`);
   const result = await migration.run(systemRepo, undefined, jobData);
   globalLogger.write(`${new Date().toISOString()} - Post-deploy migration v${version} result: ${result}`);
@@ -69,6 +71,10 @@ describe('Seed', () => {
     // Since BullMQ is not available in tests, disable automatically running post-deploy migrations
     // asynchronously. Instead, run them synchronously below.
     config.database.disableRunPostDeployMigrations = true;
+    for (const shardConfig of getAllShards()) {
+      shardConfig.database.runMigrations = true;
+      shardConfig.database.disableRunPostDeployMigrations = true;
+    }
 
     // Delete all cache Redis keys to ensure a clean slate since the cache may be out of
     // sync with the database, e.g. if postgres/init_test.sql or something similar was run beforehand.
@@ -80,6 +86,9 @@ describe('Seed', () => {
     globalLogger.write(`${new Date().toISOString()} - Initializing app services`);
     await initAppServices(config);
 
+    for (const shardConfig of getAllShards()) {
+      await synchronouslyRunAllPendingPostDeployMigrations(getShardSystemRepo(shardConfig.id));
+    }
     const repo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
     // Run post-deploy migrations synchronously
     await synchronouslyRunAllPendingPostDeployMigrations(repo);
@@ -113,28 +122,43 @@ describe('Seed', () => {
       // // seedDatabase executed in beforeAll via initAppServices
       expect(seedDatabaseSpy).toHaveBeenCalledTimes(1);
 
-      // Make sure all database migrations have run
-      const pool = getDatabasePool(DatabaseMode.WRITER);
+      let expectedSuperAdminProjects = 0;
+      for (const shardConfig of getAllShards()) {
+        expectedSuperAdminProjects++;
+        // Make sure all database migrations have run
+        const pool = getDatabasePool(DatabaseMode.WRITER, shardConfig.id);
 
-      const preDeployVersion = await getPreDeployVersion(pool);
-      expect(preDeployVersion).toBeGreaterThanOrEqual(67);
+        const preDeployVersion = await getPreDeployVersion(pool);
+        expect(preDeployVersion).toBeGreaterThanOrEqual(67);
 
-      const postDeployVersion = await getPostDeployVersion(pool);
-      // only show log messages if post-deploy migrations did not run successfully
-      if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
-        loggerWriteSpy.mock.calls.forEach((call: unknown[]) => console.log(...call));
+        const postDeployVersion = await getPostDeployVersion(pool);
+        // only show log messages if post-deploy migrations did not run successfully
+        if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
+          loggerWriteSpy.mock.calls.forEach((call: unknown[]) => console.log(...call));
+        }
+        expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
       }
-      expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 
       // seedDatabase is idempotent
       await seedDatabaseSpy(config);
 
-      // One super admin project exists
-      const rows = await new SelectQuery('Project').column('content').where('name', '=', 'Super Admin').execute(pool);
-      expect(rows.length).toBe(1);
+      // One Super Admin project per shard, all synced to/on the global shard
+      const globalPool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
+      const rows = await new SelectQuery('Project')
+        .column('content')
+        .where('name', '=', 'Super Admin')
+        .execute(globalPool);
+      expect(rows.length).toBe(expectedSuperAdminProjects);
 
-      const project = JSON.parse(rows[0].content) as Project;
-      expect(project.superAdmin).toBe(true);
-      expect(project.strictMode).toBe(true);
+      const projects = await getGlobalSystemRepo().searchResources<Project>({
+        resourceType: 'Project',
+        filters: [{ code: 'name', operator: 'eq', value: 'Super Admin' }],
+      });
+      expect(projects.length).toBe(expectedSuperAdminProjects);
+      for (const project of projects) {
+        expect(project.superAdmin).toBe(true);
+        expect(project.strictMode).toBe(true);
+        expect(project.shard).toBeDefined();
+      }
     }));
 });

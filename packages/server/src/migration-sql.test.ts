@@ -9,6 +9,7 @@ import { getPostDeployVersion, markPostDeployMigrationCompleted, setPreDeployVer
 import type { CustomPostDeployMigration } from './migrations/data/types';
 import type * as MigrationDataV1 from './migrations/data/v1';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
+import { TEST_SHARD_ID } from './test.setup';
 import type * as PostDeployMigration from './workers/post-deploy-migration';
 
 const migrationMocks = vi.hoisted(() => ({
@@ -43,11 +44,12 @@ vi.mock('./migrations/data/index', async () => {
 describe('markPostDeployMigrationCompleted', () => {
   let client: Pool;
   let rowId: number;
+  const shardId = TEST_SHARD_ID;
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config);
 
-    client = getDatabasePool(DatabaseMode.WRITER);
+    client = getDatabasePool(DatabaseMode.WRITER, shardId);
     const result = await client.query<{ id: number }>(
       `INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion", "firstBoot") VALUES (2, 0, $1, true)
         ON CONFLICT("id") DO UPDATE SET "id" = EXCLUDED."id", "version" = EXCLUDED."version", "dataVersion" = EXCLUDED."dataVersion"
