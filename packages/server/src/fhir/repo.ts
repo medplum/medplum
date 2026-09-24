@@ -271,8 +271,9 @@ export class Repository extends FhirRepository implements Disposable {
    *                Project.link (https://github.com/medplum/medplum/pull/9159)
    * 16. 06/30/26 - Added search param: Provenance-activity (https://github.com/medplum/medplum/pull/9709)
    * 17. 08/27/26 - Added search param: PractitionerRole-davinci-pdex-network
+   * 18. 09/23/26 - Added search param: Login-project (https://github.com/medplum/medplum/issues/10634)
    */
-  static readonly VERSION: number = 17;
+  static readonly VERSION: number = 18;
 
   /**
    * Constructs a new Repository instance.
@@ -663,7 +664,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (!this.inOwnTransaction()) {
       // Only set cache entry if not in a transaction
-      await this.setCacheEntry(resource);
+      await this.setCacheEntry(resource, { force: true });
     }
 
     return this.authorizeBinarySecurityContext(resource);
@@ -1151,7 +1152,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     // Skip writing AuditEvents to cache, since they are written in high volume but are seldom read by ID
     if (resource.resourceType !== 'AuditEvent') {
-      await this.setCacheEntry(resource);
+      await this.setCacheEntry(resource, { force: this.isCacheOnly(resource) });
     } else if (!create) {
       // Explicitly remove old AuditEvents from cache on update, to prevent stale reads from cache
       await this.deleteCacheEntry(resource.resourceType, resource.id);
@@ -2517,19 +2518,21 @@ export class Repository extends FhirRepository implements Disposable {
   /**
    * Writes a cache entry to Redis.
    * @param resource - The resource to cache.
+   * @param options - Optional write options.
+   * @param options.force - Create the entry even if it does not already exist.
    */
-  private async setCacheEntry(resource: WithId<Resource>): Promise<void> {
+  private async setCacheEntry(resource: WithId<Resource>, options?: { force?: boolean }): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.inOwnTransaction()) {
       const cachedResource = deepClone(resource);
       await this.postCommit(() => {
-        return this.setCacheEntry(cachedResource);
+        return this.setCacheEntry(cachedResource, options);
       });
       return;
     }
 
     this.recordCacheAccess('write', resource.resourceType, 'repo.setCacheEntry');
-    await setResourceCacheEntry(resource);
+    await setResourceCacheEntry(resource, options);
   }
 
   /**

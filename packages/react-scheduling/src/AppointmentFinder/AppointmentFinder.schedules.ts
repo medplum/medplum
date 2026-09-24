@@ -210,7 +210,7 @@ function getServiceTypeTokens(service: HealthcareService): string[] {
   return [...new Set(tokens)];
 }
 
-function toScheduleCandidate(
+export function toScheduleCandidate(
   schedule: WithId<Schedule>,
   service: WithId<HealthcareService> | undefined,
   actors: Map<string, SchedulingActorResource>

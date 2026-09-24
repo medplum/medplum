@@ -148,6 +148,8 @@ export interface MultiResourceInputProps<T extends Resource = Resource> {
   readonly maxValues?: number;
   /** Render the options dropdown inside the DOM tree (not a portal); defaults to portalled. */
   readonly withinPortal?: boolean;
+  /** Whether to show a button that clears the whole selection. Defaults to true. */
+  readonly clearable?: boolean;
 }
 
 export function MultiResourceInput<T extends Resource = Resource>(
@@ -242,7 +244,7 @@ export function MultiResourceInput<T extends Resource = Resource>(
       loadOptions={loadValues}
       onChange={handleChange}
       withinPortal={props.withinPortal}
-      clearable
+      clearable={props.clearable ?? true}
     />
   );
 }

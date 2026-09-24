@@ -139,6 +139,15 @@ const billingOrg: WithId<Organization> = {
   address: [{ line: ['456 Medical Center Drive'], city: 'Boston', state: 'MA', postalCode: '02101' }],
 };
 
+/** An organization created outside billing settings: no billing marker, no NPI, no phone. */
+const clinicOrg: WithId<Organization> = {
+  resourceType: 'Organization',
+  id: 'org-clinic',
+  name: 'Downtown Clinic',
+  identifier: [{ system: 'https://example.com/legacy-id', value: 'clinic-7' }],
+  address: [{ line: ['9 Harbor St'], city: 'Boston', state: 'MA', postalCode: '02110' }],
+};
+
 const drSmith: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'prac-smith',
@@ -207,6 +216,8 @@ describe('BillingSetupPage', () => {
   const mockSearches = (
     resources: {
       organizations?: Organization[];
+      /** Organizations without the billing marker, served to the existing organization picker. */
+      otherOrganizations?: Organization[];
       payers?: Organization[];
       practitioners?: Practitioner[];
       roles?: PractitionerRole[];
@@ -218,6 +229,9 @@ describe('BillingSetupPage', () => {
       }
       if (resourceType === 'PractitionerRole') {
         return (resources.roles ?? []).filter((role) => params.get('active') !== 'true' || role.active === true);
+      }
+      if (params.has('identifier:not')) {
+        return resources.otherOrganizations ?? [];
       }
       return (params.get('identifier') ?? '').startsWith(MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM)
         ? (resources.organizations ?? [])
@@ -379,7 +393,7 @@ describe('BillingSetupPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await user.click(screen.getByRole('button', { name: 'New Organization' }));
+    await user.click(screen.getByRole('button', { name: 'New...' }));
     expect(await screen.findByRole('heading', { name: 'New billing organization' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations/new');
   });
@@ -488,7 +502,7 @@ describe('BillingSetupPage', () => {
     expect(await within(screen.getByRole('tabpanel')).findByText('No results')).toBeInTheDocument();
 
     mockSearches({ organizations: [billingOrg] });
-    await user.click(screen.getByRole('button', { name: 'New Organization' }));
+    await user.click(screen.getByRole('button', { name: 'New...' }));
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');
     await user.type(within(dialog).getByLabelText(/NPI/), '3564119220');
@@ -515,7 +529,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
+    await user.click(await screen.findByRole('button', { name: 'New...' }));
 
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');
@@ -549,7 +563,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
+    await user.click(await screen.findByRole('button', { name: 'New...' }));
 
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Bad Org');
@@ -614,12 +628,207 @@ describe('BillingSetupPage', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'New Organization' }));
+    await user.click(screen.getByRole('button', { name: 'New...' }));
     dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('heading', { name: 'New billing organization' })).toBeInTheDocument();
     expect(within(dialog).getByLabelText(/^Name/)).toHaveValue('');
     expect(within(dialog).getByLabelText(/NPI/)).toHaveValue('');
     expect(within(dialog).getByPlaceholderText('City')).toHaveValue('');
+  });
+
+  describe('existing organizations', () => {
+    /**
+     * Opens the picker from the list, searches it and picks the clinic.
+     * @param user - The user event instance.
+     * @returns The picker dialog, with the clinic selected.
+     */
+    const pickClinic = async (user: UserEvent): Promise<HTMLElement> => {
+      await user.click(await screen.findByRole('button', { name: 'Add existing...' }));
+      const dialog = await screen.findByRole('dialog');
+      await user.type(within(dialog).getByRole('searchbox'), 'Down');
+      await user.click(await screen.findByRole('option', { name: /Downtown Clinic/, hidden: true }));
+      return dialog;
+    };
+
+    /**
+     * The picker is still closing while the set-up modal opens, so two dialogs overlap for a moment; find the
+     * set-up modal by its heading.
+     * @returns The set-up dialog.
+     */
+    const findSetupDialog = async (): Promise<HTMLElement> => {
+      const heading = await screen.findByRole('heading', { name: 'Set up billing organization' });
+      return heading.closest('[role="dialog"]') as HTMLElement;
+    };
+
+    test('offers the organizations without the billing marker in a picker on its own URL', async () => {
+      const user = userEvent.setup();
+      const searchSpy = vi.spyOn(medplum, 'searchResources');
+      mockSearches({ otherOrganizations: [clinicOrg] });
+      mockBots({ createProvider: true });
+      const { router } = setup();
+
+      await user.click(await screen.findByRole('button', { name: 'Add existing...' }));
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByRole('heading', { name: 'Add existing organization' })).toBeInTheDocument();
+      expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations/existing');
+      expect(within(dialog).getByRole('button', { name: 'Continue' })).toBeDisabled();
+
+      await user.type(within(dialog).getByRole('searchbox'), 'Down');
+      const option = await screen.findByRole('option', { name: /Downtown Clinic/, hidden: true });
+      expect(within(option).getByText(/9 Harbor St/)).toBeInTheDocument();
+
+      const query = searchSpy.mock.calls
+        .map((call) => new URLSearchParams(call[1] as string))
+        .find((params) => params.has('identifier:not'));
+      expect(query?.get('identifier:not')).toBe(
+        `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`
+      );
+    });
+
+    test('opens the picker from a direct link and closes it by leaving that URL', async () => {
+      const user = userEvent.setup();
+      mockBots({ createProvider: true });
+      const { router } = setup('Organizations/existing');
+
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByRole('heading', { name: 'Add existing organization' })).toBeInTheDocument();
+
+      await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations');
+    });
+
+    test('warns instead of opening the picker when the create-provider bot is not deployed', async () => {
+      mockBots();
+      const showSpy = vi.spyOn(notifications, 'show');
+      const { router } = setup('Organizations/existing');
+
+      await waitFor(() => expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations'));
+      expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ title: 'Cannot set up a billing organization' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    test('opens the picked organization for set-up, prefilled and asking for what it lacks', async () => {
+      const user = userEvent.setup();
+      mockSearches({ otherOrganizations: [clinicOrg] });
+      mockBots({ createProvider: true });
+      const readSpy = vi.spyOn(medplum, 'readResource');
+      const { router } = setup();
+
+      const picker = await pickClinic(user);
+      await user.click(within(picker).getByRole('button', { name: 'Continue' }));
+
+      const dialog = await findSetupDialog();
+      expect(router.state.location.pathname).toBe('/Settings/Billing/Organizations/org-clinic');
+      expect(readSpy).not.toHaveBeenCalled();
+      expect(within(dialog).getByLabelText(/^Name/)).toHaveValue('Downtown Clinic');
+      expect(within(dialog).getByPlaceholderText('City')).toHaveValue('Boston');
+      expect(within(dialog).getByLabelText(/NPI/)).toHaveValue('');
+      expect(within(dialog).getByLabelText(/Phone/)).toHaveValue('');
+      expect(
+        within(dialog).getByText(
+          'This organization is not set up for billing yet. Enter its NPI, Tax ID and phone to make it available for billing.'
+        )
+      ).toBeInTheDocument();
+    });
+
+    test('makes a picked organization a billing organization on save, keeping what it had', async () => {
+      const user = userEvent.setup();
+      mockSearches({ otherOrganizations: [clinicOrg] });
+      mockBots({ createProvider: true });
+      const updateSpy = vi.spyOn(medplum, 'updateResource').mockResolvedValue(clinicOrg);
+      const createSpy = vi.spyOn(medplum, 'createResource');
+      const showSpy = vi.spyOn(notifications, 'show');
+
+      setup();
+
+      const picker = await pickClinic(user);
+      await user.click(within(picker).getByRole('button', { name: 'Continue' }));
+      const dialog = await findSetupDialog();
+      await user.type(within(dialog).getByLabelText(/NPI/), '3564119220');
+      await user.type(within(dialog).getByLabelText(/Tax ID/), '12-3456789');
+      await user.type(within(dialog).getByLabelText(/Phone/), '6175550142');
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      await waitFor(() => expect(updateSpy).toHaveBeenCalled());
+      const updated = updateSpy.mock.calls[0][0] as Organization;
+      expect(updated.id).toBe('org-clinic');
+      expect(updated.name).toBe('Downtown Clinic');
+      expect(updated.identifier).toEqual([
+        { system: 'https://example.com/legacy-id', value: 'clinic-7' },
+        { system: NPI_SYSTEM, value: '3564119220' },
+        { system: EIN_SYSTEM, value: '123456789' },
+        { system: MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM, value: BILLING_ORGANIZATION_IDENTIFIER_VALUE },
+      ]);
+      expect(updated.address?.[0]?.city).toBe('Boston');
+      expect(createSpy).not.toHaveBeenCalled();
+      expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ message: 'Organization set up for billing' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    });
+
+    test('clears the selection with the in-field clear button, and forgets it when the picker is reopened', async () => {
+      const user = userEvent.setup();
+      mockSearches({ otherOrganizations: [clinicOrg] });
+      mockBots({ createProvider: true });
+
+      setup();
+
+      const picker = await pickClinic(user);
+      expect(within(picker).getByRole('button', { name: 'Continue' })).toBeEnabled();
+      await user.click(within(picker).getByTitle('Clear all'));
+      expect(within(picker).getByRole('button', { name: 'Continue' })).toBeDisabled();
+      await user.type(within(picker).getByRole('searchbox'), 'Down');
+      await user.click(await screen.findByRole('option', { name: /Downtown Clinic/, hidden: true }));
+      expect(within(picker).getByRole('button', { name: 'Continue' })).toBeEnabled();
+      await user.click(within(picker).getByRole('button', { name: 'Close' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+      await user.click(screen.getByRole('button', { name: 'Add existing...' }));
+      const reopened = await screen.findByRole('dialog');
+      expect(within(reopened).queryByText('Downtown Clinic')).not.toBeInTheDocument();
+      expect(within(reopened).getByRole('button', { name: 'Continue' })).toBeDisabled();
+    });
+
+    test('names a single missing field on its own', async () => {
+      const noPhone: WithId<Organization> = {
+        ...billingOrg,
+        id: 'org-no-phone',
+        identifier: billingOrg.identifier?.filter((id) => id.system !== MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM),
+        telecom: undefined,
+      };
+      mockBots({ createProvider: true });
+      vi.spyOn(medplum, 'readResource').mockResolvedValue(noPhone);
+
+      setup('Organizations/org-no-phone');
+
+      const dialog = await screen.findByRole('dialog');
+      expect(
+        within(dialog).getByText(
+          'This organization is not set up for billing yet. Enter its phone to make it available for billing.'
+        )
+      ).toBeInTheDocument();
+    });
+
+    test('says an organization with everything only needs saving', async () => {
+      const complete: WithId<Organization> = {
+        ...billingOrg,
+        id: 'org-complete',
+        name: 'Complete Clinic',
+        identifier: billingOrg.identifier?.filter((id) => id.system !== MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM),
+      };
+      mockBots({ createProvider: true });
+      vi.spyOn(medplum, 'readResource').mockResolvedValue(complete);
+
+      setup('Organizations/org-complete');
+
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByRole('heading', { name: 'Set up billing organization' })).toBeInTheDocument();
+      expect(
+        within(dialog).getByText(
+          'This organization is not set up for billing yet. Check its details and save to make it available for billing.'
+        )
+      ).toBeInTheDocument();
+    });
   });
 
   test('lists imported payers, filtering on the Candid payer UUID identifier', async () => {
@@ -688,7 +897,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
+    await user.click(await screen.findByRole('button', { name: 'New...' }));
 
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');
@@ -738,7 +947,7 @@ describe('BillingSetupPage', () => {
     const showSpy = vi.spyOn(notifications, 'show');
     const { router } = setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
+    await user.click(await screen.findByRole('button', { name: 'New...' }));
 
     await waitFor(() =>
       expect(showSpy).toHaveBeenCalledWith(
@@ -758,7 +967,7 @@ describe('BillingSetupPage', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'New Organization' }));
+    await user.click(await screen.findByRole('button', { name: 'New...' }));
 
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');

@@ -39,13 +39,32 @@ export async function setupBookingClient(): Promise<MockClient> {
   return medplum;
 }
 
+/**
+ * A field of the booking form, by the label above it.
+ *
+ * Scoped to the booking pane, because the workspace's sidebar carries filters
+ * with the same labels as some of the booking form's fields. Falls back to the
+ * whole document for the tests that render the form on its own.
+ *
+ * @param label - Matches the label above the field.
+ * @returns The field's search box.
+ */
 export function field(label: RegExp): HTMLElement {
-  return screen.getByRole('searchbox', { name: label });
+  const pane = screen.queryByRole('region', { name: 'Book appointment' });
+  return within(pane ?? document.body).getByRole('searchbox', { name: label });
 }
 
+/**
+ * Chooses the imaging visit type, scoped to the field's own dropdown.
+ *
+ * The workspace names its visit types in the sidebar too, so an unscoped query for
+ * the name would match the filter row as well as the option.
+ */
 export async function chooseImagingService(): Promise<void> {
-  await typeInAutocomplete(field(/visit type/i), 'Ultrasound');
-  await clickAutocompleteOption('Ultrasound Imaging');
+  const listbox = await searchField(/visit type/i, 'Ultrasound');
+  await act(async () => {
+    fireEvent.click(within(listbox).getByText('Ultrasound Imaging'));
+  });
   await settleAutocomplete();
 }
 
@@ -53,8 +72,10 @@ export async function chooseImagingService(): Promise<void> {
  * Names the visit type a practice designated as needing prior authorization.
  */
 export async function chooseAuthorizedService(): Promise<void> {
-  await typeInAutocomplete(field(/visit type/i), 'Infusion');
-  await clickAutocompleteOption('Infusion Therapy');
+  const listbox = await searchField(/visit type/i, 'Infusion');
+  await act(async () => {
+    fireEvent.click(within(listbox).getByText('Infusion Therapy'));
+  });
   await settleAutocomplete();
 }
 
@@ -168,26 +189,6 @@ export async function chooseActor(role: RegExp, query: string, name: string): Pr
   const listbox = await searchField(role, query);
   await act(async () => {
     fireEvent.click(within(listbox).getByText(name));
-  });
-  await settleAutocomplete();
-}
-
-/**
- * Takes one chosen value back out of the field holding it: the only way to change the
- * visit type, which takes its search box away while full.
- *
- * @param name - The value currently chosen.
- */
-export async function removePill(name: string | RegExp): Promise<void> {
-  // Scoped to the pill, since a named resource is also on the slot card and in the
-  // chosen time's description. Mantine's remove button is `aria-hidden`.
-  const pill = screen.queryAllByText(name).find((node) => node.className.includes('Pill'));
-  const remove = pill?.parentElement?.querySelector('button');
-  if (!remove) {
-    throw new Error(`No remove button on the ${String(name)} pill`);
-  }
-  await act(async () => {
-    fireEvent.click(remove);
   });
   await settleAutocomplete();
 }

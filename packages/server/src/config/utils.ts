@@ -34,6 +34,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.accurateCountThreshold ??= 1_000_000;
   config.maxSearchOffset ??= 10_000;
   config.defaultBotRuntimeVersion ??= 'awslambda';
+  config.storeBotInput ??= true;
   config.defaultProjectFeatures ??= [];
   config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
@@ -51,6 +52,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.rateLimitsEnabled ??= true;
   config.defaultRateLimit ??= 60_000;
   config.defaultAuthRateLimit ??= 160;
+  config.defaultMfaRateLimit ??= 10;
   config.defaultFhirQuota ??= 50_000;
   config.defaultMaxUserWebSocketSubscriptions ??= 20;
   config.asyncDelayScaling ??= 5;
@@ -105,6 +107,7 @@ type DefaultConfigKeys =
   | 'base64BinaryMaxBytes'
   | 'inlineAttachmentsMaxTotalBytes'
   | 'defaultBotRuntimeVersion'
+  | 'storeBotInput'
   | 'defaultProjectFeatures'
   | 'defaultProjectSystemSetting'
   | 'emailProvider'
@@ -114,6 +117,7 @@ type DefaultConfigKeys =
   | 'rateLimitsEnabled'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
+  | 'defaultMfaRateLimit'
   | 'defaultFhirQuota'
   | 'aiRealtimeTranscriptionUrl'
   | 'asyncDelayScaling'
@@ -124,6 +128,7 @@ const integerKeys = new Set([
   'bcryptHashSalt',
   'base64BinaryMaxBytes',
   'defaultAuthRateLimit',
+  'defaultMfaRateLimit',
   'defaultFhirQuota',
   'defaultRateLimit',
   'heartbeatMilliseconds',
@@ -184,7 +189,9 @@ export function isFloatConfig(_key: string): boolean {
 
 const booleanKeys = new Set([
   'allowUnsafeOutbound',
+  'autoDownloadEnabled',
   'botCustomFunctionsEnabled',
+  'cacheResourcesOnWrite',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
   'database.disableConnectionConfiguration',
@@ -200,6 +207,7 @@ const booleanKeys = new Set([
   'registerEnabled',
   'requireVerifiedEmailForProjectCreation',
   'serverScopedSubscriptionsEnabled',
+  'storeBotInput',
   'require',
   'rejectUnauthorized',
   'fhirSearchDiscourageSeqScan',

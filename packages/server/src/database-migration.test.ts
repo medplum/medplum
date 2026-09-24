@@ -252,7 +252,8 @@ describe('Database migrations', () => {
           expect(queueAddSpy).toHaveBeenCalledTimes(1);
           const jobData = queueAddSpy.mock.calls[0][1];
 
-          const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+          const asyncJobId = jobData.asyncJobId !== undefined ? jobData.asyncJobId : jobData.tracking.asyncJobId;
+          const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJobId);
 
           expect(jobData).toEqual(
             expect.objectContaining<CustomPostDeployMigrationJobData>({
@@ -505,8 +506,8 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob.id);
-        const result = await new ReindexJob(systemRepo).execute(undefined, jobData);
+        const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob);
+        const result = await (await ReindexJob.create(jobData)).execute(undefined);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
         expect(asyncJob.status).toStrictEqual('accepted');
@@ -537,8 +538,8 @@ describe('Database migrations', () => {
 
         expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(0);
 
-        const jobData = prepareReindexJobData(['MedicinalProductContraindication'], asyncJob.id);
-        await new ReindexJob(systemRepo).execute(undefined, jobData);
+        const jobData = prepareReindexJobData(['MedicinalProductContraindication'], asyncJob);
+        await (await ReindexJob.create(jobData)).execute(undefined);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
         expect(asyncJob.status).toStrictEqual('completed');
@@ -581,14 +582,14 @@ describe('Database migrations', () => {
 
       let jobData: ReindexJobData = {} as unknown as ReindexJobData;
       await withTestContext(async () => {
-        jobData = prepareReindexJobData(['ValueSet'], asyncJob.id);
+        jobData = prepareReindexJobData(['ValueSet'], asyncJob);
       });
 
-      const reindexJob = new ReindexJob(systemRepo);
+      const reindexJob = await ReindexJob.create(jobData);
       const processIterationSpy = vi
         .spyOn(reindexJob, 'processIteration')
         .mockResolvedValueOnce({ count: 0, durationMs: 0 });
-      await expect(reindexJob.execute(undefined, jobData)).resolves.toBe('finished');
+      await expect(reindexJob.execute(undefined)).resolves.toBe('finished');
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       if (firstBootMode && dataVersion) {
@@ -877,7 +878,8 @@ describe('Database migrations', () => {
             ],
           },
         });
-        const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+        const asyncJobId = jobData.asyncJobId !== undefined ? jobData.asyncJobId : jobData.tracking.asyncJobId;
+        const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJobId);
         expect(asyncJob.request).toBe('/admin/super/rebuild-index?index=Patient_name_idx&table=Observation');
         expect(asyncJob.meta?.project).toBeUndefined();
       });
@@ -961,7 +963,8 @@ describe('Database migrations', () => {
             ],
           },
         });
-        const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+        const asyncJobId = jobData.asyncJobId !== undefined ? jobData.asyncJobId : jobData.tracking.asyncJobId;
+        const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJobId);
         expect(asyncJob.request).toBe(
           '/admin/super/drop-invalid-indexes?index=public.AuditEvent_References_pkey_ccnew&index=pg_toast.pg_toast_2539493_index_ccnew'
         );

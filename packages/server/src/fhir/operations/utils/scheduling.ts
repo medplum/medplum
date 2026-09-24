@@ -31,7 +31,7 @@ import type {
 import assert from 'node:assert';
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
-import { areIntervalsOverlapping, clamp, earliest, latest } from '../../../util/date';
+import { addMinutes, areIntervalsOverlapping, clamp, earliest, latest } from '../../../util/date';
 import type { LayeredDict } from '../../../util/layereddict';
 import type { WithPath } from '../../../util/withpath';
 import { copyPaths, filterWithPaths, getPath, withPath } from '../../../util/withpath';
@@ -477,6 +477,91 @@ export function applyExistingSlots(params: {
   return removeAvailability(allAvailability, blockedIntervals);
 }
 
+/**
+ * Applies the overlap capacity a Slot is created under — the resolved `slotCapacity` for its
+ * schedule — so later bookings of other services respect this booking's limit. Buffer
+ * (`busy-unavailable`) Slots are left unstamped: buffer time is exclusive, matching the capacity
+ * `validateAvailability` admitted them at. Capacity 1 (the default) is left unstamped, keeping
+ * ordinary bookings minimal. Any stamp already on the slot is replaced.
+ *
+ * @param slot - The slot to stamp (mutated in place)
+ * @param capacity - The resolved `slotCapacity` for the slot's schedule, if it is known
+ */
+function stampSlotCapacity(slot: Slot, capacity: number | undefined): void {
+  const extension = (slot.extension ?? []).filter((ext) => ext.url !== SchedulingSlotCapacityURI);
+  if (capacity !== undefined && capacity > 1 && slot.status !== 'busy-unavailable') {
+    extension.push({ url: SchedulingSlotCapacityURI, valuePositiveInt: capacity });
+  }
+  if (extension.length > 0) {
+    slot.extension = extension;
+  } else {
+    delete slot.extension;
+  }
+}
+
+/**
+ * Builds the Slot resources that an appointment on `schedule` over `interval` must hold: one
+ * `busy` Slot for the appointment itself, plus a `busy-unavailable` Slot for each configured
+ * buffer. The set is fully determined by the scheduling parameters, so this is the single
+ * definition shared by $find (which proposes them) and the write operations (which persist them).
+ *
+ * @param params - input object
+ * @param params.schedule - The Schedule the slots belong to
+ * @param params.parameters - Scheduling parameters supplying bufferBefore/bufferAfter
+ * @param params.interval - The appointment's own start and end, excluding buffers
+ * @returns The Slot resources for this schedule, unpersisted
+ */
+export function buildAppointmentSlots(params: {
+  schedule: WithId<Schedule>;
+  parameters: LayeredDict<SchedulingParameters>;
+  interval: Interval;
+}): Slot[] {
+  const { schedule, parameters, interval } = params;
+  const start = interval.start.toISOString();
+  const end = interval.end.toISOString();
+
+  const busySlot: Slot = {
+    resourceType: 'Slot',
+    start,
+    end,
+    schedule: createReference(schedule),
+    status: 'busy',
+  };
+
+  const slots: Slot[] = [busySlot];
+
+  const bufferBefore = parameters.get('bufferBefore');
+  if (bufferBefore) {
+    slots.push({
+      resourceType: 'Slot',
+      start: addMinutes(interval.start, -1 * bufferBefore).toISOString(),
+      end: start,
+      schedule: createReference(schedule),
+      status: 'busy-unavailable',
+      comment: 'buffer before appointment',
+    });
+  }
+
+  const bufferAfter = parameters.get('bufferAfter');
+  if (bufferAfter) {
+    slots.push({
+      resourceType: 'Slot',
+      start: end,
+      end: addMinutes(interval.end, bufferAfter).toISOString(),
+      schedule: createReference(schedule),
+      status: 'busy-unavailable',
+      comment: 'buffer after appointment',
+    });
+  }
+
+  const capacity = parameters.get('slotCapacity');
+  for (const slot of slots) {
+    stampSlotCapacity(slot, capacity);
+  }
+
+  return slots;
+}
+
 export function assertAllLoaded<T extends Resource>(
   objects: WithPath<T | Error>[],
   message: string
@@ -500,6 +585,9 @@ export async function getSchedulingParametersGroup(
   }
 
   schedules.forEach((schedule) => {
+    if (schedule.active === false) {
+      throw new OperationOutcomeError(badRequest('Schedule is inactive', getPath(schedule)));
+    }
     if (schedule.actor.length !== 1) {
       throw new OperationOutcomeError(
         badRequest('Scheduling only supported on schedules with exactly one actor', getPath(schedule))
@@ -572,7 +660,7 @@ export async function slotsOverlappingInterval(
   repo: Repository,
   schedules: (WithId<Schedule> | (Reference<Schedule> & { reference: string }))[],
   interval: Interval
-): Promise<Slot[]> {
+): Promise<WithId<Slot>[]> {
   const searchStart = interval.start.toISOString();
   const searchEnd = interval.end.toISOString();
   const results = await repo.searchResources<Slot>({
@@ -914,12 +1002,8 @@ export async function validateAllAvailability(
 }
 
 /**
- * Stamps each booking Slot with the overlap capacity it was created under — the resolved
- * `slotCapacity` for its schedule — so later bookings of other services respect this
- * booking's limit. Buffer (`busy-unavailable`) Slots are left unstamped: buffer time is
- * exclusive, matching the capacity `validateAvailability` admitted them at.
- *
- * Capacity 1 (the default) is left unstamped, keeping ordinary bookings minimal.
+ * Stamps client-supplied booking Slots with the capacity of the schedule each one names. The
+ * rule itself lives in `stampSlotCapacity`; this resolves the capacity to hand it.
  *
  * @param slots - The proposed slots (mutated in place)
  * @param schedulingParameterGroup - Resolved parameters per schedule
@@ -934,20 +1018,7 @@ function stampBookingCapacity(
   }
 
   for (const slot of slots) {
-    // Drop any client-supplied stamp; we set it authoritatively below.
-    const extension = (slot.extension ?? []).filter((ext) => ext.url !== SchedulingSlotCapacityURI);
-    const capacity = slot.schedule.reference ? capacityBySchedule.get(slot.schedule.reference) : undefined;
-
-    // We don't apply capacity to `busy-unavailable` slots, which represent "buffer" that should
-    // not be overbooked.
-    if (capacity !== undefined && capacity > 1 && slot.status !== 'busy-unavailable') {
-      extension.push({ url: SchedulingSlotCapacityURI, valuePositiveInt: capacity });
-    }
-    if (extension.length > 0) {
-      slot.extension = extension;
-    } else {
-      delete slot.extension;
-    }
+    stampSlotCapacity(slot, slot.schedule.reference ? capacityBySchedule.get(slot.schedule.reference) : undefined);
   }
 }
 

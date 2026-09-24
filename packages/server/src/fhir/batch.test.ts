@@ -1480,7 +1480,7 @@ describe('Batch and Transaction processing', () => {
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
+      expect.objectContaining<Partial<ReentrantBatchJobData>>({ tracking: expect.anything() })
     );
     const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
     expect(enqueued.bundle).toBeUndefined();
@@ -1531,7 +1531,7 @@ describe('Batch and Transaction processing', () => {
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
+      expect.objectContaining<Partial<ReentrantBatchJobData>>({ tracking: expect.any(Object) })
     );
     const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
     expect(enqueued.bundle).toBeUndefined();
@@ -1971,7 +1971,7 @@ describe('Batch and Transaction processing', () => {
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
+      expect.objectContaining<Partial<ReentrantBatchJobData>>({ tracking: expect.anything() })
     );
     const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
     expect(enqueued.bundle).toBeUndefined();

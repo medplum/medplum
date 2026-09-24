@@ -21,7 +21,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
-import { findProjectMembership } from '../../workers/utils';
+import { findProjectMembership } from '../projectmembership';
 import type { Repository } from '../repo';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {

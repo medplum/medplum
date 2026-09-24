@@ -20,6 +20,8 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly error?: AsyncAutocompleteProps<T>['error'];
   /** Render the options dropdown inside the DOM tree (not a portal); defaults to portalled. */
   readonly withinPortal?: boolean;
+  /** Whether to show a button that clears the whole selection. Defaults to true. */
+  readonly clearable?: boolean;
 }
 
 /**
@@ -53,6 +55,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       error={props.error}
       withinPortal={props.withinPortal}
       maxValues={1}
+      clearable={props.clearable}
     />
   );
 }

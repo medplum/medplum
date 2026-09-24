@@ -71,6 +71,7 @@ describe('Config', () => {
     expect(config.redis.tls).toStrictEqual({});
     expect(config.database.ssl).toStrictEqual({ require: true });
     expect(config.smtp?.host).toStrictEqual('smtp.example.com');
+    expect(config.autoDownloadEnabled).toBe(true);
     expect(getConfig()).toBe(config);
   });
 
@@ -134,6 +135,7 @@ describe('Config', () => {
     setEnv('MEDPLUM_LOG_REQUESTS', 'false');
     setEnv('MEDPLUM_BOT_CUSTOM_FUNCTIONS_ENABLED', 'true');
     setEnv('MEDPLUM_RATE_LIMITS_ENABLED', 'false');
+    setEnv('MEDPLUM_AUTO_DOWNLOAD_ENABLED', 'false');
     setEnv('MEDPLUM_REQUIRE_VERIFIED_EMAIL_FOR_PROJECT_CREATION', 'false');
 
     const config = await loadConfig('env');
@@ -141,6 +143,7 @@ describe('Config', () => {
     expect(config.logRequests).toBe(false);
     expect(config.botCustomFunctionsEnabled).toBe(true);
     expect(config.rateLimitsEnabled).toBe(false);
+    expect(config.autoDownloadEnabled).toBe(false);
     expect(config.requireVerifiedEmailForProjectCreation).toBe(false);
   });
 
@@ -163,6 +166,7 @@ describe('Config', () => {
     setEnv('MEDPLUM_ACCURATE_COUNT_THRESHOLD', '500000');
     setEnv('MEDPLUM_SHUTDOWN_TIMEOUT_MILLISECONDS', '60000');
     setEnv('MEDPLUM_DEFAULT_RATE_LIMIT', '100');
+    setEnv('MEDPLUM_DEFAULT_MFA_RATE_LIMIT', '12');
     setEnv('MEDPLUM_BCRYPT_HASH_SALT', '12');
 
     const config = await loadConfig('env');
@@ -170,6 +174,7 @@ describe('Config', () => {
     expect(config.accurateCountThreshold).toStrictEqual(500000);
     expect(config.shutdownTimeoutMilliseconds).toStrictEqual(60000);
     expect(config.defaultRateLimit).toStrictEqual(100);
+    expect(config.defaultMfaRateLimit).toStrictEqual(12);
     expect(config.bcryptHashSalt).toStrictEqual(12);
   });
 

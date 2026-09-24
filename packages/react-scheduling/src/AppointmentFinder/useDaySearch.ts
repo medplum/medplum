@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { Appointment, HealthcareService } from '@medplum/fhirtypes';
+import type { Appointment, HealthcareService, Reference } from '@medplum/fhirtypes';
 import { useCallback, useMemo, useState } from 'react';
 import type { SchedulingActorResource } from '../actors';
 import type { DateTimeRange } from '../types';
@@ -50,6 +50,11 @@ export interface UseDaySearchOptions {
    * `$find` copied off the Schedule.
    */
   readonly actorResources?: ReadonlyMap<string, SchedulingActorResource>;
+  /**
+   * An appointment whose own times are not to count as taken, for a search run on
+   * behalf of an appointment being moved. See {@link useProposedAppointments}.
+   */
+  readonly ignoreAppointment?: Reference<Appointment> | WithId<Appointment>;
   /**
    * Fired when what is on show is replaced rather than added to, so the caller can
    * drop the time it chose out of results that no longer exist.
@@ -108,7 +113,8 @@ export interface UseDaySearchResult {
  * @returns The days on show with their times, load and error state, and the ways in.
  */
 export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
-  const { service, combinations, timezone, defaultStart, actorResources, onResultsReplaced } = options;
+  const { service, combinations, timezone, defaultStart, actorResources, ignoreAppointment, onResultsReplaced } =
+    options;
 
   const [daySearch, setDaySearch] = useState<DaySearch>(() => openDaySearch(defaultStart ?? new Date()));
   const [combinationLimit, setCombinationLimit] = useState(COMBINATION_WAVE);
@@ -124,6 +130,7 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     combinations: searchedCombinations,
     range: siteWindow,
     count: TIMES_PER_DAY * getDayCount(siteWindow.start, siteWindow.end),
+    ignoreAppointment,
   });
 
   const selectedDayRange = useMemo(
