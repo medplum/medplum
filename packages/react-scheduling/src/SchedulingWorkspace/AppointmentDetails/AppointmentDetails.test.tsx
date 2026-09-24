@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { CPT, ServiceTypeReferenceURI } from '@medplum/core';
+import { CPT, ICD10, SchedulingMedicalNecessityURI, ServiceTypeReferenceURI } from '@medplum/core';
 import type { Appointment, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { RenderResult } from '@testing-library/react';
@@ -156,6 +156,47 @@ describe('AppointmentDetails', () => {
     });
 
     expect(screen.getByText('Office visit, Follow-up')).toBeInTheDocument();
+  });
+
+  test('lists the codes and attestation the visit type asked for at booking', () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      serviceType: [
+        ...(BOOKED_APPOINTMENT.serviceType ?? []),
+        { coding: [{ system: CPT, code: '76700', display: 'Ultrasound, abdominal, real time' }] },
+        { coding: [{ system: CPT, code: '76705' }] },
+      ],
+      reasonCode: [{ coding: [{ system: ICD10, code: 'R10.9', display: 'Unspecified abdominal pain' }] }],
+      extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
+    });
+
+    expect(screen.getByText('Procedure codes')).toBeInTheDocument();
+    expect(screen.getByText('76700')).toBeInTheDocument();
+    expect(screen.getByText(/Ultrasound, abdominal, real time/)).toBeInTheDocument();
+    expect(screen.getByText('76705')).toBeInTheDocument();
+    expect(screen.getByText('Diagnosis codes')).toBeInTheDocument();
+    expect(screen.getByText('R10.9')).toBeInTheDocument();
+    expect(screen.getByText(/Unspecified abdominal pain/)).toBeInTheDocument();
+    expect(screen.getByText('Medical necessity confirmed')).toBeInTheDocument();
+    expect(screen.getByText('Yes')).toBeInTheDocument();
+  });
+
+  test('says when medical necessity was not confirmed', () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: false }],
+    });
+
+    expect(screen.getByText('Medical necessity confirmed')).toBeInTheDocument();
+    expect(screen.getByText('No')).toBeInTheDocument();
+  });
+
+  test('asks after no codes a visit type never asked for', () => {
+    renderDetails(BOOKED_APPOINTMENT);
+
+    expect(screen.queryByText('Procedure codes')).not.toBeInTheDocument();
+    expect(screen.queryByText('Diagnosis codes')).not.toBeInTheDocument();
+    expect(screen.queryByText('Medical necessity confirmed')).not.toBeInTheDocument();
   });
 
   test('leaves out what is not on file', () => {
