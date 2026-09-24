@@ -34,6 +34,9 @@ import {
   RECOVER_DELAYED,
   RECOVER_INFLIGHT,
   RECOVER_INFLIGHT_GUARANTEED,
+} from './queries';
+import { QueueErrorCode } from './types';
+import {
   RELEASE_LEASE,
   REQUEUE,
   SCHEDULE_RETRY,
@@ -912,13 +915,13 @@ export class DurableQueue {
    * @returns Counts of rows promoted to `failed` and returned to `queued`, respectively.
    */
   recoverOnStartup(now: number = Date.now()): { failed: number; requeued: number } {
-    const failed = Number(this.recoverInflightStmt.run(now).changes);
+    const failed = Number(this.recoverInflightStmt.run(now, QueueErrorCode.Interrupted).changes);
     // Every leg here returns a row to `queued`: provably-unsent `claimed` rows
     // (always safe), guaranteed-delivery `inflight` rows (duplication risk
     // accepted), and `delayed` rows (never dispatched, just waiting on a peer).
     const requeued =
       Number(this.recoverClaimedStmt.run().changes) +
-      Number(this.recoverInflightGuaranteedStmt.run().changes) +
+      Number(this.recoverInflightGuaranteedStmt.run(QueueErrorCode.Interrupted).changes) +
       Number(this.recoverDelayedStmt.run().changes);
     if (failed > 0 || requeued > 0) {
       this.walDirty = true;

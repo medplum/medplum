@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { QueueErrorCode } from './types';
+
 
 /**
  * Every SQL statement run by {@link DurableQueue} and {@link RetentionSweeper},
@@ -413,7 +413,7 @@ export const RECOVER_INFLIGHT = `
      SET state = 'failed',
          errored_at = ?,
          last_error = COALESCE(last_error, 'interrupted: process restart while inflight'),
-         error_code = COALESCE(error_code, '${QueueErrorCode.Interrupted}')
+         error_code = COALESCE(error_code, ?)
    WHERE state = 'inflight' AND guaranteed_delivery = 0
 `;
 
@@ -433,7 +433,7 @@ export const RECOVER_INFLIGHT_GUARANTEED = `
          sent_at = NULL,
          next_attempt_at = NULL,
          last_error = 'interrupted: process restart while inflight',
-         error_code = '${QueueErrorCode.Interrupted}'
+         error_code = ?
    WHERE state = 'inflight' AND guaranteed_delivery = 1
 `;
 
