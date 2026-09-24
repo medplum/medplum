@@ -291,21 +291,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     setAllSelected((e.target as HTMLInputElement).checked);
   }
 
-  /**
-   * Makes the whole checkbox cell a hit target: a click in the cell but outside the input (its
-   * padding, the wrapper, the icon) toggles the checkbox. Clicks on the input itself are left to its
-   * own change handler, so they are not toggled twice.
-   * @param e - The click event on the cell.
-   * @param toggle - Toggles the cell's checkbox.
-   */
-  function handleCheckboxCellClick(e: MouseEvent, toggle: () => void): void {
-    e.stopPropagation();
-    if ((e.target as Element).closest('input, label')) {
-      return;
-    }
-    toggle();
-  }
-
   function setAllSelected(checked: boolean): void {
     const newSelected = {} as { [id: string]: boolean };
     const searchResponse = stateRef.current.searchResponse;
@@ -798,6 +783,21 @@ function getDeleteCopy(
     message = custom.message;
   }
   return { title, message, confirmLabel: custom.confirmLabel ?? 'Delete' };
+}
+
+/**
+ * Makes the whole checkbox cell a hit target: a click in the cell but outside the input (its
+ * padding, the wrapper, the icon) toggles the checkbox. Clicks on the input itself are left to its
+ * own change handler, so they are not toggled twice.
+ * @param e - The click event on the cell.
+ * @param toggle - Toggles the cell's checkbox.
+ */
+function handleCheckboxCellClick(e: MouseEvent, toggle: () => void): void {
+  e.stopPropagation();
+  if ((e.target as Element).closest('input, label')) {
+    return;
+  }
+  toggle();
 }
 
 function getPage(search: SearchRequest): number {
