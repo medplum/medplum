@@ -3,7 +3,7 @@
 import type { SearchRequest } from '@medplum/core';
 import { Operator } from '@medplum/core';
 import type { Meta } from '@storybook/react';
-import { IconArchive, IconHistory, IconRefresh, IconReport } from '@tabler/icons-react';
+import { IconArchive, IconHistory, IconRefresh, IconReportAnalytics, IconUserPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { SearchControl } from './SearchControl';
@@ -79,30 +79,6 @@ export const AllButtons = (): JSX.Element => {
   );
 };
 
-export const ToolbarActions = (): JSX.Element => {
-  const [search, setSearch] = useState<SearchRequest>({
-    resourceType: 'MedicationRequest',
-    fields: ['id', '_lastUpdated', 'status'],
-  });
-
-  return (
-    <SearchControl
-      search={search}
-      onNew={() => console.log('onNew')}
-      hideRefresh
-      toolbarActions={[
-        {
-          key: 'sync',
-          label: 'Sync with DoseSpot',
-          icon: <IconRefresh size={16} />,
-          onClick: () => console.log('sync'),
-        },
-      ]}
-      onChange={(e) => setSearch(e.definition)}
-    />
-  );
-};
-
 export const CustomActions = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',
@@ -118,14 +94,14 @@ export const CustomActions = (): JSX.Element => {
       toolbarActions={[
         {
           key: 'sync',
-          label: 'Sync',
+          label: 'Sync Patients',
           icon: <IconRefresh size={16} />,
           onClick: (ids) => console.log('sync', ids),
         },
         {
           key: 'reports',
           label: 'Reports',
-          icon: <IconReport size={16} />,
+          icon: <IconReportAnalytics size={16} />,
           href: '/reports',
         },
       ]}
@@ -149,6 +125,89 @@ export const CustomActions = (): JSX.Element => {
   );
 };
 
+export const ReplaceBuiltInActions = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      hideRefresh
+      hideActionsMenu
+      toolbarActions={[
+        {
+          key: 'sync',
+          label: 'Sync Patients',
+          icon: <IconRefresh size={16} />,
+          onClick: () => console.log('sync'),
+        },
+        {
+          key: 'invite',
+          label: 'Invite Patient',
+          icon: <IconUserPlus size={16} />,
+          variant: 'filled',
+          color: 'green',
+          onClick: () => console.log('invite'),
+        },
+      ]}
+      onChange={(e) => setSearch(e.definition)}
+    />
+  );
+};
+
+export const ContextMenuDefault = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'ServiceRequest',
+    fields: ['id', '_lastUpdated', 'subject', 'code', 'status'],
+  });
+
+  return <SearchControl search={search} onChange={(e) => setSearch(e.definition)} />;
+};
+
+export const ContextMenuCustomLinks = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'ServiceRequest',
+    fields: ['id', '_lastUpdated', 'subject', 'code', 'status'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      rowContextMenu={{
+        getResourceHref: (resource) => `/orders/${resource.id}`,
+        getReferenceHref: (reference) => `/directory/${reference.reference}`,
+      }}
+      onChange={(e) => setSearch(e.definition)}
+    />
+  );
+};
+
+export const ContextMenuWithoutCopyLink = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      rowContextMenu={{ items: { copyLink: false } }}
+      onChange={(e) => setSearch(e.definition)}
+    />
+  );
+};
+
+export const ContextMenuDisabled = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return <SearchControl search={search} rowContextMenu={false} onChange={(e) => setSearch(e.definition)} />;
+};
+
 export const DeleteDefault = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',
@@ -159,6 +218,23 @@ export const DeleteDefault = (): JSX.Element => {
     <SearchControl
       search={search}
       checkboxesEnabled={true}
+      onDelete={(ids) => console.log('onDelete', ids)}
+      onChange={(e) => setSearch(e.definition)}
+    />
+  );
+};
+
+export const DeleteWithoutConfirmation = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      confirmDelete={false}
       onDelete={(ids) => console.log('onDelete', ids)}
       onChange={(e) => setSearch(e.definition)}
     />

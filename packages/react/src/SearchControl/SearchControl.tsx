@@ -30,7 +30,7 @@ import {
   IconDots,
   IconLibraryPlus,
   IconPlus,
-  IconRefresh,
+  IconRotate,
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
@@ -512,7 +512,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   <Menu.Dropdown className={classes.menuDropdown}>
                     {showRefresh && (
                       <Menu.Item
-                        leftSection={<IconRefresh size={16} color="var(--mantine-color-dimmed)" />}
+                        leftSection={<IconRotate size={16} color="var(--mantine-color-dimmed)" />}
                         onClick={refreshResults}
                       >
                         <Text size="sm">Refresh</Text>
