@@ -46,7 +46,7 @@ const result = await medplum.executeBot(
 
 ## Preferred pharmacy sync
 
-Confirm that the deployed patient-sync bot in your target project includes outbound pharmacy sync. Older deployments may only pull from ScriptSure. Updating the server alone does not update project-specific bot code.
+Confirm that the deployed patient-sync bot in your target project includes outbound pharmacy sync and version-checked Patient reconciliation. Older deployments may only pull from ScriptSure. Updating the server alone does not update project-specific bot code.
 
 For readable local pharmacy references with an NCPDP identifier, sync works in this order:
 
@@ -61,6 +61,8 @@ For the pharmacy portion, the execution identity needs Organization `search`, `r
 ### Check pharmacy sync results
 
 Pharmacy reconciliation failures can return a normal bot response containing a `warnings` entry with `code: 'pharmacy-sync-failed'` and an explanatory `message`. Inspect these warnings even when a ScriptSure patient ID is returned. After an Organization persistence failure, the bot skips applying the pharmacy snapshot to the Patient; earlier Organization writes may already have completed.
+
+Before reconciling preferences, the bot reads the latest Patient and saves with an `If-Match` version check. If another edit changes the Patient after that read, the write fails and returns a `pharmacy-sync-failed` warning instead of overwriting the edit. A missing Patient version also prevents the write. Review the current preferences and resolve any pending removal/replacement before retrying sync; earlier vendor or Organization writes are not rolled back.
 
 Unreadable local pharmacy references are logged and skipped during the outbound pass, so an absent warning alone is not proof that every local preference was pushed. Confirm the expected pharmacies in ScriptSure when validating a deployment. A successful HTTP response or INFO log by itself does not establish complete pharmacy sync.
 

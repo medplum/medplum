@@ -124,15 +124,15 @@ export async function removePreferredPharmacy(
 }
 ```
 
-A successful response has `success: true`. `vendorSync` is `complete` when the vendor operations completed, or `not-required` when the Patient has no ScriptSure patient ID and only the local preference changed.
+A successful response has `success: true`. `vendorSync` is `complete` when the required vendor steps completed or were already satisfied, or `not-required` when the Patient has no ScriptSure patient ID and only the local preference changed.
 
 ### Handle partial failures
 
 For a synced Patient, the bot updates ScriptSure first, then saves the Patient with a version check. A normal response can still contain `success: false`:
 
 - `failedStage: 'vendor'` and `vendorSync: 'unknown'`: local preferences are unchanged, but some vendor steps may have completed.
-- `failedStage: 'patient-update'`: the local write failed. `vendorSync: 'complete'` means the vendor changed while the Patient still needs updating; `not-required` means this was a local-only operation.
+- `failedStage: 'patient-update'`: the local write failed. `vendorSync: 'complete'` means the required vendor steps completed or were already satisfied, while the Patient still needs updating; `not-required` means this was a local-only operation.
 
-Resolve the reported cause and retry the same request before running patient sync. Validation and resource-read failures can also reject the request, so handle thrown errors as well as `success: false`.
+Resolve the reported cause and retry the same request before running patient sync. On each attempt, the bot fetches the vendor pharmacy list, skips adding a replacement already present, and skips removing an old pharmacy already absent. This allows a retry to finish the local Patient update after an earlier attempt completed the vendor changes. Validation and resource-read failures can also reject the request, so handle thrown errors as well as `success: false`.
 
 Do not run removal/replacement concurrently with patient sync for the same patient. There is no transaction spanning Medplum and ScriptSure, and sync can re-add an association during a partial update. Removing only a local extension or only the vendor association is insufficient for a lasting removal.
