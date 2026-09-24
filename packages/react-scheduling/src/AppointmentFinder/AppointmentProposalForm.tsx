@@ -1,18 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Checkbox, Group, Loader, NumberInput, Pill, Stack, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Group, Loader, NumberInput, Stack, Text, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   createReference,
-  formatDate,
   getDisplayString,
-  getIdentifier,
-  getIdentifierByType,
   getReferenceString,
   getSchedulingRequirements,
   getSchedulingTimezone,
-  MRN_IDENTIFIER_TYPE,
   normalizeErrorString,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
@@ -20,19 +16,10 @@ import {
   SchedulingMedicalNecessityURI,
   toAppointmentSiteReference,
 } from '@medplum/core';
-import type {
-  Appointment,
-  Extension,
-  HealthcareService,
-  Location,
-  Patient,
-  Reference,
-  ValueSetExpansionContains,
-} from '@medplum/fhirtypes';
-import type { AsyncAutocompleteOption } from '@medplum/react';
-import { CalendarDateInput, ResourceInput, ResourceName, ValueSetAutocomplete } from '@medplum/react';
+import type { Appointment, Extension, HealthcareService, Location, Patient, Reference } from '@medplum/fhirtypes';
+import { CalendarDateInput, ResourceInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconAlertCircle, IconCalendarSearch, IconCheck } from '@tabler/icons-react';
+import { IconAlertCircle, IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SchedulingActorValue } from '../actors';
@@ -49,7 +36,6 @@ import {
   DEFAULT_PROCEDURE_VALUE_SET,
   EMPTY_REQUIREMENT_VALUES,
   hasRequiredValues,
-  toCodings,
 } from './AppointmentFinder.requirements';
 import type { ActorSelections, SelectionBlocker } from './AppointmentFinder.schedules';
 import {
@@ -67,9 +53,10 @@ import {
   isViewerTimezone,
   parseZonedDateTimeInput,
 } from './AppointmentFinder.times';
-import { AppointmentOptionRow } from './AppointmentOptionRow';
+import { AppointmentPatientInput } from './AppointmentPatientInput';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
+import { BookingRequirementFields } from './BookingRequirementFields';
 import { buildElevatedBooking } from './buildElevatedBooking';
 import type { BookingConflict } from './findConflicts';
 import { describeConflict, findBookingConflicts } from './findConflicts';
@@ -78,11 +65,6 @@ import { useDaySearch } from './useDaySearch';
 // The visit type decides which actors can be asked for at all, so nothing below it
 // is answerable yet. Unanswered, not answered wrongly, so it reads as a prompt.
 const NO_SERVICE_BLOCKER: SelectionBlocker = { message: 'Choose a visit type first.', severity: 'incomplete' };
-
-// Alphabetical, then by birth date: a short prefix — or the first click, before
-// anything is typed — leaves a list only a name orders usefully, and the birth
-// date is what tells the people sharing one apart.
-const PATIENT_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
 
 // No month-wide scan exists, so every day is offered and the search answers.
 const NO_MARKED_DATES: Date[] = [];
@@ -343,13 +325,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     }
   }, [chosen, onChangeTime]);
 
-  const patientItem = useCallback(
-    (option: AsyncAutocompleteOption<WithId<Patient>>) => (
-      <AppointmentOptionRow label={option.label} detail={formatPatientDetail(option.resource, mrnSystem)} />
-    ),
-    [mrnSystem]
-  );
-
   function toggleFinder(): void {
     setFinding(!finding);
   }
@@ -608,67 +583,19 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         )}
 
         {takesDetails && (
-          <ResourceInput<WithId<Patient>>
-            resourceType="Patient"
-            name="patient"
-            label="Patient"
-            placeholder="Search patients by name"
-            required
-            searchCriteria={PATIENT_SEARCH_CRITERIA}
-            defaultValue={defaultPatient}
-            itemComponent={patientItem}
-            onChange={choosePatient}
-            clearable={false}
-          />
+          <AppointmentPatientInput defaultValue={defaultPatient} mrnSystem={mrnSystem} onChange={choosePatient} />
         )}
 
         {/* Each field is shown only for a visit type whose eligibility asks for it. */}
         {takesDetails && service && requirements.size > 0 && (
-          <Fragment key={service.id}>
-            {requirements.has(REQUIRES_PROCEDURE_CODE) && (
-              <ValueSetAutocomplete
-                name="procedure-code"
-                label="Procedure codes"
-                required
-                itemComponent={RequirementCodeItem}
-                pillComponent={RequirementCodePill}
-                binding={procedureBinding}
-                onChange={(elements) =>
-                  chooseRequirementValues({
-                    ...requirementValues,
-                    procedure: toCodings(elements),
-                  })
-                }
-              />
-            )}
-            {requirements.has(REQUIRES_DIAGNOSIS_CODE) && (
-              <ValueSetAutocomplete
-                name="diagnosis-code"
-                label="Diagnosis codes"
-                required
-                itemComponent={RequirementCodeItem}
-                pillComponent={RequirementCodePill}
-                binding={diagnosisBinding}
-                onChange={(elements) =>
-                  chooseRequirementValues({
-                    ...requirementValues,
-                    diagnosis: toCodings(elements),
-                  })
-                }
-              />
-            )}
-            {requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE) && (
-              <Checkbox
-                classNames={{ label: classes.requiredLabel }}
-                label="Medical necessity confirmed"
-                required
-                checked={requirementValues.medicalNecessity}
-                onChange={(event) =>
-                  chooseRequirementValues({ ...requirementValues, medicalNecessity: event.currentTarget.checked })
-                }
-              />
-            )}
-          </Fragment>
+          <BookingRequirementFields
+            key={service.id}
+            requirements={requirements}
+            values={requirementValues}
+            procedureBinding={procedureBinding}
+            diagnosisBinding={diagnosisBinding}
+            onChange={chooseRequirementValues}
+          />
         )}
 
         {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
@@ -928,61 +855,6 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
   return chosen ? 'Change time' : 'Find a time';
 }
 
-/**
- * One code on offer, led by the code itself.
- *
- * The code is what a scheduler searches on and what a biller reads, and descriptions run long
- * before they diverge: the CPT descriptions for infusion procedures, to take one example, agree
- * for sixty characters. Led by its description, a row does not tell itself apart from the next.
- * The system is left out because a field's value set draws from a single code system in practice,
- * which makes printing it one url repeated down the list and nothing more.
- *
- * @param props - The option to render.
- * @returns The row.
- */
-function RequirementCodeItem(props: Readonly<AsyncAutocompleteOption<ValueSetExpansionContains>>): JSX.Element {
-  const { label, resource, active } = props;
-  return (
-    <Group wrap="nowrap" gap="xs">
-      {active && <IconCheck size={12} />}
-      <Text size="sm">
-        <Text span fw={600}>
-          {resource.code}
-        </Text>{' '}
-        <Text span>{label}</Text>
-      </Text>
-    </Group>
-  );
-}
-
-interface RequirementCodePillProps {
-  readonly item: AsyncAutocompleteOption<ValueSetExpansionContains>;
-  readonly disabled?: boolean;
-  readonly onRemove: () => void;
-}
-
-/**
- * A code that has been given, led by the code.
- *
- * What a scheduler checks a filled-in form against, and what a biller reads off it, is the code, so
- * it comes first and stays readable however narrow the pill gets. The description follows and is
- * clipped, since a dozen words times three pills would bury the rest of the form. The full text is
- * on the pill's `title`. A code typed in rather than picked off the list is its own description, so
- * it is printed once rather than twice.
- *
- * @param props - The chosen option, and how to take it back out.
- * @returns The pill.
- */
-function RequirementCodePill(props: RequirementCodePillProps): JSX.Element {
-  const { item, disabled, onRemove } = props;
-  const code = item.resource.code;
-  return (
-    <Pill className={classes.codePill} withRemoveButton={!disabled} onRemove={onRemove} title={item.label}>
-      {code && code !== item.label ? `${code} · ${item.label}` : item.label}
-    </Pill>
-  );
-}
-
 interface BuildBookingOptions {
   /** The time that was chosen, as `$find` offered it. */
   readonly proposal: Appointment;
@@ -1040,34 +912,6 @@ function buildBooking(options: BuildBookingOptions): Appointment {
     ...(extension.length > 0 && { extension }),
     ...(supportingInformation && { supportingInformation }),
   };
-}
-
-/**
- * What tells one patient apart from another of the same name.
- * @param patient - The patient on offer.
- * @param mrnSystem - The system a project issues medical record numbers under.
- * @returns The line under their name, or undefined when nothing is on file.
- */
-function formatPatientDetail(patient: WithId<Patient>, mrnSystem: string | undefined): string | undefined {
-  const mrn = getMedicalRecordNumber(patient, mrnSystem);
-  return [formatDate(patient.birthDate), mrn && `MRN ${mrn}`].filter(Boolean).join(' · ') || undefined;
-}
-
-/**
- * Reads a patient's medical record number.
- *
- * A typed identifier answers it whoever issued it, which is the case that needs
- * no configuration. `mrnSystem` is for the project whose identifiers carry no
- * type, where nothing but the system says which one this is.
- *
- * @param patient - The patient to read.
- * @param mrnSystem - The system a project issues medical record numbers under.
- * @returns The medical record number, or undefined for a patient with none.
- */
-function getMedicalRecordNumber(patient: WithId<Patient>, mrnSystem: string | undefined): string | undefined {
-  return (
-    getIdentifierByType(patient, MRN_IDENTIFIER_TYPE) ?? (mrnSystem ? getIdentifier(patient, mrnSystem) : undefined)
-  );
 }
 
 /**
