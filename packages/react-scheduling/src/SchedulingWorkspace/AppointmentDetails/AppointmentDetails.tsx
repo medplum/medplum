@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Badge, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { formatCodeableConcept, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
+import {
+  formatCodeableConcept,
+  getExtension,
+  isDefined,
+  normalizeErrorString,
+  resolveId,
+  ServiceTypeReferenceURI,
+} from '@medplum/core';
 import type { Appointment, AppointmentParticipant, CodeableConcept, Parameters, Reference } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ReferenceDisplay } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
@@ -354,11 +361,28 @@ function formatWhen(appointment: Appointment): string | undefined {
 }
 
 /**
+ * The `serviceType` entries naming the visit type, as opposed to the procedure codes the
+ * booking form appends alongside them.
+ *
+ * The visit type's entries carry the reference to the HealthcareService it was booked
+ * under. An appointment where none do was not booked against one, so all of its entries
+ * are taken to name the visit.
+ *
+ * @param appointment - The appointment being described.
+ * @returns The entries naming the visit type.
+ */
+function getVisitTypes(appointment: Appointment): CodeableConcept[] {
+  const serviceType = appointment.serviceType ?? [];
+  const visitTypes = serviceType.filter((concept) => getExtension(concept, ServiceTypeReferenceURI));
+  return visitTypes.length > 0 ? visitTypes : serviceType;
+}
+
+/**
  * Names what the visit is for, preferring the service over the kind of visit.
  * @param appointment - The appointment being described.
  * @returns The service or appointment type, or undefined when neither is on file.
  */
 function formatService(appointment: Appointment): string | undefined {
-  const service = (appointment.serviceType ?? []).map(formatCodeableConcept).filter(Boolean).join(', ');
+  const service = getVisitTypes(appointment).map(formatCodeableConcept).filter(Boolean).join(', ');
   return service || formatCodeableConcept(appointment.appointmentType) || undefined;
 }

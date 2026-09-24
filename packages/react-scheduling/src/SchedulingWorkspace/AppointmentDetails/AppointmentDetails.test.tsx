@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ServiceTypeReferenceURI } from '@medplum/core';
+import { CPT, ServiceTypeReferenceURI } from '@medplum/core';
 import type { Appointment, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { RenderResult } from '@testing-library/react';
@@ -135,6 +135,27 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText('Dr. Maya Rivera, Ultrasound 1')).toBeInTheDocument();
     // The day and the times it runs between, in the timezone the browser is in.
     expect(screen.getByText(/Tuesday, May 5/)).toBeInTheDocument();
+  });
+
+  test('names only the visit type under the service, not the procedure codes booked with it', () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      serviceType: [
+        ...(BOOKED_APPOINTMENT.serviceType ?? []),
+        { coding: [{ system: CPT, code: '76700', display: 'Ultrasound, abdominal, real time' }] },
+      ],
+    });
+
+    expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
+  });
+
+  test('names every service type on an appointment not booked against a visit type', () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      serviceType: [{ text: 'Office visit' }, { text: 'Follow-up' }],
+    });
+
+    expect(screen.getByText('Office visit, Follow-up')).toBeInTheDocument();
   });
 
   test('leaves out what is not on file', () => {
