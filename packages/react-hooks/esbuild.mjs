@@ -4,11 +4,8 @@
 /* global process */
 /* global console */
 
-import dotenv from 'dotenv';
 import esbuild from 'esbuild';
 import { writeFileSync } from 'fs';
-
-dotenv.config({ quiet: true });
 
 const options = {
   entryPoints: ['./src/index.ts'],
