@@ -60,6 +60,10 @@
  *     1..1), rejected by the server, and they take the Composition down with them via
  *     Composition.section.entry. Dropped, references stripped; the member condition observations
  *     are kept (which relative they belong to is lost — needs FamilyMemberHistory support).
+ * 17. The Clinical Notes section (Note Activity entries, 2.16.840.1.113883.10.20.22.4.202) is
+ *     dropped by the converter. Each note becomes a DocumentReference (US Core clinical-note
+ *     category, LOINC note type, author, encounter link) with the narrative text — resolved from
+ *     the section's table cell by the entry's text reference — as a text/plain attachment.
  *
  * Outputs per input file:
  *   <name>.fhir.json    — post-processed document bundle, pretty-printed (for review)
@@ -77,7 +81,7 @@ import {
   mapCcdaCodeToCodeableConcept,
   mapCcdaToFhirDateTime,
 } from '@medplum/ccda';
-import type { Ccda, CcdaAct, CcdaAuthor, CcdaEntry, CcdaId } from '@medplum/ccda';
+import type { Ccda, CcdaAct, CcdaAuthor, CcdaCode, CcdaEncounter, CcdaEntry, CcdaId } from '@medplum/ccda';
 import { ContentType, MedplumClient } from '@medplum/core';
 import type {
   Address,
@@ -85,6 +89,8 @@ import type {
   AsyncJob,
   Bundle,
   BundleEntry,
+  DocumentReference,
+  Encounter,
   HumanName,
   Identifier,
   Patient,
@@ -188,7 +194,10 @@ const SEED_CLIENT_SECRET = process.env.MEDPLUM_CLIENT_SECRET ?? '';
 const KNOWN_DROPPED_SECTION_OIDS: Record<string, string> = {
   '2.16.840.1.113883.10.20.22.2.18': 'Payers',
   '1.3.6.1.4.1.19376.1.5.3.1.3.1': 'Reason for Referral',
-  '2.16.840.1.113883.10.20.22.2.65': 'Notes',
+};
+// Sections the converter drops but this script handles itself (see extractNoteActivities).
+const SCRIPT_HANDLED_SECTION_OIDS: Record<string, string> = {
+  '2.16.840.1.113883.10.20.22.2.65': 'Notes -> DocumentReference',
 };
 
 // ---------------------------------------------------------------------------
@@ -276,6 +285,11 @@ const ALLERGY_TYPE_MAP: Record<
 };
 
 const CCDA_NARRATIVE_REF_URL = 'https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference';
+const OID_NOTES_SECTION = '2.16.840.1.113883.10.20.22.2.65';
+const OID_NOTE_ACTIVITY = '2.16.840.1.113883.10.20.22.4.202';
+const OID_LOINC = '2.16.840.1.113883.6.1';
+const LOINC_SYSTEM = 'http://loinc.org';
+const US_CORE_DOCREF_CATEGORY_SYSTEM = 'http://hl7.org/fhir/us/core/CodeSystem/us-core-documentreference-category';
 
 // ---------------------------------------------------------------------------
 // Historical lab orders (Planned Act entries in Assessment and Plan) -> ServiceRequest
@@ -400,6 +414,178 @@ function collectMedicationEntryInfo(ccda: Ccda): Map<string, MedEntryInfo> {
     }
   }
   return result;
+}
+
+/**
+ * Note Activity entries from the Clinical Notes section, which the converter drops entirely.
+ * @param ccda - Parsed CCDA document.
+ * @returns The note acts, in document order.
+ */
+function extractNoteActivities(ccda: Ccda): CcdaAct[] {
+  const acts: CcdaAct[] = [];
+  for (const component of ccda.component?.structuredBody?.component ?? []) {
+    for (const section of component.section ?? []) {
+      if (!section.templateId?.some((t) => t['@_root'] === OID_NOTES_SECTION)) {
+        continue;
+      }
+      for (const entry of section.entry ?? []) {
+        for (const act of entry.act ?? []) {
+          if (act.templateId?.some((t) => t['@_root'] === OID_NOTE_ACTIVITY)) {
+            acts.push(act);
+          }
+        }
+      }
+    }
+  }
+  return acts;
+}
+
+/**
+ * Plain text of a narrative block: paragraphs, table rows and <br/> become line breaks, cells
+ * become tabs, remaining markup is removed and XML entities decoded.
+ * @param markup - The narrative XML fragment.
+ * @returns The text.
+ */
+function narrativeToText(markup: string): string {
+  return markup
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(paragraph|tr|item|list|table|thead|tbody|content)>/gi, '\n')
+    .replace(/<\/t[dh]>/gi, '\t')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
+    .replace(/&amp;/g, '&')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
+ * Text of the narrative element with the given ID (e.g. the <td ID="ClinicalNote_1"> a Note
+ * Activity's text reference points at), read from the raw XML.
+ * @param xml - Raw source XML.
+ * @param id - The element ID, without the leading '#'.
+ * @returns The plain text, or undefined if no element carries that ID.
+ */
+function narrativeTextById(xml: string, id: string): string | undefined {
+  const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = new RegExp(
+    `<(td|paragraph|content|item|div|tr|list)\\b[^>]*\\bID="${escaped}"[^>]*>([\\s\\S]*?)</\\1>`
+  ).exec(xml);
+  return match ? narrativeToText(match[2]) : undefined;
+}
+
+/**
+ * CodeableConcept for a CCDA code, LOINC-aware and preferring the more specific translation
+ * (Practice Fusion codes notes as 34109-9 "Note" with the real type, e.g. 11506-3 Progress note,
+ * as a translation).
+ * @param code - The CCDA code element.
+ * @returns The concept, or undefined if there is no coded value.
+ */
+function noteTypeConcept(code: CcdaCode | undefined): DocumentReference['type'] {
+  const codes = [...(code?.translation ?? []), code].filter((c): c is CcdaCode => Boolean(c?.['@_code']));
+  if (codes.length === 0) {
+    return undefined;
+  }
+  return {
+    coding: codes.map((c) =>
+      c['@_codeSystem'] === OID_LOINC
+        ? { system: LOINC_SYSTEM, code: c['@_code'], display: c['@_displayName'] }
+        : (mapCcdaCodeToCodeableConcept(c)?.coding?.[0] ?? { code: c['@_code'], display: c['@_displayName'] })
+    ),
+    text: codes[0]['@_displayName'],
+  };
+}
+
+/**
+ * Build a DocumentReference per Note Activity: US Core clinical-note category, LOINC type,
+ * author (NPI conditional reference), encounter link when the note's encounter is in this
+ * document, and the note text as a text/plain attachment.
+ * @param acts - Note Activity acts.
+ * @param xml - Raw source XML (for the narrative text).
+ * @param patient - The document's Patient (converter id; rewritten in postProcess).
+ * @param encounters - Encounters from the converter output, to link notes to their visit.
+ * @param fileBase - Source file name without extension (placeholder ids).
+ * @returns The DocumentReferences.
+ */
+function buildClinicalNotes(
+  acts: CcdaAct[],
+  xml: string,
+  patient: Patient,
+  encounters: Encounter[],
+  fileBase: string
+): DocumentReference[] {
+  const patientDisplay = patient.name?.[0]
+    ? [...(patient.name[0].given ?? []), patient.name[0].family].filter(Boolean).join(' ')
+    : undefined;
+  const notes: DocumentReference[] = [];
+  acts.forEach((act, i) => {
+    const ref = act.text?.reference?.['@_value'];
+    const inline = act.text?.['#text'];
+    const text = ref?.startsWith('#') ? narrativeTextById(xml, ref.slice(1)) : inline?.trim();
+    if (!text) {
+      console.log(`  WARNING: clinical note ${i + 1} has no narrative text (reference ${ref ?? 'none'}) — skipped`);
+      return;
+    }
+    const author = act.author?.[0];
+    const npi = author?.assignedAuthor?.id?.find((id) => id['@_root'] === OID_NPI)?.['@_extension'];
+    const authorName = mapAuthorName(author);
+    let authorRef: Reference<Practitioner> | undefined;
+    if (npi) {
+      const pinned = PRACTITIONER_ID_OVERRIDES[npi];
+      authorRef = {
+        reference: pinned ? `Practitioner/${pinned}` : `Practitioner?identifier=${NPI_SYSTEM}|${npi}`,
+        display: authorName,
+      };
+    } else if (authorName) {
+      authorRef = { display: authorName };
+    }
+    const when = mapCcdaToFhirDateTime(author?.time?.['@_value'] ?? act.effectiveTime?.[0]?.['@_value']);
+    // DocumentReference.date is an instant — only use a value that carries time and zone.
+    const instant = when && /T.*(Z|[+-]\d\d:\d\d)$/.test(when) ? when : undefined;
+    // entryRelationship/encounter is not declared on CcdaEntryRelationship but survives parsing.
+    const encId = (act.entryRelationship ?? [])
+      .flatMap((er) => (er as { encounter?: CcdaEncounter[] }).encounter ?? [])
+      .flatMap((e) => e.id ?? [])
+      .find((id) => id['@_root'] && id['@_extension']);
+    const encounter = encId
+      ? encounters.find((e) =>
+          e.identifier?.some((id) => id.system === `urn:oid:${encId['@_root']}` && id.value === encId['@_extension'])
+        )
+      : undefined;
+    const type = noteTypeConcept(act.code);
+    const status = act.statusCode?.['@_code']?.toLowerCase();
+    const sourceId = toSourceIdentifier(act.id);
+    notes.push({
+      resourceType: 'DocumentReference',
+      id: `note-${fileBase}-${i}`, // placeholder; replaced with a deterministic id in postProcess
+      identifier: sourceId ? [sourceId] : undefined,
+      status: 'current',
+      docStatus: status === 'complete' || status === 'completed' ? 'final' : 'preliminary',
+      type,
+      category: [
+        { coding: [{ system: US_CORE_DOCREF_CATEGORY_SYSTEM, code: 'clinical-note', display: 'Clinical Note' }] },
+      ],
+      subject: { reference: `Patient/${patient.id}`, display: patientDisplay },
+      date: instant,
+      author: authorRef ? [authorRef] : undefined,
+      content: [
+        {
+          attachment: {
+            contentType: 'text/plain',
+            data: Buffer.from(text, 'utf8').toString('base64'),
+            title: type?.text,
+            creation: when,
+          },
+        },
+      ],
+      context: encounter ? { encounter: [{ reference: `Encounter/${encounter.id}` }] } : undefined,
+    });
+  });
+  return notes;
 }
 
 function buildServiceRequests(acts: CcdaAct[], patient: Patient, fileBase: string): ServiceRequest[] {
@@ -1453,6 +1639,8 @@ function sectionInventory(ccda: Ccda): string[] {
       let flag = '';
       if (entryCount > 0 && KNOWN_DROPPED_SECTION_OIDS[oid]) {
         flag = '  ** SECTION ENTRIES SILENTLY DROPPED BY CONVERTER **';
+      } else if (entryCount > 0 && SCRIPT_HANDLED_SECTION_OIDS[oid]) {
+        flag = `  (dropped by converter; handled by this script: ${SCRIPT_HANDLED_SECTION_OIDS[oid]})`;
       }
       lines.push(`${s.title ?? oid} (${oid}) — ${entryCount} entr${entryCount === 1 ? 'y' : 'ies'}${flag}`);
     }
@@ -1517,6 +1705,19 @@ for (const file of files) {
     rawResources.push(...buildServiceRequests(plannedActs, patient, fileBase));
   } else if (plannedActs.length > 0) {
     console.log('  WARNING: planned acts found but no Patient resource — ServiceRequests NOT built');
+  }
+  const noteActs = extractNoteActivities(ccda);
+  if (patient && noteActs.length > 0) {
+    const encounters = rawResources.filter((r): r is Encounter => r.resourceType === 'Encounter');
+    const notes = buildClinicalNotes(noteActs, xml, patient, encounters, fileBase);
+    rawResources.push(...notes);
+    const linked = notes.filter((n) => n.context?.encounter).length;
+    console.log(
+      `  notes: ${notes.length} DocumentReference(s) from ${noteActs.length} Clinical Notes entr${noteActs.length === 1 ? 'y' : 'ies'} ` +
+        `(${linked} linked to an encounter; converter drops the section)`
+    );
+  } else if (noteActs.length > 0) {
+    console.log('  WARNING: clinical notes found but no Patient resource — DocumentReferences NOT built');
   }
 
   for (const fix of fixAllergyCategories(rawResources, allergyInfo)) {
@@ -1584,6 +1785,7 @@ for (const file of files) {
     'MedicationRequest',
     'AllergyIntolerance',
     'Encounter',
+    'DocumentReference',
     'Observation',
     'DiagnosticReport',
     'ServiceRequest',
@@ -1716,6 +1918,7 @@ async function executeBatchAsync(medplum: MedplumClient, bundle: Bundle): Promis
 const PURGEABLE_TYPES: ResourceType[] = [
   'Composition',
   'Encounter',
+  'DocumentReference',
   'Observation',
   'Condition',
   'MedicationRequest',

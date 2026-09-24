@@ -42,7 +42,7 @@ export twice is a no-op and a **newer export of the same patients updates record
 - Patients, Practitioners and Organizations are keyed by identifier / NPI (or name) — stable
   across exports and across files.
 - Everything else (Encounters, Observations, Conditions, MedicationRequests, AllergyIntolerances,
-  ServiceRequests, CarePlans) is keyed by its **Practice Fusion source-record id** (the
+  ServiceRequests, CarePlans, DocumentReferences) is keyed by its **Practice Fusion source-record id** (the
   `<id root=… extension=…/>` on the entry, which the converter keeps as an identifier; the
   script recovers the ones the converter drops for medications and allergies). Only ids unique
   within the document count — lab-panel ids copied onto member results and problem-concern act ids
@@ -111,7 +111,7 @@ urn:ccda-import-id|<deterministic-id>` upsert with no body id, or POST + ifNoneE
    staff-recorded entries (a nurse's entries carry the supervising physician's NPI), so within one file
    the wrong name can win.
 1. Parse XML → CCDA (`convertXmlToCcda`), print a section inventory (flags sections the converter
-   silently drops: Notes, Payers, Reason for Referral — none had entries in this batch).
+   silently drops: Payers, Reason for Referral; Notes are handled by the script, see below — none had entries in this batch).
 2. **Strip negated entries** (`stripNegatedEntries`): converter ignores `negationInd="true"`, which
    turns "No Known X" placeholders into fake positive resources (verified: fake Immunization +
    Procedure per file). Handles top-level acts/substanceAdministrations/procedures/observations AND
@@ -120,6 +120,12 @@ urn:ccda-import-id|<deterministic-id>` upsert with no body id, or POST + ifNoneE
    sections (2.…22.2.9, unhandled by converter — would throw) → mapped to **ServiceRequest**
    (348 historical lab orders; status forced `completed` since these are historical orders, intent from
    moodCode, requester = NPI conditional reference, local lab compendium codes).
+   **Extract Note Activities** (templateId 2.16.840.1.113883.10.20.22.4.202) from the Clinical
+   Notes section (2.…22.2.65, dropped by the converter) → mapped to **DocumentReference** (US Core
+   `clinical-note` category, LOINC note type with the specific translation first, author = NPI
+   conditional reference, `context.encounter` when the note's encounter is in the document, and the
+   note text — resolved from the section's `<td ID=…>` cell by the entry's text reference — as a
+   `text/plain` attachment).
 4. **Strict-mode probe**: run converter with `ignoreUnsupportedSections: false` to prove nothing
    else unknown remains; then convert leniently.
 5. **Content fixes** on converter output:
@@ -198,6 +204,8 @@ urn:ccda-import-id|<deterministic-id>` upsert with no body id, or POST + ifNoneE
 
 ## Known limitations / accepted trade-offs
 
+- Reason for Referral entries (referral acts with reason diagnoses) are still dropped by the
+  converter and not recovered by the script.
 - Family history: the converter has no FamilyMemberHistory mapping, so the relative (mother, father…)
   behind each family-history condition is not captured; only the condition observations survive.
 - No DiagnosticReport grouping — converter emits labs as flat Observations (panel structure lost).
