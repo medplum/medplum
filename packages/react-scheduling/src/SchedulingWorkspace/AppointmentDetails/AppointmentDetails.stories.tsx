@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Paper } from '@mantine/core';
 import type { WithId } from '@medplum/core';
+import { createReference, SchedulingMedicalNecessityURI, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
@@ -13,9 +14,25 @@ import {
   withFixtures,
   withMockedDate,
   withRescheduleStub,
+  withValueSets,
   withValueSetStub,
 } from '../../stories/decorators';
-import { RiveraImagingAppointment, RiveraImagingHeldSlots, SchedulingFixtures } from '../../stories/scheduling';
+import {
+  AuthorizationFixtures,
+  AuthorizationValueSets,
+  DIAGNOSIS_VALUE_SET,
+  DiagnosisCodes,
+  DrChenPractitioner,
+  ElderJordanPatient,
+  InfusionService,
+  MilesCooperPatient,
+  PatientFixtures,
+  PROCEDURE_VALUE_SET,
+  ProcedureCodes,
+  RiveraImagingAppointment,
+  RiveraImagingHeldSlots,
+  SchedulingFixtures,
+} from '../../stories/scheduling';
 import { AppointmentDetails } from './AppointmentDetails';
 
 const CancelledAppointment: WithId<Appointment> = {
@@ -33,13 +50,33 @@ const CancelledAppointment: WithId<Appointment> = {
   },
 };
 
+/** Booked for a visit type asking for procedure and diagnosis codes and a medical necessity attestation. */
+const AuthorizedAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-chen-infusion-tue',
+  status: 'booked',
+  start: '2020-05-05T14:00:00Z',
+  end: '2020-05-05T15:00:00Z',
+  serviceType: [...toServiceTypeCodeableConcepts(InfusionService), { coding: [ProcedureCodes[0]] }],
+  reasonCode: [{ coding: [DiagnosisCodes[0]] }],
+  extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
+  participant: [
+    { status: 'accepted', actor: createReference(ElderJordanPatient) },
+    { status: 'accepted', actor: createReference(DrChenPractitioner) },
+  ],
+};
+
 // The schedules, the visit type and the actors as well as the visits themselves: moving
 // a visit searches against all of them.
 const STORY_FIXTURES = [
   ...SchedulingFixtures,
+  ...PatientFixtures,
+  MilesCooperPatient,
   ...RiveraImagingHeldSlots,
   RiveraImagingAppointment,
   CancelledAppointment,
+  ...AuthorizationFixtures,
+  AuthorizedAppointment,
 ];
 
 export default {
@@ -113,3 +150,24 @@ export const Cancelled = (): JSX.Element => (
     <AppointmentDetails appointment={CancelledAppointment} />
   </Paper>
 );
+
+/**
+ * A visit whose visit type asked for procedure codes, diagnosis codes, and a medical
+ * necessity attestation when it was booked. All three are editable here beside the patient.
+ *
+ * @returns The story.
+ */
+export const AuthorizationDetails = (): JSX.Element => {
+  const [appointment, setAppointment] = useState<WithId<Appointment>>(AuthorizedAppointment);
+  return (
+    <Paper withBorder p="md" maw={460}>
+      <AppointmentDetails
+        appointment={appointment}
+        procedureBinding={PROCEDURE_VALUE_SET}
+        diagnosisBinding={DIAGNOSIS_VALUE_SET}
+        onUpdated={setAppointment}
+      />
+    </Paper>
+  );
+};
+AuthorizationDetails.decorators = [withValueSets(AuthorizationValueSets)];

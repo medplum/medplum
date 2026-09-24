@@ -15,6 +15,7 @@ import {
   withValueSetStub,
 } from '../stories/decorators';
 import {
+  AppointmentPatientFixtures,
   CalendarWeekFixtures,
   ImagingBenchFixtures,
   inViewerTimezone,
@@ -36,6 +37,7 @@ const ELSEWHERE_FIXTURES = [
   ...ImagingBenchFixtures,
   ...CalendarWeekFixtures,
   ...PatientFixtures,
+  ...AppointmentPatientFixtures,
 ];
 
 /** The same clinic, moved onto whatever clock the reader is on. */

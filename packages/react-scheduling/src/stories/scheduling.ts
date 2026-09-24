@@ -814,6 +814,17 @@ export const UntypedMrnPatient = buildPatient('sam-whitfield', 'Sam', 'Whitfield
 
 export const PatientFixtures = [ElderJordanPatient, YoungerJordanPatient, UntypedMrnPatient];
 
+export const MilesCooperPatient = buildPatient('pt-cooper', 'Miles', 'Cooper', '1985-02-11');
+
+/** Who the calendar's appointments are for. Kept apart from {@link PatientFixtures}, the namesakes the patient search is tested against. */
+export const AppointmentPatientFixtures = [
+  MilesCooperPatient,
+  buildPatient('pt-alvarez', 'Renee', 'Alvarez', '1972-09-03'),
+  buildPatient('pt-jones', 'Liam', 'Jones', '2001-01-17'),
+  buildPatient('pt-garcia', 'Eliana', 'Garcia', '1990-07-22'),
+  buildPatient('pt-miller', 'Elijah', 'Miller', '1958-12-05'),
+];
+
 /**
  * Appointments and Slots for the calendar view, dated within the week of Monday,
  * May 4 2020 — the date `MockDateWrapper` freezes the clock to, so `timeGridWeek`
@@ -858,7 +869,7 @@ export const RiveraImagingAppointment: WithId<Appointment> = {
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
   slot: RiveraImagingHeldSlots.map(createReference),
   participant: [
-    { status: 'accepted', actor: { reference: 'Patient/pt-cooper', display: 'Miles Cooper' } },
+    { status: 'accepted', actor: createReference(MilesCooperPatient) },
     { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
     { status: 'accepted', actor: createReference(Ultrasound1Device) },
     { status: 'accepted', actor: createReference(ExamRoomA) },
