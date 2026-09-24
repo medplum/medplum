@@ -585,6 +585,9 @@ export async function getSchedulingParametersGroup(
   }
 
   schedules.forEach((schedule) => {
+    if (schedule.active === false) {
+      throw new OperationOutcomeError(badRequest('Schedule is inactive', getPath(schedule)));
+    }
     if (schedule.actor.length !== 1) {
       throw new OperationOutcomeError(
         badRequest('Scheduling only supported on schedules with exactly one actor', getPath(schedule))

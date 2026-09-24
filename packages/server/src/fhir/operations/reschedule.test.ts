@@ -805,6 +805,57 @@ describe('Appointment/:id/$reschedule', () => {
     });
   });
 
+  test('rejects rescheduling onto an inactive schedule', async () => {
+    const practitionerSchedule = await makeSchedule(practitioner);
+    const start = '2026-04-21T16:00:00.000Z'; // Tue 11am EST
+    const end = '2026-04-21T17:00:00.000Z';
+
+    const booked = await book(makeProposal({ start, end, schedules: [practitionerSchedule] }));
+    await systemRepo.updateResource<Schedule>({ ...practitionerSchedule, active: false });
+
+    const response = await reschedule(booked.id as string, {
+      start: '2026-04-22T16:00:00.000Z', // Wed 11am EST
+      schedules: [practitionerSchedule],
+    });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body).toHaveProperty('issue', [
+      {
+        code: 'invalid',
+        severity: 'error',
+        details: { text: 'Schedule is inactive' },
+        expression: ['Parameters.schedule[0]'],
+      },
+    ]);
+
+    // The appointment is left where it was
+    const stored = await systemRepo.readResource<Appointment>('Appointment', booked.id as string);
+    expect(stored.start).toStrictEqual(start);
+    expect(stored.slot?.map((ref) => ref.reference)).toStrictEqual(booked.slot?.map((ref) => ref.reference));
+  });
+
+  test('moves an appointment off a schedule that has since been deactivated', async () => {
+    const roomOneSchedule = await makeSchedule(roomOne);
+    const roomTwoSchedule = await makeSchedule(roomTwo);
+    const start = '2026-04-23T16:00:00.000Z'; // Thu 11am EST
+    const end = '2026-04-23T17:00:00.000Z';
+
+    const booked = await book(makeProposal({ start, end, schedules: [roomOneSchedule] }));
+    await systemRepo.updateResource<Schedule>({ ...roomOneSchedule, active: false });
+
+    const response = await reschedule(booked.id as string, { start, schedules: [roomTwoSchedule] });
+
+    expect(response).toHaveStatus(200);
+    const resources = bundleResources(response.body);
+    const appointment = resources.find((r) => isResource<Appointment>(r, 'Appointment')) as Appointment;
+    expect((appointment.participant ?? []).map((p) => p.actor?.reference)).toContainExactly([
+      getReferenceString(patient),
+      getReferenceString(roomTwo),
+    ]);
+    const slots = resources.filter((r) => isResource<Slot>(r, 'Slot'));
+    expect(slots.map((slot) => slot.schedule.reference)).toStrictEqual([`Schedule/${roomTwoSchedule.id}`]);
+  });
+
   test('rejects an invalid reference for a schedule', async () => {
     const practitionerSchedule = await makeSchedule(practitioner);
     const start = '2026-04-16T16:00:00.000Z'; // Thu 11am EST
