@@ -135,7 +135,6 @@ import {
   buildDeleteHistoryContent,
   buildExpungedHistoryContent,
   buildResourceRow,
-  isExpungedHistoryVersion,
   parseHistoryContent,
 } from './repository/row-builder';
 import { validateRepositoryResource } from './repository/validation';
@@ -840,7 +839,7 @@ export class Repository extends FhirRepository implements Disposable {
                   severity: 'error',
                   code: 'deleted',
                   details: {
-                    text: `${isExpungedHistoryVersion(parsed) ? 'Expunged' : 'Deleted'} on ${row.lastUpdated}`,
+                    text: 'Deleted on ' + row.lastUpdated,
                   },
                 },
               ],

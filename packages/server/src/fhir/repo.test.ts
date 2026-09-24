@@ -1679,7 +1679,7 @@ describe('FHIR Repo', () => {
           request: { method: 'DELETE', url: `Patient/${patient.id}` },
           response: {
             status: '410',
-            outcome: { issue: [{ details: { text: expect.stringMatching(/^Expunged on /) } }] },
+            outcome: { issue: [{ details: { text: expect.stringMatching(/^Deleted on /) } }] },
           },
         });
         expect(tombstoneEntry?.resource).toBeUndefined();

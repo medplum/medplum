@@ -46,14 +46,6 @@ export const ExpungedHistoryTag = {
   display: 'Destroy/Delete Record Lifecycle Event',
 } as const;
 
-export function isExpungedHistoryVersion(resource: Resource): boolean {
-  return (
-    resource.meta?.tag?.some(
-      (tag) => tag.system === ExpungedHistoryTag.system && tag.code === ExpungedHistoryTag.code
-    ) === true
-  );
-}
-
 export function parseHistoryContent(content: string | null | undefined): Resource {
   return content ? (JSON.parse(content) as Resource) : ({ meta: { deleted: true } } as Resource);
 }
