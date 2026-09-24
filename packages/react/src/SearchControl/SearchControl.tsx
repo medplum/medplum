@@ -46,10 +46,13 @@ import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
 import { SearchSortEditor } from '../SearchSortEditor/SearchSortEditor';
 import { isAuxClick, isCheckboxCell, killEvent } from '../utils/dom';
 import { getPaginationControlProps } from '../utils/pagination';
+import type { ResourceContextMenuTarget, SearchControlContextMenuOptions } from './ResourceContextMenu';
 import { useResourceContextMenuController } from './ResourceContextMenu';
 import classes from './SearchControl.module.css';
 import { getFieldDefinitions } from './SearchControlField';
 import { buildFieldNameString, renderValue, setPage } from './SearchUtils';
+
+export type { SearchControlContextMenuOptions } from './ResourceContextMenu';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -137,6 +140,11 @@ export interface SearchControlProps {
   readonly onExportTransactionBundle?: () => void;
   readonly onDelete?: (ids: string[]) => void;
   readonly onBulk?: (ids: string[]) => void;
+  /**
+   * Configures the right-click menu on rows and reference cells, or false to turn it off and leave
+   * the browser's own menu. See {@link SearchControlContextMenuOptions}.
+   */
+  readonly rowContextMenu?: false | SearchControlContextMenuOptions;
 }
 
 interface SearchControlState {
@@ -214,7 +222,31 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     loadResults();
   }, [loadResults]);
 
-  const { ContextMenuProvider, openContextMenu, contextMenu } = useResourceContextMenuController();
+  const { ContextMenuProvider, openContextMenu, contextMenu } = useResourceContextMenuController(props.rowContextMenu);
+
+  /**
+   * Builds the context menu target for a row. The link comes from `getResourceHref` when set, else
+   * `/${resourceType}/${id}` unless an `onClick` handler owns navigation; without a link, Open and
+   * Open in a New Tab fall back to the click handlers.
+   * @param e - The contextmenu event.
+   * @param resource - The row's resource.
+   * @returns The context menu target.
+   */
+  function getRowContextMenuTarget(e: MouseEvent, resource: Resource): ResourceContextMenuTarget {
+    const { rowContextMenu, onClick, onAuxClick } = props;
+    let href: string | undefined;
+    if (rowContextMenu && rowContextMenu.getResourceHref) {
+      href = rowContextMenu.getResourceHref(resource);
+    } else if (!onClick) {
+      href = `/${resource.resourceType}/${resource.id}`;
+    }
+    return {
+      label: resource.resourceType,
+      href,
+      onOpen: onClick && (() => onClick(new SearchClickEvent(resource, e))),
+      onOpenInNewTab: onAuxClick && (() => onAuxClick(new SearchClickEvent(resource, e))),
+    };
+  }
 
   function handleSingleCheckboxClick(e: ChangeEvent, id: string): void {
     e.stopPropagation();
@@ -546,10 +578,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                         if (isCheckboxCell(e.target as Element)) {
                           return;
                         }
-                        openContextMenu(e, {
-                          label: resource.resourceType,
-                          href: `/${resource.resourceType}/${resource.id}`,
-                        });
+                        openContextMenu(e, getRowContextMenuTarget(e, resource));
                       }}
                     >
                       {checkboxColumn && (

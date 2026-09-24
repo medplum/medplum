@@ -47,6 +47,7 @@ export function SearchPage(): JSX.Element {
         search={search}
         onClick={(e) => navigate(getResourceUrl(e.resource))?.catch(console.error)}
         onAuxClick={(e) => window.open(getResourceUrl(e.resource), '_blank')}
+        rowContextMenu={{ getResourceHref: getResourceUrl }}
         onNew={() => {
           navigate(`/${search.resourceType}/new`)?.catch(console.error);
         }}

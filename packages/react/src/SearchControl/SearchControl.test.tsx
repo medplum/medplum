@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchRequest } from '@medplum/core';
 import { Operator } from '@medplum/core';
-import type { Bundle } from '@medplum/fhirtypes';
+import type { Bundle, Resource } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
@@ -24,14 +24,17 @@ describe('SearchControl', () => {
   async function setup(
     props: SearchControlProps,
     returnVal?: Bundle,
-    medplum: MockClient = new MockClient()
+    medplum: MockClient = new MockClient(),
+    navigate?: (path: string) => void
   ): Promise<{ rerender: (props: SearchControlProps) => Promise<void> }> {
     if (returnVal) {
       medplum.search = vi.fn().mockResolvedValue(returnVal);
     }
     const { rerender: _rerender } = await act(async () =>
       render(<SearchControl {...props} />, ({ children }) => (
-        <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+        <MedplumProvider medplum={medplum} navigate={navigate}>
+          {children}
+        </MedplumProvider>
       ))
     );
     return {
@@ -778,6 +781,187 @@ describe('SearchControl', () => {
     expect(screen.queryByText('Open Observation in a New Tab')).not.toBeInTheDocument();
   });
 
+  const simpsonSearch: SearchRequest = {
+    resourceType: 'Patient',
+    fields: ['name'],
+    filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Simpson' }],
+  };
+
+  const observationBundle: Bundle = {
+    resourceType: 'Bundle',
+    type: 'searchset',
+    total: 1,
+    entry: [
+      {
+        resource: {
+          resourceType: 'Observation',
+          id: 'obs1',
+          status: 'final',
+          code: { text: 'Test' },
+          subject: { reference: `Patient/${HomerSimpson.id}`, display: 'Homer Simpson' },
+        },
+      },
+    ],
+  };
+
+  test('rowContextMenu={false} leaves the browser menu on rows and references', async () => {
+    await setup({ search: simpsonSearch, rowContextMenu: false });
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    const row = screen.getAllByTestId('search-control-row')[0];
+    let notCancelled = true;
+    await act(async () => {
+      notCancelled = fireEvent.contextMenu(row);
+    });
+    expect(notCancelled).toBe(true);
+    expect(screen.queryByText('Copy Link')).not.toBeInTheDocument();
+    expect(row.className).not.toContain('trActive');
+  });
+
+  test('rowContextMenu={false} leaves the browser menu on reference cells', async () => {
+    await setup(
+      { search: { resourceType: 'Observation', fields: ['subject'] }, rowContextMenu: false },
+      observationBundle
+    );
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    let notCancelled = true;
+    await act(async () => {
+      notCancelled = fireEvent.contextMenu(screen.getByText('Homer Simpson'));
+    });
+    expect(notCancelled).toBe(true);
+    expect(screen.queryByText('Copy Link')).not.toBeInTheDocument();
+  });
+
+  test('Custom getResourceHref is used by all three items', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    const mockNavigate = vi.fn();
+    const getResourceHref = (resource: Resource): string => `/custom/${resource.id}`;
+    await setup({ search: simpsonSearch, rowContextMenu: { getResourceHref } }, undefined, undefined, mockNavigate);
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    const openMenu = async (): Promise<void> => {
+      await act(async () => {
+        fireEvent.contextMenu(screen.getAllByTestId('search-control-row')[0]);
+      });
+    };
+
+    await openMenu();
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Open Patient in a New Tab'));
+    });
+    expect(openSpy).toHaveBeenCalledWith(`/custom/${HomerSimpson.id}`, '_blank', 'noopener,noreferrer');
+
+    await openMenu();
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Copy Link'));
+    });
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/custom/${HomerSimpson.id}`);
+
+    await openMenu();
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Open Patient'));
+    });
+    expect(mockNavigate).toHaveBeenCalledWith(`/custom/${HomerSimpson.id}`);
+    openSpy.mockRestore();
+  });
+
+  test('With onClick and no getResourceHref, items fall back to the click handlers', async () => {
+    const onClick = vi.fn();
+    const onAuxClick = vi.fn();
+    await setup({ search: simpsonSearch, onClick, onAuxClick });
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.contextMenu(screen.getAllByTestId('search-control-row')[0]);
+    });
+    expect(await screen.findByText('Open Patient')).toBeInTheDocument();
+    expect(screen.queryByText('Copy Link')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Open Patient'));
+    });
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onClick.mock.calls[0][0].resource.id).toBe(HomerSimpson.id);
+
+    await act(async () => {
+      fireEvent.contextMenu(screen.getAllByTestId('search-control-row')[0]);
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Open Patient in a New Tab'));
+    });
+    expect(onAuxClick).toHaveBeenCalledTimes(1);
+  });
+
+  test('With onClick only, Open in a New Tab is hidden', async () => {
+    await setup({ search: simpsonSearch, onClick: vi.fn() });
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.contextMenu(screen.getAllByTestId('search-control-row')[0]);
+    });
+    expect(await screen.findByText('Open Patient')).toBeInTheDocument();
+    expect(screen.queryByText('Open Patient in a New Tab')).not.toBeInTheDocument();
+    expect(screen.queryByText('Copy Link')).not.toBeInTheDocument();
+  });
+
+  test('items.copyLink: false shows exactly two items', async () => {
+    await setup({ search: simpsonSearch, rowContextMenu: { items: { copyLink: false } } });
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.contextMenu(screen.getAllByTestId('search-control-row')[0]);
+    });
+    expect(await screen.findByText('Open Patient')).toBeInTheDocument();
+    expect(screen.getAllByRole('menuitem', { hidden: true })).toHaveLength(2);
+    expect(screen.queryByText('Copy Link')).not.toBeInTheDocument();
+  });
+
+  test('A right-click with no available items falls through to the browser menu', async () => {
+    await setup({ search: simpsonSearch, rowContextMenu: { getResourceHref: () => undefined } });
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    let notCancelled = true;
+    await act(async () => {
+      notCancelled = fireEvent.contextMenu(screen.getAllByTestId('search-control-row')[0]);
+    });
+    expect(notCancelled).toBe(true);
+    expect(screen.queryByText('Open Patient')).not.toBeInTheDocument();
+  });
+
+  test('Custom getReferenceHref is used for reference cells', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    await setup(
+      {
+        search: { resourceType: 'Observation', fields: ['subject'] },
+        rowContextMenu: { getReferenceHref: (reference) => `/ref/${reference.reference}` },
+      },
+      observationBundle
+    );
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.contextMenu(screen.getByText('Homer Simpson'));
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Copy Link'));
+    });
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/ref/Patient/${HomerSimpson.id}`);
+  });
+
+  test('Right click in the checkbox cell does not open the menu', async () => {
+    await setup({ search: simpsonSearch, checkboxesEnabled: true });
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.contextMenu(screen.getAllByRole('checkbox')[1]);
+    });
+    expect(screen.queryByText('Open Patient')).not.toBeInTheDocument();
+  });
+
   test('Columns editor opens', async () => {
     const props: SearchControlProps = {
       search: {
@@ -795,7 +979,7 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Columns'));
     });
 
-    expect(await screen.findByText('Reset default')).toBeInTheDocument();
+    expect(await screen.findByText('Reset Default')).toBeInTheDocument();
     expect(screen.getByLabelText('column-name')).toBeInTheDocument();
   });
 
@@ -850,8 +1034,8 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Filters'));
     });
 
-    expect(await screen.findByText('Add condition')).toBeInTheDocument();
-    expect(screen.getByText('Add condition')).toBeInTheDocument();
+    expect(await screen.findByText('Add Filter')).toBeInTheDocument();
+    expect(screen.getByText('Add Filter')).toBeInTheDocument();
   });
 
   test('Sort popover opens', async () => {
@@ -870,8 +1054,8 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Sort'));
     });
 
-    expect(await screen.findByText('Add another sort')).toBeInTheDocument();
-    expect(screen.getByText('Add another sort')).toBeInTheDocument();
+    expect(await screen.findByText('Add Sort')).toBeInTheDocument();
+    expect(screen.getByText('Add Sort')).toBeInTheDocument();
   });
 
   test('Column header sort menu', async () => {

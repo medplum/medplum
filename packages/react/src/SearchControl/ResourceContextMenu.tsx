@@ -1,34 +1,70 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Menu } from '@mantine/core';
+import type { Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplumNavigate } from '@medplum/react-hooks';
 import { IconCornerDownRight, IconExternalLink, IconLink } from '@tabler/icons-react';
 import type { JSX, MouseEvent, ReactNode } from 'react';
-import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useLayoutEffect, useRef, useState } from 'react';
 import classes from './SearchControl.module.css';
+
+/**
+ * Configures the right-click menu that {@link SearchControl} shows on rows and reference cells.
+ * The menu is a fixed set of three items (Open, Open in a New Tab, Copy Link); these options change
+ * where they link and which of them appear.
+ */
+export interface SearchControlContextMenuOptions {
+  /**
+   * Row link. Return undefined for no link; Open then falls back to `onClick`, Open in a New Tab to
+   * `onAuxClick`, and Copy Link is hidden. Defaults to `/${resourceType}/${id}` when the
+   * SearchControl has no `onClick`, and to no link when it does.
+   */
+  readonly getResourceHref?: (resource: Resource) => string | undefined;
+  /** Reference-cell link. Return undefined for no link. Defaults to `/${reference}`. */
+  readonly getReferenceHref?: (reference: Reference) => string | undefined;
+  /** Per-item visibility; all default to true. */
+  readonly items?: {
+    readonly open?: boolean;
+    readonly openInNewTab?: boolean;
+    readonly copyLink?: boolean;
+  };
+}
 
 /** The resource a context menu acts on. */
 export interface ResourceContextMenuTarget {
   /** Display label for the resource type, e.g. "Practitioner". */
   readonly label: string;
   /** In-app href for the resource, e.g. "/Practitioner/123". */
-  readonly href: string;
+  readonly href?: string;
+  /** Fallback for Open when there is no href. */
+  readonly onOpen?: () => void;
+  /** Fallback for Open in a New Tab when there is no href. */
+  readonly onOpenInNewTab?: () => void;
 }
 
 /** Opens the shared context menu at the cursor for the given resource. */
 export type OpenResourceContextMenu = (event: MouseEvent, target: ResourceContextMenuTarget) => void;
 
-const noop: OpenResourceContextMenu = () => {};
+/** Opens the shared context menu at the cursor for a reference cell. */
+export type OpenReferenceContextMenu = (event: MouseEvent, reference: Reference) => void;
 
-const ResourceContextMenuContext = createContext<OpenResourceContextMenu>(noop);
+const noop: OpenReferenceContextMenu = () => {};
+
+const ReferenceContextMenuContext = createContext<OpenReferenceContextMenu>(noop);
 
 /**
- * Returns the opener for the shared resource context menu. Call it from an `onContextMenu` handler
- * to replace the native browser menu with in-app link actions. Returns a no-op outside a provider.
+ * Returns the opener for the shared context menu, scoped to a reference. Call it from a reference
+ * cell's `onContextMenu` handler. Returns a no-op outside a provider.
  * @returns The context menu open handler.
  */
-export function useResourceContextMenu(): OpenResourceContextMenu {
-  return useContext(ResourceContextMenuContext);
+export function useReferenceContextMenu(): OpenReferenceContextMenu {
+  return useContext(ReferenceContextMenuContext);
+}
+
+interface VisibleItems {
+  readonly open: boolean;
+  readonly openInNewTab: boolean;
+  readonly copyLink: boolean;
 }
 
 interface MenuState {
@@ -36,10 +72,11 @@ interface MenuState {
   readonly x: number;
   readonly y: number;
   readonly target?: ResourceContextMenuTarget;
+  readonly visible?: VisibleItems;
 }
 
 export interface ResourceContextMenuController {
-  /** Provider that supplies {@link useResourceContextMenu} to descendant cells. */
+  /** Provider that supplies {@link useReferenceContextMenu} to descendant cells. */
   readonly ContextMenuProvider: (props: { readonly children: ReactNode }) => JSX.Element;
   /** Open handler for elements rendered directly by the owner (e.g. table rows). */
   readonly openContextMenu: OpenResourceContextMenu;
@@ -48,16 +85,50 @@ export interface ResourceContextMenuController {
 }
 
 /**
+ * Resolves which items a target can show: each needs a link or its own fallback, and can be hidden.
+ * @param target - The menu target.
+ * @param options - The context menu options.
+ * @returns The visible items.
+ */
+function getVisibleItems(target: ResourceContextMenuTarget, options: SearchControlContextMenuOptions): VisibleItems {
+  const items = options.items ?? {};
+  return {
+    open: items.open !== false && (!!target.href || !!target.onOpen),
+    openInNewTab: items.openInNewTab !== false && (!!target.href || !!target.onOpenInNewTab),
+    copyLink: items.copyLink !== false && !!target.href,
+  };
+}
+
+/**
+ * Returns the default in-app href for a reference, e.g. "/Practitioner/123".
+ * @param reference - The reference.
+ * @returns The href, or undefined when the reference has no reference string.
+ */
+function getDefaultReferenceHref(reference: Reference): string | undefined {
+  return reference.reference ? `/${reference.reference}` : undefined;
+}
+
+/**
  * Sets up a single cursor-positioned context menu shared by the table rows and the reference cells.
  * The owner renders {@link ResourceContextMenuController.contextMenu} inside
  * {@link ResourceContextMenuController.ContextMenuProvider} and wires row `onContextMenu` handlers to
  * {@link ResourceContextMenuController.openContextMenu}; descendant cells reach the same menu via
- * {@link useResourceContextMenu}.
+ * {@link useReferenceContextMenu}. When the menu is turned off, or a right-click leaves no items to
+ * show, the event is left alone so the browser's own menu appears.
+ * @param options - The context menu options, or false to turn the menu off.
  * @returns The controller.
  */
-export function useResourceContextMenuController(): ResourceContextMenuController {
+export function useResourceContextMenuController(
+  options?: false | SearchControlContextMenuOptions
+): ResourceContextMenuController {
   const navigate = useMedplumNavigate();
   const [state, setState] = useState<MenuState>({ opened: false, x: 0, y: 0 });
+
+  // Read options through a ref so the open handlers, and the provider built from them, stay stable.
+  const optionsRef = useRef(options);
+  useLayoutEffect(() => {
+    optionsRef.current = options;
+  });
 
   // The row the menu is open for keeps its hover background while the cursor is over the menu.
   const activeRowRef = useRef<Element | null>(null);
@@ -69,6 +140,14 @@ export function useResourceContextMenuController(): ResourceContextMenuControlle
 
   const openContextMenu = useCallback<OpenResourceContextMenu>(
     (event, target) => {
+      const currentOptions = optionsRef.current;
+      if (currentOptions === false) {
+        return;
+      }
+      const visible = getVisibleItems(target, currentOptions ?? {});
+      if (!visible.open && !visible.openInNewTab && !visible.copyLink) {
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       clearActiveRow();
@@ -77,9 +156,25 @@ export function useResourceContextMenuController(): ResourceContextMenuControlle
         row.classList.add(classes.trActive);
         activeRowRef.current = row;
       }
-      setState({ opened: true, x: event.clientX, y: event.clientY, target });
+      setState({ opened: true, x: event.clientX, y: event.clientY, target, visible });
     },
     [clearActiveRow]
+  );
+
+  const openReferenceContextMenu = useCallback<OpenReferenceContextMenu>(
+    (event, reference) => {
+      const currentOptions = optionsRef.current;
+      if (currentOptions === false) {
+        return;
+      }
+      const [label] = reference.reference?.split('/') ?? [];
+      if (!label) {
+        return;
+      }
+      const getHref = currentOptions?.getReferenceHref ?? getDefaultReferenceHref;
+      openContextMenu(event, { label, href: getHref(reference) });
+    },
+    [openContextMenu]
   );
 
   const close = useCallback(() => {
@@ -89,49 +184,64 @@ export function useResourceContextMenuController(): ResourceContextMenuControlle
 
   const ContextMenuProvider = useCallback(
     ({ children }: { readonly children: ReactNode }): JSX.Element => (
-      <ResourceContextMenuContext.Provider value={openContextMenu}>{children}</ResourceContextMenuContext.Provider>
+      <ReferenceContextMenuContext.Provider value={openReferenceContextMenu}>
+        {children}
+      </ReferenceContextMenuContext.Provider>
     ),
-    [openContextMenu]
+    [openReferenceContextMenu]
   );
 
-  const target = state.target;
+  const { target, visible } = state;
+  const href = target?.href;
   const contextMenu = (
     <Menu opened={state.opened} onClose={close} shadow="md" width="max-content" radius="md" position="bottom-start">
       <Menu.Target>
         <div aria-hidden style={{ position: 'fixed', left: state.x, top: state.y, width: 1, height: 1 }} />
       </Menu.Target>
       <Menu.Dropdown>
-        {target && (
+        {target && visible && (
           <>
-            <Menu.Item
-              leftSection={<IconCornerDownRight size={14} />}
-              onClick={() => {
-                navigate(target.href);
-                close();
-              }}
-            >
-              Open {target.label}
-            </Menu.Item>
-            <Menu.Item
-              leftSection={<IconExternalLink size={14} />}
-              onClick={() => {
-                window.open(target.href, '_blank', 'noopener,noreferrer');
-                close();
-              }}
-            >
-              Open {target.label} in a New Tab
-            </Menu.Item>
-            <Menu.Item
-              leftSection={<IconLink size={14} />}
-              onClick={() => {
-                navigator.clipboard
-                  ?.writeText(new URL(target.href, window.location.origin).href)
-                  .catch(() => undefined);
-                close();
-              }}
-            >
-              Copy Link
-            </Menu.Item>
+            {visible.open && (
+              <Menu.Item
+                leftSection={<IconCornerDownRight size={14} />}
+                onClick={() => {
+                  if (href) {
+                    navigate(href);
+                  } else {
+                    target.onOpen?.();
+                  }
+                  close();
+                }}
+              >
+                Open {target.label}
+              </Menu.Item>
+            )}
+            {visible.openInNewTab && (
+              <Menu.Item
+                leftSection={<IconExternalLink size={14} />}
+                onClick={() => {
+                  if (href) {
+                    window.open(href, '_blank', 'noopener,noreferrer');
+                  } else {
+                    target.onOpenInNewTab?.();
+                  }
+                  close();
+                }}
+              >
+                Open {target.label} in a New Tab
+              </Menu.Item>
+            )}
+            {visible.copyLink && href && (
+              <Menu.Item
+                leftSection={<IconLink size={14} />}
+                onClick={() => {
+                  navigator.clipboard?.writeText(new URL(href, window.location.origin).href).catch(() => undefined);
+                  close();
+                }}
+              >
+                Copy Link
+              </Menu.Item>
+            )}
           </>
         )}
       </Menu.Dropdown>

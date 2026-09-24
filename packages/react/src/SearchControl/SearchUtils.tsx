@@ -19,7 +19,7 @@ import { ResourceName } from '../ResourceName/ResourceName';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
-import { useResourceContextMenu } from './ResourceContextMenu';
+import { useReferenceContextMenu } from './ResourceContextMenu';
 import classes from './SearchControl.module.css';
 import type { SearchControlField } from './SearchControlField';
 
@@ -657,19 +657,9 @@ function renderRichValue(propertyType: string, value: unknown, code: string): JS
  * @returns The avatar + link element.
  */
 function ReferenceAvatarLink({ value }: { readonly value: Reference }): JSX.Element {
-  const openContextMenu = useResourceContextMenu();
-  const referenceString = value.reference;
-  const [referenceType] = referenceString?.split('/') ?? [];
+  const openContextMenu = useReferenceContextMenu();
   return (
-    <Group
-      gap="xs"
-      wrap="nowrap"
-      onContextMenu={
-        referenceString && referenceType
-          ? (e) => openContextMenu(e, { label: referenceType, href: `/${referenceString}` })
-          : undefined
-      }
-    >
+    <Group gap="xs" wrap="nowrap" onContextMenu={(e) => openContextMenu(e, value)}>
       <ResourceAvatar value={value} radius="xl" size={28} />
       <MedplumLink to={value} size="sm" className={classes.nameLink}>
         <ResourceName value={value} />
