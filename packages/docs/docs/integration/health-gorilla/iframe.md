@@ -8,18 +8,25 @@ sidebar_position: 4
 The iframe is an **optional alternative** to Medplum's [React order form components and `useHealthGorillaLabOrder` hook](./sending-orders.md#creating-an-order-form-in-react). Use either the hosted iframe or the Medplum form components and hook for your ordering workflow. You do not need both, and the iframe is not required for the Health Gorilla integration.
 :::
 
-The `health-gorilla-iframe` bot lets your application launch Health Gorilla's hosted lab ordering interface for a Medplum patient. It returns an authenticated URL that you embed in an `<iframe>`; the bot itself does not render a user interface.
+Use the shared `health-gorilla-iframe` bot or `Patient/$health-gorilla-iframe` operation to open Health Gorilla's lab ordering interface from a patient chart. The returned URL opens an ordering session with the patient's demographics and the signed-in practitioner as the default Ordering Provider.
+
+This guide assumes the Health Gorilla integration is already shared with your project. You can call its bots and operations directly from your application.
 
 Health Gorilla's [Lab Network iFrame](https://developer.healthgorilla.com/docs/iframe) supports lab order placement for a single patient. Results are handled separately through the [results integration](./receiving-results.md).
 
 ## Prerequisites
 
-- A configured Health Gorilla labs integration, including an enabled Lab Network tenant, laboratory connections, and OAuth credentials with ordering scopes. [Contact the Medplum team](mailto:info+healthgorilla@medplum.com?subject=Health%20Gorilla%20Integration%20for%20Medplum) to enable the iframe bot and its operation for your project.
 - An existing Medplum `Patient` with `name[0].given`, `name[0].family`, `gender`, and a full `birthDate` in `YYYY-MM-DD` format. Partial birth dates are rejected.
-- A signed-in Medplum `Practitioner` whose Health Gorilla login has been saved by [practitioner sync](./user-management.md). The login must belong to the configured Health Gorilla tenant. Client-credentials sessions and ordering on behalf of another practitioner are not supported.
-- A callback page in your application that Health Gorilla can return the user to after the order is completed or cancelled.
+- A signed-in Medplum `Practitioner` who has completed [practitioner sync](./user-management.md) for your Health Gorilla integration.
+- An HTTPS callback page in your application to receive the user after ordering finishes or is cancelled.
 
-The bot uses the existing Health Gorilla OAuth credentials to obtain a token for the signed-in practitioner. No additional iframe-specific SSO secrets are required. The bot must run with [`runAsUser: true`](/docs/bots/bot-run-as-user) so the caller's access policy applies to patient and practitioner reads; the integration deployment scripts configure this.
+## Prepare the ordering practitioner
+
+Before the practitioner's first order, run the shared `sync-practitioner` bot or `Practitioner/{id}/$health-gorilla-sync-practitioner` operation for that practitioner's Medplum record. See [User Management](./user-management.md) for the required practitioner data and sync examples.
+
+Call the iframe operation from the ordering practitioner's signed-in Medplum session. That practitioner becomes the default Ordering Provider. You do not need to supply Health Gorilla credentials or generate a Health Gorilla token in your application.
+
+Client-credentials sessions and ordering on behalf of another practitioner are not supported in this flow.
 
 ## Request and response
 
@@ -37,7 +44,7 @@ The bot accepts a JSON object with two required string fields:
 
 Do not include a `practitionerId` or Health Gorilla login in the request. The ordering practitioner comes from the authenticated caller; provider overrides are not supported.
 
-The response is a JSON object containing `url`, the authenticated ordering URL. Use it as returned; the bot has already appended the Health Gorilla access token.
+The response is a JSON object containing `url`, the authenticated ordering URL. Use it as returned.
 
 ### Invoke the operation
 
@@ -85,31 +92,30 @@ Request a new ordering session when the user starts a new order, switches patien
 The returned URL contains a Health Gorilla OAuth access token. Keep it in memory for the ordering flow; do not log it, persist it in FHIR resources, or include it in analytics events.
 :::
 
-## Ordering practitioner
-
-Health Gorilla defaults the Ordering Provider from the access token's identity. The bot reads the signed-in practitioner's `hg-practitioner-login` extension (`https://www.healthgorilla.com/fhir/R4/StructureDefinition/hg-practitioner-login`) and uses its `valueString` as the subject of the OAuth JWT assertion. This login can differ from the practitioner's Medplum ID and Health Gorilla resource ID.
-
-The bot requires exactly one nonempty login extension. Run practitioner sync before ordering if it is missing. Keep this mapping managed by trusted provisioning; a single login extension does not represent multiple Health Gorilla tenant identities. The bot uses the same resulting access token for session creation and the returned iframe URL. Tokens are cached separately by practitioner and connection configuration.
-
-When upgrading an existing integration, sync provider logins and use practitioner sessions before deploying the updated bot. Existing two-field request bodies remain valid, but the bot no longer falls back to the integration account. Re-deploy bot metadata as well as code so project-level deployments receive `runAsUser: true`.
-
 ## Patient context
 
-The bot reads the patient from Medplum and sends the first name entry's given names and family name, gender, birth date, and available address and phone fields to Health Gorilla. It uses demographics for matching even when the Medplum patient already has a Health Gorilla identifier. Health Gorilla may create a new patient if those demographics do not match an existing record.
-
-The bot does not require a Health Gorilla patient identifier and does not write one back to Medplum. Launching an iframe therefore does not establish the identifier mapping needed for downstream result matching. Validate patient and order matching as part of your integration setup; see [Resolving Orders with Results](./receiving-results.md#resolving-orders-with-results).
-
-The bot passes `Patient.gender` through unchanged. Health Gorilla's current reference lists `male`, `female`, `other`, and `unknown`.
+Keep the patient's demographics current in Medplum before opening the iframe. The ordering session uses the first name entry's given and family names, gender, full birth date, and available address and phone numbers.
 
 ### Address and phones
 
-The bot sends a `patient` object so Medplum demographics can prefill the iframe. It does not switch to HG's `patientId` lookup when an HG identifier is present.
+For address prefill, populate `Patient.address` with a current home address (`use: home`). If there is no current home address, an address without a `use` can be used. The first qualifying address is selected; addresses marked old, work, temporary, or billing, and those outside their validity period, are excluded.
 
-For the address, it selects the first current home address, then falls back to the first current address without a `use`. Old, work, temporary, billing, expired, and future addresses are excluded. The first address line becomes `address1`; remaining lines are joined into `address2`.
+The selected address needs:
 
-A selected address must include street, city, a two-letter state code, a five-digit ZIP or ZIP+4, and an explicit US country. The bot accepts `US`, `USA`, `United States`, and `United States of America` case-insensitively, sends `USA`, uppercases the state, and reduces ZIP+4 to five digits. It preserves leading ZIP zeroes. Missing or foreign country values produce an error rather than being assumed to mean the US. A patient without a selected address can still launch; a selected incomplete address must be corrected first.
+- `line[0]`: street address. Additional lines can contain an apartment or suite.
+- `city` and a two-letter `state` code.
+- `postalCode`: a five-digit ZIP or ZIP+4. The iframe receives the first five digits.
+- `country`: `US`, `USA`, `United States`, or `United States of America` (case-insensitive).
 
-Current `Patient.telecom` entries with `system: phone` and `use: home`, `mobile`, or `work` populate `homePhone`, `mobilePhone`, and `workPhone`. Lower rank wins, unranked values come last, and source order breaks ties. Unclassified numbers, old or expired numbers, fax, and email are omitted. Supported work-phone extension suffixes (`;ext=005`, `x005`, or `ext. 005`) populate `workPhoneExt` separately.
+A patient without a qualifying address can still launch the iframe. If a selected address is incomplete or has an unsupported country, correct the fields identified in the error before trying again.
+
+For phone prefill, use `Patient.telecom` entries with `system: phone` and `use: home`, `mobile`, or `work`. If several current numbers share a use, the lowest `rank` takes priority, with unranked entries last and source order breaking ties. Numbers without a use, expired or future entries, fax, and email are not included. Work-phone extensions can use `;ext=005`, `x005`, or `ext. 005` suffixes.
+
+### Patient matching
+
+Health Gorilla matches the supplied demographics to its patient records and may create a new record when no match is found. An existing Health Gorilla patient identifier on the Medplum patient does not change this launch behavior.
+
+Launching the iframe does not save a Health Gorilla patient identifier back to Medplum. Verify that orders and results resolve to the expected patient; see [Resolving Orders with Results](./receiving-results.md#resolving-orders-with-results).
 
 ## Returning to your application and receiving results
 
@@ -122,7 +128,7 @@ The iframe bot creates the ordering session and returns its URL. It does not cre
 - **`Missing patientId` or `Missing callbackUrl`**: Include both fields in the JSON request body.
 - **Patient is missing required fields**: Populate the first name entry's given and family names, gender, and full birth date before launching the session.
 - **Signed-in Practitioner required**: Call using a practitioner session rather than client credentials or a patient account. Staff delegation is not supported.
-- **Practitioner must have one Health Gorilla login ID**: Run practitioner sync for the configured tenant and verify the login extension. An HG resource identifier alone is insufficient.
+- **Practitioner must have one Health Gorilla login ID**: Run the shared practitioner sync for the signed-in practitioner, then retry. If the error persists, contact the Medplum team with the Practitioner ID.
 - **Patient address is incomplete or unsupported**: Correct the selected address fields named in the error, including an explicit US country. Address fields are required only when an address is supplied.
-- **Session creation fails**: Verify the existing Health Gorilla OAuth configuration, ordering scopes, and Lab Network setup. The bot surfaces HTTP and Health Gorilla session errors to the caller.
+- **Session creation fails**: Confirm that practitioner sync succeeded and the patient has the required demographics. If the error persists, contact the Medplum team with the error message. Do not include the authenticated iframe URL.
 - **Results do not match the expected patient or order**: Check the [result matching rules](./receiving-results.md#resolving-orders-with-results) and review `DetectedIssue` resources. The iframe launch does not sync patient identifiers or create a corresponding Medplum order.
