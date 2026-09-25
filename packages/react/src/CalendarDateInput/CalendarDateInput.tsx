@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group } from '@mantine/core';
 import cx from 'clsx';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import classes from './CalendarDateInput.module.css';
 import {
@@ -41,6 +41,8 @@ export interface CalendarDateInputProps {
    * which may begin in a month that has been paged away from.
    */
   readonly onSelectRange?: (start: Date, end: Date) => void;
+  /** Shown in place of the month and year above the grid, such as a control for jumping to a month. */
+  readonly monthLabel?: ReactNode;
 }
 
 interface CalendarCell {
@@ -85,7 +87,11 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
   return (
     <div>
       <Group justify="space-between" gap="xs" grow wrap="nowrap">
-        <p style={{ flex: 1 }}>{getMonthString(month)}</p>
+        {props.monthLabel ? (
+          <div style={{ flex: 1 }}>{props.monthLabel}</div>
+        ) : (
+          <p style={{ flex: 1 }}>{getMonthString(month)}</p>
+        )}
         <Group justify="flex-end" gap="xs">
           <Button
             variant="outline"

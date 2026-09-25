@@ -9,16 +9,16 @@ import themePlugin from '@fullcalendar/react/themes/classic';
 import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
-import { Button, Group, Loader, Popover, SegmentedControl, Title, useComputedColorScheme } from '@mantine/core';
-import { MonthPicker } from '@mantine/dates';
+import { Button, Group, Loader, SegmentedControl, Title, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { assertNever } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from '@medplum/fhirtypes';
-import { IconChevronDown, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import type { DateTimeRange } from '../types';
 import classes from './CalendarBase.module.css';
 import { availableTimeToBusinessHoursEntry, filterBookedSlots } from './CalendarBase.utils';
@@ -90,13 +90,6 @@ function slotsToEvents(
     className: `slot ${slot.status}`,
     ...extra,
   }));
-}
-
-// `@mantine/dates` values are `YYYY-MM-DD` strings, which `gotoDate` reads in the calendar's own time zone.
-function toDateString(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 export interface CalendarBaseProps extends Omit<
@@ -230,8 +223,6 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
 
   const selectable = Boolean(onSelectInterval || selection);
 
-  const [pickerOpened, setPickerOpened] = useState(false);
-
   // FullCalendar owns the highlight and only a pointer gesture ever sets it, so the
   // prop has to be pushed in. Keyed on the instants rather than the object: a host
   // reporting the interval back hands over a fresh pair of `Date`s each time, and
@@ -267,34 +258,12 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
             </Button>
           </Button.Group>
           <Group>
-            <Popover opened={pickerOpened} onChange={setPickerOpened} position="bottom-start" shadow="md">
-              <Popover.Target>
-                <Button
-                  variant="subtle"
-                  color="gray"
-                  size="compact-md"
-                  rightSection={<IconChevronDown size={14} />}
-                  aria-label="Go to month"
-                  onClick={() => setPickerOpened((o) => !o)}
-                >
-                  <Title order={4} c="var(--mantine-color-text)">
-                    {controller.view?.title}
-                  </Title>
-                </Button>
-              </Popover.Target>
-              <Popover.Dropdown>
-                <MonthPicker
-                  size="xs"
-                  defaultDate={toDateString(controller.getDate() ?? new Date())}
-                  onChange={(value) => {
-                    if (value) {
-                      controller.gotoDate(value);
-                      setPickerOpened(false);
-                    }
-                  }}
-                />
-              </Popover.Dropdown>
-            </Popover>
+            <MonthPickerButton
+              size="compact-md"
+              label={<Title order={4}>{controller.view?.title}</Title>}
+              date={controller.getDate() ?? new Date()}
+              onChange={(month) => controller.gotoDate(month)}
+            />
             {loading && <Loader size="sm" />}
           </Group>
         </Group>
