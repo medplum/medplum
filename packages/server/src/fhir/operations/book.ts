@@ -15,7 +15,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getPath, withPath, withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { recursWeekly, seriesTimezone, tagWeeklySeries } from './utils/recurrence';
+import { MAX_OCCURRENCE_COUNT, recursWeekly, seriesTimezone, tagWeeklySeries } from './utils/recurrence';
 import type { ValidatedOccurrence } from './utils/scheduling';
 import { createProposedAppointment, createProposedAppointments } from './utils/scheduling';
 
@@ -25,7 +25,7 @@ const bookOperation = makeOperationDefinition(
     name: 'book',
     code: 'book',
     parameter: [
-      { use: 'in', name: 'appointment', type: 'Appointment', min: 1, max: '6' },
+      { use: 'in', name: 'appointment', type: 'Appointment', min: 1, max: String(MAX_OCCURRENCE_COUNT) },
       { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
     ],
   }

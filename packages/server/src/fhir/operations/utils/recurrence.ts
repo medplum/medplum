@@ -17,6 +17,9 @@ import type { LayeredDict } from '../../../util/layereddict';
 
 const IANA_TIMEZONES = 'https://www.iana.org/time-zones';
 
+/** The most occurrences a weekly series may have, for `$find` to offer and `$book` to book. */
+export const MAX_OCCURRENCE_COUNT = 6;
+
 // Indexed by `Temporal.ZonedDateTime.dayOfWeek - 1`, and named for R5's `weeklyTemplate` elements.
 const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 

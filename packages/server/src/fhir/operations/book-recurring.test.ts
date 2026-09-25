@@ -291,6 +291,20 @@ describe('Appointment/$book with a recurring series', () => {
     ]);
   });
 
+  test('rejects a series of more than 6 occurrences', async () => {
+    const schedule = await makeSchedule();
+    const occurrences = Array.from({ length: 7 }, (_, idx) => {
+      const start = new Date(Date.parse('2026-03-09T13:00:00.000Z') + idx * 7 * 24 * 60 * 60 * 1000);
+      return makeOccurrence(schedule, start.toISOString(), new Date(start.valueOf() + 60 * 60 * 1000).toISOString());
+    });
+
+    const response = await bookRecurring(occurrences);
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toBe(
+      'Expected 1..6 value(s) for input parameter appointment, but 7 provided'
+    );
+  });
+
   test('rejects a series that is not one week apart', async () => {
     const schedule = await makeSchedule();
     const occurrences = [

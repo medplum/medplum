@@ -36,7 +36,7 @@ import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
 import { bufferTimeConflicts, findAlignedSlotTimes, overlappingIntervals } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { seriesTimezone, weekProjector } from './utils/recurrence';
+import { MAX_OCCURRENCE_COUNT, seriesTimezone, weekProjector } from './utils/recurrence';
 import {
   applyExistingSlots,
   assertAllLoaded,
@@ -77,8 +77,6 @@ type AppointmentFindParameters = {
   'occurrence-count'?: number;
   _count?: number;
 };
-
-const MAX_OCCURRENCE_COUNT = 6;
 
 // The range-independent half of availability. Loading it costs 2N+2 quota-charged, audit-logged
 // reads for N schedules, so a search over several weeks loads it once.
