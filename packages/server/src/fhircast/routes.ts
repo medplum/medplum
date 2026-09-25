@@ -11,6 +11,7 @@ import type {
 import {
   append,
   badRequest,
+  buildFhircastPublishSequence,
   conflict,
   EMPTY,
   generateId,
@@ -31,7 +32,7 @@ import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
-import { publish } from '../pubsub';
+import { publish, publishAll } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import {
   cleanupContextForResource,
@@ -589,7 +590,27 @@ async function finalizeContextChangeRequest(
   projectId: string,
   payload: FhircastMessagePayload
 ): Promise<void> {
-  await publish(`${projectId}:${payload.event['hub.topic']}`, serializeFhircastChannelMessage(payload));
+  // A context change carries everything the less specific events would carry, so the Hub publishes
+  // those alongside it for the subscribers that asked for them instead. Each socket already filters
+  // the topic down to the events it subscribed to, so nothing here decides who hears what.
+  let sequence: FhircastMessagePayload[] = [payload];
+  if (getConfig().fhircastDerivedEventsEnabled !== false) {
+    try {
+      sequence = buildFhircastPublishSequence(payload);
+    } catch (err: unknown) {
+      // Whether the published event reaches its topic cannot come to depend on whether the Hub
+      // could make sense of what it carries
+      getLogger().error('[FHIRcast]: Failed to derive events from a context change', {
+        event: payload.event['hub.event'],
+        error: normalizeErrorString(err),
+      });
+      sequence = [payload];
+    }
+  }
+  await publishAll(
+    `${projectId}:${payload.event['hub.topic']}`,
+    sequence.map((message) => serializeFhircastChannelMessage(message))
+  );
   // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-6-RequestContextChange.html#response
   // Only HTTP status code is defined for response for RequestContextChange
   res.status(202).json({ success: true, event: payload });
