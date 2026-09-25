@@ -614,7 +614,13 @@ describe('Infra', () => {
           PolicyDocument: Match.objectLike({
             Statement: Match.arrayWith([
               Match.objectLike({
-                Action: ['s3:GetObjectTagging', 's3:PutObjectTagging'],
+                Action: [
+                  's3:GetObject',
+                  's3:PutObject',
+                  's3:DeleteObject',
+                  's3:GetObjectTagging',
+                  's3:PutObjectTagging',
+                ],
                 Resource: 'arn:aws:s3:::medplum-storage/*',
               }),
               Match.objectLike({ Action: 'guardduty:SendObjectMalwareScan', Resource: '*' }),
@@ -659,6 +665,21 @@ describe('Infra', () => {
     const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
 
     expect(JSON.stringify(template.toJSON())).not.toContain('guardduty:SendObjectMalwareScan');
+    template.hasResourceProperties('AWS::IAM::Role', {
+      Description: 'Medplum Server Task Execution Role',
+      Policies: Match.arrayWith([
+        Match.objectLike({
+          PolicyDocument: Match.objectLike({
+            Statement: Match.arrayWith([
+              Match.objectLike({
+                Action: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
+                Resource: 'arn:aws:s3:::medplum-storage/*',
+              }),
+            ]),
+          }),
+        }),
+      ]),
+    });
   });
 
   // Regression test for https://github.com/medplum/medplum/issues/8985:
