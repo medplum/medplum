@@ -41,7 +41,10 @@ export interface CalendarDateInputProps {
    * which may begin in a month that has been paged away from.
    */
   readonly onSelectRange?: (start: Date, end: Date) => void;
-  /** Shown in place of the month and year above the grid, such as a control for jumping to a month. */
+  /**
+   * Shown in place of the month and year above the grid, such as a button for jumping to a month.
+   * Rendered inside a `<p>`, so it must be inline content.
+   */
   readonly monthLabel?: ReactNode;
 }
 
@@ -87,11 +90,7 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
   return (
     <div>
       <Group justify="space-between" gap="xs" grow wrap="nowrap">
-        {props.monthLabel ? (
-          <div style={{ flex: 1 }}>{props.monthLabel}</div>
-        ) : (
-          <p style={{ flex: 1 }}>{getMonthString(month)}</p>
-        )}
+        <p style={{ flex: 1 }}>{props.monthLabel ?? getMonthString(month)}</p>
         <Group justify="flex-end" gap="xs">
           <Button
             variant="outline"
