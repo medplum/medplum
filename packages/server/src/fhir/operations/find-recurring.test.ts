@@ -562,6 +562,24 @@ describe('Appointment/$find with occurrence-count', () => {
     ]);
   });
 
+  test('accepts one local week that runs an hour longer across a DST transition', async () => {
+    const schedule = await makeSchedule(mondayNineToTen);
+
+    // Clocks fall back on Sunday 2026-11-01, so this week is 169 hours long.
+    const response = await makeRequest({
+      start: new Date('2026-10-26T00:00:00-04:00').toISOString(),
+      end: new Date('2026-11-02T00:00:00-05:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: `Schedule/${schedule.id}`,
+      'occurrence-count': '2',
+    });
+
+    expect(response).toHaveStatus(200);
+    expect(seriesIn(response).map((occurrences) => occurrences.map((a) => a.start))).toEqual([
+      ['2026-10-26T13:00:00.000Z', '2026-11-02T14:00:00.000Z'], // 9am EDT, then 9am EST
+    ]);
+  });
+
   test('rejects a search range wider than one week', async () => {
     const schedule = await makeSchedule(mondayNineToNoon);
 

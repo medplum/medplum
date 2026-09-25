@@ -300,6 +300,9 @@ const MAX_FIND_RANGE_DAYS = 31;
 // of those Slot queries too.
 const MAX_RECURRING_RANGE_DAYS = 7;
 
+// Whole local days run up to an hour longer across a DST transition, and still count as whole days.
+const DST_SLACK_MINUTES = 60;
+
 // The time the candidates' projections, `weeksForward` weeks out, occupy with their buffers. Any
 // narrower, and availability clipped at its edge would reject a projection the first week accepted.
 function projectedWeekWindow(
@@ -354,9 +357,7 @@ async function findAvailableSeries(params: {
   }
 
   const maxDays = occurrenceCount > 1 ? MAX_RECURRING_RANGE_DAYS : MAX_FIND_RANGE_DAYS;
-  const diffMilliseconds = requestedRange.end.valueOf() - requestedRange.start.valueOf();
-  const diffDays = diffMilliseconds / (24 * 60 * 60 * 1000);
-  if (diffDays > maxDays) {
+  if (requestedRange.end > addMinutes(requestedRange.start, maxDays * 24 * 60 + DST_SLACK_MINUTES)) {
     throw new OperationOutcomeError(badRequest(`Search range cannot exceed ${maxDays} days`));
   }
 

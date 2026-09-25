@@ -224,7 +224,7 @@ Passing `occurrence-count` searches for a **weekly-recurring** series of appoint
 
 A series search differs from a single-time search in a few ways:
 
-- `start`/`end` cover only the **first** occurrence, and cannot span more than **7 days**. That's tighter than the usual 31 days because each later occurrence is searched with a window of the same width. To search a later week, call `$find` again with that week's `start`/`end`.
+- `start`/`end` cover only the **first** occurrence, and cannot span more than **7 days** (7 local days, even when they run an hour longer across a DST transition). That's tighter than the usual 31 days because each later occurrence is searched with a window of the same width. To search a later week, call `$find` again with that week's `start`/`end`.
 - `_count` counts series. Each series is one entry of the response.
 - `ignore-appointment` is not supported.
 
