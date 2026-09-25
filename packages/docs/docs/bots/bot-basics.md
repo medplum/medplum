@@ -261,6 +261,12 @@ Because Bots are executed using HTTP requests, we will select the Channel "Type"
 
 ![Subscription Channel](/img/app/bots/subscription_channel.png)
 
+:::tip[Referencing Bots by identifier]
+
+Bot IDs differ between environments (for example, staging vs. production), which can make Subscriptions difficult to manage in CI and multi-environment deployments. Instead of the Bot ID, the Channel "Endpoint" can reference the Bot by identifier using `Bot/$execute?identifier=<value>` or `Bot/$execute?identifier=<system>|<value>` (URL encoded). The Bot must be in the same project as the Subscription, and exactly one Bot should match the identifier.
+
+:::
+
 Change "Payload" to `application/fhir+json`. This is similar to the [CONTENT_TYPE](#content_type) field used by the `$execute` endpoint.
 
 ![Subscription Payload](/img/app/bots/subscription_payload.png)
