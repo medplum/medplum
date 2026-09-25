@@ -12,13 +12,18 @@ import {
   withFixtures,
   withMockedDate,
   withRescheduleStub,
-  withValueSetStub,
+  withValueSets,
 } from '../stories/decorators';
+import { CancellationReasonValueSets } from '../stories/mockValueSet';
 import {
+  AppointmentPatientFixtures,
+  AuthorizationValueSets,
   CalendarWeekFixtures,
+  DIAGNOSIS_VALUE_SET,
   ImagingBenchFixtures,
   inViewerTimezone,
   PatientFixtures,
+  PROCEDURE_VALUE_SET,
   SchedulingFixtures,
 } from '../stories/scheduling';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
@@ -36,6 +41,7 @@ const ELSEWHERE_FIXTURES = [
   ...ImagingBenchFixtures,
   ...CalendarWeekFixtures,
   ...PatientFixtures,
+  ...AppointmentPatientFixtures,
 ];
 
 /** The same clinic, moved onto whatever clock the reader is on. */
@@ -50,7 +56,8 @@ export default {
     withBookStub(),
     withCancelStub(),
     withRescheduleStub(),
-    withValueSetStub(),
+    // Cancellation reasons, plus the code value sets for visit types that ask for codes.
+    withValueSets({ ...CancellationReasonValueSets, ...AuthorizationValueSets }),
     withFindStub(),
     withMockedDate,
   ],
@@ -93,6 +100,11 @@ export default {
  * cancelled appointment, showing the reason and with no button left on it, and the event
  * beside it is drawn as cancelled without a reload, because the cancellation announces
  * what it wrote the way booking does.
+ *
+ * Thursday's infusion on Dr. Chen's calendar (select **Providers → Dr. Wei Chen**) is booked
+ * for a visit type asking for procedure codes, diagnosis codes, and a medical necessity
+ * attestation, so its details offer all three for editing beside the patient. Booking
+ * **Infusion Therapy** from the form asks for the same three.
  *
  * The same drawer offers to move the visit. "Reschedule" swaps the details for the form
  * that finds it another time, opened on the visit type and the actors it is held on —
@@ -186,6 +198,8 @@ function Workspace(props: WorkspaceProps): JSX.Element {
     <div style={{ height: 'calc(100vh - 72px)', padding: '1em', boxSizing: 'border-box' }}>
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
+        procedureBinding={PROCEDURE_VALUE_SET}
+        diagnosisBinding={DIAGNOSIS_VALUE_SET}
         onBooked={({ appointment }) => {
           showNotification({
             color: 'green',

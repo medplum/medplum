@@ -11,6 +11,7 @@ import {
   REQUIRES_DIAGNOSIS_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
+  SchedulingMedicalNecessityURI,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
   setScheduleSchedulingParameter,
@@ -814,6 +815,17 @@ export const UntypedMrnPatient = buildPatient('sam-whitfield', 'Sam', 'Whitfield
 
 export const PatientFixtures = [ElderJordanPatient, YoungerJordanPatient, UntypedMrnPatient];
 
+export const MilesCooperPatient = buildPatient('pt-cooper', 'Miles', 'Cooper', '1985-02-11');
+
+/** Who the calendar's appointments are for. Kept apart from {@link PatientFixtures}, the namesakes the patient search is tested against. */
+export const AppointmentPatientFixtures = [
+  MilesCooperPatient,
+  buildPatient('pt-alvarez', 'Renee', 'Alvarez', '1972-09-03'),
+  buildPatient('pt-jones', 'Liam', 'Jones', '2001-01-17'),
+  buildPatient('pt-garcia', 'Eliana', 'Garcia', '1990-07-22'),
+  buildPatient('pt-miller', 'Elijah', 'Miller', '1958-12-05'),
+];
+
 /**
  * Appointments and Slots for the calendar view, dated within the week of Monday,
  * May 4 2020 — the date `MockDateWrapper` freezes the clock to, so `timeGridWeek`
@@ -858,7 +870,7 @@ export const RiveraImagingAppointment: WithId<Appointment> = {
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
   slot: RiveraImagingHeldSlots.map(createReference),
   participant: [
-    { status: 'accepted', actor: { reference: 'Patient/pt-cooper', display: 'Miles Cooper' } },
+    { status: 'accepted', actor: createReference(MilesCooperPatient) },
     { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
     { status: 'accepted', actor: createReference(Ultrasound1Device) },
     { status: 'accepted', actor: createReference(ExamRoomA) },
@@ -993,6 +1005,35 @@ export const DrBrownAppointments: WithId<Appointment>[] = DrBrownSlots.map((slot
   ],
 }));
 
+export const ChenInfusionHeldSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-chen-infusion-thu',
+  status: 'busy',
+  start: '2020-05-07T14:00:00Z',
+  end: '2020-05-07T15:00:00Z',
+  schedule: createReference(DrChenInfusionSchedule),
+};
+
+/**
+ * An infusion on Dr. Chen's calendar, booked for a visit type asking for procedure and diagnosis
+ * codes and a medical necessity attestation, with all three given.
+ */
+export const ChenInfusionAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-chen-infusion-thu',
+  status: 'booked',
+  start: ChenInfusionHeldSlot.start,
+  end: ChenInfusionHeldSlot.end,
+  serviceType: [...toServiceTypeCodeableConcepts(InfusionService), { coding: [ProcedureCodes[0]] }],
+  reasonCode: [{ coding: [DiagnosisCodes[0]] }],
+  extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
+  slot: [createReference(ChenInfusionHeldSlot)],
+  participant: [
+    { status: 'accepted', actor: createReference(ElderJordanPatient) },
+    { status: 'accepted', actor: createReference(DrChenPractitioner) },
+  ],
+};
+
 export const CalendarWeekFixtures = [
   RiveraImagingAppointment,
   ...RiveraImagingHeldSlots,
@@ -1005,4 +1046,9 @@ export const CalendarWeekFixtures = [
   DrBrownSchedule,
   ...DrBrownSlots,
   ...DrBrownAppointments,
+  DrChenPractitioner,
+  InfusionService,
+  DrChenInfusionSchedule,
+  ChenInfusionHeldSlot,
+  ChenInfusionAppointment,
 ];
