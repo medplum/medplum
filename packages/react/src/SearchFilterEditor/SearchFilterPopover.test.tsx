@@ -134,43 +134,6 @@ describe('SearchFilterPopover', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  test('A relative date expands into a start/end filter pair', async () => {
-    const { onChange } = await setup({ resourceType: 'Patient' });
-    await openPopover();
-    await act(async () => {
-      fireEvent.click(screen.getByText('Add Filter'));
-    });
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText('filter-0-field', { selector: 'input' }));
-    });
-    await act(async () => {
-      fireEvent.click(await screen.findByText('Birthdate'));
-    });
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText('filter-0-operator', { selector: 'input' }));
-    });
-    expect(await screen.findByText('Relative dates')).toBeInTheDocument();
-    await act(async () => {
-      fireEvent.click(screen.getByText('Today'));
-    });
-
-    const lastArg = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
-    expect(lastArg.filters).toMatchObject([
-      { code: 'birthdate', operator: Operator.GREATER_THAN_OR_EQUALS },
-      { code: 'birthdate', operator: Operator.LESS_THAN_OR_EQUALS },
-    ]);
-    expect(screen.getByLabelText('filter-1-field', { selector: 'input' })).toHaveValue('Birthdate');
-  });
-
-  test('Non-date fields have no relative date options', async () => {
-    await setup({ resourceType: 'Patient', filters: [{ code: 'name', operator: Operator.EQUALS, value: 'x' }] });
-    await openPopover();
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText('filter-0-operator', { selector: 'input' }));
-    });
-    expect(screen.queryByText('Relative dates')).not.toBeInTheDocument();
-  });
-
   test('requestFilterField opens the popover with the field preselected', async () => {
     await act(async () => {
       await medplum.requestSchema('Patient');

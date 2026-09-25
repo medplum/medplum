@@ -3,10 +3,21 @@
 import { Menu } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
-import { IconFilter2Plus, IconSortAscending, IconSortDescending } from '@tabler/icons-react';
+import { IconCalendar, IconFilter2Plus, IconSortAscending, IconSortDescending } from '@tabler/icons-react';
 import type { JSX } from 'react';
+import { Fragment } from 'react';
 import classes from '../SearchControl/SearchControl.module.css';
-import { setSort } from '../SearchControl/SearchUtils';
+import {
+  addLastMonthFilter,
+  addNext24HoursFilter,
+  addNextMonthFilter,
+  addThisMonthFilter,
+  addTodayFilter,
+  addTomorrowFilter,
+  addYearToDateFilter,
+  addYesterdayFilter,
+  setSort,
+} from '../SearchControl/SearchUtils';
 
 export interface SearchPopupMenuProps {
   readonly search: SearchRequest;
@@ -15,6 +26,27 @@ export interface SearchPopupMenuProps {
   /** When provided, adds a "Filter by this column" item that opens the toolbar Filters popover. */
   readonly onFilterByColumn?: (searchParam: SearchParameter) => void;
 }
+
+type RelativeDateOption = {
+  readonly label: string;
+  readonly apply: (search: SearchRequest, code: string) => SearchRequest;
+};
+
+/** Relative date shortcuts for date columns, grouped by day, month and year. */
+const RELATIVE_DATE_GROUPS: RelativeDateOption[][] = [
+  [
+    { label: 'Tomorrow', apply: addTomorrowFilter },
+    { label: 'Today', apply: addTodayFilter },
+    { label: 'Yesterday', apply: addYesterdayFilter },
+    { label: 'Next 24 Hours', apply: addNext24HoursFilter },
+  ],
+  [
+    { label: 'Next Month', apply: addNextMonthFilter },
+    { label: 'This Month', apply: addThisMonthFilter },
+    { label: 'Last Month', apply: addLastMonthFilter },
+  ],
+  [{ label: 'Year to date', apply: addYearToDateFilter }],
+];
 
 /**
  * Direction labels vary by the search parameter type so they read naturally, matching the global
@@ -35,8 +67,8 @@ function getSortLabels(type: string | undefined): { asc: string; desc: string } 
 }
 
 /**
- * The column-header dropdown offering the two sort directions for the column (any type). Filtering
- * lives in the toolbar Filters popover.
+ * The column-header dropdown offering the two sort directions for the column (any type), relative date
+ * filters for date columns, and "Filter by this column" to open the toolbar Filters popover.
  * @param props - The popup menu props.
  * @returns The sort menu dropdown, or null when the column is not backed by a search parameter.
  */
@@ -69,6 +101,21 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
       <Menu.Item leftSection={<IconSortDescending size={14} />} onClick={() => onSort(true)}>
         {labels.desc}
       </Menu.Item>
+      {searchParam.type === 'date' &&
+        RELATIVE_DATE_GROUPS.map((group) => (
+          <Fragment key={group[0].label}>
+            <Menu.Divider />
+            {group.map(({ label, apply }) => (
+              <Menu.Item
+                key={label}
+                leftSection={<IconCalendar size={14} />}
+                onClick={() => props.onChange(apply(props.search, code))}
+              >
+                {label}
+              </Menu.Item>
+            ))}
+          </Fragment>
+        ))}
       {props.onFilterByColumn && (
         <>
           <Menu.Divider />

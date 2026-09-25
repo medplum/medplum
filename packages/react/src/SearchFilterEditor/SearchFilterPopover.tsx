@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ComboboxData } from '@mantine/core';
 import { ActionIcon, Button, Indicator, Popover, Select, Text } from '@mantine/core';
 import type { Filter, SearchRequest } from '@medplum/core';
 import { Operator, deepClone, deepEquals, getSearchParameters } from '@medplum/core';
@@ -9,14 +8,6 @@ import { IconCirclePlus, IconFilter2Plus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  addLastMonthFilter,
-  addNext24HoursFilter,
-  addNextMonthFilter,
-  addThisMonthFilter,
-  addTodayFilter,
-  addTomorrowFilter,
-  addYearToDateFilter,
-  addYesterdayFilter,
   buildSearchParamFieldLabel,
   getOpString,
   getSearchOperators,
@@ -91,12 +82,6 @@ export function SearchFilterPopover(props: SearchFilterPopoverProps): JSX.Elemen
     emit(nextRows);
   }
 
-  function replaceRow(index: number, filters: Filter[]): void {
-    const [first, ...rest] = filters;
-    const replacement = first ? [{ id: rows[index].id, filter: first }, ...toRows(rest)] : [];
-    emit([...rows.slice(0, index), ...replacement, ...rows.slice(index + 1)]);
-  }
-
   function deleteRow(index: number): void {
     const nextRows = rows.filter((_, i) => i !== index);
     emit(nextRows);
@@ -146,7 +131,6 @@ export function SearchFilterPopover(props: SearchFilterPopoverProps): JSX.Elemen
               searchParams={searchParams}
               value={row.filter}
               onChange={(next) => updateRow(index, next)}
-              onReplace={(filters) => replaceRow(index, filters)}
               onDelete={() => deleteRow(index)}
             />
           ))}
@@ -183,12 +167,10 @@ function toRows(filters: Partial<Filter>[]): FilterRow[] {
 interface FilterConditionRowProps {
   readonly rowId: number;
   readonly index: number;
-  readonly resourceType: SearchRequest['resourceType'];
+  readonly resourceType: string;
   readonly searchParams: Record<string, SearchParameter>;
   readonly value: Partial<Filter>;
   readonly onChange: (value: Partial<Filter>) => void;
-  /** Replaces this row with the given filters, e.g. the start/end pair for a relative date. */
-  readonly onReplace: (filters: Filter[]) => void;
   readonly onDelete: () => void;
 }
 
@@ -278,16 +260,9 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
         aria-label={`filter-${props.index}-operator`}
         placeholder="Operator"
         disabled={!operators}
-        data={getOperatorData(searchParam, operators)}
+        data={operators ? operators.map((op) => ({ value: op, label: getOpString(op) })) : []}
         value={value.operator ?? null}
-        onChange={(op) => {
-          const relative = RELATIVE_DATES.find((r) => r.value === op);
-          if (relative && value.code) {
-            props.onReplace(relative.apply({ resourceType: props.resourceType }, value.code).filters ?? []);
-            return;
-          }
-          props.onChange({ code: value.code, operator: (op as Operator) ?? undefined, value: '' });
-        }}
+        onChange={(op) => props.onChange({ code: value.code, operator: (op as Operator) ?? undefined, value: '' })}
       />
       {multiInput ? (
         <>
@@ -305,39 +280,6 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
       )}
     </div>
   );
-}
-
-const RELATIVE_DATES: {
-  value: string;
-  label: string;
-  apply: (search: SearchRequest, code: string) => SearchRequest;
-}[] = [
-  { value: 'relative:tomorrow', label: 'Tomorrow', apply: addTomorrowFilter },
-  { value: 'relative:today', label: 'Today', apply: addTodayFilter },
-  { value: 'relative:yesterday', label: 'Yesterday', apply: addYesterdayFilter },
-  { value: 'relative:next-24-hours', label: 'Next 24 Hours', apply: addNext24HoursFilter },
-  { value: 'relative:next-month', label: 'Next Month', apply: addNextMonthFilter },
-  { value: 'relative:this-month', label: 'This Month', apply: addThisMonthFilter },
-  { value: 'relative:last-month', label: 'Last Month', apply: addLastMonthFilter },
-  { value: 'relative:year-to-date', label: 'Year to date', apply: addYearToDateFilter },
-];
-
-/**
- * Builds the operator dropdown options. Date fields also get relative-date shortcuts, which expand
- * into a start/end filter pair when picked.
- * @param searchParam - The row's search parameter.
- * @param operators - The operators the search parameter supports.
- * @returns The Select data.
- */
-function getOperatorData(searchParam: SearchParameter | undefined, operators: Operator[] | undefined): ComboboxData {
-  const operatorItems = (operators ?? []).map((op) => ({ value: op, label: getOpString(op) }));
-  if (searchParam?.type !== 'date') {
-    return operatorItems;
-  }
-  return [
-    { group: 'Operators', items: operatorItems },
-    { group: 'Relative dates', items: RELATIVE_DATES.map(({ value, label }) => ({ value, label })) },
-  ];
 }
 
 function isCompleteFilter(filter: Partial<Filter>): filter is Filter {

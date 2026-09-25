@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Menu } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
-import { globalSchema } from '@medplum/core';
+import { globalSchema, Operator } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -75,6 +75,43 @@ describe('SearchPopupMenu', () => {
       fireEvent.click(await screen.findByText('Sort Newest to Oldest'));
     });
     expect(currSearch.sortRules).toMatchObject([{ code: 'birthdate', descending: true }]);
+  });
+
+  test('Date columns offer relative dates above "Filter by this column"', async () => {
+    await setup({ searchParams: [param('Patient', 'birthdate')], onFilterByColumn: vi.fn() });
+    await screen.findByText('Sort Oldest to Newest');
+    const labels = screen.getAllByRole('menuitem', { hidden: true }).map((el) => el.textContent);
+    expect(labels).toEqual([
+      'Sort Oldest to Newest',
+      'Sort Newest to Oldest',
+      'Tomorrow',
+      'Today',
+      'Yesterday',
+      'Next 24 Hours',
+      'Next Month',
+      'This Month',
+      'Last Month',
+      'Year to date',
+      'Filter by this column',
+    ]);
+  });
+
+  test('A relative date adds a start/end filter pair', async () => {
+    let currSearch: SearchRequest = { resourceType: 'Patient' };
+    await setup({ searchParams: [param('Patient', 'birthdate')], onChange: (e) => (currSearch = e) });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Today'));
+    });
+    expect(currSearch.filters).toMatchObject([
+      { code: 'birthdate', operator: Operator.GREATER_THAN_OR_EQUALS },
+      { code: 'birthdate', operator: Operator.LESS_THAN_OR_EQUALS },
+    ]);
+  });
+
+  test('Non-date columns have no relative dates', async () => {
+    await setup({ searchParams: [param('Patient', 'name')] });
+    expect(await screen.findByText('Sort A to Z')).toBeInTheDocument();
+    expect(screen.queryByText('Today')).not.toBeInTheDocument();
   });
 
   test('Quantity sort uses smallest/largest labels', async () => {
