@@ -43,6 +43,7 @@ const unguardedMembers = new Set<PropertyKey>([
   'generateId',
   'addDeletedFilter',
   'addSecurityFilters',
+  'getSearchProjectIds',
   'isClosed',
   'validateBinarySecurityContext',
   'clone',
