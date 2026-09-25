@@ -3,6 +3,25 @@
 import { bufferTimeConflicts, findAlignedSlotTimes } from './find';
 
 describe('findAlignedSlotTimes', () => {
+  test('finds each time once around a day with no midnight', () => {
+    // Havana springs forward at midnight on 2026-03-08, so that day starts at 1am. The next day
+    // starts at midnight again.
+    const slots = findAlignedSlotTimes(
+      { start: new Date('2026-03-08T22:00:00-04:00'), end: new Date('2026-03-09T02:00:00-04:00') },
+      { alignment: { interval: 30, offset: 0, timezone: 'America/Havana' }, durationMinutes: 30 }
+    );
+    expect(slots.map((slot) => slot.start.toISOString())).toEqual([
+      '2026-03-09T02:00:00.000Z', // 10pm
+      '2026-03-09T02:30:00.000Z',
+      '2026-03-09T03:00:00.000Z',
+      '2026-03-09T03:30:00.000Z',
+      '2026-03-09T04:00:00.000Z', // midnight
+      '2026-03-09T04:30:00.000Z',
+      '2026-03-09T05:00:00.000Z',
+      '2026-03-09T05:30:00.000Z',
+    ]);
+  });
+
   test('can find a slot that exactly coincides with the interval', () => {
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T01:00:00Z') },

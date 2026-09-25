@@ -90,15 +90,15 @@ export function isAlignedToGrid(date: Date, alignment: AlignmentOptions): boolea
   return mod(minutesSinceMidnight(date, alignment.timezone) - alignment.offset, alignment.interval) === 0;
 }
 
+// The first instant of each local day the interval touches. That's usually midnight, but not on a
+// day whose midnight a DST transition skips, and the next day starts at its own midnight again.
 export function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.ZonedDateTime[] {
-  let t = Temporal.Instant.fromEpochMilliseconds(interval.start.valueOf())
-    .toZonedDateTimeISO(timeZone)
-    .withPlainTime({ hour: 0, minute: 0, second: 0, millisecond: 0 });
+  let t = Temporal.Instant.fromEpochMilliseconds(interval.start.valueOf()).toZonedDateTimeISO(timeZone).startOfDay();
 
   const results: Temporal.ZonedDateTime[] = [];
   while (t.epochMilliseconds < interval.end.valueOf()) {
     results.push(t);
-    t = t.add({ days: 1 });
+    t = t.add({ days: 1 }).startOfDay();
   }
   return results;
 }
