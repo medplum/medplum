@@ -1501,9 +1501,6 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(e3, { profile })).toThrow();
   });
 
-  // TODO: Change this check from warning to error
-  // Duplicate entries for choice-of-type property is currently a warning
-  // We need to first log and track this, and notify customers of breaking changes
   function expectOneWarning(resource: Resource, textContains: string): void {
     const issues = validateResource(resource);
     expect(issues).toHaveLength(1);
@@ -1511,7 +1508,6 @@ describe('FHIR resource validation', () => {
     expect(issues[0].details?.text).toContain(textContains);
   }
 
-  const DUPLICATE_CHOICE_OF_TYPE_PROPERTY = 'Conflicting choice of type properties';
   const PRIMITIVE_EXTENSION_TYPE_MISMATCH = 'Type of primitive extension does not match the type of property';
 
   test('Multiple values for choice of type property', () => {
@@ -1541,9 +1537,9 @@ describe('FHIR resource validation', () => {
       ],
     };
 
-    expectOneWarning(carePlan, DUPLICATE_CHOICE_OF_TYPE_PROPERTY);
-    expectOneWarning(carePlan, 'scheduledTiming');
-    expectOneWarning(carePlan, 'scheduledPeriod');
+    expect(() => validateResource(carePlan)).toThrow(
+      'Conflicting choice of type properties: "scheduledTiming", "scheduledPeriod" (CarePlan.activity[0].detail.scheduledTiming)'
+    );
   });
 
   test('Valid choice of type properties with primitive extensions', () => {
@@ -1585,17 +1581,18 @@ describe('FHIR resource validation', () => {
   });
 
   test('Invalid choice of type properties with primitive extensions', () => {
-    expectOneWarning(
-      {
+    expect(() =>
+      validateResource({
         resourceType: 'Patient',
         multipleBirthBoolean: true,
         multipleBirthInteger: 2,
-      },
-      DUPLICATE_CHOICE_OF_TYPE_PROPERTY
+      })
+    ).toThrow(
+      'Conflicting choice of type properties: "multipleBirthInteger", "multipleBirthBoolean" (Patient.multipleBirthInteger)'
     );
 
-    expectOneWarning(
-      {
+    expect(() =>
+      validateResource({
         resourceType: 'Patient',
         _multipleBirthInteger: {
           extension: [],
@@ -1603,8 +1600,9 @@ describe('FHIR resource validation', () => {
         _multipleBirthBoolean: {
           extension: [],
         },
-      } as Patient,
-      DUPLICATE_CHOICE_OF_TYPE_PROPERTY
+      } as Patient)
+    ).toThrow(
+      'Conflicting choice of type properties: "_multipleBirthBoolean", "_multipleBirthInteger" (Patient._multipleBirthBoolean)'
     );
 
     // Primitive extension type mismatch, check both orders of the properties
@@ -1630,6 +1628,39 @@ describe('FHIR resource validation', () => {
     );
   });
 
+  test('Extension with two values for choice of type property', () => {
+    expect(() =>
+      validateResource({
+        resourceType: 'Patient',
+        extension: [
+          {
+            url: 'http://example.com/StructureDefinition/patient-status',
+            valueCode: 'active',
+            valueString: 'Active',
+          },
+        ],
+      })
+    ).toThrow('Conflicting choice of type properties: "valueString", "valueCode" (Patient.extension[0].valueString)');
+  });
+
+  test('Choice of type property explicitly set to undefined', () => {
+    // Spreading a template and clearing the other choices, as convertSampleToObservations in
+    // datasampler.ts does, leaves keys whose value is `undefined`.
+    expect(
+      validateResource({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        effectiveInstant: undefined,
+        effectivePeriod: undefined,
+        effectiveTiming: undefined,
+        effectiveDateTime: '2024-02-29T16:52:20.825Z',
+        valueQuantity: { value: 1, unit: 'mg' },
+        valueSampledData: undefined,
+      })
+    ).toHaveLength(0);
+  });
+
   test('Reference type check', () => {
     const docRef: DocumentReference = {
       resourceType: 'DocumentReference',
@@ -1641,9 +1672,6 @@ describe('FHIR resource validation', () => {
       relatesTo: [{ code: 'appends', target: { reference: 'Patient/123' } }],
     };
 
-    // TODO: Change this check from warning to error
-    // Duplicate entries for choice-of-type property is currently a warning
-    // We need to first log and track this, and notify customers of breaking changes
     const issues = validateResource(docRef);
     expect(issues).toHaveLength(1);
     expect(issues[0].severity).toBe('warning');
