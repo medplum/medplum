@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MedplumClient, getDisplayString } from '@medplum/core';
-import { config as loadEnv } from 'dotenv';
+import { existsSync } from 'node:fs';
 
-loadEnv();
+if (existsSync('.env')) {
+  process.loadEnvFile();
+}
 
 interface ScriptConfig {
   baseUrl: string;

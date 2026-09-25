@@ -8,6 +8,10 @@ sidebar_position: 99
 
 This page tracks updates, improvements, and changes to the HealthGorilla integration in Medplum.
 
+## [September 2026]
+
+- Physician-Level Lab Account Number Override: Added `setPerformingLabPhysicianAccountNumber` to `useHealthGorillaLabOrder`, letting a practitioner select between multiple physician-level accounts with the same lab (e.g. different clinic locations) at order time, mirroring the existing practice-level `setPerformingLabAccountNumber` override.
+
 ## [August 2026]
 
 - Order Update Reliability: Fixed `If-Match` version conflicts in `send-to-health-gorilla` when stamping requisition and identifiers after submit. AOE `QuestionnaireResponse` entries are now included in the optimistic locking version list, and conflicted PATCH entries are retried without re-sending already applied updates.

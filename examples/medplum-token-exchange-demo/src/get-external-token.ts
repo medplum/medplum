@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { config as loadEnv } from 'dotenv';
 import { exec } from 'node:child_process';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { URL } from 'node:url';
 
-loadEnv();
+if (existsSync('.env')) {
+  process.loadEnvFile();
+}
 
 interface IdpConfig {
   authorizeUrl: string;
