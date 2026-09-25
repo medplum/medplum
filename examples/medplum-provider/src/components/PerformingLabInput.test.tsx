@@ -51,6 +51,7 @@ describe('PerformingLabInput', () => {
       state: {
         performingLab: undefined,
         performingLabAccountNumber: undefined,
+        performingLabPhysicianAccountNumber: undefined,
         selectedTests: [],
         testMetadata: {},
         diagnoses: [],
@@ -72,6 +73,7 @@ describe('PerformingLabInput', () => {
       searchAvailableTests: vi.fn().mockResolvedValue([]),
       setPerformingLab: mockSetPerformingLab,
       setPerformingLabAccountNumber: vi.fn(),
+      setPerformingLabPhysicianAccountNumber: vi.fn(),
       addTest: vi.fn(),
       removeTest: vi.fn(),
       setTests: vi.fn(),

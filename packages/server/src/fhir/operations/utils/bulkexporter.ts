@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { EMPTY, getReferenceString } from '@medplum/core';
 import type { AsyncJob, Binary, Bundle, Parameters, Project, Resource } from '@medplum/fhirtypes';
+import { once } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { getBinaryStorage } from '../../../storage/loader';
 import type { Repository } from '../../repo';
@@ -26,10 +27,7 @@ class BulkFileWriter {
     const data = JSON.stringify(resource) + '\n';
     // Handle backpressure - if write buffer is full, wait for drain
     if (!this.stream.write(data)) {
-      await new Promise<void>((resolve, reject) => {
-        this.stream.once('drain', () => resolve());
-        this.stream.once('error', (err) => reject(err));
-      });
+      await once(this.stream, 'drain');
     }
   }
 
@@ -73,6 +71,9 @@ export class BulkExporter {
   async getWriter(resourceType: string): Promise<BulkFileWriter> {
     let writer = this.writers[resourceType];
     if (!writer) {
+      if (!this.resource) {
+        throw new Error('Export must be started before writing output');
+      }
       // Like the AsyncJob, the output Binary is bookkeeping for a read operation, so create it
       // with the system repo (scoped to the caller's project + account compartment so they can
       // presign/download it). The exported data was already access-checked when read.
@@ -80,6 +81,11 @@ export class BulkExporter {
       const binary = await this.repo.getSystemRepo().createResource<Binary>({
         resourceType: 'Binary',
         contentType: NDJSON_CONTENT_TYPE,
+        // Bind export output Binary authorization to the export job context.
+        // Binary read/presign paths must be able to read this reference.
+        securityContext: {
+          reference: getReferenceString(this.resource),
+        },
         meta: {
           project: this.repo.currentProject()?.id,
           accounts: accountCompartment ? [accountCompartment] : undefined,
@@ -110,22 +116,24 @@ export class BulkExporter {
     }
   }
 
-  async writeResource(resource: WithId<Resource>): Promise<void> {
+  async writeResource(resource: WithId<Resource>, options?: { skipDedupe?: boolean }): Promise<void> {
     const resourceType = resource.resourceType;
-    const ref = getReferenceString(resource);
-
-    // Get or create the Set for this resource type
-    let exportedResources = this.resourceSets.get(resourceType);
-    if (!exportedResources) {
-      exportedResources = new Set<string>();
-      this.resourceSets.set(resourceType, exportedResources);
-    }
-
-    // Only write if not already tracked
-    if (!exportedResources.has(ref)) {
+    if (options?.skipDedupe) {
       const writer = await this.getWriter(resourceType);
       await writer.write(resource);
-      exportedResources.add(ref);
+      return;
+    }
+
+    let exportedIds = this.resourceSets.get(resourceType);
+    if (!exportedIds) {
+      exportedIds = new Set<string>();
+      this.resourceSets.set(resourceType, exportedIds);
+    }
+
+    if (!exportedIds.has(resource.id)) {
+      const writer = await this.getWriter(resourceType);
+      await writer.write(resource);
+      exportedIds.add(resource.id);
     }
   }
 

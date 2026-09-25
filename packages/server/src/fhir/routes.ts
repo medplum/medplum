@@ -78,6 +78,7 @@ import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
 import { rebuildBaseDefinitionsOperation } from './operations/rebuild-base-definitions';
 import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
+import { appointmentRescheduleHandler } from './operations/reschedule';
 import { userRescopeOperation } from './operations/rescope';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
@@ -428,6 +429,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Appointment/$hold', appointmentHoldHandler);
   router.add('POST', '/Appointment/:id/$cancel', appointmentCancelHandler);
   router.add('POST', '/Appointment/:id/$confirm', appointmentConfirmHandler);
+  router.add('POST', '/Appointment/:id/$reschedule', appointmentRescheduleHandler);
 
   // PackageRelease $install operation
   router.add('POST', '/PackageRelease/:id/$install', packageInstallHandler);

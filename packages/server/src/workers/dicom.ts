@@ -10,9 +10,11 @@ import dcmjs from 'dcmjs';
 import { Readable } from 'node:stream';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
+import type { ProjectJobTarget } from './base';
+import { getJobSystemRepo, getProjectJobTarget } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
@@ -27,6 +29,7 @@ const { DicomMetadataListener } = utilities;
  */
 
 export interface DicomJobData {
+  readonly target?: ProjectJobTarget; // PENDING{v5.2} make target required and tighten up based on that throughout
   readonly id: string;
   readonly requestId?: string;
   readonly traceId?: string;
@@ -84,6 +87,7 @@ export async function addDicomJobs(resource: WithId<DicomInstance>, previousVers
   if (resource.raw?.reference !== previousVersion?.raw?.reference) {
     const ctx = tryGetRequestContext();
     await addDicomJobData({
+      target: getProjectJobTarget(resource),
       id: resource.id,
       requestId: ctx?.requestId,
       traceId: ctx?.traceId,
@@ -107,7 +111,7 @@ async function addDicomJobData(job: DicomJobData): Promise<void> {
  * @param job - The DICOM processor job details.
  */
 export async function execDicomJob(job: Job<DicomJobData>): Promise<void> {
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in future
+  const systemRepo = job.data.target ? await getJobSystemRepo(job.data.target) : getShardSystemRepo(TODO_SHARD_ID);
   const log = getLogger();
   const { id } = job.data;
 

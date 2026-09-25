@@ -264,7 +264,7 @@ Decide whether intake is a single form or a multi-step workflow with several tas
 | Encounter-chart visibility | Pass `encounter` to `$apply`; each generated Task must set **both** `Task.focus` (Questionnaire/X or ServiceRequest/X – the provider UI uses this for rendering) **and** `Task.input[0].valueReference` (used to load the form). Missing either breaks the chart view. |
 | Reusable intake template | One `PlanDefinition` with `url`, `name`, and `title` set (the provider UI's resource search uses `name`, not `title`); referenced Questionnaires and ActivityDefinitions must also have `url` so `$apply` can resolve canonicals. |
 
-*Scheduling integration (appointments generated from intake answers, or intake gated on a scheduled visit) is covered in depth in the Medplum Scheduling discovery guide. From the intake side, link the resulting appointment or visit back to the intake artifacts that originated it.*
+*Scheduling integration (appointments generated from intake answers, or intake gated on a scheduled visit) is covered in the [Scheduling Decision Guide](/docs/decision-guides/scheduling). From the intake side, link the resulting appointment or visit back to the intake artifacts that originated it.*
 
 ---
 
@@ -285,4 +285,3 @@ Decide what "intake is done" means for your operations, how that signal is repre
 | Composite completion | Single `Task` per Encounter with `businessStatus` advancing through extraction, eligibility, consent, and ready-for-clinical; or use `CarePlan.status` when intake is orchestrated via PlanDefinition (3.8). |
 | Incomplete intake | `QuestionnaireResponse.status` \= `in-progress`; surface via a Task assigned to registration so it doesn't disappear. |
 | Downstream gating | Scheduling, clinical chart, and billing surfaces filter on the chosen completion signal; keep the definition single-sourced. |
-

@@ -1,12 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Coding, Extension, HealthcareService, Practitioner, Schedule } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  Coding,
+  Extension,
+  HealthcareService,
+  Location,
+  Practitioner,
+  Reference,
+  Schedule,
+} from '@medplum/fhirtypes';
 import type { HealthcareServiceSchedulingParameterExtension, SchedulingParameterExtension } from './scheduling';
 import {
   clearHealthcareServiceSchedulingParameter,
   clearScheduleParameter,
   clearScheduleSchedulingParameter,
   extractServiceTypeReferences,
+  getAppointmentSite,
   getHealthcareServiceSchedulingParameters,
   getScheduleParameters,
   getScheduleSchedulingParameters,
@@ -20,11 +30,13 @@ import {
   SCHEDULING_ELIGIBILITY_SYSTEM,
   schedulingDurationToMinutes,
   SchedulingParametersURI,
+  SchedulingSiteURI,
   serviceTypeIncludesService,
   setHealthcareServiceSchedulingParameter,
   setScheduleParameter,
   setScheduleSchedulingParameter,
   TimezoneExtensionURI,
+  toAppointmentSiteReference,
   toServiceTypeCodeableConcepts,
 } from './scheduling';
 import type { WithId } from './utils';
@@ -181,6 +193,16 @@ describe('schedule parameters', () => {
       'duration',
       'availability',
     ]);
+  });
+
+  test('drops the parameters extension once it holds nothing but the service pointer', () => {
+    const schedule: Schedule = { resourceType: 'Schedule', actor: [{ reference: 'Practitioner/123' }] };
+    const configured = setScheduleSchedulingParameter(schedule, service, bufferBefore);
+
+    const cleared = clearScheduleSchedulingParameter(configured, service, 'bufferBefore');
+
+    expect(cleared.extension).toBeUndefined();
+    expect(hasSchedulingParameters(cleared)).toBe(false);
   });
 
   test('creates service-specific SchedulingParameters when missing', () => {
@@ -478,6 +500,26 @@ describe('service parameters', () => {
     expect(hasSchedulingParameters(cleared)).toBe(false);
   });
 
+  test('replaces the only parameter without moving its extension behind the others', () => {
+    const configured: WithId<HealthcareService> = {
+      ...visitType,
+      extension: [
+        { url: SchedulingParametersURI, extension: [duration] },
+        { url: 'https://example.com/unrelated', valueString: 'kept' },
+      ],
+    };
+
+    const updated = setHealthcareServiceSchedulingParameter(configured, {
+      url: 'duration',
+      valueDuration: { value: 45, unit: 'min' },
+    });
+
+    expect(updated.extension?.map((extension) => extension.url)).toEqual([
+      SchedulingParametersURI,
+      'https://example.com/unrelated',
+    ]);
+  });
+
   test('keeps the parameters extension while other parameters remain', () => {
     const configured = setHealthcareServiceSchedulingParameter(
       setHealthcareServiceSchedulingParameter(visitType, duration),
@@ -552,6 +594,56 @@ describe('deprecated schedule parameter helpers', () => {
       { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
     ]);
     expect(getScheduleParameters(schedule, service, 'bufferBefore')).toEqual([bufferBefore]);
+  });
+});
+
+describe('getAppointmentSite', () => {
+  const MainClinic: WithId<Location> = { resourceType: 'Location', id: 'main-clinic', name: 'Main Clinic' };
+
+  function withSupportingInformation(...references: Reference[]): Appointment {
+    return { resourceType: 'Appointment', status: 'booked', participant: [], supportingInformation: references };
+  }
+
+  test('reads back the site toAppointmentSiteReference recorded', () => {
+    const site = toAppointmentSiteReference(MainClinic);
+    expect(getAppointmentSite(withSupportingInformation(site))).toEqual(site);
+  });
+
+  test('says nothing for an appointment holding no site', () => {
+    expect(getAppointmentSite(withSupportingInformation())).toBeUndefined();
+    expect(getAppointmentSite({ resourceType: 'Appointment', status: 'booked', participant: [] })).toBeUndefined();
+  });
+
+  test('ignores a Location nobody stamped', () => {
+    // A host's own Location is not the site, however it is placed.
+    const appointment = withSupportingInformation({ reference: 'Location/other-site' });
+    expect(getAppointmentSite(appointment)).toBeUndefined();
+  });
+
+  test('finds the site among the other Locations and references a host keeps', () => {
+    const site = toAppointmentSiteReference(MainClinic);
+    const appointment = withSupportingInformation(
+      { reference: 'Coverage/insurance' },
+      { reference: 'Location/other-site' },
+      site
+    );
+    expect(getAppointmentSite(appointment)).toEqual(site);
+  });
+
+  test('ignores a stamp on something that is not a Location', () => {
+    const appointment = withSupportingInformation({
+      reference: 'Coverage/insurance',
+      extension: [{ url: SchedulingSiteURI, valueBoolean: true }],
+    });
+    expect(getAppointmentSite(appointment)).toBeUndefined();
+  });
+
+  test('survives a reference holding no reference', () => {
+    // A display-only reference is legal here; reading one must not throw the way
+    // `parseReference` does.
+    const appointment = withSupportingInformation({ display: 'Somewhere nobody recorded' });
+    expect(() => getAppointmentSite(appointment)).not.toThrow();
+    expect(getAppointmentSite(appointment)).toBeUndefined();
   });
 });
 
