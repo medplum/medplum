@@ -23,6 +23,7 @@ The `$book` operation books an [`Appointment`](/docs/api/fhir/resources/appointm
 - **Direct booking**: Book an appointment directly from a `$find` result, without a prior hold
 - **Multi-resource booking**: Simultaneously book multiple Schedules (e.g., surgeon + OR room + anesthesiologist) for the same appointment time
 - **Programmatic scheduling**: Automate appointment creation from external systems while respecting provider availability rules
+- **Recurring visits**: Book every visit of a weekly series at once, or none of them. See [Booking a weekly series](#booking-a-weekly-series)
 
 ## Invoke the `$book` operation
 
@@ -93,7 +94,7 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$book' \
 
 | Name          | Type          | Description                                                                                                                                                   | Required |
 | ------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `appointment` | `Appointment` | A proposed `Appointment` resource (e.g. from `$find`). Must include `start`, `end`, and `serviceType`. Must have `Slot` resources in `contained`.             | Yes      |
+| `appointment` | `Appointment` | A proposed `Appointment` resource (e.g. from `$find`). Must include `start`, `end`, and `serviceType`. Must have `Slot` resources in `contained`. Repeat once per occurrence (2 to 6) to [book a weekly series](#booking-a-weekly-series). | Yes      |
 
 ### Appointment Input
 
@@ -244,6 +245,47 @@ Returns `201 Created` with a [`Bundle`](/docs/api/fhir/resources/bundle) wrappin
 }
 ```
 
+## Booking a weekly series
+
+To book every occurrence of a weekly series found with [`$find` and `occurrence-count`](/docs/scheduling/appointment-find#finding-a-weekly-series), pass one `appointment` parameter per occurrence. `$book` books all of them atomically: either every occurrence is created or none are. That means a series can't end up partly booked, even when another booking takes one of the later occurrences between the find and the book.
+
+```typescript
+// `occurrences` holds the Appointments of one series: one nested Bundle's entries from $find.
+declare const occurrences: Appointment[];
+
+const bundle = await medplum.post<Bundle>(medplum.fhirUrl('Appointment', '$book'), {
+  resourceType: 'Parameters',
+  parameter: occurrences.map((appointment) => ({ name: 'appointment', resource: appointment })),
+});
+```
+
+One `appointment` is booked as a single Appointment. Two to six are booked together as one weekly series.
+
+### Series Constraints
+
+- Ordered by `start` (they may be passed in any order), the appointments must fall exactly one week apart, at the same local time in the schedules' [`timezone`](/docs/scheduling/defining-availability#timezone-resolution)
+- Every appointment must book the same schedules and `HealthcareService`
+- Every appointment's schedules must share one `timezone`
+- Each appointment's `start` and `end` must match its `busy` Slots'
+- All of the [constraints](#constraints) on a single booking apply to each occurrence individually
+
+The easiest way to meet these requirements is to pass back one series from `$find` exactly as it was returned.
+
+### Series Output
+
+The response Bundle holds one booked `Appointment` and its Slots per occurrence, all created in the same transaction. If any occurrence is no longer available, the whole transaction rolls back, and no occurrence is created, including ones that were still available.
+
+Each booked occurrence is tagged as part of the series, replacing any series tags the submitted appointments carried:
+
+- Every occurrence shares a series `identifier` (system `https://medplum.com/fhir/recurring-appointment-series`). Read it from the response. Every occurrence of the series can then be found with `GET [base]/Appointment?identifier=https://medplum.com/fhir/recurring-appointment-series|<series id>`.
+- Every occurrence carries its 1-based position as R5's `recurrenceId`, using the standard R4 [cross-version extension](https://hl7.org/fhir/R5/versions.html#extensions) `http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceId`.
+- The first occurrence carries R5's `recurrenceTemplate` (`http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceTemplate`), describing the series:
+  - `recurrenceType`: always `wk` (weekly)
+  - `occurrenceCount`
+  - `weeklyTemplate`: the weekday the series falls on, every week
+  - `timezone`: the timezone whose local time the series keeps, which is the schedules' `timezone`
+- Every occurrence after the first carries R5's `originatingAppointment` (`http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.originatingAppointment`), referencing the first occurrence.
+
 ## Booking Logic
 
 `$book` performs the following steps atomically inside a database transaction, ensuring safety when concurrent booking requests are received.
@@ -283,6 +325,21 @@ Because these steps run inside a `SERIALIZABLE` transaction, two requests racing
 {
   "resourceType": "OperationOutcome",
   "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "No timezone specified" } }]
+}
+```
+
+### Series Not Weekly
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "error",
+      "code": "invalid",
+      "details": { "text": "Appointments in a recurring series must be one week apart, at the same local time" }
+    }
+  ]
 }
 ```
 
