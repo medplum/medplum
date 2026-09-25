@@ -8,10 +8,7 @@ import type { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
-import { DatabaseMode, getDatabasePool } from '../../../database';
 import { getLogger } from '../../../logger';
-import { markPostDeployMigrationCompleted } from '../../../migration-sql';
-import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
 import { getProjectScopedUrl } from '../../../util/url';
 import { CancelledError } from '../../../workers/utils';
 import { sendOutcome } from '../../outcomes';
@@ -145,29 +142,14 @@ export class AsyncJobExecutor {
     if (!this.resource) {
       throw new Error('Cannot completeJob since AsyncJob is not specified');
     }
-    let updatedJob: WithId<AsyncJob> = {
+    const updatedJob: WithId<AsyncJob> = {
       ...this.resource,
       status: 'completed',
       transactionTime: new Date().toISOString(),
       output,
     };
-    if (updatedJob.type === 'data-migration' && updatedJob.dataVersion) {
-      // This probably needs more validation that its a system-owned AsyncJob.
-      const completedDataVersion = updatedJob.dataVersion;
-      getLogger().info('Marking post-deploy migration complete', {
-        version: `v${completedDataVersion}`,
-      });
-      await markPostDeployMigrationCompleted(
-        getDatabasePool(DatabaseMode.WRITER, this.repo.shardId),
-        completedDataVersion
-      );
-      this.resource = updatedJob = await this.repo.getSystemRepo().updateResource(updatedJob);
-      await maybeAutoRunPendingPostDeployMigration();
-      return updatedJob;
-    } else {
-      this.resource = await this.repo.getSystemRepo().updateResource(updatedJob);
-      return this.resource;
-    }
+    this.resource = await this.repo.getSystemRepo().updateResource(updatedJob);
+    return this.resource;
   }
 
   async failJob(err?: Error, output?: Parameters): Promise<WithId<AsyncJob>> {

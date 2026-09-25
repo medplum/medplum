@@ -561,6 +561,10 @@ describe('Database migrations', () => {
 
         // Make sure we call `markDataMigrationComplete` after the reindex job if it's a data migration
         expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(1);
+        expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledWith(
+          getDatabasePool(DatabaseMode.WRITER, systemRepo.shardId),
+          1
+        );
 
         expect(getReindexQueueAddSpy()).not.toHaveBeenCalled();
         expect(getQueueAddSpy()).toHaveBeenCalledTimes(expectedQueueCalls);

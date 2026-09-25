@@ -132,11 +132,12 @@ function deepMerge(base: Record<string, unknown>, overlay: Record<string, unknow
 
 /**
  * Loads the configuration setting for unit and integration tests.
- * @param sharded - Whether to load the sharded configuration.
+ * @param opts - Test config options
+ * @param opts.sharded - Whether to load the sharded test configuration.
  * @returns The configuration for tests.
  */
-export async function loadTestConfig(sharded?: boolean): Promise<MedplumServerConfig> {
-  const config = await loadConfig(sharded ? 'file:medplum-sharded.config.json' : 'file:medplum.config.json');
+export async function loadTestConfig(opts?: { sharded?: boolean }): Promise<ServerConfig> {
+  const config = await loadConfig(opts?.sharded ? 'file:medplum-sharded.config.json' : 'file:medplum.config.json');
   config.binaryStorage = 'file:' + mkdtempSync(join(tmpdir(), 'medplum-temp-storage'));
   config.allowedOrigins = undefined;
   config.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
@@ -172,7 +173,7 @@ export async function loadTestConfig(sharded?: boolean): Promise<MedplumServerCo
   config.defaultSuperAdminClientSecret = randomUUID();
   config.mtlsCertHeader = 'x-mtls-cert';
 
-  if (sharded) {
+  if (opts?.sharded) {
     if (!config.shards) {
       throw new Error('Sharded configuration requires shards');
     }

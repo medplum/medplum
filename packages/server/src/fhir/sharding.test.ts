@@ -4,9 +4,13 @@
 import { getStatus, OperationOutcomeError } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { Mock } from 'vitest';
+import { loadTestConfig } from '../config/loader';
 import { getLogger } from '../logger';
+import { TEST_SHARD_ID } from '../test.setup';
 import {
+  getDefaultShardId,
   GLOBAL_SHARD_ID,
+  isConfiguredShardId,
   normalizeShardId,
   PLACEHOLDER_SHARD_ID,
   resetStrictShardingEnforcement,
@@ -158,5 +162,39 @@ describe('resolveShardId', () => {
         logSpy.mockRestore();
       }
     });
+  });
+});
+
+describe('getDefaultShardId', () => {
+  test('Returns the global shard when no shards are configured', async () => {
+    await loadTestConfig();
+    expect(getDefaultShardId()).toStrictEqual(GLOBAL_SHARD_ID);
+  });
+
+  test('Returns the shard that sets isDefaultShard', async () => {
+    await loadTestConfig({ sharded: true });
+    expect(getDefaultShardId()).toStrictEqual(TEST_SHARD_ID);
+  });
+
+  test('Returns the global shard when no configured shard sets isDefaultShard', async () => {
+    const config = await loadTestConfig({ sharded: true });
+    for (const shardConfig of Object.values(config.shards ?? {})) {
+      shardConfig.isDefaultShard = false;
+    }
+    expect(getDefaultShardId()).toStrictEqual(GLOBAL_SHARD_ID);
+  });
+});
+
+describe('isConfiguredShardId', () => {
+  beforeAll(async () => {
+    await loadTestConfig({ sharded: true });
+  });
+
+  test.each([GLOBAL_SHARD_ID, TEST_SHARD_ID])('Accepts %s', (shardId) => {
+    expect(isConfiguredShardId(shardId)).toBe(true);
+  });
+
+  test.each(['unknown-shard', '', PLACEHOLDER_SHARD_ID, TODO_SHARD_ID, 'toString'])('Rejects "%s"', (shardId) => {
+    expect(isConfiguredShardId(shardId)).toBe(false);
   });
 });

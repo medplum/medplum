@@ -29,7 +29,7 @@ import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import type { SystemRepository } from '../repo';
 import { getShardSystemRepo } from '../repo';
-import { getProjectShardId } from '../sharding';
+import { getDefaultShardId, getProjectShardId } from '../sharding';
 import { makeOperationDefinition } from './definitions';
 import {
   buildOutputParameters,
@@ -135,7 +135,7 @@ export async function createProject(
 }> {
   const log = getLogger();
   const config = getConfig();
-  const systemRepo = getShardSystemRepo(config.defaultShardId);
+  const systemRepo = getShardSystemRepo(getDefaultShardId());
 
   log.info('Project creation request received', { shardId: systemRepo.shardId, name: projectName });
 

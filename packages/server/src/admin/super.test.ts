@@ -996,6 +996,16 @@ describe('Super Admin routes', () => {
       });
       expect(res1).toHaveStatus(200);
     });
+
+    test('Rejects an unknown shardId', async () => {
+      const res1 = await request(app)
+        .get('/admin/super/migrations')
+        .query({ shardId: 'unknown-shard' })
+        .set('Authorization', 'Bearer ' + adminAccessToken);
+
+      expect(res1).toHaveStatus(400);
+      expect(res1.body.issue[0].details.text).toBe('Unknown shardId: unknown-shard');
+    });
   });
 
   describe('Table settings', () => {

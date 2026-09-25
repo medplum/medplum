@@ -27,7 +27,7 @@ import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/as
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getShardSystemRepo, Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
-import { GLOBAL_SHARD_ID } from '../fhir/sharding';
+import { GLOBAL_SHARD_ID, isConfiguredShardId } from '../fhir/sharding';
 import { isValidPostgresIdentifier } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted, setPreDeployVersion } from '../migration-sql';
@@ -56,24 +56,27 @@ export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_cost_delay: 'float',
 } as const satisfies Record<string, 'float' | 'int'>;
 
-/** If sharding isn't being used, shardId not a required input */
-let shardIdRequired: boolean | undefined;
-
 function shardIdValidator(source?: 'body' | 'query'): ValidationChain {
-  shardIdRequired ??= getConfig().shards !== undefined;
   const src = source === 'query' ? query : body;
-  const chain = src('shardId');
-  if (!shardIdRequired) {
-    return chain.optional().isString().withMessage('shardId must be a string');
-  }
-  return chain.isString().withMessage('shardId is required');
+  return src('shardId').custom((value: unknown) => {
+    const shardIdRequired = getConfig().shards !== undefined;
+    if (value === undefined && !shardIdRequired) {
+      return true;
+    }
+    if (typeof value !== 'string') {
+      throw new Error(shardIdRequired ? 'shardId is required' : 'shardId must be a string');
+    }
+    if (!isConfiguredShardId(value)) {
+      throw new Error(`Unknown shardId: ${value}`);
+    }
+    return true;
+  });
 }
 
 function getShardId(bodyOrQuery: any): string {
   const shardId = bodyOrQuery.shardId as unknown;
   if (!shardId) {
-    shardIdRequired ??= getConfig().shards !== undefined;
-    if (!shardIdRequired) {
+    if (getConfig().shards === undefined) {
       return GLOBAL_SHARD_ID;
     }
     throw new Error('shardId accessed without validation');

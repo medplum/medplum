@@ -23,6 +23,7 @@ import type {
 } from '../migrations/data/types';
 import { executeMigrationActions } from '../migrations/migrate';
 import {
+  completePostDeployMigration,
   enforceStrictMigrationVersionChecks,
   getPostDeployManifestEntry,
   getPostDeployMigration,
@@ -171,7 +172,7 @@ async function runDynamicMigration(
       }
     }, shardId);
     const output = getAsyncJobOutputFromMigrationActionResults(results);
-    await exec.completeJob(output);
+    await completePostDeployMigration(exec, shardId, output);
   } catch (err: any) {
     const errorMsg = normalizeErrorString(err);
     globalLogger.error('Post-deploy migration threw an error', {
@@ -205,7 +206,7 @@ export async function runCustomMigration(
       asyncJob: getReferenceString(asyncJob),
       version: `v${asyncJob.dataVersion}`,
     });
-    await exec.completeJob({
+    await completePostDeployMigration(exec, shardId, {
       resourceType: 'Parameters',
       parameter: [{ name: 'skipped', valueString: 'In firstBoot mode' }],
     });
@@ -218,7 +219,7 @@ export async function runCustomMigration(
       await callback(client, results, job, jobData);
     }, shardId);
     const output = getAsyncJobOutputFromMigrationActionResults(results);
-    await exec.completeJob(output);
+    await completePostDeployMigration(exec, shardId, output);
   } catch (err: any) {
     const errorMsg = normalizeErrorString(err);
     globalLogger.error('Post-deploy migration threw an error', {

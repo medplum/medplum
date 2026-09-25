@@ -1,33 +1,121 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { createReference, parseSearchRequest } from '@medplum/core';
 import type { ClientApplication, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { bcryptHashPassword, createProfile, createProjectMembership } from './auth/utils';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import { r4ProjectId } from './constants';
 import type { SystemRepository } from './fhir/repo';
 import { getShardSystemRepo } from './fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
 
-export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
-  // client will eventually know its shard ID
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID, undefined, {
-    skipBackgroundJobs: true,
-  });
+/**
+ * Seed the database including all shards
+ *
+ * On the global shard:
+ * 1. Create R4 project
+ * 2. Rebuild structure definitions, value sets, and search parameters
+ * 3. Create super admin user, project, practitioner, projectmembership, clientapplication
+ *
+ * On each additional shard, if any:
+ * 2. Rebuild structure definitions, value sets, and search parameters
+ */
 
-  if (await isSeeded(systemRepo)) {
-    globalLogger.info('Already seeded');
-    return;
+export async function seedDatabase(config: ServerConfig): Promise<void> {
+  const globalShardRepo = getShardSystemRepo(GLOBAL_SHARD_ID, undefined, { skipBackgroundJobs: true });
+
+  if (await globalShardRepo.searchOne({ resourceType: 'Practitioner' })) {
+    globalLogger.info('Already seeded', { shardId: GLOBAL_SHARD_ID });
+  } else {
+    await createR4Project(globalShardRepo);
+
+    await seedBaseDefinitions(globalShardRepo);
+
+    await createSuperAdmin(globalShardRepo, config);
   }
 
-  await systemRepo.withTransaction(
-    async (txRepo) => {
-      await createSuperAdmin(txRepo, config);
+  if (config.shards) {
+    for (const [shardId] of Object.entries(config.shards)) {
+      const shardSystemRepo = getShardSystemRepo(shardId, undefined, { skipBackgroundJobs: true });
+      if (!(await shardSystemRepo.searchOne({ resourceType: 'StructureDefinition' }))) {
+        await seedBaseDefinitions(shardSystemRepo);
+      }
+    }
+  }
+}
 
+async function createR4Project(systemRepo: SystemRepository): Promise<WithId<Project>> {
+  let r4Project = await systemRepo.searchOne<Project>(parseSearchRequest(`Project?_id=${r4ProjectId}`));
+  if (!r4Project) {
+    r4Project = await systemRepo.createResource<Project>(
+      { resourceType: 'Project', id: r4ProjectId, name: 'FHIR R4' },
+      { assignedId: true }
+    );
+  }
+  return r4Project;
+}
+
+async function createSuperAdmin(systemRepo: SystemRepository, config: ServerConfig): Promise<void> {
+  const email = (config.defaultSuperAdminEmail ?? 'admin@example.com').toLowerCase();
+  const password = config.defaultSuperAdminPassword ?? 'medplum_admin';
+  const [firstName, lastName] = ['Medplum', 'Admin'];
+  const passwordHash = await bcryptHashPassword(password);
+
+  const { superAdminUser, superAdminProject } = await systemRepo.ensureInTransaction(
+    async (txRepo) => {
+      const superAdminUser = await txRepo.createResource<User>({
+        resourceType: 'User',
+        firstName,
+        lastName,
+        email,
+        passwordHash,
+      });
+
+      const superAdminProject = await txRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'Super Admin',
+        owner: createReference(superAdminUser),
+        superAdmin: true,
+        strictMode: true,
+      });
+
+      if (config.defaultSuperAdminClientId && config.defaultSuperAdminClientSecret) {
+        // Use specified client ID and secret
+        const client = await txRepo.updateResource<ClientApplication>({
+          meta: { project: superAdminProject.id },
+          resourceType: 'ClientApplication',
+          id: config.defaultSuperAdminClientId,
+          name: 'Default Super Admin Client',
+          secret: config.defaultSuperAdminClientSecret,
+        });
+
+        await txRepo.createResource<ProjectMembership>({
+          meta: { project: superAdminProject.id },
+          resourceType: 'ProjectMembership',
+          project: createReference(superAdminProject),
+          user: createReference(client),
+          profile: createReference(client),
+        });
+      }
+
+      return { superAdminUser, superAdminProject };
+    },
+    { resourceTypes: ['User', 'Project', 'ClientApplication', 'ProjectMembership'] }
+  );
+
+  const practitioner = await createProfile(systemRepo, superAdminProject, 'Practitioner', firstName, lastName, email);
+
+  await createProjectMembership(systemRepo, superAdminUser, superAdminProject, practitioner, { admin: true });
+}
+
+async function seedBaseDefinitions(systemRepo: SystemRepository): Promise<void> {
+  await systemRepo.ensureInTransaction(
+    async (txRepo) => {
       globalLogger.info('Building structure definitions...');
       let startTime = Date.now();
       await rebuildR4StructureDefinitions(txRepo);
@@ -44,80 +132,8 @@ export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
       globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
     },
     {
-      resourceTypes: [
-        'ClientApplication',
-        'Practitioner',
-        'Project',
-        'ProjectMembership',
-        'SearchParameter',
-        'StructureDefinition',
-        'User',
-        'ValueSet',
-      ],
-      source: 'seedDatabase',
+      resourceTypes: ['StructureDefinition', 'OperationDefinition', 'ValueSet', 'CodeSystem', 'SearchParameter'],
+      source: 'seedDatabase.rebuild',
     }
   );
-}
-
-async function createSuperAdmin(systemRepo: SystemRepository, config: MedplumServerConfig): Promise<void> {
-  const email = (config.defaultSuperAdminEmail ?? 'admin@example.com').toLowerCase();
-  const password = config.defaultSuperAdminPassword ?? 'medplum_admin';
-  const [firstName, lastName] = ['Medplum', 'Admin'];
-  const passwordHash = await bcryptHashPassword(password);
-  const superAdmin = await systemRepo.createResource<User>({
-    resourceType: 'User',
-    firstName,
-    lastName,
-    email,
-    passwordHash,
-  });
-
-  const superAdminProject = await systemRepo.createResource<Project>({
-    resourceType: 'Project',
-    name: 'Super Admin',
-    owner: createReference(superAdmin),
-    superAdmin: true,
-    strictMode: true,
-  });
-
-  await systemRepo.updateResource<Project>({
-    resourceType: 'Project',
-    id: r4ProjectId,
-    name: 'FHIR R4',
-  });
-
-  const practitioner = await createProfile(systemRepo, superAdminProject, 'Practitioner', firstName, lastName, email);
-  await createProjectMembership(systemRepo, superAdmin, superAdminProject, practitioner, { admin: true });
-
-  if (config.defaultSuperAdminClientId && config.defaultSuperAdminClientSecret) {
-    // Use specified client ID and secret
-    const client = await systemRepo.updateResource<ClientApplication>({
-      meta: {
-        project: superAdminProject.id,
-      },
-      resourceType: 'ClientApplication',
-      id: config.defaultSuperAdminClientId,
-      name: 'Default Super Admin Client',
-      secret: config.defaultSuperAdminClientSecret,
-    });
-
-    await systemRepo.createResource<ProjectMembership>({
-      meta: {
-        project: superAdminProject.id,
-      },
-      resourceType: 'ProjectMembership',
-      project: createReference(superAdminProject),
-      user: createReference(client),
-      profile: createReference(client),
-    });
-  }
-}
-
-/**
- * Returns true if the database is already seeded.
- * @param systemRepo - The system repository to use to check if the database is seeded.
- * @returns True if already seeded.
- */
-function isSeeded(systemRepo: SystemRepository): Promise<User | undefined> {
-  return systemRepo.searchOne({ resourceType: 'User' });
 }

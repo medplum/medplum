@@ -2,16 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest } from '@medplum/core';
-import type { AsyncJob } from '@medplum/fhirtypes';
+import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import type { MedplumShardConfig } from '../config/types';
 import { DatabaseMode, getDatabasePool, withPoolClient } from '../database';
+import type { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
 import { getAllShards, getShardConfig } from '../fhir/sharding';
 import type { PgQueryable } from '../fhir/sql';
 import { globalLogger } from '../logger';
-import { getPostDeployVersion } from '../migration-sql';
+import { getPostDeployVersion, markPostDeployMigrationCompleted } from '../migration-sql';
 import type { ShardPoolClient } from '../sharding/sharding-types';
 import { getServerVersion } from '../util/version';
 import { addPostDeployMigrationJobData } from '../workers/post-deploy-migration';
@@ -187,6 +188,41 @@ export async function queuePostDeployMigration(
   }
 
   return asyncJob;
+}
+
+/**
+ * Completes an AsyncJob run by a post-deploy worker. Data migration jobs also advance the migration
+ * version on their explicit target shard and trigger the next pending migration there. The executor's
+ * repository remains responsible only for storing the AsyncJob resource.
+ *
+ * @param exec - The executor bound to the repository that owns the AsyncJob.
+ * @param targetShardId - The shard where the post-deploy work ran.
+ * @param output - The final AsyncJob output.
+ * @returns The completed AsyncJob.
+ */
+export async function completePostDeployMigration(
+  exec: AsyncJobExecutor,
+  targetShardId: string,
+  output?: Parameters
+): Promise<WithId<AsyncJob>> {
+  const asyncJob = exec.getAsyncJob();
+  if (asyncJob.type !== 'data-migration' || !asyncJob.dataVersion) {
+    return exec.completeJob(output);
+  }
+
+  // dataVersion should be moved into post-deploy job data and pass it to this function alongside targetShardId.
+  // The queued job should be the source of truth for the migration it performed; AsyncJob.dataVersion should be
+  // retained as tracking metadata and validated against the queued value. Legacy payloads can continue falling
+  // back to AsyncJob.dataVersion until their compatibility path is removed.
+  const completedDataVersion = asyncJob.dataVersion;
+  globalLogger.info('Marking post-deploy migration complete', {
+    shardId: targetShardId,
+    version: `v${completedDataVersion}`,
+  });
+  await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER, targetShardId), completedDataVersion);
+  const updatedJob = await exec.completeJob(output);
+  await maybeAutoRunPendingPostDeployMigrationOnShard(targetShardId);
+  return updatedJob;
 }
 
 export async function withLongRunningDatabaseClient<TResult>(

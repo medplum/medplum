@@ -23,7 +23,7 @@ import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type { PostDeployJobData, PostDeployMigration, PrepareJobDataContext } from '../migrations/data/types';
-import { isFirstBootMode } from '../migrations/migration-utils';
+import { completePostDeployMigration, isFirstBootMode } from '../migrations/migration-utils';
 import { getAsyncJobTracking, getJobSystemRepo, getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
@@ -169,13 +169,18 @@ export class ReindexJob {
         asyncJob: getReferenceString(asyncJob),
         version: `v${asyncJob.dataVersion}`,
       });
-      await this.asyncJobExecutor.completeJob({
+      await this.completeJob({
         resourceType: 'Parameters',
         parameter: [{ name: 'skipped', valueString: 'In firstBoot mode' }],
       });
       return true;
     }
     return false;
+  }
+
+  private completeJob(output?: Parameters): Promise<WithId<AsyncJob>> {
+    const targetShardId = 'target' in this.jobData ? this.jobData.target.shardId : this.systemRepo.shardId;
+    return completePostDeployMigration(this.asyncJobExecutor, targetShardId, output);
   }
 
   private async checkForQueueClosing(job: Job<ReindexJobData> | undefined, nextJobData: ReindexJobData): Promise<void> {
@@ -235,7 +240,7 @@ export class ReindexJob {
       const finishedOrNextIterationData = this.nextIterationData(result, nextJobData);
       nextJobData = undefined;
       if (finishedOrNextIterationData === true) {
-        await this.asyncJobExecutor.completeJob(output);
+        await this.completeJob(output);
       } else if (finishedOrNextIterationData === false) {
         await this.asyncJobExecutor.failJob();
       } else {

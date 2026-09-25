@@ -53,6 +53,26 @@ export function getShardConfig(shardId: string): MedplumShardConfig {
   return shardConfig;
 }
 
+/**
+ * @param shardId - The shard ID to check.
+ * @returns True if the shard ID is the global shard or a shard in the loaded config.
+ */
+export function isConfiguredShardId(shardId: string): boolean {
+  return shardId === GLOBAL_SHARD_ID || getConfig().shards?.[shardId] !== undefined;
+}
+
+/**
+ * @returns The shard new projects are placed on: the shard that sets `isDefaultShard`, or the global shard.
+ */
+export function getDefaultShardId(): string {
+  for (const shardConfig of Object.values(getConfig().shards ?? {})) {
+    if (shardConfig.isDefaultShard) {
+      return shardConfig.id;
+    }
+  }
+  return GLOBAL_SHARD_ID;
+}
+
 export function* getAllShards(): Generator<MedplumShardConfig> {
   yield getGlobalShardConfig();
   const shards = getConfig().shards;

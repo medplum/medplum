@@ -4,15 +4,13 @@ import type { Project } from '@medplum/fhirtypes';
 import type { Mock } from 'vitest';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { OutputAction } from './fhir/operations/db-configure-indexes';
-import { configureGinIndexes, vacuumTable } from './fhir/operations/db-configure-indexes';
+import { configureGinIndexes } from './fhir/operations/db-configure-indexes';
 import type { SystemRepository } from './fhir/repo';
 import { getGlobalSystemRepo, getShardSystemRepo } from './fhir/repo';
-import { repoAccess } from './fhir/repository/access-tracker';
-import { getAllShards, GLOBAL_SHARD_ID, PLACEHOLDER_SHARD_ID } from './fhir/sharding';
-import { SelectQuery } from './fhir/sql';
+import { getAllShards, GLOBAL_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
@@ -20,7 +18,11 @@ import {
   getPostDeployMigration,
   preparePostDeployMigrationAsyncJob,
 } from './migrations/migration-utils';
-import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
+import {
+  getLatestPostDeployMigrationVersion,
+  getPreDeployMigrationVersions,
+  MigrationVersion,
+} from './migrations/migration-versions';
 import { closeRedis, getCacheRedis, initRedis } from './redis';
 import * as seedModule from './seed';
 import { deleteRedisKeys, withTestContext } from './test.setup';
@@ -40,7 +42,7 @@ async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: System
   }
 
   globalLogger.write(
-    `${new Date().toISOString()} - Running pending post-deploy migrations ${pendingMigration} through ${lastVersion}`
+    `${new Date().toISOString()} - [${systemRepo.shardId}] Running pending post-deploy migrations ${pendingMigration} through ${lastVersion}`
   );
 
   for (let i = pendingMigration; i <= lastVersion; i++) {
@@ -51,22 +53,26 @@ async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: System
 async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository, version: number): Promise<void> {
   const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
-  const jobData = migration.prepareJobData({ shardId: GLOBAL_SHARD_ID, asyncJob });
-  globalLogger.write(`${new Date().toISOString()} - Starting post-deploy migration v${version}`);
+  const jobData = migration.prepareJobData({ shardId: systemRepo.shardId, asyncJob });
+  globalLogger.write(
+    `${new Date().toISOString()} - [${systemRepo.shardId}] Starting post-deploy migration v${version}`
+  );
   const result = await migration.run(systemRepo, undefined, jobData);
-  globalLogger.write(`${new Date().toISOString()} - Post-deploy migration v${version} result: ${result}`);
+  globalLogger.write(
+    `${new Date().toISOString()} - [${systemRepo.shardId}] Post-deploy migration v${version} result: ${result}`
+  );
 }
 
 describe('Seed', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let loggerWriteSpy: Mock<typeof globalLogger.write>;
   let seedDatabaseSpy: Mock<(typeof seedModule)['seedDatabase']>;
 
   beforeAll(async () => {
-    loggerWriteSpy = vi.spyOn(globalLogger, 'write').mockImplementation(() => undefined);
+    loggerWriteSpy = vi.spyOn(globalLogger, 'write'); // .mockImplementation(() => undefined);
     seedDatabaseSpy = vi.spyOn(seedModule, 'seedDatabase');
 
-    config = await loadTestConfig();
+    config = await loadTestConfig({ sharded: true });
     config.database.runMigrations = true;
     // Since BullMQ is not available in tests, disable automatically running post-deploy migrations
     // asynchronously. Instead, run them synchronously below.
@@ -87,27 +93,20 @@ describe('Seed', () => {
     await initAppServices(config);
 
     for (const shardConfig of getAllShards()) {
-      await synchronouslyRunAllPendingPostDeployMigrations(getShardSystemRepo(shardConfig.id));
-    }
-    const repo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
-    // Run post-deploy migrations synchronously
-    await synchronouslyRunAllPendingPostDeployMigrations(repo);
+      const systemRepo = getShardSystemRepo(shardConfig.id);
+      await synchronouslyRunAllPendingPostDeployMigrations(systemRepo);
 
-    // Scheduling and user creation use serializable transactions that touch these
-    // tables. The `fastUpdate` feature can cause seemingly unrelated transactions
-    // to append to the same "pending list", which can cause transaction
-    // failures.
-    //
-    // Here we update the indexes on Appointment, Slot, and User tables to disable `fastUpdate`,
-    // and then vacuum the tables to clear any existing pending list entries.
-    const actions: OutputAction[] = [];
-    const tables = ['Appointment', 'Appointment_References', 'Slot', 'Slot_References', 'User', 'User_References'];
-    const client = repo.getDatabaseClient(
-      repoAccess.sqlWrite(['Appointment', 'Slot', 'User'], { source: 'seed.test.configureIndexes' })
-    );
-    await configureGinIndexes(client, actions, tables, { fastUpdate: false });
-    for (const table of tables) {
-      await vacuumTable(client, actions, table);
+      // Scheduling and user creation use serializable transactions that touch these
+      // tables. The `fastUpdate` feature can cause seemingly unrelated transactions
+      // to append to the same "pending list", which can cause transaction
+      // failures.
+      //
+      // Here we update the indexes on Appointment, Slot, and User tables to disable `fastUpdate`,
+      // and then vacuum the tables to clear any existing pending list entries.
+      const pool = getDatabasePool(DatabaseMode.WRITER, shardConfig.id);
+      const actions: OutputAction[] = [];
+      const tables = ['Appointment', 'Slot', 'User'];
+      await configureGinIndexes(pool, actions, tables, { fastUpdate: false });
     }
   });
 
@@ -122,43 +121,37 @@ describe('Seed', () => {
       // // seedDatabase executed in beforeAll via initAppServices
       expect(seedDatabaseSpy).toHaveBeenCalledTimes(1);
 
-      let expectedSuperAdminProjects = 0;
       for (const shardConfig of getAllShards()) {
-        expectedSuperAdminProjects++;
-        // Make sure all database migrations have run
         const pool = getDatabasePool(DatabaseMode.WRITER, shardConfig.id);
 
         const preDeployVersion = await getPreDeployVersion(pool);
         expect(preDeployVersion).toBeGreaterThanOrEqual(67);
+        expect(preDeployVersion).toBe(getPreDeployMigrationVersions().at(-1) as number);
 
         const postDeployVersion = await getPostDeployVersion(pool);
+
         // only show log messages if post-deploy migrations did not run successfully
         if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
           loggerWriteSpy.mock.calls.forEach((call: unknown[]) => console.log(...call));
+          expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
         }
-        expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
       }
 
-      // seedDatabase is idempotent
+      // confirm seedDatabase is idempotent
       await seedDatabaseSpy(config);
-
-      // One Super Admin project per shard, all synced to/on the global shard
-      const globalPool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
-      const rows = await new SelectQuery('Project')
-        .column('content')
-        .where('name', '=', 'Super Admin')
-        .execute(globalPool);
-      expect(rows.length).toBe(expectedSuperAdminProjects);
 
       const projects = await getGlobalSystemRepo().searchResources<Project>({
         resourceType: 'Project',
         filters: [{ code: 'name', operator: 'eq', value: 'Super Admin' }],
       });
-      expect(projects.length).toBe(expectedSuperAdminProjects);
+      expect(projects.length).toBe(1);
       for (const project of projects) {
-        expect(project.superAdmin).toBe(true);
-        expect(project.strictMode).toBe(true);
-        expect(project.shard).toBeDefined();
+        expect(project).toMatchObject({
+          name: 'Super Admin',
+          superAdmin: true,
+          strictMode: true,
+          shard: [{ id: GLOBAL_SHARD_ID }],
+        });
       }
     }));
 });
