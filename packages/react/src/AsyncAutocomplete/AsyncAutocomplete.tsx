@@ -27,6 +27,11 @@ export interface AsyncAutocompleteProps<T> extends Omit<
   readonly toOption: (item: T) => AsyncAutocompleteOption<T>;
   readonly loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
+  /**
+   * Custom pill for a selected value. It must render its remove control as a focusable, labelled
+   * button (e.g. `removeButtonProps={{ 'aria-label': ..., 'aria-hidden': undefined, tabIndex: 0 }}` on a
+   * Mantine `Pill`), or keyboard and screen reader users cannot remove the value.
+   */
   readonly pillComponent?: (props: {
     item: AsyncAutocompleteOption<T>;
     disabled?: boolean;
@@ -87,6 +92,9 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const PillComponent = pillComponent ?? DefaultPillComponent;
   const EmptyComponent = emptyComponent ?? DefaultEmptyComponent;
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const pillGroupRef = useRef<HTMLDivElement>(null);
+  const pendingFocusIndexRef = useRef<number>(undefined);
   const searchRef = useRef(search);
   const lastLoadOptionsRef = useRef<AsyncAutocompleteProps<T>['loadOptions']>(undefined);
   const lastValueRef = useRef<string>(undefined);
@@ -248,12 +256,31 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
   const handleValueRemove = useCallback(
     (item: AsyncAutocompleteOption<T>): void => {
+      // Mantine's remove button never takes focus on mouse down, so a focused remove button means
+      // a keyboard removal. Only then move focus, so it doesn't fall back to <body> with the button.
+      const active = document.activeElement;
+      if (active && active !== searchInputRef.current && pillGroupRef.current?.contains(active)) {
+        pendingFocusIndexRef.current = selected.findIndex((v) => v.value === item.value);
+      }
+
       const newSelected = selected.filter((v) => v.value !== item.value);
       onChange(newSelected.map((v) => v.resource));
       setSelected(newSelected);
     },
     [selected, onChange]
   );
+
+  useLayoutEffect(() => {
+    const index = pendingFocusIndexRef.current;
+    if (index === undefined) {
+      return;
+    }
+    pendingFocusIndexRef.current = undefined;
+    // Next pill's remove button, else the previous one, else the search input
+    const buttons = pillGroupRef.current?.querySelectorAll<HTMLElement>('button:not([tabindex="-1"])');
+    const target = buttons?.[Math.min(index, buttons.length - 1)] ?? searchInputRef.current;
+    target?.focus();
+  }, [selected]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent): void => {
@@ -263,7 +290,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           // We need to wait for the results to come in.
           autoSubmitRef.current = true;
         }
-      } else if (e.key === 'Backspace' && search.length === 0) {
+      } else if (e.key === 'Backspace' && search.length === 0 && selected.length > 0) {
         killEvent(e);
         handleValueRemove(selected[selected.length - 1]);
       }
@@ -311,7 +338,16 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           withAsterisk={withAsterisk}
           disabled={disabled}
         >
-          <Pill.Group data-testid={AsyncAutocompleteTestIds.selectedItems}>
+          <Pill.Group
+            ref={pillGroupRef}
+            data-testid={AsyncAutocompleteTestIds.selectedItems}
+            onBlur={(e) => {
+              // Keep the search text while focus moves between the input and the pills
+              if (!e.currentTarget.contains(e.relatedTarget)) {
+                setSearch('');
+              }
+            }}
+          >
             {selected.map((item) => (
               <PillComponent
                 key={item.value}
@@ -323,15 +359,13 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
             {!disabled && (maxValues === undefined || maxValues === 0 || selected.length < maxValues) && (
               <Combobox.EventsTarget>
                 <PillsInput.Field
+                  ref={searchInputRef}
                   role="searchbox"
                   name={name}
                   value={search}
                   placeholder={placeholder}
                   onFocus={handleSearchChange}
-                  onBlur={() => {
-                    combobox.closeDropdown();
-                    setSearch('');
-                  }}
+                  onBlur={() => combobox.closeDropdown()}
                   onKeyDown={handleKeyDown}
                   onChange={handleSearchChange}
                 />
@@ -392,7 +426,15 @@ function DefaultPillComponent<T>({
   readonly onRemove: () => void;
 }): JSX.Element {
   return (
-    <Pill withRemoveButton={!disabled} onRemove={onRemove}>
+    <Pill
+      withRemoveButton={!disabled}
+      onRemove={onRemove}
+      removeButtonProps={{
+        'aria-label': `Remove ${item.label}`,
+        'aria-hidden': undefined,
+        tabIndex: 0,
+      }}
+    >
       {item.label}
     </Pill>
   );
