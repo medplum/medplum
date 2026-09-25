@@ -1,5 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { vi } from 'vitest';
 import * as awsConfigModule from '../cloud/aws/config';
 import * as azureConfigModule from '../cloud/azure/config';
@@ -400,6 +403,22 @@ describe('Config', () => {
   test('Multi-source: empty and trailing comma segments skipped', async () => {
     const config = await loadConfig('file:medplum.config.json,,');
     expect(config.baseUrl).toBeDefined();
+  });
+
+  test('Rejects more than one default shard', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'medplum-config-'));
+    try {
+      const overlayPath = join(dir, 'overlay.json');
+      writeFileSync(
+        overlayPath,
+        JSON.stringify({ shards: { 'test-shard-2': { isDefaultShard: true, database: {} } } })
+      );
+      await expect(loadConfig(`file:medplum-sharded.config.json,file:${overlayPath}`)).rejects.toThrow(
+        'Only one shard can set isDefaultShard: test-shard-1, test-shard-2'
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   test('Multi-source: empty config name throws', async () => {

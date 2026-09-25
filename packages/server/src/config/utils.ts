@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { concatUrls } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'node:crypto';
-import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { MedplumServerConfig } from './types';
 
@@ -83,7 +82,6 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
     config.signingKeyPassphrase = passphrase;
   }
 
-  config.defaultShardId ||= GLOBAL_SHARD_ID;
   if (config.shards && Object.keys(config.shards).length > 0) {
     for (const [shardId, shardConfig] of Object.entries(config.shards)) {
       shardConfig.id = shardId;
@@ -129,8 +127,7 @@ type DefaultConfigKeys =
   | 'defaultFhirQuota'
   | 'aiRealtimeTranscriptionUrl'
   | 'asyncDelayScaling'
-  | 'serverScopedSubscriptionsEnabled'
-  | 'defaultShardId';
+  | 'serverScopedSubscriptionsEnabled';
 
 const integerKeys = new Set([
   'accurateCountThreshold',

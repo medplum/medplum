@@ -53,8 +53,6 @@ export interface MedplumServerConfig {
    * Separating background job queues from other purposes can improve performance under high load by isolating job queue operations.
    */
   backgroundJobsRedis?: MedplumRedisConfig;
-  /** The default shard ID to place new projects and related resources */
-  defaultShardId?: string;
   shards?: Record<string, MedplumShardConfig>;
   emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
@@ -449,6 +447,8 @@ export interface MedplumFissionConfig {
 
 export interface MedplumShardConfig {
   id: string;
+  /** Place new projects on this shard. Only one shard may set this; when none do, new projects go on the global shard. */
+  isDefaultShard?: boolean;
   database: MedplumDatabaseConfig;
   readonlyDatabase?: MedplumDatabaseConfig;
 }

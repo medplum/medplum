@@ -72,10 +72,17 @@ export async function loadConfig(configName: string): Promise<ServerConfig> {
 
 function validateShardingConfig(config: ServerConfig): void {
   if (config.shards) {
-    for (const [shardId] of Object.entries(config.shards)) {
+    const defaultShardIds: string[] = [];
+    for (const [shardId, shardConfig] of Object.entries(config.shards)) {
       if (isReservedShardId(shardId)) {
         throw new Error(`Cannot use reserved shard ID ${shardId}`);
       }
+      if (shardConfig.isDefaultShard) {
+        defaultShardIds.push(shardId);
+      }
+    }
+    if (defaultShardIds.length > 1) {
+      throw new Error(`Only one shard can set isDefaultShard: ${defaultShardIds.join(', ')}`);
     }
   }
 }
