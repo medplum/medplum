@@ -23,6 +23,10 @@
   padding-bottom: 8px;
 }
 
+.table tbody td {
+  height: 42px;
+}
+
 .toolbar {
   border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
 }
