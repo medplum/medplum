@@ -38,6 +38,7 @@ import type { LayeredDict } from '../../../util/layereddict';
 import type { WithPath } from '../../../util/withpath';
 import { copyPaths, filterWithPaths, getPath, withPath } from '../../../util/withpath';
 import type { Repository } from '../../repo';
+import { isRetryableTransactionError } from '../../sql';
 import { linkToOriginatingAppointment } from './recurrence';
 import type { SchedulingParameters } from './scheduling-parameters';
 import { getHealthcareServiceSchedulingParameters, getScheduleSchedulingParameters } from './scheduling-parameters';
@@ -1062,6 +1063,37 @@ function stampBookingCapacity(
   }
 }
 
+/**
+ * Runs `validate` for one of several Appointments booked together, and says which one any error it
+ * throws is about. They can share one path, as a series' occurrences all have the first's.
+ *
+ * @param appointments - The Appointments booked together.
+ * @param idx - The index of the one being validated.
+ * @param validate - Validates it.
+ * @returns What `validate` returns.
+ */
+async function aboutAppointment<T>(appointments: Appointment[], idx: number, validate: () => Promise<T>): Promise<T> {
+  try {
+    return await validate();
+  } catch (err) {
+    // A serialization conflict isn't about any one of them, and is retried as it was thrown.
+    if (appointments.length === 1 || !(err instanceof OperationOutcomeError) || isRetryableTransactionError(err)) {
+      throw err;
+    }
+    const prefix = `Appointment ${idx + 1} of ${appointments.length} (${appointments[idx].start})`;
+    throw new OperationOutcomeError(
+      {
+        ...err.outcome,
+        issue: err.outcome.issue.map((issue) => ({
+          ...issue,
+          details: { ...issue.details, text: issue.details?.text ? `${prefix}: ${issue.details.text}` : prefix },
+        })),
+      },
+      { cause: err }
+    );
+  }
+}
+
 export async function createProposedAppointment(
   repo: Repository,
   proposedAppointment: WithPath<Appointment>,
@@ -1098,7 +1130,9 @@ export async function createProposedAppointments(
 ): Promise<Bundle<Appointment | Slot>> {
   const reader = readingEachOnce(repo);
   const validated = await Promise.all(
-    proposedAppointments.map((proposedAppointment) => validateProposedAppointment(reader, proposedAppointment))
+    proposedAppointments.map((proposedAppointment, idx) =>
+      aboutAppointment(proposedAppointments, idx, () => validateProposedAppointment(reader, proposedAppointment))
+    )
   );
 
   for (const [idx, [appointment, slots, , schedulingParametersGroup]] of validated.entries()) {
@@ -1131,7 +1165,9 @@ export async function createProposedAppointments(
       const results: (Appointment | Slot)[] = [];
       let originating: WithId<Appointment> | undefined;
       for (const [idx, [, slots, healthcareService, schedulingParametersGroup]] of validated.entries()) {
-        await validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup);
+        await aboutAppointment(proposedAppointments, idx, () =>
+          validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup)
+        );
         const createdSlots = new Array<WithId<Slot>>(slots.length);
         for (const [i, slot] of slots.entries()) {
           createdSlots[i] = await txRepo.createResource<Slot>(slot);

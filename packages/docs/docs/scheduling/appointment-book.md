@@ -312,6 +312,8 @@ Because these steps run inside a `SERIALIZABLE` transaction, two requests racing
 }
 ```
 
+When booking a [weekly series](#booking-a-weekly-series), an error about one occurrence names which, as in `Appointment 3 of 6 (2026-03-23T13:00:00.000Z): Requested time slot is not available`. Errors from a single booking are unprefixed.
+
 ### Mismatched Slot Times
 
 ```json

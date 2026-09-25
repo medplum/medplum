@@ -443,7 +443,9 @@ describe('Appointment/$book with a recurring series', () => {
 
     const response = await book(templated(first, weeklyTemplate(start, 3, 'America/New_York')));
     expect(response).toHaveStatus(400);
-    expect(response.body.issue[0].details.text).toBe('Requested time slot is not available');
+    expect(response.body.issue[0].details.text).toBe(
+      'Appointment 3 of 3 (2026-03-23T13:00:00.000Z): Requested time slot is not available'
+    );
 
     const appointments = await systemRepo.searchResources<Appointment>(
       parseSearchRequest(`Appointment?practitioner=${schedule.actor[0].reference}`)
@@ -451,5 +453,21 @@ describe('Appointment/$book with a recurring series', () => {
     expect(appointments).toHaveLength(0);
     const slots = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
     expect(slots).toHaveLength(1);
+  });
+
+  test('names the later occurrence an error is about, even with no blocking Slot to show it', async () => {
+    const schedule = await systemRepo.updateResource<Schedule>({
+      ...(await makeSchedule()),
+      // Ends before the 2nd occurrence.
+      planningHorizon: { end: '2026-03-15T00:00:00.000Z' },
+    });
+    const start = '2026-03-09T13:00:00.000Z';
+    const first = makeOccurrence(schedule, start, '2026-03-09T14:00:00.000Z');
+
+    const response = await book(templated(first, weeklyTemplate(start, 2, 'America/New_York')));
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toBe(
+      'Appointment 2 of 2 (2026-03-16T13:00:00.000Z): Appointment falls outside schedule planning horizon'
+    );
   });
 });
