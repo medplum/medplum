@@ -386,12 +386,13 @@ async function findAvailableSeries(params: {
   const parameters = [...context.parameterGroup.values()];
   const timezone = occurrenceCount > 1 ? seriesTimezone(parameters) : parameters[0].get('timezone');
 
-  // A series' first occurrences are capped loosely, since later weeks discard some of them.
+  // A series' first occurrences aren't capped, since later weeks can discard any of them. The
+  // range limit bounds how many there are, and later weeks' Slot queries don't grow with them.
   const candidates = computeAlignedIntervals({
     context,
     effectiveRange,
     slots: existingSlots,
-    maxCount: occurrenceCount > 1 ? DEFAULT_MAX_SEARCH_COUNT : pageSize,
+    maxCount: occurrenceCount > 1 ? Number.POSITIVE_INFINITY : pageSize,
   });
   if (candidates.length === 0) {
     return [];

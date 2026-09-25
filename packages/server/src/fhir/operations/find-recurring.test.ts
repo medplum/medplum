@@ -464,6 +464,54 @@ describe('Appointment/$find with occurrence-count', () => {
     expect(response.body.issue[0].details.text).toBe('Every schedule in a recurring series must share one timezone');
   });
 
+  test('considers every first occurrence in the range, however fine the grid', async () => {
+    // Weekdays 9am to 5pm on a 1-minute grid: 421 candidates a day, so over 1000 by Wednesday.
+    const schedule = await makeSchedule(
+      {
+        url: 'availability',
+        extension: [
+          {
+            url: 'availableTime',
+            extension: [
+              { url: 'daysOfWeek', valueCode: 'mon' },
+              { url: 'daysOfWeek', valueCode: 'tue' },
+              { url: 'daysOfWeek', valueCode: 'wed' },
+              { url: 'daysOfWeek', valueCode: 'thu' },
+              { url: 'daysOfWeek', valueCode: 'fri' },
+              { url: 'availableStartTime', valueTime: '09:00:00' },
+              { url: 'availableEndTime', valueTime: '17:00:00' },
+            ],
+          },
+        ],
+      },
+      { parameters: [{ url: 'alignmentInterval', valueDuration: { value: 1, unit: 'min' } }] }
+    );
+
+    // Week 2 is fully booked from Monday through Wednesday.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.id },
+      schedule: createReference(schedule),
+      status: 'busy',
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-19T00:00:00-04:00').toISOString(),
+    });
+
+    const response = await makeRequest({
+      start: new Date('2026-03-09T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: `Schedule/${schedule.id}`,
+      'occurrence-count': '2',
+      _count: '1',
+    });
+
+    expect(response).toHaveStatus(200);
+    expect(seriesIn(response).map((occurrences) => occurrences.map((a) => a.start))).toEqual([
+      ['2026-03-12T13:00:00.000Z', '2026-03-19T13:00:00.000Z'], // Thursday 9am
+    ]);
+  });
+
   test('drops a series whose wall-clock time falls in a DST gap', async () => {
     // Sundays 1am-6am on an hourly grid at a quarter past. DST begins at 2am on Sunday 2026-03-08,
     // so 2:15am doesn't exist that day. Its projection would shift to 3:15am EDT, which is on the
