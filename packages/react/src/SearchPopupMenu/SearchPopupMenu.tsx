@@ -5,10 +5,11 @@ import type { SearchRequest } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import {
   IconCalendar,
+  IconCheck,
   IconFilter2Plus,
-  IconFilter2X,
   IconSortAscending,
   IconSortDescending,
+  IconX,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment } from 'react';
@@ -37,6 +38,8 @@ type RelativeDateOption = {
   readonly label: string;
   readonly apply: (search: SearchRequest, code: string) => SearchRequest;
   readonly future?: boolean;
+  /** The end is "now" at the time it was picked, so only the start is compared. */
+  readonly openEnded?: boolean;
 };
 
 /** Relative date shortcuts for date columns, grouped by day, month and year. */
@@ -51,8 +54,30 @@ const RELATIVE_DATE_GROUPS: RelativeDateOption[][] = [
     { label: 'This Month', apply: addThisMonthFilter },
     { label: 'Last Month', apply: addLastMonthFilter },
   ],
-  [{ label: 'Year to date', apply: addYearToDateFilter }],
+  [{ label: 'Year to date', apply: addYearToDateFilter, openEnded: true }],
 ];
+
+const CHECK = <IconCheck size={16} color="var(--mantine-color-blue-6)" />;
+
+/**
+ * Returns true when the column's filters are exactly the start/end pair this relative date
+ * produces today.
+ * @param option - The relative date option.
+ * @param search - The current search.
+ * @param code - The column's search parameter code.
+ * @returns True if the option is the column's current filter.
+ */
+function isRelativeDateSelected(option: RelativeDateOption, search: SearchRequest, code: string): boolean {
+  const actual = (search.filters ?? []).filter((filter) => filter.code === code);
+  const expected = option.apply({ resourceType: search.resourceType }, code).filters ?? [];
+  if (actual.length !== expected.length) {
+    return false;
+  }
+  return expected.every((filter, i) => {
+    const matchesValue = option.openEnded && i > 0 ? true : actual[i].value === filter.value;
+    return actual[i].operator === filter.operator && matchesValue;
+  });
+}
 
 /** Date search parameters that can only hold past dates, so future shortcuts are hidden. */
 const PAST_ONLY_DATE_CODES = new Set(['_lastUpdated', 'death-date']);
@@ -104,6 +129,10 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
   const code = searchParam.code;
   const labels = getSortLabels(searchParam.type);
 
+  function isSortSelected(descending: boolean): boolean {
+    return !!props.search.sortRules?.some((rule) => rule.code === code && !!rule.descending === descending);
+  }
+
   function onSort(descending: boolean): void {
     const existing = props.search.sortRules ?? [];
     if (existing.length >= 2) {
@@ -118,23 +147,32 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
 
   return (
     <Menu.Dropdown className={classes.menuDropdown}>
-      <Menu.Item leftSection={<IconSortAscending size={14} />} onClick={() => onSort(false)}>
+      <Menu.Item
+        leftSection={<IconSortAscending size={14} />}
+        rightSection={isSortSelected(false) ? CHECK : null}
+        onClick={() => onSort(false)}
+      >
         {labels.asc}
       </Menu.Item>
-      <Menu.Item leftSection={<IconSortDescending size={14} />} onClick={() => onSort(true)}>
+      <Menu.Item
+        leftSection={<IconSortDescending size={14} />}
+        rightSection={isSortSelected(true) ? CHECK : null}
+        onClick={() => onSort(true)}
+      >
         {labels.desc}
       </Menu.Item>
       {searchParam.type === 'date' &&
         getRelativeDateGroups(code).map((group) => (
           <Fragment key={group[0].label}>
             <Menu.Divider />
-            {group.map(({ label, apply }) => (
+            {group.map((option) => (
               <Menu.Item
-                key={label}
+                key={option.label}
                 leftSection={<IconCalendar size={14} />}
-                onClick={() => props.onChange(apply(props.search, code))}
+                rightSection={isRelativeDateSelected(option, props.search, code) ? CHECK : null}
+                onClick={() => props.onChange(option.apply(props.search, code))}
               >
-                {label}
+                {option.label}
               </Menu.Item>
             ))}
           </Fragment>
@@ -151,7 +189,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
         <>
           <Menu.Divider />
           <Menu.Item
-            leftSection={<IconFilter2X size={14} />}
+            leftSection={<IconX size={14} color="var(--mantine-color-dimmed)" />}
             onClick={() => props.onChange(clearFiltersOnField(props.search, code))}
           >
             Clear all column filters

@@ -6,6 +6,7 @@ import { globalSchema, Operator } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { addThisMonthFilter, addYearToDateFilter } from '../SearchControl/SearchUtils';
 import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
 import type { SearchPopupMenuProps } from './SearchPopupMenu';
 import { SearchPopupMenu } from './SearchPopupMenu';
@@ -156,6 +157,45 @@ describe('SearchPopupMenu', () => {
       fireEvent.click(await screen.findByText('Clear all column filters'));
     });
     expect(currSearch.filters).toEqual([{ code: 'gender', operator: Operator.EQUALS, value: 'male' }]);
+  });
+
+  function hasCheck(label: string): boolean {
+    const item = screen.getByText(label).closest('[role=menuitem]') as HTMLElement;
+    return !!item.querySelector('.tabler-icon-check');
+  }
+
+  test('The active sort direction shows a check', async () => {
+    await setup({
+      search: { resourceType: 'Patient', sortRules: [{ code: 'name', descending: true }] },
+      searchParams: [param('Patient', 'name')],
+    });
+    await screen.findByText('Sort A to Z');
+    expect(hasCheck('Sort Z to A')).toBe(true);
+    expect(hasCheck('Sort A to Z')).toBe(false);
+  });
+
+  test('The active relative date shows a check', async () => {
+    const search = addThisMonthFilter({ resourceType: 'Patient' }, 'birthdate');
+    await setup({ search, searchParams: [param('Patient', 'birthdate')] });
+    await screen.findByText('This Month');
+    expect(hasCheck('This Month')).toBe(true);
+    expect(hasCheck('Today')).toBe(false);
+    expect(hasCheck('Last Month')).toBe(false);
+  });
+
+  test('Year to date shows a check even though its end time has moved on', async () => {
+    const search = addYearToDateFilter({ resourceType: 'Patient' }, 'birthdate');
+    const filters = search.filters ?? [];
+    filters[1] = { ...filters[1], value: new Date(Date.now() - 60_000).toISOString() };
+    await setup({ search: { ...search, filters }, searchParams: [param('Patient', 'birthdate')] });
+    await screen.findByText('Year to date');
+    expect(hasCheck('Year to date')).toBe(true);
+  });
+
+  test('"Clear all column filters" uses the X icon', async () => {
+    await setup({ search: nameAndGenderFilters, searchParams: [param('Patient', 'name')] });
+    const item = (await screen.findByText('Clear all column filters')).closest('[role=menuitem]') as HTMLElement;
+    expect(item.querySelector('.tabler-icon-x')).toBeTruthy();
   });
 
   test('Non-date columns have no relative dates', async () => {
