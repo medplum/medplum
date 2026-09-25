@@ -9,6 +9,7 @@ import {
 } from '@medplum/core';
 import type { Bundle, HealthcareService, Location, Practitioner, Resource, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import type { ReactNode } from 'react';
 import { describe, expect, test, vi } from 'vitest';
 import { setScheduleAvailability } from '../../availability';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
@@ -138,9 +139,8 @@ function storedSchedule(onStored: Setup['onStored']): WithId<Schedule> {
 }
 
 async function openOfferMenu(): Promise<void> {
-  const button = await screen.findByRole('button', { name: 'Offer a visit type' });
-  await waitFor(() => expect(button).not.toHaveAttribute('data-loading'));
-  await userEvent.click(button);
+  await userEvent.click(await screen.findByRole('button', { name: 'Offer a visit type' }));
+  await waitFor(() => expect(screen.queryByLabelText('Checking service facilities')).not.toBeInTheDocument());
 }
 
 describe('ActorPage', () => {
@@ -321,6 +321,27 @@ describe('ActorPage', () => {
     expect(held).toHaveTextContent("Cystoscopy isn't held at Downtown Clinic");
   });
 
+  test('the offer button is ready at once, and only visit types held somewhere wait on where the actor is', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
+    for (const resource of [downtown, northside, ...services, drSmith]) {
+      await medplum.createResource(resource);
+    }
+    vi.spyOn(medplum, 'searchResources').mockReturnValue(new Promise(() => {}) as never);
+    renderWithMedplum(
+      <ActorPage actor={{ resource: drSmith, schedules: [] }} services={services} onStored={vi.fn()} />,
+      medplum
+    );
+
+    const button = screen.getByRole('button', { name: 'Offer a visit type' });
+    expect(button).not.toHaveAttribute('data-loading');
+    await userEvent.click(button);
+
+    expect(screen.getByRole('menuitem', { name: /Initial Visit/ })).toBeEnabled();
+    const held = screen.getByRole('menuitem', { name: /Cystoscopy/ });
+    expect(held).toBeDisabled();
+    expect(within(held).getByLabelText('Checking service facilities')).toBeInTheDocument();
+  });
+
   test('a provider with no service facilities can be offered every active visit type', async () => {
     await setup(drSmith);
 
@@ -332,6 +353,43 @@ describe('ActorPage', () => {
 
   test("an offered visit type the room's service facility doesn't hold is marked as not bookable", async () => {
     await setup(room3, [calendar('Location/room-3', [cystoscopy])]);
+
+    await waitFor(() => expect(entry('Cystoscopy')).toHaveTextContent("Can't be booked"));
+    expect(
+      within(panel('Cystoscopy')).getByText("Can't be booked here: Cystoscopy isn't held at Downtown Clinic.")
+    ).toBeVisible();
+  });
+
+  test('moving a room away from where an offered visit type is held marks it as not bookable, and keeps it offered', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
+    for (const resource of [downtown, northside, ...services]) {
+      await medplum.createResource(resource);
+    }
+    const atNorthside = await medplum.createResource<Location>({
+      ...room3,
+      partOf: { reference: 'Location/northside' },
+    });
+    const schedule = await medplum.createResource(calendar('Location/room-3', [cystoscopy]));
+    const heldDowntown: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      id: 'ultrasound',
+      name: 'Ultrasound',
+      location: [{ reference: 'Location/downtown' }],
+    };
+    const page = (resource: WithId<Location>): ReactNode => (
+      <ActorPage
+        actor={{ resource, schedules: [schedule] }}
+        services={[...services, heldDowntown]}
+        onStored={vi.fn()}
+      />
+    );
+    const { rerender } = renderWithMedplum(page(atNorthside), medplum);
+    await openOfferMenu();
+    expect(screen.getByRole('menuitem', { name: /Ultrasound/ })).toHaveTextContent("isn't held at Northside");
+    await userEvent.keyboard('{Escape}');
+    expect(entry('Cystoscopy')).not.toHaveTextContent("Can't be booked");
+
+    rerender(page({ ...atNorthside, partOf: { reference: 'Location/downtown' } }));
 
     await waitFor(() => expect(entry('Cystoscopy')).toHaveTextContent("Can't be booked"));
     expect(

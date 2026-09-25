@@ -305,10 +305,10 @@ describe('SchedulingConfigWorkspace', () => {
     await setup();
     await userEvent.click(row('Exam Room C'));
 
-    const offer = within(details()).getByRole('button', { name: 'Offer a visit type' });
-    await waitFor(() => expect(offer).not.toHaveAttribute('data-loading'));
-    await userEvent.click(offer);
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Telehealth Consult' }));
+    await userEvent.click(within(details()).getByRole('button', { name: 'Offer a visit type' }));
+    const telehealth = screen.getByRole('menuitem', { name: 'Telehealth Consult' });
+    await waitFor(() => expect(telehealth).toBeEnabled());
+    await userEvent.click(telehealth);
     await userEvent.click(saveButton());
 
     await waitFor(() =>

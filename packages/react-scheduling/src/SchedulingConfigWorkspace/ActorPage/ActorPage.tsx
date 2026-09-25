@@ -6,6 +6,7 @@ import {
   Badge,
   Button,
   Group,
+  Loader,
   Menu,
   Modal,
   SimpleGrid,
@@ -312,7 +313,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
         <OfferMenu
           services={offerable}
-          loading={!facilities}
+          // A visit type held everywhere can be offered before the actor's facilities are known.
+          checking={(service) => !facilities && (service.location?.length ?? 0) > 0}
           disabledReason={(service) => notBookableReason(service)}
           onOffer={offer}
         />
@@ -380,15 +382,15 @@ function ReadOnlyField(props: { readonly label: string; readonly value: string }
 interface OfferMenuProps {
   /** The active visit types the calendar doesn't offer yet. */
   readonly services: readonly WithId<HealthcareService>[];
-  /** Still working out which of them can be booked with the actor. */
-  readonly loading: boolean;
+  /** Whether it's still being worked out if a visit type can be booked with the actor. */
+  readonly checking: (service: WithId<HealthcareService>) => boolean;
   /** Why a visit type can't be offered, for one that shares no service facility with the actor. */
   readonly disabledReason: (service: WithId<HealthcareService>) => string | undefined;
   readonly onOffer: (service: WithId<HealthcareService>) => void;
 }
 
 function OfferMenu(props: OfferMenuProps): JSX.Element {
-  const { services, loading, disabledReason, onOffer } = props;
+  const { services, checking, disabledReason, onOffer } = props;
   if (services.length === 0) {
     return (
       <Text size="sm" c="dimmed">
@@ -400,15 +402,21 @@ function OfferMenu(props: OfferMenuProps): JSX.Element {
     <Group>
       <Menu position="bottom-start" withinPortal>
         <Menu.Target>
-          <Button variant="light" rightSection={<IconChevronDown size={16} />} loading={loading}>
+          <Button variant="light" rightSection={<IconChevronDown size={16} />}>
             Offer a visit type
           </Button>
         </Menu.Target>
         <Menu.Dropdown>
           {services.map((service) => {
-            const reason = disabledReason(service);
+            const pending = checking(service);
+            const reason = pending ? undefined : disabledReason(service);
             return (
-              <Menu.Item key={service.id} disabled={!!reason} onClick={() => onOffer(service)}>
+              <Menu.Item
+                key={service.id}
+                disabled={pending || !!reason}
+                rightSection={pending && <Loader size={12} aria-label="Checking service facilities" />}
+                onClick={() => onOffer(service)}
+              >
                 <Text size="sm">{service.name ?? 'Untitled visit type'}</Text>
                 {reason && (
                   <Text size="xs" c="dimmed">
