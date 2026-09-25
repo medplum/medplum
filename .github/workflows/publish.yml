@@ -23,9 +23,12 @@ jobs:
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
     permissions:
-      contents: write # Required to upload release assets
-      id-token: write
-      pull-requests: write
+      # Only GITHUB_TOKEN use in this job is `gh release view` (a read). The
+      # example-repo sync pushes with SYNC_REPO_TOKEN, and releases are created
+      # by scripts/prepare-release.sh, not here. The agent build jobs below
+      # keep contents: write because they do upload release assets.
+      contents: read
+      id-token: write # npm publish --provenance + AWS OIDC
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

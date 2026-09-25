@@ -4,6 +4,11 @@ on:
 
 name: "Vouch - Check PR"
 
+# Deny by default. Job-level permissions replace this rather than merging with
+# it, so each job below grants exactly what it needs and anything added later
+# starts from nothing.
+permissions: {}
+
 jobs:
   check:
     permissions:
