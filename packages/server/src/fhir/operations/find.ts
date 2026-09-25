@@ -36,7 +36,7 @@ import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
 import { bufferTimeConflicts, findAlignedSlotTimes, overlappingIntervals } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { projectWeeksForward, seriesTimezone } from './utils/recurrence';
+import { seriesTimezone, weekProjector } from './utils/recurrence';
 import {
   applyExistingSlots,
   assertAllLoaded,
@@ -308,12 +308,9 @@ const DST_SLACK_MINUTES = 60;
 function projectedWeekWindow(
   context: SchedulingContext,
   candidates: Interval[],
-  weeksForward: number,
-  timezone: string
+  project: (anchor: Date) => Date | undefined
 ): Interval | undefined {
-  const projections = candidates
-    .map((candidate) => projectWeeksForward(candidate.start, weeksForward, timezone))
-    .filter(isDefined);
+  const projections = candidates.map((candidate) => project(candidate.start)).filter(isDefined);
   const first = earliest(projections);
   const last = latest(projections);
   if (!first || !last) {
@@ -412,7 +409,7 @@ async function findAvailableSeries(params: {
   );
   const laterWeeks: Interval[] = [];
   for (let weeksForward = 1; weeksForward < occurrenceCount; weeksForward++) {
-    const window = projectedWeekWindow(context, candidates, weeksForward, timezone);
+    const window = projectedWeekWindow(context, candidates, weekProjector(weeksForward, timezone));
     if (!window || (horizonEnd && window.start > horizonEnd)) {
       return [];
     }
@@ -435,14 +432,15 @@ async function findAvailableSeries(params: {
       slots: laterWeekSlots[idx],
     });
 
-    const weeksForward = idx + 1;
+    const project = weekProjector(idx + 1, timezone);
     series = series
       .map((occurrences) => {
         // Always projected from the first occurrence, so a series stays anchored to one
-        // wall-clock time instead of drifting across DST transitions. That time can fall off a
-        // grid kept in another timezone, where `$book` would refuse it.
-        const start = projectWeeksForward(occurrences[0].start, weeksForward, timezone);
-        if (!start || !isAlignedToGrid(start, alignment)) {
+        // wall-clock time instead of drifting across DST transitions. That time stays on a grid
+        // kept in the same timezone, but can fall off one kept in another, where `$book` would
+        // refuse it.
+        const start = project(occurrences[0].start);
+        if (!start || (alignmentTimezone !== timezone && !isAlignedToGrid(start, alignment))) {
           return undefined;
         }
         const occurrence = { start, end: addMinutes(start, duration) };

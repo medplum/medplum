@@ -31,6 +31,44 @@ export function projectWeeksForward(anchor: Date, weeksForward: number, timezone
   return new Date(projected.epochMilliseconds);
 }
 
+const DAY_MILLISECONDS = 24 * 60 * 60 * 1000;
+
+/**
+ * Like `projectWeeksForward`, but cheap for many anchors in chronological order. A local day with
+ * no DST transition, projected onto another, keeps every wall-clock time at one fixed shift, so the
+ * shift is found once per day rather than once per anchor. Days that don't run 24 hours from
+ * midnight, at either end, fall back to `projectWeeksForward`.
+ *
+ * @param weeksForward - How many weeks forward to project.
+ * @param timezone - The IANA timezone whose wall-clock time is kept.
+ * @returns A function projecting one anchor, as `projectWeeksForward` would.
+ */
+export function weekProjector(weeksForward: number, timezone: string): (anchor: Date) => Date | undefined {
+  let day: { start: number; end: number; shift: number | undefined } | undefined;
+  return (anchor) => {
+    const instant = anchor.valueOf();
+    if (!day || instant < day.start || instant >= day.end) {
+      const start = Temporal.Instant.fromEpochMilliseconds(instant).toZonedDateTimeISO(timezone).startOfDay();
+      const end = start.add({ days: 1 }).startOfDay();
+      const projected = start.add({ days: 7 * weeksForward });
+      const wholeDays = [start, projected].every(
+        (dayStart) =>
+          dayStart.hour === 0 &&
+          dayStart.minute === 0 &&
+          dayStart.add({ days: 1 }).startOfDay().epochMilliseconds - dayStart.epochMilliseconds === DAY_MILLISECONDS
+      );
+      day = {
+        start: start.epochMilliseconds,
+        end: end.epochMilliseconds,
+        shift: wholeDays ? projected.epochMilliseconds - start.epochMilliseconds : undefined,
+      };
+    }
+    return day.shift === undefined
+      ? projectWeeksForward(anchor, weeksForward, timezone)
+      : new Date(instant + day.shift);
+  };
+}
+
 /**
  * The timezone a weekly series keeps its local time in: the one its schedules' availability is
  * defined in, which every schedule must share.
