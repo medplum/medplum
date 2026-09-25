@@ -561,7 +561,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   iconSize={iconSize}
                 />
                 {lastResult && (
-                  <Text className={classes.mutedText} size="xs" ml={4} data-testid="count-display">
+                  <Text size="xs" fw={500} c="dimmed" ml={4} data-testid="count-display">
                     {getStart(memoizedSearch, lastResult).toLocaleString()}-
                     {getEnd(memoizedSearch, lastResult).toLocaleString()}
                     {lastResult.total !== undefined &&
