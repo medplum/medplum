@@ -351,19 +351,13 @@
         "compose": {
           "include": [
             {
-              "valueSet": [
-                "https://www.medplum.com/fhir/ValueSet/access-oap-initial-codes"
-              ]
+              "valueSet": ["https://www.medplum.com/fhir/ValueSet/access-oap-initial-codes"]
             },
             {
-              "valueSet": [
-                "https://www.medplum.com/fhir/ValueSet/access-oap-followon-codes"
-              ]
+              "valueSet": ["https://www.medplum.com/fhir/ValueSet/access-oap-followon-codes"]
             },
             {
-              "valueSet": [
-                "https://www.medplum.com/fhir/ValueSet/access-cmp-codes"
-              ]
+              "valueSet": ["https://www.medplum.com/fhir/ValueSet/access-cmp-codes"]
             }
           ]
         }
@@ -2023,9 +2017,7 @@
         "status": "active",
         "experimental": false,
         "publisher": "Medplum",
-        "subjectType": [
-          "Patient"
-        ],
+        "subjectType": ["Patient"],
         "description": "Monthly outcome capture for the Early cardio-kidney-metabolic track. Outcome performance across a Participant's panel determines the variable 20 percent of the Outcome-Aligned Payment. Confirm the measures and targets against the CMS OAP billing guidelines for your performance year.",
         "useContext": [
           {
@@ -2201,9 +2193,7 @@
         "status": "active",
         "experimental": false,
         "publisher": "Medplum",
-        "subjectType": [
-          "Patient"
-        ],
+        "subjectType": ["Patient"],
         "description": "Monthly outcome capture for the Cardio-kidney-metabolic track. Outcome performance across a Participant's panel determines the variable 20 percent of the Outcome-Aligned Payment. Confirm the measures and targets against the CMS OAP billing guidelines for your performance year.",
         "useContext": [
           {
@@ -2379,9 +2369,7 @@
         "status": "active",
         "experimental": false,
         "publisher": "Medplum",
-        "subjectType": [
-          "Patient"
-        ],
+        "subjectType": ["Patient"],
         "description": "Monthly outcome capture for the Musculoskeletal track. Outcome performance across a Participant's panel determines the variable 20 percent of the Outcome-Aligned Payment. Confirm the measures and targets against the CMS OAP billing guidelines for your performance year.",
         "useContext": [
           {
@@ -2453,9 +2441,7 @@
         "status": "active",
         "experimental": false,
         "publisher": "Medplum",
-        "subjectType": [
-          "Patient"
-        ],
+        "subjectType": ["Patient"],
         "description": "Monthly outcome capture for the Behavioral health track. Outcome performance across a Participant's panel determines the variable 20 percent of the Outcome-Aligned Payment. Confirm the measures and targets against the CMS OAP billing guidelines for your performance year.",
         "useContext": [
           {
@@ -2978,10 +2964,7 @@
         ],
         "active": true,
         "name": "Centers for Medicare & Medicaid Services",
-        "alias": [
-          "CMS",
-          "Medicare"
-        ],
+        "alias": ["CMS", "Medicare"],
         "type": [
           {
             "coding": [
