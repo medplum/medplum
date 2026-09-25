@@ -153,7 +153,11 @@ export class Storage extends Construct {
       );
 
       if (config.guardDutyMalwareProtectionEnabled) {
-        addGuardDutyMalwareProtectionReadGate(this.storageBucket, [this.originAccessIdentity.grantPrincipal]);
+        addGuardDutyMalwareProtectionReadGate(
+          this.storageBucket,
+          [this.originAccessIdentity.grantPrincipal],
+          config.guardDutyMalwareProtectionOnDemandOnly
+        );
       }
 
       // CloudFront distribution

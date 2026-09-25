@@ -8,6 +8,8 @@ import { resolve } from 'path';
 import { normalizeInfraConfig } from './config';
 import { main, MedplumStack } from './index';
 
+const scanStatusTag = 's3:ExistingObjectTag/GuardDutyMalwareScanStatus';
+
 async function writeConfig(filename: string, config: any): Promise<string> {
   const resolvedPath = resolve(filename);
   await writeFile(resolvedPath, JSON.stringify(config, null, 2), { encoding: 'utf-8' });
@@ -623,21 +625,30 @@ describe('Infra', () => {
   });
 
   test.each([
-    [true, ['guardduty-on-demand-only/']],
-    [false, Match.absent()],
-  ])('GuardDuty on-demand only (%s) sets the plan object prefixes', async (onDemandOnly, objectPrefixes) => {
-    const config = await normalizeInfraConfig({
-      ...baseConfig,
-      stackName: `MedplumGuardDutyOnDemandOnly${onDemandOnly}Stack`,
-      guardDutyMalwareProtectionEnabled: true,
-      guardDutyMalwareProtectionOnDemandOnly: onDemandOnly,
-    } as unknown as MedplumSourceInfraConfig);
-    const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
+    [true, ['guardduty-on-demand-only/'], { StringEquals: { [scanStatusTag]: 'THREATS_FOUND' } }],
+    [false, Match.absent(), { StringNotEquals: { [scanStatusTag]: 'NO_THREATS_FOUND' } }],
+  ])(
+    'GuardDuty on-demand only (%s) sets the plan prefixes and read gate',
+    async (onDemandOnly, prefixes, condition) => {
+      const config = await normalizeInfraConfig({
+        ...baseConfig,
+        stackName: `MedplumGuardDutyOnDemandOnly${onDemandOnly}Stack`,
+        guardDutyMalwareProtectionEnabled: true,
+        guardDutyMalwareProtectionOnDemandOnly: onDemandOnly,
+      } as unknown as MedplumSourceInfraConfig);
+      const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
 
-    template.hasResourceProperties('AWS::GuardDuty::MalwareProtectionPlan', {
-      ProtectedResource: { S3Bucket: Match.objectLike({ ObjectPrefixes: objectPrefixes }) },
-    });
-  });
+      template.hasResourceProperties('AWS::GuardDuty::MalwareProtectionPlan', {
+        ProtectedResource: { S3Bucket: Match.objectLike({ ObjectPrefixes: prefixes }) },
+      });
+      const readGates = Object.values(template.findResources('AWS::S3::BucketPolicy')).flatMap((policy) =>
+        (policy.Properties.PolicyDocument.Statement as { Action: unknown; Condition?: unknown }[]).filter(
+          (s) => JSON.stringify(s.Action) === JSON.stringify(['s3:GetObject', 's3:GetObjectVersion'])
+        )
+      );
+      expect(readGates.map((s) => s.Condition)).toStrictEqual([condition]);
+    }
+  );
 
   test('No on-demand scan permissions without GuardDuty', async () => {
     const config = await normalizeInfraConfig({

@@ -71,14 +71,28 @@ POST /fhir/R4/Binary/[id]/$scan
 - The storage bucket needs a GuardDuty Malware Protection plan with tagging enabled. The
   `guardDutyMalwareProtectionEnabled` infra config option creates one. It also grants the server
   `s3:GetObjectTagging`, `s3:PutObjectTagging` and `guardduty:SendObjectMalwareScan`.
-- To turn off automatic scanning of new uploads, also set `guardDutyMalwareProtectionOnDemandOnly`. GuardDuty has no
-  on-demand-only mode, so this limits automatic scanning to the `guardduty-on-demand-only/` prefix, which Medplum never
-  writes to. On-demand scans ignore the prefix.
 - SSE-C encryption (`sseCustomerKey`) is not supported, because GuardDuty cannot read SSE-C objects.
+
+## Serving scanned Binaries
+
+GuardDuty Malware Protection supports two setups:
+
+- **Scan every upload** (`guardDutyMalwareProtectionEnabled`): GuardDuty scans each new object, and CloudFront only
+  serves Binaries tagged `NO_THREATS_FOUND`. Binaries that haven't been scanned yet, or that returned any other result,
+  are not served.
+- **Scan on demand** (`guardDutyMalwareProtectionEnabled` and `guardDutyMalwareProtectionOnDemandOnly`): for
+  deployments with many existing, unscanned Binaries. Only `$scan` sends scans, and CloudFront blocks only Binaries
+  tagged `THREATS_FOUND`. Unscanned Binaries and Binaries with a scan in progress are still served. GuardDuty has no
+  on-demand-only mode, so this setup limits automatic scanning to the `guardduty-on-demand-only/` prefix, which Medplum
+  never writes to. On-demand scans ignore the prefix.
+
+When the storage bucket and CloudFront distribution are in different regions, apply the read gate with
+`medplum aws update-bucket-policies`. Pass `--guardduty-malware-protection`, and add `--guardduty-on-demand-only` for
+on-demand scanning.
 
 :::note
 
-With Malware Protection enabled, CloudFront only serves Binaries tagged `NO_THREATS_FOUND`. With automatic scanning
-turned off, a new upload is not served until `$scan` reports `NO_THREATS_FOUND`.
+The gate only applies when CloudFront reads from the bucket. CloudFront can cache a Binary for up to a day, so a Binary
+served before GuardDuty tags it `THREATS_FOUND` may stay available from the cache until that entry expires.
 
 :::
