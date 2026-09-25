@@ -305,14 +305,9 @@ const DST_SLACK_MINUTES = 60;
 
 // The time the candidates' projections, `weeksForward` weeks out, occupy with their buffers. Any
 // narrower, and availability clipped at its edge would reject a projection the first week accepted.
-function projectedWeekWindow(
-  context: SchedulingContext,
-  candidates: Interval[],
-  project: (anchor: Date) => Date | undefined
-): Interval | undefined {
-  const projections = candidates.map((candidate) => project(candidate.start)).filter(isDefined);
-  const first = earliest(projections);
-  const last = latest(projections);
+function projectedWeekWindow(context: SchedulingContext, projections: (Date | undefined)[]): Interval | undefined {
+  const first = earliest(projections.filter(isDefined));
+  const last = latest(projections.filter(isDefined));
   if (!first || !last) {
     return undefined;
   }
@@ -407,57 +402,61 @@ async function findAvailableSeries(params: {
       .filter(isDefined)
       .map((end) => new Date(end))
   );
-  const laterWeeks: Interval[] = [];
+  const laterWeeks: { projections: (Date | undefined)[]; range: Interval }[] = [];
   for (let weeksForward = 1; weeksForward < occurrenceCount; weeksForward++) {
-    const window = projectedWeekWindow(context, candidates, weekProjector(weeksForward, timezone));
+    // Each candidate's start that week, if any. Always projected from the first occurrence, so a
+    // series stays anchored to one wall-clock time instead of drifting across DST transitions.
+    // That time stays on a grid kept in the same timezone, but can fall off one kept in another,
+    // where `$book` would refuse it.
+    const project = weekProjector(weeksForward, timezone);
+    const projections = candidates.map((candidate) => {
+      const start = project(candidate.start);
+      return start && (alignmentTimezone === timezone || isAlignedToGrid(start, alignment)) ? start : undefined;
+    });
+    const window = projectedWeekWindow(context, projections);
     if (!window || (horizonEnd && window.start > horizonEnd)) {
       return [];
     }
     const end = horizonEnd && horizonEnd < window.end ? horizonEnd : window.end;
-    laterWeeks.push({ start: window.start, end });
+    laterWeeks.push({ projections, range: { start: window.start, end } });
   }
 
   const laterWeekSlots = await Promise.all(
-    laterWeeks.map(async (effectiveRange) => slotsOverlappingInterval(ctx.repo, params.schedules, effectiveRange))
+    laterWeeks.map(async ({ range }) => slotsOverlappingInterval(ctx.repo, params.schedules, range))
   );
+  const laterWeekChecks = laterWeeks.map(({ projections, range }, idx) => ({
+    projections,
+    ...computeAvailability({ context, effectiveRange: range, slots: laterWeekSlots[idx] }),
+  }));
 
-  // Use each candidate as the first entry of a weekly series. For each following week, we either
-  // add an available recurrence, or we drop the series.
-  let series = candidates.map((candidate) => [candidate]);
-
-  for (const [idx, effectiveRange] of laterWeeks.entries()) {
-    const { availability, hasBufferConflict } = computeAvailability({
-      context,
-      effectiveRange,
-      slots: laterWeekSlots[idx],
-    });
-
-    const project = weekProjector(idx + 1, timezone);
-    series = series
-      .map((occurrences) => {
-        // Always projected from the first occurrence, so a series stays anchored to one
-        // wall-clock time instead of drifting across DST transitions. That time stays on a grid
-        // kept in the same timezone, but can fall off one kept in another, where `$book` would
-        // refuse it.
-        const start = project(occurrences[0].start);
-        if (!start || (alignmentTimezone !== timezone && !isAlignedToGrid(start, alignment))) {
-          return undefined;
-        }
-        const occurrence = { start, end: addMinutes(start, duration) };
-        const bookable =
-          availability.some((interval) => interval.start <= start && occurrence.end <= interval.end) &&
-          !hasBufferConflict(occurrence);
-        return bookable ? [...occurrences, occurrence] : undefined;
-      })
-      .filter(isDefined);
-
-    if (series.length === 0) {
-      return [];
+  // Each candidate is taken through every later week before the next, so the search stops once it
+  // has `pageSize` series. Candidates are in chronological order, so these are the earliest.
+  const series: Interval[][] = [];
+  for (const [idx, candidate] of candidates.entries()) {
+    const occurrences = [candidate];
+    for (const { projections, availability, hasBufferConflict } of laterWeekChecks) {
+      const start = projections[idx];
+      if (!start) {
+        break;
+      }
+      const occurrence = { start, end: addMinutes(start, duration) };
+      const bookable =
+        availability.some((interval) => interval.start <= start && occurrence.end <= interval.end) &&
+        !hasBufferConflict(occurrence);
+      if (!bookable) {
+        break;
+      }
+      occurrences.push(occurrence);
+    }
+    if (occurrences.length === occurrenceCount) {
+      series.push(occurrences);
+      if (series.length === pageSize) {
+        break;
+      }
     }
   }
 
-  // Still in chronological order, so these are the earliest offers.
-  return series.slice(0, pageSize).map((occurrences) => buildAppointments(context, occurrences));
+  return series.map((occurrences) => buildAppointments(context, occurrences));
 }
 
 /**
