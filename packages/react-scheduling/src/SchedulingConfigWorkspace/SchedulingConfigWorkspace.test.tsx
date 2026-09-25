@@ -25,6 +25,23 @@ function row(label: string): HTMLElement {
   return within(sidebar()).getByText(label).closest('button') as HTMLElement;
 }
 
+function section(title: string): HTMLElement {
+  return within(sidebar()).getByText(title, { selector: 'p' }).closest('.mantine-Stack-root') as HTMLElement;
+}
+
+function sectionCount(title: string): string | null {
+  return within(section(title)).getByTestId('section-count').textContent;
+}
+
+async function showInactive(): Promise<void> {
+  await userEvent.click(within(sidebar()).getByRole('button', { name: 'Filters' }));
+  await userEvent.click(screen.getByLabelText('Show inactive'));
+}
+
+function entry(name: string): HTMLElement {
+  return within(details()).getByRole('button', { name: new RegExp(`^${name}`) });
+}
+
 function details(): HTMLElement {
   return screen.getByRole('region', { name: 'Configuration details' });
 }
@@ -55,7 +72,7 @@ describe('SchedulingConfigWorkspace', () => {
   test('nothing is selected until something is picked, and the empty pane offers to start one', async () => {
     await setup();
 
-    expect(within(details()).getByText('No visit type selected')).toBeInTheDocument();
+    expect(within(details()).getByText('Nothing selected')).toBeInTheDocument();
     expect(
       within(sidebar())
         .queryAllByRole('button')
@@ -187,6 +204,184 @@ describe('SchedulingConfigWorkspace', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(nameField()).toHaveValue('Ultrasound Imaging');
+  });
+
+  test('lists each provider, room, and device once, whether or not it has a calendar, and no calendar as a row', async () => {
+    await setup();
+
+    expect(within(section('Providers')).getAllByText('Dr. Maya Rivera')).toHaveLength(1);
+    expect(within(section('Providers')).getAllByText('Dr. Anika Patel')).toHaveLength(1);
+    expect(within(section('Devices')).getByText('Ultrasound 1 (Main Campus)')).toBeInTheDocument();
+    expect(within(section('Rooms')).getByText('Exam Room C')).toBeInTheDocument();
+    expect(within(sidebar()).queryByText(/availability$/)).not.toBeInTheDocument();
+  });
+
+  test('rooms are the Locations typed as rooms and the ones booked as rooms, and never a service facility', async () => {
+    await setup();
+
+    expect(within(section('Rooms')).getByText('Exam Room A Bed 1')).toBeInTheDocument();
+    expect(row('Procedure Room')).toHaveTextContent('Not marked as a room');
+    expect(row('Exam Room A')).not.toHaveTextContent('Not marked as a room');
+    expect(within(sidebar()).queryByText('Uro Associates - Main Clinic')).not.toBeInTheDocument();
+    expect(within(sidebar()).queryByText('Second Floor')).not.toBeInTheDocument();
+  });
+
+  test('a calendar held by two actors is counted rather than listed', async () => {
+    await setup();
+
+    expect(within(sidebar()).getByText(/1 calendar is not listed because it can’t be booked/)).toBeInTheDocument();
+  });
+
+  test('offers to create visit types, and never providers', async () => {
+    await setup();
+
+    expect(within(section('Visit types')).getByRole('button', { name: 'New visit type' })).toBeInTheDocument();
+    expect(within(section('Providers')).queryByRole('button', { name: /^New/ })).not.toBeInTheDocument();
+  });
+
+  test('the text filter narrows every section, and the counts follow it', async () => {
+    await setup();
+    const providers = Number(sectionCount('Providers')?.replace(/\D/g, ''));
+    expect(providers).toBeGreaterThan(3);
+
+    await userEvent.type(within(sidebar()).getByRole('textbox', { name: 'Filter' }), 'NGUYEN');
+
+    expect(sectionCount('Providers')).toBe('1 listed');
+    expect(row('Dr. Linh Nguyen')).toBeInTheDocument();
+    expect(within(section('Rooms')).getByText('No matching rooms')).toBeInTheDocument();
+    expect(within(section('Devices')).getByText('No matching devices')).toBeInTheDocument();
+  });
+
+  test('collapsing a section hides its rows but keeps its header and count, and leaves the others', async () => {
+    await setup();
+    const count = sectionCount('Providers');
+
+    await userEvent.click(within(sidebar()).getByRole('button', { name: 'Hide providers' }));
+
+    await waitFor(() => expect(within(section('Providers')).getByText('Dr. Maya Rivera')).not.toBeVisible());
+    expect(sectionCount('Providers')).toBe(count);
+    expect(within(section('Rooms')).getByText('Exam Room A')).toBeVisible();
+  });
+
+  test('hides inactive providers and devices until asked, then marks them', async () => {
+    await setup();
+
+    expect(within(sidebar()).queryByText('Ultrasound 3 (Retired)')).not.toBeInTheDocument();
+    expect(within(sidebar()).queryByText('Dr. Hana Lee')).not.toBeInTheDocument();
+
+    await showInactive();
+
+    expect(row('Ultrasound 3 (Retired)')).toHaveTextContent('Inactive');
+    expect(row('Dr. Hana Lee')).toHaveTextContent('Inactive');
+  });
+
+  test('marks what still needs finishing: no time zone, and a calendar not accepting appointments', async () => {
+    await setup();
+    await showInactive();
+
+    expect(row('Dr. Anika Patel')).toHaveTextContent('No time zone');
+    expect(row('Ultrasound 3 (Retired)')).toHaveTextContent('Not accepting appointments');
+    // An actor with no calendar, or whose calendar resolves a time zone, needs nothing.
+    expect(row('Exam Room C')).not.toHaveTextContent(/No time zone|Not accepting/);
+    expect(row('Dr. Linh Nguyen')).not.toHaveTextContent(/No time zone|Not accepting/);
+  });
+
+  test('a saved calendar replaces the one listed, so its row and page follow at once', async () => {
+    const medplum = await setup();
+    const search = vi.spyOn(medplum, 'searchResourcePages');
+    await userEvent.click(row('Dr. Maya Rivera'));
+
+    await userEvent.click(within(details()).getByRole('switch', { name: 'Accepting appointments' }));
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Dr. Maya Rivera')).toHaveTextContent('Not accepting appointments'));
+    expect(row('Dr. Maya Rivera')).toHaveAttribute('aria-current', 'true');
+    expect(within(details()).getByRole('switch', { name: 'Accepting appointments' })).not.toBeChecked();
+    expect(screen.queryByRole('region', { name: 'Unsaved changes' })).not.toBeInTheDocument();
+    expect(search).not.toHaveBeenCalled();
+  });
+
+  test("offering a room's first visit type creates its calendar, and the room stays selected", async () => {
+    await setup();
+    await userEvent.click(row('Exam Room C'));
+
+    await userEvent.click(within(details()).getByRole('button', { name: 'Offer a visit type' }));
+    const telehealth = screen.getByRole('menuitem', { name: 'Telehealth Consult' });
+    await waitFor(() => expect(telehealth).toBeEnabled());
+    await userEvent.click(telehealth);
+    await userEvent.click(saveButton());
+
+    await waitFor(() =>
+      expect(within(details()).getByRole('switch', { name: 'Accepting appointments' })).toBeInTheDocument()
+    );
+    expect(entry('Telehealth Consult')).toHaveAttribute('aria-expanded', 'true');
+    expect(row('Exam Room C')).toHaveAttribute('aria-current', 'true');
+  });
+
+  test('a visit type’s page shows its sections in order, ending with what offers it', async () => {
+    await setup();
+
+    await userEvent.click(row('Ultrasound Imaging'));
+
+    expect(
+      within(details())
+        .getAllByRole('heading', { level: 3 })
+        .map((heading) => heading.textContent)
+    ).toEqual(['General', 'Scheduling parameters', 'Default availability', 'Offered by']);
+    const offeredBy = within(details()).getByRole('region', { name: 'Offered by' });
+    expect(within(offeredBy).getByText('Dr. Maya Rivera')).toBeInTheDocument();
+    expect(within(offeredBy).getByText('Exam Room B')).toBeInTheDocument();
+  });
+
+  test('Offered by says why an actor sharing no service facility with the visit type can’t be booked', async () => {
+    await setup();
+
+    await userEvent.click(row('Ultrasound Imaging'));
+
+    const offeredBy = within(details()).getByRole('region', { name: 'Offered by' });
+    const satellite = within(offeredBy).getByText('Satellite Exam Room').closest('button') as HTMLElement;
+    await waitFor(() =>
+      expect(satellite).toHaveTextContent(
+        "Can't be booked: Ultrasound Imaging isn't held at Uro Associates - Satellite."
+      )
+    );
+    // Exam Room B is a floor below the main clinic, which holds the visit type.
+    expect(within(offeredBy).getByText('Exam Room B').closest('button')).not.toHaveTextContent("Can't be booked");
+  });
+
+  test("selecting an actor in Offered by opens its page with that visit type's entry open", async () => {
+    await setup();
+    await userEvent.click(row('Telehealth Consult'));
+
+    const offeredBy = within(details()).getByRole('region', { name: 'Offered by' });
+    await userEvent.click(within(offeredBy).getByText('Dr. Linh Nguyen'));
+
+    expect(within(details()).getByRole('heading', { name: 'Dr. Linh Nguyen' })).toBeInTheDocument();
+    expect(entry('Telehealth Consult')).toHaveAttribute('aria-expanded', 'true');
+    expect(entry('Ultrasound Imaging')).toHaveAttribute('aria-expanded', 'false');
+    expect(row('Dr. Linh Nguyen')).toHaveAttribute('aria-current', 'true');
+  });
+
+  test('Offered by says when nothing offers the visit type, and where visit types are offered from', async () => {
+    await setup();
+
+    await userEvent.click(row('Unconfigured Visit'));
+
+    expect(
+      within(details()).getByText(
+        "Nothing offers Unconfigured Visit yet. Visit types are offered from a provider's, room's, or device's page."
+      )
+    ).toBeInTheDocument();
+  });
+
+  test('an empty project says each section has nothing yet, and still offers to create a visit type', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
+    renderWithMedplum(<SchedulingConfigWorkspace />, medplum);
+
+    for (const noun of ['visit types', 'providers', 'rooms', 'devices']) {
+      expect(await within(sidebar()).findByText(`No ${noun} yet`)).toBeInTheDocument();
+    }
+    expect(within(sidebar()).getByRole('button', { name: 'New visit type' })).toBeInTheDocument();
   });
 
   test('says when the visit types could not be loaded', async () => {

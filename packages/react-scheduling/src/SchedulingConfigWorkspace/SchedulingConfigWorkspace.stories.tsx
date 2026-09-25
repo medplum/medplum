@@ -26,16 +26,21 @@ function Workspace(): JSX.Element {
 }
 
 /**
- * The clinic's visit types as an admin sees them, including what booking hides.
+ * The clinic as an admin sees it, including what booking hides.
  *
  * Initial Consultation is offered at both clinics, with prep and turnover time and a lunch break in its hours.
  * Group Education Class books eight patients into one weekly session. Telehealth Consult names no service facility,
  * so it is offered at every one. Unconfigured Visit and Walk-in Clinic have no duration, so booking never offers
- * them, but they are listed here to be finished. Discontinued Consult is turned off, so it is hidden until
- * **Show inactive** is ticked under the filters button.
+ * them, but they are listed here to be finished. Discontinued Consult, Dr. Hana Lee, and Ultrasound 3 are turned
+ * off, so they are hidden until **Show inactive** is ticked under the filters button. Exam Room C is listed though
+ * it has no calendar.
+ *
+ * Rows carry what still needs finishing: Dr. Anika Patel's Walk-in Clinic hours have no time zone, and Procedure
+ * Room is booked as a room without being marked as one.
  *
  * Pick one to edit it in place. Switching to another with unsaved changes asks first. The **+** beside Visit
- * types starts a new one, which is listed once it is saved.
+ * types starts a new one, which is listed once it is saved. A visit type's Offered by opens the page of each
+ * provider, room, or device offering it.
  *
  * @returns The story.
  */

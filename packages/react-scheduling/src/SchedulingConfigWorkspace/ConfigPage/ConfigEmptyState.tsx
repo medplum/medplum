@@ -26,12 +26,12 @@ export function ConfigEmptyState(props: ConfigEmptyStateProps): JSX.Element {
         </ThemeIcon>
         <Stack align="center" gap="xs">
           <Text size="lg" fw={500} c="dimmed">
-            {notFound ? 'Visit type not found' : 'No visit type selected'}
+            {notFound ? 'Not found' : 'Nothing selected'}
           </Text>
           <Text size="sm" c="dimmed" ta="center">
             {notFound
               ? 'It is no longer in the list, and may have been deleted. Pick another from the list.'
-              : 'Pick a visit type from the list to see and edit how it is scheduled, or start a new one.'}
+              : 'Pick a visit type, provider, room, or device from the list to see and edit how it is scheduled, or start a new visit type.'}
           </Text>
         </Stack>
         {onCreate && (

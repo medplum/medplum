@@ -197,6 +197,31 @@ export function getHealthcareServiceSchedulingParameterValues(service: Healthcar
 }
 
 /**
+ * Resolves the scheduling parameters in effect for a HealthcareService, on a given calendar or on its own.
+ * A parameter the Schedule sets for the service wins, then the service's own, then scheduling's default.
+ *
+ * `duration` and `timezone` come back undefined when nothing sets them, because neither has a default.
+ * Undefined here means scheduling has no answer, not zero. A calendar's `timezone` also falls back to its
+ * actor, which this does not read; `getSchedulingTimezone` from `@medplum/core` does.
+ * @param service - HealthcareService providing the parameters
+ * @param schedule - Schedule that may override them for the service
+ * @returns Every parameter, with the value scheduling would use
+ */
+export function getEffectiveSchedulingParameterValues(
+  service: WithId<HealthcareService>,
+  schedule?: Schedule
+): SchedulingParameterValues {
+  const serviceValues = withInherited(
+    getHealthcareServiceSchedulingParameterValues(service),
+    SCHEDULING_PARAMETER_DEFAULTS
+  );
+  if (!schedule) {
+    return serviceValues;
+  }
+  return withInherited(getScheduleSchedulingParameterValues(schedule, service), serviceValues);
+}
+
+/**
  * Immutably writes the flat scheduling parameters a Schedule overrides for a HealthcareService. The values
  * are the complete state rather than a patch: a key set to undefined, and a key left out, both clear it.
  * @param schedule - Schedule to update

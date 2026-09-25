@@ -77,6 +77,35 @@ describe('ConfigPanel', () => {
     expect(row('Blood draw')).not.toHaveTextContent('Inactive');
   });
 
+  test('marks each row with what still needs finishing', () => {
+    setup({
+      sections: [
+        {
+          key: 'Location',
+          title: 'Rooms',
+          noun: 'rooms',
+          items: [
+            {
+              id: 'room-1',
+              label: 'Procedure Room',
+              selected: false,
+              notices: ['No time zone', 'Not marked as a room'],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(row('Procedure Room')).toHaveTextContent('No time zone');
+    expect(row('Procedure Room')).toHaveTextContent('Not marked as a room');
+  });
+
+  test('shows the footer below the sections', () => {
+    setup({ footer: '1 calendar is not listed' });
+
+    expect(screen.getByText('1 calendar is not listed')).toBeInTheDocument();
+  });
+
   test('collapsing a section hides its rows and keeps its header and count', async () => {
     setup();
 

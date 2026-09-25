@@ -14,6 +14,8 @@ export interface ConfigPanelItem {
   readonly selected: boolean;
   /** The resource is turned off. */
   readonly inactive?: boolean;
+  /** What still needs finishing on the resource, each shown as a mark on its row. */
+  readonly notices?: readonly string[];
   readonly imageUrl?: string;
 }
 
@@ -43,6 +45,8 @@ export interface ConfigPanelProps {
   /** Whether turned-off resources are listed. The host applies it too. */
   readonly showInactive: boolean;
   readonly onShowInactiveChange: (showInactive: boolean) => void;
+  /** Shown below the sections, for something about the project rather than one row. */
+  readonly footer?: ReactNode;
   readonly className?: string;
 }
 
@@ -56,7 +60,7 @@ export interface ConfigPanelProps {
  * @returns The sidebar.
  */
 export function ConfigPanel(props: ConfigPanelProps): JSX.Element {
-  const { sections, onSelect, filter, onFilterChange, showInactive, onShowInactiveChange, className } = props;
+  const { sections, onSelect, filter, onFilterChange, showInactive, onShowInactiveChange, footer, className } = props;
 
   return (
     <Stack gap="xs" className={className}>
@@ -132,6 +136,7 @@ export function ConfigPanel(props: ConfigPanelProps): JSX.Element {
           <Divider />
         </Stack>
       ))}
+      {footer}
     </Stack>
   );
 }
