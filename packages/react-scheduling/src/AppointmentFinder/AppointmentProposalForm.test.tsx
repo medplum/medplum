@@ -1208,6 +1208,32 @@ describe('AppointmentProposalForm', () => {
     });
   });
 
+  describe('Jumping to a month', () => {
+    test('Moves the calendar to the month picked from its label', async () => {
+      setup(medplum, { defaultService: UltrasoundImagingService });
+      await settleAutocomplete();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      fireEvent.click(screen.getByRole('button', { name: 'August 2026' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Nov' }));
+
+      expect(screen.getByRole('button', { name: 'November 2026' })).toBeInTheDocument();
+    });
+
+    test('Offers no month before today', async () => {
+      setup(medplum, { defaultService: UltrasoundImagingService });
+      await settleAutocomplete();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      fireEvent.click(screen.getByRole('button', { name: 'August 2026' }));
+
+      expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Jul' }).disabled).toBe(true);
+      expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Aug' }).disabled).toBe(false);
+    });
+  });
+
   describe('Identifying the patient', () => {
     test('Asks for the patient below the action that finds a time', async () => {
       setup(medplum);

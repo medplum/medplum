@@ -33,12 +33,14 @@ import type { AsyncAutocompleteOption } from '@medplum/react';
 import { CalendarDateInput, ResourceInput, ResourceName, ValueSetAutocomplete } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle, IconCalendarSearch, IconCheck } from '@tabler/icons-react';
+import dayjs from 'dayjs';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
 import { LOCATION_SEARCH_CRITERIA } from '../constants';
+import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
@@ -602,6 +604,14 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               onChangeMonth={setMonth}
               onClick={daySearch.chooseDayRange}
               onSelectRange={daySearch.chooseDayRange}
+              monthLabel={
+                <MonthPickerButton
+                  label={formatMonth(month ?? new Date())}
+                  date={month ?? new Date()}
+                  minDate={new Date()}
+                  onChange={(value) => setMonth(dayjs(value).toDate())}
+                />
+              }
             />
             {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
           </Stack>
@@ -1091,6 +1101,10 @@ function toRange(appointment: Appointment | undefined): DateTimeRange | undefine
  */
 function getSearchedOptionsHint(searched: number, total: number): string {
   return `Showing times for ${searched} of ${total} ways of holding this visit.`;
+}
+
+function formatMonth(month: Date): string {
+  return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(month);
 }
 
 /**
