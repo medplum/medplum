@@ -4,6 +4,7 @@ import { NumberInput, Select, SimpleGrid, Stack, Text } from '@mantine/core';
 import type { JSX } from 'react';
 import { useMemo } from 'react';
 import type { SchedulingParameterValues } from '../parameterValues';
+import { SCHEDULING_PARAMETER_LABELS } from '../parameterValues';
 import classes from './SchedulingParametersEditor.module.css';
 import type {
   SchedulingParameter,
@@ -100,15 +101,12 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
     setValue(key, Number.isNaN(value) ? undefined : value);
   }
 
-  function minutesField(
-    key: NumericParameter,
-    label: string,
-    options: { min: number; description?: string }
-  ): JSX.Element | null {
+  function minutesField(key: NumericParameter, options: { min: number; description?: string }): JSX.Element | null {
     if (!shows(key)) {
       return null;
     }
     const { min, description } = options;
+    const label = SCHEDULING_PARAMETER_LABELS[key];
     return (
       <NumberInput
         key={key}
@@ -133,10 +131,11 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
     );
   }
 
-  function timezoneField(key: TimezoneParameter, label: string, description: string): JSX.Element | null {
+  function timezoneField(key: TimezoneParameter, description: string): JSX.Element | null {
     if (!shows(key)) {
       return null;
     }
+    const label = SCHEDULING_PARAMETER_LABELS[key];
     return (
       <Select
         key={key}
@@ -178,7 +177,7 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
     <NumberInput
       key="slotCapacity"
       id={`${idPrefix}-slotCapacity`}
-      label="Concurrent appointments"
+      label={SCHEDULING_PARAMETER_LABELS.slotCapacity}
       description="How many appointments may run at once, so anything above 1 allows overbooking"
       inputWrapperOrder={[...DESCRIPTION_BELOW]}
       value={values.slotCapacity ?? ''}
@@ -196,22 +195,19 @@ export function SchedulingParametersFields(props: SchedulingParametersFieldsProp
   return (
     <Stack gap="xl">
       {group('Length and spacing', [
-        minutesField('duration', 'Duration', { min: 1 }),
-        minutesField('bufferBefore', 'Buffer before', { min: 0 }),
-        minutesField('bufferAfter', 'Buffer after', { min: 0 }),
+        minutesField('duration', { min: 1 }),
+        minutesField('bufferBefore', { min: 0 }),
+        minutesField('bufferAfter', { min: 0 }),
       ])}
       {group('Start times', [
-        minutesField('alignmentInterval', 'Interval', { min: 1, description: 'Start times are this far apart' }),
-        minutesField('alignmentOffset', 'Offset', {
+        minutesField('alignmentInterval', { min: 1, description: 'Start times are this far apart' }),
+        minutesField('alignmentOffset', {
           min: 0,
           description: 'Pushes every start later, so 5 turns 9:00 and 9:30 into 9:05 and 9:35',
         }),
-        timezoneField('alignmentTimezone', 'Alignment time zone', 'Whose midnight the start times are counted from'),
+        timezoneField('alignmentTimezone', 'Whose midnight the start times are counted from'),
       ])}
-      {group('Booking', [
-        capacityField,
-        timezoneField('timezone', 'Time zone', 'The working hours are read in this zone'),
-      ])}
+      {group('Booking', [capacityField, timezoneField('timezone', 'The working hours are read in this zone')])}
     </Stack>
   );
 }

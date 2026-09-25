@@ -65,6 +65,46 @@ const CODE_PARAMETERS = ['timezone', 'alignmentTimezone'] as const satisfies (ke
 /** Every flat parameter, which is every key of `SchedulingParameterValues`. */
 export const FLAT_PARAMETERS = [...DURATION_PARAMETERS, ...CODE_PARAMETERS, 'slotCapacity'] as const;
 
+/**
+ * What scheduling uses for a parameter nothing sets. `duration` and `timezone` have none: without a duration
+ * a visit type is bookable only where a calendar sets one, and timezone falls back to the calendar's actor.
+ */
+export const SCHEDULING_PARAMETER_DEFAULTS: SchedulingParameterValues = {
+  bufferBefore: 0,
+  bufferAfter: 0,
+  alignmentInterval: 60,
+  alignmentOffset: 0,
+  slotCapacity: 1,
+  alignmentTimezone: 'Etc/UTC',
+};
+
+/**
+ * Lays one set of parameters over another: a value `values` sets wins, and anything it leaves undefined
+ * falls through to `inherited`.
+ * @param values - The parameters that take precedence.
+ * @param inherited - What each parameter falls back to.
+ * @returns The merged parameters.
+ */
+export function withInherited(
+  values: SchedulingParameterValues,
+  inherited: SchedulingParameterValues
+): SchedulingParameterValues {
+  const stored = Object.entries(values).filter(([, value]) => value !== undefined);
+  return { ...inherited, ...Object.fromEntries(stored) };
+}
+
+/** What each parameter is called, wherever one is shown to a reader. */
+export const SCHEDULING_PARAMETER_LABELS: Record<keyof SchedulingParameterValues, string> = {
+  duration: 'Duration',
+  bufferBefore: 'Buffer before',
+  bufferAfter: 'Buffer after',
+  alignmentInterval: 'Interval',
+  alignmentOffset: 'Offset',
+  alignmentTimezone: 'Alignment time zone',
+  slotCapacity: 'Concurrent appointments',
+  timezone: 'Time zone',
+};
+
 type FlatParameter = (typeof FLAT_PARAMETERS)[number];
 type DurationParameter = (typeof DURATION_PARAMETERS)[number];
 type CodeParameter = (typeof CODE_PARAMETERS)[number];

@@ -1,26 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { SchedulingParameterValues } from '../parameterValues';
-import { FLAT_PARAMETERS } from '../parameterValues';
+import { FLAT_PARAMETERS, SCHEDULING_PARAMETER_DEFAULTS, withInherited } from '../parameterValues';
 
 /** Minutes in a day, the longest alignment interval scheduling accepts. */
 export const MINUTES_PER_DAY = 1440;
 
 /** Minutes in an hour, which is how far the clocks move at a daylight saving change. */
 const MINUTES_PER_HOUR = 60;
-
-/**
- * What scheduling uses for a parameter nothing sets. `duration` and `timezone` have none: without a duration
- * a visit type is bookable only where a calendar sets one, and timezone falls back to the calendar's actor.
- */
-export const SCHEDULING_PARAMETER_DEFAULTS: SchedulingParameterValues = {
-  bufferBefore: 0,
-  bufferAfter: 0,
-  alignmentInterval: 60,
-  alignmentOffset: 0,
-  slotCapacity: 1,
-  alignmentTimezone: 'Etc/UTC',
-};
 
 /** Where a set of parameters is stored: on the visit type itself, or on one calendar's override of it. */
 export type SchedulingParameterLevel = 'service' | 'schedule';
@@ -56,14 +43,6 @@ const CROSS_SCHEDULE_PARAMETERS: readonly { key: SchedulingParameter; label: str
 
 function listOf(labels: readonly string[]): string {
   return labels.length < 2 ? (labels[0] ?? '') : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
-}
-
-function withInherited(
-  values: SchedulingParameterValues,
-  inherited: SchedulingParameterValues
-): SchedulingParameterValues {
-  const stored = Object.entries(values).filter(([, value]) => value !== undefined);
-  return { ...inherited, ...Object.fromEntries(stored) };
 }
 
 /**
