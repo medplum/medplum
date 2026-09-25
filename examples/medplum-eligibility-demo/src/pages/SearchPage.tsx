@@ -47,6 +47,7 @@ export function SearchPage(): JSX.Element {
       <SearchControl
         search={search}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
+        hideFilters={true}
         onNew={() => handlers.open()}
         hideToolbar={search.resourceType === 'Coverage'}
         onChange={(e) => {

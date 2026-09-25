@@ -54,6 +54,7 @@ export function SearchPage(): JSX.Element {
         onChange={(e) => {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
         }}
+        hideFilters={true}
         hideToolbar
       />
     </Paper>

@@ -23,6 +23,7 @@ export function PatientConsents(props: PatientConsentsProps): JSX.Element {
   return (
     <SearchControl
       search={search}
+      hideFilters={true}
       hideToolbar={true}
       onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
       onChange={(e) => {
