@@ -150,11 +150,13 @@ class CcdaToFhirConverter {
   private readonly ccda: Ccda;
   private readonly options: CcdaToFhirOptions | undefined;
   private readonly resources: Resource[] = [];
+  private readonly narrativeTextById: Map<string, string>;
   private patient?: Patient;
 
   constructor(ccda: Ccda, options?: CcdaToFhirOptions) {
     this.ccda = ccda;
     this.options = options;
+    this.narrativeTextById = indexNarrativeText(ccda);
   }
 
   convert(): Bundle {
@@ -886,7 +888,16 @@ class CcdaToFhirConverter {
       }
     }
 
-    const text = code['@_displayName'] || code.originalText?.reference?.['@_value'] || nodeToString(code.originalText);
+    const referenceValue = code.originalText?.reference?.['@_value'];
+    const resolvedText =
+      referenceValue && referenceValue.startsWith('#')
+        ? this.narrativeTextById.get(referenceValue.slice(1))
+        : undefined;
+    // Prefer the display name, then inline originalText content, then the resolved narrative
+    // reference. A bare "#ID" pointer is never emitted as text: if the reference does not
+    // resolve, text is left unset (the pointer is still preserved in the ccda-narrative-reference
+    // extension where one is added).
+    const text = code['@_displayName'] || nodeToString(code.originalText) || resolvedText;
 
     if (codings.length === 0) {
       return text ? { text } : undefined;
@@ -1505,6 +1516,96 @@ class CcdaToFhirConverter {
         valueString: text.reference?.['@_value'],
       },
     ];
+  }
+}
+
+/**
+ * Indexes the narrative (`section.text`) elements of a C-CDA document by their `@_ID` attribute,
+ * so that `originalText` references such as `#Med0Name` can be resolved to the actual narrative text.
+ * CDA `ID` is `xs:ID` and therefore unique per document; an ID that appears more than once is
+ * treated as ambiguous and dropped rather than resolving to an arbitrary match.
+ * @param ccda - The parsed C-CDA document.
+ * @returns A map from narrative ID to text content.
+ */
+function indexNarrativeText(ccda: Ccda): Map<string, string> {
+  const index = new Map<string, string>();
+  const seen = new Set<string>();
+  const ambiguous = new Set<string>();
+  const components = ccda.component?.structuredBody?.component || [];
+  for (const component of components) {
+    for (const section of component.section) {
+      collectNarrativeIds(section.text, index, seen, ambiguous);
+    }
+  }
+  for (const id of ambiguous) {
+    index.delete(id);
+  }
+  return index;
+}
+
+function collectNarrativeIds(
+  node: unknown,
+  index: Map<string, string>,
+  seen: Set<string>,
+  ambiguous: Set<string>
+): void {
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      collectNarrativeIds(item, index, seen, ambiguous);
+    }
+    return;
+  }
+  if (typeof node === 'object' && node !== null) {
+    const record = node as Record<string, unknown>;
+    const id = record['@_ID'];
+    if (typeof id === 'string' && id.length > 0) {
+      if (seen.has(id)) {
+        ambiguous.add(id);
+      } else {
+        seen.add(id);
+        const text = narrativeTextOf(record);
+        if (text.length > 0) {
+          index.set(id, text);
+        }
+      }
+    }
+    for (const value of Object.values(record)) {
+      collectNarrativeIds(value, index, seen, ambiguous);
+    }
+  }
+}
+
+/**
+ * Best-effort text content of a narrative element: the `#text` of the node and its descendants,
+ * whitespace-normalized. The CDA parser does not preserve mixed-content order, so text interleaved
+ * with child elements may not read in document order.
+ * @param node - The narrative element.
+ * @returns The concatenated text content.
+ */
+function narrativeTextOf(node: Record<string, unknown>): string {
+  const parts: string[] = [];
+  collectNarrativeText(node, parts);
+  return parts.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+function collectNarrativeText(node: unknown, parts: string[]): void {
+  if (typeof node === 'string') {
+    parts.push(node);
+    return;
+  }
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      collectNarrativeText(item, parts);
+    }
+    return;
+  }
+  if (typeof node === 'object' && node !== null) {
+    for (const [key, value] of Object.entries(node)) {
+      // Skip attributes (e.g. `@_ID`); only element text is narrative content.
+      if (!key.startsWith('@_')) {
+        collectNarrativeText(value, parts);
+      }
+    }
   }
 }
 
