@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Paper } from '@mantine/core';
 import type { Filter, SearchRequest, SortRule } from '@medplum/core';
 import { DEFAULT_SEARCH_COUNT, formatSearchQuery, isReference, parseSearchRequest } from '@medplum/core';
 import type { Patient, Reference, Resource, UserConfiguration } from '@medplum/fhirtypes';
@@ -41,13 +42,12 @@ export function SearchPage(): JSX.Element {
   }
 
   return (
-    <div className={classes.container}>
+    <Paper shadow="xs" m="xs" p="xs" className={classes.paper}>
       <SearchControl
         checkboxesEnabled={true}
         search={search}
         onClick={(e) => navigate(getResourceUrl(e.resource))?.catch(console.error)}
         onAuxClick={(e) => window.open(getResourceUrl(e.resource), '_blank')}
-        getResourceHref={getResourceUrl}
         onNew={() => {
           navigate(`/${search.resourceType}/new`)?.catch(console.error);
         }}
@@ -55,7 +55,7 @@ export function SearchPage(): JSX.Element {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
         }}
       />
-    </div>
+    </Paper>
   );
 }
 

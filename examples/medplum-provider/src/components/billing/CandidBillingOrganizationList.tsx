@@ -81,6 +81,7 @@ export function CandidBillingOrganizationList(props: CandidBillingOrganizationLi
         search={search}
         additionalColumns={additionalColumns}
         hideToolbar
+        hideFilters
         onChange={(e) => setSearch(e.definition)}
         onClick={(e) => onSelectOrganization(e.resource as WithId<Organization>)}
       />
