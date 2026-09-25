@@ -238,7 +238,7 @@ export async function verifyEmailMfaCode(login: Login, token: string | undefined
 
 export async function createProfile(
   systemRepo: SystemRepository,
-  project: Project,
+  project: WithId<Project>,
   resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson',
   firstName: string,
   lastName: string,

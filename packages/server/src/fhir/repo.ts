@@ -145,7 +145,16 @@ import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { lookupTables } from './searchparameter';
 import type { ShardRouting } from './sharding';
-import { GLOBAL_SHARD_ID, normalizeShardId, resolveShardId, shardRoutingError, TODO_SHARD_ID } from './sharding';
+import {
+  getProjectShardId,
+  GLOBAL_SHARD_ID,
+  isShardingEnabled,
+  normalizeShardId,
+  resolveShardId,
+  setProjectShardId,
+  shardRoutingError,
+  TODO_SHARD_ID,
+} from './sharding';
 import type { Expression, PgQueryable } from './sql';
 import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
 
@@ -561,6 +570,16 @@ export class Repository extends FhirRepository implements Disposable {
       ...resource,
       id: options?.assignedId && resource.id ? resource.id : this.generateId(),
     };
+
+    if (resourceWithId.resourceType === 'Project' && isShardingEnabled()) {
+      const currentShardId = getProjectShardId(resourceWithId);
+      if (currentShardId === undefined) {
+        setProjectShardId(resourceWithId, this.shardId);
+      } else if (currentShardId !== this.shardId) {
+        throw new OperationOutcomeError(badRequest('Project specifies incorrect shard', 'Project.shard'));
+      }
+    }
+
     const startTime = Date.now();
     try {
       const result = await this.updateResourceImpl(resourceWithId, true);

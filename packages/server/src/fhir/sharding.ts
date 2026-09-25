@@ -42,6 +42,17 @@ export function getGlobalShardConfig(): MedplumShardConfig {
   return { id: GLOBAL_SHARD_ID, database: config.database, readonlyDatabase: config.readonlyDatabase };
 }
 
+export function getShardConfig(shardId: string): MedplumShardConfig {
+  if (shardId === GLOBAL_SHARD_ID) {
+    return getGlobalShardConfig();
+  }
+  const shardConfig = getConfig().shards?.[shardId];
+  if (!shardConfig) {
+    throw new Error(`Shard config not found for shard ID: ${shardId}`);
+  }
+  return shardConfig;
+}
+
 export function* getAllShards(): Generator<MedplumShardConfig> {
   yield getGlobalShardConfig();
   const shards = getConfig().shards;

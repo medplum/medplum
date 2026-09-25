@@ -27,7 +27,7 @@ let DEBUG: string | undefined = env['SQL_DEBUG'];
  *   ) => Promise<QueryResult<R>>;
  * ```
  */
-export type PgQueryable = Pick<Pool, 'query'> & Pick<PoolClient, 'query'>;
+export type PgQueryable = Pick<Pool, 'query'> & Pick<PoolClient, 'query'> & { shardId?: string };
 
 export const PUBLIC_SCHEMA = 'public';
 
@@ -656,9 +656,13 @@ export class SqlBuilder {
   async execute(conn: PgQueryable): Promise<{ rowCount: number; rows: any[] }> {
     const sql = this.toString();
     let startTime = 0;
+    let debugPrefix = '';
     if (this.debug) {
-      globalLogger.write(`sql ${sql}`);
-      globalLogger.write(`values ${JSON.stringify(this.values)}`);
+      if ('shardId' in conn && conn.shardId) {
+        debugPrefix = `[shardId: ${conn.shardId}] `;
+      }
+      globalLogger.write(`${debugPrefix}sql ${sql}`);
+      globalLogger.write(`${debugPrefix}values ${JSON.stringify(this.values)}`);
       startTime = Date.now();
     }
     try {
@@ -666,7 +670,7 @@ export class SqlBuilder {
       if (this.debug) {
         const endTime = Date.now();
         const duration = endTime - startTime;
-        globalLogger.write(`result: ${result.rowCount ?? 0} rows (${duration} ms)`);
+        globalLogger.write(`${debugPrefix}result: ${result.rowCount ?? 0} rows (${duration} ms)`);
       }
 
       return { rowCount: result.rowCount ?? 0, rows: result.rows };

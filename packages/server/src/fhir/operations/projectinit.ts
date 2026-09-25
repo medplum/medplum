@@ -29,7 +29,7 @@ import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import type { SystemRepository } from '../repo';
 import { getShardSystemRepo } from '../repo';
-import { PLACEHOLDER_SHARD_ID } from '../sharding';
+import { getProjectShardId } from '../sharding';
 import { makeOperationDefinition } from './definitions';
 import {
   buildOutputParameters,
@@ -134,10 +134,10 @@ export async function createProject(
   membership?: WithId<ProjectMembership>;
 }> {
   const log = getLogger();
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be a parameter of this function
   const config = getConfig();
+  const systemRepo = getShardSystemRepo(config.defaultShardId);
 
-  log.info('Project creation request received', { name: projectName });
+  log.info('Project creation request received', { shardId: systemRepo.shardId, name: projectName });
 
   return systemRepo.withTransaction(
     async (txRepo) => {
@@ -186,6 +186,7 @@ export async function createProject(
       log.info('Project created', {
         id: project.id,
         name: projectName,
+        shardId: getProjectShardId(project),
       });
 
       const client = await createClient(txRepo, {
