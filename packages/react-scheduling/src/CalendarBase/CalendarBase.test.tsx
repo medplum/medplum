@@ -167,6 +167,19 @@ describe('CalendarBase', () => {
       expect(title).toBeInTheDocument();
     });
 
+    test('jumps to the month picked from the title', async () => {
+      const onRangeChange = vi.fn();
+      setup({ eventSources: [], onRangeChange });
+      const target = new Date(now.getFullYear(), (now.getMonth() + 6) % 12, 1);
+
+      await userEvent.click(screen.getByRole('button', { name: /\d{4}/ }));
+      await userEvent.click(screen.getByRole('button', { name: target.toLocaleString('en-US', { month: 'short' }) }));
+
+      const range = onRangeChange.mock.lastCall?.[0];
+      expect(range.start.getTime()).toBeLessThanOrEqual(target.getTime());
+      expect(range.end.getTime()).toBeGreaterThan(target.getTime());
+    });
+
     test('navigates to previous period when clicking prev button', async () => {
       const onRangeChange = vi.fn();
       setup({ eventSources: [], onRangeChange });

@@ -7,11 +7,10 @@ import { IconChevronDown } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
 import classes from './MonthPickerButton.module.css';
-import { toDateString } from './MonthPickerButton.utils';
 
 export interface MonthPickerButtonProps {
   readonly label: ReactNode;
-  /** The month the picker opens on. */
+  /** The month on show, which the picker opens on and marks. */
   readonly date: Date;
   readonly minDate?: Date;
   readonly size?: ButtonProps['size'];
@@ -40,8 +39,8 @@ export function MonthPickerButton(props: MonthPickerButtonProps): JSX.Element {
       <Popover.Dropdown>
         <MonthPicker
           size="xs"
-          defaultDate={toDateString(date)}
-          minDate={minDate && toDateString(minDate)}
+          value={date}
+          minDate={minDate}
           onChange={(value) => {
             if (value) {
               onChange(value);
