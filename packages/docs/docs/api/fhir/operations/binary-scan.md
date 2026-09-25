@@ -49,6 +49,11 @@ The operation returns an `OperationOutcome` with a single issue. `issue.details.
 | `ACCESS_DENIED`    | `error`       | `forbidden`     | GuardDuty couldn't read the object. The next call sends a new scan                               |
 | `SCAN_REQUESTED`   | `information` | `informational` | The scan is still in progress. Call `$scan` again for the result                                 |
 
+When the result comes from a scan that `$scan` requested, the issue has a
+`https://medplum.com/fhir/StructureDefinition/malware-scan-requested` extension whose `valueDateTime` is when the scan
+was requested. Results from automatic scans of new uploads don't have it. GuardDuty doesn't report when a scan of an S3
+object finishes, so no completion time is available.
+
 ## Example
 
 ### Request
@@ -66,6 +71,12 @@ POST /fhir/R4/Binary/[id]/$scan
     {
       "severity": "information",
       "code": "informational",
+      "extension": [
+        {
+          "url": "https://medplum.com/fhir/StructureDefinition/malware-scan-requested",
+          "valueDateTime": "2026-09-25T16:44:55.296Z"
+        }
+      ],
       "details": {
         "coding": [{ "system": "https://medplum.com/fhir/CodeSystem/malware-scan-status", "code": "NO_THREATS_FOUND" }],
         "text": "No threats found"

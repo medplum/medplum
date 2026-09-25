@@ -34,6 +34,9 @@ export const MALWARE_SCAN_PENDING_MS = 60 * 60 * 1000;
 
 export const MALWARE_SCAN_STATUS_SYSTEM = 'https://medplum.com/fhir/CodeSystem/malware-scan-status';
 
+/** Issue extension holding when $scan requested the scan the result belongs to. */
+export const MALWARE_SCAN_REQUESTED_EXTENSION = 'https://medplum.com/fhir/StructureDefinition/malware-scan-requested';
+
 /** Our code for "scan submitted, result pending"; every other code is a GuardDuty tag value. */
 export const SCAN_REQUESTED = 'SCAN_REQUESTED';
 
@@ -109,15 +112,15 @@ async function scanAndWait(
   tags: Record<string, string>,
   timeoutMs: number
 ): Promise<OperationOutcome> {
+  // Requesting a scan drops any old status tag, so a status next to the marker means that scan finished
+  let requestedAt: string | undefined = tags[MALWARE_SCAN_REQUESTED_TAG];
   const status = tags[MALWARE_SCAN_STATUS_TAG];
   if (status && FINAL_RESULTS[status]) {
-    return scanOutcome(status, FINAL_RESULTS[status]);
+    return scanOutcome(status, FINAL_RESULTS[status], requestedAt);
   }
 
-  // Requesting a scan drops any old status tag, so a status next to the marker means that scan finished
-  const requestedAt = tags[MALWARE_SCAN_REQUESTED_TAG];
   if (status || !requestedAt || Date.now() - Date.parse(requestedAt) >= MALWARE_SCAN_PENDING_MS) {
-    await requestScan(storage, key, tags);
+    requestedAt = await requestScan(storage, key, tags);
   }
 
   const deadline = Date.now() + timeoutMs;
@@ -126,7 +129,8 @@ async function scanAndWait(
     const result = (await storage.getObjectTags(key))[MALWARE_SCAN_STATUS_TAG];
     if (result) {
       const known = FINAL_RESULTS[result] ?? RETRYABLE_RESULTS[result];
-      return scanOutcome(result, known ?? { severity: 'error', code: 'exception', text: `Malware scan ${result}` });
+      const described = known ?? { severity: 'error', code: 'exception', text: `Malware scan ${result}` };
+      return scanOutcome(result, described, requestedAt);
     }
   }
 
@@ -135,16 +139,24 @@ async function scanAndWait(
     code: 'informational',
     text: 'Malware scan in progress, call $scan again for the result',
   };
-  return scanOutcome(SCAN_REQUESTED, pending);
+  return scanOutcome(SCAN_REQUESTED, pending, requestedAt);
 }
 
-async function requestScan(storage: S3Storage, key: string, tags: Record<string, string>): Promise<void> {
+/**
+ * Tags the object as pending and sends an on-demand scan.
+ * @param storage - The S3 storage.
+ * @param key - The S3 key.
+ * @param tags - The object's current tags.
+ * @returns The time the scan was requested.
+ */
+async function requestScan(storage: S3Storage, key: string, tags: Record<string, string>): Promise<string> {
   // PutObjectTagging replaces the whole set and only GuardDuty may write the status tag, so the stale
   // status is dropped. Write before sending: a write after could erase a result GuardDuty already tagged.
   const otherTags = Object.fromEntries(
     Object.entries(tags).filter(([k]) => k !== MALWARE_SCAN_STATUS_TAG && k !== MALWARE_SCAN_REQUESTED_TAG)
   );
-  await storage.putObjectTags(key, { ...otherTags, [MALWARE_SCAN_REQUESTED_TAG]: new Date().toISOString() });
+  const requestedAt = new Date().toISOString();
+  await storage.putObjectTags(key, { ...otherTags, [MALWARE_SCAN_REQUESTED_TAG]: requestedAt });
 
   try {
     const client = new GuardDutyClient({ region: getConfig().awsRegion });
@@ -156,11 +168,17 @@ async function requestScan(storage: S3Storage, key: string, tags: Record<string,
     });
     throw err;
   }
+  return requestedAt;
 }
 
-function scanOutcome(status: string, { severity, code, text }: ScanResult): OperationOutcome {
-  return {
-    resourceType: 'OperationOutcome',
-    issue: [{ severity, code, details: { coding: [{ system: MALWARE_SCAN_STATUS_SYSTEM, code: status }], text } }],
+function scanOutcome(status: string, { severity, code, text }: ScanResult, requestedAt?: string): OperationOutcome {
+  const issue: OperationOutcomeIssue = {
+    severity,
+    code,
+    details: { coding: [{ system: MALWARE_SCAN_STATUS_SYSTEM, code: status }], text },
   };
+  if (requestedAt) {
+    issue.extension = [{ url: MALWARE_SCAN_REQUESTED_EXTENSION, valueDateTime: requestedAt }];
+  }
+  return { resourceType: 'OperationOutcome', issue: [issue] };
 }

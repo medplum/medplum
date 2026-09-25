@@ -16,6 +16,7 @@ import { initBinaryStorage } from '../../storage/loader';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 import {
   MALWARE_SCAN_PENDING_MS,
+  MALWARE_SCAN_REQUESTED_EXTENSION,
   MALWARE_SCAN_REQUESTED_TAG,
   MALWARE_SCAN_STATUS_SYSTEM,
   MALWARE_SCAN_STATUS_TAG,
@@ -105,6 +106,11 @@ describe('Binary/$scan', () => {
     } as OperationOutcome;
   }
 
+  function requestedAt(res: request.Response): string | undefined {
+    return (res.body as OperationOutcome).issue[0].extension?.find((e) => e.url === MALWARE_SCAN_REQUESTED_EXTENSION)
+      ?.valueDateTime;
+  }
+
   function expectScanStatus(res: request.Response, severity: string, code: string, status: string): void {
     expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject(scanOutcomeMatcher(severity, code, status));
@@ -124,6 +130,7 @@ describe('Binary/$scan', () => {
     const [tagSet] = putTagSets();
     expect(tagSet).toStrictEqual({ Other: 'keep', [MALWARE_SCAN_REQUESTED_TAG]: expect.any(String) });
     expect(Date.now() - Date.parse(tagSet[MALWARE_SCAN_REQUESTED_TAG])).toBeLessThan(60_000);
+    expect(requestedAt(res)).toBe(tagSet[MALWARE_SCAN_REQUESTED_TAG]);
   });
 
   test.each([
@@ -131,12 +138,22 @@ describe('Binary/$scan', () => {
     ['THREATS_FOUND', 'error', 'security'],
     ['UNSUPPORTED', 'warning', 'not-supported'],
   ])('Returns %s without re-scanning', async (status, severity, code) => {
-    mockTags({ [MALWARE_SCAN_STATUS_TAG]: status, [MALWARE_SCAN_REQUESTED_TAG]: new Date().toISOString() });
+    const scanRequestedAt = new Date(Date.now() - 60_000).toISOString();
+    mockTags({ [MALWARE_SCAN_STATUS_TAG]: status, [MALWARE_SCAN_REQUESTED_TAG]: scanRequestedAt });
 
     const res = await scan();
     expectScanStatus(res, severity, code, status);
+    expect(requestedAt(res)).toBe(scanRequestedAt);
     expect(scanRequests()).toBe(0);
     expect(putTagSets()).toHaveLength(0);
+  });
+
+  test('Omits the requested time for a result from an automatic scan', async () => {
+    mockTags({ [MALWARE_SCAN_STATUS_TAG]: 'NO_THREATS_FOUND' });
+
+    const res = await scan();
+    expectScanStatus(res, 'information', 'informational', 'NO_THREATS_FOUND');
+    expect(res.body.issue[0].extension).toBeUndefined();
   });
 
   test('Reports the scan in progress when no result arrives in time', async () => {
