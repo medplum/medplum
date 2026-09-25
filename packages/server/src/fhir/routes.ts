@@ -75,6 +75,7 @@ import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectRateLimitsHandler } from './operations/project-rate-limits';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
+import { questionnaireAssembleHandler } from './operations/questionnaireassemble';
 import { rebuildBaseDefinitionsOperation } from './operations/rebuild-base-definitions';
 import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
 import { appointmentRescheduleHandler } from './operations/reschedule';
@@ -395,6 +396,10 @@ function initInternalFhirRouter(): FhirRouter {
   // SMART Health Links operations
   router.add('POST', '/Patient/:id/$generate-smart-health-link', generateSmartHealthLinkHandler);
   router.add('POST', '/$resolve-smart-health-link', resolveSmartHealthLinkHandler);
+
+  // Questionnaire $assemble operation
+  router.add('POST', '/Questionnaire/$assemble', questionnaireAssembleHandler);
+  router.add('POST', '/Questionnaire/:id/$assemble', questionnaireAssembleHandler);
 
   // QuestionnaireResponse $extract operation
   router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);
