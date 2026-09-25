@@ -318,6 +318,46 @@ function projectedWeekWindow(context: SchedulingContext, projections: (Date | un
   };
 }
 
+// Each candidate is taken through every later week before the next, so the search stops once it
+// has `pageSize` series. Candidates are in chronological order, so these are the earliest.
+function selectSeries(params: {
+  candidates: Interval[];
+  laterWeeks: {
+    projections: (Date | undefined)[];
+    availability: Interval[];
+    hasBufferConflict: (interval: Interval) => boolean;
+  }[];
+  duration: number;
+  pageSize: number;
+}): Interval[][] {
+  const { candidates, laterWeeks, duration, pageSize } = params;
+  const series: Interval[][] = [];
+  for (const [idx, candidate] of candidates.entries()) {
+    const occurrences = [candidate];
+    for (const { projections, availability, hasBufferConflict } of laterWeeks) {
+      const start = projections[idx];
+      if (!start) {
+        break;
+      }
+      const occurrence = { start, end: addMinutes(start, duration) };
+      const bookable =
+        availability.some((interval) => interval.start <= start && occurrence.end <= interval.end) &&
+        !hasBufferConflict(occurrence);
+      if (!bookable) {
+        break;
+      }
+      occurrences.push(occurrence);
+    }
+    if (occurrences.length === laterWeeks.length + 1) {
+      series.push(occurrences);
+      if (series.length === pageSize) {
+        break;
+      }
+    }
+  }
+  return series;
+}
+
 // Internal implementation of $find logic. A single time is a series of one. A first-occurrence
 // candidate survives each later week only if its projection is available that week; each later
 // week costs one Slot search, so DB work scales with `occurrenceCount`, not with candidates.
@@ -408,33 +448,7 @@ async function findAvailableSeries(params: {
     ...computeAvailability({ context, effectiveRange: range, slots: laterWeekSlots[idx] }),
   }));
 
-  // Each candidate is taken through every later week before the next, so the search stops once it
-  // has `pageSize` series. Candidates are in chronological order, so these are the earliest.
-  const series: Interval[][] = [];
-  for (const [idx, candidate] of candidates.entries()) {
-    const occurrences = [candidate];
-    for (const { projections, availability, hasBufferConflict } of laterWeekChecks) {
-      const start = projections[idx];
-      if (!start) {
-        break;
-      }
-      const occurrence = { start, end: addMinutes(start, duration) };
-      const bookable =
-        availability.some((interval) => interval.start <= start && occurrence.end <= interval.end) &&
-        !hasBufferConflict(occurrence);
-      if (!bookable) {
-        break;
-      }
-      occurrences.push(occurrence);
-    }
-    if (occurrences.length === occurrenceCount) {
-      series.push(occurrences);
-      if (series.length === pageSize) {
-        break;
-      }
-    }
-  }
-
+  const series = selectSeries({ candidates, laterWeeks: laterWeekChecks, duration, pageSize });
   return series.map((occurrences) => buildAppointments(context, occurrences));
 }
 
