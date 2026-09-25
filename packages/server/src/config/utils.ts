@@ -34,6 +34,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.accurateCountThreshold ??= 1_000_000;
   config.maxSearchOffset ??= 10_000;
   config.defaultBotRuntimeVersion ??= 'awslambda';
+  config.storeBotInput ??= true;
   config.defaultProjectFeatures ??= [];
   config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
@@ -99,13 +100,13 @@ type DefaultConfigKeys =
   | 'botLambdaLayerName'
   | 'bcryptHashSalt'
   | 'bullmq'
-  | 'dataWarehouse'
   | 'shutdownTimeoutMilliseconds'
   | 'accurateCountThreshold'
   | 'maxSearchOffset'
   | 'base64BinaryMaxBytes'
   | 'inlineAttachmentsMaxTotalBytes'
   | 'defaultBotRuntimeVersion'
+  | 'storeBotInput'
   | 'defaultProjectFeatures'
   | 'defaultProjectSystemSetting'
   | 'emailProvider'
@@ -187,7 +188,9 @@ export function isFloatConfig(_key: string): boolean {
 
 const booleanKeys = new Set([
   'allowUnsafeOutbound',
+  'autoDownloadEnabled',
   'botCustomFunctionsEnabled',
+  'cacheResourcesOnWrite',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
   'database.disableConnectionConfiguration',
@@ -203,11 +206,11 @@ const booleanKeys = new Set([
   'registerEnabled',
   'requireVerifiedEmailForProjectCreation',
   'serverScopedSubscriptionsEnabled',
+  'storeBotInput',
   'require',
   'rejectUnauthorized',
   'fhirSearchDiscourageSeqScan',
   'redactAuditEvents',
-  'dataWarehouse.enabled',
 ]);
 
 export function isBooleanConfig(key: string): boolean {
@@ -228,18 +231,13 @@ const objectKeys = new Set([
   'workers',
   'workers.enabled',
   'workers.bullmq',
-  'dataWarehouse',
 ]);
 
 export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
 }
 
-const arrayKeys = new Set([
-  'dataWarehouse.includeResourceTypes',
-  'dataWarehouse.excludeResourceTypes',
-  'blockedEmailDomains',
-]);
+const arrayKeys = new Set(['blockedEmailDomains']);
 
 export function isArrayConfig(key: string): boolean {
   return arrayKeys.has(key);

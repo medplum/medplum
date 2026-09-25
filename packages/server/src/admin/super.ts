@@ -38,6 +38,7 @@ import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
+import { getAsyncJobTracking } from '../workers/base';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import type { LambdaCleanerOptions } from '../workers/lambda-cleaner';
 import { addLambdaCleanerJobData } from '../workers/lambda-cleaner';
@@ -267,11 +268,15 @@ superAdminRouter.post(
     const asyncJobUrl = new URL(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     asyncJobUrl.search = getQueryString(queryForUrl);
 
-    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
-    const exec = new AsyncJobExecutor(systemRepo);
+    const exec = new AsyncJobExecutor(ctx.repo);
     await exec.init(asyncJobUrl.toString());
     await exec.run(async (asyncJob) => {
-      await addLambdaCleanerJobData({ asyncJob, options, requestId: ctx.requestId, traceId: ctx.traceId });
+      await addLambdaCleanerJobData({
+        tracking: getAsyncJobTracking(asyncJob),
+        options,
+        requestId: ctx.requestId,
+        traceId: ctx.traceId,
+      });
     });
 
     const { baseUrl } = getConfig();
@@ -728,7 +733,7 @@ superAdminRouter.post('/reloadcron', async (req: Request, res: Response) => {
 
   await sendAsyncResponse(req, res, async () => {
     const startTime = Date.now();
-    await reloadCronBots();
+    await reloadCronBots(PLACEHOLDER_SHARD_ID);
     globalLogger.info('[Super Admin]: Cron bots reloaded', {
       durationMs: Date.now() - startTime,
     });

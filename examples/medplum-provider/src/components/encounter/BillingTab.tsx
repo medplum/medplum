@@ -25,6 +25,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { ChartNoteStatus } from '../../types/encounter';
+import { BILLING_ORGANIZATION_IDENTIFIER } from '../../utils/billing';
 import { refreshCandidClaimResponse } from '../../utils/candid';
 import { getChargeItemsForEncounter } from '../../utils/chargeitems';
 import { buildClaimFromEncounter } from '../../utils/claims';
@@ -109,7 +110,8 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   }, [medplum, patient]);
 
   // Default the billing organization: an existing draft claim records the previous choice;
-  // otherwise use the organization the practitioner bills under (PractitionerRole).
+  // otherwise use the billing organization on the practitioner's active PractitionerRole, looked up
+  // the same way the visit's insurance eligibility check does. The picker stays editable either way.
   useEffect(() => {
     const resolveBillingOrganization = async (): Promise<Reference<Organization> | undefined> => {
       if (claim?.provider?.reference?.startsWith('Organization/')) {
@@ -121,6 +123,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       const role = await medplum.searchOne('PractitionerRole', {
         practitioner: getReferenceString(practitioner),
         active: 'true',
+        'organization.identifier': BILLING_ORGANIZATION_IDENTIFIER,
       });
       return role?.organization;
     };

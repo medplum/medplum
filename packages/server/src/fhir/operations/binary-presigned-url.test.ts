@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type { Binary, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import type { Server } from 'node:http';
@@ -104,6 +105,46 @@ describe('Binary/$presigned-url', () => {
       .auth(accessToken, { type: 'bearer' })
       .send();
     expect(writeUrlRes).toHaveStatus(403);
+  });
+
+  test('Linked project cannot generate upload link', async () => {
+    const owner = await createTestProject({ withAccessToken: true });
+    const linked = await createTestProject({
+      withAccessToken: true,
+      project: { link: [{ project: createReference(owner.project) }] },
+    });
+
+    const binRes = await request(server)
+      .post('/fhir/R4/Binary')
+      .auth(owner.accessToken, { type: 'bearer' })
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Binary',
+        contentType: 'text/plain',
+      } satisfies Binary);
+    expect(binRes).toHaveStatus(201);
+    const binary = binRes.body as WithId<Binary>;
+
+    // Owning project can upload
+    const ownerWriteUrlRes = await request(server)
+      .get(`/fhir/R4/Binary/${binary.id}/$presigned-url?upload=true`)
+      .auth(owner.accessToken, { type: 'bearer' })
+      .send();
+    expect(ownerWriteUrlRes).toHaveStatus(200);
+
+    // Linked project can read
+    const linkedReadUrlRes = await request(server)
+      .get(`/fhir/R4/Binary/${binary.id}/$presigned-url`)
+      .auth(linked.accessToken, { type: 'bearer' })
+      .send();
+    expect(linkedReadUrlRes).toHaveStatus(200);
+
+    // Linked project cannot upload
+    const linkedWriteUrlRes = await request(server)
+      .get(`/fhir/R4/Binary/${binary.id}/$presigned-url?upload=true`)
+      .auth(linked.accessToken, { type: 'bearer' })
+      .send();
+    expect(linkedWriteUrlRes).toHaveStatus(403);
   });
 
   test('Requires securityContext read access to generate presigned URL', async () => {

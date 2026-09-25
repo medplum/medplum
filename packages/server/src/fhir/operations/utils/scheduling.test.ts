@@ -9,6 +9,7 @@ import { withPath } from '../../../util/withpath';
 import type { Repository } from '../../repo';
 import {
   applyExistingSlots,
+  eachDayOfInterval,
   intersectIntervals,
   intervalsExceedingCapacity,
   isAlignedToGrid,
@@ -1026,6 +1027,22 @@ describe('applyExistingSlots', () => {
     const range = { start: new Date('2025-12-01'), end: new Date('2025-12-02') };
     expect(applyExistingSlots({ availability, slots, range, capacity: 3 })).toEqual([
       { start: new Date('2025-12-01T10:00:00Z'), end: new Date('2025-12-01T12:00:00Z') },
+    ]);
+  });
+});
+
+describe('eachDayOfInterval', () => {
+  test('starts each day at its first instant, including after a day with no midnight', () => {
+    // Havana springs forward at midnight on 2026-03-08, so that day starts at 1am.
+    const days = eachDayOfInterval(
+      { start: new Date('2026-03-07T12:00:00-05:00'), end: new Date('2026-03-10T00:30:00-04:00') },
+      'America/Havana'
+    );
+    expect(days.map((day) => day.toString())).toEqual([
+      '2026-03-07T00:00:00-05:00[America/Havana]',
+      '2026-03-08T01:00:00-04:00[America/Havana]',
+      '2026-03-09T00:00:00-04:00[America/Havana]',
+      '2026-03-10T00:00:00-04:00[America/Havana]',
     ]);
   });
 });

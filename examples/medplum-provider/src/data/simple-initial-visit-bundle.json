@@ -3,108 +3,11 @@
   "type": "transaction",
   "entry": [
     {
-      "fullUrl": "urn:uuid:a1b2c3d4-e5f6-7890-abcd-123456789abc",
-      "resource": {
-        "resourceType": "ActivityDefinition",
-        "url": "https://www.medplum.com/activitydefinition/comprehensive-laboratory-screening",
-        "name": "Comprehensive Laboratory Screening",
-        "status": "active",
-        "extension": [
-          {
-            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
-            "valueCanonical": "https://www.medplum.com/chargeItemDefinition/samplevisit"
-          }
-        ],
-        "code": {
-          "coding": [
-            {
-              "system": "http://snomed.info/sct",
-              "code": "26604007",
-              "display": "Complete blood count"
-            },
-            {
-              "system": "http://snomed.info/sct",
-              "code": "108252007",
-              "display": "Laboratory procedure (procedure)"
-            },
-            {
-              "system": "http://snomed.info/sct",
-              "code": "371361000119107",
-              "display": "Comprehensive metabolic panel (procedure)"
-            },
-            {
-              "system": "http://snomed.info/sct",
-              "code": "16254007",
-              "display": "Lipid panel (procedure)"
-            },
-            {
-              "system": "http://snomed.info/sct",
-              "code": "27171005",
-              "display": "Urinalysis (procedure)"
-            },
-            {
-              "system": "http://snomed.info/sct",
-              "code": "35650009",
-              "display": "Thyroid panel (procedure)"
-            },
-            {
-              "system": "http://www.ama-assn.org/go/cpt",
-              "code": "80050",
-              "display": "General health panel"
-            }
-          ]
-        },
-        "kind": "ServiceRequest",
-        "intent": "order",
-        "dynamicValue": [
-          {
-            "path": "category.coding.system",
-            "expression": {
-              "language": "text/fhirpath",
-              "expression": "'http://snomed.info/sct'"
-            }
-          },
-          {
-            "path": "category.coding.code",
-            "expression": {
-              "language": "text/fhirpath",
-              "expression": "'108252007'"
-            }
-          },
-          {
-            "path": "category.coding.display",
-            "expression": {
-              "language": "text/fhirpath",
-              "expression": "'Laboratory procedure'"
-            }
-          },
-          {
-            "path": "performer.reference",
-            "expression": {
-              "language": "text/fhirpath",
-              "expression": "'Organization/258a1dbb-ccec-4cb3-b9ff-4dc28f8f28a0'"
-            }
-          },
-          {
-            "path": "performer.display",
-            "expression": {
-              "language": "text/fhirpath",
-              "expression": "'National HGDX LabCorp'"
-            }
-          }
-        ]
-      },
-      "request": {
-        "method": "POST",
-        "url": "ActivityDefinition"
-      }
-    },
-    {
       "fullUrl": "urn:uuid:a9b8c7d6-e5f4-3210-abcd-fedcba987654",
       "resource": {
         "resourceType": "ActivityDefinition",
-        "url": "https://www.medplum.com/activitydefinition/office-visit-established-patient",
-        "name": "Office Visit Established Patient",
+        "url": "https://www.medplum.com/activitydefinition/venipuncture",
+        "name": "Venipuncture",
         "status": "active",
         "kind": "ServiceRequest",
         "intent": "order",
@@ -117,9 +20,14 @@
         "code": {
           "coding": [
             {
+              "system": "http://snomed.info/sct",
+              "code": "82078001",
+              "display": "Collection of blood specimen for laboratory (procedure)"
+            },
+            {
               "system": "http://www.ama-assn.org/go/cpt",
-              "code": "99213",
-              "display": "Office or other outpatient visit for the evaluation and management of an established patient, low to moderate complexity"
+              "code": "36415",
+              "display": "Collection of venous blood by venipuncture"
             }
           ]
         }
@@ -134,10 +42,30 @@
       "resource": {
         "resourceType": "ChargeItemDefinition",
         "url": "https://www.medplum.com/chargeItemDefinition/samplevisit",
-        "title": "Simple Initial Visit",
+        "title": "Simple Initial Visit + Billing",
         "status": "active",
+        "code": {
+          "coding": [
+            {
+              "system": "http://www.ama-assn.org/go/cpt",
+              "code": "99213",
+              "display": "Office/outpatient visit, established patient, low complexity"
+            },
+            {
+              "system": "http://www.ama-assn.org/go/cpt",
+              "code": "36415",
+              "display": "Collection of venous blood by venipuncture"
+            }
+          ]
+        },
         "propertyGroup": [
           {
+            "applicability": [
+              {
+                "description": "Office/outpatient visit, established patient, low complexity (99213)",
+                "expression": "%resource.code.coding.where(system='http://www.ama-assn.org/go/cpt' and code='99213').exists()"
+              }
+            ],
             "priceComponent": [
               {
                 "type": "base",
@@ -146,7 +74,7 @@
                     {
                       "system": "http://www.ama-assn.org/go/cpt",
                       "code": "99213",
-                      "display": "Office visit, established patient, low complexity"
+                      "display": "Office/outpatient visit, established patient, low complexity"
                     }
                   ]
                 },
@@ -161,25 +89,25 @@
           {
             "applicability": [
               {
-                "description": "Comprehensive Laboratory Screening (80050)",
-                "expression": "%resource.code.coding.where(system='http://www.ama-assn.org/go/cpt' and code='80050').exists()"
+                "description": "Collection of venous blood by venipuncture (36415)",
+                "expression": "%resource.code.coding.where(system='http://www.ama-assn.org/go/cpt' and code='36415').exists()"
               }
             ],
             "priceComponent": [
               {
-                "type": "surcharge",
+                "type": "base",
                 "code": {
                   "coding": [
                     {
                       "system": "http://www.ama-assn.org/go/cpt",
-                      "code": "80050",
-                      "display": "General health panel"
+                      "code": "36415",
+                      "display": "Collection of venous blood by venipuncture"
                     }
                   ]
                 },
                 "factor": 1,
                 "amount": {
-                  "value": 500,
+                  "value": 25,
                   "currency": "USD"
                 }
               }
@@ -196,7 +124,26 @@
       "fullUrl": "urn:uuid:c3d4e5f6-a7b8-9012-cdef-3456789abcde",
       "resource": {
         "resourceType": "PlanDefinition",
-        "name": "Simple Initial Visit",
+        "url": "https://www.medplum.com/plandefinition/simple-initial-visit",
+        "name": "Simple Initial Visit + Billing",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/uv/order-catalog/StructureDefinition/ServiceBillingCode",
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://www.ama-assn.org/go/cpt",
+                  "code": "99213",
+                  "display": "Office/outpatient visit, established patient, low complexity"
+                }
+              ]
+            }
+          },
+          {
+            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
+            "valueCanonical": "https://www.medplum.com/chargeItemDefinition/samplevisit"
+          }
+        ],
         "type": {
           "coding": [
             {
@@ -226,14 +173,9 @@
             "definitionCanonical": "https://www.medplum.com/questionnaire/health-maintenance-screening"
           },
           {
-            "id": "id-7",
-            "definitionCanonical": "https://www.medplum.com/activitydefinition/comprehensive-laboratory-screening",
-            "title": "Comprehensive Laboratory Screening"
-          },
-          {
-            "id": "charge-consultation",
-            "title": "Office Visit Established Patient",
-            "definitionCanonical": "https://www.medplum.com/activitydefinition/office-visit-established-patient"
+            "id": "id-8",
+            "title": "Venipuncture",
+            "definitionCanonical": "https://www.medplum.com/activitydefinition/venipuncture"
           }
         ]
       },

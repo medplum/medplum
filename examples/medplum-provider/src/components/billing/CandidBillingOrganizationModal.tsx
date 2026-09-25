@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Input, Stack, TextInput, Tooltip } from '@mantine/core';
+import { Alert, Button, Input, Stack, TextInput, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Address, Organization } from '@medplum/fhirtypes';
 import { AddressInput, Modal, useMedplum } from '@medplum/react';
+import { IconInfoCircle } from '@tabler/icons-react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useCandidProviderContracts } from '../../hooks/useCandidProviderContracts';
@@ -14,6 +15,8 @@ import {
   EIN_SYSTEM,
   NPI_SYSTEM,
   buildUpdatedOrganization,
+  getMissingBillingOrganizationFields,
+  isBillingOrganization,
   isValidBillingPhone,
   withCandidProviderExtensions,
   withCandidProviderId,
@@ -29,7 +32,10 @@ import { CandidRegistrationAlert } from './CandidRegistrationAlert';
  */
 const FORM_ID = 'billing-organization-form';
 
-/** Props for the billing organization modal; `organization` is the one to edit, or undefined to create a new one. */
+/**
+ * Props for the billing organization modal. `organization` is the one to edit, or undefined to create a new one;
+ * an organization without the billing marker is one from elsewhere in the project being set up for billing.
+ */
 export interface CandidBillingOrganizationModalProps {
   readonly candidCreateBotId: string | undefined;
   readonly candidEditBotId: string | undefined;
@@ -62,7 +68,7 @@ export function CandidBillingOrganizationModal(props: CandidBillingOrganizationM
       opened={opened}
       onClose={onClose}
       size="lg"
-      title={organization ? 'Edit billing organization' : 'New billing organization'}
+      title={getModalTitle(organization)}
       actions={
         <Tooltip label={missingBotMessage} disabled={!missingBotMessage} multiline w={300}>
           <Button
@@ -93,6 +99,13 @@ export function CandidBillingOrganizationModal(props: CandidBillingOrganizationM
       )}
     </Modal>
   );
+}
+
+function getModalTitle(organization: Organization | undefined): string {
+  if (!organization) {
+    return 'New billing organization';
+  }
+  return isBillingOrganization(organization) ? 'Edit billing organization' : 'Set up billing organization';
 }
 
 /**
@@ -189,7 +202,7 @@ function CandidBillingOrganizationForm(props: CandidBillingOrganizationFormProps
         : await medplum.createResource(built);
       showSuccessNotification({
         title: 'Success',
-        message: organization ? 'Billing organization updated' : 'Billing organization created',
+        message: getSavedMessage(organization),
       });
       if (botId) {
         try {
@@ -223,6 +236,9 @@ function CandidBillingOrganizationForm(props: CandidBillingOrganizationFormProps
   return (
     <form id={FORM_ID} onSubmit={handleSubmit}>
       <Stack gap="md">
+        {organization && !isBillingOrganization(organization) && (
+          <MissingBillingFieldsAlert organization={organization} />
+        )}
         <CandidRegistrationAlert
           registration={registration}
           registersAs={
@@ -262,6 +278,42 @@ function CandidBillingOrganizationForm(props: CandidBillingOrganizationFormProps
       </Stack>
     </form>
   );
+}
+
+function getSavedMessage(organization: Organization | undefined): string {
+  if (!organization) {
+    return 'Billing organization created';
+  }
+  return isBillingOrganization(organization) ? 'Billing organization updated' : 'Organization set up for billing';
+}
+
+interface MissingBillingFieldsAlertProps {
+  readonly organization: Organization;
+}
+
+/**
+ * Tells the user an organization from elsewhere in the project is about to become a billing organization, and
+ * which billing fields it still lacks; the fields below are empty and required, so the save cannot proceed
+ * without them.
+ * @param props - The MissingBillingFieldsAlert React props.
+ * @returns The MissingBillingFieldsAlert React node.
+ */
+function MissingBillingFieldsAlert(props: MissingBillingFieldsAlertProps): JSX.Element {
+  const missing = getMissingBillingOrganizationFields(props.organization);
+  return (
+    <Alert icon={<IconInfoCircle size={16} />} color={missing.length > 0 ? 'yellow' : 'blue'} variant="light">
+      {missing.length > 0
+        ? `This organization is not set up for billing yet. Enter its ${formatList(missing)} to make it available for billing.`
+        : 'This organization is not set up for billing yet. Check its details and save to make it available for billing.'}
+    </Alert>
+  );
+}
+
+function formatList(items: string[]): string {
+  if (items.length <= 1) {
+    return items.join('');
+  }
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
 function getIdentifierValue(organization: Organization | undefined, system: string): string {
