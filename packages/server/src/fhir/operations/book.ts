@@ -70,24 +70,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   );
   const bundle = await createProposedAppointments(ctx.repo, occurrences, (validated) => {
     const timezone = seriesTimezone(validated.flatMap(({ schedulingParameters }) => schedulingParameters));
-    // Each schedule's duration is set per service, and every Slot is checked against it, so the
-    // same schedules and service also mean the same duration.
-    const bookedWith = ({ appointment, slots }: ValidatedOccurrence): string =>
-      JSON.stringify([
-        [...new Set(slots.map((slot) => slot.schedule.reference))].sort(),
-        resolveId(extractServiceTypeReferences(appointment.serviceType)[0]),
-      ]);
-    const firstBookedWith = bookedWith(validated[0]);
-    for (const [idx, occurrence] of validated.entries()) {
-      if (bookedWith(occurrence) !== firstBookedWith) {
-        throw new OperationOutcomeError(
-          badRequest(
-            'Appointments in a recurring series must book the same schedules and service',
-            getPath(occurrences[idx])
-          )
-        );
-      }
-    }
+    checkSameSchedulesAndService(validated, occurrences);
     // The series is checked on the appointments' times, so those must be the times actually booked.
     for (const [idx, { appointment, slots }] of validated.entries()) {
       const mismatched = slots.some(
@@ -120,4 +103,38 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   });
 
   return [created, buildOutputParameters(bookOperation, bundle)];
+}
+
+/**
+ * Checks that every occurrence of a series books the same schedules and service as the first.
+ *
+ * Each schedule's duration is set per service, and every Slot is checked against it, so the
+ * same schedules and service also mean the same duration.
+ *
+ * @param validated - The validated occurrences of the series.
+ * @param occurrences - The submitted occurrences, in the same order, for error paths.
+ */
+function checkSameSchedulesAndService(validated: ValidatedOccurrence[], occurrences: Appointment[]): void {
+  const schedulesOf = ({ slots }: ValidatedOccurrence): Set<string | undefined> =>
+    new Set(slots.map((slot) => slot.schedule.reference));
+  const serviceOf = ({ appointment }: ValidatedOccurrence): string | undefined =>
+    resolveId(extractServiceTypeReferences(appointment.serviceType)[0]);
+
+  const firstSchedules = schedulesOf(validated[0]);
+  const firstService = serviceOf(validated[0]);
+  for (const [idx, occurrence] of validated.entries()) {
+    const schedules = schedulesOf(occurrence);
+    if (
+      serviceOf(occurrence) !== firstService ||
+      schedules.size !== firstSchedules.size ||
+      !schedules.isSubsetOf(firstSchedules)
+    ) {
+      throw new OperationOutcomeError(
+        badRequest(
+          'Appointments in a recurring series must book the same schedules and service',
+          getPath(occurrences[idx])
+        )
+      );
+    }
+  }
 }
