@@ -29,6 +29,14 @@
   flex: 1 1 0;
 }
 
+.secondLine :global(.mantine-Group-root) {
+  gap: 8px;
+}
+
+.secondLine :global(.mantine-Group-root > .mantine-InputWrapper-root) {
+  max-width: calc(50% - 4px) !important;
+}
+
 .secondLine {
   flex: 1 1 100%;
   display: flex;
