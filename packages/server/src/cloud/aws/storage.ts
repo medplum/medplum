@@ -4,7 +4,9 @@ import {
   CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  GetObjectTaggingCommand,
   PutObjectCommand,
+  PutObjectTaggingCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
@@ -125,6 +127,37 @@ export class S3Storage extends BaseBinaryStorage {
           CopySourceSSECustomerKey: this.sseC.SSECustomerKey,
           CopySourceSSECustomerKeyMD5: this.sseC.SSECustomerKeyMD5,
         }),
+      })
+    );
+  }
+
+  /**
+   * Returns the tags on an S3 object as a key/value map.
+   * @param key - The S3 key.
+   * @returns The object tags.
+   */
+  async getObjectTags(key: string): Promise<Record<string, string>> {
+    const response = await this.client.send(new GetObjectTaggingCommand({ Bucket: this.bucket, Key: key }));
+    const tags: Record<string, string> = {};
+    for (const tag of response.TagSet ?? []) {
+      if (tag.Key) {
+        tags[tag.Key] = tag.Value ?? '';
+      }
+    }
+    return tags;
+  }
+
+  /**
+   * Replaces all tags on an S3 object.
+   * @param key - The S3 key.
+   * @param tags - The complete new tag set.
+   */
+  async putObjectTags(key: string, tags: Record<string, string>): Promise<void> {
+    await this.client.send(
+      new PutObjectTaggingCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Tagging: { TagSet: Object.entries(tags).map(([Key, Value]) => ({ Key, Value })) },
       })
     );
   }

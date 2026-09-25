@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { StackResource } from '@aws-sdk/client-cloudformation';
 import { GetBucketPolicyCommand, PutBucketPolicyCommand } from '@aws-sdk/client-s3';
+import { isDeepStrictEqual } from 'node:util';
 import { readConfig } from '../utils';
 import { createInvalidation, getStackByTag, printConfigNotFound, printStackNotFound, s3Client } from './utils';
 
@@ -9,6 +10,7 @@ export interface UpdateBucketPoliciesOptions {
   file?: string;
   dryrun?: boolean;
   guarddutyMalwareProtection?: boolean;
+  guarddutyOnDemandOnly?: boolean;
 }
 
 interface Policy {
@@ -95,13 +97,16 @@ export async function updateBucketPolicy(
   const bucketName = bucketResource.PhysicalResourceId;
   const oaiId = oaiResource.PhysicalResourceId;
   const bucketPolicy = await getPolicy(bucketName);
-  if (policyHasAllowStatement(bucketPolicy, bucketName, oaiId)) {
-    throw new Error(`${friendlyName} bucket already has policy statement`);
+  const hasAllowStatement = policyHasAllowStatement(bucketPolicy, bucketName, oaiId);
+  if (!hasAllowStatement) {
+    addAllowPolicyStatement(bucketPolicy, bucketName, oaiId);
   }
-
-  addAllowPolicyStatement(bucketPolicy, bucketName, oaiId);
-  if (friendlyName === 'Storage' && options.guarddutyMalwareProtection) {
-    addGuardDutyReadPolicyStatement(bucketPolicy, bucketName, oaiId);
+  const gateChanged =
+    friendlyName === 'Storage' &&
+    options.guarddutyMalwareProtection &&
+    addGuardDutyReadPolicyStatement(bucketPolicy, bucketName, oaiId, options.guarddutyOnDemandOnly);
+  if (hasAllowStatement && !gateChanged) {
+    throw new Error(`${friendlyName} bucket already has policy statement`);
   }
   console.log(`${friendlyName} bucket policy:`);
   console.log(JSON.stringify(bucketPolicy, undefined, 2));
@@ -176,34 +181,42 @@ function addAllowPolicyStatement(policy: Policy, bucketName: string, oaiId: stri
   });
 }
 
-function addGuardDutyReadPolicyStatement(policy: Policy, bucketName: string, oaiId: string): void {
-  if (
-    policy.Statement?.some(
-      (s) =>
-        s?.Effect === 'Deny' &&
-        s?.Principal?.AWS === `arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${oaiId}` &&
-        statementHasAction(s, 's3:GetObject') &&
-        statementHasAction(s, 's3:GetObjectVersion') &&
-        s?.Condition?.StringNotEquals?.['s3:ExistingObjectTag/GuardDutyMalwareScanStatus'] === 'NO_THREATS_FOUND'
-    )
-  ) {
-    return;
-  }
+function addGuardDutyReadPolicyStatement(
+  policy: Policy,
+  bucketName: string,
+  oaiId: string,
+  onDemandOnly: boolean | undefined
+): boolean {
+  const principal = `arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${oaiId}`;
+  const tag = 's3:ExistingObjectTag/GuardDutyMalwareScanStatus';
+  const blanketCondition = { StringNotEquals: { [tag]: 'NO_THREATS_FOUND' } };
+  // Without automatic scans most objects are never scanned, so only block known threats
+  const [sid, condition]: [string, PolicyStatement['Condition']] = onDemandOnly
+    ? ['GuardDutyMalwareProtectionThreatsFoundGate', { StringEquals: { [tag]: 'THREATS_FOUND' } }]
+    : ['GuardDutyMalwareProtectionReadGate', blanketCondition];
+  const isReadGate = (s: PolicyStatement, gateCondition: PolicyStatement['Condition']): boolean =>
+    s?.Effect === 'Deny' &&
+    s?.Principal?.AWS === principal &&
+    statementHasAction(s, 's3:GetObject') &&
+    statementHasAction(s, 's3:GetObjectVersion') &&
+    isDeepStrictEqual(s?.Condition, gateCondition);
 
-  policy.Statement?.push({
-    Sid: 'GuardDutyMalwareProtectionReadGate',
-    Effect: 'Deny',
-    Principal: {
-      AWS: `arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${oaiId}`,
-    },
-    Action: ['s3:GetObject', 's3:GetObjectVersion'],
-    Resource: `arn:aws:s3:::${bucketName}/*`,
-    Condition: {
-      StringNotEquals: {
-        's3:ExistingObjectTag/GuardDutyMalwareScanStatus': 'NO_THREATS_FOUND',
-      },
-    },
-  });
+  const original = policy.Statement ?? [];
+  const statements = original.filter((s) => !(onDemandOnly && isReadGate(s, blanketCondition)));
+  const removed = statements.length !== original.length;
+  const added = !statements.some((s) => isReadGate(s, condition));
+  if (added) {
+    statements.push({
+      Sid: sid,
+      Effect: 'Deny',
+      Principal: { AWS: principal },
+      Action: ['s3:GetObject', 's3:GetObjectVersion'],
+      Resource: `arn:aws:s3:::${bucketName}/*`,
+      Condition: condition,
+    });
+  }
+  policy.Statement = statements;
+  return removed || added;
 }
 
 function statementHasAction(statement: PolicyStatement, action: string): boolean {
