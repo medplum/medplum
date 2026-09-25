@@ -325,35 +325,16 @@ async function findAvailableSeries(params: {
   schedules: WithPath<Reference<Schedule> & { reference: string }>[];
   healthcareService: Reference<HealthcareService> & { reference: string };
   ignoreAppointment?: WithPath<Reference<Appointment>> & { reference: string };
-  start: string;
-  end: string;
+  searchRange: Interval;
   occurrenceCount: number;
-  _count?: number;
+  pageSize: number;
 }): Promise<Appointment[][]> {
   const ctx = getAuthenticatedContext();
-  const { ignoreAppointment, occurrenceCount } = params;
-
-  const pageSize = params._count ?? DEFAULT_SEARCH_COUNT;
-  if (pageSize < 1) {
-    throw new OperationOutcomeError(badRequest('Invalid _count, minimum required is 1'));
-  }
-  if (pageSize > DEFAULT_MAX_SEARCH_COUNT) {
-    throw new OperationOutcomeError(badRequest(`Invalid _count, maximum allowed is ${DEFAULT_MAX_SEARCH_COUNT}`));
-  }
-
-  const requestedRange = { start: new Date(params.start), end: new Date(params.end) };
-  if (requestedRange.start >= requestedRange.end) {
-    throw new OperationOutcomeError(badRequest('Invalid search time range'));
-  }
-
-  const maxDays = occurrenceCount > 1 ? MAX_RECURRING_RANGE_DAYS : MAX_FIND_RANGE_DAYS;
-  if (requestedRange.end > addMinutes(requestedRange.start, maxDays * 24 * 60 + DST_SLACK_MINUTES)) {
-    throw new OperationOutcomeError(badRequest(`Search range cannot exceed ${maxDays} days`));
-  }
+  const { ignoreAppointment, occurrenceCount, searchRange, pageSize } = params;
 
   const [context, allExistingSlots, ignoredAppointment] = await Promise.all([
     loadSchedulingContext({ schedules: params.schedules, healthcareService: params.healthcareService }),
-    slotsOverlappingInterval(ctx.repo, params.schedules, requestedRange),
+    slotsOverlappingInterval(ctx.repo, params.schedules, searchRange),
     ignoreAppointment
       ? ctx.repo.readReference<Appointment>(ignoreAppointment).catch((err) => {
           if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
@@ -364,7 +345,7 @@ async function findAvailableSeries(params: {
       : undefined,
   ]);
 
-  const effectiveRange = resolveEffectiveRange(context, requestedRange);
+  const effectiveRange = resolveEffectiveRange(context, searchRange);
 
   // The Slots held by the appointment being reassigned shouldn't block that appointment from
   // moving, so drop them before computing availability.
@@ -470,9 +451,7 @@ async function findAvailableSeries(params: {
 export async function appointmentFindHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<AppointmentFindParameters>(appointmentFindOperation, req);
 
-  const { schedule, start, end, _count } = params;
-
-  const scheduleRefs = arrayify(schedule).map((reference) => ({ reference }));
+  const scheduleRefs = arrayify(params.schedule).map((reference) => ({ reference }));
   const invalidIndex = scheduleRefs.findIndex((ref) => !isReference(ref, 'Schedule'));
   if (invalidIndex !== -1) {
     throw new OperationOutcomeError(badRequest('Invalid schedule reference', `Parameters.schedule[${invalidIndex}]`));
@@ -505,14 +484,31 @@ export async function appointmentFindHandler(req: FhirRequest): Promise<FhirResp
     ignoreAppointment = withPath(ref, 'Parameters.ignore-appointment');
   }
 
+  const pageSize = params._count ?? DEFAULT_SEARCH_COUNT;
+  if (pageSize < 1) {
+    throw new OperationOutcomeError(badRequest('Invalid _count, minimum required is 1'));
+  }
+  if (pageSize > DEFAULT_MAX_SEARCH_COUNT) {
+    throw new OperationOutcomeError(badRequest(`Invalid _count, maximum allowed is ${DEFAULT_MAX_SEARCH_COUNT}`));
+  }
+
+  const searchRange = { start: new Date(params.start), end: new Date(params.end) };
+  if (searchRange.start >= searchRange.end) {
+    throw new OperationOutcomeError(badRequest('Invalid search time range'));
+  }
+
+  const maxDays = occurrenceCount > 1 ? MAX_RECURRING_RANGE_DAYS : MAX_FIND_RANGE_DAYS;
+  if (searchRange.end > addMinutes(searchRange.start, maxDays * 24 * 60 + DST_SLACK_MINUTES)) {
+    throw new OperationOutcomeError(badRequest(`Search range cannot exceed ${maxDays} days`));
+  }
+
   const offers = await findAvailableSeries({
-    start,
-    end,
+    searchRange,
     healthcareService: { reference: params['service-type-reference'] },
     schedules: withPaths(scheduleRefs, 'Parameters.schedule'),
     ignoreAppointment,
     occurrenceCount,
-    _count,
+    pageSize,
   });
 
   const bundle: Bundle<Appointment | Bundle<Appointment>> = {
