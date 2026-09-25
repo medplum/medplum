@@ -11,15 +11,13 @@ import {
   TerminateMicrovmCommand,
 } from '@aws-sdk/client-lambda-microvms';
 import type { WithId } from '@medplum/core';
-import { createReference, normalizeErrorString, sleep } from '@medplum/core';
-import type { AsyncJob, Bot, Parameters } from '@medplum/fhirtypes';
+import { createReference, normalizeErrorString } from '@medplum/core';
+import type { AsyncJob, Binary, Bot, Parameters } from '@medplum/fhirtypes';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
 import type { Repository } from '../../fhir/repo';
 import { getProjectSystemRepo } from '../../fhir/repo';
-import { normalizeBinaryUrl } from '../../fhir/rewrite';
 import { getLogger } from '../../logger';
-import { getBinaryStorageKey } from '../../storage/base';
 import { getBinaryStorage } from '../../storage/loader';
 import { buildLambdaPayload } from './execute';
 import { S3Storage } from './storage';
@@ -31,7 +29,7 @@ export function getBotMicrovmName(bot: WithId<Bot>): string {
   return `bot-${bot.id}-image`;
 }
 
-export async function deployBotMicrovmImage(bot: WithId<Bot>): Promise<string> {
+export async function deployBotMicrovmImage(bot: WithId<Bot>, binary: WithId<Binary>): Promise<string> {
   const config = getConfig();
 
   const baseImageArn = config.awsLambdaMicrovmBaseImageArn;
@@ -44,16 +42,6 @@ export async function deployBotMicrovmImage(bot: WithId<Bot>): Promise<string> {
     throw new Error('Missing AWS Lambda MicroVM build role ARN in configuration');
   }
 
-  const executableCode = bot.executableCode;
-  if (!executableCode?.url) {
-    throw new Error('Bot does not have executable code');
-  }
-
-  const binaryParts = normalizeBinaryUrl(executableCode.url);
-  if (!binaryParts.id || !binaryParts.versionId) {
-    throw new Error('Bot executable code URL is not a valid S3 URL');
-  }
-
   const storage = getBinaryStorage();
   if (!(storage instanceof S3Storage)) {
     throw new Error('AWS Lambda MicroVM requires S3 storage');
@@ -61,11 +49,11 @@ export async function deployBotMicrovmImage(bot: WithId<Bot>): Promise<string> {
 
   const name = getBotMicrovmName(bot);
   const bucket = storage.bucket;
-  const key = getBinaryStorageKey(binaryParts.id, binaryParts.versionId);
+  const key = storage.getKey(binary);
 
   const client = getMicrovmClient();
 
-  await client.send(
+  const microvmImage = await client.send(
     new CreateMicrovmImageCommand({
       name,
       codeArtifact: { uri: `s3://${bucket}/${key}` },
@@ -74,24 +62,8 @@ export async function deployBotMicrovmImage(bot: WithId<Bot>): Promise<string> {
     })
   );
 
-  for (;;) {
-    const image = await client.send(
-      new GetMicrovmImageCommand({
-        imageIdentifier: name,
-      })
-    );
-
-    switch (image.state) {
-      case 'CREATED':
-        return image.imageArn as string;
-
-      case 'CREATE_FAILED':
-        throw new Error('MicroVM image build failed');
-
-      default:
-        await sleep(2000);
-    }
-  }
+  getLogger().info('Creating MicroVM image', { name, baseImageArn, buildRoleArn, imageArn: microvmImage.imageArn });
+  return microvmImage.imageArn as string;
 }
 
 let client: LambdaMicrovmsClient | undefined;
