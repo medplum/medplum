@@ -54,7 +54,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
   component: ({ patient, onClickResource }: SectionRenderContext) => {
     const languageDisplay = getPreferredLanguage(patient);
     return (
-      <Stack gap="xs" py={8}>
+      <Stack gap="xs" py="md">
         <PatientInfoItem
           patient={patient}
           value={patient.birthDate ? `${patient.birthDate} (${calculateAgeString(patient.birthDate)})` : undefined}
