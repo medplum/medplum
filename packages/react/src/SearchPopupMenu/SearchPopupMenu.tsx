@@ -4,7 +4,9 @@ import { Menu } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import {
-  IconCalendar,
+  IconCalendarDue,
+  IconCalendarMonth,
+  IconCalendarTime,
   IconCheck,
   IconFilter2Plus,
   IconSortAscending,
@@ -36,6 +38,7 @@ export interface SearchPopupMenuProps {
 
 type RelativeDateOption = {
   readonly label: string;
+  readonly Icon: typeof IconCalendarDue;
   readonly apply: (search: SearchRequest, code: string) => SearchRequest;
   readonly future?: boolean;
   /** The end is "now" at the time it was picked, so only the start is compared. */
@@ -45,16 +48,16 @@ type RelativeDateOption = {
 /** Relative date shortcuts for date columns, grouped by day, month and year. */
 const RELATIVE_DATE_GROUPS: RelativeDateOption[][] = [
   [
-    { label: 'Tomorrow', apply: addTomorrowFilter, future: true },
-    { label: 'Today', apply: addTodayFilter },
-    { label: 'Yesterday', apply: addYesterdayFilter },
+    { label: 'Tomorrow', Icon: IconCalendarDue, apply: addTomorrowFilter, future: true },
+    { label: 'Today', Icon: IconCalendarDue, apply: addTodayFilter },
+    { label: 'Yesterday', Icon: IconCalendarDue, apply: addYesterdayFilter },
   ],
   [
-    { label: 'Next Month', apply: addNextMonthFilter, future: true },
-    { label: 'This Month', apply: addThisMonthFilter },
-    { label: 'Last Month', apply: addLastMonthFilter },
+    { label: 'Next Month', Icon: IconCalendarMonth, apply: addNextMonthFilter, future: true },
+    { label: 'This Month', Icon: IconCalendarMonth, apply: addThisMonthFilter },
+    { label: 'Last Month', Icon: IconCalendarMonth, apply: addLastMonthFilter },
   ],
-  [{ label: 'Year to date', apply: addYearToDateFilter, openEnded: true }],
+  [{ label: 'Year to date', Icon: IconCalendarTime, apply: addYearToDateFilter, openEnded: true }],
 ];
 
 const CHECK = <IconCheck size={16} color="var(--mantine-color-blue-6)" />;
@@ -171,7 +174,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
             {group.map((option) => (
               <Menu.Item
                 key={option.label}
-                leftSection={<IconCalendar size={16} color="var(--mantine-color-dimmed)" />}
+                leftSection={<option.Icon size={16} color="var(--mantine-color-dimmed)" />}
                 rightSection={isRelativeDateSelected(option, props.search, code) ? CHECK : null}
                 onClick={() => props.onChange(option.apply(props.search, code))}
               >
