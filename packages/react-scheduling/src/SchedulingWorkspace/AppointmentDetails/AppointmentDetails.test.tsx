@@ -21,11 +21,13 @@ import {
   AuthorizationValueSets,
   DIAGNOSIS_VALUE_SET,
   DiagnosisCodes,
+  DrRiveraPractitioner,
   ElderJordanPatient,
   MilesCooperPatient,
   PatientFixtures,
   PROCEDURE_VALUE_SET,
   ProcedureCodes,
+  Ultrasound1Device,
 } from '../../stories/scheduling';
 import { installAutocompleteTimers, removePill, settleAutocomplete } from '../../test-utils/asyncAutocomplete';
 import {
@@ -142,6 +144,8 @@ beforeEach(async () => {
   await medplum.createResource(DIAGNOSIS_SERVICE);
   await medplum.createResource(PROCEDURE_SERVICE);
   await medplum.createResource(MilesCooperPatient);
+  await medplum.createResource(DrRiveraPractitioner);
+  await medplum.createResource(Ultrasound1Device);
   for (const patient of PatientFixtures) {
     await medplum.createResource(patient);
   }
@@ -206,8 +210,9 @@ describe('AppointmentDetails', () => {
     expect(await screen.findByText('Miles Cooper')).toBeInTheDocument();
     expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
     expect(screen.getByText('Bring prior films')).toBeInTheDocument();
-    // Everyone but the patient, in one line.
-    expect(screen.getByText('Dr. Maya Rivera, Ultrasound 1')).toBeInTheDocument();
+    // Everyone but the patient, named from their own resources rather than the references' displays.
+    expect(await screen.findByText('Dr. Maya Rivera')).toBeInTheDocument();
+    expect(await screen.findByText('Ultrasound 1 (Main Campus)')).toBeInTheDocument();
     // The day and the times it runs between, in the timezone the browser is in.
     expect(screen.getByText(/Tuesday, May 5/)).toBeInTheDocument();
   });
@@ -233,19 +238,37 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText('Office visit, Follow-up')).toBeInTheDocument();
   });
 
-  test('leaves out what is not on file', () => {
+  test('leaves out what is not on file', async () => {
     renderDetails({
       resourceType: 'Appointment',
       id: 'appt-bare',
       status: 'booked',
-      participant: [{ status: 'accepted', actor: { reference: 'Practitioner/dr-rivera' } }],
+      participant: [{ status: 'accepted', actor: { reference: 'Practitioner/dr-unknown' } }],
     });
 
     expect(screen.queryByText('When')).not.toBeInTheDocument();
     expect(screen.queryByText('Service')).not.toBeInTheDocument();
     expect(screen.queryByText('Notes')).not.toBeInTheDocument();
-    // A participant with no display name is still named, by what it points at.
-    expect(screen.getByText('Practitioner/dr-rivera')).toBeInTheDocument();
+    // A participant whose resource can't be read says so.
+    expect(await screen.findByText('[Not found]')).toBeInTheDocument();
+  });
+
+  test('names a participant stored without a display by the resource it points at', async () => {
+    await medplum.createResource({
+      resourceType: 'Practitioner',
+      id: 'dr-okafor',
+      name: [{ given: ['Tunde'], family: 'Okafor' }],
+    });
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      participant: [
+        ...BOOKED_APPOINTMENT.participant.slice(0, 1),
+        { status: 'accepted', actor: { reference: 'Practitioner/dr-okafor' } },
+      ],
+    });
+
+    expect(await screen.findByText('Tunde Okafor')).toBeInTheDocument();
+    expect(screen.queryByText('Practitioner/dr-okafor')).not.toBeInTheDocument();
   });
 
   test('cancelling posts $cancel and reports the cancelled appointment', async () => {

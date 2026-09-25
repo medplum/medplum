@@ -4,7 +4,7 @@ import { Alert, Badge, Button, Divider, Group, Stack, Text, Title } from '@manti
 import type { WithId } from '@medplum/core';
 import { formatCodeableConcept, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
 import type { Appointment, CodeableConcept, Parameters, Reference } from '@medplum/fhirtypes';
-import { CodeableConceptInput, ReferenceDisplay } from '@medplum/react';
+import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconArrowLeft, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
@@ -188,7 +188,9 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const [cancelling, setCancelling] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
 
-  const patientLine = <Detail label="Patient" value={patient && <ReferenceDisplay link={false} value={patient} />} />;
+  const patientLine = (
+    <Detail label="Patient" value={patient && <ResourceName value={patient} link={false} inherit />} />
+  );
   const whenLine = <Detail label="When" value={formatWhen(appointment)} />;
 
   const innerOnCancelled = useCallback(
@@ -273,7 +275,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
             ? otherActors.map((actor, index) => (
                 <Fragment key={actor.reference ?? `actor-${index}`}>
                   {index > 0 && ', '}
-                  <ReferenceDisplay value={actor} link={false} />
+                  <ResourceName value={actor} link={false} inherit />
                 </Fragment>
               ))
             : undefined
