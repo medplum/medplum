@@ -46,7 +46,41 @@ describe('SearchFilterPopover', () => {
     });
     await openPopover();
     expect(screen.getByText('Where')).toBeInTheDocument();
-    expect(screen.getByLabelText('filter-0-field', { selector: 'input' })).toHaveValue('Name');
+    expect(screen.getByLabelText('Filter 1 field', { selector: 'input' })).toHaveValue('Name');
+  });
+
+  test('Describes the applied filter count on the button', async () => {
+    await setup({
+      resourceType: 'Patient',
+      filters: [
+        { code: 'name', operator: Operator.EQUALS, value: 'Simpson' },
+        { code: 'gender', operator: Operator.EQUALS, value: 'male' },
+      ],
+    });
+    expect(screen.getByRole('button', { name: 'Filters' })).toHaveAccessibleDescription('2 Filters Applied');
+  });
+
+  test('Uses the singular label for one filter and no description for none', async () => {
+    await setup({ resourceType: 'Patient', filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Simpson' }] });
+    expect(screen.getByRole('button', { name: 'Filters' })).toHaveAccessibleDescription('1 Filter Applied');
+  });
+
+  test('Has no description when no filters are applied', async () => {
+    await setup({ resourceType: 'Patient' });
+    expect(screen.getByRole('button', { name: 'Filters' })).not.toHaveAttribute('aria-describedby');
+  });
+
+  test('Opening moves focus into the popover', async () => {
+    await setup({ resourceType: 'Patient' });
+    await openPopover();
+    await act(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 20);
+      });
+    });
+    expect(screen.getByText('Add Filter').closest('.mantine-Popover-dropdown')).toContainElement(
+      document.activeElement as HTMLElement
+    );
   });
 
   test('Add Filter adds an empty row', async () => {
@@ -55,7 +89,7 @@ describe('SearchFilterPopover', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Add Filter'));
     });
-    expect(screen.getByLabelText('filter-0-field', { selector: 'input' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Filter 1 field', { selector: 'input' })).toBeInTheDocument();
   });
 
   test('Delete removes the filter and emits onChange', async () => {
@@ -65,7 +99,7 @@ describe('SearchFilterPopover', () => {
     });
     await openPopover();
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('delete-filter-0'));
+      fireEvent.click(screen.getByLabelText('Remove filter 1'));
     });
     expect(onChange).toHaveBeenCalled();
     const lastArg = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
@@ -81,14 +115,14 @@ describe('SearchFilterPopover', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('filter-0-field', { selector: 'input' }));
+      fireEvent.click(screen.getByLabelText('Filter 1 field', { selector: 'input' }));
     });
     await act(async () => {
       fireEvent.click(await screen.findByText('Name'));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('filter-0-operator', { selector: 'input' }));
+      fireEvent.click(screen.getByLabelText('Filter 1 operator', { selector: 'input' }));
     });
     await act(async () => {
       fireEvent.click(await screen.findByText('contains'));
@@ -114,7 +148,7 @@ describe('SearchFilterPopover', () => {
     expect(screen.getByTestId('filter-0-value')).toHaveValue('Smith');
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('delete-filter-0'));
+      fireEvent.click(screen.getByLabelText('Remove filter 1'));
     });
     expect(screen.getByTestId('filter-0-value')).toHaveValue('Jones');
   });
@@ -126,7 +160,7 @@ describe('SearchFilterPopover', () => {
       fireEvent.click(screen.getByText('Add Filter'));
     });
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('filter-0-field', { selector: 'input' }));
+      fireEvent.click(screen.getByLabelText('Filter 1 field', { selector: 'input' }));
     });
     await act(async () => {
       fireEvent.click(await screen.findByText('Name'));
@@ -151,6 +185,6 @@ describe('SearchFilterPopover', () => {
     });
 
     expect(await screen.findByText('Add Filter')).toBeInTheDocument();
-    expect(screen.getByLabelText('filter-0-field', { selector: 'input' })).toHaveValue('Name');
+    expect(screen.getByLabelText('Filter 1 field', { selector: 'input' })).toHaveValue('Name');
   });
 });

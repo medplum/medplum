@@ -107,7 +107,7 @@ describe('HomePage', () => {
   test('Delete button, cancel', async () => {
     await setup();
     await act(async () => {
-      fireEvent.click(await screen.findByLabelText('all-checkbox'));
+      fireEvent.click(await screen.findByLabelText('Select all rows'));
     });
     await act(async () => {
       fireEvent.click(await screen.findByLabelText('Actions'));
@@ -136,7 +136,7 @@ describe('HomePage', () => {
     expect(await screen.findByText(family)).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText(`Checkbox for ${patient.id}`));
+      fireEvent.click(screen.getByLabelText(`Select row ${patient.id}`));
     });
 
     await act(async () => {

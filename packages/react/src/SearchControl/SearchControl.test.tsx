@@ -934,6 +934,136 @@ describe('SearchControl', () => {
     expect(props.onAuxClick).toHaveBeenCalledTimes(3);
   });
 
+  describe('Row keyboard access', () => {
+    const threeRows: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 3,
+      entry: [
+        { resource: { resourceType: 'Patient', id: 'p1', name: [{ given: ['Ann'], family: 'One' }] } },
+        { resource: { resourceType: 'Patient', id: 'p2', name: [{ given: ['Bob'], family: 'Two' }] } },
+        { resource: { resourceType: 'Patient', id: 'p3', name: [{ given: ['Cal'], family: 'Three' }] } },
+      ],
+    };
+
+    test('Only the first row is in the tab order until another row is focused', async () => {
+      await setup({ search: { resourceType: 'Patient', fields: ['name'] } }, threeRows);
+      const rows = await screen.findAllByTestId('search-control-row');
+      expect(rows.map((r) => r.tabIndex)).toStrictEqual([0, -1, -1]);
+
+      act(() => rows[1].focus());
+      expect(rows.map((r) => r.tabIndex)).toStrictEqual([-1, 0, -1]);
+    });
+
+    test('Arrow keys, Home and End move focus between rows', async () => {
+      await setup({ search: { resourceType: 'Patient', fields: ['name'] } }, threeRows);
+      const rows = await screen.findAllByTestId('search-control-row');
+      act(() => rows[0].focus());
+
+      fireEvent.keyDown(rows[0], { key: 'ArrowDown' });
+      expect(rows[1]).toHaveFocus();
+      fireEvent.keyDown(rows[1], { key: 'End' });
+      expect(rows[2]).toHaveFocus();
+      fireEvent.keyDown(rows[2], { key: 'ArrowUp' });
+      expect(rows[1]).toHaveFocus();
+      fireEvent.keyDown(rows[1], { key: 'Home' });
+      expect(rows[0]).toHaveFocus();
+      fireEvent.keyDown(rows[0], { key: 'ArrowUp' });
+      expect(rows[0]).toHaveFocus();
+    });
+
+    test('Enter clicks the row and Ctrl/Cmd+Enter aux-clicks it', async () => {
+      const onClick = vi.fn();
+      const onAuxClick = vi.fn();
+      await setup({ search: { resourceType: 'Patient', fields: ['name'] }, onClick, onAuxClick }, threeRows);
+      const rows = await screen.findAllByTestId('search-control-row');
+
+      await act(async () => {
+        fireEvent.keyDown(rows[1], { key: 'Enter' });
+      });
+      expect(onClick).toHaveBeenCalledTimes(1);
+      expect(onClick.mock.calls[0][0].resource.id).toBe('p2');
+      expect(onAuxClick).not.toHaveBeenCalled();
+
+      await act(async () => {
+        fireEvent.keyDown(rows[1], { key: 'Enter', metaKey: true });
+      });
+      expect(onAuxClick).toHaveBeenCalledTimes(1);
+    });
+
+    test('Space toggles the row checkbox', async () => {
+      await setup({ search: { resourceType: 'Patient', fields: ['name'] }, checkboxesEnabled: true }, threeRows);
+      const rows = await screen.findAllByTestId('search-control-row');
+
+      await act(async () => {
+        fireEvent.keyDown(rows[0], { key: ' ' });
+      });
+      expect(screen.getByLabelText('Select row p1')).toBeChecked();
+
+      await act(async () => {
+        fireEvent.keyDown(rows[0], { key: ' ' });
+      });
+      expect(screen.getByLabelText('Select row p1')).not.toBeChecked();
+    });
+
+    test('Shift+F10 and the Menu key open the row context menu', async () => {
+      await setup({ search: { resourceType: 'Patient', fields: ['name'] } }, threeRows);
+      const rows = await screen.findAllByTestId('search-control-row');
+
+      await act(async () => {
+        fireEvent.keyDown(rows[0], { key: 'F10', shiftKey: true });
+      });
+      expect(await screen.findByText('Open Patient')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
+      });
+      await act(async () => {
+        vi.runOnlyPendingTimers();
+      });
+
+      await act(async () => {
+        fireEvent.keyDown(rows[1], { key: 'ContextMenu' });
+      });
+      expect(await screen.findByText('Open Patient')).toBeInTheDocument();
+    });
+
+    test('Keys from elements inside the row and unhandled keys are ignored', async () => {
+      const onClick = vi.fn();
+      await setup(
+        { search: { resourceType: 'Patient', fields: ['name'] }, onClick, checkboxesEnabled: true },
+        threeRows
+      );
+      const rows = await screen.findAllByTestId('search-control-row');
+
+      await act(async () => {
+        fireEvent.keyDown(screen.getByLabelText('Select row p1'), { key: 'Enter' });
+        fireEvent.keyDown(rows[0], { key: 'a' });
+        fireEvent.keyDown(rows[0], { key: 'F10' });
+      });
+      expect(onClick).not.toHaveBeenCalled();
+      expect(screen.queryByText('Open Patient')).toBeNull();
+    });
+  });
+
+  test('Sorted column headers expose aria-sort', async () => {
+    await setup({
+      search: {
+        resourceType: 'Patient',
+        fields: ['name', 'birthDate', 'gender'],
+        sortRules: [
+          { code: 'name', descending: false },
+          { code: 'birthdate', descending: true },
+        ],
+      },
+    });
+    const headers = await screen.findAllByRole('columnheader');
+    const byText = (text: string): HTMLElement | undefined => headers.find((h) => h.textContent?.includes(text));
+    expect(byText('Name')).toHaveAttribute('aria-sort', 'ascending');
+    expect(byText('Birth Date')).toHaveAttribute('aria-sort', 'descending');
+    expect(byText('Gender')).not.toHaveAttribute('aria-sort');
+  });
+
   test('Right click on row opens the resource context menu', async () => {
     const props: SearchControlProps = {
       search: {
@@ -1404,7 +1534,7 @@ describe('SearchControl', () => {
     });
 
     expect(await screen.findByText('Reset Default')).toBeInTheDocument();
-    expect(screen.getByLabelText('column-name')).toBeInTheDocument();
+    expect(screen.getByTestId('column-name')).toBeInTheDocument();
   });
 
   test('Columns editor hides a column', async () => {
@@ -1429,7 +1559,7 @@ describe('SearchControl', () => {
     });
 
     await act(async () => {
-      fireEvent.click(await screen.findByLabelText('column-birthDate'));
+      fireEvent.click(await screen.findByTestId('column-birthDate'));
     });
 
     expect(currSearch?.fields).toEqual(['name']);

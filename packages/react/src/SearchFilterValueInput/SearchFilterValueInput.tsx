@@ -12,6 +12,8 @@ export interface SearchFilterValueInputProps {
   readonly resourceType: string;
   readonly searchParam: SearchParameter;
   readonly name?: string;
+  /** Accessible name for the value input. */
+  readonly ariaLabel?: string;
   readonly defaultValue?: string;
   readonly autoFocus?: boolean;
   /** Render reference dropdowns inside the DOM tree (not a portal); defaults to portalled. */
@@ -47,6 +49,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
       return (
         <Checkbox
           name={name}
+          aria-label={props.ariaLabel}
           data-autofocus={props.autoFocus}
           data-testid={name}
           defaultChecked={props.defaultValue === 'true'}
@@ -60,6 +63,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
         <TextInput
           type="date"
           name={name}
+          aria-label={props.ariaLabel}
           data-autofocus={props.autoFocus}
           data-testid={name}
           defaultValue={props.defaultValue}
@@ -83,6 +87,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
         <TextInput
           type="number"
           name={name}
+          aria-label={props.ariaLabel}
           data-autofocus={props.autoFocus}
           data-testid={name}
           defaultValue={props.defaultValue}
@@ -112,6 +117,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
       return (
         <TextInput
           name={name}
+          aria-label={props.ariaLabel}
           data-autofocus={props.autoFocus}
           data-testid={name}
           defaultValue={props.defaultValue}

@@ -34,7 +34,7 @@ import {
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import type { ChangeEvent, JSX, MouseEvent, ReactNode } from 'react';
+import type { ChangeEvent, JSX, KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { Modal } from '../Modal/Modal';
@@ -218,6 +218,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     selected: {},
     exportDialogVisible: false,
   });
+  const [activeRowId, setActiveRowId] = useState<string>();
 
   const stateRef = useRef(state);
   useLayoutEffect(() => {
@@ -389,6 +390,56 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     }
   }
 
+  /**
+   * Keyboard support for a focused row: arrows and Home/End move between rows, Enter clicks the row
+   * (Ctrl/Cmd+Enter as an auxiliary click), Space toggles its checkbox, and Shift+F10 or the Menu
+   * key opens its context menu.
+   * @param e - The keydown event.
+   * @param resource - The row's resource.
+   */
+  function handleRowKeyDown(e: KeyboardEvent<HTMLTableRowElement>, resource: Resource): void {
+    if (e.target !== e.currentTarget) {
+      return;
+    }
+    const row = e.currentTarget;
+    let nextRow: Element | null | undefined;
+    if (e.key === 'ArrowDown') {
+      nextRow = row.nextElementSibling;
+    } else if (e.key === 'ArrowUp') {
+      nextRow = row.previousElementSibling;
+    } else if (e.key === 'Home') {
+      nextRow = row.parentElement?.firstElementChild;
+    } else if (e.key === 'End') {
+      nextRow = row.parentElement?.lastElementChild;
+    } else if (e.key === 'Enter') {
+      killEvent(e);
+      row.dispatchEvent(
+        new window.MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: e.ctrlKey, metaKey: e.metaKey })
+      );
+      return;
+    } else if (e.key === ' ' && checkboxColumn) {
+      killEvent(e);
+      setRowSelected(resource.id as string);
+      return;
+    } else if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) {
+      killEvent(e);
+      const rect = row.getBoundingClientRect();
+      row.dispatchEvent(
+        new window.MouseEvent('contextmenu', {
+          bubbles: true,
+          cancelable: true,
+          clientX: rect.left + 16,
+          clientY: rect.bottom,
+        })
+      );
+      return;
+    } else {
+      return;
+    }
+    killEvent(e);
+    (nextRow as HTMLElement | null | undefined)?.focus();
+  }
+
   function isExportPassed(): boolean {
     return !!(props.onExport ?? props.onExportCsv ?? props.onExportTransactionBundle);
   }
@@ -470,6 +521,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     setState((s) => ({ ...s, deleteConfirmVisible: false }));
   }
 
+  const focusableRowId =
+    activeRowId && resources?.some((r) => r?.id === activeRowId) ? activeRowId : resources?.find(Boolean)?.id;
+
   const showActionsMenu =
     !props.hideActionsMenu && (showExport || showDelete || showBulk || showRefresh || menuActions.length > 0);
 
@@ -506,7 +560,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   iconSize={iconSize}
                 />
                 {lastResult && (
-                  <Text size="xs" c="dimmed" ml={4} data-testid="count-display">
+                  <Text className={classes.mutedText} size="xs" ml={4} data-testid="count-display">
                     {getStart(memoizedSearch, lastResult).toLocaleString()}-
                     {getEnd(memoizedSearch, lastResult).toLocaleString()}
                     {lastResult.total !== undefined &&
@@ -613,7 +667,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                       <div className={classes.checkboxWrap}>
                         <Checkbox
                           size="xs"
-                          aria-label="all-checkbox"
+                          aria-label="Select all rows"
                           data-testid="all-checkbox"
                           checked={isAllSelected()}
                           onChange={(e) => handleAllCheckboxClick(e)}
@@ -627,20 +681,24 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                     const label = (
                       <UnstyledButton className={classes.control}>
                         <Group gap={4} wrap="nowrap">
-                          <Text size="xs" fw={500} c="dimmed">
+                          <Text className={classes.mutedText} size="xs" fw={500}>
                             {buildFieldNameString(field.name)}
                           </Text>
                           {sortRule &&
                             (sortRule.descending ? (
-                              <IconArrowDown size={12} stroke={2} aria-label={`sorted-desc-${field.name}`} />
+                              <IconArrowDown size={12} stroke={2} aria-hidden />
                             ) : (
-                              <IconArrowUp size={12} stroke={2} aria-label={`sorted-asc-${field.name}`} />
+                              <IconArrowUp size={12} stroke={2} aria-hidden />
                             ))}
                         </Group>
                       </UnstyledButton>
                     );
+                    let ariaSort: 'ascending' | 'descending' | undefined;
+                    if (sortRule) {
+                      ariaSort = sortRule.descending ? 'descending' : 'ascending';
+                    }
                     return (
-                      <Table.Th key={field.name}>
+                      <Table.Th key={field.name} aria-sort={ariaSort}>
                         {field.searchParams ? (
                           <Menu shadow="md" radius="md" position="bottom-start">
                             <Menu.Target>{label}</Menu.Target>
@@ -657,7 +715,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                             />
                           </Menu>
                         ) : (
-                          <Text className={classes.staticColumnTitle} size="xs" fw={500} c="dimmed">
+                          <Text className={`${classes.staticColumnTitle} ${classes.mutedText}`} size="xs" fw={500}>
                             {buildFieldNameString(field.name)}
                           </Text>
                         )}
@@ -666,7 +724,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   })}
                   {props.additionalColumns?.map((col) => (
                     <Table.Th key={col.name}>
-                      <Text className={classes.staticColumnTitle} size="xs" fw={500} c="dimmed">
+                      <Text className={`${classes.staticColumnTitle} ${classes.mutedText}`} size="xs" fw={500}>
                         {col.name}
                       </Text>
                     </Table.Th>
@@ -681,6 +739,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                         key={resource.id}
                         className={classes.tr}
                         data-testid="search-control-row"
+                        tabIndex={resource.id === focusableRowId ? 0 : -1}
+                        onFocus={(e) => {
+                          if (e.target === e.currentTarget) {
+                            setActiveRowId(resource.id);
+                          }
+                        }}
+                        onKeyDown={(e) => handleRowKeyDown(e, resource)}
                         onClick={(e) => handleRowClick(e, resource)}
                         onAuxClick={(e) => handleRowClick(e, resource)}
                         onContextMenu={(e) => {
@@ -701,7 +766,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                               <Checkbox
                                 size="xs"
                                 data-testid="row-checkbox"
-                                aria-label={`Checkbox for ${resource.id}`}
+                                aria-label={`Select row ${resource.id}`}
                                 checked={!!state.selected[resource.id as string]}
                                 onChange={(e) => handleSingleCheckboxClick(e, resource.id as string)}
                               />
@@ -723,7 +788,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           {!resources?.length && (
             <Container>
               <Center style={{ height: 150 }}>
-                <Text size="xl" c="dimmed">
+                <Text className={classes.mutedText} size="xl">
                   No results
                 </Text>
               </Center>

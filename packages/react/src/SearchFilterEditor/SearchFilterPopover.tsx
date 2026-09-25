@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Button, Indicator, Popover, Select, Text } from '@mantine/core';
+import { ActionIcon, Button, Indicator, Popover, Select, Text, Tooltip, VisuallyHidden } from '@mantine/core';
 import type { Filter, SearchRequest } from '@medplum/core';
 import { Operator, deepClone, deepEquals, getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import { IconCirclePlus, IconFilter2Plus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   buildSearchParamFieldLabel,
   getOpString,
@@ -92,6 +92,8 @@ export function SearchFilterPopover(props: SearchFilterPopoverProps): JSX.Elemen
   }
 
   const activeCount = (search.filters ?? []).length;
+  const activeLabel = `${activeCount} ${activeCount === 1 ? 'Filter' : 'Filters'} Applied`;
+  const activeLabelId = useId();
 
   return (
     <Popover
@@ -101,26 +103,31 @@ export function SearchFilterPopover(props: SearchFilterPopoverProps): JSX.Elemen
       shadow="md"
       radius="md"
       width={720}
-      trapFocus={false}
+      trapFocus
+      returnFocus
       closeOnClickOutside
     >
-      <Popover.Target>
-        <Indicator className={classes.indicator} disabled={activeCount === 0} color="blue" size={8} offset={6}>
-          <Button
-            className={props.buttonClassName}
-            data-opened={opened || undefined}
-            size="compact-md"
-            variant={buttonVariant}
-            color={buttonColor}
-            leftSection={<IconFilter2Plus size={iconSize} />}
-            onClick={toggle}
-          >
-            Filters
-          </Button>
-        </Indicator>
-      </Popover.Target>
+      <Indicator className={classes.indicator} disabled={activeCount === 0} color="blue" size={8} offset={6}>
+        <Tooltip label={activeLabel} position="bottom" openDelay={500} disabled={activeCount === 0 || opened}>
+          <Popover.Target>
+            <Button
+              className={props.buttonClassName}
+              data-opened={opened || undefined}
+              size="compact-md"
+              variant={buttonVariant}
+              color={buttonColor}
+              leftSection={<IconFilter2Plus size={iconSize} />}
+              aria-describedby={activeCount > 0 ? activeLabelId : undefined}
+              onClick={toggle}
+            >
+              Filters
+            </Button>
+          </Popover.Target>
+        </Tooltip>
+      </Indicator>
+      {activeCount > 0 && <VisuallyHidden id={activeLabelId}>{activeLabel}</VisuallyHidden>}
       <Popover.Dropdown className={classes.dropdown}>
-        <div className={classes.body}>
+        <div className={classes.body} tabIndex={-1} data-autofocus>
           {rows.length === 0 && <div className={classes.empty}>No filters applied</div>}
           {rows.map((row, index) => (
             <FilterConditionRow
@@ -204,7 +211,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
       variant="subtle"
       color="gray"
       radius="xl"
-      aria-label={`delete-filter-${props.index}`}
+      aria-label={`Remove filter ${props.index + 1}`}
       ml={2}
       onClick={props.onDelete}
     >
@@ -231,6 +238,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
         <SearchFilterValueInput
           key={`filter-${props.rowId}-value-${value.code}-${value.operator}`}
           name={`filter-${props.index}-value`}
+          ariaLabel={`Filter ${props.index + 1} value`}
           resourceType={props.resourceType}
           searchParam={searchParam}
           defaultValue={value.value}
@@ -247,7 +255,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
       <Select
         comboboxProps={{ withinPortal: false }}
         className={classes.field}
-        aria-label={`filter-${props.index}-field`}
+        aria-label={`Filter ${props.index + 1} field`}
         placeholder="Field"
         searchable
         data={fieldData}
@@ -257,7 +265,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
       <Select
         comboboxProps={{ withinPortal: false }}
         className={classes.operator}
-        aria-label={`filter-${props.index}-operator`}
+        aria-label={`Filter ${props.index + 1} operator`}
         placeholder="Operator"
         disabled={!operators}
         data={operators ? operators.map((op) => ({ value: op, label: getOpString(op) })) : []}

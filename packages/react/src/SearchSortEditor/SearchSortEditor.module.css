@@ -41,7 +41,7 @@
 .empty {
   padding-block: 7px;
   font-size: var(--mantine-font-size-sm);
-  color: var(--mantine-color-dimmed);
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 }
 
 .indicator {

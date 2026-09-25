@@ -20,7 +20,8 @@
   overflow-y: auto;
 }
 
-.item {
+.body > .item {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -96,6 +97,10 @@
   padding: var(--mantine-spacing-sm);
   padding-right: var(--mantine-spacing-md);
   border-top: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}
+
+.shownCount {
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 }
 
 .staticButton,

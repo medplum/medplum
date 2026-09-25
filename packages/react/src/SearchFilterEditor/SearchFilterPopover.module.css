@@ -48,7 +48,7 @@
 .conjunction {
   flex: 0 0 64px;
   font-size: var(--mantine-font-size-sm);
-  color: var(--mantine-color-dimmed);
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 }
 
 .field {
@@ -64,6 +64,24 @@
   min-width: 0;
 }
 
+@media (max-width: 48em) {
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .field,
+  .operator {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .row:not(.rowMulti) > .value {
+    order: 1;
+    flex: 1 1 100%;
+    padding-left: calc(64px + 8px);
+  }
+}
+
 .footer {
   padding: var(--mantine-spacing-sm);
   border-top: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
@@ -76,7 +94,7 @@
 .empty {
   padding-block: 7px;
   font-size: var(--mantine-font-size-sm);
-  color: var(--mantine-color-dimmed);
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 }
 
 .indicator {

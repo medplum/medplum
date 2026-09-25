@@ -45,6 +45,40 @@ describe('SearchSortEditor', () => {
     expect(document.querySelector('.mantine-Indicator-indicator')).toBeNull();
   });
 
+  test('Describes the applied sort count on the button', async () => {
+    await setup({
+      resourceType: 'Patient',
+      sortRules: [
+        { code: 'birthdate', descending: true },
+        { code: 'name', descending: false },
+      ],
+    });
+    expect(screen.getByRole('button', { name: 'Sort' })).toHaveAccessibleDescription('2 Sorts Applied');
+  });
+
+  test('Uses the singular label for one sort and no description for the default', async () => {
+    await setup({ resourceType: 'Patient', sortRules: [{ code: 'birthdate', descending: true }] });
+    expect(screen.getByRole('button', { name: 'Sort' })).toHaveAccessibleDescription('1 Sort Applied');
+  });
+
+  test('Has no description for the default sort', async () => {
+    await setup({ resourceType: 'Patient', sortRules: [{ code: '_lastUpdated', descending: true }] });
+    expect(screen.getByRole('button', { name: 'Sort' })).not.toHaveAttribute('aria-describedby');
+  });
+
+  test('Opening moves focus into the popover', async () => {
+    await setup({ resourceType: 'Patient' });
+    await openPopover();
+    await act(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 20);
+      });
+    });
+    expect(screen.getByText('Add Sort').closest('.mantine-Popover-dropdown')).toContainElement(
+      document.activeElement as HTMLElement
+    );
+  });
+
   test('Shows the indicator dot for a non-default sort', async () => {
     await setup({ resourceType: 'Patient', sortRules: [{ code: 'birthdate', descending: true }] });
     expect(document.querySelector('.mantine-Indicator-indicator')).not.toBeNull();
@@ -58,8 +92,8 @@ describe('SearchSortEditor', () => {
   test('Shows an existing sort rule with its direction', async () => {
     await setup({ resourceType: 'Patient', sortRules: [{ code: 'birthdate', descending: true }] });
     await openPopover();
-    expect(screen.getByLabelText('sort-0-field', { selector: 'input' })).toHaveValue('Birthdate');
-    expect(screen.getByLabelText('sort-0-direction', { selector: 'input' })).toHaveValue('Newest → Oldest');
+    expect(screen.getByLabelText('Sort 1 field', { selector: 'input' })).toHaveValue('Birthdate');
+    expect(screen.getByLabelText('Sort 1 direction', { selector: 'input' })).toHaveValue('Newest → Oldest');
   });
 
   test('Add Sort adds an empty row', async () => {
@@ -68,7 +102,7 @@ describe('SearchSortEditor', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Add Sort'));
     });
-    expect(screen.getByLabelText('sort-0-field', { selector: 'input' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Sort 1 field', { selector: 'input' })).toBeInTheDocument();
   });
 
   test('Selecting a field emits a sort rule', async () => {
@@ -78,7 +112,7 @@ describe('SearchSortEditor', () => {
       fireEvent.click(screen.getByText('Add Sort'));
     });
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('sort-0-field', { selector: 'input' }));
+      fireEvent.click(screen.getByLabelText('Sort 1 field', { selector: 'input' }));
     });
     await act(async () => {
       fireEvent.click(await screen.findByText('Birthdate'));
@@ -94,7 +128,7 @@ describe('SearchSortEditor', () => {
     });
     await openPopover();
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('sort-0-direction', { selector: 'input' }));
+      fireEvent.click(screen.getByLabelText('Sort 1 direction', { selector: 'input' }));
     });
     await act(async () => {
       fireEvent.click(await screen.findByText('Newest → Oldest'));
@@ -110,7 +144,7 @@ describe('SearchSortEditor', () => {
     });
     await openPopover();
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('delete-sort-0'));
+      fireEvent.click(screen.getByLabelText('Remove sort 1'));
     });
     const lastArg = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
     expect(lastArg.sortRules ?? []).toHaveLength(0);

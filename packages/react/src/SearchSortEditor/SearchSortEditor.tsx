@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Button, Indicator, Popover, Select } from '@mantine/core';
+import { ActionIcon, Button, Indicator, Popover, Select, Tooltip, VisuallyHidden } from '@mantine/core';
 import type { SearchRequest, SortRule } from '@medplum/core';
 import { deepClone, getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import { IconArrowsSort, IconCirclePlus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { buildSearchParamFieldLabel, isMetaSearchParam } from '../SearchControl/SearchUtils';
 import classes from './SearchSortEditor.module.css';
 
@@ -111,7 +111,10 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
     setRules([...rules, { code: '', descending: false }]);
   }
 
+  const activeCount = (search.sortRules ?? []).length;
   const showIndicator = !isDefaultSort(search.sortRules ?? []);
+  const activeLabel = `${activeCount} ${activeCount === 1 ? 'Sort' : 'Sorts'} Applied`;
+  const activeLabelId = useId();
 
   return (
     <Popover
@@ -121,26 +124,31 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
       shadow="md"
       radius="md"
       width={520}
-      trapFocus={false}
+      trapFocus
+      returnFocus
       closeOnClickOutside
     >
-      <Popover.Target>
-        <Indicator className={classes.indicator} disabled={!showIndicator} color="blue" size={8} offset={6}>
-          <Button
-            className={props.buttonClassName}
-            data-opened={opened || undefined}
-            size="compact-md"
-            variant={buttonVariant}
-            color={buttonColor}
-            leftSection={<IconArrowsSort size={iconSize} />}
-            onClick={toggle}
-          >
-            Sort
-          </Button>
-        </Indicator>
-      </Popover.Target>
+      <Indicator className={classes.indicator} disabled={!showIndicator} color="blue" size={8} offset={6}>
+        <Tooltip label={activeLabel} position="bottom" openDelay={500} disabled={!showIndicator || opened}>
+          <Popover.Target>
+            <Button
+              className={props.buttonClassName}
+              data-opened={opened || undefined}
+              size="compact-md"
+              variant={buttonVariant}
+              color={buttonColor}
+              leftSection={<IconArrowsSort size={iconSize} />}
+              aria-describedby={showIndicator ? activeLabelId : undefined}
+              onClick={toggle}
+            >
+              Sort
+            </Button>
+          </Popover.Target>
+        </Tooltip>
+      </Indicator>
+      {showIndicator && <VisuallyHidden id={activeLabelId}>{activeLabel}</VisuallyHidden>}
       <Popover.Dropdown className={classes.dropdown}>
-        <div className={classes.body}>
+        <div className={classes.body} tabIndex={-1} data-autofocus>
           {rules.length === 0 && <div className={classes.empty}>No sort applied</div>}
           {rules.map((rule, index) => {
             const searchParam = rule.code ? searchParams[rule.code] : undefined;
@@ -154,7 +162,7 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
                 <Select
                   comboboxProps={{ withinPortal: false }}
                   className={classes.field}
-                  aria-label={`sort-${index}-field`}
+                  aria-label={`Sort ${index + 1} field`}
                   placeholder="Field"
                   searchable
                   data={fieldData}
@@ -164,7 +172,7 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
                 <Select
                   comboboxProps={{ withinPortal: false }}
                   className={classes.direction}
-                  aria-label={`sort-${index}-direction`}
+                  aria-label={`Sort ${index + 1} direction`}
                   placeholder="Order"
                   disabled={!rule.code}
                   allowDeselect={false}
@@ -179,7 +187,7 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
                   variant="subtle"
                   color="gray"
                   radius="xl"
-                  aria-label={`delete-sort-${index}`}
+                  aria-label={`Remove sort ${index + 1}`}
                   ml={2}
                   onClick={() => deleteRule(index)}
                 >

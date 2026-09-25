@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Popover, Text, TextInput } from '@mantine/core';
+import { Button, Popover, Text, TextInput, UnstyledButton, VisuallyHidden } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import { getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import { IconCheck, IconColumns3, IconGripVertical, IconRotate2, IconSearch } from '@tabler/icons-react';
-import type { JSX, PointerEvent } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import type { JSX, KeyboardEvent, PointerEvent } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { buildSearchParamFieldLabel, isMetaSearchParam } from '../SearchControl/SearchUtils';
 import classes from './SearchColumnEditor.module.css';
 
@@ -98,10 +98,23 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
   const overIndexRef = useRef<number | null>(null);
   const endDragRef = useRef<(() => void) | undefined>(undefined);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const itemRefs = useRef(new Map<string, HTMLButtonElement>());
+  const pendingFocusRef = useRef<string | undefined>(undefined);
+  const [announcement, setAnnouncement] = useState('');
+  const reorderHintId = useId();
+
+  useLayoutEffect(() => {
+    if (pendingFocusRef.current) {
+      itemRefs.current.get(pendingFocusRef.current)?.focus();
+      pendingFocusRef.current = undefined;
+    }
+  });
 
   useEffect(() => () => endDragRef.current?.(), []);
 
   const visibleSet = useMemo(() => new Set(visibleFields), [visibleFields]);
+  const lowerQuery = query.toLowerCase();
+  const listed = order.filter((name) => !query || buildSearchParamFieldLabel(name).toLowerCase().includes(lowerQuery));
   const visibleCount = order.filter((name) => visibleSet.has(name)).length;
 
   function toggleOpen(): void {
@@ -141,6 +154,28 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
     const nextOrder = arrayMove(order, from, to);
     setOrder(nextOrder);
     emitFields(nextOrder, visibleSet);
+  }
+
+  /**
+   * Moves a column one step up or down among the columns currently listed (Alt+Up / Alt+Down).
+   * @param e - The keydown event.
+   * @param name - The column being moved.
+   * @param listed - The column names currently listed, in order.
+   */
+  function handleItemKeyDown(e: KeyboardEvent<HTMLButtonElement>, name: string, listed: string[]): void {
+    if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) {
+      return;
+    }
+    e.preventDefault();
+    const position = listed.indexOf(name);
+    const neighbor = listed[e.key === 'ArrowUp' ? position - 1 : position + 1];
+    if (!neighbor) {
+      return;
+    }
+    pendingFocusRef.current = name;
+    reorder(order.indexOf(name), order.indexOf(neighbor));
+    const newPosition = e.key === 'ArrowUp' ? position : position + 2;
+    setAnnouncement(`${buildSearchParamFieldLabel(name)} moved to position ${newPosition} of ${listed.length}`);
   }
 
   function resetDefault(): void {
@@ -225,10 +260,12 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
             onChange={(e) => setQuery(e.currentTarget.value)}
           />
         </div>
+        <VisuallyHidden id={reorderHintId}>Press Alt+Up or Alt+Down to reorder</VisuallyHidden>
+        <VisuallyHidden aria-live="polite">{announcement}</VisuallyHidden>
         <div className={dragIndex !== null ? `${classes.body} ${classes.dragActive}` : classes.body}>
           {order.map((name, index) => {
             const label = buildSearchParamFieldLabel(name);
-            if (query && !label.toLowerCase().includes(query.toLowerCase())) {
+            if (!listed.includes(name)) {
               return null;
             }
             const visible = visibleSet.has(name);
@@ -241,19 +278,21 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
               .filter(Boolean)
               .join(' ');
             return (
-              <div
+              <UnstyledButton
                 key={name}
-                className={rowClass}
-                role="button"
-                tabIndex={0}
-                aria-label={`column-${name}`}
-                onClick={() => toggleColumn(name)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    toggleColumn(name);
+                ref={(el: HTMLButtonElement | null) => {
+                  if (el) {
+                    itemRefs.current.set(name, el);
+                  } else {
+                    itemRefs.current.delete(name);
                   }
                 }}
+                className={rowClass}
+                aria-pressed={visible}
+                aria-describedby={reorderHintId}
+                data-testid={`column-${name}`}
+                onClick={() => toggleColumn(name)}
+                onKeyDown={(e) => handleItemKeyDown(e, name, listed)}
                 onPointerMove={() => {
                   if (dragIndexRef.current !== null && overIndexRef.current !== index) {
                     overIndexRef.current = index;
@@ -267,17 +306,16 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
                   data-testid={`column-grip-${name}`}
                   onPointerDown={(e) => startDrag(e, index)}
                   onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => e.stopPropagation()}
                 >
                   <IconGripVertical size={16} stroke={1.5} />
                 </span>
                 <span className={classes.label}>{label}</span>
                 {visible && (
-                  <span className={classes.check} aria-label={`visible-${name}`}>
+                  <span className={classes.check} aria-hidden="true" data-testid={`visible-${name}`}>
                     <IconCheck size={16} stroke={2} />
                   </span>
                 )}
-              </div>
+              </UnstyledButton>
             );
           })}
         </div>
@@ -293,7 +331,7 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
           >
             Reset Default
           </Button>
-          <Text size="sm" c="dimmed">
+          <Text className={classes.shownCount} size="sm">
             {visibleCount} shown
           </Text>
         </div>

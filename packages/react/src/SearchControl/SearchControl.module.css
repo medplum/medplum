@@ -69,6 +69,11 @@
   }
 }
 
+.tr:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: -2px;
+}
+
 .trActive {
   background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
 }
@@ -106,10 +111,14 @@
   margin-left: -6px;
 }
 
+.mutedText {
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+}
+
 .control {
   width: fit-content;
   border-radius: var(--mantine-radius-sm);
-  color: var(--mantine-color-dimmed);
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 
   &:hover,
   &[data-expanded] {

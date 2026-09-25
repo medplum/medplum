@@ -32,39 +32,39 @@ describe('SearchColumnEditor', () => {
     await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
     await openMenu();
     expect(screen.getByText('2 shown')).toBeInTheDocument();
-    expect(screen.getByLabelText('column-name')).toBeInTheDocument();
-    expect(screen.getByLabelText('column-birthDate')).toBeInTheDocument();
-    expect(screen.getByLabelText('visible-name')).toBeInTheDocument();
-    expect(screen.getByLabelText('visible-birthDate')).toBeInTheDocument();
+    expect(screen.getByTestId('column-name')).toBeInTheDocument();
+    expect(screen.getByTestId('column-birthDate')).toBeInTheDocument();
+    expect(screen.getByTestId('visible-name')).toBeInTheDocument();
+    expect(screen.getByTestId('visible-birthDate')).toBeInTheDocument();
   });
 
   test('Search box filters the column list by label', async () => {
     await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
     await openMenu();
-    expect(screen.getByLabelText('column-name')).toBeInTheDocument();
-    expect(screen.getByLabelText('column-birthDate')).toBeInTheDocument();
+    expect(screen.getByTestId('column-name')).toBeInTheDocument();
+    expect(screen.getByTestId('column-birthDate')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Search columns'), { target: { value: 'birth' } });
     });
 
-    expect(screen.getByLabelText('column-birthDate')).toBeInTheDocument();
-    expect(screen.queryByLabelText('column-name')).toBeNull();
+    expect(screen.getByTestId('column-birthDate')).toBeInTheDocument();
+    expect(screen.queryByTestId('column-name')).toBeNull();
   });
 
   test('Offers the full field and metadata universe, not just current columns', async () => {
     await setup({ resourceType: 'Patient', fields: ['name'] });
     await openMenu();
-    expect(screen.getByLabelText('column-gender')).toBeInTheDocument();
-    expect(screen.queryByLabelText('visible-gender')).toBeNull();
-    expect(screen.getByLabelText('column-_lastUpdated')).toBeInTheDocument();
+    expect(screen.getByTestId('column-gender')).toBeInTheDocument();
+    expect(screen.queryByTestId('visible-gender')).toBeNull();
+    expect(screen.getByTestId('column-_lastUpdated')).toBeInTheDocument();
   });
 
   test('Showing an available column adds it to the fields', async () => {
     const { onChange } = await setup({ resourceType: 'Patient', fields: ['name'] });
     await openMenu();
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('column-gender'));
+      fireEvent.click(screen.getByTestId('column-gender'));
     });
     const last = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
     expect(last.fields).toContain('name');
@@ -75,7 +75,7 @@ describe('SearchColumnEditor', () => {
     const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
     await openMenu();
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('column-name'));
+      fireEvent.click(screen.getByTestId('column-name'));
     });
     const last = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
     expect(last.fields).toEqual(['birthDate']);
@@ -99,15 +99,15 @@ describe('SearchColumnEditor', () => {
     });
     await screen.findByText('Reset Default');
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('column-birthDate'));
+      fireEvent.click(screen.getByTestId('column-birthDate'));
     });
     rerender(
       <MedplumProvider medplum={medplum}>
         <SearchColumnEditor search={search} onChange={onChange} />
       </MedplumProvider>
     );
-    expect(screen.getByLabelText('column-birthDate')).toBeInTheDocument();
-    expect(screen.queryByLabelText('visible-birthDate')).toBeNull();
+    expect(screen.getByTestId('column-birthDate')).toBeInTheDocument();
+    expect(screen.queryByTestId('visible-birthDate')).toBeNull();
     expect(screen.getByText('1 shown')).toBeInTheDocument();
   });
 
@@ -115,7 +115,7 @@ describe('SearchColumnEditor', () => {
     const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
     await openMenu();
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('column-name'));
+      fireEvent.click(screen.getByTestId('column-name'));
     });
     await act(async () => {
       fireEvent.click(screen.getByText('Reset Default'));
@@ -131,7 +131,7 @@ describe('SearchColumnEditor', () => {
     await act(async () => {
       fireEvent.change(searchBox, { target: { value: 'birth' } });
     });
-    expect(screen.queryByLabelText('column-name')).toBeNull();
+    expect(screen.queryByTestId('column-name')).toBeNull();
 
     const resetButton = screen.getByText('Reset Default');
     await act(async () => {
@@ -140,14 +140,14 @@ describe('SearchColumnEditor', () => {
     });
     expect(searchBox).toHaveValue('');
     expect(searchBox).toHaveFocus();
-    expect(screen.getByLabelText('column-name')).toBeInTheDocument();
+    expect(screen.getByTestId('column-name')).toBeInTheDocument();
   });
 
   test('Dragging a column reorders the emitted fields', async () => {
     const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
     await openMenu();
 
-    const name = screen.getByLabelText('column-name');
+    const name = screen.getByTestId('column-name');
     await act(async () => {
       fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
       fireEvent.pointerMove(name);
@@ -158,19 +158,74 @@ describe('SearchColumnEditor', () => {
     expect(last.fields).toEqual(['gender', 'name', 'birthDate']);
   });
 
+  test('Column rows are toggle buttons named by label with a pressed state', async () => {
+    await setup({ resourceType: 'Patient', fields: ['name'] });
+    await openMenu();
+    const name = screen.getByTestId('column-name');
+    expect(name.tagName).toBe('BUTTON');
+    expect(name).toHaveAccessibleName('Name');
+    expect(name).toHaveAttribute('aria-pressed', 'true');
+    expect(name).toHaveAccessibleDescription('Press Alt+Up or Alt+Down to reorder');
+    expect(screen.getByTestId('column-gender')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('Alt+Down and Alt+Up reorder a column, keep focus and announce the move', async () => {
+    const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
+    await openMenu();
+
+    const name = screen.getByTestId('column-name');
+    await act(async () => {
+      name.focus();
+      fireEvent.keyDown(name, { key: 'ArrowDown', altKey: true });
+    });
+    expect((onChange.mock.calls.at(-1)?.[0] as SearchRequest).fields).toEqual(['birthDate', 'name', 'gender']);
+    expect(screen.getByTestId('column-name')).toHaveFocus();
+    expect(screen.getByText(/Name moved to position 2 of/)).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.keyDown(screen.getByTestId('column-name'), { key: 'ArrowUp', altKey: true });
+    });
+    expect((onChange.mock.calls.at(-1)?.[0] as SearchRequest).fields).toEqual(['name', 'birthDate', 'gender']);
+    expect(screen.getByText(/Name moved to position 1 of/)).toBeInTheDocument();
+  });
+
+  test('Keyboard reorder ignores plain arrows and stops at the ends of the list', async () => {
+    const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
+    await openMenu();
+
+    await act(async () => {
+      fireEvent.keyDown(screen.getByTestId('column-name'), { key: 'ArrowDown' });
+      fireEvent.keyDown(screen.getByTestId('column-name'), { key: 'ArrowUp', altKey: true });
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  test('Keyboard reorder moves past columns hidden by the search box', async () => {
+    const { onChange } = await setup({ resourceType: 'Patient', fields: ['birthDate', 'name', 'deathDate'] });
+    await openMenu();
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Search columns'), { target: { value: 'date' } });
+    });
+
+    await act(async () => {
+      fireEvent.keyDown(screen.getByTestId('column-birthDate'), { key: 'ArrowDown', altKey: true });
+    });
+    expect((onChange.mock.calls.at(-1)?.[0] as SearchRequest).fields).toEqual(['name', 'deathDate', 'birthDate']);
+  });
+
   test('Toggling right after a reorder takes a single click', async () => {
     const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
     await openMenu();
 
     await act(async () => {
       fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
-      fireEvent.pointerMove(screen.getByLabelText('column-name'));
-      fireEvent.pointerUp(screen.getByLabelText('column-name'));
+      fireEvent.pointerMove(screen.getByTestId('column-name'));
+      fireEvent.pointerUp(screen.getByTestId('column-name'));
     });
     const callsAfterDrag = onChange.mock.calls.length;
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('column-birthDate'));
+      fireEvent.click(screen.getByTestId('column-birthDate'));
     });
 
     expect(onChange.mock.calls.length).toBe(callsAfterDrag + 1);
@@ -182,7 +237,7 @@ describe('SearchColumnEditor', () => {
     const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
     await openMenu();
 
-    const gender = screen.getByLabelText('column-gender');
+    const gender = screen.getByTestId('column-gender');
     await act(async () => {
       fireEvent.pointerDown(screen.getByTestId('column-grip-name'));
       fireEvent.pointerMove(gender);
@@ -200,7 +255,7 @@ describe('SearchColumnEditor', () => {
     const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
     await openMenu();
 
-    const name = screen.getByLabelText('column-name');
+    const name = screen.getByTestId('column-name');
     await act(async () => {
       fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
       fireEvent.pointerMove(name);
@@ -228,7 +283,7 @@ describe('SearchColumnEditor', () => {
 
     await act(async () => {
       fireEvent.pointerDown(screen.getByTestId('column-grip-name'));
-      fireEvent.pointerMove(screen.getByLabelText('column-birthDate'));
+      fireEvent.pointerMove(screen.getByTestId('column-birthDate'));
     });
     const removeSpy = vi.spyOn(document, 'removeEventListener');
     unmount();
@@ -243,10 +298,10 @@ describe('SearchColumnEditor', () => {
     const { onChange } = await setup({ resourceType: 'Patient', fields: ['name'] });
     await openMenu();
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('column-name'));
+      fireEvent.click(screen.getByTestId('column-name'));
     });
     expect(onChange).not.toHaveBeenCalled();
-    expect(screen.getByLabelText('visible-name')).toBeInTheDocument();
+    expect(screen.getByTestId('visible-name')).toBeInTheDocument();
   });
 
   test('Changing the resource type rebuilds the column list and reset default', async () => {
@@ -266,8 +321,8 @@ describe('SearchColumnEditor', () => {
       </MedplumProvider>
     );
     await openMenu();
-    expect(screen.getByLabelText('column-code')).toBeInTheDocument();
-    expect(screen.queryByLabelText('column-gender')).toBeNull();
+    expect(screen.getByTestId('column-code')).toBeInTheDocument();
+    expect(screen.queryByTestId('column-gender')).toBeNull();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Reset Default'));
