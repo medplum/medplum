@@ -264,6 +264,7 @@ One `appointment` is booked as a single Appointment. Two to six are booked toget
 ### Series Constraints
 
 - Ordered by `start` (they may be passed in any order), the appointments must fall exactly one week apart, at the same local time in the schedules' [`timezone`](/docs/scheduling/defining-availability#timezone-resolution)
+- Every appointment must book the same schedules and `HealthcareService`
 - Every appointment's schedules must share one `timezone`
 - Each appointment's `start` and `end` must match its `busy` Slots'
 - All of the [constraints](#constraints) on a single booking apply to each occurrence individually

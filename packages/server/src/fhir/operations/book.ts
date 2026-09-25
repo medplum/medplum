@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { arrayify, badRequest, created, OperationOutcomeError } from '@medplum/core';
+import {
+  arrayify,
+  badRequest,
+  created,
+  extractServiceTypeReferences,
+  OperationOutcomeError,
+  resolveId,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Appointment } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
@@ -9,6 +16,7 @@ import { getPath, withPath, withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { recursWeekly, seriesTimezone, tagWeeklySeries } from './utils/recurrence';
+import type { ValidatedOccurrence } from './utils/scheduling';
 import { createProposedAppointment, createProposedAppointments } from './utils/scheduling';
 
 const bookOperation = makeOperationDefinition(
@@ -62,6 +70,24 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   );
   const bundle = await createProposedAppointments(ctx.repo, occurrences, (validated) => {
     const timezone = seriesTimezone(validated.flatMap(({ schedulingParameters }) => schedulingParameters));
+    // Each schedule's duration is set per service, and every Slot is checked against it, so the
+    // same schedules and service also mean the same duration.
+    const bookedWith = ({ appointment, slots }: ValidatedOccurrence): string =>
+      JSON.stringify([
+        [...new Set(slots.map((slot) => slot.schedule.reference))].sort(),
+        resolveId(extractServiceTypeReferences(appointment.serviceType)[0]),
+      ]);
+    const firstBookedWith = bookedWith(validated[0]);
+    for (const [idx, occurrence] of validated.entries()) {
+      if (bookedWith(occurrence) !== firstBookedWith) {
+        throw new OperationOutcomeError(
+          badRequest(
+            'Appointments in a recurring series must book the same schedules and service',
+            getPath(occurrences[idx])
+          )
+        );
+      }
+    }
     // The series is checked on the appointments' times, so those must be the times actually booked.
     for (const [idx, { appointment, slots }] of validated.entries()) {
       const mismatched = slots.some(

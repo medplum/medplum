@@ -331,6 +331,21 @@ describe('Appointment/$book with a recurring series', () => {
     expect(response.body.issue[0].expression).toEqual(['Parameters.appointment[1]']);
   });
 
+  test('rejects a series whose occurrences book different schedules', async () => {
+    const schedule = await makeSchedule();
+    const otherSchedule = await makeSchedule();
+
+    const response = await bookRecurring([
+      makeOccurrence(schedule, '2026-03-09T13:00:00.000Z', '2026-03-09T14:00:00.000Z'),
+      makeOccurrence(otherSchedule, '2026-03-16T13:00:00.000Z', '2026-03-16T14:00:00.000Z'),
+    ]);
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toBe(
+      'Appointments in a recurring series must book the same schedules and service'
+    );
+    expect(response.body.issue[0].expression).toEqual(['Parameters.appointment[1]']);
+  });
+
   test('checks each occurrence against the ones booked before it', async () => {
     const schedule = await makeSchedule();
     // Both hold the same Slot, which a capacity-1 schedule can only book once.
