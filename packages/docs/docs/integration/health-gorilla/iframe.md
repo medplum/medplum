@@ -8,7 +8,7 @@ sidebar_position: 4
 The iframe is an **optional alternative** to Medplum's [React order form components and `useHealthGorillaLabOrder` hook](./sending-orders.md#creating-an-order-form-in-react). Use either the hosted iframe or the Medplum form components and hook for your ordering workflow. You do not need both, and the iframe is not required for the Health Gorilla integration.
 :::
 
-Use the shared `health-gorilla-iframe` bot or `Patient/$health-gorilla-iframe` operation to open Health Gorilla's lab ordering interface from a patient chart. The returned URL opens an ordering session with the patient's demographics and the signed-in practitioner as the default Ordering Provider.
+Use the shared `health-gorilla-iframe` bot or `Patient/$health-gorilla-iframe` operation to open Health Gorilla's lab ordering interface from a patient chart. The returned URL opens an ordering session with the patient's demographics and the requesting practitioner as the default Ordering Provider.
 
 This guide assumes the Health Gorilla integration is already shared with your project. You can call its bots and operations directly from your application.
 
@@ -17,16 +17,16 @@ Health Gorilla's [Lab Network iFrame](https://developer.healthgorilla.com/docs/i
 ## Prerequisites
 
 - An existing Medplum `Patient` with `name[0].given`, `name[0].family`, `gender`, and a full `birthDate` in `YYYY-MM-DD` format. Partial birth dates are rejected.
-- A signed-in Medplum `Practitioner` who has completed [practitioner sync](./user-management.md) for your Health Gorilla integration.
+- A Medplum `Practitioner` with a project membership who has completed [practitioner sync](./user-management.md) for your Health Gorilla integration.
 - An HTTPS callback page in your application to receive the user after ordering finishes or is cancelled.
 
 ## Prepare the ordering practitioner
 
 Before the practitioner's first order, run the shared `sync-practitioner` bot or `Practitioner/{id}/$health-gorilla-sync-practitioner` operation for that practitioner's Medplum record. See [User Management](./user-management.md) for the required practitioner data and sync examples.
 
-Call the iframe operation from the ordering practitioner's signed-in Medplum session. That practitioner becomes the default Ordering Provider. You do not need to supply Health Gorilla credentials or generate a Health Gorilla token in your application.
+Call the iframe operation from the ordering practitioner's signed-in Medplum session, or from your server acting [on behalf of that practitioner](#call-from-a-server-proxy). That practitioner becomes the default Ordering Provider. You do not need to supply Health Gorilla credentials or generate a Health Gorilla token in your application.
 
-Client-credentials sessions and ordering on behalf of another practitioner are not supported in this flow.
+A client-credentials request must include the authorized on-behalf-of header. Client credentials alone do not identify an ordering practitioner.
 
 The following helper syncs the currently signed-in practitioner using the shared bot. Pass the authenticated `MedplumClient` your application already uses. The practitioner must have the required name and NPI data described in [User Management](./user-management.md).
 
@@ -119,7 +119,7 @@ The bot accepts a JSON object with two required string fields:
 }
 ```
 
-Do not include a `practitionerId` or Health Gorilla login in the request. The ordering practitioner comes from the authenticated caller; provider overrides are not supported.
+Do not include a `practitionerId` or Health Gorilla login in the request. The ordering practitioner comes from the authenticated caller, including a practitioner identified through the authorized on-behalf-of header.
 
 The response is a JSON object containing `url`, the authenticated ordering URL. Use it as returned.
 
@@ -141,7 +141,7 @@ The request body is a plain JSON object, not a FHIR `Parameters` resource. The o
 
 ### Execute the bot with the Medplum SDK
 
-You can also call the bot by its integration identifier using an authenticated `MedplumClient`:
+For an application using the practitioner's Medplum session directly, call the bot by its integration identifier using an authenticated `MedplumClient`:
 
 ```typescript
 import type { MedplumClient } from '@medplum/core';
@@ -186,6 +186,44 @@ Request a new ordering session when the user starts a new order, switches patien
 The returned URL contains a Health Gorilla OAuth access token. Keep it in memory for the ordering flow; do not log it, persist it in FHIR resources, or include it in analytics events.
 :::
 
+### Call from a server proxy
+
+If your frontend authenticates through your own backend, your backend can use Medplum client credentials and [On-Behalf-Of](/docs/auth/on-behalf-of) to launch the iframe for the authenticated practitioner. The practitioner does not need to sign in to Medplum interactively.
+
+The server's `ClientApplication` must have project admin rights. The target `Practitioner` must have a `ProjectMembership` in that project, permission to execute the integration and read the patient, and a successfully synced Health Gorilla login. Resolve the practitioner ID from your trusted server-side user mapping after authenticating and authorizing the request; do not accept an arbitrary practitioner ID from the browser.
+
+Pass your server's authenticated `MedplumClient` to this helper. It sets the header for this request only, so a shared client can serve multiple practitioners without changing its default identity:
+
+```typescript
+import type { MedplumClient } from '@medplum/core';
+
+export async function launchLabOrderFromProxy(
+  medplum: MedplumClient,
+  practitionerId: string,
+  patientId: string,
+  callbackUrl: string
+): Promise<string> {
+  if (!practitionerId || !patientId || new URL(callbackUrl).protocol !== 'https:') {
+    throw new Error('Provide practitioner and patient IDs and an absolute HTTPS callback URL.');
+  }
+
+  const { url }: { url: string } = await medplum.executeBot(
+    {
+      system: 'https://www.medplum.com/integrations/bot-identifier',
+      value: 'health-gorilla-labs/health-gorilla-iframe',
+    },
+    { patientId, callbackUrl },
+    'application/json',
+    { headers: { 'X-Medplum-On-Behalf-Of': `Practitioner/${practitionerId}` } }
+  );
+  return url;
+}
+```
+
+Return the URL to the authorized frontend and render `LabOrderFrame` as above. This helper does not use `medplum.getProfile()` to select the practitioner: with client credentials, that profile is the server's `ClientApplication`.
+
+The same header works with the `Patient/$health-gorilla-iframe` operation shown above. Add `X-Medplum-On-Behalf-Of: Practitioner/{practitioner-id}` and use your server's Medplum access token. When running practitioner sync through your proxy, also include this header on that request and sync the same practitioner reference. The header applies only to the request that carries it.
+
 ## Returning to your application and receiving results
 
 The `callbackUrl` is a browser return destination after the user completes or cancels ordering. It is separate from the webhook endpoint used by `receive-from-health-gorilla`. Reaching this page alone is not confirmation that an order was submitted.
@@ -196,8 +234,8 @@ The iframe bot creates the ordering session and returns its URL. It does not cre
 
 - **`Missing patientId` or `Missing callbackUrl`**: Include both fields in the JSON request body.
 - **Patient is missing required fields**: Populate the first name entry's given and family names, gender, and full birth date before launching the session.
-- **Signed-in Practitioner required**: Call using a practitioner session rather than client credentials or a patient account. Staff delegation is not supported.
-- **Practitioner must have one Health Gorilla login ID**: Run the shared practitioner sync for the signed-in practitioner, then retry. If the error persists, contact the Medplum team with the Practitioner ID.
+- **Signed-in Practitioner required**: Use a practitioner session or an authorized server request with `X-Medplum-On-Behalf-Of`. For a proxy, verify the header, target project membership, and client admin rights. A patient account or client credentials alone cannot identify the ordering practitioner.
+- **Practitioner must have one Health Gorilla login ID**: Run the shared practitioner sync for the requesting practitioner, then retry. If the error persists, contact the Medplum team with the Practitioner ID.
 - **Patient address is incomplete or unsupported**: Correct the selected address fields named in the error, including an explicit US country. Address fields are required only when an address is supplied.
 - **Session creation fails**: Confirm that practitioner sync succeeded and the patient has the required demographics. If the error persists, contact the Medplum team with the error message. Do not include the authenticated iframe URL.
 - **Results do not match the expected patient or order**: Check the [result matching rules](./receiving-results.md#resolving-orders-with-results) and review `DetectedIssue` resources. The iframe launch does not sync patient identifiers or create a corresponding Medplum order.
