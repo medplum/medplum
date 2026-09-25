@@ -222,10 +222,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         schedule: candidate.schedule,
         color: colorByScheduleId.get(candidate.schedule.id),
         slots: (slots ?? []).filter((slot: Slot) => slot.schedule?.reference === scheduleReference),
-        appointments: (appointments ?? []).filter((appointment: Appointment) =>
-          (appointment.participant ?? []).some(
-            (participant) => participant.actor?.reference && actorReferences.has(participant.actor.reference)
-          )
+        appointments: (appointments ?? []).filter(
+          (appointment: Appointment) =>
+            appointment.status !== 'cancelled' &&
+            (appointment.participant ?? []).some(
+              (participant) => participant.actor?.reference && actorReferences.has(participant.actor.reference)
+            )
         ),
       };
     });

@@ -142,7 +142,7 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
         label="Cancellation reason"
         placeholder="Search reasons"
         maxValues={1}
-        creatable={false}
+        creatable={true}
         withHelpText={false}
         required
         onChange={setReason}
