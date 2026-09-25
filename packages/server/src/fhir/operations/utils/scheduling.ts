@@ -917,27 +917,18 @@ export async function validateProposedAppointment(
   ]
 > {
   const { contained, ...appointment } = proposedAppointment;
+  const path = getPath(proposedAppointment);
   const serviceRefs = extractServiceTypeReferences(appointment.serviceType);
   if (serviceRefs.length === 0) {
-    throw new OperationOutcomeError(
-      badRequest('Appointment has no service reference', 'Parameters.appointment.serviceType')
-    );
+    throw new OperationOutcomeError(badRequest('Appointment has no service reference', `${path}.serviceType`));
   }
   if (serviceRefs.length > 1) {
-    throw new OperationOutcomeError(
-      badRequest('Appointment has too many service references', 'Parameters.appointment.serviceType')
-    );
+    throw new OperationOutcomeError(badRequest('Appointment has too many service references', `${path}.serviceType`));
   }
 
-  const proposedSlots = filterWithPaths(
-    contained,
-    (r) => isResource<Slot>(r, 'Slot'),
-    `${getPath(proposedAppointment)}.contained`
-  );
+  const proposedSlots = filterWithPaths(contained, (r) => isResource<Slot>(r, 'Slot'), `${path}.contained`);
   if (!proposedSlots.length) {
-    throw new OperationOutcomeError(
-      badRequest('Appointment has no contained Slot resources', 'Parameters.appointment')
-    );
+    throw new OperationOutcomeError(badRequest('Appointment has no contained Slot resources', path));
   }
 
   const busySlots = proposedSlots.filter((slot) => slot.status === 'busy');
