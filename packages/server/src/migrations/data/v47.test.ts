@@ -15,7 +15,7 @@ import { queueRegistry } from '../../workers/utils';
 import type { MigrationActionResult } from '../types';
 import type { CustomPostDeployMigrationJobData } from './types';
 import type { BackfillOverrides, ProjectIdBackfillJobData } from './v47';
-import { computeRanges, callback as migrationFn, uuidPartition } from './v47';
+import { AdaptiveConcurrency, computeRanges, callback as migrationFn, uuidPartition } from './v47';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -44,7 +44,7 @@ describe('v47 key ranges', () => {
   });
 
   test('caps the number of ranges so a bad estimate cannot explode the statement count', () => {
-    expect(computeRanges(Number.MAX_SAFE_INTEGER, 1)).toHaveLength(4096);
+    expect(computeRanges(Number.MAX_SAFE_INTEGER, 1)).toHaveLength(65_536);
   });
 
   test('spreads boundaries evenly across the key space', () => {
@@ -53,6 +53,122 @@ describe('v47 key ranges', () => {
     expect(uuidPartition(3, 4)).toBe('c0000000-0000-0000-0000-000000000000');
     expect(() => uuidPartition(0, 4)).toThrow(/uuid boundary/);
     expect(() => uuidPartition(4, 4)).toThrow(/uuid boundary/);
+  });
+});
+
+describe('v47 adaptive concurrency', () => {
+  const TARGET_MS = 100;
+  const BACKOFF_MS = 300;
+
+  /**
+   * Feeds ranges on a synthetic clock, each starting where the previous one finished.
+   * @param limiter - The limiter to feed.
+   * @returns A function recording one range of the given duration.
+   */
+  function clock(limiter: AdaptiveConcurrency): (durationMs: number) => void {
+    let now = 0;
+    return (durationMs) => {
+      const start = now;
+      now += durationMs;
+      limiter.record(start, now);
+    };
+  }
+
+  test('starts at one and grows by one per round of fast ranges, up to the ceiling', () => {
+    const limiter = new AdaptiveConcurrency(3, TARGET_MS, BACKOFF_MS);
+    const range = clock(limiter);
+    expect(limiter.limit).toBe(1);
+    expect(limiter.admits(0)).toBe(true);
+    expect(limiter.admits(1)).toBe(false);
+
+    range(10);
+    expect(limiter.limit).toBe(2);
+    // A round at two workers is two ranges
+    range(10);
+    expect(limiter.limit).toBe(2);
+    range(10);
+    expect(limiter.limit).toBe(3);
+    expect(limiter.admits(2)).toBe(true);
+
+    for (let i = 0; i < 10; i++) {
+      range(10);
+    }
+    expect(limiter.limit).toBe(3);
+  });
+
+  test('halves on a slow range and never drops below one', () => {
+    const limiter = new AdaptiveConcurrency(6, TARGET_MS, BACKOFF_MS);
+    const range = clock(limiter);
+    while (limiter.limit < 6) {
+      range(10);
+    }
+
+    range(BACKOFF_MS);
+    expect(limiter.limit).toBe(3);
+    range(BACKOFF_MS);
+    expect(limiter.limit).toBe(1);
+    range(BACKOFF_MS);
+    expect(limiter.limit).toBe(1);
+    expect(limiter.admits(0)).toBe(true);
+  });
+
+  test('ignores ranges that started before the last adjustment', () => {
+    const limiter = new AdaptiveConcurrency(4, TARGET_MS, BACKOFF_MS);
+    const range = clock(limiter);
+    while (limiter.limit < 4) {
+      range(10);
+    }
+
+    // Four ranges in flight together, all slowed by the same pressure. Only the first to finish
+    // reflects the concurrency that caused it; the rest would cascade the limit down to one.
+    const start = 1_000_000;
+    for (let i = 0; i < 4; i++) {
+      limiter.record(start, start + BACKOFF_MS + i);
+    }
+    expect(limiter.limit).toBe(2);
+  });
+
+  test('holds, and restarts the healthy streak, between the target and the backoff threshold', () => {
+    const limiter = new AdaptiveConcurrency(3, TARGET_MS, BACKOFF_MS);
+    const range = clock(limiter);
+    range(10);
+    expect(limiter.limit).toBe(2);
+
+    range(10);
+    range(TARGET_MS + 1);
+    range(10);
+    expect(limiter.limit).toBe(2);
+    range(10);
+    expect(limiter.limit).toBe(3);
+  });
+
+  test('releases parked workers when the limit grows and on wake', async () => {
+    const limiter = new AdaptiveConcurrency(2, TARGET_MS, BACKOFF_MS);
+    const range = clock(limiter);
+    const flush = (): Promise<void> =>
+      new Promise((resolve) => {
+        setImmediate(resolve);
+      });
+
+    let released = false;
+    const onGrowth = limiter.parked().then(() => {
+      released = true;
+    });
+    await flush();
+    expect(released).toBe(false);
+    range(10);
+    await onGrowth;
+    expect(released).toBe(true);
+
+    released = false;
+    const onWake = limiter.parked().then(() => {
+      released = true;
+    });
+    await flush();
+    expect(released).toBe(false);
+    limiter.wake();
+    await onWake;
+    expect(released).toBe(true);
   });
 });
 
@@ -180,7 +296,7 @@ describe('v47', () => {
 
   test('yields to a graceful shutdown between batches of one table', () =>
     withTestContext(async () => {
-      await createNulledObservation();
+      const obs = await createNulledObservation();
 
       let closing = false;
       const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => closing);
@@ -204,6 +320,8 @@ describe('v47', () => {
       } finally {
         restoreQuery();
         isClosingSpy.mockRestore();
+        // Left NULL by the interrupted run, where it would read as unfinished work to later tests
+        await client.query(`DELETE FROM "Observation_References" WHERE "resourceId" = $1`, [obs.id]);
       }
     }));
 
@@ -255,28 +373,37 @@ describe('v47', () => {
       expect(firstAnalyze).toBeLessThan(firstBackfill);
     }));
 
-  test('backfills a table before sweeping its orphans', () =>
+  test('sweeps each range right behind its own backfill', () =>
     withTestContext(async () => {
       const obs = await createNulledObservation();
       const orphanId = randomUUID();
-      await client.query(
-        `INSERT INTO "Observation_References" ("resourceId", "targetId", "code") VALUES ($1, $2, 'subject')`,
-        [orphanId, randomUUID()]
-      );
+      await insertOrphan(orphanId);
 
-      const { statements, restore } = captureSql();
+      const originalQuery = client.query.bind(client);
+      const rangeStatements: { kind: 'backfill' | 'sweep'; params: unknown[] }[] = [];
+      const spy = vi.spyOn(client, 'query').mockImplementation((async (...args: any[]) => {
+        const sql = typeof args[0] === 'string' ? args[0] : args[0]?.text;
+        if (typeof sql === 'string' && sql.includes('UPDATE "Observation_References"')) {
+          rangeStatements.push({ kind: 'backfill', params: args[1] ?? [] });
+        } else if (typeof sql === 'string' && sql.includes('DELETE FROM "Observation_References" r')) {
+          rangeStatements.push({ kind: 'sweep', params: args[1] ?? [] });
+        }
+        return (originalQuery as any)(...args);
+      }) as typeof client.query);
       try {
-        await run(undefined, SINGLE_RANGE);
+        await run(undefined, { rangeTargetRows: 1 });
       } finally {
-        restore();
+        spy.mockRestore();
       }
 
-      // Backfilling first drains every NULL row whose resource still exists, so the sweep that
-      // follows reads a NULL region holding only orphans instead of anti-joining the whole table
-      const backfill = statements.findIndex((sql) => sql.includes('UPDATE "Observation_References"'));
-      const sweep = statements.findIndex((sql) => sql.includes('DELETE FROM "Observation_References"'));
-      expect(backfill).toBeGreaterThanOrEqual(0);
-      expect(sweep).toBeGreaterThan(backfill);
+      // Sweeping while the range's pages are still cached, rather than in a second pass over the
+      // whole table, is what keeps the sweep from costing a second full read. Backfilling first
+      // leaves only orphans NULL in the range.
+      expect(rangeStatements.filter((s) => s.kind === 'backfill').length).toBeGreaterThan(1);
+      for (let i = 0; i < rangeStatements.length; i += 2) {
+        expect(rangeStatements[i].kind).toBe('backfill');
+        expect(rangeStatements[i + 1]).toEqual({ kind: 'sweep', params: rangeStatements[i].params });
+      }
 
       const remaining = await client.query(
         `SELECT 1 FROM "Observation_References" WHERE "resourceId" = ANY($1::uuid[]) AND "projectId" IS NULL`,
@@ -349,61 +476,98 @@ describe('v47', () => {
       }
     }));
 
+  async function createNulledObservations(count: number): Promise<{ ids: string[]; projectId: string }> {
+    const { repo, project } = await createTestProject({ withRepo: true });
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const ids: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const obs = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
+        subject: createReference(patient),
+      });
+      ids.push(obs.id);
+    }
+    await client.query(`UPDATE "Observation_References" SET "projectId" = NULL WHERE "resourceId" = ANY($1::uuid[])`, [
+      ids,
+    ]);
+    return { ids, projectId: project.id };
+  }
+
+  /**
+   * Runs the migration across three dedicated worker connections, counting the Observation ranges
+   * each one ran.
+   * @param overrides - Range sizing and timing.
+   * @returns The migration action results and the per-worker range counts.
+   */
+  async function runOnWorkers(
+    overrides: BackfillOverrides
+  ): Promise<{ results: MigrationActionResult[]; rangesPerWorker: number[] }> {
+    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const workers = [await pool.connect(), await pool.connect(), await pool.connect()];
+    const rangesPerWorker = workers.map(() => 0);
+    try {
+      workers.forEach((worker, i) => {
+        const original = worker.query.bind(worker);
+        vi.spyOn(worker, 'query').mockImplementation((async (...args: any[]) => {
+          const sql = typeof args[0] === 'string' ? args[0] : args[0]?.text;
+          if (typeof sql === 'string' && sql.includes('UPDATE "Observation_References"')) {
+            rangesPerWorker[i]++;
+          }
+          return (original as any)(...args);
+        }) as typeof worker.query);
+      });
+      const results = await run(undefined, { concurrency: workers.length, clients: workers, ...overrides });
+      return { results, rangesPerWorker };
+    } finally {
+      for (const worker of workers) {
+        worker.release(true);
+      }
+    }
+  }
+
+  async function expectBackfilled(ids: string[], projectId: string): Promise<void> {
+    const rows = await client.query<{ projectId: string | null }>(
+      `SELECT "projectId" FROM "Observation_References" WHERE "resourceId" = ANY($1::uuid[])`,
+      [ids]
+    );
+    expect(rows.rows).toHaveLength(ids.length * 2); // patient and subject per observation
+    expect(rows.rows.every((r) => r.projectId === projectId)).toBe(true);
+  }
+
   test('backfills every row when key ranges run in parallel', () =>
     withTestContext(async () => {
-      const { repo, project } = await createTestProject({ withRepo: true });
-      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
-      const ids: string[] = [];
-      for (let i = 0; i < 20; i++) {
-        const obs = await repo.createResource<Observation>({
-          resourceType: 'Observation',
-          status: 'final',
-          code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
-          subject: createReference(patient),
-        });
-        ids.push(obs.id);
-      }
-      await client.query(
-        `UPDATE "Observation_References" SET "projectId" = NULL WHERE "resourceId" = ANY($1::uuid[])`,
-        [ids]
-      );
+      const { ids, projectId } = await createNulledObservations(20);
 
-      const pool = getDatabasePool(DatabaseMode.WRITER);
-      const workers = [await pool.connect(), await pool.connect(), await pool.connect()];
-      const rangesPerWorker = workers.map(() => 0);
-      let results: MigrationActionResult[];
-      try {
-        workers.forEach((worker, i) => {
-          const original = worker.query.bind(worker);
-          vi.spyOn(worker, 'query').mockImplementation((async (...args: any[]) => {
-            const sql = typeof args[0] === 'string' ? args[0] : args[0]?.text;
-            if (typeof sql === 'string' && sql.includes('UPDATE "Observation_References"')) {
-              rangesPerWorker[i]++;
-            }
-            return (original as any)(...args);
-          }) as typeof worker.query);
-        });
-        // One row per range spreads the resources over many ranges claimed concurrently
-        results = await run(undefined, { concurrency: workers.length, clients: workers, rangeTargetRows: 1 });
-      } finally {
-        for (const worker of workers) {
-          worker.release(true);
-        }
-      }
+      // One row per range spreads the resources over many ranges claimed concurrently. Every range
+      // counts as fast, so the limiter admits every worker however slow the machine is.
+      const { results, rangesPerWorker } = await runOnWorkers({
+        rangeTargetRows: 1,
+        rangeTargetMs: Number.MAX_SAFE_INTEGER,
+      });
 
       // A gap between ranges would leave rows NULL, which is self-detecting: the table then fails
       // to converge and `run` throws before reaching this point
-      expect(results.find((r) => r.name === 'Backfill "Observation_References"."projectId"')?.ranges).toBeGreaterThan(
-        1
-      );
+      expect(observationResult(results)?.ranges).toBeGreaterThan(1);
+      expect(observationResult(results)?.concurrency).toBe(3);
       // Every worker pulled ranges, rather than one of them doing all the work
       expect(rangesPerWorker.every((count) => count > 0)).toBe(true);
-      const rows = await client.query<{ projectId: string | null }>(
-        `SELECT "projectId" FROM "Observation_References" WHERE "resourceId" = ANY($1::uuid[])`,
-        [ids]
-      );
-      expect(rows.rows).toHaveLength(ids.length * 2); // patient and subject per observation
-      expect(rows.rows.every((r) => r.projectId === project.id)).toBe(true);
+      await expectBackfilled(ids, projectId);
+    }));
+
+  test('stays on one worker while every range is slower than its target', () =>
+    withTestContext(async () => {
+      const { ids, projectId } = await createNulledObservations(5);
+
+      // Every range counts as slow, as on a database already saturated by live traffic
+      const { results, rangesPerWorker } = await runOnWorkers({ rangeTargetRows: 1, rangeTargetMs: 0 });
+
+      expect(observationResult(results)?.ranges).toBeGreaterThan(1);
+      expect(observationResult(results)?.concurrency).toBe(1);
+      expect(rangesPerWorker[0]).toBeGreaterThan(0);
+      expect(rangesPerWorker.slice(1)).toEqual([0, 0]);
+      await expectBackfilled(ids, projectId);
     }));
 
   test('disables sequential scans while a table runs as keyed ranges', () =>
@@ -449,7 +613,7 @@ describe('v47', () => {
 
   test('delays the job exactly once when the queue closes with several workers in flight', () =>
     withTestContext(async () => {
-      await createNulledObservation();
+      const obs = await createNulledObservation();
 
       let closing = false;
       const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => closing);
@@ -480,15 +644,15 @@ describe('v47', () => {
         );
 
         // Only the driver delays the job, and only once every worker has settled. Workers doing it
-        // themselves would write conflicting resume points and throw with queries still in flight.
-        expect(job.updateData).toHaveBeenCalledTimes(1);
-        expect(job.updateData).toHaveBeenCalledWith(expect.objectContaining({ resumeFromResourceType: 'Observation' }));
+        // themselves would throw with queries still in flight.
         expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
+        expect(lastSavedData(job)).toMatchObject({ resumeFromResourceType: 'Observation' });
       } finally {
         for (const worker of workers) {
           worker.release(true);
         }
         isClosingSpy.mockRestore();
+        await client.query(`DELETE FROM "Observation_References" WHERE "resourceId" = $1`, [obs.id]);
       }
     }));
 
@@ -507,6 +671,177 @@ describe('v47', () => {
 
       // Without the `projectId` index in place, re-proving a finished table costs a full scan of it
       expect(statements.some((sql) => sql.includes('UPDATE "Observation_References"'))).toBe(false);
+    }));
+
+  function mockJob(data: CustomPostDeployMigrationJobData = jobData): Job<CustomPostDeployMigrationJobData> {
+    return {
+      id: '1',
+      queueName: 'TestQueue',
+      token: 'token',
+      data,
+      updateData: vi.fn(),
+      moveToDelayed: vi.fn(),
+    } as unknown as Job<CustomPostDeployMigrationJobData>;
+  }
+
+  function lastSavedData(job: Job<CustomPostDeployMigrationJobData>): ProjectIdBackfillJobData {
+    const calls = vi.mocked(job.updateData).mock.calls;
+    return calls[calls.length - 1][0];
+  }
+
+  async function insertOrphan(resourceId: string): Promise<void> {
+    await client.query(
+      `INSERT INTO "Observation_References" ("resourceId", "targetId", "code") VALUES ($1, $2, 'subject')`,
+      [resourceId, randomUUID()]
+    );
+  }
+
+  test('skips ranges below the resume point when resuming a table mid-backfill', () =>
+    withTestContext(async () => {
+      // Work for the resumed attempt, placed above the resume point: everything below it is done
+      const orphanId = 'f0000000-0000-4000-8000-000000000001';
+      await insertOrphan(orphanId);
+      const resumeData: ProjectIdBackfillJobData = {
+        ...jobData,
+        resumePhase: 'backfill',
+        resumeFromResourceType: 'Observation',
+        resumeFromResourceId: '40000000-0000-0000-0000-000000000000',
+        resumeStep: 'backfill',
+      };
+
+      const { statements, restore } = captureSql();
+      let results: MigrationActionResult[];
+      try {
+        results = await run(undefined, { rangeTargetRows: 1 }, resumeData);
+      } finally {
+        restore();
+        await client.query(`DELETE FROM "Observation_References" WHERE "resourceId" = $1`, [orphanId]);
+      }
+
+      expect(observationResult(results)).toMatchObject({ passes: 1, orphansDeleted: 1 });
+      // Ranges below the resume point were backfilled and swept by the previous attempt, so only
+      // about three quarters of the key space is run again
+      const ranges = observationResult(results)?.ranges as number;
+      const updates = statements.filter((sql) => sql.includes('UPDATE "Observation_References"')).length;
+      expect(updates).toBeLessThan(ranges);
+      expect(updates).toBeGreaterThanOrEqual(Math.floor((ranges * 3) / 4));
+    }));
+
+  test('goes straight to verification when a previous attempt finished every range', () =>
+    withTestContext(async () => {
+      const orphanId = randomUUID();
+      await insertOrphan(orphanId);
+      const resumeData: ProjectIdBackfillJobData = {
+        ...jobData,
+        resumePhase: 'backfill',
+        resumeFromResourceType: 'Observation',
+        resumeStep: 'verify',
+      };
+
+      const { statements, restore } = captureSql();
+      let results: MigrationActionResult[];
+      try {
+        results = await run(undefined, SINGLE_RANGE, resumeData);
+      } finally {
+        restore();
+        await client.query(`DELETE FROM "Observation_References" WHERE "resourceId" = $1`, [orphanId]);
+      }
+
+      // Verification finds the orphan left behind, so a second, full pass still runs
+      const firstCount = statements.findIndex((sql) => sql.includes('AS remaining'));
+      const firstUpdate = statements.findIndex((sql) => sql.includes('UPDATE "Observation_References"'));
+      expect(firstCount).toBeGreaterThanOrEqual(0);
+      expect(firstUpdate).toBeGreaterThan(firstCount);
+      expect(observationResult(results)).toMatchObject({ passes: 2, orphansDeleted: 1, remaining: 0 });
+    }));
+
+  test('saves progress as it goes, not only when the queue closes', () =>
+    withTestContext(async () => {
+      await createNulledObservation();
+      const job = mockJob();
+
+      // A process killed outright never reaches the closing path; BullMQ re-runs the stalled job
+      // with whatever data was last saved
+      await run(job, { rangeTargetRows: 1, progressIntervalMs: 0 });
+
+      const saved = vi.mocked(job.updateData).mock.calls.map(([data]) => data as ProjectIdBackfillJobData);
+      expect(saved).toContainEqual(
+        expect.objectContaining({
+          resumeFromResourceType: 'Observation',
+          resumeStep: 'backfill',
+          resumeFromResourceId: expect.stringMatching(UUID_PATTERN),
+        })
+      );
+      expect(saved).toContainEqual(
+        expect.objectContaining({
+          resumeFromResourceType: undefined,
+          completedResourceTypes: expect.arrayContaining(['Observation']),
+        })
+      );
+      expect(lastSavedData(job)).toMatchObject({ resumePhase: 'index' });
+      expect(job.moveToDelayed).not.toHaveBeenCalled();
+    }));
+
+  function failBackfillWith(code: string): () => void {
+    const originalQuery = client.query.bind(client);
+    const spy = vi.spyOn(client, 'query').mockImplementation((async (...args: any[]) => {
+      const sql = typeof args[0] === 'string' ? args[0] : args[0]?.text;
+      if (typeof sql === 'string' && sql.includes('UPDATE "Observation_References"')) {
+        throw Object.assign(new Error('terminating connection due to administrator command'), { code });
+      }
+      return (originalQuery as any)(...args);
+    }) as typeof client.query);
+    return () => spy.mockRestore();
+  }
+
+  test('delays rather than fails the job when the database connection is lost', () =>
+    withTestContext(async () => {
+      const obs = await createNulledObservation();
+      const job = mockJob();
+
+      // A failover kills every connection; failing the job would discard all progress, since a
+      // re-run starts from fresh job data
+      const restore = failBackfillWith('57P01');
+      try {
+        await expect(run(job)).rejects.toThrow(DelayedError);
+      } finally {
+        restore();
+        await client.query(`DELETE FROM "Observation_References" WHERE "resourceId" = $1`, [obs.id]);
+      }
+
+      expect(lastSavedData(job)).toMatchObject({ resumeFromResourceType: 'Observation', transientFailures: 1 });
+      expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
+    }));
+
+  test('fails the job once lost connections have exhausted their restarts', () =>
+    withTestContext(async () => {
+      const obs = await createNulledObservation();
+      const job = mockJob();
+      const data: ProjectIdBackfillJobData = { ...jobData, transientFailures: 5 };
+
+      const restore = failBackfillWith('57P01');
+      try {
+        await expect(run(job, {}, data)).rejects.toThrow(/administrator command/);
+      } finally {
+        restore();
+        await client.query(`DELETE FROM "Observation_References" WHERE "resourceId" = $1`, [obs.id]);
+      }
+      expect(job.moveToDelayed).not.toHaveBeenCalled();
+    }));
+
+  test('fails the job outright on errors other than a lost connection', () =>
+    withTestContext(async () => {
+      const obs = await createNulledObservation();
+      const job = mockJob();
+
+      const restore = failBackfillWith('42P01');
+      try {
+        await expect(run(job)).rejects.toThrow(/administrator command/);
+      } finally {
+        restore();
+        await client.query(`DELETE FROM "Observation_References" WHERE "resourceId" = $1`, [obs.id]);
+      }
+      expect(job.moveToDelayed).not.toHaveBeenCalled();
     }));
 
   test('touches no rows when resuming in the index phase', () =>

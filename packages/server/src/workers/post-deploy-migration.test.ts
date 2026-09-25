@@ -610,6 +610,28 @@ describe('Post-Deploy Migration Worker', () => {
     });
   });
 
+  test('Run custom migration propagates DelayedError without failing the AsyncJob', async () => {
+    const asyncJob = await systemRepo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      status: 'accepted',
+      dataVersion: 123,
+      requestTime: new Date().toISOString(),
+      request: '/admin/super/migrate',
+    });
+    const jobData: CustomPostDeployMigrationJobData = { type: 'custom', asyncJobId: asyncJob.id };
+
+    // A migration that yields to a closing queue re-queues itself; failing the AsyncJob here would
+    // make the re-queued job skip itself as inactive
+    await expect(
+      runCustomMigration(systemRepo, undefined, jobData, async () => {
+        throw new DelayedError('queue closing');
+      })
+    ).rejects.toThrow(DelayedError);
+
+    const updatedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
+    expect(updatedJob.status).toBe('accepted');
+  });
+
   test('Run custom migration with error', async () => {
     const asyncJob = await systemRepo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
