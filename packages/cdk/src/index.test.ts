@@ -597,11 +597,12 @@ describe('Infra', () => {
     await unlink(filename);
   });
 
-  test('GuardDuty grants the server on-demand scan permissions', async () => {
+  test.each([false, true])('GuardDuty (on-demand only %s) grants the server scan permissions', async (onDemandOnly) => {
     const sourceConfig = {
       ...baseConfig,
-      stackName: 'MedplumGuardDutyScanStack',
+      stackName: `MedplumGuardDutyScan${onDemandOnly}Stack`,
       guardDutyMalwareProtectionEnabled: true,
+      guardDutyMalwareProtectionOnDemandOnly: onDemandOnly,
     } as unknown as MedplumSourceInfraConfig;
     const config = await normalizeInfraConfig(sourceConfig);
     const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
