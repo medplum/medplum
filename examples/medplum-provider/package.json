@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@mantine/core": "8.3.18",
+    "@mantine/dates": "8.3.18",
     "@mantine/hooks": "8.3.18",
     "@mantine/notifications": "8.3.18",
     "@mantine/spotlight": "8.3.18",

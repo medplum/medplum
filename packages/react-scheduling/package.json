@@ -68,6 +68,7 @@
   "devDependencies": {
     "@fullcalendar/react": "7.1.0",
     "@mantine/core": "8.3.18",
+    "@mantine/dates": "8.3.18",
     "@mantine/hooks": "8.3.18",
     "@mantine/notifications": "8.3.18",
     "@medplum/core": "5.1.42",
@@ -87,6 +88,7 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.1",
     "clsx": "2.1.1",
+    "dayjs": "1.11.23",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "sinon": "22.1.0",
@@ -96,11 +98,13 @@
   },
   "peerDependencies": {
     "@mantine/core": "^8.0.0",
+    "@mantine/dates": "^8.0.0",
     "@mantine/hooks": "^8.0.0",
     "@medplum/core": "5.1.42",
     "@medplum/fhirtypes": "5.1.42",
     "@medplum/react": "5.1.42",
     "@medplum/react-hooks": "5.1.42",
+    "dayjs": "^1.11.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
