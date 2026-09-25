@@ -387,34 +387,44 @@ describe('Appointment/$book with a recurring series', () => {
     );
   });
 
-  test('rebuilds the other series tags rather than trusting the ones it was sent', async () => {
-    const schedule = await makeSchedule();
-    const start = '2026-03-09T13:00:00.000Z';
-    const first: Appointment = {
-      ...makeOccurrence(schedule, start, '2026-03-09T14:00:00.000Z'),
-      identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'client-chosen' }],
-      extension: [
-        { url: RecurrenceIdExtensionURI, valuePositiveInt: 5 },
-        { url: OriginatingAppointmentExtensionURI, valueReference: { reference: 'Appointment/somewhere-else' } },
-      ],
-    };
+  test.each([
+    {
+      tag: 'a series identifier',
+      tagged: { identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'client-chosen' }] },
+      message: 'A series identifier is assigned when a recurring series is booked, and must not be sent',
+      expression: 'Parameters.appointment.identifier[0]',
+    },
+    {
+      tag: 'a recurrenceId',
+      tagged: { extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: 5 }] },
+      message:
+        'recurrenceId and originatingAppointment are assigned when a recurring series is booked, and must not be sent',
+      expression: 'Parameters.appointment.extension[0]',
+    },
+    {
+      tag: 'an originatingAppointment',
+      tagged: {
+        extension: [
+          { url: OriginatingAppointmentExtensionURI, valueReference: { reference: 'Appointment/somewhere-else' } },
+        ],
+      },
+      message:
+        'recurrenceId and originatingAppointment are assigned when a recurring series is booked, and must not be sent',
+      expression: 'Parameters.appointment.extension[0]',
+    },
+  ] satisfies { tag: string; tagged: Partial<Appointment>; message: string; expression: string }[])(
+    'refuses a series sent with $tag, rather than replacing it',
+    async ({ tagged, message, expression }) => {
+      const schedule = await makeSchedule();
+      const start = '2026-03-09T13:00:00.000Z';
+      const first: Appointment = { ...makeOccurrence(schedule, start, '2026-03-09T14:00:00.000Z'), ...tagged };
 
-    const response = await book(templated(first, weeklyTemplate(start, 2, 'America/New_York')));
-    expect(response).toHaveStatus(201);
-
-    const appointments = bookedAppointments(response);
-    for (const appointment of appointments) {
-      const seriesIdentifiers = appointment.identifier?.filter(
-        (identifier) => identifier.system === RecurringAppointmentSeriesIdentifierSystem
-      );
-      expect(seriesIdentifiers).toHaveLength(1);
-      expect(seriesIdentifiers?.[0].value).not.toBe('client-chosen');
+      const response = await book(templated(first, weeklyTemplate(start, 2, 'America/New_York')));
+      expect(response).toHaveStatus(400);
+      expect(response.body.issue[0].details.text).toBe(message);
+      expect(response.body.issue[0].expression).toEqual([expression]);
     }
-    expect(appointments.map((a) => getExtension(a, RecurrenceIdExtensionURI)?.valuePositiveInt)).toEqual([1, 2]);
-    expect(
-      appointments.map((a) => getExtension(a, OriginatingAppointmentExtensionURI)?.valueReference?.reference)
-    ).toEqual([undefined, `Appointment/${appointments[0].id}`]);
-  });
+  );
 
   test('rolls back the entire series when a later occurrence has become unavailable', async () => {
     const schedule = await makeSchedule();

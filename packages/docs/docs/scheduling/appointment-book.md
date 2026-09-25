@@ -268,6 +268,7 @@ An `appointment` without a `recurrenceTemplate` is booked as a single Appointmen
 - The template's weekday must be the weekday of the appointment's `start` in that timezone
 - The appointment's `start` and `end` must match its `busy` Slots'
 - Every later occurrence's local time must exist in that timezone; a series at 2:30am can't cross the night clocks spring forward
+- The appointment must not carry the series tags `$book` assigns (the series `identifier`, `recurrenceId`, or `originatingAppointment`; see [Series Output](#series-output)). They are refused rather than replaced.
 - All of the [constraints](#constraints) on a single booking apply to each occurrence individually
 
 The easiest way to meet these requirements is to pass back one entry from `$find` exactly as it was returned.
@@ -276,7 +277,7 @@ The easiest way to meet these requirements is to pass back one entry from `$find
 
 The response Bundle holds one booked `Appointment` and its Slots per occurrence, all created in the same transaction. If any occurrence is no longer available, the whole transaction rolls back, and no occurrence is created, including ones that were still available.
 
-Each booked occurrence is tagged as part of the series, replacing any series tags the submitted appointment carried:
+Each booked occurrence is tagged as part of the series:
 
 - Every occurrence shares a series `identifier` (system `https://medplum.com/fhir/recurring-appointment-series`). Read it from the response. Every occurrence of the series can then be found with `GET [base]/Appointment?identifier=https://medplum.com/fhir/recurring-appointment-series|<series id>`.
 - Every occurrence carries its 1-based position as R5's `recurrenceId`, using the standard R4 [cross-version extension](https://hl7.org/fhir/R5/versions.html#extensions) `http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceId`.

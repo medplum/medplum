@@ -129,12 +129,37 @@ export function weeklyTemplate(start: string, occurrenceCount: number, timezone:
   };
 }
 
-// Everything `tagWeeklySeries` and `linkToOriginatingAppointment` write.
-const SERIES_EXTENSION_URLS = [
-  RecurrenceIdExtensionURI,
-  RecurrenceTemplateExtensionURI,
-  OriginatingAppointmentExtensionURI,
-];
+/**
+ * Refuses the series tags `$book` assigns when it books a series, on that series' first
+ * occurrence, rather than silently replacing them. Only the `recurrenceTemplate` may be sent.
+ *
+ * @param first - The series' first occurrence, as proposed.
+ */
+export function assertNoSeriesTags(first: WithPath<Appointment>): void {
+  const path = getPath(first);
+  const identifierIdx =
+    first.identifier?.findIndex((i) => i.system === RecurringAppointmentSeriesIdentifierSystem) ?? -1;
+  if (identifierIdx >= 0) {
+    throw new OperationOutcomeError(
+      badRequest(
+        'A series identifier is assigned when a recurring series is booked, and must not be sent',
+        `${path}.identifier[${identifierIdx}]`
+      )
+    );
+  }
+  const extensionIdx =
+    first.extension?.findIndex(
+      (e) => e.url === RecurrenceIdExtensionURI || e.url === OriginatingAppointmentExtensionURI
+    ) ?? -1;
+  if (extensionIdx >= 0) {
+    throw new OperationOutcomeError(
+      badRequest(
+        'recurrenceId and originatingAppointment are assigned when a recurring series is booked, and must not be sent',
+        `${path}.extension[${extensionIdx}]`
+      )
+    );
+  }
+}
 
 /** A weekly series' `recurrenceTemplate`, as read from a proposed Appointment. */
 export type WeeklyTemplate = {
@@ -289,8 +314,8 @@ function isTimezone(timezone: string): boolean {
 }
 
 /**
- * Tags the occurrences of a booked weekly series, in order, replacing any series tags they
- * already carry. Only the first gets the `recurrenceTemplate`.
+ * Tags the occurrences of a booked weekly series, in order, which must carry no series tags but
+ * the `recurrenceTemplate` (see `assertNoSeriesTags`). Only the first gets the template.
  *
  * @param occurrences - The series, in order.
  * @param seriesId - The identifier shared by every occurrence.
@@ -303,11 +328,11 @@ export function tagWeeklySeries(occurrences: Appointment[], seriesId: string, ti
   return occurrences.map((appointment, idx) => ({
     ...appointment,
     identifier: [
-      ...(appointment.identifier ?? []).filter((i) => i.system !== RecurringAppointmentSeriesIdentifierSystem),
+      ...(appointment.identifier ?? []),
       { system: RecurringAppointmentSeriesIdentifierSystem, value: seriesId },
     ],
     extension: [
-      ...(appointment.extension ?? []).filter((e) => !SERIES_EXTENSION_URLS.includes(e.url)),
+      ...(appointment.extension ?? []).filter((e) => e.url !== RecurrenceTemplateExtensionURI),
       { url: RecurrenceIdExtensionURI, valuePositiveInt: idx + 1 },
       ...(idx === 0 ? [template] : []),
     ],

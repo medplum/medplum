@@ -8,7 +8,14 @@ import { getAuthenticatedContext } from '../../context';
 import { getPath, withPath } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { expandWeeklySeries, readWeeklyTemplate, seriesTimezone, tagWeeklySeries, weekdayOf } from './utils/recurrence';
+import {
+  assertNoSeriesTags,
+  expandWeeklySeries,
+  readWeeklyTemplate,
+  seriesTimezone,
+  tagWeeklySeries,
+  weekdayOf,
+} from './utils/recurrence';
 import { createProposedAppointment, createProposedAppointments } from './utils/scheduling';
 
 const bookOperation = makeOperationDefinition(
@@ -54,6 +61,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
     return [created, buildOutputParameters(bookOperation, bundle)];
   }
 
+  assertNoSeriesTags(proposed);
   const bundle = await createProposedAppointments(ctx.repo, expandWeeklySeries(proposed, template), (validated) => {
     const timezone = seriesTimezone(validated.flatMap(({ schedulingParameters }) => schedulingParameters));
     // The template chose the weeks booked, before the schedules were read.
