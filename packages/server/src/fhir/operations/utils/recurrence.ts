@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import {
   badRequest,
   createReference,
+  OccurrenceChangedExtensionURI,
   OperationOutcomeError,
   OriginatingAppointmentExtensionURI,
   RecurrenceIdExtensionURI,
@@ -352,6 +353,26 @@ export function linkToOriginatingAppointment(appointment: Appointment, originati
     extension: [
       ...(appointment.extension ?? []),
       { url: OriginatingAppointmentExtensionURI, valueReference: createReference(originating) },
+    ],
+  };
+}
+
+/**
+ * Flags an occurrence of a series that has moved off its `recurrenceTemplate`, as R5's
+ * `occurrenceChanged`. An Appointment in no series is returned unchanged.
+ *
+ * @param appointment - The moved Appointment.
+ * @returns The flagged Appointment.
+ */
+export function markOccurrenceChanged(appointment: Appointment): Appointment {
+  if (!appointment.extension?.some((e) => e.url === RecurrenceIdExtensionURI)) {
+    return appointment;
+  }
+  return {
+    ...appointment,
+    extension: [
+      ...appointment.extension.filter((e) => e.url !== OccurrenceChangedExtensionURI),
+      { url: OccurrenceChangedExtensionURI, valueBoolean: true },
     ],
   };
 }

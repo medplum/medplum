@@ -3,9 +3,12 @@
 import type { WithId } from '@medplum/core';
 import {
   createReference,
+  getExtension,
   getReferenceString,
   isDefined,
   isResource,
+  OccurrenceChangedExtensionURI,
+  RecurrenceTemplateExtensionURI,
   ServiceTypeReferenceURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
@@ -29,6 +32,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { addTestUser, createTestProject } from '../../test.setup';
+import { weeklyTemplate } from './utils/recurrence';
 import type {
   SchedulingParametersExtension,
   SchedulingParametersExtensionExtension,
@@ -353,6 +357,56 @@ describe('Appointment/:id/$reschedule', () => {
     // The vacated time is bookable again
     const rebooked = await book(makeProposal({ start, end, schedules: [practitionerSchedule] }));
     expect(rebooked.id).not.toStrictEqual(booked.id);
+
+    // Only an occurrence of a series can move off its template
+    expect(getExtension(appointment, OccurrenceChangedExtensionURI)).toBeUndefined();
+  });
+
+  test("moving an occurrence of a series to a new time marks it changed, and leaves the series' template", async () => {
+    const practitionerSchedule = await makeSchedule(practitioner);
+    const start = '2026-01-27T16:00:00.000Z'; // Tue 11am EST
+    const end = '2026-01-27T17:00:00.000Z';
+    const template = weeklyTemplate(start, 2, 'America/New_York');
+
+    const first = await book(makeProposal({ start, end, schedules: [practitionerSchedule] }), {
+      extension: [template],
+    });
+
+    const response = await reschedule(first.id as string, {
+      start: '2026-01-28T16:00:00.000Z', // Wed 11am EST
+      schedules: [practitionerSchedule],
+    });
+
+    expect(response).toHaveStatus(200);
+    const appointment = bundleResources(response.body).find((r) =>
+      isResource<Appointment>(r, 'Appointment')
+    ) as Appointment;
+    expect(getExtension(appointment, OccurrenceChangedExtensionURI)?.valueBoolean).toBe(true);
+    // The template still describes the series as booked: Tuesdays, not the moved occurrence's Wednesday
+    expect(getExtension(appointment, RecurrenceTemplateExtensionURI)).toStrictEqual(template);
+  });
+
+  test('reassigning an occurrence of a series at the same time keeps it on the template', async () => {
+    const practitionerSchedule = await makeSchedule(practitioner);
+    const roomOneSchedule = await makeSchedule(roomOne);
+    const roomTwoSchedule = await makeSchedule(roomTwo);
+    const start = '2026-01-27T16:00:00.000Z'; // Tue 11am EST
+    const end = '2026-01-27T17:00:00.000Z';
+
+    const first = await book(makeProposal({ start, end, schedules: [practitionerSchedule, roomOneSchedule] }), {
+      extension: [weeklyTemplate(start, 2, 'America/New_York')],
+    });
+
+    const response = await reschedule(first.id as string, {
+      start,
+      schedules: [practitionerSchedule, roomTwoSchedule],
+    });
+
+    expect(response).toHaveStatus(200);
+    const appointment = bundleResources(response.body).find((r) =>
+      isResource<Appointment>(r, 'Appointment')
+    ) as Appointment;
+    expect(getExtension(appointment, OccurrenceChangedExtensionURI)).toBeUndefined();
   });
 
   test('keeps the original slots when the new time is unavailable', async () => {

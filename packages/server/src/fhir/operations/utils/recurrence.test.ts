@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { OccurrenceChangedExtensionURI, RecurrenceIdExtensionURI } from '@medplum/core';
 import type { Appointment, Extension } from '@medplum/fhirtypes';
 import { getPath, withPath } from '../../../util/withpath';
 import {
   expandWeeklySeries,
+  markOccurrenceChanged,
   projectWeeksForward,
   readWeeklyTemplate,
   weekProjector,
@@ -236,5 +238,27 @@ describe('expandWeeklySeries', () => {
       'Parameters.appointment'
     );
     expect(() => expandWeeklySeries(first, template)).toThrow('A recurring series must have a start');
+  });
+});
+
+describe('markOccurrenceChanged', () => {
+  const occurrence: Appointment = {
+    resourceType: 'Appointment',
+    status: 'booked',
+    participant: [],
+    extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: 2 }],
+  };
+
+  test('flags an occurrence of a series only once, however often it moves', () => {
+    const marked = markOccurrenceChanged(markOccurrenceChanged(occurrence));
+    expect(marked.extension).toStrictEqual([
+      { url: RecurrenceIdExtensionURI, valuePositiveInt: 2 },
+      { url: OccurrenceChangedExtensionURI, valueBoolean: true },
+    ]);
+  });
+
+  test('leaves an Appointment in no series unchanged', () => {
+    const standalone: Appointment = { resourceType: 'Appointment', status: 'booked', participant: [] };
+    expect(markOccurrenceChanged(standalone)).toBe(standalone);
   });
 });

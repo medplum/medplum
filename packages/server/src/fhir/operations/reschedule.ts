@@ -21,6 +21,7 @@ import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import type { Repository } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { markOccurrenceChanged } from './utils/recurrence';
 import {
   assertAllLoaded,
   buildAppointmentSlots,
@@ -189,8 +190,10 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
       for (const [i, slot] of slots.entries()) {
         createdSlots[i] = await txRepo.createResource<Slot>(slot);
       }
+      // A move to other schedules at the same time keeps an occurrence on its series' template.
+      const moved = Date.parse(existingAppointment.start ?? '') !== interval.start.valueOf();
       const updatedAppointment = await txRepo.updateResource<Appointment>({
-        ...existingAppointment,
+        ...(moved ? markOccurrenceChanged(existingAppointment) : existingAppointment),
         start: interval.start.toISOString(),
         end: interval.end.toISOString(),
         participant,

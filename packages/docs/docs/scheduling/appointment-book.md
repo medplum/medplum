@@ -286,6 +286,8 @@ Each booked occurrence is tagged as part of the series:
 - The first occurrence keeps the `recurrenceTemplate` it was booked from, which describes the series. No other occurrence carries one.
 - Every occurrence after the first carries R5's `originatingAppointment` (`http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.originatingAppointment`), referencing the first occurrence.
 
+[`$reschedule`](/docs/scheduling/appointment-reschedule) keeps these tags on an occurrence it moves, and marks one moved to a new time with R5's `occurrenceChanged` (`http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.occurrenceChanged`, valueBoolean `true`). The first occurrence's `recurrenceTemplate` keeps describing the series as booked, even when that occurrence is the one moved.
+
 ## Booking Logic
 
 `$book` performs the following steps atomically inside a database transaction, ensuring safety when concurrent booking requests are received.
