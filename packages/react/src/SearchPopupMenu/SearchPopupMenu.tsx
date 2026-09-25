@@ -9,7 +9,6 @@ import { Fragment } from 'react';
 import classes from '../SearchControl/SearchControl.module.css';
 import {
   addLastMonthFilter,
-  addNext24HoursFilter,
   addNextMonthFilter,
   addThisMonthFilter,
   addTodayFilter,
@@ -30,23 +29,39 @@ export interface SearchPopupMenuProps {
 type RelativeDateOption = {
   readonly label: string;
   readonly apply: (search: SearchRequest, code: string) => SearchRequest;
+  readonly future?: boolean;
 };
 
 /** Relative date shortcuts for date columns, grouped by day, month and year. */
 const RELATIVE_DATE_GROUPS: RelativeDateOption[][] = [
   [
-    { label: 'Tomorrow', apply: addTomorrowFilter },
+    { label: 'Tomorrow', apply: addTomorrowFilter, future: true },
     { label: 'Today', apply: addTodayFilter },
     { label: 'Yesterday', apply: addYesterdayFilter },
-    { label: 'Next 24 Hours', apply: addNext24HoursFilter },
   ],
   [
-    { label: 'Next Month', apply: addNextMonthFilter },
+    { label: 'Next Month', apply: addNextMonthFilter, future: true },
     { label: 'This Month', apply: addThisMonthFilter },
     { label: 'Last Month', apply: addLastMonthFilter },
   ],
   [{ label: 'Year to date', apply: addYearToDateFilter }],
 ];
+
+/** Date search parameters that can only hold past dates, so future shortcuts are hidden. */
+const PAST_ONLY_DATE_CODES = new Set(['_lastUpdated', 'death-date']);
+
+/**
+ * Returns the relative date groups offered for a date column, without future options for
+ * past-only dates.
+ * @param code - The column's search parameter code.
+ * @returns The relative date groups.
+ */
+function getRelativeDateGroups(code: string): RelativeDateOption[][] {
+  if (!PAST_ONLY_DATE_CODES.has(code)) {
+    return RELATIVE_DATE_GROUPS;
+  }
+  return RELATIVE_DATE_GROUPS.map((group) => group.filter((option) => !option.future));
+}
 
 /**
  * Direction labels vary by the search parameter type so they read naturally, matching the global
@@ -102,7 +117,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
         {labels.desc}
       </Menu.Item>
       {searchParam.type === 'date' &&
-        RELATIVE_DATE_GROUPS.map((group) => (
+        getRelativeDateGroups(code).map((group) => (
           <Fragment key={group[0].label}>
             <Menu.Divider />
             {group.map(({ label, apply }) => (

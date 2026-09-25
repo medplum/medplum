@@ -87,12 +87,27 @@ describe('SearchPopupMenu', () => {
       'Tomorrow',
       'Today',
       'Yesterday',
-      'Next 24 Hours',
       'Next Month',
       'This Month',
       'Last Month',
       'Year to date',
       'Filter by this column',
+    ]);
+  });
+
+  test.each(['_lastUpdated', 'death-date'])('Past-only date %s hides future options', async (code) => {
+    const searchParam = param('Patient', code) ?? param('Resource', code);
+    await setup({ searchParams: [searchParam] });
+    await screen.findByText('Sort Oldest to Newest');
+    const labels = screen.getAllByRole('menuitem', { hidden: true }).map((el) => el.textContent);
+    expect(labels).toEqual([
+      'Sort Oldest to Newest',
+      'Sort Newest to Oldest',
+      'Today',
+      'Yesterday',
+      'This Month',
+      'Last Month',
+      'Year to date',
     ]);
   });
 
