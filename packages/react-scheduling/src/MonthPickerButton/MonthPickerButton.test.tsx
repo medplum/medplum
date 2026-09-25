@@ -8,7 +8,7 @@ describe('MonthPickerButton', () => {
     const onChange = vi.fn();
     render(<MonthPickerButton label="September 2026" date={new Date(2026, 8, 15)} onChange={onChange} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Go to month' }));
+    fireEvent.click(screen.getByRole('button', { name: 'September 2026' }));
     fireEvent.click(screen.getByRole('button', { name: 'Mar' }));
 
     expect(onChange).toHaveBeenCalledWith('2026-03-01');
@@ -25,7 +25,7 @@ describe('MonthPickerButton', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Go to month' }));
+    fireEvent.click(screen.getByRole('button', { name: 'September 2026' }));
 
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Aug' }).disabled).toBe(true);
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Sep' }).disabled).toBe(false);

@@ -1215,10 +1215,10 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
 
-      fireEvent.click(screen.getByRole('button', { name: 'Go to month' }));
+      fireEvent.click(screen.getByRole('button', { name: 'August 2026' }));
       fireEvent.click(screen.getByRole('button', { name: 'Nov' }));
 
-      expect(screen.getByRole('button', { name: 'Go to month' })).toHaveTextContent('November 2026');
+      expect(screen.getByRole('button', { name: 'November 2026' })).toBeInTheDocument();
     });
 
     test('Offers no month before today', async () => {
@@ -1227,7 +1227,7 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
 
-      fireEvent.click(screen.getByRole('button', { name: 'Go to month' }));
+      fireEvent.click(screen.getByRole('button', { name: 'August 2026' }));
 
       expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Jul' }).disabled).toBe(true);
       expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Aug' }).disabled).toBe(false);

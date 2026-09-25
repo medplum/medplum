@@ -23,6 +23,8 @@ Note the following peer dependencies:
 - [react-dom](https://www.npmjs.com/package/react-dom)
 - [@mantine/core](https://www.npmjs.com/package/@mantine/core)
 - [@mantine/hooks](https://www.npmjs.com/package/@mantine/hooks)
+- [@mantine/dates](https://www.npmjs.com/package/@mantine/dates)
+- [dayjs](https://www.npmjs.com/package/dayjs)
 - [@medplum/core](https://www.npmjs.com/package/@medplum/core)
 - [@medplum/fhirtypes](https://www.npmjs.com/package/@medplum/fhirtypes)
 
@@ -38,6 +40,7 @@ import { getReferenceString } from '@medplum/core';
 import type { Practitioner } from '@medplum/fhirtypes';
 import { useSearchResources } from '@medplum/react';
 import { Calendar } from '@medplum/react-scheduling';
+import '@mantine/dates/styles.css';
 import '@medplum/react-scheduling/styles.css';
 
 export function ScheduleView(props: { practitioner: Practitioner }) {
