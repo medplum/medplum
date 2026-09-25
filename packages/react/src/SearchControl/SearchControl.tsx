@@ -219,6 +219,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     exportDialogVisible: false,
   });
   const [activeRowId, setActiveRowId] = useState<string>();
+  const [actionsMenuOpened, setActionsMenuOpened] = useState(false);
 
   const stateRef = useRef(state);
   useLayoutEffect(() => {
@@ -573,19 +574,28 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   <SearchControlToolbarActionButton key={action.key} action={action} selectedIds={selectedIds} />
                 ))}
                 {showActionsMenu && (
-                  <Menu shadow="md" width={200} radius="md" position="bottom-end">
-                    <Menu.Target>
-                      <ActionIcon
-                        className={classes.actionIcon}
-                        variant="transparent"
-                        color="gray"
-                        size={32}
-                        radius="xl"
-                        aria-label="Actions"
-                      >
-                        <IconDots size={16} />
-                      </ActionIcon>
-                    </Menu.Target>
+                  <Menu
+                    shadow="md"
+                    width={200}
+                    radius="md"
+                    position="bottom-end"
+                    opened={actionsMenuOpened}
+                    onChange={setActionsMenuOpened}
+                  >
+                    <Tooltip label="Actions" position="bottom" openDelay={500} disabled={actionsMenuOpened}>
+                      <Menu.Target>
+                        <ActionIcon
+                          className={classes.actionIcon}
+                          variant="transparent"
+                          color="gray"
+                          size={32}
+                          radius="xl"
+                          aria-label="Actions"
+                        >
+                          <IconDots size={16} />
+                        </ActionIcon>
+                      </Menu.Target>
+                    </Tooltip>
                     <Menu.Dropdown className={classes.menuDropdown}>
                       {showRefresh && (
                         <Menu.Item
@@ -681,7 +691,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                     const label = (
                       <UnstyledButton className={classes.control}>
                         <Group gap={4} wrap="nowrap">
-                          <Text className={classes.mutedText} size="xs" fw={500}>
+                          <Text className={classes.mutedText} size="xs" fw={500} lh="sm">
                             {buildFieldNameString(field.name)}
                           </Text>
                           {sortRule &&
@@ -715,7 +725,12 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                             />
                           </Menu>
                         ) : (
-                          <Text className={`${classes.staticColumnTitle} ${classes.mutedText}`} size="xs" fw={500}>
+                          <Text
+                            className={`${classes.staticColumnTitle} ${classes.mutedText}`}
+                            size="xs"
+                            fw={500}
+                            lh="sm"
+                          >
                             {buildFieldNameString(field.name)}
                           </Text>
                         )}
@@ -724,7 +739,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   })}
                   {props.additionalColumns?.map((col) => (
                     <Table.Th key={col.name}>
-                      <Text className={`${classes.staticColumnTitle} ${classes.mutedText}`} size="xs" fw={500}>
+                      <Text className={`${classes.staticColumnTitle} ${classes.mutedText}`} size="xs" fw={500} lh="sm">
                         {col.name}
                       </Text>
                     </Table.Th>
