@@ -946,8 +946,10 @@ function readingEachOnce(repo: Repository): ReferenceReader {
         );
       }
       return Promise.all(
-        references.map((ref) =>
-          ref.reference ? batchedReads.get(ref.reference) : repo.readReferences([ref]).then(([result]) => result)
+        references.map(
+          (ref) =>
+            (ref.reference ? batchedReads.get(ref.reference) : undefined) ??
+            repo.readReferences([ref]).then(([result]) => result)
         )
       ) as Promise<(WithId<T> | Error)[]>;
     },
