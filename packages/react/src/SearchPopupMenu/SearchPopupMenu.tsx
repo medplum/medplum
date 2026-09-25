@@ -3,7 +3,13 @@
 import { Menu } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
-import { IconCalendar, IconFilter2Plus, IconSortAscending, IconSortDescending } from '@tabler/icons-react';
+import {
+  IconCalendar,
+  IconFilter2Plus,
+  IconFilter2X,
+  IconSortAscending,
+  IconSortDescending,
+} from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment } from 'react';
 import classes from '../SearchControl/SearchControl.module.css';
@@ -15,6 +21,7 @@ import {
   addTomorrowFilter,
   addYearToDateFilter,
   addYesterdayFilter,
+  clearFiltersOnField,
   setSort,
 } from '../SearchControl/SearchUtils';
 
@@ -83,7 +90,8 @@ function getSortLabels(type: string | undefined): { asc: string; desc: string } 
 
 /**
  * The column-header dropdown offering the two sort directions for the column (any type), relative date
- * filters for date columns, and "Filter by this column" to open the toolbar Filters popover.
+ * filters for date columns, "Filter by this column" to open the toolbar Filters popover, and "Clear all
+ * column filters" when the column has filters.
  * @param props - The popup menu props.
  * @returns The sort menu dropdown, or null when the column is not backed by a search parameter.
  */
@@ -136,6 +144,17 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
           <Menu.Divider />
           <Menu.Item leftSection={<IconFilter2Plus size={14} />} onClick={() => props.onFilterByColumn?.(searchParam)}>
             Filter by this column
+          </Menu.Item>
+        </>
+      )}
+      {props.search.filters?.some((filter) => filter.code === code) && (
+        <>
+          <Menu.Divider />
+          <Menu.Item
+            leftSection={<IconFilter2X size={14} />}
+            onClick={() => props.onChange(clearFiltersOnField(props.search, code))}
+          >
+            Clear all column filters
           </Menu.Item>
         </>
       )}

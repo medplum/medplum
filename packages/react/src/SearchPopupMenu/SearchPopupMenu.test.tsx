@@ -123,6 +123,41 @@ describe('SearchPopupMenu', () => {
     ]);
   });
 
+  test('"Clear all column filters" is hidden when the column has no filters', async () => {
+    await setup({
+      search: { resourceType: 'Patient', filters: [{ code: 'gender', operator: Operator.EQUALS, value: 'male' }] },
+      searchParams: [param('Patient', 'name')],
+    });
+    expect(await screen.findByText('Sort A to Z')).toBeInTheDocument();
+    expect(screen.queryByText('Clear all column filters')).not.toBeInTheDocument();
+  });
+
+  const nameAndGenderFilters: SearchRequest = {
+    resourceType: 'Patient',
+    filters: [
+      { code: 'name', operator: Operator.CONTAINS, value: 'Sim' },
+      { code: 'name', operator: Operator.NOT, value: 'Bart' },
+      { code: 'gender', operator: Operator.EQUALS, value: 'male' },
+    ],
+  };
+
+  test('"Clear all column filters" is the last item', async () => {
+    await setup({ search: nameAndGenderFilters, searchParams: [param('Patient', 'name')], onFilterByColumn: vi.fn() });
+    await screen.findByText('Sort A to Z');
+    const labels = screen.getAllByRole('menuitem', { hidden: true }).map((el) => el.textContent);
+    expect(labels.at(-1)).toBe('Clear all column filters');
+    expect(labels.at(-2)).toBe('Filter by this column');
+  });
+
+  test('"Clear all column filters" clears only that column', async () => {
+    let currSearch = nameAndGenderFilters;
+    await setup({ search: currSearch, searchParams: [param('Patient', 'name')], onChange: (e) => (currSearch = e) });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Clear all column filters'));
+    });
+    expect(currSearch.filters).toEqual([{ code: 'gender', operator: Operator.EQUALS, value: 'male' }]);
+  });
+
   test('Non-date columns have no relative dates', async () => {
     await setup({ searchParams: [param('Patient', 'name')] });
     expect(await screen.findByText('Sort A to Z')).toBeInTheDocument();
