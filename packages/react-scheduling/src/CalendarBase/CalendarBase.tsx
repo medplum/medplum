@@ -9,7 +9,7 @@ import themePlugin from '@fullcalendar/react/themes/classic';
 import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
-import { Button, Group, Loader, SegmentedControl, Title, useComputedColorScheme } from '@mantine/core';
+import { Button, Group, Loader, SegmentedControl, Text, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { assertNever } from '@medplum/core';
@@ -260,7 +260,11 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
           <Group>
             <MonthPickerButton
               size="compact-md"
-              label={<Title order={4}>{controller.view?.title}</Title>}
+              label={
+                <Text component="span" fz="h4" fw={700} lh="h4">
+                  {controller.view?.title}
+                </Text>
+              }
               date={controller.getDate() ?? new Date()}
               onChange={(month) => controller.gotoDate(month)}
             />

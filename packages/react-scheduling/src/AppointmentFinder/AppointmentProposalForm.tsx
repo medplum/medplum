@@ -33,6 +33,7 @@ import type { AsyncAutocompleteOption } from '@medplum/react';
 import { CalendarDateInput, ResourceInput, ResourceName, ValueSetAutocomplete } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle, IconCalendarSearch, IconCheck } from '@tabler/icons-react';
+import dayjs from 'dayjs';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SchedulingActorValue } from '../actors';
@@ -40,7 +41,6 @@ import { getActorType, getActorTypeLabel } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
 import { LOCATION_SEARCH_CRITERIA } from '../constants';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
-import { parseMonth } from '../MonthPickerButton/MonthPickerButton.utils';
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
@@ -609,7 +609,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                   label={formatMonth(month ?? new Date())}
                   date={month ?? new Date()}
                   minDate={new Date()}
-                  onChange={(value) => setMonth(parseMonth(value))}
+                  onChange={(value) => setMonth(dayjs(value).toDate())}
                 />
               }
             />

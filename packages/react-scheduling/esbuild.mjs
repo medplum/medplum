@@ -21,12 +21,14 @@ const options = {
   sourcemap: true,
   external: [
     '@mantine/core',
+    '@mantine/dates',
     '@mantine/hooks',
     '@medplum/core',
     '@medplum/react',
     '@medplum/react-hooks',
     'react',
     'react-dom',
+    'dayjs',
   ],
 };
 

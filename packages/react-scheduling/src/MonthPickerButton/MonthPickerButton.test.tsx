@@ -9,6 +9,7 @@ describe('MonthPickerButton', () => {
     render(<MonthPickerButton label="September 2026" date={new Date(2026, 8, 15)} onChange={onChange} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'September 2026' }));
+    expect(screen.getByRole('button', { name: 'Sep' })).toHaveAttribute('data-selected');
     fireEvent.click(screen.getByRole('button', { name: 'Mar' }));
 
     expect(onChange).toHaveBeenCalledWith('2026-03-01');
