@@ -577,7 +577,7 @@ export function assertAllLoaded<T extends Resource>(
 // respect to a specific HealthcareService. Loads `Schedule.actor` references
 // to look for timezone information.
 export async function getSchedulingParametersGroup(
-  repo: Repository,
+  repo: Pick<Repository, 'readReferences'>,
   schedules: WithPath<WithId<Schedule>>[],
   healthcareService: WithPath<WithId<HealthcareService>>
 ): Promise<Map<WithPath<WithId<Schedule>>, LayeredDict<SchedulingParameters & { timezone: string }>>> {
@@ -905,8 +905,57 @@ async function validateAvailability(
   }
 }
 
+// The reads `validateProposedAppointment` makes.
+type ReferenceReader = Pick<Repository, 'readReference' | 'readReferences'>;
+
+/**
+ * Reads through `repo`, but each reference only once. The occurrences of a series name the same
+ * schedules, actors and HealthcareService, and every read is quota-charged and audit-logged.
+ *
+ * @param repo - The Repository to read with.
+ * @returns A reader sharing one read of each reference between its callers.
+ */
+function readingEachOnce(repo: Repository): ReferenceReader {
+  // Each holds a read of whatever type its reference names.
+  const reads = new Map<string, Promise<unknown>>();
+  const batchedReads = new Map<string, Promise<unknown>>();
+  return {
+    readReference<T extends Resource>(reference: Reference<T>): Promise<WithId<T>> {
+      if (!reference.reference) {
+        return repo.readReference(reference);
+      }
+      let read = reads.get(reference.reference);
+      if (!read) {
+        read = repo.readReference(reference);
+        reads.set(reference.reference, read);
+      }
+      return read as Promise<WithId<T>>;
+    },
+    readReferences<T extends Resource>(references: Reference<T>[]): Promise<(WithId<T> | Error)[]> {
+      const unread = uniqueOn(
+        references.filter((ref) => ref.reference && !batchedReads.has(ref.reference)),
+        (ref) => ref.reference as string
+      );
+      if (unread.length) {
+        const loaded = repo.readReferences(unread);
+        unread.forEach((ref, idx) =>
+          batchedReads.set(
+            ref.reference as string,
+            loaded.then((results) => results[idx])
+          )
+        );
+      }
+      return Promise.all(
+        references.map((ref) =>
+          ref.reference ? batchedReads.get(ref.reference) : repo.readReferences([ref]).then(([result]) => result)
+        )
+      ) as Promise<(WithId<T> | Error)[]>;
+    },
+  };
+}
+
 export async function validateProposedAppointment(
-  repo: Repository,
+  repo: ReferenceReader,
   proposedAppointment: WithPath<Appointment>
 ): Promise<
   [
@@ -1048,8 +1097,9 @@ export async function createProposedAppointments(
   proposedAppointments: WithPath<Appointment>[],
   customizer: (occurrences: ValidatedOccurrence[]) => Appointment[]
 ): Promise<Bundle<Appointment | Slot>> {
+  const reader = readingEachOnce(repo);
   const validated = await Promise.all(
-    proposedAppointments.map((proposedAppointment) => validateProposedAppointment(repo, proposedAppointment))
+    proposedAppointments.map((proposedAppointment) => validateProposedAppointment(reader, proposedAppointment))
   );
 
   for (const [idx, [appointment, slots, , schedulingParametersGroup]] of validated.entries()) {

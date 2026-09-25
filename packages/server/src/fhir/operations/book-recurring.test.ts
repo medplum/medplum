@@ -381,6 +381,36 @@ describe('Appointment/$book with a recurring series', () => {
     expect(slots).toHaveLength(0);
   });
 
+  test('reads the schedules and service a series books only once', async () => {
+    const schedule = await makeSchedule();
+    const occurrences = withPaths(
+      [
+        makeOccurrence(schedule, '2026-03-09T13:00:00.000Z', '2026-03-09T14:00:00.000Z'),
+        makeOccurrence(schedule, '2026-03-16T13:00:00.000Z', '2026-03-16T14:00:00.000Z'),
+        makeOccurrence(schedule, '2026-03-23T13:00:00.000Z', '2026-03-23T14:00:00.000Z'),
+      ],
+      'Parameters.appointment'
+    );
+    const readReference = vi.spyOn(project.repo, 'readReference');
+    const readReferences = vi.spyOn(project.repo, 'readReferences');
+
+    try {
+      await createProposedAppointments(project.repo, occurrences, (validated) =>
+        validated.map(({ appointment }) => ({ ...appointment, status: 'booked' }))
+      );
+      const read = [
+        ...readReference.mock.calls.map(([reference]) => reference),
+        ...readReferences.mock.calls.flatMap(([references]) => references),
+      ].map((reference) => reference.reference);
+      expect(read.sort()).toEqual(
+        [`HealthcareService/${officeVisitService.id}`, schedule.actor[0].reference, `Schedule/${schedule.id}`].sort()
+      );
+    } finally {
+      readReference.mockRestore();
+      readReferences.mockRestore();
+    }
+  });
+
   test('rolls back the entire series when a later occurrence has become unavailable', async () => {
     const schedule = await makeSchedule();
     const occurrences = [
