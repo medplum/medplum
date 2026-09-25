@@ -116,7 +116,7 @@ function getSortLabels(type: string | undefined): { asc: string; desc: string } 
 /**
  * The column-header dropdown offering the two sort directions for the column (any type), relative date
  * filters for date columns, "Filter by this column" to open the toolbar Filters popover, and "Clear all
- * column filters" when the column has filters.
+ * column filters" when the column has filters. Date columns show only one of the last two.
  * @param props - The popup menu props.
  * @returns The sort menu dropdown, or null when the column is not backed by a search parameter.
  */
@@ -128,6 +128,9 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
 
   const code = searchParam.code;
   const labels = getSortLabels(searchParam.type);
+  const isDate = searchParam.type === 'date';
+  const hasColumnFilters = !!props.search.filters?.some((filter) => filter.code === code);
+  const showFilterByColumn = !!props.onFilterByColumn && !(isDate && hasColumnFilters);
 
   function isSortSelected(descending: boolean): boolean {
     return !!props.search.sortRules?.some((rule) => rule.code === code && !!rule.descending === descending);
@@ -161,7 +164,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
       >
         {labels.desc}
       </Menu.Item>
-      {searchParam.type === 'date' &&
+      {isDate &&
         getRelativeDateGroups(code).map((group) => (
           <Fragment key={group[0].label}>
             <Menu.Divider />
@@ -177,7 +180,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
             ))}
           </Fragment>
         ))}
-      {props.onFilterByColumn && (
+      {showFilterByColumn && (
         <>
           <Menu.Divider />
           <Menu.Item leftSection={<IconFilter2Plus size={14} />} onClick={() => props.onFilterByColumn?.(searchParam)}>
@@ -185,7 +188,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
           </Menu.Item>
         </>
       )}
-      {props.search.filters?.some((filter) => filter.code === code) && (
+      {hasColumnFilters && (
         <>
           <Menu.Divider />
           <Menu.Item

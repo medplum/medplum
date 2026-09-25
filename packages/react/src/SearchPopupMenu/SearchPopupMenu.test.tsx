@@ -159,6 +159,25 @@ describe('SearchPopupMenu', () => {
     expect(currSearch.filters).toEqual([{ code: 'gender', operator: Operator.EQUALS, value: 'male' }]);
   });
 
+  test('Filtered date columns show Clear instead of "Filter by this column"', async () => {
+    const search = addThisMonthFilter({ resourceType: 'Patient' }, 'birthdate');
+    await setup({ search, searchParams: [param('Patient', 'birthdate')], onFilterByColumn: vi.fn() });
+    expect(await screen.findByText('Clear all column filters')).toBeInTheDocument();
+    expect(screen.queryByText('Filter by this column')).not.toBeInTheDocument();
+  });
+
+  test('Unfiltered date columns show "Filter by this column" and no Clear', async () => {
+    await setup({ searchParams: [param('Patient', 'birthdate')], onFilterByColumn: vi.fn() });
+    expect(await screen.findByText('Filter by this column')).toBeInTheDocument();
+    expect(screen.queryByText('Clear all column filters')).not.toBeInTheDocument();
+  });
+
+  test('Filtered non-date columns keep both options', async () => {
+    await setup({ search: nameAndGenderFilters, searchParams: [param('Patient', 'name')], onFilterByColumn: vi.fn() });
+    expect(await screen.findByText('Filter by this column')).toBeInTheDocument();
+    expect(screen.getByText('Clear all column filters')).toBeInTheDocument();
+  });
+
   function hasCheck(label: string): boolean {
     const item = screen.getByText(label).closest('[role=menuitem]') as HTMLElement;
     return !!item.querySelector('.tabler-icon-check');
