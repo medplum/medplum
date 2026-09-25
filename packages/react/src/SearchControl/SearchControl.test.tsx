@@ -1096,7 +1096,7 @@ describe('SearchControl', () => {
     Object.assign(navigator, { clipboard: { writeText } });
     const mockNavigate = vi.fn();
     const getResourceHref = (resource: Resource): string => `/custom/${resource.id}`;
-    await setup({ search: simpsonSearch, rowContextMenu: { getResourceHref } }, undefined, undefined, mockNavigate);
+    await setup({ search: simpsonSearch, getResourceHref }, undefined, undefined, mockNavigate);
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
 
     const openMenu = async (): Promise<void> => {
@@ -1177,7 +1177,7 @@ describe('SearchControl', () => {
   });
 
   test('A right-click with no available items falls through to the browser menu', async () => {
-    await setup({ search: simpsonSearch, rowContextMenu: { getResourceHref: () => undefined } });
+    await setup({ search: simpsonSearch, getResourceHref: () => undefined });
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
 
     let notCancelled = true;
@@ -1217,13 +1217,53 @@ describe('SearchControl', () => {
     expect(screen.queryByText(/#contained/)).not.toBeInTheDocument();
   });
 
+  test('The ID cell links with getResourceHref', async () => {
+    await setup({
+      search: { ...simpsonSearch, fields: ['id', 'name'] },
+      getResourceHref: (resource) => `/custom/${resource.id}`,
+    });
+    const idLink = (await screen.findByText(HomerSimpson.id as string)).closest('a');
+    expect(idLink).toHaveAttribute('href', `/custom/${HomerSimpson.id}`);
+  });
+
+  test('The ID cell is plain text when getResourceHref returns no link', async () => {
+    await setup({ search: { ...simpsonSearch, fields: ['id', 'name'] }, getResourceHref: () => undefined });
+    expect((await screen.findByText(HomerSimpson.id as string)).closest('a')).toBeNull();
+  });
+
+  test('The ID cell defaults to /Type/id', async () => {
+    await setup({ search: { ...simpsonSearch, fields: ['id', 'name'] } });
+    const idLink = (await screen.findByText(HomerSimpson.id as string)).closest('a');
+    expect(idLink).toHaveAttribute('href', `/Patient/${HomerSimpson.id}`);
+  });
+
+  test('Reference cells link with getReferenceHref', async () => {
+    await setup(
+      {
+        search: { resourceType: 'Observation', fields: ['subject'] },
+        getReferenceHref: (reference) => `/ref/${reference.reference}`,
+      },
+      observationBundle
+    );
+    const link = (await screen.findByText('Homer Simpson')).closest('a');
+    expect(link).toHaveAttribute('href', `/ref/Patient/${HomerSimpson.id}`);
+  });
+
+  test('Reference cells are plain text when getReferenceHref returns no link', async () => {
+    await setup(
+      { search: { resourceType: 'Observation', fields: ['subject'] }, getReferenceHref: () => undefined },
+      observationBundle
+    );
+    expect((await screen.findByText('Homer Simpson')).closest('a')).toBeNull();
+  });
+
   test('Custom getReferenceHref is used for reference cells', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
     await setup(
       {
         search: { resourceType: 'Observation', fields: ['subject'] },
-        rowContextMenu: { getReferenceHref: (reference) => `/ref/${reference.reference}` },
+        getReferenceHref: (reference) => `/ref/${reference.reference}`,
       },
       observationBundle
     );

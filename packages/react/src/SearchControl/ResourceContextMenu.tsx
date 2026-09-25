@@ -1,27 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Menu } from '@mantine/core';
-import type { Reference, Resource } from '@medplum/fhirtypes';
+import type { Reference } from '@medplum/fhirtypes';
 import { useMedplumNavigate } from '@medplum/react-hooks';
 import { IconCornerDownRight, IconExternalLink, IconLink } from '@tabler/icons-react';
 import type { MouseEvent, ReactNode } from 'react';
 import { createContext, useCallback, useContext, useLayoutEffect, useRef, useState } from 'react';
 import classes from './SearchControl.module.css';
+import type { SearchControlLinks } from './SearchControlLinks';
+import { getReferenceHref } from './SearchControlLinks';
 
 /**
  * Configures the right-click menu that {@link SearchControl} shows on rows and reference cells.
- * The menu is a fixed set of three items (Open, Open in a New Tab, Copy Link); these options change
- * where they link and which of them appear.
+ * The menu is a fixed set of three items (Open, Open in a New Tab, Copy Link) that link where the
+ * SearchControl's `getResourceHref` and `getReferenceHref` say; these options choose which appear.
  */
 export interface SearchControlContextMenuOptions {
-  /**
-   * Row link. Return undefined for no link; Open then falls back to `onClick`, Open in a New Tab to
-   * `onAuxClick`, and Copy Link is hidden. Defaults to `/${resourceType}/${id}` when the
-   * SearchControl has no `onClick`, and to no link when it does.
-   */
-  readonly getResourceHref?: (resource: Resource) => string | undefined;
-  /** Reference-cell link. Return undefined for no link. Defaults to `/${reference}`. */
-  readonly getReferenceHref?: (reference: Reference) => string | undefined;
   /** Per-item visibility; all default to true. */
   readonly items?: {
     readonly open?: boolean;
@@ -104,15 +98,6 @@ function getVisibleItems(target: ResourceContextMenuTarget, options: SearchContr
 const RELATIVE_REFERENCE = /^([A-Z][A-Za-z]+)\/[^/]+$/;
 
 /**
- * Returns the default in-app href for a reference, e.g. "/Practitioner/123".
- * @param reference - The reference.
- * @returns The href.
- */
-function getDefaultReferenceHref(reference: Reference): string {
-  return `/${reference.reference}`;
-}
-
-/**
  * Sets up a single cursor-positioned context menu shared by the table rows and the reference cells.
  * The owner renders {@link ResourceContextMenuController.contextMenu} inside
  * {@link ReferenceContextMenuContext} and wires row `onContextMenu` handlers to
@@ -120,17 +105,21 @@ function getDefaultReferenceHref(reference: Reference): string {
  * {@link useReferenceContextMenu}. When the menu is turned off, or a right-click leaves no items to
  * show, the event is left alone so the browser's own menu appears.
  * @param options - The context menu options, or false to turn the menu off.
+ * @param links - The SearchControl's link functions; reference items use `getReferenceHref`.
  * @returns The controller.
  */
 export function useResourceContextMenuController(
-  options?: false | SearchControlContextMenuOptions
+  options?: false | SearchControlContextMenuOptions,
+  links: SearchControlLinks = {}
 ): ResourceContextMenuController {
   const navigate = useMedplumNavigate();
   const [state, setState] = useState<MenuState>({ opened: false, x: 0, y: 0 });
 
   const optionsRef = useRef(options);
+  const linksRef = useRef(links);
   useLayoutEffect(() => {
     optionsRef.current = options;
+    linksRef.current = links;
   });
 
   const activeRowRef = useRef<Element | null>(null);
@@ -173,8 +162,7 @@ export function useResourceContextMenuController(
       if (!label) {
         return;
       }
-      const getHref = currentOptions?.getReferenceHref ?? getDefaultReferenceHref;
-      openContextMenu(event, { label, href: getHref(reference) });
+      openContextMenu(event, { label, href: getReferenceHref(linksRef.current, reference) });
     },
     [openContextMenu]
   );

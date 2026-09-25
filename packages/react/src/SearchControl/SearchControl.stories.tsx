@@ -167,7 +167,7 @@ export const ContextMenuDefault = (): JSX.Element => {
   return <SearchControl search={search} onChange={(e) => setSearch(e.definition)} />;
 };
 
-export const ContextMenuCustomLinks = (): JSX.Element => {
+export const CustomLinks = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'ServiceRequest',
     fields: ['id', '_lastUpdated', 'subject', 'code', 'status'],
@@ -176,10 +176,8 @@ export const ContextMenuCustomLinks = (): JSX.Element => {
   return (
     <SearchControl
       search={search}
-      rowContextMenu={{
-        getResourceHref: (resource) => `/orders/${resource.id}`,
-        getReferenceHref: (reference) => `/directory/${reference.reference}`,
-      }}
+      getResourceHref={(resource) => `/orders/${resource.id}`}
+      getReferenceHref={(reference) => `/directory/${reference.reference}`}
       onChange={(e) => setSearch(e.definition)}
     />
   );

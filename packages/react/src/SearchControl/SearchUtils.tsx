@@ -22,6 +22,7 @@ import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { useReferenceContextMenu } from './ResourceContextMenu';
 import classes from './SearchControl.module.css';
 import type { SearchControlField } from './SearchControlField';
+import { getReferenceHref, getResourceHref, useSearchControlLinks } from './SearchControlLinks';
 
 /** Resource types whose `name` is a HumanName[] and that render an avatar in the name column. */
 const AVATAR_NAME_RESOURCE_TYPES = new Set(['Patient', 'Practitioner', 'RelatedPerson', 'Person']);
@@ -557,11 +558,7 @@ export function buildSearchParamFieldLabel(code: string): string {
 export function renderValue(resource: Resource, field: SearchControlField): string | JSX.Element | null | undefined {
   const key = field.name;
   if (key === 'id') {
-    return (
-      <MedplumLink to={`/${resource.resourceType}/${resource.id}`} className={classes.nameLink}>
-        {resource.id}
-      </MedplumLink>
-    );
+    return <ResourceIdLink resource={resource} />;
   }
 
   if (key === 'meta.versionId') {
@@ -658,13 +655,39 @@ function renderRichValue(propertyType: string, value: unknown, code: string): JS
  */
 function ReferenceAvatarLink({ value }: { readonly value: Reference }): JSX.Element {
   const openContextMenu = useReferenceContextMenu();
+  const href = getReferenceHref(useSearchControlLinks(), value);
   return (
     <Group gap="xs" wrap="nowrap" onContextMenu={(e) => openContextMenu(e, value)}>
       <ResourceAvatar value={value} radius="xl" size={28} />
-      <MedplumLink to={value} size="sm" className={classes.nameLink}>
-        <ResourceName value={value} />
-      </MedplumLink>
+      {href ? (
+        <MedplumLink to={href} size="sm" className={classes.nameLink}>
+          <ResourceName value={value} />
+        </MedplumLink>
+      ) : (
+        <Text size="sm">
+          <ResourceName value={value} />
+        </Text>
+      )}
     </Group>
+  );
+}
+
+/**
+ * Renders a row's ID as a link to the resource, using the SearchControl's `getResourceHref` when
+ * set. Renders plain text when that returns no link.
+ * @param props - The component props.
+ * @param props.resource - The row's resource.
+ * @returns The ID link or text.
+ */
+function ResourceIdLink({ resource }: { readonly resource: Resource }): JSX.Element {
+  const href = getResourceHref(useSearchControlLinks(), resource);
+  if (!href) {
+    return <>{resource.id}</>;
+  }
+  return (
+    <MedplumLink to={href} className={classes.nameLink}>
+      {resource.id}
+    </MedplumLink>
   );
 }
 

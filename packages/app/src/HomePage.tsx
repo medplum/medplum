@@ -54,7 +54,7 @@ export function HomePage(): JSX.Element {
         search={search}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
-        rowContextMenu={{ getResourceHref: (resource) => `/${resource.resourceType}/${resource.id}` }}
+        getResourceHref={(resource) => `/${resource.resourceType}/${resource.id}`}
         onChange={(e) => {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
         }}
