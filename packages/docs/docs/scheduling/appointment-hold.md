@@ -109,6 +109,7 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$hold' \
 - No existing busy Slots may overlap the requested time window (including buffer windows)
 - The `serviceType` attribute must reference the HealthcareService you are trying to schedule via the `https://medplum.com/fhir/service-type-reference` extension
 - The input `Appointment` must not already contain `slot` references (these are set by `$hold`)
+- The input `Appointment` must not carry a `recurrenceTemplate`: a [weekly series](/docs/scheduling/appointment-find#finding-a-weekly-series) can be booked, but not held
 
 The easiest way to meet these requirements is to use a result from a [`$find` operation](/docs/scheduling/appointment-find).
 

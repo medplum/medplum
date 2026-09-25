@@ -30,6 +30,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
 import type { SystemRepository } from '../repo';
+import { weeklyTemplate } from './utils/recurrence';
 import type {
   SchedulingParametersExtension,
   SchedulingParametersExtensionExtension,
@@ -460,6 +461,24 @@ describe('Appointment/$hold', () => {
       }),
     ]);
     expect(response).toHaveStatus(400);
+  });
+
+  test('rejects an appointment carrying a recurrence template', async () => {
+    const schedule = await makeSchedule({ actor: practitioner1 });
+    const params = holdParams({ schedule, start: '2026-01-15T14:00:00Z', end: '2026-01-15T15:00:00Z' }) as {
+      parameter: { resource: Appointment }[];
+    };
+    params.parameter[0].resource.extension = [weeklyTemplate('2026-01-15T14:00:00Z', 3, 'America/New_York')];
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$hold')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send(params);
+
+    expect(response).toHaveStatus(400);
+    expect(response.body).toHaveProperty('issue', [
+      expect.objectContaining({ details: { text: 'A recurring series cannot be held' } }),
+    ]);
   });
 
   test('rejects when contained has no Slot resources', async () => {

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { created } from '@medplum/core';
+import { badRequest, created, OperationOutcomeError, RecurrenceTemplateExtensionURI } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Appointment } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -38,6 +38,10 @@ type HoldParameters = {
 export async function appointmentHoldHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const params = parseInputParameters<HoldParameters>(holdOperation, req);
+  // Holding only the first occurrence would store a template claiming a series that isn't held.
+  if (params.appointment.extension?.some((e) => e.url === RecurrenceTemplateExtensionURI)) {
+    throw new OperationOutcomeError(badRequest('A recurring series cannot be held', 'Parameters.appointment'));
+  }
   const bundle = await createProposedAppointment(
     ctx.repo,
     withPath(params.appointment, 'Parameters.appointment'),

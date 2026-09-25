@@ -23,6 +23,7 @@ The `$book` operation books an [`Appointment`](/docs/api/fhir/resources/appointm
 - **Direct booking**: Book an appointment directly from a `$find` result, without a prior hold
 - **Multi-resource booking**: Simultaneously book multiple Schedules (e.g., surgeon + OR room + anesthesiologist) for the same appointment time
 - **Programmatic scheduling**: Automate appointment creation from external systems while respecting provider availability rules
+- **Recurring visits**: Book every visit of a weekly series at once, or none of them. See [Booking a weekly series](#booking-a-weekly-series)
 
 ## Invoke the `$book` operation
 
@@ -93,7 +94,7 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$book' \
 
 | Name          | Type          | Description                                                                                                                                                   | Required |
 | ------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `appointment` | `Appointment` | A proposed `Appointment` resource (e.g. from `$find`). Must include `start`, `end`, and `serviceType`. Must have `Slot` resources in `contained`.             | Yes      |
+| `appointment` | `Appointment` | A proposed `Appointment` resource (e.g. from `$find`). Must include `start`, `end`, and `serviceType`. Must have `Slot` resources in `contained`. Carries a `recurrenceTemplate` to [book a weekly series](#booking-a-weekly-series). | Yes      |
 
 ### Appointment Input
 
@@ -244,6 +245,44 @@ Returns `201 Created` with a [`Bundle`](/docs/api/fhir/resources/bundle) wrappin
 }
 ```
 
+## Booking a weekly series
+
+To book a weekly series found with [`$find` and `occurrence-count`](/docs/scheduling/appointment-find#finding-a-weekly-series), pass its entry from `$find` as the `appointment`, exactly as you would a single time. That entry is the series' first occurrence, and its `recurrenceTemplate` says how the series recurs. `$book` builds every later occurrence from it, and books all of them atomically: either every occurrence is created or none are. That means a series can't end up partly booked, even when another booking takes one of the later occurrences between the find and the book.
+
+```typescript
+// `series` is one entry of a $find response with occurrence-count.
+declare const series: Appointment;
+
+const bundle = await medplum.post<Bundle>(medplum.fhirUrl('Appointment', '$book'), {
+  resourceType: 'Parameters',
+  parameter: [{ name: 'appointment', resource: series }],
+});
+```
+
+An `appointment` without a `recurrenceTemplate` is booked as a single Appointment.
+
+### Series Constraints
+
+- The `recurrenceTemplate` must describe a weekly series, as `$find` proposes one: a `recurrenceType` of `wk`, a `weekInterval` of 1, exactly one weekday in `weeklyTemplate`, an IANA `timezone`, and an `occurrenceCount` from 2 to 6. A template with any other element, such as `excludingDate`, is refused rather than booked without it.
+- The template's `timezone` must be the schedules' [`timezone`](/docs/scheduling/defining-availability#timezone-resolution), which every schedule must share
+- The template's weekday must be the weekday of the appointment's `start` in that timezone
+- The appointment's `start` and `end` must match its `busy` Slots'
+- Every later occurrence's local time must exist in that timezone; a series at 2:30am can't cross the night clocks spring forward
+- All of the [constraints](#constraints) on a single booking apply to each occurrence individually
+
+The easiest way to meet these requirements is to pass back one entry from `$find` exactly as it was returned.
+
+### Series Output
+
+The response Bundle holds one booked `Appointment` and its Slots per occurrence, all created in the same transaction. If any occurrence is no longer available, the whole transaction rolls back, and no occurrence is created, including ones that were still available.
+
+Each booked occurrence is tagged as part of the series, replacing any series tags the submitted appointment carried:
+
+- Every occurrence shares a series `identifier` (system `https://medplum.com/fhir/recurring-appointment-series`). Read it from the response. Every occurrence of the series can then be found with `GET [base]/Appointment?identifier=https://medplum.com/fhir/recurring-appointment-series|<series id>`.
+- Every occurrence carries its 1-based position as R5's `recurrenceId`, using the standard R4 [cross-version extension](https://hl7.org/fhir/R5/versions.html#extensions) `http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceId`.
+- The first occurrence keeps the `recurrenceTemplate` it was booked from, which describes the series. No other occurrence carries one.
+- Every occurrence after the first carries R5's `originatingAppointment` (`http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.originatingAppointment`), referencing the first occurrence.
+
 ## Booking Logic
 
 `$book` performs the following steps atomically inside a database transaction, ensuring safety when concurrent booking requests are received.
@@ -283,6 +322,38 @@ Because these steps run inside a `SERIALIZABLE` transaction, two requests racing
 {
   "resourceType": "OperationOutcome",
   "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "No timezone specified" } }]
+}
+```
+
+### Unsupported recurrenceTemplate
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "error",
+      "code": "invalid",
+      "details": { "text": "Unsupported recurrenceTemplate: excludingDate is not supported" },
+      "expression": ["Parameters.appointment.extension[0]"]
+    }
+  ]
+}
+```
+
+### recurrenceTemplate Timezone Mismatch
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "error",
+      "code": "invalid",
+      "details": { "text": "recurrenceTemplate timezone must be the schedules' timezone, America/New_York" },
+      "expression": ["Parameters.appointment.extension[0]"]
+    }
+  ]
 }
 ```
 
