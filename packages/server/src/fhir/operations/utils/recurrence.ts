@@ -17,6 +17,7 @@ import { Temporal } from 'temporal-polyfill';
 import type { LayeredDict } from '../../../util/layereddict';
 import type { WithPath } from '../../../util/withpath';
 import { getPath, withPath } from '../../../util/withpath';
+import { isValidTimezone } from './scheduling-parameters';
 
 const IANA_TIMEZONES = 'https://www.iana.org/time-zones';
 
@@ -199,7 +200,7 @@ export function readWeeklyTemplate(appointment: WithPath<Appointment>): WithPath
   const timezone = elements
     .get('timezone')
     ?.valueCodeableConcept?.coding?.find((coding) => coding.system === IANA_TIMEZONES)?.code;
-  if (!timezone || !isTimezone(timezone)) {
+  if (!timezone || !isValidTimezone(timezone)) {
     throw invalid('timezone must be an IANA timezone');
   }
 
@@ -303,15 +304,6 @@ function elementsByUrl(
     elements.set(element.url, element);
   }
   return elements;
-}
-
-function isTimezone(timezone: string): boolean {
-  try {
-    Temporal.Instant.fromEpochMilliseconds(0).toZonedDateTimeISO(timezone);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 /**

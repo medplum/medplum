@@ -169,15 +169,26 @@ function extensionDurationToMinutes(extension: WithPath<Extension>): number {
   return minutes;
 }
 
+/**
+ * Whether a timezone identifier is one Temporal can build a ZonedDateTime in. Note that this
+ * accepts non-canonical timezone identifiers (example: "US/Pacific" is an alias for
+ * "America/Los_Angeles"), and is case-insensitive (we accept "america/los_angeles" as valid).
+ *
+ * @param timezone - The timezone identifier.
+ * @returns True if the timezone is valid.
+ */
+export function isValidTimezone(timezone: string): boolean {
+  try {
+    epochInstant.toZonedDateTimeISO(timezone);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function assertValidTimezone(ext: WithPath<Extension>): void {
   assertExtensionCode(ext);
-  // Check that we can build a Temporal.ZonedDateTime with the given timezone.
-  // Note that this accepts non-canonical timezone identifiers (example:
-  // "US/Pacific" is an alias for "America/Los_Angeles"), and is
-  // case-insensitive (we accept "america/los_angeles" as valid).
-  try {
-    epochInstant.toZonedDateTimeISO(ext.valueCode);
-  } catch {
+  if (!isValidTimezone(ext.valueCode)) {
     throw new OperationOutcomeError(badRequest(`Invalid timezone '${ext.valueCode}'`, getPath(ext)));
   }
 }
