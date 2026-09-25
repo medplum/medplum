@@ -655,7 +655,7 @@ function buildIdentifierTable(result: SchemaDefinition): void {
 }
 
 function buildHumanNameTable(result: SchemaDefinition): void {
-  buildLookupTable(
+  const tableDefinition = buildLookupTable(
     result,
     'HumanName',
     ['name', 'given', 'family'],
@@ -692,6 +692,13 @@ function buildHumanNameTable(result: SchemaDefinition): void {
       },
     ]
   );
+
+  tableDefinition.columns.push({ name: 'projectId', type: 'UUID' });
+  tableDefinition.indexes.push(
+    ...tableDefinition.indexes
+      .filter((index) => index.columns[0] !== 'resourceId')
+      .map((index) => applyIndexVariant(index, ProjectScoped))
+  );
 }
 
 function buildLookupTable(
@@ -699,7 +706,7 @@ function buildLookupTable(
   tableName: string,
   columns: string[],
   additionalIndexes?: IndexDefinition[]
-): void {
+): TableDefinition {
   const tableDefinition: TableDefinition = {
     name: tableName,
     columns: [{ name: 'resourceId', type: 'UUID', notNull: true }],
@@ -716,6 +723,7 @@ function buildLookupTable(
   }
 
   result.tables.push(tableDefinition);
+  return tableDefinition;
 }
 
 function buildCodingTable(result: SchemaDefinition): void {

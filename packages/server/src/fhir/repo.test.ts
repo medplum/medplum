@@ -208,6 +208,14 @@ describe('FHIR Repo', () => {
       }));
   });
 
+  test('getSearchProjectIds', () => {
+    expect(testProjectRepo.getSearchProjectIds('Patient')).toStrictEqual([testProject.id]);
+    expect(new Repository({ ...testProjectRepo.getConfig(), superAdmin: true }).getSearchProjectIds('Patient')).toBe(
+      undefined
+    );
+    expect(getShardSystemRepo(PLACEHOLDER_SHARD_ID).getSearchProjectIds('Patient')).toBe(undefined);
+  });
+
   test('Read resource with undefined id', async () => {
     try {
       await systemRepo.readResource('Patient', undefined as unknown as string);

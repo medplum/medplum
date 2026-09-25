@@ -12,6 +12,7 @@ import type {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
+import { systemResourceProjectId } from '../../constants';
 import type { PgQueryable } from '../sql';
 import { DeleteQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
@@ -23,6 +24,7 @@ type HumanNameResourceType = (typeof resourceTypes)[number];
 export type HumanNameResource = Patient | Person | Practitioner | RelatedPerson;
 
 export interface HumanNameTableRow extends LookupTableRow {
+  projectId: string;
   name: string | undefined;
   given: string | undefined;
   family: string | undefined;
@@ -56,6 +58,7 @@ export class HumanNameTable extends LookupTable {
   }
 
   protected readonly CONTAINS_SQL_OPERATOR: LookupTable['CONTAINS_SQL_OPERATOR'] = 'ILIKE';
+  protected readonly hasProjectIdColumn = true;
 
   /**
    * Returns the table name.
@@ -96,6 +99,7 @@ export class HumanNameTable extends LookupTable {
 
       const extracted = {
         resourceId: resource.id,
+        projectId: resource.meta?.project ?? systemResourceProjectId,
         // logical OR coalesce to ensure that empty strings are inserted as NULL
         name: getNameString(name) || undefined,
         given: formatGivenName(name) || undefined,
