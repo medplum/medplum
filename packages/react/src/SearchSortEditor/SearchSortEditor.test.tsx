@@ -149,4 +149,21 @@ describe('SearchSortEditor', () => {
     const lastArg = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
     expect(lastArg.sortRules ?? []).toHaveLength(0);
   });
+
+  test('Deleting the first rule keeps the next row showing its own field', async () => {
+    const { onChange } = await setup({
+      resourceType: 'Patient',
+      sortRules: [
+        { code: 'birthdate', descending: false },
+        { code: 'name', descending: true },
+      ],
+    });
+    await openPopover();
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Remove sort 1'));
+    });
+    expect((onChange.mock.calls.at(-1)?.[0] as SearchRequest).sortRules).toEqual([{ code: 'name', descending: true }]);
+    expect(screen.getByLabelText('Sort 1 field', { selector: 'input' })).toHaveValue('Name');
+    expect(screen.queryByLabelText('Sort 2 field', { selector: 'input' })).toBeNull();
+  });
 });

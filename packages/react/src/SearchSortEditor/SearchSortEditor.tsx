@@ -63,13 +63,13 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
   const iconSize = props.iconSize ?? 16;
 
   const [opened, setOpened] = useState(false);
-  const [rules, setRules] = useState<SortRule[]>(() => deepClone(search.sortRules ?? []));
+  const [rows, setRows] = useState<SortRow[]>(() => toRows(deepClone(search.sortRules ?? [])));
 
   const searchParams = useMemo(() => getSearchParameters(search.resourceType) ?? {}, [search.resourceType]);
 
   function toggle(): void {
     if (!opened) {
-      setRules(deepClone(search.sortRules ?? []));
+      setRows(toRows(deepClone(search.sortRules ?? [])));
     }
     setOpened((o) => !o);
   }
@@ -91,24 +91,24 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
     ];
   }, [searchParams]);
 
-  function emit(nextRules: SortRule[]): void {
-    setRules(nextRules);
-    const complete = nextRules.filter((r) => !!r.code);
+  function emit(nextRows: SortRow[]): void {
+    setRows(nextRows);
+    const complete = nextRows.map((row) => row.rule).filter((r) => !!r.code);
     onChange({ ...search, sortRules: complete });
   }
 
   function updateRule(index: number, next: SortRule): void {
-    const nextRules = [...rules];
-    nextRules[index] = next;
-    emit(nextRules);
+    const nextRows = [...rows];
+    nextRows[index] = { ...nextRows[index], rule: next };
+    emit(nextRows);
   }
 
   function deleteRule(index: number): void {
-    emit(rules.filter((_, i) => i !== index));
+    emit(rows.filter((_, i) => i !== index));
   }
 
   function addRule(): void {
-    setRules([...rules, { code: '', descending: false }]);
+    setRows([...rows, ...toRows([{ code: '', descending: false }])]);
   }
 
   const activeCount = (search.sortRules ?? []).length;
@@ -149,8 +149,8 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
       {showIndicator && <VisuallyHidden id={activeLabelId}>{activeLabel}</VisuallyHidden>}
       <Popover.Dropdown className={classes.dropdown}>
         <div className={classes.body} tabIndex={-1} data-autofocus>
-          {rules.length === 0 && <div className={classes.empty}>No sort applied</div>}
-          {rules.map((rule, index) => {
+          {rows.length === 0 && <div className={classes.empty}>No sort applied</div>}
+          {rows.map(({ id, rule }, index) => {
             const searchParam = rule.code ? searchParams[rule.code] : undefined;
             const labels = getDirectionLabels(searchParam);
             let directionValue: 'asc' | 'desc' | null = null;
@@ -158,7 +158,7 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
               directionValue = rule.descending ? 'desc' : 'asc';
             }
             return (
-              <div className={classes.row} key={`sort-row-${index}`}>
+              <div className={classes.row} key={id}>
                 <Select
                   comboboxProps={{ withinPortal: false }}
                   className={classes.field}
@@ -213,4 +213,15 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
       </Popover.Dropdown>
     </Popover>
   );
+}
+
+interface SortRow {
+  readonly id: number;
+  readonly rule: SortRule;
+}
+
+let nextSortRowId = 0;
+
+function toRows(rules: SortRule[]): SortRow[] {
+  return rules.map((rule) => ({ id: nextSortRowId++, rule }));
 }
