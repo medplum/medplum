@@ -977,7 +977,13 @@ function RequirementCodePill(props: RequirementCodePillProps): JSX.Element {
   const { item, disabled, onRemove } = props;
   const code = item.resource.code;
   return (
-    <Pill className={classes.codePill} withRemoveButton={!disabled} onRemove={onRemove} title={item.label}>
+    <Pill
+      className={classes.codePill}
+      withRemoveButton={!disabled}
+      onRemove={onRemove}
+      removeButtonProps={{ 'aria-label': `Remove ${item.label}`, 'aria-hidden': undefined, tabIndex: 0 }}
+      title={item.label}
+    >
       {code && code !== item.label ? `${code} · ${item.label}` : item.label}
     </Pill>
   );
