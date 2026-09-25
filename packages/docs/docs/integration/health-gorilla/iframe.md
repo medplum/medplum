@@ -28,6 +28,83 @@ Call the iframe operation from the ordering practitioner's signed-in Medplum ses
 
 Client-credentials sessions and ordering on behalf of another practitioner are not supported in this flow.
 
+The following helper syncs the currently signed-in practitioner using the shared bot. Pass the authenticated `MedplumClient` your application already uses. The practitioner must have the required name and NPI data described in [User Management](./user-management.md).
+
+```typescript
+import type { MedplumClient } from '@medplum/core';
+import type { OperationOutcome } from '@medplum/fhirtypes';
+
+export async function syncOrderingPractitioner(medplum: MedplumClient): Promise<OperationOutcome> {
+  const practitioner = medplum.getProfile();
+  if (practitioner?.resourceType !== 'Practitioner' || !practitioner.id) {
+    throw new Error('Sign in as the ordering practitioner before syncing.');
+  }
+
+  return medplum.executeBot(
+    {
+      system: 'https://www.medplum.com/integrations/bot-identifier',
+      value: 'health-gorilla-labs/sync-practitioner',
+    },
+    { reference: `Practitioner/${practitioner.id}` },
+    'application/json'
+  );
+}
+```
+
+Await this helper during practitioner setup and resolve any sync errors before enabling lab ordering.
+
+## Patient context
+
+Keep the patient's demographics current in Medplum before opening the iframe. The ordering session uses the first name entry's given and family names, gender, full birth date, and available address and phone numbers.
+
+### Address and phones
+
+For address prefill, populate `Patient.address` with a current home address (`use: home`). If there is no current home address, an address without a `use` can be used. The first qualifying address is selected; addresses marked old, work, temporary, or billing, and those outside their validity period, are excluded.
+
+The selected address needs:
+
+- `line[0]`: street address. Additional lines can contain an apartment or suite.
+- `city` and a two-letter `state` code.
+- `postalCode`: a five-digit ZIP or ZIP+4. The iframe receives the first five digits.
+- `country`: `US`, `USA`, `United States`, or `United States of America` (case-insensitive).
+
+A patient without a qualifying address can still launch the iframe. If a selected address is incomplete or has an unsupported country, correct the fields identified in the error before trying again.
+
+For phone prefill, use `Patient.telecom` entries with `system: phone` and `use: home`, `mobile`, or `work`. If several current numbers share a use, the lowest `rank` takes priority, with unranked entries last and source order breaking ties. Numbers without a use, expired or future entries, fax, and email are not included. Work-phone extensions can use `;ext=005`, `x005`, or `ext. 005` suffixes.
+
+### Example patient data
+
+This synthetic FHIR R4 `Patient` illustrates the fields used for prefill. Populate these fields through your application's patient demographics form and save the patient before calling `launchLabOrder`. Use the saved resource's ID as `patientId`; do not pass this resource as the iframe request body.
+
+```json
+{
+  "resourceType": "Patient",
+  "name": [{ "given": ["Alex"], "family": "Example" }],
+  "gender": "female",
+  "birthDate": "1990-01-15",
+  "address": [
+    {
+      "use": "home",
+      "line": ["123 Example Street", "Apt 4"],
+      "city": "Boston",
+      "state": "MA",
+      "postalCode": "02101",
+      "country": "US"
+    }
+  ],
+  "telecom": [
+    { "system": "phone", "use": "mobile", "value": "202-555-0142", "rank": 1 },
+    { "system": "phone", "use": "work", "value": "202-555-0185 ext. 005" }
+  ]
+}
+```
+
+### Patient matching
+
+Health Gorilla matches the supplied demographics to its patient records and may create a new record when no match is found. An existing Health Gorilla patient identifier on the Medplum patient does not change this launch behavior.
+
+Launching the iframe does not save a Health Gorilla patient identifier back to Medplum. Verify that orders and results resolve to the expected patient; see [Resolving Orders with Results](./receiving-results.md#resolving-orders-with-results).
+
 ## Request and response
 
 The bot accepts a JSON object with two required string fields:
@@ -67,23 +144,40 @@ The request body is a plain JSON object, not a FHIR `Parameters` resource. The o
 You can also call the bot by its integration identifier using an authenticated `MedplumClient`:
 
 ```typescript
-const { url }: { url: string } = await medplum.executeBot(
-  {
-    system: 'https://www.medplum.com/integrations/bot-identifier',
-    value: 'health-gorilla-labs/health-gorilla-iframe',
-  },
-  {
-    patientId: patient.id,
-    callbackUrl: new URL('/labs/callback', window.location.origin).toString(),
-  },
-  'application/json'
-);
+import type { MedplumClient } from '@medplum/core';
+
+export async function launchLabOrder(
+  medplum: MedplumClient,
+  patientId: string,
+  callbackUrl: string
+): Promise<string> {
+  if (medplum.getProfile()?.resourceType !== 'Practitioner') {
+    throw new Error('Sign in as the ordering practitioner before opening a lab order.');
+  }
+  if (!patientId || new URL(callbackUrl).protocol !== 'https:') {
+    throw new Error('Provide a patient ID and an absolute HTTPS callback URL.');
+  }
+
+  const { url }: { url: string } = await medplum.executeBot(
+    {
+      system: 'https://www.medplum.com/integrations/bot-identifier',
+      value: 'health-gorilla-labs/health-gorilla-iframe',
+    },
+    { patientId, callbackUrl },
+    'application/json'
+  );
+  return url;
+}
 ```
 
-After the request succeeds, render the returned URL in your application. For example, in React:
+Call `launchLabOrder` from your order button with the saved Medplum patient ID and your HTTPS callback page. While awaiting the result, disable the button and show a loading indicator. Catch failures and show the error instead of opening the iframe.
+
+After the request succeeds, pass the returned URL to a React component such as this one:
 
 ```tsx
-<iframe title="Health Gorilla lab ordering" src={url} width="100%" height="800" />
+export function LabOrderFrame({ url }: { url: string }) {
+  return <iframe title="Health Gorilla lab ordering" src={url} width="100%" height="800" />;
+}
 ```
 
 Request a new ordering session when the user starts a new order, switches patients, or signs in as another practitioner. Show a loading state while the bot runs and handle failures before rendering the iframe.
@@ -91,31 +185,6 @@ Request a new ordering session when the user starts a new order, switches patien
 :::caution[Authenticated URL]
 The returned URL contains a Health Gorilla OAuth access token. Keep it in memory for the ordering flow; do not log it, persist it in FHIR resources, or include it in analytics events.
 :::
-
-## Patient context
-
-Keep the patient's demographics current in Medplum before opening the iframe. The ordering session uses the first name entry's given and family names, gender, full birth date, and available address and phone numbers.
-
-### Address and phones
-
-For address prefill, populate `Patient.address` with a current home address (`use: home`). If there is no current home address, an address without a `use` can be used. The first qualifying address is selected; addresses marked old, work, temporary, or billing, and those outside their validity period, are excluded.
-
-The selected address needs:
-
-- `line[0]`: street address. Additional lines can contain an apartment or suite.
-- `city` and a two-letter `state` code.
-- `postalCode`: a five-digit ZIP or ZIP+4. The iframe receives the first five digits.
-- `country`: `US`, `USA`, `United States`, or `United States of America` (case-insensitive).
-
-A patient without a qualifying address can still launch the iframe. If a selected address is incomplete or has an unsupported country, correct the fields identified in the error before trying again.
-
-For phone prefill, use `Patient.telecom` entries with `system: phone` and `use: home`, `mobile`, or `work`. If several current numbers share a use, the lowest `rank` takes priority, with unranked entries last and source order breaking ties. Numbers without a use, expired or future entries, fax, and email are not included. Work-phone extensions can use `;ext=005`, `x005`, or `ext. 005` suffixes.
-
-### Patient matching
-
-Health Gorilla matches the supplied demographics to its patient records and may create a new record when no match is found. An existing Health Gorilla patient identifier on the Medplum patient does not change this launch behavior.
-
-Launching the iframe does not save a Health Gorilla patient identifier back to Medplum. Verify that orders and results resolve to the expected patient; see [Resolving Orders with Results](./receiving-results.md#resolving-orders-with-results).
 
 ## Returning to your application and receiving results
 
