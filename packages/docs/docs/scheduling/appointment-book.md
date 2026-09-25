@@ -277,6 +277,8 @@ The easiest way to meet these requirements is to pass back one entry from `$find
 
 The response Bundle holds one booked `Appointment` and its Slots per occurrence, all created in the same transaction. If any occurrence is no longer available, the whole transaction rolls back, and no occurrence is created, including ones that were still available.
 
+Every later occurrence is a copy of the submitted appointment moved to its week, so any `participant`, `comment`, or `identifier` it carries appears on every occurrence. An identifier that should name only one occurrence is best added to that Appointment after booking.
+
 Each booked occurrence is tagged as part of the series:
 
 - Every occurrence shares a series `identifier` (system `https://medplum.com/fhir/recurring-appointment-series`). Read it from the response. Every occurrence of the series can then be found with `GET [base]/Appointment?identifier=https://medplum.com/fhir/recurring-appointment-series|<series id>`.
