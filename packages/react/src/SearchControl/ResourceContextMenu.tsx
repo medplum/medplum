@@ -196,7 +196,7 @@ export function useResourceContextMenuController(
           <>
             {visible.open && (
               <Menu.Item
-                leftSection={<IconCornerDownRight size={14} />}
+                leftSection={<IconCornerDownRight size={16} color="var(--mantine-color-dimmed)" />}
                 onClick={() => {
                   if (href) {
                     navigate(href);
@@ -211,7 +211,7 @@ export function useResourceContextMenuController(
             )}
             {visible.openInNewTab && (
               <Menu.Item
-                leftSection={<IconExternalLink size={14} />}
+                leftSection={<IconExternalLink size={16} color="var(--mantine-color-dimmed)" />}
                 onClick={() => {
                   if (href) {
                     window.open(href, '_blank', 'noopener,noreferrer');
@@ -226,7 +226,7 @@ export function useResourceContextMenuController(
             )}
             {visible.copyLink && href && (
               <Menu.Item
-                leftSection={<IconLink size={14} />}
+                leftSection={<IconLink size={16} color="var(--mantine-color-dimmed)" />}
                 onClick={() => {
                   navigator.clipboard?.writeText(new URL(href, window.location.origin).href).catch(() => undefined);
                   close();

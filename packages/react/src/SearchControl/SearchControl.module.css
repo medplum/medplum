@@ -46,6 +46,10 @@
   border-radius: var(--mantine-radius-sm);
 }
 
+.menuDropdown :global(.mantine-Menu-itemLabel) {
+  line-height: var(--mantine-line-height-sm);
+}
+
 .menuDropdown :global(.mantine-Menu-item:hover),
 .menuDropdown :global(.mantine-Menu-item[data-hovered]) {
   background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));

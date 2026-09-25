@@ -151,14 +151,14 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
   return (
     <Menu.Dropdown className={classes.menuDropdown}>
       <Menu.Item
-        leftSection={<IconSortAscending size={14} />}
+        leftSection={<IconSortAscending size={16} color="var(--mantine-color-dimmed)" />}
         rightSection={isSortSelected(false) ? CHECK : null}
         onClick={() => onSort(false)}
       >
         {labels.asc}
       </Menu.Item>
       <Menu.Item
-        leftSection={<IconSortDescending size={14} />}
+        leftSection={<IconSortDescending size={16} color="var(--mantine-color-dimmed)" />}
         rightSection={isSortSelected(true) ? CHECK : null}
         onClick={() => onSort(true)}
       >
@@ -171,7 +171,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
             {group.map((option) => (
               <Menu.Item
                 key={option.label}
-                leftSection={<IconCalendar size={14} />}
+                leftSection={<IconCalendar size={16} color="var(--mantine-color-dimmed)" />}
                 rightSection={isRelativeDateSelected(option, props.search, code) ? CHECK : null}
                 onClick={() => props.onChange(option.apply(props.search, code))}
               >
@@ -183,7 +183,10 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
       {showFilterByColumn && (
         <>
           <Menu.Divider />
-          <Menu.Item leftSection={<IconFilter2Plus size={14} />} onClick={() => props.onFilterByColumn?.(searchParam)}>
+          <Menu.Item
+            leftSection={<IconFilter2Plus size={16} color="var(--mantine-color-dimmed)" />}
+            onClick={() => props.onFilterByColumn?.(searchParam)}
+          >
             Filter by this column
           </Menu.Item>
         </>
@@ -192,7 +195,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
         <>
           <Menu.Divider />
           <Menu.Item
-            leftSection={<IconX size={14} color="var(--mantine-color-dimmed)" />}
+            leftSection={<IconX size={16} color="var(--mantine-color-dimmed)" />}
             onClick={() => props.onChange(clearFiltersOnField(props.search, code))}
           >
             Clear all column filters
