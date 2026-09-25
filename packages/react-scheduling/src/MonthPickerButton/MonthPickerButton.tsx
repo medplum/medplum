@@ -32,7 +32,6 @@ export function MonthPickerButton(props: MonthPickerButtonProps): JSX.Element {
           size={size}
           classNames={{ label: classes.label }}
           rightSection={<IconChevronDown size={14} />}
-          aria-label="Go to month"
           onClick={() => setOpened((o) => !o)}
         >
           {label}
