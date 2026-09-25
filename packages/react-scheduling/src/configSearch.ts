@@ -8,15 +8,15 @@
 import type { MedplumClient, WithId } from '@medplum/core';
 import type { Bundle, HealthcareService } from '@medplum/fhirtypes';
 
-// Set explicitly: left unset, `searchResourcePages` asks for 1000 at a time, so nothing renders until one
-// slow page lands.
-const DEFAULT_PAGE_SIZE = 200;
+// The list waits for every page before it renders, so fewer, larger requests finish sooner. 1000 is also
+// what `searchResourcePages` asks for when `_count` is left unset.
+const DEFAULT_PAGE_SIZE = 1000;
 
 const DEFAULT_LIMIT = 2000;
 
 export interface ConfigSearchOptions {
   readonly signal?: AbortSignal;
-  /** How many resources to read per request. Defaults to 200. */
+  /** How many resources to read per request. Defaults to 1000. */
   readonly pageSize?: number;
   /** The most resources to read. Reading stops there and the result reports itself incomplete. Defaults to 2000. */
   readonly limit?: number;

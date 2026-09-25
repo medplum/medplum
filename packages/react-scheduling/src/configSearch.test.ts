@@ -67,7 +67,7 @@ describe('searchConfigurableServices', () => {
 
     await searchConfigurableServices(medplum);
 
-    expect(querySentTo(medplum)).toEqual({ _sort: 'name', _count: '200' });
+    expect(querySentTo(medplum)).toEqual({ _sort: 'name', _count: '1000' });
   });
 
   test('reading exactly the limit, with nothing left over, is complete', async () => {
