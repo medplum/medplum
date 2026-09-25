@@ -124,6 +124,25 @@ describe('SearchColumnEditor', () => {
     expect(last.fields).toEqual(['name', 'birthDate']);
   });
 
+  test('Reset default clears the search and focuses the search box', async () => {
+    await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
+    await openMenu();
+    const searchBox = screen.getByLabelText('Search columns');
+    await act(async () => {
+      fireEvent.change(searchBox, { target: { value: 'birth' } });
+    });
+    expect(screen.queryByLabelText('column-name')).toBeNull();
+
+    const resetButton = screen.getByText('Reset Default');
+    await act(async () => {
+      resetButton.closest('button')?.focus();
+      fireEvent.click(resetButton);
+    });
+    expect(searchBox).toHaveValue('');
+    expect(searchBox).toHaveFocus();
+    expect(screen.getByLabelText('column-name')).toBeInTheDocument();
+  });
+
   test('Dragging a column reorders the emitted fields', async () => {
     const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
     await openMenu();

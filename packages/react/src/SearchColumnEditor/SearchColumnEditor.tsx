@@ -97,6 +97,7 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
   const dragIndexRef = useRef<number | null>(null);
   const overIndexRef = useRef<number | null>(null);
   const endDragRef = useRef<(() => void) | undefined>(undefined);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => () => endDragRef.current?.(), []);
 
@@ -144,6 +145,8 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
 
   function resetDefault(): void {
     const next = [...defaultFields];
+    setQuery('');
+    searchInputRef.current?.focus();
     setOrder(buildColumnOrder(next, searchParams));
     onChange({ ...search, fields: next });
   }
@@ -213,6 +216,7 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
       <Popover.Dropdown className={classes.dropdown}>
         <div className={classes.header}>
           <TextInput
+            ref={searchInputRef}
             data-autofocus
             placeholder="Search columns"
             aria-label="Search columns"
