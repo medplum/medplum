@@ -12,9 +12,11 @@ import {
   getReferenceString,
   isDefined,
   isResource,
+  MEDPLUM_VERSION,
   OperationOutcomeError,
   Operator,
   resolveId,
+  SchedulingBookedByOperationURI,
   SchedulingSlotCapacityURI,
   TimezoneExtensionURI,
 } from '@medplum/core';
@@ -88,15 +90,15 @@ export function isAlignedToGrid(date: Date, alignment: AlignmentOptions): boolea
   return mod(minutesSinceMidnight(date, alignment.timezone) - alignment.offset, alignment.interval) === 0;
 }
 
+// The first instant of each local day the interval touches. That's usually midnight, but not on a
+// day whose midnight a DST transition skips, and the next day starts at its own midnight again.
 export function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.ZonedDateTime[] {
-  let t = Temporal.Instant.fromEpochMilliseconds(interval.start.valueOf())
-    .toZonedDateTimeISO(timeZone)
-    .withPlainTime({ hour: 0, minute: 0, second: 0, millisecond: 0 });
+  let t = Temporal.Instant.fromEpochMilliseconds(interval.start.valueOf()).toZonedDateTimeISO(timeZone).startOfDay();
 
   const results: Temporal.ZonedDateTime[] = [];
   while (t.epochMilliseconds < interval.end.valueOf()) {
     results.push(t);
-    t = t.add({ days: 1 });
+    t = t.add({ days: 1 }).startOfDay();
   }
   return results;
 }
@@ -661,8 +663,6 @@ export async function slotsOverlappingInterval(
   schedules: (WithId<Schedule> | (Reference<Schedule> & { reference: string }))[],
   interval: Interval
 ): Promise<WithId<Slot>[]> {
-  const searchStart = interval.start.toISOString();
-  const searchEnd = interval.end.toISOString();
   const results = await repo.searchResources<Slot>({
     resourceType: 'Slot',
     count: DEFAULT_MAX_SEARCH_COUNT,
@@ -677,11 +677,8 @@ export async function slotsOverlappingInterval(
         operator: Operator.EQUALS,
         value: 'busy,busy-tentative,busy-unavailable,free',
       },
-      {
-        code: '_filter',
-        operator: Operator.EQUALS,
-        value: `((start ge "${searchStart}" and start le "${searchEnd}") or (end ge "${searchStart}" and end le "${searchEnd}") or (start lt "${searchStart}" and end gt "${searchEnd}"))`,
-      },
+      { code: 'start', operator: Operator.LESS_THAN, value: interval.end.toISOString() },
+      { code: 'end', operator: Operator.GREATER_THAN, value: interval.start.toISOString() },
     ],
   });
 
@@ -1038,6 +1035,11 @@ export async function createProposedAppointment(
       badRequest('Proposed appointment must not have Slot references', `${getPath(proposedAppointment)}.slot`)
     );
   }
+
+  appointment.extension = [
+    ...(appointment.extension ?? []).filter((ext) => ext.url !== SchedulingBookedByOperationURI),
+    { url: SchedulingBookedByOperationURI, valueString: MEDPLUM_VERSION },
+  ];
 
   stampBookingCapacity(slots, schedulingParametersGroup);
   customizer(appointment, slots);

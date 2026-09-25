@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MantineThemeColors } from '@mantine/core';
 import { Box, Divider, Stack, Text } from '@mantine/core';
-import { IconMapPinFilled } from '@tabler/icons-react';
+import { IconCalculatorFilled, IconMapPinFilled } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { Fragment } from 'react';
 import type { BookableActorType } from '../../actors';
@@ -49,7 +49,7 @@ interface CalendarsPanelSection {
  */
 const SECTIONS: readonly CalendarsPanelSection[] = [
   { actorType: 'Practitioner', title: 'Providers & Staff', emptyLabel: 'providers or staff' },
-  { actorType: 'Device', title: 'Devices', emptyLabel: 'devices' },
+  { actorType: 'Device', title: 'Devices', emptyLabel: 'devices', icon: <IconCalculatorFilled size={12} /> },
   { actorType: 'Location', title: 'Rooms', emptyLabel: 'rooms', icon: <IconMapPinFilled size={12} /> },
 ];
 
