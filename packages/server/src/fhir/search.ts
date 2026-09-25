@@ -951,7 +951,14 @@ function buildSearchFilterExpression(
     case SearchStrategies.TOKEN_COLUMN:
       return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
     case SearchStrategies.LOOKUP_TABLE:
-      return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+      return impl.lookupTable.buildWhere(
+        selectQuery,
+        resourceType,
+        table,
+        param,
+        filter,
+        repo.getSearchProjectIds(resourceType)
+      );
     case SearchStrategies.RANGE_COLUMN:
       if (!repo.supportsRangeSearch()) {
         return buildNormalSearchFilterExpression(
