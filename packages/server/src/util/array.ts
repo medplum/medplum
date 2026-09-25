@@ -16,9 +16,16 @@ export function flatMapMax<T, R>(
   mapper: (obj: T, idx: number, count: number) => R | R[],
   maxCount: number
 ): R[] {
-  let result: R[] = [];
+  const result: R[] = [];
   for (const [idx, obj] of arr.entries()) {
-    result = result.concat(mapper(obj, idx, maxCount - result.length));
+    const mapped = mapper(obj, idx, maxCount - result.length);
+    if (Array.isArray(mapped)) {
+      for (const item of mapped) {
+        result.push(item);
+      }
+    } else {
+      result.push(mapped);
+    }
     if (result.length >= maxCount) {
       break;
     }
