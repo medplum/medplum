@@ -8,9 +8,8 @@ import { getAuthenticatedContext } from '../../context';
 import { getPath, withPath, withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { recursWeekly, tagWeeklySeries } from './utils/recurrence';
+import { recursWeekly, seriesTimezone, tagWeeklySeries } from './utils/recurrence';
 import { createProposedAppointment, createProposedAppointments } from './utils/scheduling';
-import { extractCommonParameters } from './utils/scheduling-parameters';
 
 const bookOperation = makeOperationDefinition(
   { scope: 'type', resource: 'Appointment' },
@@ -62,13 +61,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
     (left, right) => Date.parse(left.start ?? '') - Date.parse(right.start ?? '')
   );
   const bundle = await createProposedAppointments(ctx.repo, occurrences, (validated) => {
-    const timezones = validated.map(
-      ({ schedulingParameters }) => extractCommonParameters(schedulingParameters).alignmentTimezone
-    );
-    const timezone = timezones[0];
-    if (timezones.some((other) => other !== timezone)) {
-      throw new OperationOutcomeError(badRequest('All appointments in a recurring series must share one timezone'));
-    }
+    const timezone = seriesTimezone(validated.flatMap(({ schedulingParameters }) => schedulingParameters));
     // The series is checked on the appointments' times, so those must be the times actually booked.
     for (const [idx, { appointment, slots }] of validated.entries()) {
       const mismatched = slots.some(

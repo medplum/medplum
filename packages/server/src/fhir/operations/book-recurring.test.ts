@@ -180,7 +180,7 @@ describe('Appointment/$book with a recurring series', () => {
     expect(appointments.map((a) => getExtension(a, RecurrenceIdExtensionURI)?.valuePositiveInt)).toEqual([1, 2, 3]);
 
     // Only the first occurrence says how the series recurs: weekly on Mondays, in the schedule's
-    // alignment timezone, which defaults to UTC.
+    // own timezone, although its alignment timezone is left at the default of UTC.
     const templates = appointments.map((a) => getExtension(a, RecurrenceTemplateExtensionURI));
     expect(templates.slice(1)).toEqual([undefined, undefined]);
     expect(templates[0]).toEqual({
@@ -188,7 +188,7 @@ describe('Appointment/$book with a recurring series', () => {
       extension: [
         {
           url: 'timezone',
-          valueCodeableConcept: { coding: [{ system: 'https://www.iana.org/time-zones', code: 'Etc/UTC' }] },
+          valueCodeableConcept: { coding: [{ system: 'https://www.iana.org/time-zones', code: 'America/New_York' }] },
         },
         {
           url: 'recurrenceType',
@@ -280,9 +280,9 @@ describe('Appointment/$book with a recurring series', () => {
     }
 
     const [first, second] = appointments;
-    // The schedule sets no alignmentTimezone, so the series keeps UTC.
+    // The series keeps the schedule's own timezone.
     expect(getExtension(first, RecurrenceTemplateExtensionURI, 'timezone')?.valueCodeableConcept).toEqual({
-      coding: [{ system: 'https://www.iana.org/time-zones', code: 'Etc/UTC' }],
+      coding: [{ system: 'https://www.iana.org/time-zones', code: 'America/New_York' }],
     });
     expect(getExtension(first, RecurrenceTemplateExtensionURI, 'weeklyTemplate', 'monday')?.valueBoolean).toBe(true);
     expect(getExtension(first, OriginatingAppointmentExtensionURI)).toBeUndefined();
@@ -303,6 +303,16 @@ describe('Appointment/$book with a recurring series', () => {
     expect(response.body.issue[0].details.text).toBe(
       'Appointments in a recurring series must be one week apart, at the same local time'
     );
+  });
+
+  test('books a series that keeps its local time across a DST transition', async () => {
+    const schedule = await makeSchedule();
+    // 9am EST, then 9am EDT, although the schedule aligns in UTC.
+    const response = await bookRecurring([
+      makeOccurrence(schedule, '2026-03-02T14:00:00.000Z', '2026-03-02T15:00:00.000Z'),
+      makeOccurrence(schedule, '2026-03-09T13:00:00.000Z', '2026-03-09T14:00:00.000Z'),
+    ]);
+    expect(response).toHaveStatus(201);
   });
 
   test("rejects a series whose appointment times don't match the Slots they book", async () => {

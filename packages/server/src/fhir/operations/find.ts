@@ -36,13 +36,14 @@ import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
 import { bufferTimeConflicts, findAlignedSlotTimes, overlappingIntervals } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { projectWeeksForward } from './utils/recurrence';
+import { projectWeeksForward, seriesTimezone } from './utils/recurrence';
 import {
   applyExistingSlots,
   assertAllLoaded,
   buildAppointmentSlots,
   getSchedulingParametersGroup,
   intervalsExceedingCapacity,
+  isAlignedToGrid,
   resolveAvailability,
   slotsOverlappingInterval,
 } from './utils/scheduling';
@@ -379,6 +380,11 @@ async function findAvailableSeries(params: {
   const ignoredSlotIds = new Set((ignoredAppointment?.slot ?? []).map((ref) => resolveId(ref)).filter(isDefined));
   const existingSlots = allExistingSlots.filter((slot) => !ignoredSlotIds.has(slot.id));
 
+  // The timezone a series keeps its local time in. A single time never projects forward, so only a
+  // series needs its schedules to share one. Checked before the search, so that is never skipped.
+  const parameters = [...context.parameterGroup.values()];
+  const timezone = occurrenceCount > 1 ? seriesTimezone(parameters) : parameters[0].get('timezone');
+
   // A series' first occurrences are capped loosely, since later weeks discard some of them.
   const candidates = computeAlignedIntervals({
     context,
@@ -390,7 +396,8 @@ async function findAvailableSeries(params: {
     return [];
   }
 
-  const { alignmentTimezone, duration } = context.commonParameters;
+  const { alignmentInterval, alignmentOffset, alignmentTimezone, duration } = context.commonParameters;
+  const alignment = { interval: alignmentInterval, offset: alignmentOffset, timezone: alignmentTimezone };
 
   // Candidates already sit inside every planning horizon and later weeks only move forward, so
   // only the earliest horizon end can clamp a later week or cut the series short. Resolved before
@@ -403,7 +410,7 @@ async function findAvailableSeries(params: {
   );
   const laterWeeks: Interval[] = [];
   for (let weeksForward = 1; weeksForward < occurrenceCount; weeksForward++) {
-    const window = projectedWeekWindow(context, candidates, weeksForward, alignmentTimezone);
+    const window = projectedWeekWindow(context, candidates, weeksForward, timezone);
     if (!window || (horizonEnd && window.start > horizonEnd)) {
       return [];
     }
@@ -430,9 +437,10 @@ async function findAvailableSeries(params: {
     series = series
       .map((occurrences) => {
         // Always projected from the first occurrence, so a series stays anchored to one
-        // wall-clock time instead of drifting across DST transitions.
-        const start = projectWeeksForward(occurrences[0].start, weeksForward, alignmentTimezone);
-        if (!start) {
+        // wall-clock time instead of drifting across DST transitions. That time can fall off a
+        // grid kept in another timezone, where `$book` would refuse it.
+        const start = projectWeeksForward(occurrences[0].start, weeksForward, timezone);
+        if (!start || !isAlignedToGrid(start, alignment)) {
           return undefined;
         }
         const occurrence = { start, end: addMinutes(start, duration) };

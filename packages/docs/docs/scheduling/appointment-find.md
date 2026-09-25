@@ -261,12 +261,12 @@ A 6-week series spans 35 days, which is longer than the 31-day limit on a single
 
 1. Searches `start`/`end` exactly as a single-time search would, producing candidate start times for the first occurrence in chronological order
 2. Searches each later week once, over the window those candidates project into
-3. Keeps a candidate only if the same weekday and local time (in the schedules' shared `alignmentTimezone`) is available in **every** week
+3. Keeps a candidate only if the same weekday and local time (in the schedules' shared [`timezone`](/docs/scheduling/defining-availability#timezone-resolution)) is available in **every** week
 4. Returns the first `_count` candidates that survive every week
 
 Each week is searched once, not once per candidate. The number of availability queries therefore scales with `occurrence-count`, not with how many candidate times the first week has.
 
-Each occurrence is checked in its own calendar day in the alignment timezone, so the series keeps its local time of day across Daylight Saving Time transitions. A series anchored at 9am stays at 9am local time rather than at a fixed UTC offset. A series whose local time doesn't exist in some week, such as 2:30am on the night clocks spring forward, isn't offered. All of this holds **as long as `alignmentTimezone` is set to the schedule's real local timezone**. `alignmentTimezone` defaults to `Etc/UTC` (see [Defining Availability](/docs/scheduling/defining-availability)). In that case the series is fixed in UTC, and its local time will shift by an hour across a DST transition.
+A series keeps its local time of day in the schedules' `timezone`, the one their availability is defined in, across Daylight Saving Time transitions. A series anchored at 9am stays at 9am local time rather than at a fixed UTC offset, even when `alignmentTimezone` is left at its default of `Etc/UTC`. A series isn't offered if its local time doesn't exist in some week, such as 2:30am on the night clocks spring forward. It also isn't offered if its local time falls off the alignment grid in some week, which can happen when `alignmentTimezone` differs from `timezone` and the grid doesn't divide the hour a DST transition shifts it by. All of the schedules in a series must share one `timezone`.
 
 Recurrence is intentionally limited in this beta: **weekly only, up to 6 occurrences**. Monthly or yearly cadences, and skipped dates or other exceptions, are not yet supported.
 

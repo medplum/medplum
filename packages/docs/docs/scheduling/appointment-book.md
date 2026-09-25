@@ -263,8 +263,8 @@ One `appointment` is booked as a single Appointment. Two to six are booked toget
 
 ### Series Constraints
 
-- Ordered by `start` (they may be passed in any order), the appointments must fall exactly one week apart, at the same local time in the schedules' `alignmentTimezone`
-- Every appointment's schedules must share one `alignmentTimezone`
+- Ordered by `start` (they may be passed in any order), the appointments must fall exactly one week apart, at the same local time in the schedules' [`timezone`](/docs/scheduling/defining-availability#timezone-resolution)
+- Every appointment's schedules must share one `timezone`
 - Each appointment's `start` and `end` must match its `busy` Slots'
 - All of the [constraints](#constraints) on a single booking apply to each occurrence individually
 
@@ -282,7 +282,7 @@ Each booked occurrence is tagged as part of the series, replacing any series tag
   - `recurrenceType`: always `wk` (weekly)
   - `occurrenceCount`
   - `weeklyTemplate`: the weekday the series falls on, every week
-  - `timezone`: the timezone whose local time the series keeps, which is the schedules' `alignmentTimezone`
+  - `timezone`: the timezone whose local time the series keeps, which is the schedules' `timezone`
 - Every occurrence after the first carries R5's `originatingAppointment` (`http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.originatingAppointment`), referencing the first occurrence.
 
 ## Booking Logic

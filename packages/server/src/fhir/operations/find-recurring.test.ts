@@ -101,12 +101,12 @@ describe('Appointment/$find with occurrence-count', () => {
 
   async function makeSchedule(
     availability: SchedulingParametersExtensionExtension,
-    opts?: { planningHorizon?: Schedule['planningHorizon']; parameters?: Extension[] }
+    opts?: { planningHorizon?: Schedule['planningHorizon']; parameters?: Extension[]; actor?: Practitioner }
   ): Promise<WithId<Schedule>> {
     return systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
       meta: { project: project.id },
-      actor: [createReference(practitioner)],
+      actor: [createReference(opts?.actor ?? practitioner)],
       extension: [
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
@@ -289,6 +289,48 @@ describe('Appointment/$find with occurrence-count', () => {
     ]);
   });
 
+  test("keeps the schedule's local time across a DST transition when aligned in UTC", async () => {
+    const schedule = await makeSchedule(mondayNineToTen, {
+      parameters: [{ url: 'alignmentTimezone', valueCode: 'Etc/UTC' }],
+    });
+
+    const response = await makeRequest({
+      start: new Date('2026-03-02T00:00:00-05:00').toISOString(),
+      end: new Date('2026-03-03T00:00:00-05:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: `Schedule/${schedule.id}`,
+      'occurrence-count': '2',
+    });
+
+    expect(response).toHaveStatus(200);
+    expect(seriesIn(response).map((occurrences) => occurrences.map((a) => a.start))).toEqual([
+      ['2026-03-02T14:00:00.000Z', '2026-03-09T13:00:00.000Z'], // 9am EST, then 9am EDT
+    ]);
+  });
+
+  test('drops a series whose local time falls off a grid kept in another timezone', async () => {
+    // A 90-minute grid in UTC from 00:30, so 14:00 UTC is on it but 13:00 UTC is not.
+    const schedule = await makeSchedule(mondayNineToTen, {
+      parameters: [
+        { url: 'alignmentTimezone', valueCode: 'Etc/UTC' },
+        { url: 'alignmentInterval', valueDuration: { value: 90, unit: 'min' } },
+        { url: 'alignmentOffset', valueDuration: { value: 30, unit: 'min' } },
+      ],
+    });
+
+    const response = await makeRequest({
+      start: new Date('2026-03-02T00:00:00-05:00').toISOString(),
+      end: new Date('2026-03-03T00:00:00-05:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: `Schedule/${schedule.id}`,
+      'occurrence-count': '2',
+    });
+
+    // 9am EST is 14:00 UTC, but 9am EDT the next week is 13:00 UTC.
+    expect(response).toHaveStatus(200);
+    expect(response.body).not.toHaveProperty('entry');
+  });
+
   test('checks later occurrences at a fine alignment interval', async () => {
     const schedule = await makeSchedule(mondayNineToNoon, {
       parameters: [{ url: 'alignmentInterval', valueDuration: { value: 1, unit: 'min' } }],
@@ -399,6 +441,27 @@ describe('Appointment/$find with occurrence-count', () => {
     expect(seriesIn(response).map((occurrences) => occurrences.map((a) => a.start))).toEqual([
       ['2026-03-09T13:00:00.000Z', '2026-03-16T13:00:00.000Z'],
     ]);
+  });
+
+  test('rejects a series across schedules in different timezones', async () => {
+    const pacificPractitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.id },
+      extension: [{ url: TimezoneExtensionURI, valueCode: 'America/Los_Angeles' }],
+    });
+    const schedule = await makeSchedule(mondayNineToNoon);
+    const pacificSchedule = await makeSchedule(mondayNineToNoon, { actor: pacificPractitioner });
+
+    const response = await makeRequest({
+      start: new Date('2026-03-09T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-10T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: [`Schedule/${schedule.id}`, `Schedule/${pacificSchedule.id}`],
+      'occurrence-count': '2',
+    });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toBe('Every schedule in a recurring series must share one timezone');
   });
 
   test('drops a series whose wall-clock time falls in a DST gap', async () => {

@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  badRequest,
   createReference,
+  OperationOutcomeError,
   OriginatingAppointmentExtensionURI,
   RecurrenceIdExtensionURI,
   RecurrenceTemplateExtensionURI,
@@ -11,6 +13,7 @@ import {
 } from '@medplum/core';
 import type { Appointment, Extension } from '@medplum/fhirtypes';
 import { Temporal } from 'temporal-polyfill';
+import type { LayeredDict } from '../../../util/layereddict';
 
 const IANA_TIMEZONES = 'https://www.iana.org/time-zones';
 
@@ -26,6 +29,21 @@ export function projectWeeksForward(anchor: Date, weeksForward: number, timezone
     return undefined;
   }
   return new Date(projected.epochMilliseconds);
+}
+
+/**
+ * The timezone a weekly series keeps its local time in: the one its schedules' availability is
+ * defined in, which every schedule must share.
+ *
+ * @param parameters - The scheduling parameters of every schedule in the series.
+ * @returns The IANA timezone shared by every schedule.
+ */
+export function seriesTimezone(parameters: LayeredDict<{ timezone: string }>[]): string {
+  const timezone = parameters[0].get('timezone');
+  if (parameters.some((other) => other.get('timezone') !== timezone)) {
+    throw new OperationOutcomeError(badRequest('Every schedule in a recurring series must share one timezone'));
+  }
+  return timezone;
 }
 
 /**
