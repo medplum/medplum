@@ -539,4 +539,52 @@ describe('ResourceForm', () => {
       expect(within(typeLabel2.parentElement).queryByText('Missing required property')).not.toBeInTheDocument();
     });
   });
+
+  test('hideSubmitButton omits the built-in submit action row', async () => {
+    const onSubmit = vi.fn();
+
+    await setup({
+      defaultValue: { resourceType: 'Practitioner', id: '123' },
+      onSubmit,
+      hideSubmitButton: true,
+    });
+
+    expect(await screen.findByText('Resource Type')).toBeInTheDocument();
+    expect(screen.queryByText('Update')).not.toBeInTheDocument();
+    expect(screen.queryByText('Create')).not.toBeInTheDocument();
+  });
+
+  test('formId lets a submit control outside the form target it', async () => {
+    const onSubmit = vi.fn();
+
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <ResourceForm
+            defaultValue={{ resourceType: 'Practitioner', id: '123' }}
+            onSubmit={onSubmit}
+            formId="test-resource-form"
+            hideSubmitButton
+          />
+          <button type="submit" form="test-resource-form">
+            External Save
+          </button>
+        </MedplumProvider>
+      );
+    });
+
+    expect(await screen.findByText('Resource Type')).toBeInTheDocument();
+
+    const form = document.getElementById('test-resource-form') as HTMLFormElement;
+    expect(form).toBeInstanceOf(HTMLFormElement);
+
+    expect(screen.getByText('External Save').getAttribute('form')).toBe('test-resource-form');
+
+    await act(async () => {
+      fireEvent.submit(form);
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    expect((onSubmit.mock.calls[0][0] as Patient).resourceType).toBe('Practitioner');
+  });
 });

@@ -13,16 +13,21 @@ export interface PatientInfoItemProps {
   placeholder: string;
   label: string;
   onClickResource?: (patient: Patient) => void;
+  onClick?: () => void;
 }
 
 export const PatientInfoItem = (props: PatientInfoItemProps): JSX.Element => {
-  const { patient, value, icon, placeholder, label, onClickResource } = props;
+  const { patient, value, icon, placeholder, label, onClickResource, onClick } = props;
   const displayText = value || placeholder;
 
   return (
     <SummaryItem
       onClick={() => {
-        onClickResource?.(patient);
+        if (onClick) {
+          onClick();
+        } else {
+          onClickResource?.(patient);
+        }
       }}
     >
       <Box className={styles.patientSummaryListItem}>
