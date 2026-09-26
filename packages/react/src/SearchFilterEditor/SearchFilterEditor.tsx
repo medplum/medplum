@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Group, NativeSelect } from '@mantine/core';
+import { ActionIcon, Group, Select } from '@mantine/core';
 import type { Filter, SearchRequest } from '@medplum/core';
 import { Operator, deepClone, getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
@@ -140,12 +140,15 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
   return (
     <tr>
       <td>
-        <NativeSelect
+        <Select
           data-testid={`${props.id}-filter-field`}
+          aria-label="Filter field"
+          placeholder="Select field"
+          searchable
+          allowDeselect={false}
           defaultValue={props.value.code}
-          onChange={(e) => setFilterCode(e.currentTarget.value)}
+          onChange={(val) => setFilterCode(val ?? '')}
           data={[
-            '',
             ...(fieldOptions.length > 0 ? [{ group: 'Fields', items: fieldOptions }] : []),
             ...(metaOptions.length > 0 ? [{ group: 'Metadata', items: metaOptions }] : []),
           ]}
@@ -153,12 +156,15 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       </td>
       <td>
         {operators && (
-          <NativeSelect
+          <Select
             key={`${props.id}-filter-value-${props.value.code}`}
             data-testid={`${props.id}-filter-operation`}
+            aria-label="Filter operation"
+            placeholder="Select operation"
+            allowDeselect={false}
             defaultValue={value.operator}
-            onChange={(e) => setFilterOperator(e.currentTarget.value as Operator)}
-            data={['', ...operators.map((op) => ({ value: op, label: getOpString(op) }))]}
+            onChange={(val) => val && setFilterOperator(val as Operator)}
+            data={operators.map((op) => ({ value: op, label: getOpString(op) }))}
           />
         )}
       </td>

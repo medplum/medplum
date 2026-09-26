@@ -1,0 +1,115 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.dropdown {
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 0;
+}
+
+.header {
+  padding-block: var(--mantine-spacing-md) 4px;
+  padding-inline: var(--mantine-spacing-md);
+}
+
+.body {
+  padding: 4px 6px 6px;
+  display: flex;
+  flex-direction: column;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.body > .item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--mantine-radius-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.item:hover {
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-8));
+}
+
+.dragging {
+  opacity: 0.4;
+}
+
+.dragOver {
+  position: relative;
+}
+
+.dragOver::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  height: 1px;
+  background-color: var(--mantine-color-blue-6);
+}
+
+.dragOverBelow::before {
+  top: auto;
+  bottom: 0;
+}
+
+.grip {
+  display: flex;
+  align-items: center;
+  color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3));
+  cursor: grab;
+  touch-action: none;
+}
+
+.grip:active {
+  cursor: grabbing;
+}
+
+.dragActive,
+.dragActive * {
+  cursor: grabbing !important;
+}
+
+.label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--mantine-font-size-sm);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  color: var(--mantine-color-blue-6);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--mantine-spacing-sm);
+  padding-right: var(--mantine-spacing-md);
+  border-top: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}
+
+.shownCount {
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+}
+
+.staticButton,
+.staticButton:active,
+.staticButton:focus,
+.staticButton[data-active] {
+  transform: none !important;
+}
+
+.addButton :global(.mantine-Button-section[data-position='left']) {
+  margin-inline-end: calc(var(--mantine-spacing-xs) * 0.5);
+}

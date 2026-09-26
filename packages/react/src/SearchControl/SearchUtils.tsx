@@ -1,13 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Filter, InternalSchemaElement, SearchRequest } from '@medplum/core';
-import { capitalize, DEFAULT_SEARCH_COUNT, evalFhirPathTyped, formatDateTime, Operator } from '@medplum/core';
-import type { Resource, SearchParameter } from '@medplum/fhirtypes';
+import { Group, Text } from '@mantine/core';
+import type { Filter, InternalSchemaElement, SearchRequest, SortRule } from '@medplum/core';
+import {
+  capitalize,
+  DEFAULT_SEARCH_COUNT,
+  evalFhirPathTyped,
+  formatDateTime,
+  formatHumanName,
+  Operator,
+  PropertyType,
+} from '@medplum/core';
+import type { HumanName, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
+import { ResourceName } from '../ResourceName/ResourceName';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
+import { useReferenceContextMenu } from './ResourceContextMenu';
+import classes from './SearchControl.module.css';
 import type { SearchControlField } from './SearchControlField';
+import { getReferenceHref, getResourceHref, useSearchControlLinks } from './SearchControlLinks';
+
+/** Resource types whose `name` is a HumanName[] and that render an avatar in the name column. */
+const AVATAR_NAME_RESOURCE_TYPES = new Set(['Patient', 'Practitioner', 'RelatedPerson', 'Person']);
 
 const searchParamToOperators: Record<string, Operator[]> = {
   string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
@@ -433,6 +451,21 @@ export function toggleSort(definition: SearchRequest, key: string): SearchReques
   return setSort(definition, key, desc);
 }
 
+/** The sort {@link SearchControl} applies when a search has no sort rules: Last Updated, newest first. */
+export const DEFAULT_SORT_RULES: readonly SortRule[] = [{ code: '_lastUpdated', descending: true }];
+
+/**
+ * Returns true when two lists of sort rules sort the same way. A missing `descending` counts as ascending.
+ * @param a - The first sort rules.
+ * @param b - The second sort rules.
+ * @returns True if both lists have the same codes and directions in the same order.
+ */
+export function isSameSort(a: readonly SortRule[], b: readonly SortRule[]): boolean {
+  return (
+    a.length === b.length && a.every((rule, i) => rule.code === b[i].code && !!rule.descending === !!b[i].descending)
+  );
+}
+
 export function getSortField(definition: SearchRequest): string | undefined {
   const sortRules = definition.sortRules;
   if (!sortRules || sortRules.length === 0) {
@@ -520,15 +553,15 @@ export function isMetaSearchParam(code: string): boolean {
 }
 
 /**
- * Returns a display label for a search parameter code.
- *
- * Meta fields keep their underscore-prefixed code so they don't collide with same-named
- * elements (e.g. `ProjectMembership.project` vs `_project`).
+ * Returns a human-readable display label for a search parameter code. Metadata codes get a
+ * " (meta)" suffix so they never share a label with a same-named element - e.g. `project` reads
+ * "Project" and `_project` reads "Project (meta)" when the Column and Filter popovers list both.
  * @param code - The search parameter code.
  * @returns The display label for the search parameter.
  */
 export function buildSearchParamFieldLabel(code: string): string {
-  return isMetaSearchParam(code) ? code : buildFieldNameString(code);
+  const label = buildFieldNameString(code);
+  return isMetaSearchParam(code) ? `${label} (meta)` : label;
 }
 
 /**
@@ -540,7 +573,7 @@ export function buildSearchParamFieldLabel(code: string): string {
 export function renderValue(resource: Resource, field: SearchControlField): string | JSX.Element | null | undefined {
   const key = field.name;
   if (key === 'id') {
-    return <MedplumLink to={`/${resource.resourceType}/${resource.id}`}>{resource.id}</MedplumLink>;
+    return <ResourceIdLink resource={resource} />;
   }
 
   if (key === 'meta.versionId') {
@@ -549,6 +582,10 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
 
   if (key === '_lastUpdated') {
     return formatDateTime(resource.meta?.lastUpdated);
+  }
+
+  if (key === 'name' && AVATAR_NAME_RESOURCE_TYPES.has(resource.resourceType)) {
+    return renderNameWithAvatar(resource);
   }
 
   // Priority 1: InternalSchemaElement by exact match
@@ -566,6 +603,110 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
 }
 
 /**
+ * Chooses the single name to display for a patient, by `use`: unspecified first, then `official`,
+ * then `usual`, then any remaining name.
+ * @param names - The patient's names.
+ * @returns The preferred name, or undefined when the patient has none.
+ */
+function selectPreferredName(names: HumanName[] | undefined): HumanName | undefined {
+  if (!names || names.length === 0) {
+    return undefined;
+  }
+  for (const use of [undefined, 'official', 'usual']) {
+    const match = names.find((name) => name.use === use);
+    if (match) {
+      return match;
+    }
+  }
+  return names[0];
+}
+
+/**
+ * Renders a person-like resource's name column as its avatar next to a single preferred name,
+ * styled to match the reference columns (weight, and underline only on hover). The whole row already
+ * navigates on click, so the name is plain styled text rather than its own anchor.
+ * @param resource - The person-like resource (Patient, Practitioner, RelatedPerson, Person).
+ * @returns The avatar + name element.
+ */
+function renderNameWithAvatar(resource: Resource): JSX.Element {
+  const name = selectPreferredName((resource as { name?: HumanName[] }).name);
+  const text = name ? formatHumanName(name) : '';
+  return (
+    <Group gap="xs" wrap="nowrap">
+      <ResourceAvatar value={resource} radius="xl" size={28} />
+      <Text size="sm" truncate className={classes.nameLink}>
+        {text}
+      </Text>
+    </Group>
+  );
+}
+
+/**
+ * Renders references as an avatar/name badge and `status` fields as a colored badge, so search
+ * columns get the richer treatment used elsewhere in the app.
+ * @param propertyType - The FHIR property type of the value.
+ * @param value - The value to render.
+ * @param code - The field's element name or search parameter code (used to detect status fields).
+ * @returns A rich display element, or undefined to fall back to {@link ResourcePropertyDisplay}.
+ */
+function renderRichValue(propertyType: string, value: unknown, code: string): JSX.Element | undefined {
+  if (propertyType === PropertyType.Reference) {
+    return <ReferenceAvatarLink value={value as Reference} />;
+  }
+  if (code === 'status' && typeof value === 'string') {
+    return <StatusBadge status={value} variant="light" />;
+  }
+  return undefined;
+}
+
+/**
+ * Renders a reference as an avatar next to its name, matching the person-name column style but kept
+ * as a link (plain text that underlines on hover) to the referenced resource. Right-clicking opens
+ * the shared context menu with link actions scoped to the referenced resource (e.g. "Open
+ * Practitioner in a New Tab") rather than the row's resource.
+ * @param props - The component props.
+ * @param props.value - The reference to render.
+ * @returns The avatar + link element.
+ */
+function ReferenceAvatarLink({ value }: { readonly value: Reference }): JSX.Element {
+  const openContextMenu = useReferenceContextMenu();
+  const href = getReferenceHref(useSearchControlLinks(), value);
+  return (
+    <Group gap="xs" wrap="nowrap" onContextMenu={(e) => openContextMenu(e, value)}>
+      <ResourceAvatar value={value} radius="xl" size={28} />
+      {href ? (
+        <MedplumLink to={href} size="sm" className={classes.nameLink}>
+          <ResourceName value={value} />
+        </MedplumLink>
+      ) : (
+        <Text size="sm">
+          <ResourceName value={value} />
+        </Text>
+      )}
+    </Group>
+  );
+}
+
+/**
+ * Renders a row's ID as a link to the resource, using the SearchControl's `getResourceHref` when
+ * set. Renders plain text when that returns no link.
+ * @param props - The component props.
+ * @param props.resource - The row's resource.
+ * @returns The ID link or text.
+ */
+function ResourceIdLink({ resource }: { readonly resource: Resource }): JSX.Element {
+  const href = getResourceHref(useSearchControlLinks(), resource);
+  if (!href) {
+    return <>{resource.id}</>;
+  }
+  return (
+    <MedplumLink to={href} className={classes.nameLink}>
+      {resource.id}
+    </MedplumLink>
+  );
+}
+
+/**
  * Returns a fragment to be displayed in the search table for a resource property.
  * @param resource - The parent resource.
  * @param elementDefinition - The property element definition.
@@ -579,15 +720,17 @@ function renderPropertyValue(resource: Resource, elementDefinition: InternalSche
   }
 
   return (
-    <ResourcePropertyDisplay
-      path={elementDefinition.path}
-      property={elementDefinition}
-      propertyType={propertyType}
-      value={value}
-      maxWidth={200}
-      ignoreMissingValues={true}
-      link={false}
-    />
+    renderRichValue(propertyType, value, path) ?? (
+      <ResourcePropertyDisplay
+        path={elementDefinition.path}
+        property={elementDefinition}
+        propertyType={propertyType}
+        value={value}
+        maxWidth={200}
+        ignoreMissingValues={true}
+        link={false}
+      />
+    )
   );
 }
 
@@ -605,16 +748,23 @@ function renderSearchParameterValue(resource: Resource, searchParam: SearchParam
 
   return (
     <>
-      {value.map((v, index) => (
-        <ResourcePropertyDisplay
-          key={`${index}-${value.length}`}
-          propertyType={v.type}
-          value={v.value}
-          maxWidth={200}
-          ignoreMissingValues={true}
-          link={false}
-        />
-      ))}
+      {value.map((v, index) => {
+        const key = `${index}-${value.length}`;
+        const rich = renderRichValue(v.type, v.value, searchParam.code);
+        if (rich) {
+          return <span key={key}>{rich}</span>;
+        }
+        return (
+          <ResourcePropertyDisplay
+            key={key}
+            propertyType={v.type}
+            value={v.value}
+            maxWidth={200}
+            ignoreMissingValues={true}
+            link={false}
+          />
+        );
+      })}
     </>
   );
 }
