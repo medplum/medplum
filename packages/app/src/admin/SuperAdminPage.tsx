@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
+  Anchor,
   Button,
   Checkbox,
   Code,
@@ -12,8 +13,11 @@ import {
   Modal,
   NativeSelect,
   NumberInput,
+  Radio,
   Stack,
+  Table,
   Text,
+  Textarea,
   TextInput,
   Title,
 } from '@mantine/core';
@@ -27,7 +31,15 @@ import {
   normalizeErrorString,
   resolveId,
 } from '@medplum/core';
-import type { Parameters, Patient, Practitioner, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import type {
+  Parameters,
+  ParametersParameter,
+  Patient,
+  Practitioner,
+  Project,
+  ProjectMembership,
+  Reference,
+} from '@medplum/fhirtypes';
 import {
   convertLocalToIso,
   DateTimeInput,
@@ -309,7 +321,11 @@ export function SuperAdminPage(): JSX.Element {
       </Form>
       <Divider my="lg" />
       <Title order={2}>Database Explain Search</Title>
-      <p>Runs an EXPLAIN query on the database to show the query plan for a search.</p>
+      <p>
+        Runs an EXPLAIN query on the database to show the query plan for a FHIR search or a raw SQL SELECT query.
+        Hypothetical indexes are supported via HypoPG. EXPLAIN ANALYZE is skipped when hypothetical indexes are
+        provided, because HypoPG only affects EXPLAIN.
+      </p>
       <ExplainSearchForm setModalTitle={setModalTitle} setModalContent={setModalContent} openModal={open} />
       <Divider my="lg" />
       <Title order={2}>WebSocket Subscription Stats</Title>
@@ -580,6 +596,70 @@ function ReindexForm({ onSubmit }: { readonly onSubmit: (formData: Record<string
   );
 }
 
+const HYPOPG_DOCS_URL = 'https://hypopg.readthedocs.io/';
+
+const monospaceInputStyles = { input: { fontFamily: 'var(--mantine-font-family-monospace)' } };
+
+interface ExplainHypotheticalIndexRow {
+  indexrelid: string;
+  indexName: string;
+  schemaName?: string;
+  tableName?: string;
+  accessMethod?: string;
+  definition: string;
+}
+
+/* HypoPG index names include the OID prefix; strip it when shown beside the OID column. */
+function formatHypopgIndexDisplayName(indexName: string, indexrelid?: string): string {
+  if (indexrelid && indexName.startsWith(`<${indexrelid}>`)) {
+    return indexName.slice(`<${indexrelid}>`.length);
+  }
+  return indexName.replace(/^<\d+>/, '');
+}
+
+function parseExplainHypotheticalIndexes(parameters: ParametersParameter[] | undefined): ExplainHypotheticalIndexRow[] {
+  return (parameters ?? [])
+    .filter((p) => p.name === 'hypotheticalIndex')
+    .map((p) => {
+      if (p.part) {
+        const part = (name: string): string | undefined => p.part?.find((x) => x.name === name)?.valueString;
+        const indexrelid = part('indexrelid') ?? '';
+        const rawIndexName = part('indexName') ?? '';
+        return {
+          indexrelid,
+          indexName: formatHypopgIndexDisplayName(rawIndexName, indexrelid),
+          schemaName: part('schemaName'),
+          tableName: part('tableName'),
+          accessMethod: part('accessMethod'),
+          definition: part('definition') ?? '',
+        };
+      }
+      if (p.valueString) {
+        return {
+          indexrelid: '',
+          indexName: p.valueString,
+          definition: p.valueString,
+        };
+      }
+      return undefined;
+    })
+    .filter((row): row is ExplainHypotheticalIndexRow => !!row && !!(row.indexrelid || row.definition));
+}
+
+function formatExplainPlan(explain: string | undefined, jsonFormat: boolean): string {
+  if (!explain) {
+    return '';
+  }
+  if (!jsonFormat) {
+    return explain;
+  }
+  try {
+    return JSON.stringify(JSON.parse(explain), null, 2);
+  } catch {
+    return explain;
+  }
+}
+
 export function ExplainSearchForm({
   setModalTitle,
   setModalContent,
@@ -590,12 +670,15 @@ export function ExplainSearchForm({
   openModal: () => void;
 }): JSX.Element {
   const medplum = useMedplum();
+  const [queryMode, setQueryMode] = useState<'search' | 'sql'>('search');
   const [explainProject, setExplainProject] = useState<Reference<Project> | undefined>();
   const [explainProfile, setExplainProfile] = useState<Reference<Practitioner | Patient> | undefined>();
   const [explainMemberships, setExplainMemberships] = useState<ProjectMembership[] | undefined>();
   const [onBehalfOfProjectMembership, setOnBehalfOfProjectMembership] = useState<
     Reference<ProjectMembership> | undefined
   >();
+
+  const onBehalfOfEnabled = queryMode === 'search';
 
   const explainProfileSearchCriteria: Record<string, string> | undefined = useMemo(() => {
     if (!explainProject?.reference) {
@@ -606,6 +689,14 @@ export function ExplainSearchForm({
   }, [explainProject]);
 
   useEffect(() => {
+    if (!onBehalfOfEnabled) {
+      setExplainProject(undefined);
+      setExplainProfile(undefined);
+      setExplainMemberships(undefined);
+      setOnBehalfOfProjectMembership(undefined);
+      return;
+    }
+
     setOnBehalfOfProjectMembership(undefined);
 
     if (!explainProfile?.reference && !explainProject?.reference) {
@@ -629,7 +720,7 @@ export function ExplainSearchForm({
         console.error(err);
         showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       });
-  }, [medplum, explainProfile, explainProject]);
+  }, [medplum, explainProfile, explainProject, onBehalfOfEnabled]);
 
   const searchCriteria = useMemo(() => {
     const criteria: Record<string, string> = {};
@@ -644,19 +735,35 @@ export function ExplainSearchForm({
   }, [explainProfile, explainProject]);
 
   function explainSearch(formData: Record<string, any>): void {
-    if (!formData.query) {
-      showNotification({ color: 'red', message: 'Query is required', autoClose: false });
+    const fhirQuery = formData.query?.trim();
+    const sqlQuery = formData.sql?.trim();
+    if (queryMode === 'sql' ? !sqlQuery : !fhirQuery) {
+      showNotification({
+        color: 'red',
+        message: queryMode === 'sql' ? 'SQL is required' : 'Query is required',
+        autoClose: false,
+      });
       return;
     }
-    const onBehalfOfHeader: string | undefined = formData['onBehalfOfProjectMembership'];
+    const onBehalfOfHeader: string | undefined =
+      queryMode === 'search' ? formData['onBehalfOfProjectMembership'] : undefined;
     delete formData['onBehalfOfProjectMembership'];
 
-    const toSubmit = {
-      query: formData.query,
+    const jsonFormat = formData.json === 'on';
+    const hypotheticalIndex = formData.hypotheticalIndex?.trim();
+    const toSubmit: Record<string, unknown> = {
       analyze: formData.analyze === 'on',
       count: formData.count === 'on',
-      format: 'text',
+      format: jsonFormat ? 'json' : 'text',
     };
+    if (queryMode === 'sql') {
+      toSubmit.sql = sqlQuery;
+    } else {
+      toSubmit.query = fhirQuery;
+    }
+    if (hypotheticalIndex) {
+      toSubmit.hypotheticalIndex = hypotheticalIndex;
+    }
 
     const headers: HeadersInit = {};
     if (onBehalfOfHeader) {
@@ -672,20 +779,84 @@ export function ExplainSearchForm({
         const parametersLine = params.parameter?.find((p) => p.name === 'parameters')?.valueString;
         const countEstimate = params.parameter?.find((p) => p.name === 'countEstimate')?.valueInteger?.toLocaleString();
         const countAccurate = params.parameter?.find((p) => p.name === 'countAccurate')?.valueInteger?.toLocaleString();
-        const lines = [queryLine, parametersLine, '\n', explainLine].join('\n');
+        const hypotheticalIndexes = parseExplainHypotheticalIndexes(params.parameter);
+        const warnings = params.parameter
+          ?.filter((p) => p.name === 'warning')
+          .map((p) => p.valueString)
+          .filter((value): value is string => !!value);
+        const queryText = [queryLine, parametersLine].filter(Boolean).join('\n');
+        const explainText = formatExplainPlan(explainLine, jsonFormat);
         setModalContent(
           <Stack>
             <div>
               <Text fw={700}>Query</Text>
               <Code block maw={'100%'} style={{ whiteSpace: 'pre-wrap' }}>
-                {lines}
+                {queryText}
               </Code>
             </div>
+            {explainText && (
+              <div>
+                <Group justify="space-between" mb="xs">
+                  <Text fw={700}>{jsonFormat ? 'Plan (JSON)' : 'Plan'}</Text>
+                  <CopyButton value={explainText} timeout={2000}>
+                    {({ copied, copy }) => (
+                      <Button type="button" variant="light" size="xs" onClick={copy}>
+                        {copied ? 'Copied' : 'Copy plan'}
+                      </Button>
+                    )}
+                  </CopyButton>
+                </Group>
+                <Code block maw={'100%'} style={{ whiteSpace: 'pre-wrap' }}>
+                  {explainText}
+                </Code>
+              </div>
+            )}
             {(countEstimate || countAccurate) && (
               <div>
                 <Text fw={700}>Counts</Text>
                 {countEstimate && <Text>Estimate: {countEstimate}</Text>}
                 {countAccurate && <Text>Accurate: {countAccurate}</Text>}
+              </div>
+            )}
+            {hypotheticalIndexes.length > 0 && (
+              <div>
+                <Text fw={700} mb="xs">
+                  Hypothetical indexes
+                </Text>
+                <Table withTableBorder withColumnBorders striped>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>OID</Table.Th>
+                      <Table.Th>Index name</Table.Th>
+                      <Table.Th>Schema</Table.Th>
+                      <Table.Th>Table</Table.Th>
+                      <Table.Th>Access method</Table.Th>
+                      <Table.Th>Definition</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {hypotheticalIndexes.map((row) => (
+                      <Table.Tr key={row.indexrelid || row.indexName}>
+                        <Table.Td>{row.indexrelid || '—'}</Table.Td>
+                        <Table.Td style={{ whiteSpace: 'pre-wrap' }}>{row.indexName}</Table.Td>
+                        <Table.Td>{row.schemaName ?? '—'}</Table.Td>
+                        <Table.Td>{row.tableName ?? '—'}</Table.Td>
+                        <Table.Td>{row.accessMethod ?? '—'}</Table.Td>
+                        <Table.Td>
+                          <Code style={{ whiteSpace: 'pre-wrap' }}>{row.definition}</Code>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </div>
+            )}
+            {warnings && warnings.length > 0 && (
+              <div>
+                <Text fw={700}>Warnings</Text>
+                {warnings.map((warning) => (
+                  <Text key={warning}>{warning}</Text>
+                ))}
               </div>
             )}
           </Stack>
@@ -703,29 +874,47 @@ export function ExplainSearchForm({
   return (
     <Form onSubmit={explainSearch}>
       <Stack>
-        <TextInput name="query" label="Search" required placeholder="Observation?code=85354-9&_sort=-date&_count=5" />
-        <Group>
-          <Checkbox name="analyze" label="Analyze" />
-          <Checkbox name="count" label="Total count" />
-        </Group>
-        <InputWrapper label="On Behalf Of">
+        <Radio.Group
+          name="queryMode"
+          label="Query type"
+          value={queryMode}
+          onChange={(value) => setQueryMode(value as 'search' | 'sql')}
+        >
+          <Group mt={4}>
+            <Radio value="search" label="FHIR search" />
+            <Radio value="sql" label="SQL query" />
+          </Group>
+        </Radio.Group>
+        <TextInput
+          name="query"
+          label="Search"
+          required={queryMode === 'search'}
+          disabled={queryMode === 'sql'}
+          placeholder="Observation?code=85354-9&_sort=-date&_count=5"
+        />
+        <InputWrapper
+          label="On Behalf Of"
+          description={onBehalfOfEnabled ? undefined : 'Only available when query type is FHIR search.'}
+        >
           <Stack gap="sm">
             <ReferenceInput<Project>
-              required
+              required={onBehalfOfEnabled}
+              disabled={!onBehalfOfEnabled}
               placeholder="Project"
               targetTypes={['Project']}
               name="onBehalfOfProject"
               onChange={setExplainProject}
             />
             <ReferenceInput<Practitioner | Patient>
-              required
+              required={onBehalfOfEnabled}
+              disabled={!onBehalfOfEnabled}
               placeholder="Practitioner or Patient"
               name="onBehalfOfProfile"
               targetTypes={['Practitioner', 'Patient']}
               onChange={setExplainProfile}
               searchCriteria={explainProfileSearchCriteria}
             />
-            {explainMemberships?.length !== 1 && (
+            {onBehalfOfEnabled && explainMemberships?.length !== 1 && (
               <ReferenceInput<ProjectMembership>
                 required
                 placeholder="ProjectMembership"
@@ -735,7 +924,7 @@ export function ExplainSearchForm({
                 searchCriteria={searchCriteria}
               />
             )}
-            {explainMemberships?.length === 1 && (
+            {onBehalfOfEnabled && explainMemberships?.length === 1 && (
               <>
                 <input
                   type="hidden"
@@ -745,9 +934,46 @@ export function ExplainSearchForm({
                 <ReferenceDisplay value={createReference(explainMemberships[0])} />
               </>
             )}
-            {!onBehalfOfProjectMembership && <Text fs="italic">On Behalf Of not set. Running as super admin</Text>}
+            {onBehalfOfEnabled && !onBehalfOfProjectMembership && (
+              <Text fs="italic">On Behalf Of not set. Running as super admin</Text>
+            )}
           </Stack>
         </InputWrapper>
+        <Textarea
+          name="sql"
+          label="SQL"
+          required={queryMode === 'sql'}
+          disabled={queryMode === 'search'}
+          description="Raw SELECT or WITH query. Mutually exclusive with Search."
+          placeholder='SELECT * FROM "Patient" WHERE "active" = true'
+          minRows={3}
+          autosize
+          styles={monospaceInputStyles}
+        />
+        <Textarea
+          name="hypotheticalIndex"
+          label="Hypothetical indexes (HypoPG)"
+          styles={monospaceInputStyles}
+          description={
+            <>
+              Optional CREATE INDEX statements, separated by semicolons. Each statement is passed to{' '}
+              <Code>hypopg_create_index()</Code>, so other SQL (for example <Code>SET LOCAL enable_seqscan = off</Code>)
+              is not allowed. See the{' '}
+              <Anchor href={HYPOPG_DOCS_URL} target="_blank" rel="noopener noreferrer">
+                HypoPG documentation
+              </Anchor>{' '}
+              for usage and supported index types.
+            </>
+          }
+          placeholder='CREATE INDEX ON "Appointment" ("projectId", "status")'
+          minRows={3}
+          autosize
+        />
+        <Group>
+          <Checkbox name="analyze" label="Analyze" />
+          <Checkbox name="count" label="Total count" />
+          <Checkbox name="json" label="JSON format" />
+        </Group>
         <Button type="submit">Explain Search</Button>
       </Stack>
     </Form>
