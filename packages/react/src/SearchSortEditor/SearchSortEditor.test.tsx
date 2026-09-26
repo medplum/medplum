@@ -33,8 +33,8 @@ describe('SearchSortEditor', () => {
     await openPopover();
     expect(screen.getByLabelText('Sort 1 field', { selector: 'input' })).toHaveValue('Last Updated (meta)');
     expect(screen.getByLabelText('Sort 1 direction', { selector: 'input' })).toHaveValue('Newest → Oldest');
-    expect(screen.getByLabelText('Remove sort 1')).toBeDisabled();
-    expect(screen.queryByLabelText('Reset sort to default')).toBeNull();
+    expect(screen.getByLabelText('Reset sort to default')).toBeDisabled();
+    expect(screen.queryByLabelText('Remove sort 1')).toBeNull();
     expect(screen.getByText('Add Sort')).toBeInTheDocument();
   });
 
@@ -52,7 +52,7 @@ describe('SearchSortEditor', () => {
       { code: '_lastUpdated', descending: true },
     ]);
     expect(screen.getByLabelText('Sort 1 field', { selector: 'input' })).toHaveValue('Last Updated (meta)');
-    expect(screen.getByLabelText('Remove sort 1')).toBeDisabled();
+    expect(screen.getByLabelText('Reset sort to default')).toBeDisabled();
   });
 
   test('Changing the default row turns its remove button into reset', async () => {
@@ -64,7 +64,7 @@ describe('SearchSortEditor', () => {
     await act(async () => {
       fireEvent.click(await screen.findByText('Oldest → Newest'));
     });
-    expect(screen.getByLabelText('Reset sort to default')).toBeInTheDocument();
+    expect(screen.getByLabelText('Reset sort to default')).toBeEnabled();
   });
 
   test('Shows "No sort applied" when there is no default sort', async () => {
@@ -189,6 +189,8 @@ describe('SearchSortEditor', () => {
       { code: 'birthdate', descending: false },
     ]);
     expect(screen.getByLabelText('Remove sort 1')).toBeEnabled();
+    expect(screen.getByLabelText('Remove sort 2')).toBeEnabled();
+    expect(screen.queryByLabelText('Reset sort to default')).toBeNull();
   });
 
   test('Changing direction emits descending', async () => {

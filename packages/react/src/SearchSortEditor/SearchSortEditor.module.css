@@ -26,7 +26,8 @@
 }
 
 .direction {
-  flex: 0 0 190px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .footer {

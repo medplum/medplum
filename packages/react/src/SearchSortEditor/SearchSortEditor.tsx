@@ -68,8 +68,8 @@ function getInitialRules(search: SearchRequest, defaultRules: readonly SortRule[
 /**
  * Popover-based sort builder for the {@link SearchControl} toolbar. Presents the sort rules as an
  * ordered list of `field + direction` rows that apply live as the user edits. When there is a default
- * sort, the list is never empty: the last row's remove button is disabled while it matches the
- * default, and becomes a reset-to-default button once it differs.
+ * sort, the list is never empty: a lone row gets a reset-to-default button, disabled while the row
+ * matches the default, and every row gets a remove button once there are two or more.
  * @param props - The sort editor props.
  * @returns The sort editor React node.
  */
@@ -210,14 +210,16 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
                   value={directionValue}
                   onChange={(dir) => updateRule(index, { code: rule.code, descending: dir === 'desc' })}
                 />
-                {isLastRow && !rowsAtDefault ? (
-                  <Tooltip label="Reset to default" position="bottom" openDelay={500}>
+                {isLastRow ? (
+                  <Tooltip label="Reset to default" position="bottom" openDelay={500} disabled={rowsAtDefault}>
                     <ActionIcon
+                      className={classes.deleteButton}
                       variant="subtle"
                       color="gray"
                       radius="xl"
                       aria-label="Reset sort to default"
                       ml={2}
+                      disabled={rowsAtDefault}
                       onClick={resetToDefault}
                     >
                       <IconRotate2 size={16} stroke={2} className={classes.deleteIcon} />
@@ -225,13 +227,11 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
                   </Tooltip>
                 ) : (
                   <ActionIcon
-                    className={classes.deleteButton}
                     variant="subtle"
                     color="gray"
                     radius="xl"
                     aria-label={`Remove sort ${index + 1}`}
                     ml={2}
-                    disabled={isLastRow}
                     onClick={() => deleteRule(index)}
                   >
                     <IconX size={16} stroke={2} className={classes.deleteIcon} />
