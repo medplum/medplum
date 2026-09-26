@@ -43,6 +43,8 @@ export * from './CodeableConceptInput/CodeableConceptInput';
 export * from './CodeInput/CodeInput';
 export * from './CodingDisplay/CodingDisplay';
 export * from './CodingInput/CodingInput';
+export * from './ConceptMapBuilder/ConceptMapBuilder';
+export * from './ConceptMapBuilder/ConceptMapMappingsTable';
 export * from './ContactDetailDisplay/ContactDetailDisplay';
 export * from './ContactDetailInput/ContactDetailInput';
 export * from './ContactPointDisplay/ContactPointDisplay';
