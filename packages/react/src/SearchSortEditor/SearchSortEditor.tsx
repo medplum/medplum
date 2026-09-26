@@ -4,11 +4,10 @@ import { ActionIcon, Button, Indicator, Popover, Select, Tooltip, VisuallyHidden
 import type { SearchRequest, SortRule } from '@medplum/core';
 import { deepClone, getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
-import { IconArrowsSort, IconCirclePlus, IconX } from '@tabler/icons-react';
+import { IconArrowsSort, IconCirclePlus, IconRotate2, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useId, useMemo, useState } from 'react';
 import {
-  buildFieldNameString,
   buildSearchParamFieldLabel,
   DEFAULT_SORT_RULES,
   isMetaSearchParam,
@@ -57,8 +56,20 @@ function getDirectionLabels(searchParam: SearchParameter | undefined): { asc: st
 }
 
 /**
+ * Returns the rows the popover starts with: the search's sort rules, or the default sort when it has none.
+ * @param search - The search request.
+ * @param defaultRules - The default sort rules.
+ * @returns The initial sort rules.
+ */
+function getInitialRules(search: SearchRequest, defaultRules: readonly SortRule[]): SortRule[] {
+  return deepClone(search.sortRules?.length ? search.sortRules : [...defaultRules]);
+}
+
+/**
  * Popover-based sort builder for the {@link SearchControl} toolbar. Presents the sort rules as an
- * ordered list of `field + direction` rows that apply live as the user edits.
+ * ordered list of `field + direction` rows that apply live as the user edits. When there is a default
+ * sort, the list is never empty: the last row's remove button is disabled while it matches the
+ * default, and becomes a reset-to-default button once it differs.
  * @param props - The sort editor props.
  * @returns The sort editor React node.
  */
@@ -70,13 +81,13 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
   const defaultSortRules = props.defaultSortRules ?? DEFAULT_SORT_RULES;
 
   const [opened, setOpened] = useState(false);
-  const [rows, setRows] = useState<SortRow[]>(() => toRows(deepClone(search.sortRules ?? [])));
+  const [rows, setRows] = useState<SortRow[]>(() => toRows(getInitialRules(search, defaultSortRules)));
 
   const searchParams = useMemo(() => getSearchParameters(search.resourceType) ?? {}, [search.resourceType]);
 
   function toggle(): void {
     if (!opened) {
-      setRows(toRows(deepClone(search.sortRules ?? [])));
+      setRows(toRows(getInitialRules(search, defaultSortRules)));
     }
     setOpened((o) => !o);
   }
@@ -114,18 +125,21 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
     emit(rows.filter((_, i) => i !== index));
   }
 
+  function resetToDefault(): void {
+    emit(toRows(deepClone([...defaultSortRules])));
+  }
+
   function addRule(): void {
     setRows([...rows, ...toRows([{ code: '', descending: false }])]);
   }
 
   const activeCount = (search.sortRules ?? []).length;
   const showIndicator = !isDefaultSort(search.sortRules ?? [], defaultSortRules);
-  const defaultSortLabel = defaultSortRules
-    .map((rule) => {
-      const labels = getDirectionLabels(searchParams[rule.code]);
-      return `${buildFieldNameString(rule.code)} (${rule.descending ? labels.desc : labels.asc})`;
-    })
-    .join(', ');
+  const isLastRow = rows.length === 1 && defaultSortRules.length > 0;
+  const rowsAtDefault = isSameSort(
+    rows.map((row) => row.rule),
+    defaultSortRules
+  );
   const activeLabel = `${activeCount} ${activeCount === 1 ? 'Sort' : 'Sorts'} Applied`;
   const activeLabelId = useId();
 
@@ -162,11 +176,7 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
       {showIndicator && <VisuallyHidden id={activeLabelId}>{activeLabel}</VisuallyHidden>}
       <Popover.Dropdown className={classes.dropdown}>
         <div className={classes.body} tabIndex={-1} data-autofocus>
-          {rows.length === 0 && (
-            <div className={classes.empty}>
-              {defaultSortLabel ? `Default sort: ${defaultSortLabel}` : 'No sort applied'}
-            </div>
-          )}
+          {rows.length === 0 && <div className={classes.empty}>No sort applied</div>}
           {rows.map(({ id, rule }, index) => {
             const searchParam = rule.code ? searchParams[rule.code] : undefined;
             const labels = getDirectionLabels(searchParam);
@@ -200,16 +210,33 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
                   value={directionValue}
                   onChange={(dir) => updateRule(index, { code: rule.code, descending: dir === 'desc' })}
                 />
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  radius="xl"
-                  aria-label={`Remove sort ${index + 1}`}
-                  ml={2}
-                  onClick={() => deleteRule(index)}
-                >
-                  <IconX size={16} stroke={2} className={classes.deleteIcon} />
-                </ActionIcon>
+                {isLastRow && !rowsAtDefault ? (
+                  <Tooltip label="Reset to default" position="bottom" openDelay={500}>
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      radius="xl"
+                      aria-label="Reset sort to default"
+                      ml={2}
+                      onClick={resetToDefault}
+                    >
+                      <IconRotate2 size={16} stroke={2} className={classes.deleteIcon} />
+                    </ActionIcon>
+                  </Tooltip>
+                ) : (
+                  <ActionIcon
+                    className={classes.deleteButton}
+                    variant="subtle"
+                    color="gray"
+                    radius="xl"
+                    aria-label={`Remove sort ${index + 1}`}
+                    ml={2}
+                    disabled={isLastRow}
+                    onClick={() => deleteRule(index)}
+                  >
+                    <IconX size={16} stroke={2} className={classes.deleteIcon} />
+                  </ActionIcon>
+                )}
               </div>
             );
           })}

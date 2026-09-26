@@ -31,8 +31,40 @@ describe('SearchSortEditor', () => {
   test('Renders trigger and opens', async () => {
     await setup({ resourceType: 'Patient' });
     await openPopover();
-    expect(screen.getByText('Default sort: Last Updated (Newest → Oldest)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Sort 1 field', { selector: 'input' })).toHaveValue('Last Updated (meta)');
+    expect(screen.getByLabelText('Sort 1 direction', { selector: 'input' })).toHaveValue('Newest → Oldest');
+    expect(screen.getByLabelText('Remove sort 1')).toBeDisabled();
+    expect(screen.queryByLabelText('Reset sort to default')).toBeNull();
     expect(screen.getByText('Add Sort')).toBeInTheDocument();
+  });
+
+  test('A changed last row offers reset to default instead of remove', async () => {
+    const { onChange } = await setup({
+      resourceType: 'Patient',
+      sortRules: [{ code: 'birthdate', descending: false }],
+    });
+    await openPopover();
+    expect(screen.queryByLabelText('Remove sort 1')).toBeNull();
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Reset sort to default'));
+    });
+    expect((onChange.mock.calls.at(-1)?.[0] as SearchRequest).sortRules).toEqual([
+      { code: '_lastUpdated', descending: true },
+    ]);
+    expect(screen.getByLabelText('Sort 1 field', { selector: 'input' })).toHaveValue('Last Updated (meta)');
+    expect(screen.getByLabelText('Remove sort 1')).toBeDisabled();
+  });
+
+  test('Changing the default row turns its remove button into reset', async () => {
+    await setup({ resourceType: 'Patient' });
+    await openPopover();
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Sort 1 direction', { selector: 'input' }));
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Oldest → Newest'));
+    });
+    expect(screen.getByLabelText('Reset sort to default')).toBeInTheDocument();
   });
 
   test('Shows "No sort applied" when there is no default sort', async () => {
@@ -146,13 +178,17 @@ describe('SearchSortEditor', () => {
       fireEvent.click(screen.getByText('Add Sort'));
     });
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Sort 1 field', { selector: 'input' }));
+      fireEvent.click(screen.getByLabelText('Sort 2 field', { selector: 'input' }));
     });
     await act(async () => {
-      fireEvent.click(await screen.findByText('Birthdate'));
+      fireEvent.click((await screen.findAllByText('Birthdate')).at(-1) as HTMLElement);
     });
     const lastArg = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
-    expect(lastArg.sortRules).toMatchObject([{ code: 'birthdate', descending: false }]);
+    expect(lastArg.sortRules).toMatchObject([
+      { code: '_lastUpdated', descending: true },
+      { code: 'birthdate', descending: false },
+    ]);
+    expect(screen.getByLabelText('Remove sort 1')).toBeEnabled();
   });
 
   test('Changing direction emits descending', async () => {
@@ -174,14 +210,41 @@ describe('SearchSortEditor', () => {
   test('Delete removes the sort rule', async () => {
     const { onChange } = await setup({
       resourceType: 'Patient',
-      sortRules: [{ code: 'birthdate', descending: false }],
+      sortRules: [
+        { code: 'birthdate', descending: false },
+        { code: 'name', descending: false },
+      ],
+    });
+    await openPopover();
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Remove sort 2'));
+    });
+    const lastArg = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
+    expect(lastArg.sortRules).toEqual([{ code: 'birthdate', descending: false }]);
+  });
+
+  test('Without a default sort, the last rule can be removed', async () => {
+    await act(async () => {
+      await medplum.requestSchema('Patient');
+    });
+    const onChange = vi.fn();
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <SearchSortEditor
+            search={{ resourceType: 'Patient', sortRules: [{ code: 'birthdate', descending: false }] }}
+            onChange={onChange}
+            defaultSortRules={[]}
+          />
+        </MedplumProvider>
+      );
     });
     await openPopover();
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Remove sort 1'));
     });
-    const lastArg = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
-    expect(lastArg.sortRules ?? []).toHaveLength(0);
+    expect((onChange.mock.calls.at(-1)?.[0] as SearchRequest).sortRules).toEqual([]);
+    expect(screen.getByText('No sort applied')).toBeInTheDocument();
   });
 
   test('Deleting the first rule keeps the next row showing its own field', async () => {
