@@ -1046,6 +1046,56 @@ describe('SearchControl', () => {
     });
   });
 
+  describe('Default sort', () => {
+    const emptyBundle: Bundle = { resourceType: 'Bundle', type: 'searchset', total: 0, entry: [] };
+
+    function lastQuery(medplum: MockClient): string {
+      return (medplum.search as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[1] as string;
+    }
+
+    test('Sorts by Last Updated, newest first, when the search has no sort', async () => {
+      const medplum = new MockClient();
+      await setup({ search: { resourceType: 'Patient', fields: ['name'] } }, emptyBundle, medplum);
+      expect(lastQuery(medplum)).toContain('_sort=-_lastUpdated');
+    });
+
+    test('Uses a custom default sort', async () => {
+      const medplum = new MockClient();
+      await setup(
+        {
+          search: { resourceType: 'Patient', fields: ['name', 'birthDate'] },
+          defaultSortRules: [{ code: 'name' }, { code: 'birthdate', descending: true }],
+        },
+        emptyBundle,
+        medplum
+      );
+      expect(lastQuery(medplum)).toContain('_sort=name,-birthdate');
+      const headers = await screen.findAllByRole('columnheader');
+      expect(headers.find((h) => h.textContent?.includes('Name'))).toHaveAttribute('aria-sort', 'ascending');
+    });
+
+    test('An explicit sort overrides the default', async () => {
+      const medplum = new MockClient();
+      await setup(
+        { search: { resourceType: 'Patient', fields: ['name'], sortRules: [{ code: 'name', descending: true }] } },
+        emptyBundle,
+        medplum
+      );
+      expect(lastQuery(medplum)).toContain('_sort=-name');
+      expect(lastQuery(medplum)).not.toContain('_lastUpdated');
+    });
+
+    test('An empty default sends no sort', async () => {
+      const medplum = new MockClient();
+      await setup(
+        { search: { resourceType: 'Patient', fields: ['name'] }, defaultSortRules: [] },
+        emptyBundle,
+        medplum
+      );
+      expect(lastQuery(medplum)).not.toContain('_sort');
+    });
+  });
+
   test('Sorted column headers expose aria-sort', async () => {
     await setup({
       search: {

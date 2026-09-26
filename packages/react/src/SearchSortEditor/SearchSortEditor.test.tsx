@@ -31,8 +31,42 @@ describe('SearchSortEditor', () => {
   test('Renders trigger and opens', async () => {
     await setup({ resourceType: 'Patient' });
     await openPopover();
-    expect(screen.getByText('No sort applied')).toBeInTheDocument();
+    expect(screen.getByText('Default sort: Last Updated (Newest → Oldest)')).toBeInTheDocument();
     expect(screen.getByText('Add Sort')).toBeInTheDocument();
+  });
+
+  test('Shows "No sort applied" when there is no default sort', async () => {
+    await act(async () => {
+      await medplum.requestSchema('Patient');
+    });
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <SearchSortEditor search={{ resourceType: 'Patient' }} onChange={vi.fn()} defaultSortRules={[]} />
+        </MedplumProvider>
+      );
+    });
+    await openPopover();
+    expect(screen.getByText('No sort applied')).toBeInTheDocument();
+  });
+
+  test('Treats a custom default sort as the default', async () => {
+    await act(async () => {
+      await medplum.requestSchema('Patient');
+    });
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <SearchSortEditor
+            search={{ resourceType: 'Patient', sortRules: [{ code: 'name', descending: false }] }}
+            onChange={vi.fn()}
+            defaultSortRules={[{ code: 'name' }]}
+          />
+        </MedplumProvider>
+      );
+    });
+    expect(document.querySelector('.mantine-Indicator-indicator')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Sort' })).not.toHaveAttribute('aria-describedby');
   });
 
   test('Hides the indicator dot for no sort and the default (Last Updated, newest first)', async () => {

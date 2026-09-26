@@ -14,10 +14,10 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
-import type { SearchRequest } from '@medplum/core';
+import type { SearchRequest, SortRule } from '@medplum/core';
 import {
-  DEFAULT_SEARCH_COUNT,
   deepEquals,
+  DEFAULT_SEARCH_COUNT,
   formatSearchQuery,
   isDataTypeLoaded,
   normalizeOperationOutcome,
@@ -50,7 +50,7 @@ import type { ResourceContextMenuTarget, SearchControlContextMenuOptions } from 
 import { ReferenceContextMenuContext, useResourceContextMenuController } from './ResourceContextMenu';
 import classes from './SearchControl.module.css';
 import { getFieldDefinitions } from './SearchControlField';
-import { buildFieldNameString, renderValue, setPage } from './SearchUtils';
+import { buildFieldNameString, DEFAULT_SORT_RULES, renderValue, setPage } from './SearchUtils';
 
 import type { SearchControlMenuAction, SearchControlToolbarAction } from './SearchControlActions';
 import { SearchControlMenuActionItem, SearchControlToolbarActionButton } from './SearchControlActions';
@@ -117,6 +117,11 @@ export interface SearchControlDeleteConfirmation {
 
 export interface SearchControlProps {
   readonly search: SearchRequest;
+  /**
+   * Sort applied when `search` has no sort rules, so results always come back in a stable order.
+   * Defaults to Last Updated, newest first. Pass an empty array for no default sort.
+   */
+  readonly defaultSortRules?: readonly SortRule[];
   readonly checkboxesEnabled?: boolean;
   /** Additional computed columns rendered after the search-result columns. */
   readonly additionalColumns?: readonly SearchControlAdditionalColumn[];
@@ -207,11 +212,16 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { search, onLoad } = props;
+  const defaultSortRules = props.defaultSortRules ?? DEFAULT_SORT_RULES;
+  const sortedSearch =
+    search.sortRules?.length || defaultSortRules.length === 0
+      ? search
+      : { ...search, sortRules: [...defaultSortRules] };
 
-  const [memoizedSearch, setMemoizedSearch] = useState(search);
+  const [memoizedSearch, setMemoizedSearch] = useState(sortedSearch);
 
-  if (!deepEquals(search, memoizedSearch)) {
-    setMemoizedSearch(search);
+  if (!deepEquals(sortedSearch, memoizedSearch)) {
+    setMemoizedSearch(sortedSearch);
   }
 
   const [state, setState] = useState<SearchControlState>({
@@ -554,6 +564,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 />
                 <SearchSortEditor
                   search={memoizedSearch}
+                  defaultSortRules={defaultSortRules}
                   onChange={emitSearchChange}
                   buttonVariant={buttonVariant}
                   buttonColor={buttonColor}

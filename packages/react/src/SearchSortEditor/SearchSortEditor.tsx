@@ -7,7 +7,13 @@ import type { SearchParameter } from '@medplum/fhirtypes';
 import { IconArrowsSort, IconCirclePlus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useId, useMemo, useState } from 'react';
-import { buildSearchParamFieldLabel, isMetaSearchParam } from '../SearchControl/SearchUtils';
+import {
+  buildFieldNameString,
+  buildSearchParamFieldLabel,
+  DEFAULT_SORT_RULES,
+  isMetaSearchParam,
+  isSameSort,
+} from '../SearchControl/SearchUtils';
 import classes from './SearchSortEditor.module.css';
 
 export interface SearchSortEditorProps {
@@ -17,19 +23,19 @@ export interface SearchSortEditorProps {
   readonly buttonColor?: string;
   readonly buttonClassName?: string;
   readonly iconSize?: number;
+  /** The sort applied when there are no sort rules; hides the indicator while it's active. */
+  readonly defaultSortRules?: readonly SortRule[];
 }
 
-/** The table's implicit default order (newest first) that the Sort indicator should not flag. */
-const DEFAULT_SORT_CODE = '_lastUpdated';
-
 /**
- * Returns true when the sort is the table default — no rules, or the single implicit
- * "Last Updated, newest first" rule — so the Sort button shows no active-sort indicator.
+ * Returns true when the sort is the table default (no rules, or exactly the default rules), so the
+ * Sort button shows no active-sort indicator.
  * @param rules - The current sort rules.
+ * @param defaultRules - The default sort rules.
  * @returns True if the sort matches the default order.
  */
-function isDefaultSort(rules: readonly SortRule[]): boolean {
-  return rules.length === 0 || (rules.length === 1 && rules[0].code === DEFAULT_SORT_CODE && !!rules[0].descending);
+function isDefaultSort(rules: readonly SortRule[], defaultRules: readonly SortRule[]): boolean {
+  return rules.length === 0 || isSameSort(rules, defaultRules);
 }
 
 /**
@@ -61,6 +67,7 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
   const buttonVariant = props.buttonVariant ?? 'subtle';
   const buttonColor = props.buttonColor ?? 'gray';
   const iconSize = props.iconSize ?? 16;
+  const defaultSortRules = props.defaultSortRules ?? DEFAULT_SORT_RULES;
 
   const [opened, setOpened] = useState(false);
   const [rows, setRows] = useState<SortRow[]>(() => toRows(deepClone(search.sortRules ?? [])));
@@ -112,7 +119,13 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
   }
 
   const activeCount = (search.sortRules ?? []).length;
-  const showIndicator = !isDefaultSort(search.sortRules ?? []);
+  const showIndicator = !isDefaultSort(search.sortRules ?? [], defaultSortRules);
+  const defaultSortLabel = defaultSortRules
+    .map((rule) => {
+      const labels = getDirectionLabels(searchParams[rule.code]);
+      return `${buildFieldNameString(rule.code)} (${rule.descending ? labels.desc : labels.asc})`;
+    })
+    .join(', ');
   const activeLabel = `${activeCount} ${activeCount === 1 ? 'Sort' : 'Sorts'} Applied`;
   const activeLabelId = useId();
 
@@ -149,7 +162,11 @@ export function SearchSortEditor(props: SearchSortEditorProps): JSX.Element {
       {showIndicator && <VisuallyHidden id={activeLabelId}>{activeLabel}</VisuallyHidden>}
       <Popover.Dropdown className={classes.dropdown}>
         <div className={classes.body} tabIndex={-1} data-autofocus>
-          {rows.length === 0 && <div className={classes.empty}>No sort applied</div>}
+          {rows.length === 0 && (
+            <div className={classes.empty}>
+              {defaultSortLabel ? `Default sort: ${defaultSortLabel}` : 'No sort applied'}
+            </div>
+          )}
           {rows.map(({ id, rule }, index) => {
             const searchParam = rule.code ? searchParams[rule.code] : undefined;
             const labels = getDirectionLabels(searchParam);

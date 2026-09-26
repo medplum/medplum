@@ -72,6 +72,7 @@ describe('SubscriptionsPage', () => {
     });
 
     // click on a subscription
+    await screen.findByText(`${subscription.id}`);
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Last Updated' }));
     });

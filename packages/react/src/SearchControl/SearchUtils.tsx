@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Text } from '@mantine/core';
-import type { Filter, InternalSchemaElement, SearchRequest } from '@medplum/core';
+import type { Filter, InternalSchemaElement, SearchRequest, SortRule } from '@medplum/core';
 import {
   capitalize,
   DEFAULT_SEARCH_COUNT,
@@ -449,6 +449,21 @@ export function toggleSort(definition: SearchRequest, key: string): SearchReques
     desc = !isSortDescending(definition);
   }
   return setSort(definition, key, desc);
+}
+
+/** The sort {@link SearchControl} applies when a search has no sort rules: Last Updated, newest first. */
+export const DEFAULT_SORT_RULES: readonly SortRule[] = [{ code: '_lastUpdated', descending: true }];
+
+/**
+ * Returns true when two lists of sort rules sort the same way. A missing `descending` counts as ascending.
+ * @param a - The first sort rules.
+ * @param b - The second sort rules.
+ * @returns True if both lists have the same codes and directions in the same order.
+ */
+export function isSameSort(a: readonly SortRule[], b: readonly SortRule[]): boolean {
+  return (
+    a.length === b.length && a.every((rule, i) => rule.code === b[i].code && !!rule.descending === !!b[i].descending)
+  );
 }
 
 export function getSortField(definition: SearchRequest): string | undefined {
