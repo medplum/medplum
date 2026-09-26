@@ -1391,7 +1391,7 @@ describe('OAuth2 Token', () => {
     // 2) Get tokens with grant_type=authorization_code
     // 3) Get tokens with grant_type=refresh_token
     // 4) Get tokens again with grant_type=refresh_token
-    // 5) Verify that the first refresh token is invalid
+    // 5) Verify that replaying the first refresh token is rejected and revokes the login
 
     // 1) Authorize
     const res = await request(app).post('/auth/login').type('json').send({
@@ -1444,13 +1444,13 @@ describe('OAuth2 Token', () => {
     expect(res4.body.access_token).toBeDefined();
     expect(res4.body.refresh_token).toBeDefined();
 
-    // 5) Verify that the first refresh token is invalid
+    // 5) Verify that the first refresh token is invalid, and that replaying it revokes the login
     const res5 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'refresh_token',
       refresh_token: res2.body.refresh_token,
     });
     expect(res5).toHaveStatus(400);
-    expect(res5.body).toMatchObject({ error: 'invalid_request', error_description: 'Invalid token' });
+    expect(res5.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
   });
 
   test('accessTokenLifetime -- Valid duration', async () => {
