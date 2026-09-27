@@ -4,6 +4,9 @@ on:
 
 name: "Vouch - Check PR"
 
+permissions:
+  contents: read
+
 jobs:
   check:
     permissions:

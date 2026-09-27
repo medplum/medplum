@@ -9,6 +9,9 @@ on:
 
 name: 'Vouch - Sync CODEOWNERS'
 
+permissions:
+  contents: read
+
 concurrency:
   group: vouch-manage
   cancel-in-progress: false
