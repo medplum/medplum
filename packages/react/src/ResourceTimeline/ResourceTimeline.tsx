@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Button, Group, ScrollArea, TextInput } from '@mantine/core';
-import { showNotification, updateNotification } from '@mantine/notifications';
 import type { MedplumClient, ProfileResource } from '@medplum/core';
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type {
   Attachment,
   AuditEvent,
@@ -11,13 +10,12 @@ import type {
   Communication,
   DiagnosticReport,
   Media,
-  OperationOutcome,
   Reference,
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { IconCheck, IconCloudUpload, IconFileAlert, IconMessage } from '@tabler/icons-react';
+import { IconCloudUpload, IconMessage } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
@@ -67,21 +65,6 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     itemsRef.current = items;
   });
 
-  /**
-   * Sorts and sets the items.
-   *
-   * Sorting is primarily a function of meta.lastUpdated, but there are special cases.
-   * When displaying connected resources, for example a Communication in the context of an Encounter,
-   * the Communication.sent time is used rather than Communication.meta.lastUpdated.
-   *
-   * Other examples of special cases:
-   * - DiagnosticReport.issued
-   * - Media.issued
-   * - Observation.issued
-   * - DocumentReference.date
-   *
-   * See "sortByDateAndPriority()" for more details.
-   */
   const sortAndSetItems = useCallback(
     (newItems: Resource[]): void => {
       sortByDateAndPriority(newItems, resource);
@@ -91,17 +74,12 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     [resource]
   );
 
-  /**
-   * Handles a batch request response.
-   * @param batchResponse - The batch response.
-   */
   const handleBatchResponse = useCallback(
     (batchResponse: PromiseSettledResult<Bundle>[]): void => {
       const newItems: Resource[] = [];
 
       for (const settledResult of batchResponse) {
         if (settledResult.status !== 'fulfilled') {
-          // User may not have access to all resource types
           continue;
         }
 
@@ -123,18 +101,11 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     [sortAndSetItems]
   );
 
-  /**
-   * Adds an array of resources to the timeline.
-   * @param resource - Resource to add.
-   */
   const addResource = useCallback(
     (resource: Resource): void => sortAndSetItems([...itemsRef.current, resource]),
     [sortAndSetItems]
   );
 
-  /**
-   * Loads the timeline.
-   */
   const loadTimeline = useCallback(() => {
     let resourceType: ResourceType;
     let id: string;
@@ -154,13 +125,8 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
   useEffect(() => loadTimeline(), [loadTimeline]);
 
-  /**
-   * Adds a Communication resource to the timeline.
-   * @param contentString - The comment content.
-   */
   function createComment(contentString: string): void {
     if (!resource || !props.createCommunication) {
-      // Encounter not loaded yet
       return;
     }
     medplum
@@ -169,71 +135,14 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       .catch(console.error);
   }
 
-  /**
-   * Adds a Media resource to the timeline.
-   * @param attachment - The media attachment.
-   */
   function createMedia(attachment: Attachment): void {
     if (!resource || !props.createMedia) {
-      // Encounter not loaded yet
       return;
     }
     medplum
       .createResource(props.createMedia(resource, sender, attachment))
       .then((result) => addResource(result))
-      .then(() =>
-        updateNotification({
-          id: 'upload-notification',
-          color: 'teal',
-          title: 'Upload complete',
-          message: '',
-          icon: <IconCheck size={16} />,
-          autoClose: 2000,
-        })
-      )
-      .catch((reason) =>
-        updateNotification({
-          id: 'upload-notification',
-          color: 'red',
-          title: 'Upload error',
-          message: normalizeErrorString(reason),
-          icon: <IconFileAlert size={16} />,
-          autoClose: 2000,
-        })
-      );
-  }
-
-  function onUploadStart(): void {
-    showNotification({
-      id: 'upload-notification',
-      loading: true,
-      title: 'Initializing upload...',
-      message: 'Please wait...',
-      autoClose: false,
-      withCloseButton: false,
-    });
-  }
-
-  function onUploadProgress(e: ProgressEvent): void {
-    updateNotification({
-      id: 'upload-notification',
-      loading: true,
-      title: 'Uploading...',
-      message: getProgressMessage(e),
-      autoClose: false,
-      withCloseButton: false,
-    });
-  }
-
-  function onUploadError(outcome: OperationOutcome): void {
-    updateNotification({
-      id: 'upload-notification',
-      color: 'red',
-      title: 'Upload error',
-      message: normalizeErrorString(outcome),
-      icon: <IconFileAlert size={16} />,
-      autoClose: 2000,
-    });
+      .catch(console.error);
   }
 
   if (!resource) {
@@ -244,7 +153,6 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     );
   }
 
-  // TODO: Handle null history items for deleted versions.
   const itemsToShow = items.filter((item) => item).slice(0, countToShow);
 
   return (
@@ -274,13 +182,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
               <ActionIcon type="submit" radius="xl" color="blue" variant="filled">
                 <IconMessage size={16} />
               </ActionIcon>
-              <AttachmentButton
-                securityContext={createReference(resource)}
-                onUpload={createMedia}
-                onUploadStart={onUploadStart}
-                onUploadProgress={onUploadProgress}
-                onUploadError={onUploadError}
-              >
+              <AttachmentButton securityContext={createReference(resource)} onUpload={createMedia}>
                 {(props) => (
                   <ActionIcon {...props} radius="xl" color="blue" variant="filled">
                     <IconCloudUpload size={16} />
@@ -366,7 +268,6 @@ function HistoryTimelineItem(props: HistoryTimelineItemProps): JSX.Element {
 function getPrevious(history: Bundle, version: Resource): Resource | undefined {
   const entries = history.entry ?? [];
   const index = entries.findIndex((entry) => entry.resource?.meta?.versionId === version.meta?.versionId);
-  // If not found index is -1, -1 === 0 - 1 so this returns undefined
   if (index >= entries.length - 1) {
     return undefined;
   }
@@ -420,20 +321,4 @@ function DiagnosticReportTimelineItem(props: TimelineItemProps<DiagnosticReport>
       <DiagnosticReportDisplay value={props.resource} />
     </TimelineItem>
   );
-}
-
-function getProgressMessage(e: ProgressEvent): string {
-  if (e.lengthComputable) {
-    const percent = (100 * e.loaded) / e.total;
-    return `Uploaded: ${formatFileSize(e.loaded)} / ${formatFileSize(e.total)} ${percent.toFixed(2)}%`;
-  }
-  return `Uploaded: ${formatFileSize(e.loaded)}`;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) {
-    return '0.00 B';
-  }
-  const e = Math.floor(Math.log(bytes) / Math.log(1024));
-  return (bytes / Math.pow(1024, e)).toFixed(2) + ' ' + ' KMGTP'.charAt(e) + 'B';
 }
