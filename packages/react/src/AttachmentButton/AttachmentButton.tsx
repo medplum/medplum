@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { normalizeOperationOutcome } from '@medplum/core';
+import { showNotification, updateNotification } from '@mantine/notifications';
+import { generateId, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import type { Attachment, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import { IconCheck, IconFileAlert } from '@tabler/icons-react';
 import type { ChangeEvent, JSX, MouseEvent, ReactNode } from 'react';
 import { useRef } from 'react';
 import { killEvent } from '../utils/dom';
@@ -32,6 +34,9 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
     if (files) {
       Array.from(files).forEach(processFile);
     }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   }
 
   /**
@@ -48,6 +53,17 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
       return;
     }
 
+    const notificationId = `upload-${generateId()}`;
+
+    showNotification({
+      id: notificationId,
+      loading: true,
+      title: 'Initializing upload...',
+      message: 'Please wait...',
+      autoClose: false,
+      withCloseButton: false,
+    });
+
     if (props.onUploadStart) {
       props.onUploadStart();
     }
@@ -58,12 +74,47 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
         contentType: file.type || 'application/octet-stream',
         filename: file.name,
         securityContext: props.securityContext,
-        onProgress: props.onUploadProgress,
+        onProgress: (e: ProgressEvent) => {
+          updateNotification({
+            id: notificationId,
+            loading: true,
+            title: 'Uploading...',
+            message: getProgressMessage(e),
+            autoClose: false,
+            withCloseButton: false,
+          });
+
+          if (props.onUploadProgress) {
+            props.onUploadProgress(e);
+          }
+        },
       })
-      .then((attachment: Attachment) => props.onUpload(attachment))
+      .then((attachment: Attachment) => {
+        props.onUpload(attachment);
+
+        updateNotification({
+          id: notificationId,
+          color: 'teal',
+          title: 'Upload complete',
+          message: '',
+          icon: <IconCheck size={16} />,
+          autoClose: 2000,
+        });
+      })
       .catch((err) => {
+        const outcome = normalizeOperationOutcome(err);
+
+        updateNotification({
+          id: notificationId,
+          color: 'red',
+          title: 'Upload error',
+          message: normalizeErrorString(outcome),
+          icon: <IconFileAlert size={16} />,
+          autoClose: 2000,
+        });
+
         if (props.onUploadError) {
-          props.onUploadError(normalizeOperationOutcome(err));
+          props.onUploadError(outcome);
         }
       });
   }
@@ -82,4 +133,20 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
       {props.children({ onClick, disabled: props.disabled })}
     </>
   );
+}
+
+function getProgressMessage(e: ProgressEvent): string {
+  if (e.lengthComputable) {
+    const percent = (100 * e.loaded) / e.total;
+    return `Uploaded: ${formatFileSize(e.loaded)} / ${formatFileSize(e.total)} ${percent.toFixed(2)}%`;
+  }
+  return `Uploaded: ${formatFileSize(e.loaded)}`;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) {
+    return '0.00 B';
+  }
+  const e = Math.floor(Math.log(bytes) / Math.log(1024));
+  return (bytes / Math.pow(1024, e)).toFixed(2) + ' ' + ' KMGTP'.charAt(e) + 'B';
 }
