@@ -138,7 +138,12 @@ export function cmsPatientMatch(p1: Patient, p2: Patient, options?: CmsPatientMa
     setCriteria('21', legalId, mbi);
   } else if (ex(namespaceId)) {
     setCriteria('22', namespaceId);
-  } else if (starred(firstName, lastName) && ex(phone) && ex(zip) && !(fields1.dob.size && fields2.dob.size)) {
+  } else if (
+    starred(firstName, lastName) &&
+    ex(phone) &&
+    ex(zip) &&
+    !(dob === 'none' && fields1.dob.size && fields2.dob.size)
+  ) {
     // Rule 29 has no DOB to separate a parent and child sharing a name, phone, and ZIP (§IV.D.5),
     // so it does not apply when both DOBs are known and disagree.
     setCriteria('29', firstName, lastName, phone, zip);

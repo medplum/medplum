@@ -237,6 +237,12 @@ describe('CMS Patient Match Utils', () => {
     expect(
       cmsPatientMatch(patient({ ...base, dob: '1950-03-04' }), patient({ ...base, dob: '1980-07-08' })).criteriaId
     ).toBeUndefined();
+    expect(
+      cmsPatientMatch(
+        patient({ ...base, dob: '1950-03-04' }),
+        patient({ ...base, firstName: 'Robret', dob: '1950-03-05' })
+      ).criteriaId
+    ).toBe('29');
   });
 
   test('requires an exact First Name when exactFirstName is set', () => {

@@ -47,7 +47,7 @@ Returns a ranked, graded list from the gathered candidate set for human review o
 
 Applies a **uniqueness gate**: the operation returns a patient **only if exactly one** candidate is a `certain` match (i.e. satisfies an approved CMS combination). If no candidate qualifies, if **two or more** distinct candidates qualify (an ambiguous result), or if candidate search is truncated such that uniqueness cannot be proven, the bundle is empty. This is the conservative behavior appropriate for releasing records in cross-organization exchange, where a wrong-patient disclosure is a critical error.
 
-**Twin guardrail:** if more than one gathered candidate has exactly the same date of birth as the query, First Name must match exactly for every candidate. This prevents a one-edit fuzzy match from conflating twins with similar names, such as `Jayden` and `Jaden`.
+**Twin guardrail:** if more than one gathered candidate has the query's date of birth (within ±1 day, since twins can be born either side of midnight), First Name must match exactly for every candidate. This prevents a one-edit fuzzy match from conflating twins with similar names, such as `Jayden` and `Jaden`.
 
 ## Output
 

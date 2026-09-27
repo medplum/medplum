@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { Filter, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -108,9 +108,11 @@ export async function matchPatients(
   const maxCount = params.count ?? DEFAULT_SEARCH_COUNT;
   const { candidates, truncated } = await gatherCandidates(repo, input);
   let scored = candidates.map((candidate) => scoreCandidate(candidate, input));
-  if (scored.filter((s) => s.result.fieldMatches.dob === 'exact').length > 1) {
-    // Twin guardrail (§C.7.1): when more than one candidate shares the query's DOB,
-    // First Name must match exactly.
+  if (scored.filter((s) => s.result.fieldMatches.dob !== 'none').length > 1) {
+    // Twin guardrail (§C.7.1): when more than one candidate shares the query's DOB (within the
+    // ±1 day tolerance, since twins can be born either side of midnight), First Name must match
+    // exactly. Applied to every candidate: one without a matching DOB can't satisfy a fuzzy First
+    // Name rule except rule 29 with a missing DOB.
     scored = candidates.map((candidate) => scoreCandidate(candidate, input, { exactFirstName: true }));
   }
   const relevant = scored.filter((s) => s.grade !== 'certainly-not');
@@ -179,12 +181,8 @@ async function gatherCandidates(
     }
 
     // Strategy 3: search by name + birthdate, within the ±1 day DOB tolerance.
-    const dobRange = getBirthDateRange(input.birthDate);
-    if (dobRange) {
-      const dobFilters = [
-        { code: 'birthdate', operator: Operator.GREATER_THAN_OR_EQUALS, value: dobRange[0] },
-        { code: 'birthdate', operator: Operator.LESS_THAN_OR_EQUALS, value: dobRange[1] },
-      ];
+    const dobFilters = getBirthDateFilters(input.birthDate);
+    if (dobFilters) {
       const family = getFamilyName(input);
       const given = getGivenNames(input)[0];
       if (family) {
@@ -326,13 +324,28 @@ function getUniquenessResult(
   return 'none';
 }
 
-function getBirthDateRange(birthDate: string | undefined): [string, string] | undefined {
-  const time = birthDate?.length === 10 ? Date.parse(birthDate) : Number.NaN;
-  if (Number.isNaN(time)) {
+function getBirthDateFilters(birthDate: string | undefined): Filter[] | undefined {
+  if (!birthDate) {
     return undefined;
   }
+  const time = birthDate.length === 10 ? Date.parse(birthDate) : Number.NaN;
+  if (Number.isNaN(time)) {
+    // Partial dates can't satisfy a DOB rule, but still find discovery candidates
+    return [{ code: 'birthdate', operator: Operator.EQUALS, value: birthDate }];
+  }
   const oneDay = 24 * 60 * 60 * 1000;
-  return [new Date(time - oneDay).toISOString().slice(0, 10), new Date(time + oneDay).toISOString().slice(0, 10)];
+  return [
+    {
+      code: 'birthdate',
+      operator: Operator.GREATER_THAN_OR_EQUALS,
+      value: new Date(time - oneDay).toISOString().slice(0, 10),
+    },
+    {
+      code: 'birthdate',
+      operator: Operator.LESS_THAN_OR_EQUALS,
+      value: new Date(time + oneDay).toISOString().slice(0, 10),
+    },
+  ];
 }
 
 function getFamilyName(patient: Patient): string | undefined {
