@@ -65,6 +65,21 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     itemsRef.current = items;
   });
 
+  /**
+   * Sorts and sets the items.
+   *
+   * Sorting is primarily a function of meta.lastUpdated, but there are special cases.
+   * When displaying connected resources, for example a Communication in the context of an Encounter,
+   * the Communication.sent time is used rather than Communication.meta.lastUpdated.
+   *
+   * Other examples of special cases:
+   * - DiagnosticReport.issued
+   * - Media.issued
+   * - Observation.issued
+   * - DocumentReference.date
+   *
+   * See "sortByDateAndPriority()" for more details.
+   */
   const sortAndSetItems = useCallback(
     (newItems: Resource[]): void => {
       sortByDateAndPriority(newItems, resource);
@@ -74,12 +89,17 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     [resource]
   );
 
+  /**
+   * Handles a batch request response.
+   * @param batchResponse - The batch response.
+   */
   const handleBatchResponse = useCallback(
     (batchResponse: PromiseSettledResult<Bundle>[]): void => {
       const newItems: Resource[] = [];
 
       for (const settledResult of batchResponse) {
         if (settledResult.status !== 'fulfilled') {
+          // User may not have access to all resource types
           continue;
         }
 
@@ -101,11 +121,18 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     [sortAndSetItems]
   );
 
+  /**
+   * Adds an array of resources to the timeline.
+   * @param resource - Resource to add.
+   */
   const addResource = useCallback(
     (resource: Resource): void => sortAndSetItems([...itemsRef.current, resource]),
     [sortAndSetItems]
   );
 
+  /**
+   * Loads the timeline.
+   */
   const loadTimeline = useCallback(() => {
     let resourceType: ResourceType;
     let id: string;
@@ -125,8 +152,13 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
   useEffect(() => loadTimeline(), [loadTimeline]);
 
+  /**
+   * Adds a Communication resource to the timeline.
+   * @param contentString - The comment content.
+   */
   function createComment(contentString: string): void {
     if (!resource || !props.createCommunication) {
+      // Encounter not loaded yet
       return;
     }
     medplum
@@ -135,8 +167,13 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       .catch(console.error);
   }
 
+  /**
+   * Adds a Media resource to the timeline.
+   * @param attachment - The media attachment.
+   */
   function createMedia(attachment: Attachment): void {
     if (!resource || !props.createMedia) {
+      // Encounter not loaded yet
       return;
     }
     medplum
@@ -153,6 +190,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     );
   }
 
+  // TODO: Handle null history items for deleted versions.
   const itemsToShow = items.filter((item) => item).slice(0, countToShow);
 
   return (
@@ -268,6 +306,7 @@ function HistoryTimelineItem(props: HistoryTimelineItemProps): JSX.Element {
 function getPrevious(history: Bundle, version: Resource): Resource | undefined {
   const entries = history.entry ?? [];
   const index = entries.findIndex((entry) => entry.resource?.meta?.versionId === version.meta?.versionId);
+  // If not found index is -1, -1 === 0 - 1 so this returns undefined
   if (index >= entries.length - 1) {
     return undefined;
   }
