@@ -155,7 +155,6 @@ describe('AttachmentButton', () => {
       });
     });
 
-    // The value should be cleared to allow uploading the same file again
     expect(input.value).toBe('');
   });
 
