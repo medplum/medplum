@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Filter, ProfileResource, SearchRequest, TypedValue, WithId } from '@medplum/core';
+import type { ProfileResource, TypedValue, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -421,16 +421,11 @@ async function readCanonical<T extends Questionnaire | ActivityDefinition | Plan
     return undefined;
   }
 
-  const search: SearchRequest<T> = {
+  const definitions = await repo.searchResources<T>({
     resourceType: 'ActivityDefinition',
     types: ['ActivityDefinition', 'PlanDefinition', 'Questionnaire'],
+    filters: [{ code: 'url', operator: Operator.EQUALS, value: canonical }],
     sortRules: [{ code: '_lastUpdated', descending: true }],
-  };
-  const urlFilter: Filter = { code: 'url', operator: Operator.EQUALS, value: canonical };
-
-  const active = await repo.searchOne<T>({
-    ...search,
-    filters: [urlFilter, { code: 'status', operator: Operator.EQUALS, value: 'active' }],
   });
-  return active ?? repo.searchOne<T>({ ...search, filters: [urlFilter] });
+  return definitions.find((definition) => definition.status === 'active') ?? definitions[0];
 }
