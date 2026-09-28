@@ -8,7 +8,7 @@ import {
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
 } from '@medplum/core';
-import type { Coding, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import type { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { valueSetElementToCoding } from '@medplum/react';
 
 // Built from the core system constants rather than written out, so the `http` a terminology uri
@@ -25,8 +25,8 @@ export const DEFAULT_DIAGNOSIS_VALUE_SET = `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm/v
  * can be asked for.
  */
 export interface BookingRequirementValues {
-  readonly procedure: readonly Coding[];
-  readonly diagnosis: readonly Coding[];
+  readonly procedure: readonly CodeableConcept[];
+  readonly diagnosis: readonly CodeableConcept[];
   readonly medicalNecessity: boolean;
 }
 
@@ -67,10 +67,42 @@ export function hasRequiredValues(
 }
 
 /**
- * Reads the codes a field is holding into a list of codings.
- * @param elements - What the field is holding.
- * @returns The codings to record, dropping anything that never became a code.
+ * The option a code field shows a concept as: its first coding, or its text when it has none.
+ * @param concept - The concept to show.
+ * @returns The option standing for it.
  */
-export function toCodings(elements: readonly ValueSetExpansionContains[]): Coding[] {
-  return elements.map((element) => valueSetElementToCoding(element)).filter((coding) => !!coding.code);
+export function toExpansionContains(concept: CodeableConcept): ValueSetExpansionContains {
+  const coding = concept.coding?.[0];
+  return { system: coding?.system, code: coding?.code, display: coding?.display ?? concept.text };
+}
+
+/**
+ * Reads the options a code field is holding back into concepts.
+ *
+ * An option standing for a concept the field already held keeps that concept whole, so codings
+ * and text the field doesn't show survive the edit.
+ *
+ * @param elements - What the field is holding.
+ * @param held - The concepts the field held before this change.
+ * @returns The concepts to record, dropping anything that never became a code.
+ */
+export function toConcepts(
+  elements: readonly ValueSetExpansionContains[],
+  held: readonly CodeableConcept[]
+): CodeableConcept[] {
+  return elements.flatMap((element) => {
+    const concept = held.find((candidate) => sameOption(toExpansionContains(candidate), element));
+    if (concept) {
+      return [concept];
+    }
+    const coding = valueSetElementToCoding(element);
+    return coding.code ? [{ coding: [coding] }] : [];
+  });
+}
+
+function sameOption(a: ValueSetExpansionContains, b: ValueSetExpansionContains): boolean {
+  if (a.code === undefined || b.code === undefined) {
+    return a.code === b.code && a.display === b.display;
+  }
+  return a.system === b.system && a.code === b.code;
 }

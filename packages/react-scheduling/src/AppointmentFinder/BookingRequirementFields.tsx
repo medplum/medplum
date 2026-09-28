@@ -3,14 +3,14 @@
 import { Checkbox, Group, Pill, Text } from '@mantine/core';
 import type { SchedulingRequirement } from '@medplum/core';
 import { REQUIRES_DIAGNOSIS_CODE, REQUIRES_MEDICAL_NECESSITY_CODE, REQUIRES_PROCEDURE_CODE } from '@medplum/core';
-import type { Coding, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { ValueSetAutocomplete } from '@medplum/react';
 import { IconCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import classes from './AppointmentFinder.module.css';
 import type { BookingRequirementValues } from './AppointmentFinder.requirements';
-import { toCodings } from './AppointmentFinder.requirements';
+import { toConcepts, toExpansionContains } from './AppointmentFinder.requirements';
 
 export interface BookingRequirementFieldsProps {
   /** From the visit type's eligibility codes. A field is shown only for a requirement listed here. */
@@ -45,7 +45,7 @@ export function BookingRequirementFields(props: BookingRequirementFieldsProps): 
           pillComponent={RequirementCodePill}
           binding={procedureBinding}
           defaultValue={values.procedure.map(toExpansionContains)}
-          onChange={(elements) => onChange({ ...values, procedure: toCodings(elements) })}
+          onChange={(elements) => onChange({ ...values, procedure: toConcepts(elements, values.procedure) })}
         />
       )}
       {requirements.has(REQUIRES_DIAGNOSIS_CODE) && (
@@ -58,7 +58,7 @@ export function BookingRequirementFields(props: BookingRequirementFieldsProps): 
           pillComponent={RequirementCodePill}
           binding={diagnosisBinding}
           defaultValue={values.diagnosis.map(toExpansionContains)}
-          onChange={(elements) => onChange({ ...values, diagnosis: toCodings(elements) })}
+          onChange={(elements) => onChange({ ...values, diagnosis: toConcepts(elements, values.diagnosis) })}
         />
       )}
       {requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE) && (
@@ -73,10 +73,6 @@ export function BookingRequirementFields(props: BookingRequirementFieldsProps): 
       )}
     </>
   );
-}
-
-function toExpansionContains(coding: Coding): ValueSetExpansionContains {
-  return { system: coding.system, code: coding.code, display: coding.display };
 }
 
 /**
