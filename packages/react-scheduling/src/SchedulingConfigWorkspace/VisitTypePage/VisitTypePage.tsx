@@ -336,10 +336,7 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
         )}
       </ConfigSection>
 
-      <ConfigSection
-        title="Offered by"
-        description="The providers, rooms, and devices whose calendars offer this visit type. Pick one to change what it offers."
-      >
+      <ConfigSection title="Offered by">
         <OfferedBySection
           service={service}
           serviceName={serviceName}
