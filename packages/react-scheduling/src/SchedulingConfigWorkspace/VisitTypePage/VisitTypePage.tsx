@@ -272,14 +272,6 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
       )}
 
       <ConfigSection title="General">
-        <TextInput
-          label="Name"
-          required
-          value={fields.name}
-          onChange={(event) => update({ name: event.currentTarget.value })}
-          error={triedToSave || initial.name ? nameError : undefined}
-          placeholder="e.g. Initial Visit"
-        />
         <Stack gap={4}>
           <Switch
             label="Active"
@@ -290,6 +282,14 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
             Turning this off stops new bookings. Existing appointments are untouched.
           </Text>
         </Stack>
+        <TextInput
+          label="Name"
+          required
+          value={fields.name}
+          onChange={(event) => update({ name: event.currentTarget.value })}
+          error={triedToSave || initial.name ? nameError : undefined}
+          placeholder="e.g. Initial Visit"
+        />
         <ServiceFacilitiesField
           value={fields.location}
           onChange={(location) => update({ location })}
