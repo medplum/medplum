@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import type { Device, Location, Practitioner, PractitionerRole, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
+import { filterCandidatesByLocation } from '../AppointmentFinder/AppointmentFinder.schedules';
 import type { ActorFacilities } from './serviceFacilities';
 import {
   describeNoSharedFacility,
@@ -64,7 +65,7 @@ describe('resolveActorFacilities', () => {
     const placed = await resolveActorFacilities(medplum, [room3]);
 
     expect(placed.get('Location/room-3')).toEqual({
-      references: ['Location/floor-2', 'Location/downtown'],
+      references: ['Location/room-3', 'Location/floor-2', 'Location/downtown'],
       names: ['Second Floor'],
     });
   });
@@ -115,12 +116,12 @@ describe('resolveActorFacilities', () => {
     expect(providers.every((provider) => placed.get(`Practitioner/${provider.id}`)?.references[0])).toBe(true);
   });
 
-  test('nothing recording where an actor is leaves it unrestricted', async () => {
+  test('a parentless room sites itself, while a provider with no roles is unrestricted', async () => {
     const medplum = await setup([unplacedRoom, drSmith]);
 
     const placed = await resolveActorFacilities(medplum, [unplacedRoom, drSmith]);
 
-    expect(placed.get('Location/room-9')).toEqual(UNRESTRICTED);
+    expect(placed.get('Location/room-9')).toEqual({ references: ['Location/room-9'], names: ['Room 9'] });
     expect(placed.get('Practitioner/dr-smith')).toEqual(UNRESTRICTED);
   });
 });
@@ -156,5 +157,68 @@ describe('describeNoSharedFacility', () => {
         names: ['Downtown Clinic', 'Northside', 'East'],
       })
     ).toBe("Cystoscopy isn't held at Downtown Clinic, Northside or East");
+  });
+});
+
+describe('facility decisions agree with booking', () => {
+  async function expectDecision(
+    actor: WithId<Location> | WithId<Device>,
+    locations: readonly Location[],
+    site: string,
+    expected: boolean
+  ): Promise<void> {
+    const medplum = await setup([...locations, actor]);
+    const reference = `${actor.resourceType}/${actor.id}`;
+    const facilities = (await resolveActorFacilities(medplum, [actor])).get(reference) as ActorFacilities;
+    const candidates = [
+      {
+        actorResource: actor,
+        schedule: { resourceType: 'Schedule' as const, id: 'calendar', actor: [{ reference }] },
+      },
+    ];
+    const booked = await filterCandidatesByLocation(medplum, candidates, { reference: site });
+    expect(booked.length > 0).toBe(expected);
+    expect(sharesServiceFacility({ location: [{ reference: site }] }, facilities)).toBe(expected);
+  }
+
+  test.each([
+    ['Location/room-3', true],
+    ['Location/floor-2', true],
+    ['Location/downtown', true],
+    ['Location/northside', false],
+  ] as const)('a room at %s: %s', async (site, expected) => {
+    await expectDecision(room3, [floor2, downtown], site, expected);
+  });
+
+  test.each([
+    ['Location/room-9', true],
+    ['Location/downtown', false],
+  ] as const)('a parentless room at %s: %s', async (site, expected) => {
+    await expectDecision(unplacedRoom, [], site, expected);
+  });
+
+  test.each(['Location', 'Device'] as const)('%s with unreadable ancestry remains eligible', async (resourceType) => {
+    const missing = { reference: 'Location/missing' };
+    const actor = resourceType === 'Location' ? { ...room3, partOf: missing } : { ...doppler, location: missing };
+    await expectDecision(actor, [], 'Location/downtown', true);
+  });
+
+  test.each(['Location', 'Device'] as const)('%s respects the four-location boundary', async (resourceType) => {
+    for (const length of [4, 5]) {
+      const chain: WithId<Location>[] = Array.from({ length }, (_, index) => ({
+        resourceType: 'Location',
+        id: `level-${index}`,
+        ...(index + 1 < length && { partOf: { reference: `Location/level-${index + 1}` } }),
+      }));
+      const actor =
+        resourceType === 'Location' ? chain[0] : { ...doppler, location: { reference: 'Location/level-0' } };
+      const locations = resourceType === 'Location' ? chain.slice(1) : chain;
+      await expectDecision(actor, locations, 'Location/level-3', true);
+      await expectDecision(actor, locations, 'Location/unrelated', length > 4);
+    }
+  });
+
+  test('a device without a location remains unrestricted', async () => {
+    await expectDecision({ ...doppler, location: undefined }, [], 'Location/downtown', true);
   });
 });

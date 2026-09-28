@@ -14,11 +14,13 @@ const ROLE_SEARCH_BATCH = 50;
 /** Where an actor is, as far as booking's service facility filter can tell. */
 export interface ActorFacilities {
   /**
-   * Every Location the actor counts as being at: a room's service facility and that facility's ancestors, a
+   * Every Location the actor counts as being at: a room itself and its ancestors, a
    * device's location and its ancestors, or each location of a provider's active roles. Empty when nothing
    * records where the actor is, which leaves it bookable at every service facility.
    */
   readonly references: readonly string[];
+  /** An unreadable or too-deep location chain cannot rule out any service facility. */
+  readonly incomplete?: boolean;
   /** The service facilities to name when saying where the actor is, the nearest first. */
   readonly names: readonly string[];
 }
@@ -28,8 +30,8 @@ export const UNRESTRICTED: ActorFacilities = { references: [], names: [] };
 
 /**
  * Finds where each actor is, reading what booking reads to decide it: a room's or device's Location and its
- * ancestors, and a provider's active roles. A Location that can't be read ends its chain there, and roles that
- * can't be read leave their providers unrestricted, as booking treats both.
+ * ancestors, and a provider's active roles. An unreadable or too-deep location chain, or unreadable roles,
+ * leaves the actor unrestricted, as booking treats both.
  * @param medplum - The Medplum client.
  * @param actors - The providers, rooms, and devices to place. A room or device may be a draft with edits.
  * @param signal - Aborts the reads.
@@ -50,7 +52,7 @@ export async function resolveActorFacilities(
         case 'Practitioner':
           return [reference, await placeByRoles(medplum, reference, roles, signal)];
         case 'Location':
-          return [reference, await walkUp(medplum, actor.partOf, signal)];
+          return [reference, await walkUp(medplum, { reference }, signal, actor)];
         case 'Device':
           return [reference, await walkUp(medplum, actor.location, signal)];
         default:
@@ -72,7 +74,7 @@ export function sharesServiceFacility(
   service: Pick<HealthcareService, 'location'>,
   facilities: ActorFacilities
 ): boolean {
-  if (isHeldEverywhere(service.location) || facilities.references.length === 0) {
+  if (isHeldEverywhere(service.location) || facilities.incomplete || facilities.references.length === 0) {
     return true;
   }
   return (service.location ?? []).some((location) => {
@@ -156,18 +158,25 @@ async function placeByRoles(
 async function walkUp(
   medplum: MedplumClient,
   start: Reference<Location> | undefined,
-  signal: AbortSignal | undefined
+  signal: AbortSignal | undefined,
+  room?: Location
 ): Promise<ActorFacilities> {
   const references: string[] = [];
   const names: string[] = [];
   let current = normalizeReference(start?.reference);
   for (let depth = 0; current && depth < MAX_LOCATION_DEPTH; depth++) {
     references.push(current);
-    const location = await readLocation(medplum, current, signal);
+    const location = depth === 0 && room ? room : await readLocation(medplum, current, signal);
     names.push(location ? getDisplayString(location) : (start?.display ?? current));
-    current = normalizeReference(location?.partOf?.reference);
+    if (!location) {
+      break;
+    }
+    current = normalizeReference(location.partOf?.reference);
   }
-  return { references, names: names.slice(0, 1) };
+  // A remaining reference means a read failed or the depth limit stopped the walk, as in booking.
+  // Rooms match themselves too, but explanations still name their nearest parent when present.
+  const nameIndex = room?.partOf?.reference ? 1 : 0;
+  return { references, names: names.slice(nameIndex, nameIndex + 1), ...(current && { incomplete: true }) };
 }
 
 async function nameOf(
