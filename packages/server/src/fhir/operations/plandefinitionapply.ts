@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource, TypedValue, WithId } from '@medplum/core';
+import type { Filter, ProfileResource, SearchRequest, TypedValue, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -405,6 +405,14 @@ function setValueAtPath(
   currentNode[writeKey] = finalElement.isArray ? values.map((v) => v.value) : values[0].value;
 }
 
+/**
+ * Resolves a canonical URL to a definition resource.
+ * Several versions of a definition can share a url, so the most recently updated `active` one is preferred,
+ * falling back to the most recently updated definition of any status.
+ * @param repo - The repository.
+ * @param canonical - The canonical URL from the action's `definitionCanonical`.
+ * @returns The matching definition, if any.
+ */
 async function readCanonical<T extends Questionnaire | ActivityDefinition | PlanDefinition>(
   repo: Repository,
   canonical: string
@@ -413,9 +421,16 @@ async function readCanonical<T extends Questionnaire | ActivityDefinition | Plan
     return undefined;
   }
 
-  return repo.searchOne({
+  const search: SearchRequest<T> = {
     resourceType: 'ActivityDefinition',
     types: ['ActivityDefinition', 'PlanDefinition', 'Questionnaire'],
-    filters: [{ code: 'url', operator: Operator.EQUALS, value: canonical }],
+    sortRules: [{ code: '_lastUpdated', descending: true }],
+  };
+  const urlFilter: Filter = { code: 'url', operator: Operator.EQUALS, value: canonical };
+
+  const active = await repo.searchOne<T>({
+    ...search,
+    filters: [urlFilter, { code: 'status', operator: Operator.EQUALS, value: 'active' }],
   });
+  return active ?? repo.searchOne<T>({ ...search, filters: [urlFilter] });
 }
