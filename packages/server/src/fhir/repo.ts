@@ -16,6 +16,7 @@ import {
   fhirpathPatchTypedValue,
   forbidden,
   formatSearchQuery,
+  getReferenceString,
   getStatus,
   gone,
   isGone,
@@ -155,7 +156,18 @@ export interface InteractionOptions {
 
 export interface ReadResourceOptions extends InteractionOptions {
   checkCacheOnly?: boolean;
+  /**
+   * Also require permission for this interaction on the resource.
+   * Checked before hidden fields are removed, so it works regardless of extended mode.
+   */
+  requireInteraction?: AccessPolicyInteraction;
 }
+
+/**
+ * Resources whose meta was stripped by `removeHiddenFields` outside extended mode.
+ * `canPerformInteraction` cannot evaluate these, since the project check needs `meta.project`.
+ */
+const strippedMetaResources = new WeakSet<Resource>();
 
 export interface ResendSubscriptionsOptions extends InteractionOptions {
   interaction?: BackgroundJobInteraction;
@@ -593,7 +605,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     const startTime = Date.now();
     try {
-      const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id, options));
+      const resource = await this.readResourceImpl<T>(resourceType, id, options);
+      if (options?.requireInteraction && !this.canPerformInteraction(options.requireInteraction, resource)) {
+        throw new OperationOutcomeError(forbidden);
+      }
+      const result = this.removeHiddenFields(resource);
       const durationMs = Date.now() - startTime;
       this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
       return result;
@@ -2167,11 +2183,23 @@ export class Repository extends FhirRepository implements Disposable {
   /**
    * Determines if the current user can actually perform some interaction on the specified resource.
    * This is a more in-depth check, e.g. after building the candidate result of a write operation.
+   *
+   * The resource must still have its `meta`, so do not pass one returned by this repository outside
+   * extended mode. To check a resource being read, use `readResource` with `requireInteraction`.
    * @param interaction - The interaction to be performed.
    * @param resource - The resource.
    * @returns The access policy permitting the interaction, or undefined if not permitted.
    */
   canPerformInteraction(interaction: AccessPolicyInteraction, resource: Resource): AccessPolicyResource | undefined {
+    if (strippedMetaResources.has(resource)) {
+      const message =
+        'canPerformInteraction called on a resource with meta removed; use readResource requireInteraction';
+      if (process.env.NODE_ENV === 'test') {
+        throw new Error(message);
+      }
+      getLogger().error(message, { resource: getReferenceString(resource), interaction });
+      return undefined;
+    }
     if (!this.isSuperAdmin()) {
       // Only Super Admins can access server-critical resource types
       if (protectedResourceTypes.includes(resource.resourceType)) {
@@ -2263,6 +2291,7 @@ export class Repository extends FhirRepository implements Disposable {
       meta.accounts = undefined;
       meta.compartment = undefined;
       meta.deleted = undefined;
+      strippedMetaResources.add(input);
     }
     return input;
   }
