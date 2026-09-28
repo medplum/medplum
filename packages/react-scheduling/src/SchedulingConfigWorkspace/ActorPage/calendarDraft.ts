@@ -177,6 +177,16 @@ export function withoutService(schedule: Schedule, service: WithId<HealthcareSer
 }
 
 /**
+ * Names what a stored calendar sets of its own for a visit type it offers.
+ * @param service - The visit type.
+ * @param schedule - The calendar.
+ * @returns The names, such as `Buffer after` and `custom hours`.
+ */
+export function describeCalendarOverrides(service: WithId<HealthcareService>, schedule: Schedule): string[] {
+  return describeOverrides(offeringFieldsOf(service, schedule));
+}
+
+/**
  * Names what a calendar sets of its own for a visit type, which stopping the offering discards.
  * @param fields - What the calendar sets for it.
  * @returns The names, such as `Buffer after` and `custom hours`.

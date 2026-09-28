@@ -333,6 +333,24 @@ describe('SchedulingConfigWorkspace', () => {
     expect(within(offeredBy).getByText('Exam Room B')).toBeInTheDocument();
   });
 
+  test('Offered by marks the actors whose calendars customize the visit type', async () => {
+    await setup();
+
+    await userEvent.click(row('Telehealth Consult'));
+    const telehealth = within(details()).getByRole('region', { name: 'Offered by' });
+    expect(await within(telehealth).findByText('Customized')).toHaveTextContent(
+      'Overrides buffer after and custom hours. Everything else follows Telehealth Consult.'
+    );
+    expect(within(telehealth).getAllByText('Customized')).toHaveLength(1);
+
+    await userEvent.click(row('Ultrasound Imaging'));
+    const ultrasound = within(details()).getByRole('region', { name: 'Offered by' });
+    const okafor = (await within(ultrasound).findByText('Dr. Tunde Okafor')).closest('button') as HTMLElement;
+    expect(within(okafor).getByText('Customized')).toHaveTextContent('Overrides time zone.');
+    const nguyen = within(ultrasound).getByText('Dr. Linh Nguyen').closest('button') as HTMLElement;
+    expect(within(nguyen).queryByText('Customized')).not.toBeInTheDocument();
+  });
+
   test('Offered by says why an actor sharing no service facility with the visit type can’t be booked', async () => {
     await setup();
 

@@ -156,6 +156,27 @@ describe('ActorPage', () => {
     expect(entry('Initial Visit')).toHaveTextContent('60 min · Mon 9:00 AM–5:00 PM');
   });
 
+  test('marks a visit type the calendar customizes, naming what it overrides, and follows edits', async () => {
+    const overriding = setScheduleAvailability(
+      setScheduleSchedulingParameterValues(calendar('Practitioner/dr-smith', [initialVisit, followUp]), initialVisit, {
+        bufferAfter: 10,
+      }),
+      initialVisit,
+      [{ daysOfWeek: ['tue'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
+    );
+    await setup(drSmith, [overriding]);
+
+    expect(within(entry('Initial Visit')).getByText('Customized')).toHaveTextContent(
+      'Overrides buffer after and custom hours. Everything else follows Initial Visit.'
+    );
+    expect(within(entry('Follow-up')).queryByText('Customized')).not.toBeInTheDocument();
+
+    await userEvent.click(entry('Follow-up'));
+    await userEvent.type(within(panel('Follow-up')).getByTestId('scheduling-parameters-bufferAfter'), '15');
+
+    expect(within(entry('Follow-up')).getByText('Customized')).toHaveTextContent('Overrides buffer after.');
+  });
+
   test('a calendar offering one visit type opens its entry', async () => {
     await setup(drSmith, [calendar('Practitioner/dr-smith', [initialVisit])]);
 

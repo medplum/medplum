@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { DayOfWeek, WithId } from '@medplum/core';
-import { DAYS_OF_WEEK, getScheduleSchedulingParameters } from '@medplum/core';
+import { DAYS_OF_WEEK } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { getEffectiveAvailability } from '../availability';
 import { getEffectiveSchedulingParameterValues } from '../parameterValues';
@@ -29,11 +29,10 @@ const SHORT_DAYS: Record<DayOfWeek, string> = {
  */
 export function summarizeOffering(service: WithId<HealthcareService>, schedule: Schedule): string {
   const { duration } = getEffectiveSchedulingParameterValues(service, schedule);
-  const custom = getScheduleSchedulingParameters(schedule, service, 'availability').length > 0;
   const hours = getEffectiveAvailability(service, schedule);
   const hoursText = hours ? summarizeWeek(toWeeklyAvailability(hours)) : 'Any time (no hours set)';
   const durationText = duration === undefined ? 'No duration' : `${duration} min`;
-  return `${durationText} · ${custom ? `Custom hours: ${hoursText}` : hoursText}`;
+  return `${durationText} · ${hoursText}`;
 }
 
 /**

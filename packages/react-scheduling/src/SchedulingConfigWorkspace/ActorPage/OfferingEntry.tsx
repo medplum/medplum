@@ -17,8 +17,10 @@ import {
 } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
 import { SchedulingParametersFields } from '../../SchedulingParametersEditor/SchedulingParametersFields';
 import { ParameterWarnings } from '../ConfigPage/ParameterWarnings';
+import { OverridesBadge } from '../OverridesBadge';
 import classes from './ActorPage.module.css';
 import type { OfferingFields } from './calendarDraft';
+import { describeOverrides } from './calendarDraft';
 
 export interface OfferingEntryProps {
   readonly service: WithId<HealthcareService>;
@@ -64,6 +66,7 @@ export function OfferingEntry(props: OfferingEntryProps): JSX.Element {
             <Text fw={600} truncate>
               {serviceName}
             </Text>
+            <OverridesBadge overrides={describeOverrides(value)} serviceName={serviceName} />
             {dirty && (
               <>
                 <Box className={classes.dot} aria-hidden />

@@ -29,14 +29,14 @@ describe('summarizeOffering', () => {
     expect(summarizeOffering(initialVisit, calendar)).toBe('60 min · Mon–Fri 9:00 AM–5:00 PM');
   });
 
-  test("a calendar's own duration and hours win, and custom hours say so", () => {
+  test("a calendar's own duration and hours win", () => {
     const overriding = setScheduleAvailability(
       setScheduleSchedulingParameterValues(calendar, initialVisit, { duration: 45 }),
       initialVisit,
       [{ daysOfWeek: ['tue', 'thu'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
     );
 
-    expect(summarizeOffering(initialVisit, overriding)).toBe('45 min · Custom hours: Tue, Thu 8:00 AM–12:00 PM');
+    expect(summarizeOffering(initialVisit, overriding)).toBe('45 min · Tue, Thu 8:00 AM–12:00 PM');
   });
 
   test('says when there is no duration or no hours', () => {

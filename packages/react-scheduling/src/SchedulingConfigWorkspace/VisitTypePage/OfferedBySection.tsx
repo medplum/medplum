@@ -7,8 +7,10 @@ import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes'
 import { IconChevronRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { getActorTypeLabel } from '../../actors';
+import { describeCalendarOverrides } from '../ActorPage/calendarDraft';
 import classes from '../ConfigPanel/ConfigRow.module.css';
 import { summarizeOffering } from '../offeringSummary';
+import { OverridesBadge } from '../OverridesBadge';
 import type { ConfigOffering } from '../SchedulingConfigWorkspace.utils';
 import { describeNoSharedFacility, isHeldEverywhere, sharesServiceFacility } from '../serviceFacilities';
 import { useActorFacilities } from '../useActorFacilities';
@@ -67,6 +69,10 @@ export function OfferedBySection(props: OfferedBySectionProps): JSX.Element {
                   <Text size="xs" c="dimmed">
                     {getActorTypeLabel(resource.resourceType)}
                   </Text>
+                  <OverridesBadge
+                    overrides={describeCalendarOverrides(service, offering.schedule)}
+                    serviceName={serviceName}
+                  />
                 </Group>
                 <Text size="sm" c="dimmed" truncate>
                   {summarizeOffering(service, offering.schedule)}
