@@ -693,12 +693,16 @@ function buildHumanNameTable(result: SchemaDefinition): void {
     ]
   );
 
+  // Unscoped btree indexes stay for searches without a project filter; a multicolumn GIN index serves conditions
+  // on any subset of its columns, so the scoped GIN indexes replace the unscoped ones
   tableDefinition.columns.push({ name: 'projectId', type: 'UUID' });
-  tableDefinition.indexes.push(
-    ...tableDefinition.indexes
-      .filter((index) => index.columns[0] !== 'resourceId')
-      .map((index) => applyIndexVariant(index, ProjectScoped))
-  );
+  tableDefinition.indexes = tableDefinition.indexes.flatMap((index) => {
+    if (index.columns[0] === 'resourceId') {
+      return [index];
+    }
+    const scoped = applyIndexVariant(index, ProjectScoped);
+    return index.indexType === 'gin' ? [scoped] : [index, scoped];
+  });
 }
 
 function buildLookupTable(

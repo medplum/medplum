@@ -438,7 +438,7 @@ describe('Generator', () => {
         expect(columns).toContainEqual(['subject', 'date']);
       });
 
-      test('HumanName adds project-scoped indexes alongside unscoped ones', () => {
+      test('HumanName project-scopes its GIN indexes and keeps unscoped btree ones', () => {
         const schemaBuilder = new FileBuilder();
         buildSchema(schemaBuilder);
         const schema = schemaBuilder.toString();
@@ -449,13 +449,11 @@ describe('Generator', () => {
           expect(schema).toContain(
             `CREATE INDEX "HumanName_projectId_${column}_idx" ON "HumanName" ("projectId", "${column}");`
           );
-          expect(schema).toContain(
-            `CREATE INDEX "HumanName_${column}Trgm_idx" ON "HumanName" USING gin (${column} gin_trgm_ops);`
-          );
+          expect(schema).not.toContain(`"HumanName_${column}Trgm_idx"`);
           expect(schema).toContain(
             `CREATE INDEX "HumanName_projectId_${column}Trgm_idx" ON "HumanName" USING gin ("projectId", ${column} gin_trgm_ops);`
           );
-          expect(schema).toContain(`CREATE INDEX "HumanName_${column}_idx_tsv" ON "HumanName" USING gin (`);
+          expect(schema).not.toContain(`"HumanName_${column}_idx_tsv"`);
           expect(schema).toContain(
             `CREATE INDEX "HumanName_projectId_${column}_idx_tsv" ON "HumanName" USING gin ("projectId", `
           );
