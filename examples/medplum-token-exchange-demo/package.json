@@ -21,8 +21,8 @@
   "devDependencies": {
     "@medplum/core": "5.1.42",
     "@medplum/eslint-config": "5.1.42",
-    "@types/node": "22.20.3",
-    "tsx": "4.23.13",
+    "@types/node": "22.20.4",
+    "tsx": "4.23.15",
     "typescript": "6.0.3"
   },
   "packageManager": "npm@10.9.9",
