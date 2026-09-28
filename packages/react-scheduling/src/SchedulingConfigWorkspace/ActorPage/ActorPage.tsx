@@ -350,6 +350,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           resource={actorDraft}
           value={general}
           onChange={setGeneral}
+          storedStatus={initialGeneral.status}
           creating={creating}
           nameError={triedToSave || initialGeneral.name ? nameError : undefined}
         />

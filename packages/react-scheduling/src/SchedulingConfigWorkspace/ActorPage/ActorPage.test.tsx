@@ -643,13 +643,12 @@ describe('ActorPage', () => {
       }
     });
 
-    test('a room is retired by setting its status to Inactive, and nothing deletes it', async () => {
+    test('a room is retired by turning Active off, and nothing deletes it', async () => {
       const { medplum, onStored } = await setup(room3, [calendar('Location/room-3', [initialVisit])]);
       const remove = vi.spyOn(medplum, 'deleteResource');
 
       expect(screen.queryByRole('button', { name: /delete|remove/i })).not.toBeInTheDocument();
-      await userEvent.click(within(general()).getByRole('textbox', { name: 'Status' }));
-      await userEvent.click(screen.getByRole('option', { name: 'Inactive' }));
+      await userEvent.click(within(general()).getByRole('switch', { name: 'Active' }));
       await save();
 
       await waitFor(() => expect(onStored).toHaveBeenCalled());

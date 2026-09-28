@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
+import { Select, SimpleGrid, Stack, Switch, Text, TextInput } from '@mantine/core';
 import { createReference, deepEquals, getDisplayString } from '@medplum/core';
 import type { Location, Reference } from '@medplum/fhirtypes';
 import { ResourceInput } from '@medplum/react';
@@ -15,13 +15,13 @@ export interface ActorGeneralProps {
   readonly resource: ActorResource;
   readonly value: ActorGeneralFields;
   readonly onChange: (value: ActorGeneralFields) => void;
+  /** The status as stored, restored when the switch is turned back on. */
+  readonly storedStatus?: string;
   /** The actor hasn't been saved yet. */
   readonly creating: boolean;
   /** Why the name can't be saved, once that should be said. */
   readonly nameError?: string;
 }
-
-const STATUSES = ['active', 'inactive'];
 
 /**
  * The General section of an actor's page. A provider's name and status are read-only, since they are kept by
@@ -31,7 +31,7 @@ const STATUSES = ['active', 'inactive'];
  * @returns The section's fields.
  */
 export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
-  const { resource, value, onChange, creating, nameError } = props;
+  const { resource, value, onChange, storedStatus, creating, nameError } = props;
 
   function update(change: Partial<ActorGeneralFields>): void {
     onChange({ ...value, ...change });
@@ -61,16 +61,20 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
         placeholder={noun === 'room' ? 'e.g. Exam Room 3' : 'e.g. Ultrasound 2'}
       />
       {!creating && (
-        <Select
-          label="Status"
-          description={`Inactive hides this ${noun} from the list. Existing appointments are kept.`}
-          inputWrapperOrder={['label', 'input', 'description', 'error']}
-          data={statusOptions(value.status)}
-          value={value.status ?? null}
-          placeholder="Not set"
-          onChange={(next) => update({ status: next ?? undefined })}
-          allowDeselect={false}
-        />
+        <Stack gap={4}>
+          <Switch
+            label="Active"
+            checked={value.status !== 'inactive'}
+            onChange={(event) =>
+              update({
+                status: event.currentTarget.checked ? activeStatus(storedStatus) : 'inactive',
+              })
+            }
+          />
+          <Text size="xs" c="dimmed">
+            Turning this off stops new bookings. Existing appointments are untouched.
+          </Text>
+        </Stack>
       )}
       <LocationField
         label={noun === 'room' ? 'Service facility' : 'Location'}
@@ -86,9 +90,9 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
   );
 }
 
-function statusOptions(stored: string | undefined): { value: string; label: string }[] {
-  const values = stored && !STATUSES.includes(stored) ? [...STATUSES, stored] : STATUSES;
-  return values.map((status) => ({ value: status, label: status.charAt(0).toUpperCase() + status.slice(1) }));
+// Booking skips only `inactive`, so switching back on restores any other stored status, including none.
+function activeStatus(stored: string | undefined): string | undefined {
+  return stored === 'inactive' ? 'active' : stored;
 }
 
 function TimezoneField(props: {
