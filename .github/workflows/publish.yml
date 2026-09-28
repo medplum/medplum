@@ -59,13 +59,11 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
 
-      - name: Install npm from packageManager
-        uses: ./.github/actions/setup-npm
-
       # publish.sh authenticates only via trusted publishing (OIDC), so fail early if this npm
       # lacks it. `npm trust` (npm >= 11.10.0) is the closest public probe for that support.
-      - name: Check npm supports trusted publishing
+      - name: Install npm from packageManager
         run: |
+          corepack enable npm
           if ! npm trust --help > /dev/null 2>&1; then
             echo "::error::npm $(npm -v) does not support trusted publishing (no 'npm trust' command)"
             exit 1

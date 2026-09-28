@@ -1,8 +1,0 @@
-{
-  "name": "setup-npm",
-  "private": true,
-  "description": "Pins the CI npm version with a lockfile so `npm ci` verifies its integrity hash. Keep in sync with packageManager in the root package.json.",
-  "dependencies": {
-    "npm": "11.19.1"
-  }
-}
