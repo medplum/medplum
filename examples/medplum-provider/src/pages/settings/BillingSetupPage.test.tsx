@@ -10,6 +10,7 @@ import type {
   Parameters,
   Practitioner,
   PractitionerRole,
+  Reference,
   Resource,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -37,6 +38,7 @@ import {
   CANDID_GET_PAYERS_BOT_IDENTIFIER,
   CANDID_IS_BILLING_PROVIDER_EXTENSION,
   CANDID_IS_RENDERING_PROVIDER_EXTENSION,
+  CANDID_LINK_RENDERING_PROVIDER_BOT_IDENTIFIER,
   CANDID_LIST_PROVIDERS_BOT_IDENTIFIER,
   CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM,
   CANDID_PAYER_CATEGORY_SYSTEM,
@@ -55,6 +57,7 @@ const createProviderBot: WithId<Bot> = {
 const listProvidersBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-list-providers', name: 'Candid List Providers' };
 const editProviderBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-edit-provider', name: 'Candid Edit Provider' };
 const contractsBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-contracts', name: 'Candid Get Contracts' };
+const linkBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-link', name: 'Candid Link Rendering Provider' };
 
 /**
  * What candid-list-providers returns: the providers Candid holds for an NPI, as FHIR resources.
@@ -266,6 +269,7 @@ describe('BillingSetupPage', () => {
       editProvider?: boolean;
       listProviders?: boolean;
       getContracts?: boolean;
+      linkRenderingProvider?: boolean;
     } = {}
   ): ReturnType<typeof vi.spyOn> =>
     vi.spyOn(medplum, 'searchOne').mockImplementation((async (resourceType: string, query: any) => {
@@ -284,6 +288,9 @@ describe('BillingSetupPage', () => {
       }
       if (identifier === CANDID_GET_CONTRACTS_BOT_IDENTIFIER.value) {
         return bots.getContracts ? contractsBot : undefined;
+      }
+      if (identifier === CANDID_LINK_RENDERING_PROVIDER_BOT_IDENTIFIER.value) {
+        return bots.linkRenderingProvider ? linkBot : undefined;
       }
       return bots.payers ? payersBot : undefined;
     }) as any);
@@ -1940,6 +1947,39 @@ describe('BillingSetupPage', () => {
       });
     });
 
+    test('turns off billing in Candid when a registered practitioner is put under an organization', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drSmith], organizations: [billingOrg] });
+      mockBots({ createProvider: true, editProvider: true, listProviders: true });
+      vi.spyOn(medplum, 'updateResource').mockImplementation((async (resource: Practitioner) => resource) as any);
+      vi.spyOn(medplum, 'createResource').mockResolvedValue(smithBillsUnderPractice);
+      const executeSpy = vi
+        .spyOn(medplum, 'executeBot')
+        .mockResolvedValue(makeProviderSearchResult([candidPractitioner]));
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Alice Smith'));
+      const dialog = await screen.findByRole('dialog');
+      await screen.findByText(/Registered with Candid/);
+      await user.type(within(dialog).getByRole('searchbox'), 'Test');
+      await user.click(await screen.findByRole('option', { name: /Test Medical Practice LLC/, hidden: true }));
+      await user.click(within(dialog).getByRole('button', { name: 'Edit' }));
+
+      await waitFor(() => {
+        expect(executeSpy).toHaveBeenCalledWith(
+          'bot-edit-provider',
+          expect.objectContaining({
+            extension: [
+              { url: CANDID_IS_BILLING_PROVIDER_EXTENSION, valueBoolean: false },
+              { url: CANDID_IS_RENDERING_PROVIDER_EXTENSION, valueBoolean: true },
+            ],
+          }),
+          'application/fhir+json'
+        );
+      });
+    });
+
     test('disables Save with a tooltip for a practitioner when the create-provider bot is not deployed', async () => {
       const user = userEvent.setup();
       mockSearches({ practitioners: [drSmith], organizations: [billingOrg] });
@@ -2246,6 +2286,274 @@ describe('BillingSetupPage', () => {
 
       expect(await screen.findByText(/No active Candid contract for this practitioner/)).toBeInTheDocument();
       expect(executeSpy).toHaveBeenCalledWith(...contractsCall('cand-prac-1'));
+    });
+  });
+  describe('Candid contract links', () => {
+    const candidPractitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      identifier: [
+        { system: CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM, value: 'cand-prac-1' },
+        { system: NPI_SYSTEM, value: '1234567893' },
+      ],
+    };
+    /** The billing organization after a registration stamped Candid's provider ID on it. */
+    const stampedOrg: WithId<Organization> = {
+      ...billingOrg,
+      identifier: [
+        ...(billingOrg.identifier ?? []),
+        { system: CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM, value: 'cand-org-1' },
+      ],
+    };
+    const linkCall = (contractingProviderId: string, action: 'link' | 'unlink'): unknown[] => [
+      'bot-link',
+      { contractingProviderId, renderingProviderId: 'cand-prac-1', action },
+      'application/json',
+    ];
+
+    /**
+     * Routes bot executions by bot: the provider lookup answers with `providers`, the edit and create bots echo
+     * the practitioner back stamped with Candid's ID, and the link bot answers with `link` (or rejects with it).
+     * @param providers - What candid-list-providers holds for any NPI.
+     * @param link - What candid-link-rendering-provider returns, or the error it fails with.
+     * @returns The spy on executeBot.
+     */
+    const mockCandid = (
+      providers: (Organization | Practitioner)[],
+      link: Parameters | Error = { resourceType: 'Parameters' }
+    ): ReturnType<typeof vi.spyOn> =>
+      vi.spyOn(medplum, 'executeBot').mockImplementation((async (botId: string, body: unknown) => {
+        if (botId === 'bot-link') {
+          if (link instanceof Error) {
+            throw link;
+          }
+          return link;
+        }
+        if (botId === 'bot-create-provider' || botId === 'bot-edit-provider') {
+          const practitioner = body as Practitioner;
+          return {
+            ...practitioner,
+            identifier: [
+              ...(practitioner.identifier ?? []),
+              { system: CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM, value: 'cand-prac-1' },
+            ],
+          };
+        }
+        return makeProviderSearchResult(providers);
+      }) as any);
+
+    test('links a registered practitioner to the contracts of the organization they are put under', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drSmith], organizations: [stampedOrg] });
+      mockBots({ createProvider: true, editProvider: true, listProviders: true, linkRenderingProvider: true });
+      vi.spyOn(medplum, 'readReference').mockResolvedValue(stampedOrg);
+      vi.spyOn(medplum, 'updateResource').mockImplementation((async (resource: Practitioner) => resource) as any);
+      vi.spyOn(medplum, 'createResource').mockResolvedValue(smithBillsUnderPractice);
+      const executeSpy = mockCandid([candidPractitioner]);
+      const showSpy = vi.spyOn(notifications, 'show');
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Alice Smith'));
+      const dialog = await screen.findByRole('dialog');
+      expect(
+        within(dialog).getByText(/Saving also links the practitioner to the Candid contracts/)
+      ).toBeInTheDocument();
+      await screen.findByText(/Registered with Candid/);
+      await user.type(within(dialog).getByRole('searchbox'), 'Test');
+      await user.click(await screen.findByRole('option', { name: /Test Medical Practice LLC/, hidden: true }));
+      await user.click(within(dialog).getByRole('button', { name: 'Edit' }));
+
+      await waitFor(() =>
+        expect(showSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Linked to the Candid contracts of Test Medical Practice LLC' })
+        )
+      );
+      expect(executeSpy).toHaveBeenCalledWith(...linkCall('cand-org-1', 'link'));
+      expect(executeSpy).not.toHaveBeenCalledWith(
+        'bot-link',
+        expect.objectContaining({ action: 'unlink' }),
+        'application/json'
+      );
+      const calls = executeSpy.mock.calls.map((call) => call[0]);
+      expect(calls.indexOf('bot-edit-provider')).toBeLessThan(calls.indexOf('bot-link'));
+    });
+
+    test('links a newly registered practitioner with the ID the create-provider bot stamps', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drJones], organizations: [stampedOrg] });
+      mockBots({ createProvider: true, listProviders: true, linkRenderingProvider: true });
+      vi.spyOn(medplum, 'readReference').mockResolvedValue(stampedOrg);
+      vi.spyOn(medplum, 'updateResource').mockImplementation((async (resource: Practitioner) => resource) as any);
+      vi.spyOn(medplum, 'createResource').mockResolvedValue(smithBillsUnderPractice);
+      const executeSpy = mockCandid([]);
+      const showSpy = vi.spyOn(notifications, 'show');
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Bob Jones'));
+      const dialog = await screen.findByRole('dialog');
+      await user.type(within(dialog).getByLabelText(/NPI/), '3564119220');
+      await screen.findByText(/Not registered with Candid/);
+      await user.type(within(dialog).getByRole('searchbox'), 'Test');
+      await user.click(await screen.findByRole('option', { name: /Test Medical Practice LLC/, hidden: true }));
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      await waitFor(() =>
+        expect(showSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Linked to the Candid contracts of Test Medical Practice LLC' })
+        )
+      );
+      expect(executeSpy).toHaveBeenCalledWith(...linkCall('cand-org-1', 'link'));
+    });
+
+    test('unlinks a practitioner from the contracts of the organization they leave', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drSmith], organizations: [stampedOrg], roles: [smithBillsUnderPractice] });
+      mockBots({ createProvider: true, editProvider: true, listProviders: true, linkRenderingProvider: true });
+      vi.spyOn(medplum, 'readReference').mockResolvedValue(stampedOrg);
+      vi.spyOn(medplum, 'updateResource').mockImplementation((async (resource: Practitioner) => resource) as any);
+      vi.spyOn(medplum, 'patchResource').mockResolvedValue(smithBillsUnderPractice);
+      const executeSpy = mockCandid([candidPractitioner]);
+      const showSpy = vi.spyOn(notifications, 'show');
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Alice Smith'));
+      const dialog = await screen.findByRole('dialog');
+      await screen.findByText(/Registered with Candid/);
+      expect(await within(dialog).findByText('Test Medical Practice LLC')).toBeInTheDocument();
+      await user.click(within(dialog).getByTitle('Clear all'));
+      await fillPractitionerBillingIdentity(user, dialog);
+      await user.click(within(dialog).getByRole('button', { name: 'Edit' }));
+
+      await waitFor(() =>
+        expect(showSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Unlinked from the Candid contracts of Test Medical Practice LLC' })
+        )
+      );
+      expect(executeSpy).toHaveBeenCalledWith(...linkCall('cand-org-1', 'unlink'));
+      expect(executeSpy).not.toHaveBeenCalledWith(
+        'bot-link',
+        expect.objectContaining({ action: 'link' }),
+        'application/json'
+      );
+    });
+
+    test('moves the practitioner between organizations: unlinks the old one, links the new one', async () => {
+      const user = userEvent.setup();
+      const nextOrganization: WithId<Organization> = {
+        ...stampedOrg,
+        id: 'org-next',
+        name: 'Next Practice',
+        identifier: [
+          ...(billingOrg.identifier ?? []),
+          { system: CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM, value: 'cand-org-2' },
+        ],
+      };
+      mockSearches({ practitioners: [drSmith], organizations: [nextOrganization], roles: [smithBillsUnderPractice] });
+      mockBots({ createProvider: true, editProvider: true, listProviders: true, linkRenderingProvider: true });
+      vi.spyOn(medplum, 'readReference').mockImplementation((async (reference: Reference) =>
+        reference.reference === 'Organization/org-next' ? nextOrganization : stampedOrg) as any);
+      vi.spyOn(medplum, 'updateResource').mockImplementation((async (resource: Practitioner) => resource) as any);
+      vi.spyOn(medplum, 'patchResource').mockResolvedValue(smithBillsUnderPractice);
+      const executeSpy = mockCandid([candidPractitioner]);
+      const showSpy = vi.spyOn(notifications, 'show');
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Alice Smith'));
+      const dialog = await screen.findByRole('dialog');
+      await screen.findByText(/Registered with Candid/);
+      expect(await within(dialog).findByText('Test Medical Practice LLC')).toBeInTheDocument();
+      await user.click(within(dialog).getByTitle('Clear all'));
+      await user.type(within(dialog).getByRole('searchbox'), 'Next');
+      await user.click(await screen.findByRole('option', { name: /Next Practice/, hidden: true }));
+      await user.click(within(dialog).getByRole('button', { name: 'Edit' }));
+
+      await waitFor(() =>
+        expect(showSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Linked to the Candid contracts of Next Practice' })
+        )
+      );
+      expect(executeSpy).toHaveBeenCalledWith(...linkCall('cand-org-1', 'unlink'));
+      expect(executeSpy).toHaveBeenCalledWith(...linkCall('cand-org-2', 'link'));
+    });
+
+    test('keeps the saved role and reports it when linking fails', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drSmith], organizations: [stampedOrg] });
+      mockBots({ createProvider: true, editProvider: true, listProviders: true, linkRenderingProvider: true });
+      vi.spyOn(medplum, 'readReference').mockResolvedValue(stampedOrg);
+      vi.spyOn(medplum, 'updateResource').mockImplementation((async (resource: Practitioner) => resource) as any);
+      const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue(smithBillsUnderPractice);
+      mockCandid([candidPractitioner], new Error('Contract update rejected'));
+      const showSpy = vi.spyOn(notifications, 'show');
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Alice Smith'));
+      const dialog = await screen.findByRole('dialog');
+      await screen.findByText(/Registered with Candid/);
+      await user.type(within(dialog).getByRole('searchbox'), 'Test');
+      await user.click(await screen.findByRole('option', { name: /Test Medical Practice LLC/, hidden: true }));
+      await user.click(within(dialog).getByRole('button', { name: 'Edit' }));
+
+      await waitFor(() =>
+        expect(showSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            message: expect.stringContaining(
+              'Practitioner saved, but linking them to the Candid contracts of Test Medical Practice LLC failed: Contract update rejected'
+            ),
+          })
+        )
+      );
+      expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'PractitionerRole' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    });
+
+    test('skips linking to an organization Candid does not know', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drSmith], organizations: [billingOrg] });
+      mockBots({ createProvider: true, editProvider: true, listProviders: true, linkRenderingProvider: true });
+      vi.spyOn(medplum, 'readReference').mockResolvedValue(billingOrg);
+      vi.spyOn(medplum, 'updateResource').mockImplementation((async (resource: Practitioner) => resource) as any);
+      vi.spyOn(medplum, 'createResource').mockResolvedValue(smithBillsUnderPractice);
+      const executeSpy = mockCandid([candidPractitioner]);
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Alice Smith'));
+      const dialog = await screen.findByRole('dialog');
+      await screen.findByText(/Registered with Candid/);
+      await user.type(within(dialog).getByRole('searchbox'), 'Test');
+      await user.click(await screen.findByRole('option', { name: /Test Medical Practice LLC/, hidden: true }));
+      await user.click(within(dialog).getByRole('button', { name: 'Edit' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(executeSpy).not.toHaveBeenCalledWith('bot-link', expect.anything(), expect.anything());
+    });
+
+    test('leaves contract links to the Candid portal when the link bot is not deployed', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drSmith], organizations: [stampedOrg] });
+      mockBots({ createProvider: true, editProvider: true, listProviders: true });
+      vi.spyOn(medplum, 'readReference').mockResolvedValue(stampedOrg);
+      vi.spyOn(medplum, 'updateResource').mockImplementation((async (resource: Practitioner) => resource) as any);
+      vi.spyOn(medplum, 'createResource').mockResolvedValue(smithBillsUnderPractice);
+      const executeSpy = mockCandid([candidPractitioner]);
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Alice Smith'));
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).queryByText(/Saving also links the practitioner/)).not.toBeInTheDocument();
+      await screen.findByText(/Registered with Candid/);
+      await user.type(within(dialog).getByRole('searchbox'), 'Test');
+      await user.click(await screen.findByRole('option', { name: /Test Medical Practice LLC/, hidden: true }));
+      await user.click(within(dialog).getByRole('button', { name: 'Edit' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(executeSpy).not.toHaveBeenCalledWith('bot-link', expect.anything(), expect.anything());
     });
   });
 });
