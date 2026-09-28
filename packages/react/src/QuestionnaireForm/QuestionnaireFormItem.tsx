@@ -465,11 +465,13 @@ function useValueSetOptions(valueSetUrl: string | undefined): ValueSetOptionsSta
   return { options: valueSetOptions, loading: isLoading, available: isAvailable };
 }
 
-function SuggestionsUnavailableDisplay({ valueSetUrl }: { readonly valueSetUrl: string | undefined }): JSX.Element {
+// Radio and checkbox items can only offer the answers their value set provides, so an unavailable
+// value set leaves nothing to pick and the question cannot be answered at all.
+function ValueSetUnavailableDisplay({ valueSetUrl }: { readonly valueSetUrl: string | undefined }): JSX.Element {
   return (
     <UnavailableNote
-      text="Suggestions unavailable"
-      color="yellow.9"
+      text="This question is unavailable."
+      severity="error"
       message={`Value set ${valueSetUrl} is unavailable`}
     />
   );
@@ -533,7 +535,7 @@ function QuestionnaireRadioButtonInput(props: QuestionnaireChoiceInputProps): JS
 
   if (options.length === 0) {
     return isValueSetAvailable === false ? (
-      <SuggestionsUnavailableDisplay valueSetUrl={item.answerValueSet} />
+      <ValueSetUnavailableDisplay valueSetUrl={item.answerValueSet} />
     ) : (
       <NoAnswerDisplay />
     );
@@ -621,7 +623,7 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
 
   if (options.length === 0) {
     return isValueSetAvailable === false ? (
-      <SuggestionsUnavailableDisplay valueSetUrl={item.answerValueSet} />
+      <ValueSetUnavailableDisplay valueSetUrl={item.answerValueSet} />
     ) : (
       <NoAnswerDisplay />
     );

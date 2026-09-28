@@ -4,20 +4,35 @@ import { ActionIcon, Text, Tooltip } from '@mantine/core';
 import { IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 
+/**
+ * How badly the missing dependency degrades the field: `warning` when the field is still usable
+ * (e.g. it accepts free text and has only lost its suggestions), `error` when it is not.
+ */
+export type UnavailableNoteSeverity = 'warning' | 'error';
+
+const SEVERITY_COLORS: Record<UnavailableNoteSeverity, string> = {
+  warning: 'yellow.9',
+  error: 'red',
+};
+
 export interface UnavailableNoteProps {
   readonly text: string;
-  readonly color: string;
+  /** Defaults to `warning`. */
+  readonly severity?: UnavailableNoteSeverity;
+  /** @deprecated Use `severity` instead. When set, overrides the color `severity` would pick. */
+  readonly color?: string;
   readonly message: string;
 }
 
-export function UnavailableNote({ text, color, message }: UnavailableNoteProps): JSX.Element {
+export function UnavailableNote({ text, severity = 'warning', color, message }: UnavailableNoteProps): JSX.Element {
+  const noteColor = color ?? SEVERITY_COLORS[severity];
   return (
-    <Text span size="xs" c={color}>
+    <Text span size="xs" c={noteColor}>
       {text}
       <Tooltip label={message} position="top-start" withArrow events={{ hover: true, focus: true, touch: true }}>
         <ActionIcon
           variant="subtle"
-          color={color}
+          color={noteColor}
           size={16}
           ml={4}
           aria-label={`Why is this unavailable? ${message}`}

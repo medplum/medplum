@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getAllQuestionnaireAnswers, getQuestionnaireAnswers } from '@medplum/core';
+import { badRequest, getAllQuestionnaireAnswers, getQuestionnaireAnswers, OperationOutcomeError } from '@medplum/core';
 import type { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QuestionnaireItemType } from '@medplum/react-hooks';
@@ -1508,6 +1508,53 @@ describe('QuestionnaireForm', () => {
     expect(answer['q1']).toMatchObject({
       valueCoding: { code: 'test-code-0', display: 'Test Display 0', system: 'x' },
     });
+  });
+
+  test('Radio and checkbox questions with a missing value set are unavailable', async () => {
+    const itemControl = (code: string): Extension[] => [
+      {
+        url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+        valueCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/questionnaire-item-control', code }] },
+      },
+    ];
+    const valueSetExpandSpy = vi
+      .spyOn(medplum, 'valueSetExpand')
+      .mockRejectedValue(new OperationOutcomeError(badRequest('ValueSet not found')));
+
+    try {
+      await setup({
+        questionnaire: {
+          resourceType: 'Questionnaire',
+          status: 'active',
+          item: [
+            {
+              linkId: 'radio',
+              text: 'Radio',
+              type: 'choice',
+              answerValueSet: 'http://example.com/missing-valueset',
+              extension: itemControl('radio-button'),
+            },
+            {
+              linkId: 'checkbox',
+              text: 'Checkbox',
+              type: 'choice',
+              answerValueSet: 'http://example.com/missing-valueset',
+              extension: itemControl('check-box'),
+            },
+          ],
+        },
+        onSubmit: vi.fn(),
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(screen.getAllByText('This question is unavailable.')).toHaveLength(2);
+      expect(screen.queryByText('Suggestions unavailable')).not.toBeInTheDocument();
+    } finally {
+      valueSetExpandSpy.mockRestore();
+    }
   });
 
   test('Non-Value Set Checkbox', async () => {
