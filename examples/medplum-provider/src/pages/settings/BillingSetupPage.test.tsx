@@ -2374,7 +2374,7 @@ describe('BillingSetupPage', () => {
         expect.objectContaining({ action: 'unlink' }),
         'application/json'
       );
-      const calls = executeSpy.mock.calls.map((call) => call[0]);
+      const calls = executeSpy.mock.calls.map((call: unknown[]) => call[0]);
       expect(calls.indexOf('bot-edit-provider')).toBeLessThan(calls.indexOf('bot-link'));
     });
 
