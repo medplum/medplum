@@ -39,8 +39,8 @@ export type ConfigurableActorResource = WithId<Practitioner> | WithId<Location> 
 export interface ConfigurableActor<T extends ConfigurableActorResource = ConfigurableActorResource> {
   readonly resource: T;
   /**
-   * The Schedules whose only actor is this one. Most actors hold none or one. A Schedule shared with another
-   * actor is left out, since scheduling cannot book it.
+   * The Schedules whose only actor is this one. A Schedule shared with another actor is left out, since
+   * scheduling cannot book it.
    */
   readonly schedules: WithId<Schedule>[];
 }

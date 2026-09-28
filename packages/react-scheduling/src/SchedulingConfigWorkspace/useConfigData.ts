@@ -57,8 +57,7 @@ export function useConfigData(): ConfigData {
     useState<Settled<{ readonly locations: Read<ConfigurableActor<WithId<Location>>>; readonly skipped: number }>>(
       LOADING
     );
-  // Everything saved here, in the order it was saved. Laid over each read, so a save made while a read was
-  // still in flight isn't lost when the older result lands.
+  // Laid over each read, so a save made while a read was in flight isn't lost when the older result lands.
   const [saved, setSaved] = useState<readonly WithId<Resource>[]>([]);
 
   useEffect(() => {
