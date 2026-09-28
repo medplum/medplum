@@ -262,7 +262,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         <ActorGeneral resource={resource} />
       </ConfigSection>
 
-      <ConfigSection title="Visit types" description={`What ${actorName} can be booked for, and how.`}>
+      <ConfigSection title="Visit types offered">
         {schedule && (
           <Stack gap={4}>
             <Switch

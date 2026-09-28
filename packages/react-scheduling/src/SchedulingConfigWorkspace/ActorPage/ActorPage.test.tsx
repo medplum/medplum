@@ -149,7 +149,7 @@ describe('ActorPage', () => {
 
     expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual([
       'General',
-      'Visit types',
+      'Visit types offered',
     ]);
     expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'false');
     expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'false');
