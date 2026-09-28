@@ -37,8 +37,6 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
     onChange({ ...value, ...change });
   }
 
-  const timezone = <TimezoneField value={value.timezone} onChange={(next) => update({ timezone: next })} />;
-
   if (resource.resourceType === 'Practitioner') {
     return (
       <Stack gap="md">
@@ -46,12 +44,12 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
           <ReadOnlyField label="Name" value={getDisplayString(resource)} />
           <ReadOnlyField label="Status" value={resource.active === false ? 'Inactive' : 'Active'} />
         </SimpleGrid>
-        {timezone}
+        <TimezoneField value={value.timezone} onChange={(timezone) => update({ timezone })} />
       </Stack>
     );
   }
 
-  const room = resource.resourceType === 'Location';
+  const noun = resource.resourceType === 'Location' ? 'room' : 'device';
   return (
     <Stack gap="md">
       <TextInput
@@ -60,12 +58,12 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
         value={value.name}
         onChange={(event) => update({ name: event.currentTarget.value })}
         error={nameError}
-        placeholder={room ? 'e.g. Exam Room 3' : 'e.g. Ultrasound 2'}
+        placeholder={noun === 'room' ? 'e.g. Exam Room 3' : 'e.g. Ultrasound 2'}
       />
       {!creating && (
         <Select
           label="Status"
-          description={`Set to Inactive to retire this ${room ? 'room' : 'device'}. It is hidden from the list, nothing is deleted, and existing appointments are untouched.`}
+          description={`Inactive hides this ${noun} from the list. Existing appointments are kept.`}
           inputWrapperOrder={['label', 'input', 'description', 'error']}
           data={statusOptions(value.status)}
           value={value.status ?? null}
@@ -75,16 +73,15 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
         />
       )}
       <LocationField
-        label={room ? 'Service facility' : 'Location'}
-        description={
-          room
-            ? 'Where the room is. Visit types held elsewhere can’t be booked in it.'
-            : 'Where the device is kept. Visit types held elsewhere can’t be booked with it.'
-        }
+        label={noun === 'room' ? 'Service facility' : 'Location'}
         value={value.location}
         onChange={(location) => update({ location })}
       />
-      {timezone}
+      <TimezoneField
+        description={`Used for this ${noun}'s hours unless a visit type sets its own.`}
+        value={value.timezone}
+        onChange={(timezone) => update({ timezone })}
+      />
     </Stack>
   );
 }
@@ -95,15 +92,16 @@ function statusOptions(stored: string | undefined): { value: string; label: stri
 }
 
 function TimezoneField(props: {
+  readonly description?: string;
   readonly value: string | undefined;
   readonly onChange: (value: string | undefined) => void;
 }): JSX.Element {
-  const { value, onChange } = props;
+  const { description, value, onChange } = props;
   const options = useMemo(() => getTimezoneOptions([value]), [value]);
   return (
     <Select
       label="Time zone"
-      description="Hours are read in this zone for any visit type that sets none of its own."
+      description={description}
       inputWrapperOrder={['label', 'input', 'description', 'error']}
       data={options}
       value={value ?? null}
@@ -120,7 +118,6 @@ function TimezoneField(props: {
 
 interface LocationFieldProps {
   readonly label: string;
-  readonly description: string;
   readonly value: Reference<Location> | undefined;
   readonly onChange: (value: Reference<Location> | undefined) => void;
 }
@@ -131,7 +128,7 @@ interface LocationFieldProps {
  * @returns The field.
  */
 function LocationField(props: LocationFieldProps): JSX.Element {
-  const { label, description, value, onChange } = props;
+  const { label, value, onChange } = props;
   // The input holds its own selection, so it is remounted when `value` is reset from outside, as Discard does.
   const [inputKey, setInputKey] = useState(0);
   const reported = useRef(value);
@@ -144,25 +141,20 @@ function LocationField(props: LocationFieldProps): JSX.Element {
   }, [value]);
 
   return (
-    <Stack gap={4}>
-      <ResourceInput<Location>
-        key={inputKey}
-        resourceType="Location"
-        name={label.toLowerCase().replace(' ', '-')}
-        label={label}
-        placeholder="Not set"
-        searchCriteria={LOCATION_SEARCH_CRITERIA}
-        defaultValue={value}
-        onChange={(location) => {
-          const next = location && createReference(location);
-          reported.current = next;
-          onChange(next);
-        }}
-      />
-      <Text size="xs" c="dimmed">
-        {description}
-      </Text>
-    </Stack>
+    <ResourceInput<Location>
+      key={inputKey}
+      resourceType="Location"
+      name={label.toLowerCase().replace(' ', '-')}
+      label={label}
+      placeholder="Not set"
+      searchCriteria={LOCATION_SEARCH_CRITERIA}
+      defaultValue={value}
+      onChange={(location) => {
+        const next = location && createReference(location);
+        reported.current = next;
+        onChange(next);
+      }}
+    />
   );
 }
 
