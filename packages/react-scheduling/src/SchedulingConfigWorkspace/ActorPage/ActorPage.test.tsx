@@ -7,7 +7,15 @@ import {
   TimezoneExtensionURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
-import type { Bundle, HealthcareService, Location, Practitioner, Resource, Schedule } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  HealthcareService,
+  Location,
+  Practitioner,
+  PractitionerRole,
+  Resource,
+  Schedule,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { ReactNode } from 'react';
 import { describe, expect, test, vi } from 'vitest';
@@ -18,7 +26,12 @@ import {
   setHealthcareServiceSchedulingParameterValues,
   setScheduleSchedulingParameterValues,
 } from '../../parameterValues';
-import { renderWithMedplum, screen, userEvent, waitFor, within } from '../../test-utils/render';
+import {
+  clickAutocompleteOption,
+  installAutocompleteTimers,
+  typeInAutocomplete,
+} from '../../test-utils/asyncAutocomplete';
+import { act, fireEvent, renderWithMedplum, screen, userEvent, waitFor, within } from '../../test-utils/render';
 import { ActorPage } from './ActorPage';
 
 const downtown: WithId<Location> = { resourceType: 'Location', id: 'downtown', name: 'Downtown Clinic' };
@@ -143,12 +156,43 @@ async function openOfferMenu(): Promise<void> {
   await waitFor(() => expect(screen.queryByLabelText('Checking service facilities')).not.toBeInTheDocument());
 }
 
+function role(
+  id: string,
+  locations: WithId<Location>[],
+  options: { active?: boolean; linked?: boolean } = {}
+): WithId<PractitionerRole> {
+  return {
+    resourceType: 'PractitionerRole',
+    id,
+    practitioner: { reference: 'Practitioner/dr-smith' },
+    location: locations.map((location) => ({ reference: `Location/${location.id}` })),
+    ...(options.active !== undefined && { active: options.active }),
+    ...(options.linked && { identifier: [{ system: 'http://example.org/provider-location-link', value: id }] }),
+  };
+}
+
+function facilities(): HTMLElement {
+  return screen.getByRole('region', { name: 'Service facilities' });
+}
+
+function sentRoles(medplum: MockClient): Bundle['entry'] {
+  return sentBundle(medplum).entry?.filter((item) => item.resource?.resourceType === 'PractitionerRole');
+}
+
+// Nothing the workspace sends may delete: a service facility is taken away by turning its role off.
+function expectNothingDeleted(medplum: MockClient): void {
+  const requests = vi.mocked(medplum.executeBatch).mock.calls.flatMap(([bundle]) => bundle.entry ?? []);
+  expect(requests.every((item) => item.request?.method !== 'DELETE')).toBe(true);
+  expect(medplum.deleteResource).not.toHaveBeenCalled();
+}
+
 describe('ActorPage', () => {
-  test("a provider's page shows General and Visit types, with every visit type closed to its summary", async () => {
+  test("a provider's page shows General, Service facilities, and Visit types offered, with every visit type closed to its summary", async () => {
     await setup(drSmith, [calendar('Practitioner/dr-smith', [initialVisit, followUp])]);
 
     expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual([
       'General',
+      'Service facilities',
       'Visit types offered',
     ]);
     expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'false');
@@ -601,5 +645,249 @@ describe('ActorPage', () => {
 
     await waitFor(() => expect(onStored).toHaveBeenCalled());
     expect(storedSchedule(onStored).comment).toBe('Changed elsewhere');
+  });
+
+  describe('service facilities', () => {
+    test('a provider with no active role is offered at every service facility', async () => {
+      await setup(drSmith, [], [role('retired', [northside], { active: false })]);
+
+      expect(
+        await within(facilities()).findByText(
+          'No service facilities. When booking filters by service facility, Dr. Jane Smith is offered at every one.'
+        )
+      ).toBeInTheDocument();
+    });
+
+    test('rooms and devices have no Service facilities section', async () => {
+      await setup(room3);
+
+      expect(screen.queryByRole('heading', { name: 'Service facilities' })).not.toBeInTheDocument();
+    });
+
+    test('lists each service facility of the active roles once', async () => {
+      await setup(
+        drSmith,
+        [],
+        [role('r1', [downtown, northside]), role('r2', [downtown]), role('r3', [room3], { active: false })]
+      );
+
+      expect(await within(facilities()).findByText('Downtown Clinic')).toBeInTheDocument();
+      expect(
+        within(facilities())
+          .getAllByText(/Downtown Clinic|Northside|Room 3/)
+          .map((node) => node.textContent)
+      ).toEqual(['Downtown Clinic', 'Northside']);
+    });
+
+    test('removing a service facility turns its role off on save, deleting nothing and writing nothing else', async () => {
+      const { medplum, onStored } = await setup(drSmith, [], [role('r1', [northside]), role('r2', [downtown])]);
+      vi.spyOn(medplum, 'deleteResource');
+      const stored = await medplum.readResource('PractitionerRole', 'r1');
+
+      await userEvent.click(await within(facilities()).findByRole('button', { name: 'Remove Northside' }));
+      expect(within(facilities()).queryByText('Northside')).not.toBeInTheDocument();
+      await save();
+
+      await waitFor(() => expect(onStored).toHaveBeenCalled());
+      expect(sentRoles(medplum)).toEqual([
+        {
+          resource: { ...stored, active: false },
+          request: { method: 'PUT', url: 'PractitionerRole/r1', ifMatch: `W/"${stored.meta?.versionId}"` },
+        },
+      ]);
+      expect(await medplum.readResource('PractitionerRole', 'r1', { cache: 'no-cache' })).toMatchObject({
+        active: false,
+      });
+      expectNothingDeleted(medplum);
+    });
+
+    test('removing a service facility takes it off a role naming others', async () => {
+      const { medplum, onStored } = await setup(drSmith, [], [role('r1', [downtown, northside])]);
+
+      await userEvent.click(await within(facilities()).findByRole('button', { name: 'Remove Northside' }));
+      await save();
+
+      await waitFor(() => expect(onStored).toHaveBeenCalled());
+      const [sent] = sentRoles(medplum) ?? [];
+      expect(sent.resource).toMatchObject({ location: [{ reference: 'Location/downtown' }] });
+      expect(sent.resource).not.toHaveProperty('active');
+    });
+
+    test('a save changing only roles leaves the page clean, showing what was stored', async () => {
+      const { onStored } = await setup(drSmith, [], [role('r1', [northside]), role('r2', [downtown])]);
+
+      await userEvent.click(await within(facilities()).findByRole('button', { name: 'Remove Northside' }));
+      await save();
+
+      await waitFor(() => expect(onStored).toHaveBeenCalled());
+      expect(onStored.mock.calls[0][0].map((resource: Resource) => resource.resourceType)).toEqual([
+        'PractitionerRole',
+      ]);
+      await waitFor(() => expect(saveBar()).toBeNull());
+      expect(within(facilities()).queryByText('Northside')).not.toBeInTheDocument();
+      expect(within(facilities()).getByText('Downtown Clinic')).toBeInTheDocument();
+    });
+
+    test('Discard puts a removed service facility back', async () => {
+      await setup(drSmith, [], [role('r1', [northside])]);
+
+      await userEvent.click(await within(facilities()).findByRole('button', { name: 'Remove Northside' }));
+      await userEvent.click(within(saveBar() as HTMLElement).getByRole('button', { name: 'Discard' }));
+
+      expect(within(facilities()).getByText('Northside')).toBeInTheDocument();
+      expect(saveBar()).toBeNull();
+    });
+
+    test('a service facility linked by another system shows locked and cannot be removed', async () => {
+      await setup(drSmith, [], [role('theirs', [downtown], { linked: true })]);
+
+      expect(await within(facilities()).findByText('Downtown Clinic')).toBeInTheDocument();
+      expect(within(facilities()).getByText('Locked')).toHaveTextContent(
+        "Another system linked Downtown Clinic, so it can't be removed here."
+      );
+      expect(within(facilities()).queryByRole('button', { name: /^Remove/ })).not.toBeInTheDocument();
+    });
+
+    test('a service facility linked both by another system and here shows once, locked', async () => {
+      await setup(drSmith, [], [role('mine', [downtown]), role('theirs', [downtown], { linked: true })]);
+
+      expect(await within(facilities()).findByText('Downtown Clinic')).toBeInTheDocument();
+      expect(within(facilities()).getAllByText('Downtown Clinic')).toHaveLength(1);
+      expect(within(facilities()).getByText('Locked')).toBeInTheDocument();
+      expect(within(facilities()).queryByRole('button', { name: /^Remove/ })).not.toBeInTheDocument();
+    });
+
+    test('removing a service facility marks a visit type held only there as not bookable, and keeps it offered', async () => {
+      await setup(
+        drSmith,
+        [calendar('Practitioner/dr-smith', [cystoscopy])],
+        [role('r1', [downtown]), role('r2', [northside])]
+      );
+      await within(facilities()).findByText('Northside');
+      expect(entry('Cystoscopy')).not.toHaveTextContent("Can't be booked");
+
+      await userEvent.click(within(facilities()).getByRole('button', { name: 'Remove Northside' }));
+
+      expect(entry('Cystoscopy')).toHaveTextContent("Can't be booked");
+      expect(
+        within(panel('Cystoscopy')).getByText("Can't be booked here: Cystoscopy isn't held at Downtown Clinic.")
+      ).toBeVisible();
+      expect(saveBar()).not.toBeNull();
+    });
+
+    test('says so when the roles cannot be read, and still offers every visit type', async () => {
+      const medplum = new MockClient({ seedDefaultData: false });
+      for (const resource of [downtown, northside, ...services, drSmith]) {
+        await medplum.createResource(resource);
+      }
+      vi.spyOn(medplum, 'searchResources').mockRejectedValue(new Error('Access denied'));
+      renderWithMedplum(
+        <ActorPage actor={{ resource: drSmith, schedules: [] }} services={services} onStored={vi.fn()} />,
+        medplum
+      );
+
+      expect(await within(facilities()).findByText(/Service facilities could not be loaded/)).toHaveTextContent(
+        'Access denied'
+      );
+      await openOfferMenu();
+      expect(screen.getByRole('menuitem', { name: /Cystoscopy/ })).toBeEnabled();
+    });
+
+    test('a role another user changed since it was loaded is not written over, and reload discards the draft', async () => {
+      const { medplum, onStored } = await setup(drSmith, [], [role('r1', [northside]), role('r2', [downtown])]);
+      await userEvent.click(await within(facilities()).findByRole('button', { name: 'Remove Northside' }));
+      const changed = await medplum.readResource('PractitionerRole', 'r1');
+      await medplum.updateResource({ ...changed, location: [{ reference: 'Location/downtown' }] });
+
+      await save();
+
+      expect(
+        await screen.findByText('The service facilities for Dr. Jane Smith changed since you opened them')
+      ).toBeInTheDocument();
+      expect(onStored).not.toHaveBeenCalled();
+      await userEvent.click(screen.getByRole('button', { name: 'Reload' }));
+
+      await waitFor(() => expect(saveBar()).toBeNull());
+      expect(within(facilities()).queryByText('Northside')).not.toBeInTheDocument();
+      expect(within(facilities()).getByText('Downtown Clinic')).toBeInTheDocument();
+    });
+
+    describe('adding', () => {
+      installAutocompleteTimers();
+
+      async function add(name: string): Promise<void> {
+        await typeInAutocomplete(within(facilities()).getByRole('searchbox'), name.split(' ')[0]);
+        await clickAutocompleteOption(name);
+      }
+
+      async function saveNow(): Promise<void> {
+        await act(async () => {
+          fireEvent.click(within(saveBar() as HTMLElement).getByRole('button', { name: 'Save' }));
+        });
+      }
+
+      test('adding a service facility creates an active role holding only the practitioner and that location', async () => {
+        const { medplum, onStored } = await setup(drSmith);
+        vi.spyOn(medplum, 'deleteResource');
+        await within(facilities()).findByText(/No service facilities/);
+
+        await add('Northside');
+        expect(within(facilities()).getByText('Northside')).toBeInTheDocument();
+        await saveNow();
+
+        await waitFor(() => expect(onStored).toHaveBeenCalled());
+        const [sent] = sentRoles(medplum) ?? [];
+        expect(sent.request).toEqual({ method: 'POST', url: 'PractitionerRole' });
+        expect(Object.keys(sent.resource as PractitionerRole).sort()).toEqual([
+          'active',
+          'location',
+          'practitioner',
+          'resourceType',
+        ]);
+        expect(sent.resource).toMatchObject({
+          practitioner: { reference: 'Practitioner/dr-smith' },
+          location: [{ reference: 'Location/northside' }],
+          active: true,
+        });
+        expectNothingDeleted(medplum);
+      });
+
+      test('adding a service facility back reactivates the inactive role for it', async () => {
+        const { medplum, onStored } = await setup(drSmith, [], [role('r1', [northside], { active: false })]);
+        const stored = await medplum.readResource('PractitionerRole', 'r1');
+        await within(facilities()).findByText(/No service facilities/);
+
+        await add('Northside');
+        await saveNow();
+
+        await waitFor(() => expect(onStored).toHaveBeenCalled());
+        expect(sentRoles(medplum)).toEqual([
+          {
+            resource: { ...stored, active: true },
+            request: { method: 'PUT', url: 'PractitionerRole/r1', ifMatch: `W/"${stored.meta?.versionId}"` },
+          },
+        ]);
+      });
+
+      test('role writes join the calendar in one bundle', async () => {
+        const { medplum, onStored, schedules } = await setup(drSmith, [
+          calendar('Practitioner/dr-smith', [initialVisit]),
+        ]);
+        await within(facilities()).findByText(/No service facilities/);
+
+        await act(async () => {
+          fireEvent.click(screen.getByRole('switch', { name: 'Accepting appointments' }));
+        });
+        await add('Northside');
+        await saveNow();
+
+        await waitFor(() => expect(onStored).toHaveBeenCalled());
+        expect(medplum.executeBatch).toHaveBeenCalledTimes(1);
+        expect(sentBundle(medplum).entry?.map((item) => item.request?.url)).toEqual([
+          `Schedule/${schedules[0].id}`,
+          'PractitionerRole',
+        ]);
+      });
+    });
   });
 });

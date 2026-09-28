@@ -200,8 +200,12 @@ async function readLocation(
   }
 }
 
-// Compared by type and id only, since a stored reference may carry a version.
-function normalizeReference(reference: string | undefined): string | undefined {
+/**
+ * Reduces a reference to its type and id, since a stored reference may carry a version.
+ * @param reference - The reference string.
+ * @returns `ResourceType/id`, or undefined for one that isn't a relative reference.
+ */
+export function normalizeReference(reference: string | undefined): string | undefined {
   if (!reference) {
     return undefined;
   }

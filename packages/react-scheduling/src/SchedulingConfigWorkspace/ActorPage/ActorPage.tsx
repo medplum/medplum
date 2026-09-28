@@ -17,13 +17,21 @@ import {
 } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
+  createReference,
   deepEquals,
   getDisplayString,
   getReferenceString,
   getSchedulingTimezone,
   normalizeErrorString,
 } from '@medplum/core';
-import type { HealthcareService, Resource } from '@medplum/fhirtypes';
+import type {
+  HealthcareService,
+  Location,
+  Practitioner,
+  PractitionerRole,
+  Reference,
+  Resource,
+} from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconChevronDown } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -36,15 +44,25 @@ import {
   validateSchedulingParameters,
 } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
 import { ConfigSection, SaveBar } from '../ConfigPage/ConfigPage';
-import type { ConfigSaveFailure } from '../ConfigPage/configSave';
+import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { summarizeOffering } from '../offeringSummary';
 import { isActorInactive } from '../SchedulingConfigWorkspace.utils';
-import { describeNoSharedFacility, isHeldEverywhere, sharesServiceFacility } from '../serviceFacilities';
+import type { ActorFacilities } from '../serviceFacilities';
+import {
+  describeNoSharedFacility,
+  isHeldEverywhere,
+  normalizeReference,
+  sharesServiceFacility,
+  UNRESTRICTED,
+} from '../serviceFacilities';
 import { useActorFacilities } from '../useActorFacilities';
 import type { CalendarFields, OfferingFields } from './calendarDraft';
 import { buildCalendar, calendarFieldsOf, describeOverrides, newOfferingFields } from './calendarDraft';
 import { OfferingEntry } from './OfferingEntry';
+import { buildRoleChanges, providerFacilitiesOf } from './roleDraft';
+import { ServiceFacilitiesSection } from './ServiceFacilitiesSection';
+import { useProviderRoles } from './useProviderRoles';
 
 export interface ActorPageProps {
   /** The provider, room, or device, with its calendars as stored. The first calendar is the one edited. */
@@ -96,14 +114,42 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [stopping, setStopping] = useState<WithId<HealthcareService>>();
   const [saving, setSaving] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
-  const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'>>();
+  const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'> & { change?: ConfigChange }>();
   const [reloading, setReloading] = useState(false);
 
-  const facilities = useActorFacilities([resource])?.get(getReferenceString(resource));
+  // A provider's service facilities are the page's own to edit, so the visit type checks follow the draft.
+  const providerRoles = useProviderRoles(resource);
+  const storedRoles = providerRoles?.value;
+  const [facilityEdits, setFacilityEdits] = useState<Reference<Location>[]>();
+  const storedFacilities = storedRoles && providerFacilitiesOf(storedRoles.roles);
+  const providerFacilities = (facilityEdits ?? storedFacilities?.facilities)?.map((facility): Reference<Location> => ({
+    ...facility,
+    display:
+      storedRoles?.names.get(normalizeReference(facility.reference) ?? '') ?? facility.display ?? facility.reference,
+  }));
+  const roleChanges: ConfigChange<PractitionerRole>[] =
+    storedRoles && providerFacilities
+      ? buildRoleChanges(storedRoles.roles, createReference(resource as WithId<Practitioner>), providerFacilities)
+      : [];
+
+  const placed = useActorFacilities(providerRoles ? [] : [resource])?.get(getReferenceString(resource));
+  let facilities: ActorFacilities | undefined = placed;
+  if (providerRoles?.error) {
+    // As booking treats a provider whose roles can't be read.
+    facilities = UNRESTRICTED;
+  } else if (providerRoles) {
+    facilities = providerFacilities && {
+      references: providerFacilities.flatMap((facility) => normalizeReference(facility.reference) ?? []),
+      names: providerFacilities.map((facility) => facility.display ?? ''),
+    };
+  }
 
   const draft = buildCalendar(schedule, resource, fields, initial, servicesById);
   // Edits the draft can't store yet, like an emptied week, still count, so the save bar can say why it refuses.
-  const dirty = (schedule ? !deepEquals(draft, schedule) : draft !== undefined) || !deepEquals(fields, initial);
+  const dirty =
+    (schedule ? !deepEquals(draft, schedule) : draft !== undefined) ||
+    !deepEquals(fields, initial) ||
+    roleChanges.length > 0;
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const offered = fields.offered.flatMap((id) => servicesById.get(id) ?? []);
@@ -173,13 +219,21 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       setTriedToSave(true);
       return;
     }
-    if (!draft) {
+    const changes: ConfigChange[] = [...(draft ? [{ stored: schedule, draft }] : []), ...roleChanges];
+    if (changes.length === 0) {
       return;
     }
     setSaving(true);
     setFailure(undefined);
     try {
-      const result = await saveConfigChanges(medplum, [{ stored: schedule, draft }]);
+      const result = await saveConfigChanges(medplum, changes);
+      // Stored roles are laid over the page's, since a save changing only roles doesn't remount it.
+      const savedRoles = result.saved.flatMap(({ resource: saved }) =>
+        saved.resourceType === 'PractitionerRole' ? [saved] : []
+      );
+      if (savedRoles.length > 0) {
+        providerRoles?.store(savedRoles);
+      }
       if (result.failures.length > 0) {
         setFailure(result.failures[0]);
       } else if (result.saved.length === 0) {
@@ -187,6 +241,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         // remounts the page.
         handleDiscard();
       } else {
+        setFacilityEdits(undefined);
         onStored(
           result.saved.map(({ resource: saved }) => saved),
           open
@@ -199,6 +254,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
   function handleDiscard(): void {
     setFields(initial);
+    setFacilityEdits(undefined);
     setOpen((current) => (current && initial.offered.includes(current) ? current : null));
     setTriedToSave(false);
     setFailure(undefined);
@@ -213,7 +269,10 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       if (schedule) {
         reloaded.push(await medplum.readResource('Schedule', schedule.id, { cache: 'no-cache' }));
       }
+      await providerRoles?.reload();
       onStored(reloaded, open);
+      // When only a role changed, no version the page is keyed on did, so it isn't remounted.
+      handleDiscard();
     } catch (err) {
       setFailure({ conflict: false, message: `Could not reload it: ${normalizeErrorString(err)}` });
     } finally {
@@ -240,7 +299,14 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       </Stack>
 
       {failure?.conflict && (
-        <Alert color="orange" title={`The calendar for ${actorName} changed since you opened it`}>
+        <Alert
+          color="orange"
+          title={
+            failure.change?.draft.resourceType === 'PractitionerRole'
+              ? `The service facilities for ${actorName} changed since you opened them`
+              : `The calendar for ${actorName} changed since you opened it`
+          }
+        >
           <Stack gap="sm" align="flex-start">
             <Text size="sm">
               A newer version was saved somewhere else, so nothing here was written over it. Reload to see the latest
@@ -261,6 +327,16 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       <ConfigSection title="General">
         <ActorGeneral resource={resource} />
       </ConfigSection>
+
+      {providerRoles && (
+        <ServiceFacilitiesSection
+          actorName={actorName}
+          value={providerFacilities}
+          locked={storedFacilities?.locked ?? new Set()}
+          error={providerRoles.error}
+          onChange={setFacilityEdits}
+        />
+      )}
 
       <ConfigSection title="Visit types offered">
         {schedule && (

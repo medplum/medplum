@@ -73,6 +73,13 @@ actor isn't at is listed disabled, with the reason. Offering an actor's first vi
 the page is saved, and not before. **Stop offering** asks first, naming the settings the calendar holds for that
 visit type, and removes them with it.
 
+A provider's page also has **Service facilities**, between General and Visit types offered: the service facility
+Locations the provider's active `PractitionerRole`s name, each listed once. With none, booking filtered to a
+service facility offers the provider at every one. Adding a service facility turns an inactive role for it back
+on, or creates a role holding only `practitioner`, that `location`, and `active`. Removing one turns off the role
+naming only it, or takes it off a role naming others. A role carrying an `identifier` was written by another
+system and is never changed, so a service facility it links is shown locked and can't be removed.
+
 ## Saving
 
 Nothing is written as it is typed. A save bar appears while the page differs from what is stored, and Save sends
