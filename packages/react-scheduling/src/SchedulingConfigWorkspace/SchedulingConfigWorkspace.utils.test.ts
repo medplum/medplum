@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ServiceTypeReferenceURI, TimezoneExtensionURI, toServiceTypeCodeableConcepts } from '@medplum/core';
+import {
+  getDisplayString,
+  ServiceTypeReferenceURI,
+  TimezoneExtensionURI,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type { Device, HealthcareService, Location, Practitioner, Schedule } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import type { ConfigurableActor } from '../configSearch';
@@ -91,6 +96,14 @@ describe('isSameSelection', () => {
     expect(isSameSelection({ kind: 'new-service', key: 1 }, { kind: 'new-service', key: 1 })).toBe(true);
     expect(isSameSelection({ kind: 'new-service', key: 1 }, { kind: 'new-service', key: 2 })).toBe(false);
     expect(isSameSelection({ kind: 'service', id: 'exam' }, undefined)).toBe(false);
+  });
+
+  test('matches the same room or device being created, and nothing else', () => {
+    const room = { kind: 'new-actor', resourceType: 'Location', key: 1 } as const;
+
+    expect(isSameSelection(room, { ...room })).toBe(true);
+    expect(isSameSelection(room, { ...room, key: 2 })).toBe(false);
+    expect(isSameSelection(room, { kind: 'new-service', key: 1 })).toBe(false);
   });
 
   test('matches the same actor, whichever of its visit types is open', () => {
@@ -266,6 +279,26 @@ describe('withStoredActorResource', () => {
 
     expect(withStoredActorResource(actors, calendar('x', 'Practitioner/dr-other', []))).toEqual(actors);
     expect(withStoredActorResource(actors, shared)).toEqual(actors);
+  });
+
+  test('an actor just created joins the list of its type where its name sorts, and no other list', () => {
+    const rooms: ConfigurableActor[] = [
+      { resource: { resourceType: 'Location', id: 'a', name: 'Room 1' }, schedules: [] },
+      { resource: { resourceType: 'Location', id: 'c', name: 'Room 3' }, schedules: [] },
+    ];
+    const created: WithId<Location> = { resourceType: 'Location', id: 'b', name: 'Room 2' };
+
+    expect(
+      withStoredActorResource(rooms, created, 'Location').map(({ resource }) => [
+        resource.id,
+        getDisplayString(resource),
+      ])
+    ).toEqual([
+      ['a', 'Room 1'],
+      ['b', 'Room 2'],
+      ['c', 'Room 3'],
+    ]);
+    expect(withStoredActorResource(actors, created, 'Practitioner')).toEqual(actors);
   });
 });
 

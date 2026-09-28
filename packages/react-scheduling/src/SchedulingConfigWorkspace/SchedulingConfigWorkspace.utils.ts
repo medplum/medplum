@@ -11,16 +11,18 @@ import type { CodeableConcept, HealthcareService, Location, Resource, Schedule }
 import type { BookableActorType } from '../actors';
 import { isBookableActorType } from '../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../configSearch';
+import type { NewActorType } from './ActorPage/actorDraft';
 import type { ConfigPanelItem } from './ConfigPanel/ConfigPanel';
 
 /**
  * What the detail pane shows: a stored visit type or actor, kept by id so it survives a save replacing it in
- * the list, or a visit type being created, which has no id until it is saved. An actor's page may be opened on
- * one of the visit types it offers.
+ * the list, or a visit type, room, or device being created, which has no id until it is saved. An actor's page
+ * may be opened on one of the visit types it offers.
  */
 export type ConfigSelection =
   | { readonly kind: 'service'; readonly id: string }
   | { readonly kind: 'new-service'; readonly key: number }
+  | { readonly kind: 'new-actor'; readonly resourceType: NewActorType; readonly key: number }
   | {
       readonly kind: 'actor';
       readonly resourceType: BookableActorType;
@@ -39,8 +41,8 @@ export function isSameSelection(a: ConfigSelection, b: ConfigSelection | undefin
   if (a.kind === 'service') {
     return b?.kind === 'service' && b.id === a.id;
   }
-  if (a.kind === 'new-service') {
-    return b?.kind === 'new-service' && b.key === a.key;
+  if (a.kind === 'new-service' || a.kind === 'new-actor') {
+    return b?.kind === a.kind && b.key === a.key;
   }
   return b?.kind === 'actor' && b.resourceType === a.resourceType && b.id === a.id;
 }
@@ -245,17 +247,28 @@ export function mergeActors<T extends ConfigurableActor>(first: readonly T[], se
 
 /**
  * Puts a stored resource into the actors listed, so a save shows at once without refetching: an actor replaces
- * the version it was loaded as, and a Schedule replaces or joins the calendars of its only actor. Anything
- * else, or anything about an actor not listed, leaves the list as it was.
+ * the version it was loaded as, an actor of the list's type not listed yet joins it where its name sorts, and a
+ * Schedule replaces or joins the calendars of its only actor. Anything else, or a calendar of an actor not
+ * listed, leaves the list as it was.
  * @param actors - The actors listed.
  * @param stored - The resource as the server now holds it.
+ * @param resourceType - The type the list holds, which an actor just created joins.
  * @returns The new list.
  */
 export function withStoredActorResource<T extends ConfigurableActor>(
   actors: readonly T[],
-  stored: WithId<Resource>
+  stored: WithId<Resource>,
+  resourceType?: BookableActorType
 ): T[] {
   if (isBookableActorType(stored.resourceType)) {
+    const listed = actors.some(
+      (actor) => actor.resource.resourceType === stored.resourceType && actor.resource.id === stored.id
+    );
+    if (!listed) {
+      return stored.resourceType === resourceType
+        ? mergeActors(actors, [{ resource: stored, schedules: [] } as ConfigurableActor as T])
+        : [...actors];
+    }
     return actors.map((actor) =>
       actor.resource.resourceType === stored.resourceType && actor.resource.id === stored.id
         ? { ...actor, resource: stored }

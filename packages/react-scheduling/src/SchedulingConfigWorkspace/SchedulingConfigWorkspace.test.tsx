@@ -230,11 +230,54 @@ describe('SchedulingConfigWorkspace', () => {
     consoleError.mockRestore();
   });
 
-  test('offers to create visit types, and never providers', async () => {
+  test('offers to create visit types, rooms, and devices, and never providers', async () => {
     await setup();
 
     expect(within(section('Visit types')).getByRole('button', { name: 'New visit type' })).toBeInTheDocument();
+    expect(within(section('Rooms')).getByRole('button', { name: 'New room' })).toBeInTheDocument();
+    expect(within(section('Devices')).getByRole('button', { name: 'New device' })).toBeInTheDocument();
     expect(within(section('Providers')).queryByRole('button', { name: /^New/ })).not.toBeInTheDocument();
+  });
+
+  test('a new room is listed under Rooms and selected once created, and can then offer visit types', async () => {
+    await setup();
+
+    await userEvent.click(within(sidebar()).getByRole('button', { name: 'New room' }));
+    expect(within(details()).getByText('Not saved yet')).toBeInTheDocument();
+    await userEvent.type(nameField(), 'Room 9');
+    expect(within(sidebar()).queryByText('Room 9')).not.toBeInTheDocument();
+
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Room 9')).toHaveAttribute('aria-current', 'true'));
+    expect(within(section('Rooms')).getByText('Room 9')).toBeInTheDocument();
+    expect(within(details()).getByRole('heading', { name: 'Room 9' })).toBeInTheDocument();
+    expect(within(details()).getByText('Room 9 offers no visit types yet.')).toBeInTheDocument();
+    expect(within(details()).getByRole('button', { name: 'Offer a visit type' })).toBeInTheDocument();
+  });
+
+  test('a new device is listed under Devices once created', async () => {
+    await setup();
+
+    await userEvent.click(within(sidebar()).getByRole('button', { name: 'New device' }));
+    await userEvent.type(nameField(), 'Ultrasound 4');
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Ultrasound 4')).toHaveAttribute('aria-current', 'true'));
+    expect(within(section('Devices')).getByText('Ultrasound 4')).toBeInTheDocument();
+  });
+
+  test('discarding a new room lists nothing and leaves nothing selected', async () => {
+    await setup();
+    await userEvent.click(within(sidebar()).getByRole('button', { name: 'New room' }));
+    await userEvent.type(nameField(), 'Room 9');
+
+    await userEvent.click(
+      within(screen.getByRole('region', { name: 'Unsaved changes' })).getByRole('button', { name: 'Discard' })
+    );
+
+    expect(within(details()).getByText('Nothing selected')).toBeInTheDocument();
+    expect(within(sidebar()).queryByText('Room 9')).not.toBeInTheDocument();
   });
 
   test("a provider's saved time zone clears their No time zone notice", async () => {
@@ -408,14 +451,16 @@ describe('SchedulingConfigWorkspace', () => {
     ).toBeInTheDocument();
   });
 
-  test('an empty project says each section has nothing yet, and still offers to create a visit type', async () => {
+  test('an empty project says each section has nothing yet, and still offers to create a visit type, room, or device', async () => {
     const medplum = new MockClient({ seedDefaultData: false });
     renderWithMedplum(<SchedulingConfigWorkspace />, medplum);
 
     for (const noun of ['visit types', 'providers', 'rooms', 'devices']) {
       expect(await within(sidebar()).findByText(`No ${noun} yet`)).toBeInTheDocument();
     }
-    expect(within(sidebar()).getByRole('button', { name: 'New visit type' })).toBeInTheDocument();
+    for (const label of ['New visit type', 'New room', 'New device']) {
+      expect(within(sidebar()).getByRole('button', { name: label })).toBeInTheDocument();
+    }
   });
 
   test('says when the visit types could not be loaded', async () => {

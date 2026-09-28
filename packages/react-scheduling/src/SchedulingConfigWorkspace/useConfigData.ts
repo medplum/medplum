@@ -5,6 +5,7 @@ import { getReferenceString } from '@medplum/core';
 import type { Device, HealthcareService, Location, Practitioner, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { BookableActorType } from '../actors';
 import type { ConfigSearchOptions, ConfigurableActor } from '../configSearch';
 import { searchConfigurableActors, searchConfigurableCalendars, searchConfigurableServices } from '../configSearch';
 import { mergeActors, withStoredActorResource, withStoredService } from './SchedulingConfigWorkspace.utils';
@@ -100,12 +101,14 @@ export function useConfigData(): ConfigData {
         items
       )
     );
-    const withSaved = <T extends ConfigurableActor>(items: readonly T[]): T[] =>
-      saved.reduce((list, resource) => withStoredActorResource(list, resource), [...items]);
+    const withSaved =
+      (resourceType: BookableActorType) =>
+      <T extends ConfigurableActor>(items: readonly T[]): T[] =>
+        saved.reduce((list, resource) => withStoredActorResource(list, resource, resourceType), [...items]);
 
     // Rooms come from two reads: the Locations typed as rooms, and the Locations some calendar is held on alone.
     const rooms: ConfigList<ConfigurableActor<WithId<Location>>> = {
-      items: withSaved(mergeActors(typedRooms.value?.items ?? [], calendars.value?.items ?? [])),
+      items: withSaved('Location')(mergeActors(typedRooms.value?.items ?? [], calendars.value?.items ?? [])),
       loading: typedRooms.loading || calendars.loading,
       complete: (typedRooms.value?.complete ?? true) && (calendars.value?.complete ?? true),
       error: typedRooms.error ?? calendars.error,
@@ -113,9 +116,9 @@ export function useConfigData(): ConfigData {
 
     return {
       services: servicesList,
-      providers: toList(providers, withSaved),
+      providers: toList(providers, withSaved('Practitioner')),
       rooms,
-      devices: toList(devices, withSaved),
+      devices: toList(devices, withSaved('Device')),
       store,
     };
   }, [services, providers, typedRooms, devices, calendars, saved, store]);

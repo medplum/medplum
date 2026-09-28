@@ -11,6 +11,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { isBookableActorType } from '../actors';
 import type { ConfigurableActor } from '../configSearch';
+import type { NewActorType } from './ActorPage/actorDraft';
 import { ActorPage } from './ActorPage/ActorPage';
 import { ConfigEmptyState } from './ConfigPage/ConfigEmptyState';
 import type { ConfigPanelSection } from './ConfigPanel/ConfigPanel';
@@ -30,12 +31,19 @@ interface ActorSectionConfig {
   readonly title: string;
   readonly noun: string;
   readonly icon?: JSX.Element;
+  /** Labels the header's create button. Providers have none: they come from elsewhere. */
+  readonly createLabel?: string;
 }
 
 const ACTOR_SECTIONS: Record<BookableActorType, ActorSectionConfig> = {
   Practitioner: { title: 'Providers', noun: 'providers' },
-  Location: { title: 'Rooms', noun: 'rooms', icon: <IconDoor size={12} /> },
-  Device: { title: 'Devices', noun: 'devices', icon: <IconDeviceHeartMonitor size={12} /> },
+  Location: { title: 'Rooms', noun: 'rooms', icon: <IconDoor size={12} />, createLabel: 'New room' },
+  Device: {
+    title: 'Devices',
+    noun: 'devices',
+    icon: <IconDeviceHeartMonitor size={12} />,
+    createLabel: 'New device',
+  },
 };
 
 /**
@@ -83,6 +91,11 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     setNextNewKey((key) => key + 1);
   }
 
+  function startNewActor(resourceType: NewActorType): void {
+    select({ kind: 'new-actor', resourceType, key: nextNewKey });
+    setNextNewKey((key) => key + 1);
+  }
+
   function confirmDiscard(): void {
     setDirty(false);
     setSelection(pending);
@@ -98,8 +111,23 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     [store]
   );
 
-  // An actor's page carries on from what it stored and reports its own dirty state.
-  const handleActorStored = useCallback((resources: WithId<Resource>[]): void => store(resources), [store]);
+  // An actor's page carries on from what it stored and reports its own dirty state. A room or device just
+  // created is selected by its new id, unless the viewer has moved on.
+  const handleActorStored = useCallback(
+    (storedFor: ConfigSelection, resources: WithId<Resource>[]): void => {
+      store(resources);
+      if (storedFor.kind !== 'new-actor') {
+        return;
+      }
+      const created = resources.find((resource) => resource.resourceType === storedFor.resourceType);
+      setSelection((current) =>
+        created && current && isSameSelection(current, storedFor)
+          ? { kind: 'actor', resourceType: storedFor.resourceType, id: created.id }
+          : current
+      );
+    },
+    [store]
+  );
 
   const handleDiscardNew = useCallback((): void => {
     setSelection(undefined);
@@ -140,6 +168,17 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     ) : (
       <ConfigEmptyState notFound />
     );
+  } else if (selection?.kind === 'new-actor') {
+    detail = (
+      <ActorPage
+        key={`new-${selection.key}`}
+        newActorType={selection.resourceType}
+        services={services.items}
+        onStored={(resources) => handleActorStored(selection, resources)}
+        onDiscardNew={handleDiscardNew}
+        onDirtyChange={setDirty}
+      />
+    );
   } else if (selection?.kind === 'actor') {
     const list = actorLists[selection.resourceType];
     const actor = list.items.find((item) => item.resource.id === selection.id);
@@ -157,7 +196,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
           actor={actor}
           services={services.items}
           initialOpenServiceId={selection.openServiceId}
-          onStored={handleActorStored}
+          onStored={(resources) => handleActorStored(selection, resources)}
           onDirtyChange={setDirty}
         />
       );
@@ -186,6 +225,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       items: buildActorItems(actorLists[resourceType].items, selection, filter, showInactive, servicesById),
       loading: actorLists[resourceType].loading,
       incomplete: !actorLists[resourceType].complete,
+      onCreate: resourceType === 'Practitioner' ? undefined : () => startNewActor(resourceType),
     })),
   ];
 
