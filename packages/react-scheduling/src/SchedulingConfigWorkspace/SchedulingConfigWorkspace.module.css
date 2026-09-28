@@ -10,7 +10,9 @@
 
 .sidebar {
   flex-shrink: 0;
-  width: 300px;
+  width: 312px;
+  /* Room for an overlay scrollbar, which takes no layout space and would cover the + buttons. */
+  padding-right: var(--mantine-spacing-sm);
   overflow-y: auto;
 }
 
