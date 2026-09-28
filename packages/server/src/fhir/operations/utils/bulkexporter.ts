@@ -71,6 +71,9 @@ export class BulkExporter {
   async getWriter(resourceType: string): Promise<BulkFileWriter> {
     let writer = this.writers[resourceType];
     if (!writer) {
+      if (!this.resource) {
+        throw new Error('Export must be started before writing output');
+      }
       // Like the AsyncJob, the output Binary is bookkeeping for a read operation, so create it
       // with the system repo (scoped to the caller's project + account compartment so they can
       // presign/download it). The exported data was already access-checked when read.
@@ -78,6 +81,11 @@ export class BulkExporter {
       const binary = await this.repo.getSystemRepo().createResource<Binary>({
         resourceType: 'Binary',
         contentType: NDJSON_CONTENT_TYPE,
+        // Bind export output Binary authorization to the export job context.
+        // Binary read/presign paths must be able to read this reference.
+        securityContext: {
+          reference: getReferenceString(this.resource),
+        },
         meta: {
           project: this.repo.currentProject()?.id,
           accounts: accountCompartment ? [accountCompartment] : undefined,

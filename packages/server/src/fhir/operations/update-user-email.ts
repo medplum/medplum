@@ -53,6 +53,15 @@ const op = makeOperationDefinition(
         documentation: 'If true, do not send the verification email and mark the email as non-verified',
       },
       {
+        use: 'in',
+        name: 'sendEmail',
+        type: 'boolean',
+        min: 0,
+        max: '1',
+        documentation:
+          'If false, create the email verification request but do not send the built-in verification email. Default true.',
+      },
+      {
         use: 'out',
         name: 'return',
         type: 'User',
@@ -68,6 +77,7 @@ type InputParams = {
   email: string;
   updateProfileTelecom?: boolean;
   skipEmailVerification?: boolean;
+  sendEmail?: boolean;
 };
 
 const profileTypesWithTelecom: ResourceType[] = ['Patient', 'Practitioner', 'RelatedPerson'];
@@ -104,39 +114,10 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
 
       if (!params.skipEmailVerification) {
         const { id, secret } = await verifyEmail(txRepo, user);
-        const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
-
-        // Use the target user's own project for project-level SMTP configuration.
-        // A super admin may be operating across projects, so the caller's project is not authoritative.
-        let emailProject: WithId<Project> | undefined;
-        if (user.project) {
-          emailProject =
-            user.project.reference === getReferenceString(project)
-              ? project
-              : await getGlobalSystemRepo().readReference<Project>(user.project);
+        // sendEmail: false lets the caller send its own email, e.g. from a Bot subscribed to UserSecurityRequest
+        if (params.sendEmail !== false) {
+          await sendVerificationEmail(id, secret, user, project, txRepo);
         }
-
-        await sendEmail(
-          txRepo,
-          {
-            to: params.email,
-            subject: 'Medplum Email Address Updated',
-            text: [
-              'We received a request to update the email address associated with your Medplum account.',
-              '',
-              'Please click on the following link to verify your ability to receive emails:',
-              '',
-              url,
-              '',
-              'If you received this in error, you can safely ignore it.',
-              '',
-              'Thank you,',
-              'Medplum',
-              '',
-            ].join('\n'),
-          },
-          emailProject
-        );
       }
 
       if (params.updateProfileTelecom && user.project?.reference) {
@@ -189,4 +170,46 @@ async function updateProfileTelecom(
   profile.telecom = telecom;
 
   return repo.updateResource(profile);
+}
+
+async function sendVerificationEmail(
+  id: string,
+  secret: string,
+  user: WithId<User>,
+  project: WithId<Project>,
+  repo: Repository
+): Promise<void> {
+  const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
+
+  // Use the target user's own project for project-level SMTP configuration.
+  // A super admin may be operating across projects, so the caller's project is not authoritative.
+  let emailProject: WithId<Project> | undefined;
+  if (user.project) {
+    emailProject =
+      user.project.reference === getReferenceString(project)
+        ? project
+        : await getGlobalSystemRepo().readReference<Project>(user.project);
+  }
+
+  await sendEmail(
+    repo,
+    {
+      to: user.email,
+      subject: 'Medplum Email Address Updated',
+      text: [
+        'We received a request to update the email address associated with your Medplum account.',
+        '',
+        'Please click on the following link to verify your ability to receive emails:',
+        '',
+        url,
+        '',
+        'If you received this in error, you can safely ignore it.',
+        '',
+        'Thank you,',
+        'Medplum',
+        '',
+      ].join('\n'),
+    },
+    emailProject
+  );
 }
