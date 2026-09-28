@@ -1,6 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Accordion, Alert, Badge, Box, Button, Group, Stack, Text, Title, VisuallyHidden } from '@mantine/core';
+import {
+  Accordion,
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Group,
+  Stack,
+  Text,
+  Title,
+  Tooltip,
+  VisuallyHidden,
+} from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
 import { IconAlertTriangle } from '@tabler/icons-react';
@@ -69,7 +81,9 @@ export function OfferingEntry(props: OfferingEntryProps): JSX.Element {
             <OverridesBadge overrides={describeOverrides(value)} serviceName={serviceName} />
             {dirty && (
               <>
-                <Box className={classes.dot} aria-hidden />
+                <Tooltip label="Unsaved changes" withArrow>
+                  <Box className={classes.dot} aria-hidden />
+                </Tooltip>
                 <VisuallyHidden>Unsaved changes</VisuallyHidden>
               </>
             )}
