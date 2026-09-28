@@ -816,6 +816,42 @@ export const DrPatelSchedule = buildSchedule('schedule-dr-patel', 'Practitioner/
   name: 'Walk-in Clinic',
 });
 
+/** Works at both clinics: the main clinic as another system linked her, the satellite as the workspace did. */
+export const DrBrooksPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-brooks',
+  name: [{ given: ['Elena'], family: 'Brooks', prefix: ['Dr.'] }],
+  extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
+};
+
+/** Carries an identifier, which marks it as another system's, so the workspace won't change it. */
+export const DrBrooksLinkedRole: WithId<PractitionerRole> = {
+  resourceType: 'PractitionerRole',
+  id: 'role-dr-brooks-main-clinic',
+  identifier: [{ system: 'http://example.org/provider-location-link', value: 'dr-brooks|main-clinic' }],
+  practitioner: { reference: 'Practitioner/dr-brooks' },
+  location: [{ reference: 'Location/main-clinic' }],
+  active: true,
+};
+
+/** Holds only what the workspace writes, so the satellite can be removed from her page. */
+export const DrBrooksRole: WithId<PractitionerRole> = {
+  resourceType: 'PractitionerRole',
+  id: 'role-dr-brooks-satellite',
+  practitioner: { reference: 'Practitioner/dr-brooks' },
+  location: [{ reference: 'Location/satellite-clinic' }],
+  active: true,
+};
+
+/** Offers one visit type held at each clinic, so taking the satellite away strands Satellite Follow-up. */
+export const DrBrooksSchedule: WithId<Schedule> = {
+  ...buildSchedule('schedule-dr-brooks', 'Practitioner/dr-brooks', 'Dr. Elena Brooks'),
+  serviceType: [
+    ...toServiceTypeCodeableConcepts(UltrasoundImagingService),
+    ...toServiceTypeCodeableConcepts(SatelliteFollowUpService),
+  ],
+};
+
 /** Shared by a provider and a room, which scheduling cannot book. */
 export const SharedSchedule: WithId<Schedule> = {
   ...buildSchedule('schedule-shared', 'Practitioner/dr-rivera', 'Dr. Maya Rivera'),
@@ -830,7 +866,8 @@ export const SharedSchedule: WithId<Schedule> = {
  * the way a clinic would set them, more visit types covering service facilities, split hours, and group
  * capacity, and what booking hides. Visit types that have no duration or are turned off, one held only at the
  * satellite clinic, a provider who left, a retired device, a room with no calendar, a room never typed as one, a
- * provider with no time zone, and a calendar scheduling cannot book at all.
+ * provider with no time zone, a provider at service facilities linked both by another system and by hand, and a
+ * calendar scheduling cannot book at all.
  *
  * Kept out of `SchedulingFixtures`, whose tests read the whole list.
  */
@@ -852,6 +889,10 @@ export const ConfigFixtures = [
   ProcedureRoomSchedule,
   DrPatelPractitioner,
   DrPatelSchedule,
+  DrBrooksPractitioner,
+  DrBrooksLinkedRole,
+  DrBrooksRole,
+  DrBrooksSchedule,
   SharedSchedule,
 ];
 

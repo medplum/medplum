@@ -12,7 +12,7 @@ import type { BookableActorType } from '../../actors';
 import type { ConfigurableActor } from '../../configSearch';
 import { searchConfigurableActors, searchConfigurableServices } from '../../configSearch';
 import { withFixtures } from '../../stories/decorators';
-import { ConfigFixtures, DrNguyenPractitioner, ExamRoomC } from '../../stories/scheduling';
+import { ConfigFixtures, DrBrooksPractitioner, DrNguyenPractitioner, ExamRoomC } from '../../stories/scheduling';
 import { ActorPage } from './ActorPage';
 
 export default {
@@ -89,3 +89,16 @@ export const ProviderWithOverrides = (): JSX.Element => (
  * @returns The story.
  */
 export const RoomWithNoCalendar = (): JSX.Element => <StoredActor resourceType="Location" id={ExamRoomC.id} />;
+
+/**
+ * Dr. Elena Brooks works at both clinics. Another system linked her to the main clinic, so it is locked: hover the
+ * badge to see why. The satellite clinic was linked here, so it can be removed. Remove it and Satellite Follow-up,
+ * held only there, is marked as not bookable before anything is saved.
+ *
+ * Saving turns the satellite's role off rather than deleting it, and adding the satellite back turns the same role
+ * on again.
+ * @returns The story.
+ */
+export const ProviderServiceFacilities = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrBrooksPractitioner.id} />
+);
