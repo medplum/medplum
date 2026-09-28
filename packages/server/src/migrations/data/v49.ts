@@ -63,8 +63,7 @@ const minId = '00000000-0000-0000-0000-000000000000';
 
 /** Where to resume the backfill: after `lastId` in one resource type's table, or past the end of all of them. */
 export type BackfillCheckpoint =
-  | { readonly resourceType: (typeof resourceTypes)[number]; readonly lastId: string }
-  | { readonly done: true };
+  { readonly resourceType: (typeof resourceTypes)[number]; readonly lastId: string } | { readonly done: true };
 
 export interface BackfillOptions {
   /** Resources scanned per statement. Bounds how long any single row lock is held. */

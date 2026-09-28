@@ -49,10 +49,9 @@ async function getProjectIds(resourceId: string): Promise<(string | null)[]> {
 async function waitForLockWait(pid: number): Promise<void> {
   const pool = getDatabasePool(DatabaseMode.WRITER);
   for (let i = 0; i < 200; i++) {
-    const result = await pool.query(
-      `SELECT 1 FROM pg_stat_activity WHERE pid = $1 AND wait_event_type = 'Lock'`,
-      [pid]
-    );
+    const result = await pool.query(`SELECT 1 FROM pg_stat_activity WHERE pid = $1 AND wait_event_type = 'Lock'`, [
+      pid,
+    ]);
     if (result.rowCount) {
       return;
     }
@@ -74,14 +73,14 @@ function isBatchQuery(text: unknown): boolean {
 function failBatchQueries(client: PoolClient, times: number): MockInstance<PoolClient['query']> {
   const query = client.query.bind(client) as (...args: unknown[]) => Promise<unknown>;
   let remaining = times;
-  return vi.spyOn(client, 'query').mockImplementation(((...args: unknown[]) => {
+  return vi.spyOn(client, 'query').mockImplementation((...args: unknown[]) => {
     if (isBatchQuery(args[0]) && remaining-- > 0) {
       return query(
         `DO $$ BEGIN RAISE EXCEPTION 'could not serialize access due to concurrent delete' USING ERRCODE = 'serialization_failure'; END $$`
       );
     }
     return query(...args);
-  }));
+  });
 }
 
 describe('v49: backfill HumanName.projectId', () => {
@@ -138,7 +137,10 @@ describe('v49: backfill HumanName.projectId', () => {
       const { project, repo } = await createTestProject({ withRepo: true });
       const patientIds: string[] = [];
       for (let i = 0; i < 20; i++) {
-        const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: randomUUID() }] });
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ family: randomUUID() }],
+        });
         patientIds.push(patient.id);
       }
       patientIds.sort();
