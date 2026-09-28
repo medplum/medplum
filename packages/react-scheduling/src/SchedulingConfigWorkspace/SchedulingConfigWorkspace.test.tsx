@@ -226,10 +226,16 @@ describe('SchedulingConfigWorkspace', () => {
     expect(within(sidebar()).queryByText('Second Floor')).not.toBeInTheDocument();
   });
 
-  test('a calendar held by two actors is counted rather than listed', async () => {
+  test('a calendar held by two actors is logged rather than listed', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     await setup();
 
-    expect(within(sidebar()).getByText(/1 calendar is not listed because it can’t be booked/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('Calendars not listed'), [
+        expect.stringMatching(/^Schedule\//),
+      ])
+    );
+    consoleError.mockRestore();
   });
 
   test('offers to create visit types, and never providers', async () => {

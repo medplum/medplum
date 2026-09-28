@@ -64,7 +64,7 @@ export interface ConfigurableCalendarsResult {
    * Calendars read but left out because they hold more than one actor, or an actor of a type this package
    * does not schedule. Scheduling cannot book either, so they are misconfigured rather than hidden.
    */
-  readonly skipped: number;
+  readonly skipped: WithId<Schedule>[];
 }
 
 type ActorOf<K extends BookableActorType> = Extract<ConfigurableActorResource, { resourceType: K }>;
@@ -199,7 +199,7 @@ export async function searchConfigurableCalendars(
   }
 
   const read = schedules.slice(0, limit);
-  const skipped = read.filter((schedule) => !getSoleActorReference(schedule)).length;
+  const skipped = read.filter((schedule) => !getSoleActorReference(schedule));
   const found: ConfigurableActor<WithId<Location>>[] = [];
   for (const [reference, held] of groupBySoleActor(read)) {
     const resource = locations.get(reference);

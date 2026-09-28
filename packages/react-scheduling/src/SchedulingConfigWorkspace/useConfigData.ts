@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import type { Device, HealthcareService, Location, Practitioner, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -23,8 +24,6 @@ export interface ConfigData {
   readonly providers: ConfigList<ConfigurableActor<WithId<Practitioner>>>;
   readonly rooms: ConfigList<ConfigurableActor<WithId<Location>>>;
   readonly devices: ConfigList<ConfigurableActor<WithId<Device>>>;
-  /** Calendars scheduling cannot book, with several actors or an actor of a type it doesn't schedule. */
-  readonly unbookableCalendars: number;
   /** Puts resources the server now holds into the lists, in place of what they were loaded as. */
   readonly store: (resources: readonly WithId<Resource>[]) => void;
 }
@@ -53,10 +52,7 @@ export function useConfigData(): ConfigData {
   const [providers, setProviders] = useState<Settled<Read<ConfigurableActor<WithId<Practitioner>>>>>(LOADING);
   const [typedRooms, setTypedRooms] = useState<Settled<Read<ConfigurableActor<WithId<Location>>>>>(LOADING);
   const [devices, setDevices] = useState<Settled<Read<ConfigurableActor<WithId<Device>>>>>(LOADING);
-  const [calendars, setCalendars] =
-    useState<Settled<{ readonly locations: Read<ConfigurableActor<WithId<Location>>>; readonly skipped: number }>>(
-      LOADING
-    );
+  const [calendars, setCalendars] = useState<Settled<Read<ConfigurableActor<WithId<Location>>>>>(LOADING);
   // Laid over each read, so a save made while a read was in flight isn't lost when the older result lands.
   const [saved, setSaved] = useState<readonly WithId<Resource>[]>([]);
 
@@ -79,10 +75,15 @@ export function useConfigData(): ConfigData {
     settle(searchConfigurableActors(medplum, 'Location', options).then(toRead), setTypedRooms);
     settle(searchConfigurableActors(medplum, 'Device', options).then(toRead), setDevices);
     settle(
-      searchConfigurableCalendars(medplum, options).then((result) => ({
-        locations: { items: result.locations, complete: result.complete },
-        skipped: result.skipped,
-      })),
+      searchConfigurableCalendars(medplum, options).then((result) => {
+        if (result.skipped.length > 0) {
+          console.error(
+            'Calendars not listed because scheduling can’t book them: each has more than one actor, or an actor that isn’t a Practitioner, Location, or Device.',
+            result.skipped.map(getReferenceString)
+          );
+        }
+        return { items: result.locations, complete: result.complete };
+      }),
       setCalendars
     );
     return () => controller.abort();
@@ -104,9 +105,9 @@ export function useConfigData(): ConfigData {
 
     // Rooms come from two reads: the Locations typed as rooms, and the Locations some calendar is held on alone.
     const rooms: ConfigList<ConfigurableActor<WithId<Location>>> = {
-      items: withSaved(mergeActors(typedRooms.value?.items ?? [], calendars.value?.locations.items ?? [])),
+      items: withSaved(mergeActors(typedRooms.value?.items ?? [], calendars.value?.items ?? [])),
       loading: typedRooms.loading || calendars.loading,
-      complete: (typedRooms.value?.complete ?? true) && (calendars.value?.locations.complete ?? true),
+      complete: (typedRooms.value?.complete ?? true) && (calendars.value?.complete ?? true),
       error: typedRooms.error ?? calendars.error,
     };
 
@@ -115,7 +116,6 @@ export function useConfigData(): ConfigData {
       providers: toList(providers, withSaved),
       rooms,
       devices: toList(devices, withSaved),
-      unbookableCalendars: calendars.value?.skipped ?? 0,
       store,
     };
   }, [services, providers, typedRooms, devices, calendars, saved, store]);

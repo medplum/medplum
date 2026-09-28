@@ -100,12 +100,6 @@ describe('ConfigPanel', () => {
     expect(row('Procedure Room')).toHaveTextContent('Not marked as a room');
   });
 
-  test('shows the footer below the sections', () => {
-    setup({ footer: '1 calendar is not listed' });
-
-    expect(screen.getByText('1 calendar is not listed')).toBeInTheDocument();
-  });
-
   test('collapsing a section hides its rows and keeps its header and count', async () => {
     setup();
 

@@ -276,7 +276,7 @@ describe('searchConfigurableCalendars', () => {
       ['room-1', ['room-1']],
     ]);
     expect(complete).toBe(true);
-    expect(skipped).toBe(0);
+    expect(skipped).toEqual([]);
     expect(querySentTo(medplum)).toEqual({ _count: '1000', _include: 'Schedule:actor:Location' });
   });
 
@@ -292,7 +292,7 @@ describe('searchConfigurableCalendars', () => {
     const { locations, skipped } = await searchConfigurableCalendars(medplum);
 
     expect(locations).toEqual([]);
-    expect(skipped).toBe(2);
+    expect(skipped.map((schedule) => schedule.id)).toEqual(['shared', 'role']);
   });
 
   test('stops at the limit and reports the rest missing', async () => {

@@ -222,16 +222,6 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
           onFilterChange={setFilter}
           showInactive={showInactive}
           onShowInactiveChange={setShowInactive}
-          footer={
-            data.unbookableCalendars > 0 && (
-              <Text c="dimmed" size="xs" pl="xs">
-                {data.unbookableCalendars === 1
-                  ? '1 calendar is not listed because it can’t be booked: it'
-                  : `${data.unbookableCalendars} calendars are not listed because they can’t be booked: each`}{' '}
-                has more than one actor, or an actor that isn’t a provider, room, or device.
-              </Text>
-            )
-          }
         />
       </Box>
 
