@@ -241,13 +241,47 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
   });
 
-  test('names every service type on an appointment not booked against a visit type', () => {
+  test('uses only the first referenced visit type', () => {
     renderDetails({
       ...BOOKED_APPOINTMENT,
+      serviceType: [
+        ...(BOOKED_APPOINTMENT.serviceType ?? []),
+        {
+          text: 'Ignored visit type',
+          extension: [{ url: ServiceTypeReferenceURI, valueReference: { reference: 'HealthcareService/other' } }],
+        },
+        { text: 'Abdominal ultrasound' },
+      ],
+    });
+
+    expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
+    expect(screen.queryByText(/Ignored visit type/)).not.toBeInTheDocument();
+    expect(screen.getByText('Abdominal ultrasound')).toBeInTheDocument();
+  });
+
+  test('shows unreferenced service types as procedures when there is no visit type', () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      appointmentType: undefined,
       serviceType: [{ text: 'Office visit' }, { text: 'Follow-up' }],
     });
 
     expect(screen.getByText('Office visit, Follow-up')).toBeInTheDocument();
+    expect(screen.getByText('Procedure codes')).toBeInTheDocument();
+    expect(screen.queryByText('Service')).not.toBeInTheDocument();
+  });
+
+  test('falls back to appointment type for the service when all service types are procedures', () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      appointmentType: { text: 'Follow-up visit' },
+      serviceType: [{ text: 'Abdominal ultrasound' }],
+    });
+
+    expect(screen.getByText('Service')).toBeInTheDocument();
+    expect(screen.getByText('Follow-up visit')).toBeInTheDocument();
+    expect(screen.getByText('Procedure codes')).toBeInTheDocument();
+    expect(screen.getByText('Abdominal ultrasound')).toBeInTheDocument();
   });
 
   test('leaves out what is not on file', async () => {

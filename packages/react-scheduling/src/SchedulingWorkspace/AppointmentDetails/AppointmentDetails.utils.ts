@@ -26,26 +26,23 @@ export function getPatientParticipant(appointment: Appointment): AppointmentPart
 }
 
 export interface ServiceTypes {
-  readonly visitTypes: CodeableConcept[];
+  readonly visitType?: CodeableConcept;
   readonly procedures: CodeableConcept[];
 }
 
 /**
- * Splits `serviceType` into the visit type's entries (those carrying the HealthcareService
- * reference) and the procedure codes the booking form appends beside them. An appointment
- * where no entry carries the reference wasn't booked against a visit type, so every entry is
- * taken as naming the visit.
+ * Reads the first entry carrying a HealthcareService reference as the visit type.
+ * Additional referenced entries are ignored. Entries without a reference are procedures.
  *
  * @param appointment - The appointment being described.
- * @returns The entries naming the visit type, and the procedure codes.
+ * @returns The visit type, if present, and the procedure codes.
  */
 export function partitionServiceTypes(appointment: Appointment): ServiceTypes {
   const serviceType = appointment.serviceType ?? [];
-  const visitTypes = serviceType.filter((concept) => getExtension(concept, ServiceTypeReferenceURI));
-  if (visitTypes.length === 0) {
-    return { visitTypes: serviceType, procedures: [] };
-  }
-  return { visitTypes, procedures: serviceType.filter((concept) => !visitTypes.includes(concept)) };
+  return {
+    visitType: serviceType.find((concept) => getExtension(concept, ServiceTypeReferenceURI)),
+    procedures: serviceType.filter((concept) => !getExtension(concept, ServiceTypeReferenceURI)),
+  };
 }
 
 /**
@@ -116,8 +113,11 @@ export function buildAppointmentUpdate(
 
   const updated: WithId<Appointment> = { ...appointment, participant };
   if (requirements.has(REQUIRES_PROCEDURE_CODE)) {
-    const { visitTypes } = partitionServiceTypes(appointment);
-    updated.serviceType = [...visitTypes, ...values.procedure.map(toConcept)];
+    // Preserve referenced entries even when the UI only uses the first one.
+    const referenced = (appointment.serviceType ?? []).filter((concept) =>
+      getExtension(concept, ServiceTypeReferenceURI)
+    );
+    updated.serviceType = [...referenced, ...values.procedure.map(toConcept)];
   }
   if (requirements.has(REQUIRES_DIAGNOSIS_CODE)) {
     updated.reasonCode = values.diagnosis.length > 0 ? values.diagnosis.map(toConcept) : undefined;
