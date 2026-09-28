@@ -267,7 +267,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   }
 
   const cancelable = CANCELABLE_STATUSES.has(appointment.status);
-  const { visitTypes, procedures } = partitionServiceTypes(appointment);
+  const { visitType, procedures } = partitionServiceTypes(appointment);
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
 
   // Both pages fill the pane the same way, so what can be done to the visit sits at the
@@ -277,7 +277,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       <Badge color={STATUS_COLORS[appointment.status]}>{appointment.status}</Badge>
       {!editing && patientLine}
       {whenLine}
-      <Detail label="Service" value={formatService(appointment, visitTypes)} />
+      <Detail label="Service" value={formatService(appointment, visitType)} />
       <Detail
         label="With"
         value={
@@ -408,10 +408,10 @@ function formatWhen(appointment: Appointment): string | undefined {
 /**
  * Names what the visit is for, preferring the service over the kind of visit.
  * @param appointment - The appointment being described.
- * @param visitTypes - The `serviceType` entries naming the visit type.
+ * @param visitType - The first `serviceType` entry referencing a visit type.
  * @returns The service or appointment type, or undefined when neither is on file.
  */
-function formatService(appointment: Appointment, visitTypes: CodeableConcept[]): string | undefined {
-  const service = visitTypes.map(formatCodeableConcept).filter(Boolean).join(', ');
+function formatService(appointment: Appointment, visitType: CodeableConcept | undefined): string | undefined {
+  const service = formatCodeableConcept(visitType);
   return service || formatCodeableConcept(appointment.appointmentType) || undefined;
 }
