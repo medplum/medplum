@@ -278,10 +278,7 @@ async function getExistingLoginFromIdTokenHint(
  * @param client - The current client application.
  * @returns Existing login if found; undefined otherwise.
  */
-async function getExistingLoginFromCookie(
-  req: Request,
-  client: ClientApplication
-): Promise<WithId<Login> | undefined> {
+async function getExistingLoginFromCookie(req: Request, client: ClientApplication): Promise<WithId<Login> | undefined> {
   const cookieName = 'medplum-' + client.id;
   const cookieValue = req.cookies[cookieName];
   if (!cookieValue) {
