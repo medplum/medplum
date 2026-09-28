@@ -31,6 +31,7 @@ import type {
   PlanDefinition,
   PlanDefinitionAction,
   PlanDefinitionGoal,
+  PlanDefinitionGoalTarget,
   Practitioner,
   Questionnaire,
   Reference,
@@ -164,14 +165,35 @@ async function createGoal(
     category: goal.category ? [goal.category] : undefined,
     priority: goal.priority,
     startCodeableConcept: goal.start,
-    target: goal.target?.map((target): GoalTarget => ({
-      measure: target.measure,
-      detailQuantity: target.detailQuantity,
-      detailRange: target.detailRange,
-      detailCodeableConcept: target.detailCodeableConcept,
-      dueDuration: target.due,
-    })),
+    target: createGoalTargets(goal.target),
   });
+}
+
+/**
+ * Creates the Goal targets for the given PlanDefinition goal targets.
+ *
+ * PlanDefinition.goal.target allows detail[x] without a measure, but Goal.target does not
+ * (constraint gol-1), so detail[x] is only carried over when a measure is present. Targets
+ * left with nothing to say are dropped, because FHIR does not allow empty elements.
+ * @param targets - The PlanDefinition goal targets.
+ * @returns The Goal targets, or undefined if there are none.
+ */
+function createGoalTargets(targets: PlanDefinitionGoalTarget[] | undefined): GoalTarget[] | undefined {
+  const result: GoalTarget[] = [];
+  for (const target of targets ?? EMPTY) {
+    if (target.measure) {
+      result.push({
+        measure: target.measure,
+        detailQuantity: target.detailQuantity,
+        detailRange: target.detailRange,
+        detailCodeableConcept: target.detailCodeableConcept,
+        dueDuration: target.due,
+      });
+    } else if (target.due) {
+      result.push({ dueDuration: target.due });
+    }
+  }
+  return result.length > 0 ? result : undefined;
 }
 
 /**

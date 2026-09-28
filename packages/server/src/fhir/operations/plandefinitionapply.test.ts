@@ -1484,6 +1484,97 @@ describe('PlanDefinition apply', () => {
     expect(goal2.target).toBeUndefined();
   });
 
+  test('Goal target detail without a measure is not carried over', async () => {
+    // 1. Create a PlanDefinition with goal targets that have detail but no measure
+    // 2. Create a Patient
+    // 3. Apply the PlanDefinition
+    // 4. Verify the Goal target keeps due but drops detail (Goal constraint gol-1)
+
+    // 1. Create a PlanDefinition with goal targets that have detail but no measure
+    const res1 = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+        status: 'active',
+        goal: [
+          {
+            description: { text: 'Walk 10,000 steps a day' },
+            target: [
+              {
+                detailQuantity: { value: 10000, unit: 'steps' },
+                due: { value: 30, unit: 'days' },
+              },
+            ],
+          },
+          {
+            description: { text: 'Sleep 8 hours a night' },
+            target: [
+              {
+                detailQuantity: { value: 8, unit: 'hours' },
+              },
+            ],
+          },
+        ],
+        action: [
+          {
+            title: 'Follow up visit',
+          },
+        ],
+      });
+    expect(res1).toHaveStatus(201);
+
+    // 2. Create a Patient
+    const res2 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Detail'], family: 'Demo' }],
+      });
+    expect(res2).toHaveStatus(201);
+    const patient = res2.body as WithId<Patient>;
+
+    // 3. Apply the PlanDefinition
+    const res3 = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${res1.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'subject',
+            valueString: getReferenceString(patient),
+          },
+        ],
+      });
+    expect(res3).toHaveStatus(200);
+
+    // 4. Verify the Goal target keeps due but drops detail (Goal constraint gol-1)
+    const carePlan = res3.body as WithId<CarePlan>;
+    expect(carePlan.goal).toHaveLength(2);
+
+    const res4 = await request(app)
+      .get(`/fhir/R4/${carePlan.goal?.[0]?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res4).toHaveStatus(200);
+    const goal1 = res4.body as Goal;
+    expect(goal1.target).toStrictEqual([{ dueDuration: { value: 30, unit: 'days' } }]);
+
+    // A target left empty once detail is dropped is omitted entirely
+    const res5 = await request(app)
+      .get(`/fhir/R4/${carePlan.goal?.[1]?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res5).toHaveStatus(200);
+    const goal2 = res5.body as Goal;
+    expect(goal2.description).toMatchObject({ text: 'Sleep 8 hours a night' });
+    expect(goal2.target).toBeUndefined();
+  });
+
   test('PlanDefinition without goals does not populate CarePlan.goal', async () => {
     // 1. Create a PlanDefinition without goals
     const res1 = await request(app)
