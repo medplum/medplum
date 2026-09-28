@@ -31,6 +31,7 @@ export interface AppointmentDetailsFormProps {
   readonly appointment: WithId<Appointment>;
   readonly procedureBinding?: string;
   readonly diagnosisBinding?: string;
+  readonly onCancel?: () => void;
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
 }
 
@@ -49,6 +50,7 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
     procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
     diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
     onUpdated,
+    onCancel,
   } = props;
   const medplum = useMedplum();
 
@@ -78,7 +80,7 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
   }
 
   async function save(): Promise<void> {
-    if (!patient) {
+    if (!patient || !complete) {
       return;
     }
     setSaving(true);
@@ -100,7 +102,11 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
 
   return (
     <Stack gap="sm">
-      <AppointmentPatientInput defaultValue={patient} onChange={choosePatient} />
+      <AppointmentPatientInput
+        defaultValue={patient}
+        onChange={choosePatient}
+        error={!patient ? 'Select a patient.' : undefined}
+      />
       {service && requirements.size > 0 && (
         <BookingRequirementFields
           key={service.id}
@@ -109,6 +115,7 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
           procedureBinding={procedureBinding}
           diagnosisBinding={diagnosisBinding}
           onChange={chooseValues}
+          showValidation
         />
       )}
       {saveError !== undefined && (
@@ -119,6 +126,11 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
       <Button variant="outline" loading={saving} disabled={!edited || !complete || saved} onClick={save}>
         Save Changes
       </Button>
+      {onCancel && (
+        <Button variant="subtle" disabled={saving} onClick={onCancel}>
+          Cancel
+        </Button>
+      )}
     </Stack>
   );
 }

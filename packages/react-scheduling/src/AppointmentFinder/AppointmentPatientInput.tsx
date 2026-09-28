@@ -19,6 +19,7 @@ export interface AppointmentPatientInputProps {
   readonly defaultValue?: WithId<Patient> | Reference<Patient>;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
+  readonly error?: string;
   readonly onChange: (patient: WithId<Patient> | undefined) => void;
 }
 
@@ -28,7 +29,7 @@ export interface AppointmentPatientInputProps {
  * @returns The field.
  */
 export function AppointmentPatientInput(props: AppointmentPatientInputProps): JSX.Element {
-  const { defaultValue, mrnSystem, onChange } = props;
+  const { defaultValue, mrnSystem, onChange, error } = props;
 
   const patientItem = useCallback(
     (option: AsyncAutocompleteOption<WithId<Patient>>) => (
@@ -44,6 +45,7 @@ export function AppointmentPatientInput(props: AppointmentPatientInputProps): JS
       label="Patient"
       placeholder="Search patients by name"
       required
+      error={error}
       searchCriteria={PATIENT_SEARCH_CRITERIA}
       defaultValue={defaultValue as WithId<Patient> | Reference<WithId<Patient>> | undefined}
       itemComponent={patientItem}

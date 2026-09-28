@@ -17,6 +17,8 @@ export interface BookingRequirementFieldsProps {
   readonly requirements: ReadonlySet<SchedulingRequirement>;
   /** The code fields read this once, at mount; the checkbox follows it. */
   readonly values: BookingRequirementValues;
+  /** Show an inline error on each unanswered required field. */
+  readonly showValidation?: boolean;
   readonly procedureBinding: string;
   readonly diagnosisBinding: string;
   readonly onChange: (values: BookingRequirementValues) => void;
@@ -30,12 +32,13 @@ export interface BookingRequirementFieldsProps {
  * @returns The fields the visit type asks for.
  */
 export function BookingRequirementFields(props: BookingRequirementFieldsProps): JSX.Element {
-  const { requirements, values, procedureBinding, diagnosisBinding, onChange } = props;
+  const { requirements, values, procedureBinding, diagnosisBinding, onChange, showValidation } = props;
   return (
     <>
       {requirements.has(REQUIRES_PROCEDURE_CODE) && (
         <ValueSetAutocomplete
           name="procedure-code"
+          error={showValidation && values.procedure.length === 0 ? 'Add at least one procedure code.' : undefined}
           label="Procedure codes"
           required
           itemComponent={RequirementCodeItem}
@@ -48,6 +51,7 @@ export function BookingRequirementFields(props: BookingRequirementFieldsProps): 
       {requirements.has(REQUIRES_DIAGNOSIS_CODE) && (
         <ValueSetAutocomplete
           name="diagnosis-code"
+          error={showValidation && values.diagnosis.length === 0 ? 'Add at least one diagnosis code.' : undefined}
           label="Diagnosis codes"
           required
           itemComponent={RequirementCodeItem}
@@ -60,6 +64,7 @@ export function BookingRequirementFields(props: BookingRequirementFieldsProps): 
       {requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE) && (
         <Checkbox
           classNames={{ label: classes.requiredLabel }}
+          error={showValidation && !values.medicalNecessity ? 'Confirm medical necessity.' : undefined}
           label="Medical necessity confirmed"
           required
           checked={values.medicalNecessity}

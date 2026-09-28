@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Badge, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { formatCodeableConcept, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
+import {
+  formatCodeableConcept,
+  getExtensionValue,
+  isDefined,
+  normalizeErrorString,
+  resolveId,
+  SchedulingMedicalNecessityURI,
+} from '@medplum/core';
 import type { Appointment, CodeableConcept, Parameters, Reference } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
@@ -185,6 +192,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     props;
   const patient = getPatientParticipant(appointment)?.actor;
   const otherActors = getOtherActors(appointment);
+  const [editing, setEditing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
 
@@ -259,13 +267,15 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   }
 
   const cancelable = CANCELABLE_STATUSES.has(appointment.status);
-  const { visitTypes } = partitionServiceTypes(appointment);
+  const { visitTypes, procedures } = partitionServiceTypes(appointment);
+  const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
 
   // Both pages fill the pane the same way, so what can be done to the visit sits at the
   // foot of either.
   return (
     <Stack gap="sm" className={classes.details}>
       <Badge color={STATUS_COLORS[appointment.status]}>{appointment.status}</Badge>
+      {!editing && patientLine}
       {whenLine}
       <Detail label="Service" value={formatService(appointment, visitTypes)} />
       <Detail
@@ -283,34 +293,60 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       />
       <Detail label="Notes" value={appointment.comment ?? appointment.description} />
       <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
-      <AppointmentDetailsForm
-        appointment={appointment}
-        procedureBinding={procedureBinding}
-        diagnosisBinding={diagnosisBinding}
-        onUpdated={onUpdated}
-      />
-      <Stack gap="sm" className={classes.actions}>
-        <Divider />
-        {RESCHEDULABLE_STATUSES.has(appointment.status) && (
-          <Button
-            variant="outline"
-            leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
-            onClick={() => setRescheduling(true)}
-          >
-            Reschedule
+      {editing ? (
+        <AppointmentDetailsForm
+          appointment={appointment}
+          procedureBinding={procedureBinding}
+          diagnosisBinding={diagnosisBinding}
+          onUpdated={(updated) => {
+            setEditing(false);
+            return onUpdated?.(updated);
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      ) : (
+        <>
+          <Detail
+            label="Procedure codes"
+            value={procedures.map((concept) => formatCodeableConcept(concept)).join(', ')}
+          />
+          <Detail
+            label="Diagnosis codes"
+            value={appointment.reasonCode?.map((concept) => formatCodeableConcept(concept)).join(', ')}
+          />
+          <Detail
+            label="Medical necessity"
+            value={typeof medicalNecessity === 'boolean' && (medicalNecessity ? 'Confirmed' : 'Not confirmed')}
+          />
+        </>
+      )}
+      {!editing && (
+        <Stack gap="sm" className={classes.actions}>
+          <Divider />
+          <Button variant="outline" onClick={() => setEditing(true)}>
+            Edit
           </Button>
-        )}
-        <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
-          Cancel Appointment
-        </Button>
-        {!cancelable && (
-          <Text size="sm" c="dimmed">
-            {appointment.status === 'cancelled'
-              ? 'This appointment is cancelled.'
-              : `An appointment in '${appointment.status}' status cannot be cancelled.`}
-          </Text>
-        )}
-      </Stack>
+          {RESCHEDULABLE_STATUSES.has(appointment.status) && (
+            <Button
+              variant="outline"
+              leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
+              onClick={() => setRescheduling(true)}
+            >
+              Reschedule
+            </Button>
+          )}
+          <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
+            Cancel Appointment
+          </Button>
+          {!cancelable && (
+            <Text size="sm" c="dimmed">
+              {appointment.status === 'cancelled'
+                ? 'This appointment is cancelled.'
+                : `An appointment in '${appointment.status}' status cannot be cancelled.`}
+            </Text>
+          )}
+        </Stack>
+      )}
     </Stack>
   );
 }
