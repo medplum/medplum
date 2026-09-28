@@ -475,6 +475,13 @@ describe('SchedulingWorkspace booking', () => {
       return within(detailsPane() as HTMLElement).getByRole('button', { name: 'Save Changes' });
     }
 
+    async function clickEdit(): Promise<void> {
+      await act(async () => {
+        fireEvent.click(within(detailsPane() as HTMLElement).getByRole('button', { name: 'Edit' }));
+      });
+      await settleAutocomplete();
+    }
+
     test("Saves the codes against the workspace's value sets, and reports the appointment written", async () => {
       const onUpdated = vi.fn();
       setup(undefined, onUpdated);
@@ -483,6 +490,7 @@ describe('SchedulingWorkspace booking', () => {
         fireEvent.click(screen.getByRole('button', { name: `click appointment ${AUTHORIZED_VISIT.id}` }));
       });
       await settleAutocomplete();
+      await clickEdit();
 
       // The stub serves only the workspace's value sets, so finding a code proves the bindings reached the pane.
       await enterCode(/diagnosis code/i, DiagnosisCodes[1]);
@@ -494,9 +502,10 @@ describe('SchedulingWorkspace booking', () => {
       expect(onUpdated).toHaveBeenCalledTimes(1);
       const [updated] = onUpdated.mock.calls[0] as [WithId<Appointment>];
       expect(updated.reasonCode).toEqual([{ coding: [DiagnosisCodes[0]] }, { coding: [DiagnosisCodes[1]] }]);
-      expect(saveButton()).toBeDisabled();
+      expect(within(detailsPane() as HTMLElement).queryByRole('button', { name: 'Save Changes' })).toBeNull();
 
       // An edit only against the written appointment: against the one first opened, removing this code changes nothing.
+      await clickEdit();
       await removePill(codePill(DiagnosisCodes[1]));
       expect(saveButton()).toBeEnabled();
     });
