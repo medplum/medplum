@@ -26,6 +26,11 @@ export interface CalendarFilterValues {
 }
 
 export interface CalendarFiltersProps {
+  /**
+   * What the filters start on. Read once on mount, and not reported through
+   * `onChange`: the caller already holds it.
+   */
+  readonly defaultValue?: CalendarFilterValues;
   /** Reports both filters, whichever one changed. */
   readonly onChange: (values: CalendarFilterValues) => void;
 }
@@ -46,9 +51,9 @@ export interface CalendarFiltersProps {
  * @returns A React Node with the Location and Visit Type fields in it
  */
 export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
-  const { onChange } = props;
-  const [location, setLocation] = useState<WithId<Location>>();
-  const [service, setService] = useState<WithId<HealthcareService>>();
+  const { defaultValue, onChange } = props;
+  const [location, setLocation] = useState<WithId<Location> | undefined>(defaultValue?.location);
+  const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultValue?.service);
 
   // Key to remount field relying on `defaultValue` on change
   // see: https://github.com/medplum/medplum/issues/10288

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, CloseButton, Group, Title, useMantineTheme } from '@mantine/core';
+import { Alert, Center, CloseButton, Group, Loader, Title, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   getExtensionValue,
@@ -9,8 +9,8 @@ import {
   normalizeErrorString,
   SchedulingScheduleColorURI,
 } from '@medplum/core';
-import type { Appointment, Extension, Slot } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import type { Appointment, Extension, Location, OperationOutcome, Reference, Slot } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -84,6 +84,19 @@ export interface SchedulingWorkspaceProps {
    * {@link AppointmentProposalFormProps.appointmentExtensions}.
    */
   readonly appointmentExtensions?: readonly Extension[];
+  /**
+   * The site the Location filter starts on, e.g. the facility the host launched
+   * scheduling from: the Location itself, or its id for the workspace to read. The
+   * user can still change or clear it. Read once on mount; key the workspace to
+   * start it over on another site.
+   */
+  readonly defaultLocation?: WithId<Location> | string;
+}
+
+interface SchedulingWorkspaceBodyProps extends Omit<SchedulingWorkspaceProps, 'defaultLocation'> {
+  readonly defaultLocation?: WithId<Location>;
+  /** Why `defaultLocation` could not be read, shown with the workspace's other errors. */
+  readonly defaultLocationError?: unknown;
 }
 
 /**
@@ -103,11 +116,38 @@ export interface SchedulingWorkspaceProps {
  *   pane, then whatever the form's time search settles on, and nothing while the form
  *   holds no time. The calendar is never moved to reach it — a highlight off the week
  *   on screen is kept, and is drawn again on paging back to it.
+ * - Can open on a site the host chooses: `defaultLocation` is where the Location filter,
+ *   and so the booking form, starts.
  *
  * @param props - Component props
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
  */
 export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Element {
+  const { defaultLocation } = props;
+  const [locationOutcome, setLocationOutcome] = useState<OperationOutcome>();
+
+  // Memoized: `useResource` re-reads whenever its argument's identity changes.
+  const locationValue = useMemo(
+    (): Reference<Location> | WithId<Location> | undefined =>
+      typeof defaultLocation === 'string' ? { reference: `Location/${defaultLocation}` } : defaultLocation,
+    [defaultLocation]
+  );
+  const location = useResource(locationValue, setLocationOutcome);
+
+  // `CalendarFilters` reads its starting site only on mount, so wait for it. This also
+  // keeps the first calendar search from running on every site.
+  if (locationValue && !location && !locationOutcome) {
+    return (
+      <Center className={`${classes.root} ${props.className ?? ''}`}>
+        <Loader aria-label="Loading location" />
+      </Center>
+    );
+  }
+
+  return <SchedulingWorkspaceBody {...props} defaultLocation={location} defaultLocationError={locationOutcome} />;
+}
+
+function SchedulingWorkspaceBody(props: SchedulingWorkspaceBodyProps): JSX.Element {
   const {
     procedureBinding,
     diagnosisBinding,
@@ -115,6 +155,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     appointmentCancellationReasonValueSet,
     canBypassSchedulingRules,
     appointmentExtensions,
+    defaultLocation,
+    defaultLocationError,
   } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
@@ -129,7 +171,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // Owned by `CalendarFilters`, which reports both whenever either changes. Held here
   // because the candidate search below is keyed on them.
-  const [filters, setFilters] = useState<CalendarFilterValues>(NO_FILTERS);
+  const [initialFilters] = useState<CalendarFilterValues>(() =>
+    defaultLocation ? { location: defaultLocation } : NO_FILTERS
+  );
+  const [filters, setFilters] = useState<CalendarFilterValues>(initialFilters);
   const { service: selectedService, location: selectedLocation } = filters;
 
   const [range, setRange] = useState<DateTimeRange>();
@@ -306,7 +351,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     ])
   ) as Record<BookableActorType, CalendarsPanelItem[]>;
 
-  const displayError = resourcesError ?? schedulesLoadingError;
+  const displayError = resourcesError ?? schedulesLoadingError ?? defaultLocationError;
 
   // The pane beside the calendar shows one thing at a time. Opening either side already
   // closes the other, so this only decides which wins if they ever both hold something.
@@ -319,7 +364,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           items={panelItems}
           candidatesLoading={candidatesLoading}
           onToggle={toggleCandidate}
-          filters={<CalendarFilters onChange={setFilters} />}
+          filters={<CalendarFilters defaultValue={initialFilters} onChange={setFilters} />}
         />
       </div>
       <div className={classes.calendar}>
