@@ -62337,6 +62337,10 @@
         "pictureUrl": {
           "description": "Optional picture URL from the external identity provider.",
           "$ref": "#/definitions/string"
+        },
+        "basedOn": {
+          "description": "The existing login that this login was created from, when an authorization request reused an existing session.",
+          "$ref": "#/definitions/Reference"
         }
       },
       "additionalProperties": false,
