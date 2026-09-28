@@ -203,6 +203,18 @@ async function chooseReason(label = 'Patient: Feeling Better'): Promise<void> {
 }
 
 describe('AppointmentDetails', () => {
+  test('shows saved requirements as details until Edit is clicked', () => {
+    renderDetails(AUTHORIZED_APPOINTMENT);
+    expect(screen.getByText(ProcedureCodes[0].display as string)).toBeInTheDocument();
+    expect(screen.getByText(DiagnosisCodes[0].display as string)).toBeInTheDocument();
+    expect(screen.getByText('Confirmed')).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
+    expect(cancelButton()).not.toBeInTheDocument();
+  });
+
   test('describes the appointment', async () => {
     renderDetails(BOOKED_APPOINTMENT);
 
@@ -483,6 +495,7 @@ describe('AppointmentDetails editing', () => {
       />,
       medplum
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
   }
 
   function saveButton(): HTMLElement {
@@ -510,6 +523,7 @@ describe('AppointmentDetails editing', () => {
     });
 
     expect(field(/patient/i)).toBeInTheDocument();
+    expect(screen.getByText('Select a patient.')).toBeInTheDocument();
     expect(saveButton()).toBeDisabled();
   });
 
@@ -562,9 +576,11 @@ describe('AppointmentDetails editing', () => {
 
     await removePill(codePill(ProcedureCodes[0]));
     expect(saveButton()).toBeDisabled();
+    expect(screen.getByText('Add at least one procedure code.')).toBeInTheDocument();
 
     await enterCode(/procedure code/i, ProcedureCodes[1]);
     expect(saveButton()).toBeEnabled();
+    expect(screen.queryByText('Before you can save')).not.toBeInTheDocument();
   });
 
   test('saves the codes, keeping the visit type they were booked under', async () => {
@@ -587,7 +603,8 @@ describe('AppointmentDetails editing', () => {
     ]);
     expect(stored.reasonCode).toEqual([{ coding: [DiagnosisCodes[1]] }]);
     expect(stored.extension).toEqual([{ url: SchedulingMedicalNecessityURI, valueBoolean: true }]);
-    expect(saveButton()).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
   });
 
   test('saves a different patient in place of the one on file', async () => {
@@ -637,11 +654,13 @@ describe('AppointmentDetails editing', () => {
     await screen.findByRole('searchbox', { name: /procedure code/i });
     await enterCode(/procedure code/i, ProcedureCodes[1]);
     expect(saveButton()).toBeEnabled();
+    expect(screen.queryByText('Before you can save')).not.toBeInTheDocument();
 
     await confirmMedicalNecessity();
 
     expect(medicalNecessityBox()).not.toBeChecked();
     expect(saveButton()).toBeDisabled();
+    expect(screen.getByText('Confirm medical necessity.')).toBeInTheDocument();
   });
 
   test('adds a patient to an appointment that had none', async () => {
@@ -717,9 +736,12 @@ describe('AppointmentDetails editing', () => {
     expect(hasPill(codePill(ProcedureCodes[0]))).toBe(false);
     expect(medicalNecessityBox()).not.toBeChecked();
     expect(saveButton()).toBeDisabled();
+    expect(screen.getByText('Confirm medical necessity.')).toBeInTheDocument();
 
+    expect(screen.getByText('Add at least one diagnosis code.')).toBeInTheDocument();
     await enterCode(/procedure code/i, ProcedureCodes[0]);
     await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+    expect(screen.queryByText('Add at least one diagnosis code.')).not.toBeInTheDocument();
     expect(saveButton()).toBeDisabled();
     await confirmMedicalNecessity();
     await clickSave();
@@ -730,19 +752,20 @@ describe('AppointmentDetails editing', () => {
     expect(stored.extension).toEqual(AUTHORIZED_APPOINTMENT.extension);
   });
 
-  test('offers to save again once something changes after a save', async () => {
-    await medplum.createResource(AUTHORIZED_APPOINTMENT);
-    // The prop is never replaced with the written appointment, as with a host that ignores the update.
+  test('discards unsaved changes when editing is cancelled', async () => {
+    const update = vi.spyOn(medplum, 'updateResource');
     renderEditable(AUTHORIZED_APPOINTMENT);
     await screen.findByRole('searchbox', { name: /procedure code/i });
-
     await enterCode(/procedure code/i, ProcedureCodes[1]);
-    await clickSave();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
+    expect(update).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+    expect(hasPill(codePill(ProcedureCodes[1]))).toBe(false);
     expect(saveButton()).toBeDisabled();
-
-    await enterCode(/diagnosis code/i, DiagnosisCodes[1]);
-
-    expect(saveButton()).toBeEnabled();
   });
 
   test('shows a refused save and keeps what was entered', async () => {
