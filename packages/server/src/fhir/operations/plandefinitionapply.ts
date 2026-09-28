@@ -24,10 +24,14 @@ import type {
   ClientApplication,
   CodeableConcept,
   Encounter,
+  Goal,
+  GoalTarget,
   Organization,
   Patient,
   PlanDefinition,
   PlanDefinitionAction,
+  PlanDefinitionGoal,
+  PlanDefinitionGoalTarget,
   Practitioner,
   Questionnaire,
   Reference,
@@ -105,6 +109,11 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
     );
   }
 
+  const goals: WithId<Goal>[] = [];
+  for (const goal of planDefinition.goal ?? EMPTY) {
+    goals.push(await createGoal(ctx.repo, subjectRef, goal));
+  }
+
   const requestGroup = await ctx.repo.createResource<RequestGroup>({
     resourceType: 'RequestGroup',
     instantiatesCanonical: planDefinition.url ? [planDefinition.url] : undefined,
@@ -128,9 +137,63 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
       ? undefined
       : [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))],
     activity: [{ reference: createReference(requestGroup) }],
+    goal: goals.length > 0 ? goals.map(createReference) : undefined,
   });
 
   return [allOk, carePlan];
+}
+
+/**
+ * Creates a Goal for the given PlanDefinition goal.
+ *
+ * See: https://hl7.org/fhir/plandefinition-definitions.html#PlanDefinition.goal
+ * @param repo - The repository configured for the current user.
+ * @param subject - The subject of the plan definition.
+ * @param goal - The PlanDefinition goal.
+ * @returns The created Goal.
+ */
+async function createGoal(
+  repo: Repository,
+  subject: Reference<Patient>,
+  goal: PlanDefinitionGoal
+): Promise<WithId<Goal>> {
+  return repo.createResource<Goal>({
+    resourceType: 'Goal',
+    lifecycleStatus: 'proposed',
+    subject,
+    description: goal.description,
+    category: goal.category ? [goal.category] : undefined,
+    priority: goal.priority,
+    startCodeableConcept: goal.start,
+    target: createGoalTargets(goal.target),
+  });
+}
+
+/**
+ * Creates the Goal targets for the given PlanDefinition goal targets.
+ *
+ * PlanDefinition.goal.target allows detail[x] without a measure, but Goal.target does not
+ * (constraint gol-1), so detail[x] is only carried over when a measure is present. Targets
+ * left with nothing to say are dropped, because FHIR does not allow empty elements.
+ * @param targets - The PlanDefinition goal targets.
+ * @returns The Goal targets, or undefined if there are none.
+ */
+function createGoalTargets(targets: PlanDefinitionGoalTarget[] | undefined): GoalTarget[] | undefined {
+  const result: GoalTarget[] = [];
+  for (const target of targets ?? EMPTY) {
+    if (target.measure) {
+      result.push({
+        measure: target.measure,
+        detailQuantity: target.detailQuantity,
+        detailRange: target.detailRange,
+        detailCodeableConcept: target.detailCodeableConcept,
+        dueDuration: target.due,
+      });
+    } else if (target.due) {
+      result.push({ dueDuration: target.due });
+    }
+  }
+  return result.length > 0 ? result : undefined;
 }
 
 /**
