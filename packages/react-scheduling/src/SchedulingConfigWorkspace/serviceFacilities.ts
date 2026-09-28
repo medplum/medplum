@@ -8,6 +8,9 @@ import type { ConfigurableActorResource } from '../configSearch';
 /** How far up a `partOf` chain of Locations to look, as booking does. */
 const MAX_LOCATION_DEPTH = 4;
 
+/** Providers per role search, so the query string stays well inside URL length limits. */
+const ROLE_SEARCH_BATCH = 50;
+
 /** Where an actor is, as far as booking's service facility filter can tell. */
 export interface ActorFacilities {
   /**
@@ -69,11 +72,22 @@ export function sharesServiceFacility(
   service: Pick<HealthcareService, 'location'>,
   facilities: ActorFacilities
 ): boolean {
-  const held = (service.location ?? []).map((location) => normalizeReference(location.reference));
-  if (held.length === 0 || facilities.references.length === 0) {
+  if (isHeldEverywhere(service.location) || facilities.references.length === 0) {
     return true;
   }
-  return held.some((reference) => reference !== undefined && facilities.references.includes(reference));
+  return (service.location ?? []).some((location) => {
+    const reference = normalizeReference(location.reference);
+    return reference !== undefined && facilities.references.includes(reference);
+  });
+}
+
+/**
+ * Whether a visit type names no service facility, so booking offers it with every actor wherever the actor is.
+ * @param location - The visit type's `location`, as stored or as edited.
+ * @returns True when it names none.
+ */
+export function isHeldEverywhere(location: readonly Reference<Location>[] | undefined): boolean {
+  return !location?.length;
 }
 
 /**
@@ -94,20 +108,30 @@ async function searchActiveRoles(
   practitioners: readonly ConfigurableActorResource[],
   signal: AbortSignal | undefined
 ): Promise<PractitionerRole[]> {
-  try {
-    return await medplum.searchResources(
-      'PractitionerRole',
-      {
-        practitioner: practitioners.map((practitioner) => getReferenceString(practitioner)).join(','),
-        // An inactive role no longer places the person, which is how booking reads them too.
-        'active:not': 'false',
-        _count: '1000',
-      },
-      { signal }
-    );
-  } catch {
-    return [];
+  const references = practitioners.map((practitioner) => getReferenceString(practitioner));
+  const batches: string[][] = [];
+  for (let start = 0; start < references.length; start += ROLE_SEARCH_BATCH) {
+    batches.push(references.slice(start, start + ROLE_SEARCH_BATCH));
   }
+  const found = await Promise.all(
+    batches.map(async (batch) => {
+      try {
+        return await medplum.searchResources(
+          'PractitionerRole',
+          {
+            practitioner: batch.join(','),
+            // An inactive role no longer places the person, which is how booking reads them too.
+            'active:not': 'false',
+            _count: '1000',
+          },
+          { signal }
+        );
+      } catch {
+        return [];
+      }
+    })
+  );
+  return found.flat();
 }
 
 async function placeByRoles(

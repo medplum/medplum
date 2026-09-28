@@ -40,7 +40,7 @@ import type { ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { summarizeOffering } from '../offeringSummary';
 import { isActorInactive } from '../SchedulingConfigWorkspace.utils';
-import { describeNoSharedFacility, sharesServiceFacility } from '../serviceFacilities';
+import { describeNoSharedFacility, isHeldEverywhere, sharesServiceFacility } from '../serviceFacilities';
 import { useActorFacilities } from '../useActorFacilities';
 import type { CalendarFields, OfferingFields } from './calendarDraft';
 import { buildCalendar, calendarFieldsOf, describeOverrides, newOfferingFields } from './calendarDraft';
@@ -130,17 +130,16 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     return !before || !deepEquals(fields.offerings[service.id], before);
   }
 
-  let blockedReason: string | undefined;
-  for (const service of offered) {
-    if (Object.keys(errorsFor(service)).length > 0) {
-      blockedReason = `Fix the highlighted fields for ${service.name ?? 'this visit type'} before saving.`;
-      break;
-    }
-    blockedReason = availabilityErrorFor(service);
-    if (blockedReason) {
-      break;
-    }
-  }
+  const checks = offered.map((service) => ({
+    service,
+    errors: errorsFor(service),
+    availabilityError: availabilityErrorFor(service),
+  }));
+  const blocking = checks.find(({ errors, availabilityError }) => Object.keys(errors).length > 0 || availabilityError);
+  const blockedReason =
+    blocking && Object.keys(blocking.errors).length > 0
+      ? `Fix the highlighted fields for ${blocking.service.name ?? 'this visit type'} before saving.`
+      : blocking?.availabilityError;
 
   function notBookableReason(service: WithId<HealthcareService>): string | undefined {
     return facilities && !sharesServiceFacility(service, facilities)
@@ -183,6 +182,10 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       const result = await saveConfigChanges(medplum, [{ stored: schedule, draft }]);
       if (result.failures.length > 0) {
         setFailure(result.failures[0]);
+      } else if (result.saved.length === 0) {
+        // Nothing differed from what is stored (say, a visit type stopped and offered again), so no new version
+        // remounts the page.
+        handleDiscard();
       } else {
         onStored(
           result.saved.map(({ resource: saved }) => saved),
@@ -284,7 +287,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           </Text>
         ) : (
           <Accordion variant="separated" value={open} onChange={setOpen}>
-            {offered.map((service) => {
+            {checks.map(({ service, errors, availabilityError }) => {
               const timezone = getSchedulingTimezone(service, draft, resource);
               return (
                 <OfferingEntry
@@ -295,8 +298,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
                   onChange={(value) => updateOffering(service.id, value)}
                   summary={draft ? summarizeOffering(service, draft) : ''}
                   dirty={isOfferingDirty(service)}
-                  errors={errorsFor(service)}
-                  availabilityError={triedToSave ? availabilityErrorFor(service) : undefined}
+                  errors={errors}
+                  availabilityError={triedToSave ? availabilityError : undefined}
                   notBookableReason={notBookableReason(service)}
                   timezone={
                     timezone
@@ -313,8 +316,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
         <OfferMenu
           services={offerable}
-          // A visit type held everywhere can be offered before the actor's facilities are known.
-          checking={(service) => !facilities && (service.location?.length ?? 0) > 0}
+          checking={(service) => !facilities && !isHeldEverywhere(service.location)}
           disabledReason={(service) => notBookableReason(service)}
           onOffer={offer}
         />

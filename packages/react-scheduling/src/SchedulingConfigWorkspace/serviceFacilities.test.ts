@@ -3,7 +3,7 @@
 import type { WithId } from '@medplum/core';
 import type { Device, Location, Practitioner, PractitionerRole, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import type { ActorFacilities } from './serviceFacilities';
 import {
   describeNoSharedFacility,
@@ -95,6 +95,24 @@ describe('resolveActorFacilities', () => {
       names: ['Downtown Clinic'],
     });
     expect(placed.get('Practitioner/dr-jones')).toEqual({ references: ['Location/northside'], names: ['Northside'] });
+  });
+
+  test('reads the roles of many providers in batches, placing every one', async () => {
+    const providers: WithId<Practitioner>[] = Array.from({ length: 120 }, (_, index) => ({
+      resourceType: 'Practitioner',
+      id: `provider-${index}`,
+    }));
+    const medplum = await setup([
+      downtown,
+      ...providers,
+      ...providers.map((provider) => role(`role-${provider.id}`, provider.id, ['downtown'])),
+    ]);
+    const search = vi.spyOn(medplum, 'searchResources');
+
+    const placed = await resolveActorFacilities(medplum, providers);
+
+    expect(search.mock.calls.filter(([resourceType]) => resourceType === 'PractitionerRole')).toHaveLength(3);
+    expect(providers.every((provider) => placed.get(`Practitioner/${provider.id}`)?.references[0])).toBe(true);
   });
 
   test('nothing recording where an actor is leaves it unrestricted', async () => {

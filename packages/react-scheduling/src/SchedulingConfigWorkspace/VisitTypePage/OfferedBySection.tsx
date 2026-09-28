@@ -10,7 +10,7 @@ import { getActorTypeLabel } from '../../actors';
 import classes from '../ConfigPanel/ConfigRow.module.css';
 import { summarizeOffering } from '../offeringSummary';
 import type { ConfigOffering } from '../SchedulingConfigWorkspace.utils';
-import { describeNoSharedFacility, sharesServiceFacility } from '../serviceFacilities';
+import { describeNoSharedFacility, isHeldEverywhere, sharesServiceFacility } from '../serviceFacilities';
 import { useActorFacilities } from '../useActorFacilities';
 
 export interface OfferedBySectionProps {
@@ -32,7 +32,9 @@ export interface OfferedBySectionProps {
  */
 export function OfferedBySection(props: OfferedBySectionProps): JSX.Element {
   const { service, serviceName, location, offerings, loading, onOpen } = props;
-  const facilities = useActorFacilities(offerings.map((offering) => offering.actor.resource));
+  const facilities = useActorFacilities(
+    isHeldEverywhere(location) ? [] : offerings.map((offering) => offering.actor.resource)
+  );
 
   if (loading) {
     return <Loader size="sm" aria-label="Loading what offers this visit type" />;

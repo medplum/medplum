@@ -427,6 +427,28 @@ describe('ActorPage', () => {
     expect(getScheduleSchedulingParameters(saved, initialVisit, 'availability')).toEqual([]);
   });
 
+  test('stopping a visit type and offering it again saves nothing, and leaves the page clean', async () => {
+    const { medplum, onStored } = await setup(drSmith, [calendar('Practitioner/dr-smith', [initialVisit, followUp])]);
+    await userEvent.click(entry('Initial Visit'));
+    await userEvent.click(
+      await within(panel('Initial Visit')).findByRole('button', { name: 'Stop offering Initial Visit' })
+    );
+    await userEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Stop offering Initial Visit?' })).getByRole('button', {
+        name: 'Stop offering',
+      })
+    );
+    await openOfferMenu();
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Initial Visit' }));
+    expect(saveBar()).not.toBeNull();
+
+    await save();
+
+    await waitFor(() => expect(saveBar()).toBeNull());
+    expect(medplum.executeBatch).not.toHaveBeenCalled();
+    expect(onStored).not.toHaveBeenCalled();
+  });
+
   test('keeping a visit type from the confirmation changes nothing', async () => {
     await setup(drSmith, [calendar('Practitioner/dr-smith', [initialVisit])]);
 

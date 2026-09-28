@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import {
   getScheduleSchedulingParameters,
   serviceTypeIncludesService,
+  ServiceTypeReferenceURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type { HealthcareService, Location, Schedule } from '@medplum/fhirtypes';
@@ -125,6 +126,25 @@ describe('withoutService', () => {
     };
 
     expect(withoutService(withUnknown, initialVisit).extension).toBeUndefined();
+  });
+
+  test('drops the visit type when the calendar names it by a versioned reference', () => {
+    const versioned: Schedule = {
+      ...stored,
+      serviceType: [
+        {
+          extension: [
+            {
+              url: ServiceTypeReferenceURI,
+              valueReference: { reference: 'HealthcareService/initial-visit/_history/2' },
+            },
+          ],
+        },
+        ...toServiceTypeCodeableConcepts(followUp),
+      ],
+    };
+
+    expect(withoutService(versioned, initialVisit).serviceType).toEqual(toServiceTypeCodeableConcepts(followUp));
   });
 });
 

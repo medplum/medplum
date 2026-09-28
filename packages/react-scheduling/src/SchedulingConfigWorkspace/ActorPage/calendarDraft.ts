@@ -8,7 +8,6 @@ import {
   deepEquals,
   getReferenceString,
   SchedulingParametersURI,
-  serviceTypeIncludesService,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
@@ -27,7 +26,7 @@ import {
   initialAvailabilityFieldsValue,
   toWeeklyAvailability,
 } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
-import { getOfferedServices } from '../SchedulingConfigWorkspace.utils';
+import { getOfferedServices, serviceTypeOffers } from '../SchedulingConfigWorkspace.utils';
 
 /** What a calendar sets for one visit type it offers. */
 export interface OfferingFields {
@@ -156,7 +155,7 @@ export function buildCalendar(
 export function withoutService(schedule: Schedule, service: WithId<HealthcareService>): Schedule {
   const draft = deepClone(schedule);
   const reference = getReferenceString(service);
-  const serviceType = draft.serviceType?.filter((concept) => !serviceTypeIncludesService([concept], service));
+  const serviceType = draft.serviceType?.filter((concept) => !serviceTypeOffers([concept], service));
   if (serviceType?.length) {
     draft.serviceType = serviceType;
   } else {

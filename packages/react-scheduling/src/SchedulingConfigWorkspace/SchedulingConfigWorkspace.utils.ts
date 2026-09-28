@@ -6,9 +6,8 @@ import {
   getDisplayString,
   getReferenceString,
   getSchedulingTimezone,
-  serviceTypeIncludesService,
 } from '@medplum/core';
-import type { HealthcareService, Location, Resource, Schedule } from '@medplum/fhirtypes';
+import type { CodeableConcept, HealthcareService, Location, Resource, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType } from '../actors';
 import { isBookableActorType } from '../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../configSearch';
@@ -124,6 +123,20 @@ export function isMarkedAsRoom(location: Location): boolean {
 }
 
 /**
+ * Whether serviceType concepts refer to a visit type. Unlike core's `serviceTypeIncludesService`, it compares
+ * type and id only, as `getOfferedServices` does, since a stored reference may carry a version.
+ * @param serviceType - The concepts, such as a calendar's `serviceType`.
+ * @param service - The visit type.
+ * @returns True when any concept refers to it.
+ */
+export function serviceTypeOffers(
+  serviceType: CodeableConcept[] | undefined,
+  service: WithId<HealthcareService>
+): boolean {
+  return extractServiceTypeReferences(serviceType).some(({ reference }) => reference.split('/')[1] === service.id);
+}
+
+/**
  * The visit types a calendar offers, in the order it lists them. A visit type that isn't loaded is left out.
  * @param schedule - The calendar.
  * @param servicesById - Every visit type loaded.
@@ -133,8 +146,10 @@ export function getOfferedServices(
   schedule: Schedule | undefined,
   servicesById: ReadonlyMap<string, WithId<HealthcareService>>
 ): WithId<HealthcareService>[] {
-  const ids = new Set(extractServiceTypeReferences(schedule?.serviceType).map(({ reference }) => reference));
-  return [...ids].flatMap((reference) => servicesById.get(reference.split('/')[1]) ?? []);
+  const ids = new Set(
+    extractServiceTypeReferences(schedule?.serviceType).map(({ reference }) => reference.split('/')[1])
+  );
+  return [...ids].flatMap((id) => servicesById.get(id) ?? []);
 }
 
 /**
@@ -283,6 +298,6 @@ export function getOfferings(
 ): ConfigOffering[] {
   return actors.flatMap((actor) => {
     const [schedule] = actor.schedules;
-    return schedule && serviceTypeIncludesService(schedule.serviceType, service) ? [{ actor, schedule }] : [];
+    return schedule && serviceTypeOffers(schedule.serviceType, service) ? [{ actor, schedule }] : [];
   });
 }
