@@ -81,7 +81,7 @@ if [[ "$IS_RELEASE" == "true" ]]; then
 fi
 
 METADATA_FILE=$(mktemp)
-docker buildx build $ATTESTATIONS $PLATFORMS $SERVER_TAGS --progress=plain --push --metadata-file "$METADATA_FILE" .
+docker buildx build $ATTESTATIONS $PLATFORMS $SERVER_TAGS --progress=plain --push --metadata-file "$METADATA_FILE" -f docker/server.Dockerfile .
 
 SERVER_DOCKER_IMAGE_DIGEST=$(jq -r '."containerimage.digest"' "$METADATA_FILE")
 rm -f "$METADATA_FILE"

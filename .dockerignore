@@ -3,6 +3,6 @@
 .github
 .gitignore
 .dockerignore
-Dockerfile
+docker/server.Dockerfile
 docker-compose.yml
 node_modules
