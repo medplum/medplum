@@ -7,6 +7,7 @@ import {
   capitalize,
   concatUrls,
   createReference,
+  DEFAULT_MAX_SEARCH_COUNT,
   EMPTY,
   evalFhirPathTyped,
   getElementDefinition,
@@ -413,9 +414,13 @@ async function readCanonical<T extends Questionnaire | ActivityDefinition | Plan
     return undefined;
   }
 
-  return repo.searchOne({
+  const definitions = (await repo.searchResources({
     resourceType: 'ActivityDefinition',
     types: ['ActivityDefinition', 'PlanDefinition', 'Questionnaire'],
     filters: [{ code: 'url', operator: Operator.EQUALS, value: canonical }],
-  });
+    count: DEFAULT_MAX_SEARCH_COUNT,
+  })) as WithId<T>[];
+
+  definitions.sort((a, b) => (Date.parse(b.date ?? '') || 0) - (Date.parse(a.date ?? '') || 0));
+  return definitions.find((definition) => definition.status === 'active') ?? definitions[0];
 }
