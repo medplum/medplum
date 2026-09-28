@@ -2,23 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
+  deepEquals,
   getExtension,
   getExtensionValue,
-  isDefined,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
   SchedulingMedicalNecessityURI,
   ServiceTypeReferenceURI,
 } from '@medplum/core';
-import type {
-  Appointment,
-  AppointmentParticipant,
-  CodeableConcept,
-  Coding,
-  Patient,
-  Reference,
-} from '@medplum/fhirtypes';
+import type { Appointment, AppointmentParticipant, CodeableConcept, Patient, Reference } from '@medplum/fhirtypes';
 import type { BookingRequirementValues } from '../../AppointmentFinder/AppointmentFinder.requirements';
 
 export function getPatientParticipant(appointment: Appointment): AppointmentParticipant | undefined {
@@ -52,8 +45,8 @@ export function partitionServiceTypes(appointment: Appointment): ServiceTypes {
  */
 export function readRequirementValues(appointment: Appointment): BookingRequirementValues {
   return {
-    procedure: partitionServiceTypes(appointment).procedures.map(firstCoding).filter(isDefined),
-    diagnosis: (appointment.reasonCode ?? []).map(firstCoding).filter(isDefined),
+    procedure: partitionServiceTypes(appointment).procedures,
+    diagnosis: appointment.reasonCode ?? [],
     medicalNecessity: getExtensionValue(appointment, SchedulingMedicalNecessityURI) === true,
   };
 }
@@ -75,8 +68,8 @@ export function isEdited(
   const saved = readRequirementValues(appointment);
   return (
     patient?.reference !== getPatientParticipant(appointment)?.actor?.reference ||
-    (requirements.has(REQUIRES_PROCEDURE_CODE) && !sameCodings(values.procedure, saved.procedure)) ||
-    (requirements.has(REQUIRES_DIAGNOSIS_CODE) && !sameCodings(values.diagnosis, saved.diagnosis)) ||
+    (requirements.has(REQUIRES_PROCEDURE_CODE) && !deepEquals(values.procedure, saved.procedure)) ||
+    (requirements.has(REQUIRES_DIAGNOSIS_CODE) && !deepEquals(values.diagnosis, saved.diagnosis)) ||
     (requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE) && values.medicalNecessity !== saved.medicalNecessity)
   );
 }
@@ -117,10 +110,10 @@ export function buildAppointmentUpdate(
     const referenced = (appointment.serviceType ?? []).filter((concept) =>
       getExtension(concept, ServiceTypeReferenceURI)
     );
-    updated.serviceType = [...referenced, ...values.procedure.map(toConcept)];
+    updated.serviceType = [...referenced, ...values.procedure];
   }
   if (requirements.has(REQUIRES_DIAGNOSIS_CODE)) {
-    updated.reasonCode = values.diagnosis.length > 0 ? values.diagnosis.map(toConcept) : undefined;
+    updated.reasonCode = values.diagnosis.length > 0 ? [...values.diagnosis] : undefined;
   }
   if (requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE)) {
     updated.extension = [
@@ -129,16 +122,4 @@ export function buildAppointmentUpdate(
     ];
   }
   return updated;
-}
-
-function firstCoding(concept: CodeableConcept): Coding | undefined {
-  return concept.coding?.[0];
-}
-
-function toConcept(coding: Coding): CodeableConcept {
-  return { coding: [coding] };
-}
-
-function sameCodings(a: readonly Coding[], b: readonly Coding[]): boolean {
-  return a.length === b.length && a.every((coding, i) => coding.system === b[i].system && coding.code === b[i].code);
 }

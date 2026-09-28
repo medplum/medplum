@@ -10,7 +10,7 @@ import {
   SchedulingMedicalNecessityURI,
   ServiceTypeReferenceURI,
 } from '@medplum/core';
-import type { Appointment, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, CodeableConcept, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { RenderResult } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -639,6 +639,30 @@ describe('AppointmentDetails editing', () => {
     expect(stored.extension).toEqual([{ url: SchedulingMedicalNecessityURI, valueBoolean: true }]);
     expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+  });
+
+  test('keeps every coding and the text of a code it was not asked to change', async () => {
+    const procedure = {
+      text: 'Infusion, as ordered',
+      coding: [ProcedureCodes[0], { system: 'http://example.com/local', code: 'INF-1' }],
+    };
+    const diagnosis = { coding: [DiagnosisCodes[0], { system: 'http://example.com/local', code: 'ANEMIA' }] };
+    const appointment: WithId<Appointment> = {
+      ...AUTHORIZED_APPOINTMENT,
+      serviceType: [AUTHORIZED_APPOINTMENT.serviceType?.[0] as CodeableConcept, procedure],
+      reasonCode: [diagnosis],
+    };
+    await medplum.createResource(appointment);
+    renderEditable(appointment);
+    await screen.findByRole('searchbox', { name: /procedure code/i });
+
+    expect(saveButton()).toBeDisabled();
+    await enterCode(/diagnosis code/i, DiagnosisCodes[1]);
+    await clickSave();
+
+    const stored = await medplum.readResource('Appointment', appointment.id);
+    expect(stored.serviceType?.[1]).toEqual(procedure);
+    expect(stored.reasonCode).toEqual([diagnosis, { coding: [DiagnosisCodes[1]] }]);
   });
 
   test('saves a different patient in place of the one on file', async () => {

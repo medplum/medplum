@@ -898,8 +898,8 @@ function buildBooking(options: BuildBookingOptions): Appointment {
   const patientReference = getReferenceString(patient);
   const procedure = requirements.has(REQUIRES_PROCEDURE_CODE) ? values.procedure : [];
   const diagnosis = requirements.has(REQUIRES_DIAGNOSIS_CODE) ? values.diagnosis : [];
-  const serviceType = [...(proposal.serviceType ?? []), ...procedure.map((coding) => ({ coding: [coding] }))];
-  const reasonCode = [...(proposal.reasonCode ?? []), ...diagnosis.map((coding) => ({ coding: [coding] }))];
+  const serviceType = [...(proposal.serviceType ?? []), ...procedure];
+  const reasonCode = [...(proposal.reasonCode ?? []), ...diagnosis];
   const extension = [
     ...(proposal.extension ?? []),
     ...(requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE)
