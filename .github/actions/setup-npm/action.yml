@@ -1,0 +1,21 @@
+name: Setup npm
+description: Installs the npm version from the root packageManager field, integrity-checked via this action's lockfile.
+
+runs:
+  using: composite
+  steps:
+    - name: Install npm from lockfile
+      shell: bash
+      run: |
+        dir="$RUNNER_TEMP/setup-npm"
+        mkdir -p "$dir"
+        cp "$GITHUB_ACTION_PATH/package.json" "$GITHUB_ACTION_PATH/package-lock.json" "$dir/"
+        npm ci --prefix "$dir" --ignore-scripts --no-audit --no-fund
+        echo "$dir/node_modules/.bin" >> "$GITHUB_PATH"
+
+        expected="$(node -p "require('./package.json').packageManager")"
+        actual="npm@$("$dir/node_modules/.bin/npm" -v)"
+        if [ "$expected" != "$actual" ]; then
+          echo "::error::packageManager is $expected but .github/actions/setup-npm pins $actual; update both together"
+          exit 1
+        fi

@@ -32,7 +32,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Install npm from packageManager
-        run: npm install -g "$(node -p "require('./package.json').packageManager")"
+        uses: ./.github/actions/setup-npm
 
       - name: Setup git
         run: |
