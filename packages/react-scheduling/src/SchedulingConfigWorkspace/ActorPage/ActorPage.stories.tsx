@@ -12,7 +12,7 @@ import type { BookableActorType } from '../../actors';
 import type { ConfigurableActor } from '../../configSearch';
 import { searchConfigurableActors, searchConfigurableServices } from '../../configSearch';
 import { withFixtures } from '../../stories/decorators';
-import { ConfigFixtures, DrNguyenPractitioner, ExamRoomC } from '../../stories/scheduling';
+import { ConfigFixtures, DrNguyenPractitioner, DrPatelPractitioner, ExamRoomC } from '../../stories/scheduling';
 import { ActorPage } from './ActorPage';
 
 export default {
@@ -28,8 +28,7 @@ interface Loaded {
 }
 
 /**
- * Opens the page on an actor as the story's server holds it, and reads it again after each save, the way the
- * workspace swaps in what was stored.
+ * Opens the page on an actor as the story's server holds it. The page carries on from what it saves.
  * @param props - The actor to open.
  * @param props.resourceType - Its type.
  * @param props.id - Its id.
@@ -39,7 +38,6 @@ function StoredActor(props: { readonly resourceType: BookableActorType; readonly
   const { resourceType, id } = props;
   const medplum = useMedplum();
   const [loaded, setLoaded] = useState<Loaded>();
-  const [reads, setReads] = useState(0);
 
   useEffect(() => {
     Promise.all([searchConfigurableActors(medplum, resourceType, {}), searchConfigurableServices(medplum, {})])
@@ -50,20 +48,14 @@ function StoredActor(props: { readonly resourceType: BookableActorType; readonly
         }
       })
       .catch(console.error);
-  }, [medplum, resourceType, id, reads]);
+  }, [medplum, resourceType, id]);
 
   if (!loaded) {
     return <Text c="dimmed">Loading…</Text>;
   }
-  const [schedule] = loaded.actor.schedules;
   return (
     <Document>
-      <ActorPage
-        key={`${schedule?.id}-${schedule?.meta?.versionId}`}
-        actor={loaded.actor}
-        services={loaded.services}
-        onStored={() => setReads((count) => count + 1)}
-      />
+      <ActorPage actor={loaded.actor} services={loaded.services} onStored={() => undefined} />
     </Document>
   );
 }
@@ -89,3 +81,46 @@ export const ProviderWithOverrides = (): JSX.Element => (
  * @returns The story.
  */
 export const RoomWithNoCalendar = (): JSX.Element => <StoredActor resourceType="Location" id={ExamRoomC.id} />;
+
+/**
+ * Dr. Anika Patel offers Walk-in Clinic, and neither she nor the visit type sets a time zone, so its hours can't
+ * be booked and the entry says so. Her name and status are kept by the system she comes from and are read-only.
+ *
+ * Pick a Time zone under General and the hours are read in it at once. Save writes the time zone to her
+ * `Practitioner` and nothing else.
+ * @returns The story.
+ */
+export const ProviderTimeZone = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrPatelPractitioner.id} />
+);
+
+/**
+ * A room being created, marked as new and not saved yet. Nothing is written until Create, which is refused until
+ * it has a name. It is stored active and typed as a room, at the service facility picked from the same list
+ * booking filters by. Visit types can be offered once it is created.
+ * @returns The story.
+ */
+export const CreateRoom = (): JSX.Element => {
+  const medplum = useMedplum();
+  const [services, setServices] = useState<WithId<HealthcareService>[]>();
+
+  useEffect(() => {
+    searchConfigurableServices(medplum, {})
+      .then((result) => setServices(result.services))
+      .catch(console.error);
+  }, [medplum]);
+
+  if (!services) {
+    return <Text c="dimmed">Loading…</Text>;
+  }
+  return (
+    <Document>
+      <ActorPage
+        newActorType="Location"
+        services={services}
+        onStored={() => undefined}
+        onDiscardNew={() => undefined}
+      />
+    </Document>
+  );
+};

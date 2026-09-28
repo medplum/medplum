@@ -42,8 +42,8 @@ A calendar scheduling can't book, held by more than one actor or by something ot
 device, is left out of the list and logged with `console.error`.
 
 Each section is read in pages up to a limit, and says so when it stops short. A section that can't be read is
-named above the page, and the others still list. The **+** beside Visit types starts a new visit type, which is
-listed once it is saved.
+named above the page, and the others still list. The **+** beside Visit types, Rooms, or Devices starts a new
+one, which is listed once it is saved. Providers can't be created here.
 
 ## A visit type's page
 
@@ -60,7 +60,11 @@ listed once it is saved.
 
 ## A provider's, room's, or device's page
 
-- **General:** its name and status.
+- **General:** a provider's name and status are read-only, since they are kept by the system providers come from,
+  and only their time zone (the `timezone` extension) is edited. A room's or device's name, status, service
+  facility (`Location.partOf`, or `Device.location`), and time zone are all edited, the service facility picked
+  from the same Locations booking filters by. The time zone is the one hours are read in for any visit type that
+  sets none of its own.
 - **Visit types offered:** what its calendar offers. **Accepting appointments** turns the calendar off without losing
   anything, and appears once there is a calendar. Each visit type offered is an entry showing its duration and
   hours in effect; opening one shows the calendar's own scheduling parameters and hours for it, each empty field
@@ -73,14 +77,19 @@ actor isn't at is listed disabled, with the reason. Offering an actor's first vi
 the page is saved, and not before. **Stop offering** asks first, naming the settings the calendar holds for that
 visit type, and removes them with it.
 
+A new room is stored active and typed as a room (`physicalType` `ro`), so the service facility pickers never offer
+it as a service facility. A new room or device can offer visit types once it is created.
+
 ## Saving
 
 Nothing is written as it is typed. A save bar appears while the page differs from what is stored, and Save sends
 only what changed, as one transaction bundle, each update conditional on the version the page opened. When
 another user or system saved the same resource in the meantime, nothing is written over it: the page says so and
-offers to reload it. A field the editor would reject blocks Save, with the reason; a value already stored out of
-range does not, unless it is edited.
+offers to reload it. On a project without the `transaction-bundles` feature the server applies the bundle a
+resource at a time, so a save can partly land: the page keeps what was stored, says what wasn't and why, and keeps
+those edits to save again. A field the editor would reject blocks Save, with the reason; a value already stored
+out of range does not, unless it is edited.
 
 Switching to another row with unsaved changes asks before discarding them. Nothing in the workspace deletes a
-resource: a visit type or a calendar is taken out of use by turning it off, which leaves its existing appointments
-untouched.
+resource: a visit type or a calendar is taken out of use by turning it off, and a room or device by setting its
+status to Inactive, which leaves existing appointments untouched.

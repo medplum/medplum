@@ -39,8 +39,9 @@ function Workspace(): JSX.Element {
  * Room is booked as a room without being marked as one.
  *
  * Pick one to edit it in place. Switching to another with unsaved changes asks first. The **+** beside Visit
- * types starts a new one, which is listed once it is saved. A visit type's Offered by opens the page of each
- * provider, room, or device offering it.
+ * types, Rooms, or Devices starts a new one, which is listed once it is saved. Providers are only edited, and
+ * only their time zone: set one for Dr. Anika Patel and her notice clears once it is saved. A visit type's
+ * Offered by opens the page of each provider, room, or device offering it.
  *
  * @returns The story.
  */
