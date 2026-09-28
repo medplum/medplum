@@ -22,8 +22,8 @@ import {
   withCandidProviderId,
 } from '../../utils/billing';
 import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
-import { getErrorMessage } from '../insurance/utils';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
+import { getErrorMessage } from '../insurance/utils';
 import { CandidContractAlert } from './CandidContractAlert';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
