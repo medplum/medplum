@@ -35,7 +35,8 @@
     "typescript": "6.0.3",
     "uuid": "14.0.2",
     "whatwg-url": "14.0.0",
-    "import-in-the-middle": "3.4.0"
+    "import-in-the-middle": "3.4.0",
+    "vitest": "4.1.11"
   },
   "devDependencies": {
     "@microsoft/api-documenter": "7.30.16",
