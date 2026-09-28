@@ -98,17 +98,8 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     [store]
   );
 
-  // Dirty is left to the page, which remounts on what it stored and reports itself clean. A save landing after
-  // the viewer moved on must not touch the page now shown.
-  const handleActorStored = useCallback(
-    (storedFor: ConfigSelection, resources: WithId<Resource>[], openServiceId: string | null): void => {
-      store(resources);
-      setSelection((current) =>
-        current?.kind === 'actor' && isSameSelection(current, storedFor) ? { ...current, openServiceId } : current
-      );
-    },
-    [store]
-  );
+  // An actor's page carries on from what it stored and reports its own dirty state.
+  const handleActorStored = useCallback((resources: WithId<Resource>[]): void => store(resources), [store]);
 
   const handleDiscardNew = useCallback((): void => {
     setSelection(undefined);
@@ -159,15 +150,14 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         </Center>
       );
     } else if (actor) {
-      const [schedule] = actor.schedules;
       detail = (
         <ActorPage
-          // Every version the page reads is in the key, so a save or reload remounts it on what was stored.
-          key={`${selection.resourceType}/${actor.resource.id}-${actor.resource.meta?.versionId}-${schedule?.id}-${schedule?.meta?.versionId}`}
+          // Not keyed on versions: the page carries on from what it saves, keeping any edits a save didn't land.
+          key={`${selection.resourceType}/${actor.resource.id}`}
           actor={actor}
           services={services.items}
           initialOpenServiceId={selection.openServiceId}
-          onStored={(resources, openServiceId) => handleActorStored(selection, resources, openServiceId)}
+          onStored={handleActorStored}
           onDirtyChange={setDirty}
         />
       );

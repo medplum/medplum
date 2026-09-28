@@ -1,20 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Accordion,
-  Alert,
-  Badge,
-  Button,
-  Group,
-  Loader,
-  Menu,
-  Modal,
-  SimpleGrid,
-  Stack,
-  Switch,
-  Text,
-  Title,
-} from '@mantine/core';
+import { Accordion, Alert, Badge, Button, Group, Loader, Menu, Modal, Stack, Switch, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   deepEquals,
@@ -28,7 +14,7 @@ import { useMedplum } from '@medplum/react-hooks';
 import { IconChevronDown } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { getActorTypeLabel } from '../../actors';
+import { getActorTypeLabel, isBookableActorType } from '../../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
 import { getAvailabilityFieldsError } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
 import {
@@ -36,19 +22,27 @@ import {
   validateSchedulingParameters,
 } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
 import { ConfigSection, SaveBar } from '../ConfigPage/ConfigPage';
-import type { ConfigSaveFailure } from '../ConfigPage/configSave';
+import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { summarizeOffering } from '../offeringSummary';
 import { isActorInactive } from '../SchedulingConfigWorkspace.utils';
 import { describeNoSharedFacility, isHeldEverywhere, sharesServiceFacility } from '../serviceFacilities';
 import { useActorFacilities } from '../useActorFacilities';
+import type { NewActorType } from './actorDraft';
+import { actorGeneralFieldsOf, buildActorResource, newActorResource } from './actorDraft';
+import { ActorGeneral } from './ActorGeneral';
 import type { CalendarFields, OfferingFields } from './calendarDraft';
 import { buildCalendar, calendarFieldsOf, describeOverrides, newOfferingFields } from './calendarDraft';
 import { OfferingEntry } from './OfferingEntry';
 
 export interface ActorPageProps {
-  /** The provider, room, or device, with its calendars as stored. The first calendar is the one edited. */
-  readonly actor: ConfigurableActor;
+  /**
+   * The provider, room, or device, with its calendars as stored. The first calendar is the one edited. Omitted
+   * to create a room or device.
+   */
+  readonly actor?: ConfigurableActor;
+  /** What to create when `actor` is omitted. Defaults to a room. */
+  readonly newActorType?: NewActorType;
   /** Every visit type loaded, which is what can be offered. */
   readonly services: readonly WithId<HealthcareService>[];
   /**
@@ -57,10 +51,12 @@ export interface ActorPageProps {
    */
   readonly initialOpenServiceId?: string | null;
   /**
-   * Called with the resources as the server now holds them, after a save or after reloading newer versions, and
-   * the visit type whose entry is open.
+   * Called with the resources as the server now holds them, after a save, even one that only partly landed, or
+   * after reloading newer versions.
    */
-  readonly onStored: (resources: WithId<Resource>[], openServiceId: string | null) => void;
+  readonly onStored: (resources: WithId<Resource>[]) => void;
+  /** Called when a room or device that was being created is discarded instead. */
+  readonly onDiscardNew?: () => void;
   /** Called whenever the page starts or stops holding unsaved changes. */
   readonly onDirtyChange?: (dirty: boolean) => void;
 }
@@ -69,24 +65,43 @@ export interface ActorPageProps {
  * The page for one provider, room, or device: its own fields, and the visit types its calendar offers, each
  * opening to the calendar's own parameters and hours for it. Everything is saved together.
  *
- * The actor's calendar isn't a thing of its own here. Offering a first visit type creates it, on save.
+ * The actor's calendar isn't a thing of its own here. Offering a first visit type creates it, on save. A new
+ * room or device has to be created before it can offer anything.
  *
- * It opens on what is stored and is not reset by a change of props, so the caller remounts it with a `key`
- * when the actor or its calendar is replaced.
+ * It opens on the actor as given and then carries on from what it saves or reloads, so edits a save didn't land
+ * are kept. A change of props doesn't reset it, so the caller remounts it with a `key` for another actor.
  * @param props - The actor and its calendars, the visit types, and what to do once something is stored.
  * @returns The page.
  */
 export function ActorPage(props: ActorPageProps): JSX.Element {
-  const { actor, services, initialOpenServiceId, onStored, onDirtyChange } = props;
+  const {
+    actor,
+    newActorType = 'Location',
+    services,
+    initialOpenServiceId,
+    onStored,
+    onDiscardNew,
+    onDirtyChange,
+  } = props;
   const medplum = useMedplum();
-  const resource = actor.resource;
-  const [schedule] = actor.schedules;
-  const actorName = getDisplayString(resource);
-  const typeLabel = getActorTypeLabel(resource.resourceType);
-
   const servicesById = useMemo(() => new Map(services.map((service) => [service.id, service])), [services]);
-  const [initial] = useState<CalendarFields>(() => calendarFieldsOf(schedule, servicesById));
+
+  const [storedResource, setStoredResource] = useState(actor?.resource);
+  const [schedule, setSchedule] = useState(actor?.schedules[0]);
+  const [initialGeneral, setInitialGeneral] = useState(() =>
+    actorGeneralFieldsOf(actor?.resource ?? newActorResource(newActorType))
+  );
+  const [general, setGeneral] = useState(initialGeneral);
+  const [initial, setInitial] = useState<CalendarFields>(() => calendarFieldsOf(schedule, servicesById));
   const [fields, setFields] = useState(initial);
+
+  const creating = !storedResource;
+  const actorDraft = buildActorResource(storedResource ?? newActorResource(newActorType), general, initialGeneral);
+  // The draft keeps a stored actor's id, so it stands in for the actor wherever the calendar reads one.
+  const resource = storedResource && (actorDraft as ConfigurableActorResource);
+  const typeLabel = getActorTypeLabel(actorDraft.resourceType);
+  const noun = typeLabel.toLowerCase();
+  const actorName = storedResource ? getDisplayString(storedResource) : general.name.trim() || `this ${noun}`;
   const [open, setOpen] = useState<string | null>(() => {
     if (initialOpenServiceId !== undefined) {
       return initialOpenServiceId && initial.offered.includes(initialOpenServiceId) ? initialOpenServiceId : null;
@@ -96,14 +111,18 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [stopping, setStopping] = useState<WithId<HealthcareService>>();
   const [saving, setSaving] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
-  const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'>>();
+  const [failure, setFailure] = useState<PageFailure>();
   const [reloading, setReloading] = useState(false);
 
-  const facilities = useActorFacilities([resource])?.get(getReferenceString(resource));
+  const facilities = useActorFacilities(resource ? [resource] : [])?.get(resource ? getReferenceString(resource) : '');
 
-  const draft = buildCalendar(schedule, resource, fields, initial, servicesById);
+  const draft = resource && buildCalendar(schedule, resource, fields, initial, servicesById);
   // Edits the draft can't store yet, like an emptied week, still count, so the save bar can say why it refuses.
-  const dirty = (schedule ? !deepEquals(draft, schedule) : draft !== undefined) || !deepEquals(fields, initial);
+  const dirty =
+    creating ||
+    !deepEquals(actorDraft, storedResource) ||
+    (schedule ? !deepEquals(draft, schedule) : draft !== undefined) ||
+    !deepEquals(fields, initial);
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const offered = fields.offered.flatMap((id) => servicesById.get(id) ?? []);
@@ -136,10 +155,16 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     availabilityError: availabilityErrorFor(service),
   }));
   const blocking = checks.find(({ errors, availabilityError }) => Object.keys(errors).length > 0 || availabilityError);
-  const blockedReason =
-    blocking && Object.keys(blocking.errors).length > 0
-      ? `Fix the highlighted fields for ${blocking.service.name ?? 'this visit type'} before saving.`
-      : blocking?.availabilityError;
+  const nameError =
+    actorDraft.resourceType !== 'Practitioner' && !general.name.trim() ? 'A name is required.' : undefined;
+  let blockedReason: string | undefined;
+  if (nameError) {
+    blockedReason = nameError;
+  } else if (blocking && Object.keys(blocking.errors).length > 0) {
+    blockedReason = `Fix the highlighted fields for ${blocking.service.name ?? 'this visit type'} before saving.`;
+  } else {
+    blockedReason = blocking?.availabilityError;
+  }
 
   function notBookableReason(service: WithId<HealthcareService>): string | undefined {
     return facilities && !sharesServiceFacility(service, facilities)
@@ -168,29 +193,53 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     setStopping(undefined);
   }
 
+  /**
+   * Makes what the server now holds the page's starting point, dropping the edits to those resources and keeping
+   * the rest.
+   * @param resources - The actor, its calendar, or both, as stored.
+   */
+  function adopt(resources: readonly WithId<Resource>[]): void {
+    for (const stored of resources) {
+      if (stored.resourceType === 'Schedule') {
+        const next = calendarFieldsOf(stored, servicesById);
+        setSchedule(stored);
+        setInitial(next);
+        setFields(next);
+        setOpen((current) => (current && next.offered.includes(current) ? current : null));
+      } else if (isBookableActorType(stored.resourceType)) {
+        const next = actorGeneralFieldsOf(stored as ConfigurableActorResource);
+        setStoredResource(stored as ConfigurableActorResource);
+        setInitialGeneral(next);
+        setGeneral(next);
+      }
+    }
+  }
+
   async function handleSave(): Promise<void> {
     if (blockedReason) {
       setTriedToSave(true);
       return;
     }
-    if (!draft) {
-      return;
-    }
     setSaving(true);
     setFailure(undefined);
     try {
-      const result = await saveConfigChanges(medplum, [{ stored: schedule, draft }]);
+      const changes: ConfigChange[] = [{ stored: storedResource, draft: actorDraft }];
+      if (draft) {
+        changes.push({ stored: schedule, draft });
+      }
+      const result = await saveConfigChanges(medplum, changes);
+      const saved = result.saved.map(({ resource: stored }) => stored);
+      if (saved.length > 0) {
+        adopt(saved);
+        onStored(saved);
+      }
       if (result.failures.length > 0) {
-        setFailure(result.failures[0]);
-      } else if (result.saved.length === 0) {
-        // Nothing differed from what is stored (say, a visit type stopped and offered again), so no new version
-        // remounts the page.
+        setFailure({ failed: result.failures.map(toSaveFailure), partly: saved.length > 0 });
+      } else if (saved.length === 0) {
+        // Nothing differed from what is stored, say a visit type stopped and offered again.
         handleDiscard();
       } else {
-        onStored(
-          result.saved.map(({ resource: saved }) => saved),
-          open
-        );
+        setTriedToSave(false);
       }
     } finally {
       setSaving(false);
@@ -198,6 +247,11 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   }
 
   function handleDiscard(): void {
+    if (creating) {
+      onDiscardNew?.();
+      return;
+    }
+    setGeneral(initialGeneral);
     setFields(initial);
     setOpen((current) => (current && initial.offered.includes(current) ? current : null));
     setTriedToSave(false);
@@ -205,21 +259,37 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   }
 
   async function handleReload(): Promise<void> {
+    if (!storedResource) {
+      return;
+    }
     setReloading(true);
     try {
       const reloaded: WithId<Resource>[] = [
-        await medplum.readResource(resource.resourceType, resource.id, { cache: 'no-cache' }),
+        await medplum.readResource(storedResource.resourceType, storedResource.id, { cache: 'no-cache' }),
       ];
       if (schedule) {
         reloaded.push(await medplum.readResource('Schedule', schedule.id, { cache: 'no-cache' }));
       }
-      onStored(reloaded, open);
+      adopt(reloaded);
+      setTriedToSave(false);
+      setFailure(undefined);
+      onStored(reloaded);
     } catch (err) {
-      setFailure({ conflict: false, message: `Could not reload it: ${normalizeErrorString(err)}` });
+      setFailure({
+        failed: [{ target: 'actor', conflict: false, message: `Could not reload it: ${normalizeErrorString(err)}` }],
+        partly: false,
+      });
     } finally {
       setReloading(false);
     }
   }
+
+  function subjectOf(target: SaveFailure['target']): string {
+    return target === 'calendar' ? `The calendar for ${actorName}` : actorName;
+  }
+
+  const conflicts = failure?.failed.filter(({ conflict }) => conflict) ?? [];
+  const refusals = failure?.failed.filter(({ conflict }) => !conflict) ?? [];
 
   const offerable = services.filter((service) => service.active !== false && !fields.offered.includes(service.id));
 
@@ -227,11 +297,16 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     <Stack gap="lg">
       <Stack gap={2}>
         <Text size="xs" fw={700} tt="uppercase" c="dimmed">
-          {typeLabel}
+          {creating ? `New ${noun}` : typeLabel}
         </Text>
         <Group gap="sm">
-          <Title order={2}>{actorName}</Title>
-          {isActorInactive(resource) && (
+          <Title order={2}>{storedResource ? actorName : general.name.trim() || `Untitled ${noun}`}</Title>
+          {creating && (
+            <Badge variant="light" color="blue">
+              Not saved yet
+            </Badge>
+          )}
+          {storedResource && isActorInactive(storedResource) && (
             <Badge variant="light" color="gray">
               Inactive
             </Badge>
@@ -239,8 +314,14 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         </Group>
       </Stack>
 
-      {failure?.conflict && (
-        <Alert color="orange" title={`The calendar for ${actorName} changed since you opened it`}>
+      {creating && (
+        <Alert color="blue" variant="light">
+          Nothing is created until you press Create.
+        </Alert>
+      )}
+
+      {conflicts.length > 0 && (
+        <Alert color="orange" title={conflictTitle(conflicts, actorName)}>
           <Stack gap="sm" align="flex-start">
             <Text size="sm">
               A newer version was saved somewhere else, so nothing here was written over it. Reload to see the latest
@@ -252,17 +333,34 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           </Stack>
         </Alert>
       )}
-      {failure && !failure.conflict && (
-        <Alert color="red" title="Not saved">
-          {failure.message}
-        </Alert>
-      )}
+      {failure?.partly
+        ? refusals.map(({ target, message }) => (
+            <Alert key={target} color="red" title={`${subjectOf(target)} was not saved`}>
+              {message} The rest was saved. These changes are kept, so you can save them again.
+            </Alert>
+          ))
+        : refusals.length > 0 && (
+            <Alert color="red" title="Not saved">
+              {refusals[0].message}
+            </Alert>
+          )}
 
       <ConfigSection title="General">
-        <ActorGeneral resource={resource} />
+        <ActorGeneral
+          resource={actorDraft}
+          value={general}
+          onChange={setGeneral}
+          creating={creating}
+          nameError={triedToSave || initialGeneral.name ? nameError : undefined}
+        />
       </ConfigSection>
 
       <ConfigSection title="Visit types offered">
+        {!resource && (
+          <Text size="sm" c="dimmed">
+            Visit types can be offered once {actorName} is created.
+          </Text>
+        )}
         {schedule && (
           <Stack gap={4}>
             <Switch
@@ -281,11 +379,12 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           </Stack>
         )}
 
-        {offered.length === 0 ? (
+        {resource && offered.length === 0 && (
           <Text size="sm" c="dimmed">
             {actorName} offers no visit types yet.
           </Text>
-        ) : (
+        )}
+        {resource && offered.length > 0 && (
           <Accordion variant="separated" value={open} onChange={setOpen}>
             {checks.map(({ service, errors, availabilityError }) => {
               const timezone = getSchedulingTimezone(service, draft, resource);
@@ -306,7 +405,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
                       ? { zone: timezone, source: timezoneSource(fields.offerings[service.id], service, actorName) }
                       : undefined
                   }
-                  timezoneHint={`Set one in Time zone above, on ${service.name ?? 'the visit type'}, or on ${actorName}.`}
+                  timezoneHint={`Set one in Time zone above, on ${service.name ?? 'the visit type'}, or under General for ${actorName}.`}
                   onStopOffering={() => setStopping(service)}
                 />
               );
@@ -314,12 +413,14 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           </Accordion>
         )}
 
-        <OfferMenu
-          services={offerable}
-          checking={(service) => !facilities && !isHeldEverywhere(service.location)}
-          disabledReason={(service) => notBookableReason(service)}
-          onOffer={offer}
-        />
+        {resource && (
+          <OfferMenu
+            services={offerable}
+            checking={(service) => !facilities && !isHeldEverywhere(service.location)}
+            disabledReason={(service) => notBookableReason(service)}
+            onOffer={offer}
+          />
+        )}
       </ConfigSection>
 
       <Modal
@@ -345,6 +446,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
       <SaveBar
         dirty={dirty}
+        message={creating ? `New ${noun}, not created yet` : undefined}
+        saveLabel={creating ? 'Create' : undefined}
         saving={saving}
         blockedReason={blockedReason}
         onSave={handleSave}
@@ -354,31 +457,36 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   );
 }
 
-function ActorGeneral(props: { readonly resource: ConfigurableActorResource }): JSX.Element {
-  const { resource } = props;
-  let status: string;
-  if (resource.resourceType === 'Practitioner') {
-    status = resource.active === false ? 'Inactive' : 'Active';
-  } else {
-    status = resource.status ? resource.status.charAt(0).toUpperCase() + resource.status.slice(1) : 'Not set';
-  }
-  return (
-    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-      <ReadOnlyField label="Name" value={getDisplayString(resource)} />
-      <ReadOnlyField label="Status" value={status} />
-    </SimpleGrid>
-  );
+interface SaveFailure {
+  /** Which write failed: the actor's own, or its calendar's. */
+  readonly target: 'actor' | 'calendar';
+  readonly conflict: boolean;
+  readonly message: string;
 }
 
-function ReadOnlyField(props: { readonly label: string; readonly value: string }): JSX.Element {
-  return (
-    <Stack gap={2}>
-      <Text size="sm" fw={500}>
-        {props.label}
-      </Text>
-      <Text size="sm">{props.value}</Text>
-    </Stack>
-  );
+interface PageFailure {
+  readonly failed: readonly SaveFailure[];
+  /** Something else on the page was saved. */
+  readonly partly: boolean;
+}
+
+function toSaveFailure(failure: ConfigSaveFailure): SaveFailure {
+  return {
+    target: failure.change.draft.resourceType === 'Schedule' ? 'calendar' : 'actor',
+    conflict: failure.conflict,
+    message: failure.message,
+  };
+}
+
+function conflictTitle(conflicts: readonly SaveFailure[], actorName: string): string {
+  const actorChanged = conflicts.some(({ target }) => target === 'actor');
+  const calendarChanged = conflicts.some(({ target }) => target === 'calendar');
+  if (actorChanged && calendarChanged) {
+    return `${actorName} and its calendar changed since you opened them`;
+  }
+  return actorChanged
+    ? `${actorName} changed since you opened it`
+    : `The calendar for ${actorName} changed since you opened it`;
 }
 
 interface OfferMenuProps {

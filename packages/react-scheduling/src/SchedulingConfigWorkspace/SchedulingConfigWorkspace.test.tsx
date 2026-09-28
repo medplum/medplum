@@ -4,7 +4,7 @@ import type { Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
 import { ConfigFixtures } from '../stories/scheduling';
-import { act, renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingConfigWorkspace } from './SchedulingConfigWorkspace';
 
 async function setup(resources: readonly Resource[] = ConfigFixtures): Promise<MockClient> {
@@ -235,6 +235,24 @@ describe('SchedulingConfigWorkspace', () => {
 
     expect(within(section('Visit types')).getByRole('button', { name: 'New visit type' })).toBeInTheDocument();
     expect(within(section('Providers')).queryByRole('button', { name: /^New/ })).not.toBeInTheDocument();
+  });
+
+  test("a provider's saved time zone clears their No time zone notice", async () => {
+    await setup();
+    await userEvent.click(row('Dr. Anika Patel'));
+    const general = within(details()).getByRole('region', { name: 'General' });
+    const timezone = within(general).getByRole('textbox', { name: 'Time zone' });
+
+    fireEvent.focus(timezone);
+    fireEvent.change(timezone, { target: { value: 'America/Chicago' } });
+    fireEvent.click(screen.getByText('America/Chicago'));
+    expect(row('Dr. Anika Patel')).toHaveTextContent('No time zone');
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Dr. Anika Patel')).not.toHaveTextContent('No time zone'));
+    expect(row('Dr. Anika Patel')).toHaveAttribute('aria-current', 'true');
+    expect(within(general).getByRole('textbox', { name: 'Time zone' })).toHaveValue('America/Chicago');
+    expect(screen.queryByRole('region', { name: 'Unsaved changes' })).not.toBeInTheDocument();
   });
 
   test('the text filter narrows every section, and the counts follow it', async () => {
