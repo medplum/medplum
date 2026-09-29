@@ -13,12 +13,7 @@ import * as keysModule from '../oauth/keys';
 import { getLoginForAccessToken, revokeLogin } from '../oauth/utils';
 import { getCacheRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
-import {
-  clearBotAccessTokenCache,
-  getBotAccessToken,
-  getJsFileExtension,
-  normalizeBotExecutionResult,
-} from './utils';
+import { clearBotAccessTokenCache, getBotAccessToken, getJsFileExtension, normalizeBotExecutionResult } from './utils';
 
 describe('getJsFileExtension', () => {
   test('returns .cjs for CommonJS code with .cjs extension', () => {
