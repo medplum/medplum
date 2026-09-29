@@ -1,14 +1,35 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Title } from '@mantine/core';
 import type { Coding, Resource } from '@medplum/fhirtypes';
+import { Document } from '@medplum/react';
 import type { Decorator } from '@storybook/react';
 import { MockDateWrapper } from './MockDateWrapper';
 import { WithBookStub } from './WithBookStub';
 import { WithCancelStub } from './WithCancelStub';
 import { WithFindStub } from './WithFindStub';
 import { WithFixtures } from './WithFixtures';
+import { WithRescheduleStub } from './WithRescheduleStub';
 import { WithValueSets } from './WithValueSets';
 import { WithValueSetStub } from './WithValueSetStub';
+
+/**
+ * Frames a story in a page, under the heading its `heading` parameter gives. Keeping the frame here leaves the
+ * story rendering only the component, which is what Storybook's Code panel then shows.
+ * @param Story - The story to frame.
+ * @param context - The story context, whose parameters may carry a `heading`.
+ * @returns The framed story.
+ */
+export const withDocument: Decorator = (Story, context) => (
+  <Document>
+    {context.parameters.heading && (
+      <Title order={4} mb="md">
+        {context.parameters.heading}
+      </Title>
+    )}
+    <Story />
+  </Document>
+);
 
 // Freezes the system clock so date/time-dependent stories are deterministic.
 export const withMockedDate: Decorator = (Story) => (
@@ -65,6 +86,17 @@ export const withCancelStub = (): Decorator => (Story) => (
   <WithCancelStub>
     <Story />
   </WithCancelStub>
+);
+
+/**
+ * Answers `Appointment/[id]/$reschedule` by moving what it names, which MockClient
+ * cannot.
+ * @returns The decorator.
+ */
+export const withRescheduleStub = (): Decorator => (Story) => (
+  <WithRescheduleStub>
+    <Story />
+  </WithRescheduleStub>
 );
 
 /**

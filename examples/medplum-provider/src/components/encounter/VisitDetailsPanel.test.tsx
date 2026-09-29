@@ -173,7 +173,8 @@ describe('VisitDetailsPanel', () => {
       resourceType: 'Organization',
       id: 'org-1',
       name: 'Test Medical Practice',
-      identifier: [{ system: 'http://hl7.org/fhir/sid/us-npi', value: '3564119220' }],
+      identifier: [{ system: 'https://www.medplum.com/provider', value: 'billing-organization' }],
+      address: [{ line: ['1 Main St'], city: 'Springfield', state: 'IL', postalCode: '62701' }],
     };
 
     await medplum.createResource(mockOrganization);
@@ -195,7 +196,7 @@ describe('VisitDetailsPanel', () => {
       fireEvent.change(organizationInput, { target: { value: 'Test Medical' } });
     });
 
-    // The search is restricted to provider organizations that have an NPI identifier
+    // The search is restricted to billing organizations, as in the visit's eligibility check
     await waitFor(
       () => {
         expect(medplum.searchResources).toHaveBeenCalledWith(
@@ -206,17 +207,17 @@ describe('VisitDetailsPanel', () => {
         const calls = (medplum.searchResources as ReturnType<typeof vi.fn>).mock.calls;
         const orgCall = calls.find((call) => call[0] === 'Organization');
         const params = orgCall?.[1] as URLSearchParams;
-        expect(params.get('identifier')).toBe('http://hl7.org/fhir/sid/us-npi|');
-        expect(params.get('type')).toBe('http://terminology.hl7.org/CodeSystem/organization-type|prov');
+        expect(params.get('identifier')).toBe('https://www.medplum.com/provider|billing-organization');
+        expect(params.get('type')).toBeNull();
       },
       { timeout: 3000 }
     );
 
-    // Dropdown options show the organization name and its NPI
+    // Dropdown options show the organization name and its address
     await waitFor(
       () => {
         expect(screen.queryByText(/Test Medical Practice/i)).toBeInTheDocument();
-        expect(screen.queryByText(/NPI 3564119220/i)).toBeInTheDocument();
+        expect(screen.queryByText(/1 Main St/i)).toBeInTheDocument();
       },
       { timeout: 3000 }
     );

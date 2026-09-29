@@ -71,6 +71,8 @@ export interface MedplumServerConfig {
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
   botCustomFunctionsEnabled?: boolean;
+  /** Write each bot invocation's input to binary storage (e.g. S3) for debugging and analytics. Default is `true`. */
+  storeBotInput?: boolean;
   logRequests?: boolean;
   logAuditEvents?: boolean;
   saveAuditEvents?: boolean;
@@ -134,6 +136,13 @@ export interface MedplumServerConfig {
 
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
+
+  /**
+   * Whether writes create resource cache entries (default 'true').
+   * When 'false', writes only update cache entries that already exist, and entries are created only
+   * when a read misses the cache. This prevents bulk writes from filling the cache.
+   */
+  cacheResourcesOnWrite?: boolean;
 
   /** Flag to enable pre-commit subscriptions for the interceptor pattern (default: false) */
   preCommitSubscriptionsEnabled?: boolean;
@@ -200,12 +209,6 @@ export interface MedplumServerConfig {
    * Allows running separate server pools for HTTP request serving vs. background job processing.
    */
   workers?: MedplumWorkersConfig;
-
-  /**
-   * Optional configuration for scheduled data warehouse sync jobs.
-   * Runs incremental in-server data warehouse sync jobs on a fixed cron pattern.
-   */
-  dataWarehouse?: MedplumDataWarehouseConfig;
 
   /**
    * Optional mTLS certificate header for incoming requests.
@@ -416,7 +419,6 @@ export type WorkerName =
   | 'post-deploy-migration'
   | 'set-accounts'
   | 'lambda-cleaner'
-  | 'data-warehouse-sync'
   | 'dicom';
 
 export interface MedplumWorkersConfig {
@@ -432,36 +434,6 @@ export interface MedplumWorkersConfig {
    * Only takes effect for workers that are enabled.
    */
   bullmq?: Partial<Record<WorkerName, Partial<MedplumBullmqConfig>>>;
-}
-
-export type MedplumDataWarehouseDestinationType = 's3tables' | 'local';
-
-export interface MedplumDataWarehouseConfig {
-  /**
-   * Enables/disables the scheduled sync worker. Defaults to false.
-   */
-  enabled?: boolean;
-  /**
-   * BullMQ cron pattern used to schedule sync runs.
-   */
-  cron?: string;
-  /** Warehouse export destination type. */
-  destination?: MedplumDataWarehouseDestinationType;
-  /** Required when destination is `s3tables`. */
-  awsS3TableArn?: string;
-  /** Required when destination is `local`. */
-  localBasePath?: string;
-  /** Optional Iceberg namespace used by sync. */
-  namespace?: string;
-  /**
-   * Earliest resource `lastUpdated` timestamp to include in sync (ISO-8601 date or date-time string).
-   * History rows with `lastUpdated` before this value are excluded.
-   */
-  startDate?: string;
-  /** FHIR resource types to include (e.g. `Patient`, `Observation`). When omitted, all types are candidates. */
-  includeResourceTypes?: string[];
-  /** FHIR resource types to exclude from sync. Cannot be set together with `includeResourceTypes`. */
-  excludeResourceTypes?: string[];
 }
 
 export interface MedplumFissionConfig {

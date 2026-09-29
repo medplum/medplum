@@ -8,18 +8,15 @@ import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
 import { getAllowedProjects } from '../fhir/accesspolicy';
+import { findProjectMembership } from '../fhir/projectmembership';
 import type { Repository } from '../fhir/repo';
 import { getPermittedProjectIds, getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
+import type { ProjectJobTarget } from './base';
+import { getJobSystemRepo, getProjectJobTarget } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import {
-  defaultQueueOptions,
-  findProjectMembership,
-  getWorkerBullmqConfig,
-  queueRegistry,
-  trackJobMetrics,
-} from './utils';
+import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 const MAX_BOTS_PER_PAGE = 500;
@@ -30,12 +27,15 @@ const MAX_BOTS_PER_PAGE = 500;
  * Cron job
  */
 
+// PENDING{v5.2} make target required and tighten up based on that throughout
 export type CronJobData =
   | {
+      readonly target?: ProjectJobTarget;
       readonly resourceType: 'Bot';
       readonly botId: string;
     }
   | {
+      readonly target?: ProjectJobTarget;
       readonly resourceType: 'Cron';
       readonly cronId: string;
     };
@@ -127,7 +127,7 @@ export async function addCronJobs(
         pattern: newCronStr,
       },
       {
-        data: buildJobData(resource),
+        data: buildCronJobData(resource),
       }
     );
   } else {
@@ -159,10 +159,18 @@ function getResourceIds(resource: WithId<Bot> | WithId<Cron>): { botId?: string;
   return resource.resourceType === 'Cron' ? { cronId: resource.id } : { botId: resource.id };
 }
 
-function buildJobData(resource: WithId<Bot> | WithId<Cron>): CronJobData {
+export function buildCronJobData(resource: WithId<Bot> | WithId<Cron>): CronJobData {
   return resource.resourceType === 'Cron'
-    ? { resourceType: 'Cron', cronId: resource.id }
-    : { resourceType: 'Bot', botId: resource.id };
+    ? {
+        target: getProjectJobTarget(resource),
+        resourceType: resource.resourceType,
+        cronId: resource.id,
+      }
+    : {
+        target: getProjectJobTarget(resource),
+        resourceType: resource.resourceType,
+        botId: resource.id,
+      };
 }
 
 function getCronString(resource: Bot | Cron): string | undefined {
@@ -367,7 +375,7 @@ async function resolveCronJob(
 }
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in the future
+  const systemRepo = job.data.target ? await getJobSystemRepo(job.data.target) : getShardSystemRepo(TODO_SHARD_ID);
 
   let bot: WithId<Bot>;
   let runAs: WithId<ProjectMembership> | undefined;
@@ -404,13 +412,13 @@ export async function removeBullMQJobByKey(schedulerId: string): Promise<void> {
   }
 }
 
-export async function reloadCronBots(): Promise<void> {
+export async function reloadCronBots(shardId: string): Promise<void> {
   const queue = queueRegistry.get(queueName);
   if (queue) {
     // Clears all jobs from the cron queue, including active ones
     await queue.obliterate({ force: true });
 
-    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be a function parameter in the future
+    const systemRepo = getShardSystemRepo(shardId);
 
     await systemRepo.processAllResources<Bot>(
       { resourceType: 'Bot', count: MAX_BOTS_PER_PAGE },

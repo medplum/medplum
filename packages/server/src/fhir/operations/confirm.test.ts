@@ -52,13 +52,16 @@ describe('Appointment/:id/$confirm', () => {
     await shutdownApp();
   });
 
-  async function makeSlot(status: Slot['status'] = 'busy-tentative'): Promise<WithId<Slot>> {
+  async function makeSlot(
+    status: Slot['status'] = 'busy-tentative',
+    slotSchedule: WithId<Schedule> = schedule
+  ): Promise<WithId<Slot>> {
     return systemRepo.createResource<Slot>({
       resourceType: 'Slot',
       status,
       start: '2026-05-15T14:00:00Z',
       end: '2026-05-15T15:00:00Z',
-      schedule: createReference(schedule),
+      schedule: createReference(slotSchedule),
       meta: { project: project.project.id },
     });
   }
@@ -378,6 +381,43 @@ describe('Appointment/:id/$confirm', () => {
       'status',
       'pending'
     );
+  });
+
+  test('Returns 400 when a slot is on an inactive Schedule', async () => {
+    const inactiveSchedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      active: false,
+      actor: [createReference(practitioner)],
+      meta: { project: project.project.id },
+    });
+    const activeSlot = await makeSlot('busy-tentative');
+    const inactiveSlot = await makeSlot('busy-tentative', inactiveSchedule);
+    const appointment = await makeAppointment('pending', [activeSlot, inactiveSlot]);
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
+
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'invalid',
+          details: { text: 'Schedule is inactive' },
+          expression: ['Appointment.slot[1].schedule'],
+        },
+      ],
+    });
+    expect(response).toHaveStatus(400);
+
+    // The appointment and its slots were left untouched
+    expect(await systemRepo.readResource<Appointment>('Appointment', appointment.id)).toHaveProperty(
+      'status',
+      'pending'
+    );
+    expect(await systemRepo.readResource<Slot>('Slot', activeSlot.id)).toHaveProperty('status', 'busy-tentative');
+    expect(await systemRepo.readResource<Slot>('Slot', inactiveSlot.id)).toHaveProperty('status', 'busy-tentative');
   });
 
   test('Returns 404 when appointment does not exist', async () => {
