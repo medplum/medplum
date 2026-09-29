@@ -63,7 +63,7 @@ jobs:
       # lacks it. `npm trust` (npm >= 11.10.0) is the closest public probe for that support.
       - name: Install npm from packageManager
         run: |
-          npm install -g "$(node -p "require('./package.json').packageManager")"
+          corepack enable npm
           if ! npm trust --help > /dev/null 2>&1; then
             echo "::error::npm $(npm -v) does not support trusted publishing (no 'npm trust' command)"
             exit 1

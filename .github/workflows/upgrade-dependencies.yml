@@ -36,7 +36,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Install npm from packageManager
-        run: npm install -g "$(node -p "require('./package.json').packageManager")"
+        run: corepack enable npm
       - name: Setup git
         run: |
           git config --global user.email "${{ secrets.MEDPLUM_BOT_EMAIL }}"

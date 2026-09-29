@@ -41,7 +41,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Install npm from packageManager
-        run: npm install -g "$(node -p "require('./package.json').packageManager")"
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
@@ -144,7 +144,7 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
       - name: Install npm from packageManager
-        run: npm install -g "$(node -p "require('./package.json').packageManager")"
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
@@ -283,7 +283,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Install npm from packageManager
-        run: npm install -g "$(node -p "require('./package.json').packageManager")"
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
@@ -399,7 +399,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Install npm from packageManager
-        run: npm install -g "$(node -p "require('./package.json').packageManager")"
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
@@ -484,7 +484,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Install npm from packageManager
-        run: npm install -g "$(node -p "require('./package.json').packageManager")"
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
@@ -565,7 +565,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Install npm from packageManager
-        run: npm install -g "$(node -p "require('./package.json').packageManager")"
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
@@ -703,7 +703,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Install npm from packageManager
-        run: npm install -g "$(node -p "require('./package.json').packageManager")"
+        run: corepack enable npm
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
