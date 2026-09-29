@@ -196,7 +196,7 @@ abstract class LookupTable {
     const conditions: Expression[] = [
       new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
     ];
-    // TODO: Enable once the v49 reindex has backfilled HumanName.projectId, so no rows are left with NULL projectId,
+    // PENDING{v5.2}: Enable once the v49 reindex has backfilled HumanName.projectId, so no rows are left with NULL projectId,
     // and rename `_projectIds` above
     // if (this.hasProjectIdColumn && projectIds) {
     //   conditions.push(new Condition(new Column(lookupTableName, 'projectId'), 'IN', projectIds));

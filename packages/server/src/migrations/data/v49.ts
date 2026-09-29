@@ -90,8 +90,10 @@ interface BatchResult {
   readonly updated: number;
 }
 
+const maxBatchAttempts = 2;
+
 /**
- * Runs one backfill batch in its own READ COMMITTED transaction, retrying once on a serialization failure.
+ * Runs one backfill batch in its own READ COMMITTED transaction, retrying on a serialization failure.
  *
  * Pool connections default to REPEATABLE READ, where a concurrent resource write that rewrites a batch's
  * `HumanName` rows fails the whole statement; READ COMMITTED skips those rows, whose replacements already carry
@@ -102,7 +104,8 @@ interface BatchResult {
  * @returns The batch result.
  */
 async function runBatch(client: PoolClient, sql: string, params: unknown[]): Promise<BatchResult> {
-  for (let attempt = 1; ; attempt++) {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxBatchAttempts; attempt++) {
     await client.query('BEGIN ISOLATION LEVEL READ COMMITTED');
     try {
       const result = await client.query<BatchResult>(sql, params);
@@ -110,15 +113,19 @@ async function runBatch(client: PoolClient, sql: string, params: unknown[]): Pro
       return result.rows[0];
     } catch (err: any) {
       await client.query('ROLLBACK');
-      if (attempt > 1 || err?.code !== PostgresError.SerializationFailure) {
+      if (err?.code !== PostgresError.SerializationFailure) {
         throw err;
       }
-      globalLogger.warn('Retrying HumanName.projectId backfill batch after serialization failure', {
-        lastId: params[0],
-        error: err.message,
-      });
+      lastError = err;
+      if (attempt < maxBatchAttempts) {
+        globalLogger.warn('Retrying HumanName.projectId backfill batch after serialization failure', {
+          lastId: params[0],
+          error: err.message,
+        });
+      }
     }
   }
+  throw lastError;
 }
 
 /**
@@ -140,6 +147,11 @@ export async function backfillHumanNameProjectId(
     ...defaultOptions,
     ...options,
   };
+
+  // A non-positive batch size would scan nothing, and either loop forever or mark the backfill done without running it
+  if (!Number.isInteger(batchSize) || batchSize < 1) {
+    throw new Error(`Invalid HumanName.projectId backfill batch size: ${batchSize}`);
+  }
 
   if (checkpoint && 'done' in checkpoint) {
     results.push({ name: 'Backfill HumanName.projectId', durationMs: 0, skipped: 'Already completed' });
@@ -180,32 +192,37 @@ export async function backfillHumanNameProjectId(
     let lastId = i === startIndex && checkpoint ? checkpoint.lastId : minId;
     let scanned = 0;
     let updated = 0;
-    for (;;) {
+    let hasMore = true;
+    while (hasMore) {
       const row = await runBatch(client, sql, [lastId, batchSize]);
-      if (!row.scanned || !row.maxId) {
-        break;
-      }
-      lastId = row.maxId;
-      scanned += row.scanned;
-      updated += row.updated;
-
-      if (Math.floor(scanned / progressLogThreshold) !== Math.floor((scanned - row.scanned) / progressLogThreshold)) {
-        globalLogger.info('HumanName.projectId backfill in progress', {
-          resourceType,
-          lastId,
-          scanned,
-          updated,
-          durationMs: Date.now() - start,
-        });
-      }
-
       // A partial batch means the end of the table was reached
-      if (row.scanned < batchSize) {
-        break;
+      hasMore = row.scanned === batchSize;
+
+      if (row.scanned > 0) {
+        // Canonical lowercase UUID strings sort in the same order as Postgres uuids
+        if (!row.maxId || row.maxId <= lastId) {
+          throw new Error(`HumanName.projectId backfill made no progress on ${resourceType} past ${lastId}`);
+        }
+        lastId = row.maxId;
+        scanned += row.scanned;
+        updated += row.updated;
+
+        if (Math.floor(scanned / progressLogThreshold) !== Math.floor((scanned - row.scanned) / progressLogThreshold)) {
+          globalLogger.info('HumanName.projectId backfill in progress', {
+            resourceType,
+            lastId,
+            scanned,
+            updated,
+            durationMs: Date.now() - start,
+          });
+        }
       }
-      await onCheckpoint?.({ resourceType, lastId });
-      if (delayBetweenBatches > 0) {
-        await sleep(delayBetweenBatches);
+
+      if (hasMore) {
+        await onCheckpoint?.({ resourceType, lastId });
+        if (delayBetweenBatches > 0) {
+          await sleep(delayBetweenBatches);
+        }
       }
     }
 
