@@ -995,6 +995,15 @@ function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS btree_gist;`);
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pgstattuple;`);
+  // Optional contrib / third-party extensions — same availability guards as schema/v121.ts.
+  for (const ext of ['bloom', 'hypopg']) {
+    b.append('DO $$');
+    b.append('BEGIN');
+    b.append(`  IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = '${ext}') THEN`);
+    b.append(`    EXECUTE 'CREATE EXTENSION IF NOT EXISTS ${ext}';`);
+    b.append('  END IF;');
+    b.append('END $$;');
+  }
   b.newLine();
 
   for (const action of actions) {

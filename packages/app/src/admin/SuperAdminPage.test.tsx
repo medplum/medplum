@@ -12,6 +12,40 @@ import type { MockInstance } from 'vitest';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 
+function columnStatistics(tableName: string | string[] | undefined): [typeof allOk, Parameters] {
+  const name = Array.isArray(tableName) ? tableName[0] : tableName;
+  const columns =
+    name === 'Appointment_History'
+      ? [
+          { name: 'id', type: 'uuid' },
+          { name: 'lastUpdated', type: 'timestamptz' },
+        ]
+      : [
+          { name: 'projectId', type: 'uuid' },
+          { name: 'status', type: 'text' },
+        ];
+
+  return [
+    allOk,
+    {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'defaultStatisticsTarget', valueInteger: 100 },
+        {
+          name: 'table',
+          part: columns.map((column) => ({
+            name: 'column',
+            part: [
+              { name: 'name', valueString: column.name },
+              { name: 'type', valueString: column.type },
+            ],
+          })),
+        },
+      ],
+    },
+  ];
+}
+
 describe('SuperAdminPage', () => {
   let postSpy: MockInstance;
   let medplum: MockClient;
@@ -572,6 +606,339 @@ describe('SuperAdminPage', () => {
       expect(await screen.findByText('Accurate: 12,300')).toBeInTheDocument();
     });
 
+    test('Explain search with hypothetical indexes', async () => {
+      vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+        resourceType: 'ValueSet',
+        status: 'active',
+        expansion: { timestamp: '2021-01-01T00:00:00.000Z', contains: [{ code: 'Appointment' }] },
+      });
+
+      medplum.router.add('GET', '$db-column-statistics', async (req) => columnStatistics(req.query.tableName));
+
+      setup();
+
+      medplum.router.add('POST', '$explain', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'query', valueString: 'SELECT * FROM "Appointment"' },
+              { name: 'parameters', valueString: '[]' },
+              { name: 'explain', valueString: 'Index Scan using <hypo> on Appointment' },
+              {
+                name: 'hypotheticalIndex',
+                part: [
+                  { name: 'indexrelid', valueString: '18284' },
+                  { name: 'indexName', valueString: '<18284>btree_Appointment_projectId_status' },
+                  { name: 'schemaName', valueString: 'public' },
+                  { name: 'tableName', valueString: 'Appointment' },
+                  { name: 'accessMethod', valueString: 'btree' },
+                  {
+                    name: 'definition',
+                    valueString: 'CREATE INDEX ON public."Appointment" USING btree ("projectId", "status")',
+                  },
+                ],
+              },
+              {
+                name: 'warning',
+                valueString:
+                  'EXPLAIN ANALYZE is skipped because HypoPG hypothetical indexes are only considered by EXPLAIN',
+              },
+            ],
+          },
+        ];
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Search *'), {
+          target: { value: 'Appointment?status=booked' },
+        });
+      });
+
+      await chooseSearchableOption('Table', 'Appointment');
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(screen.getByLabelText('Add column')).toBeEnabled();
+      await chooseSearchableOption('Add column', 'projectId');
+      await chooseSearchableOption('Add column', 'status');
+
+      expect(screen.getByText('CREATE INDEX ON "Appointment" USING btree ("projectId", "status")')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith(
+        'fhir/R4/$explain',
+        expect.objectContaining({
+          query: 'Appointment?status=booked',
+          hypotheticalIndex: 'CREATE INDEX ON "Appointment" USING btree ("projectId", "status")',
+          format: 'text',
+        }),
+        undefined,
+        expect.any(Object)
+      );
+
+      expect(await screen.findByText('Hypothetical indexes')).toBeInTheDocument();
+      expect(await screen.findByText('18284')).toBeInTheDocument();
+      expect(await screen.findByText('btree_Appointment_projectId_status')).toBeInTheDocument();
+      expect(
+        await screen.findByText('CREATE INDEX ON public."Appointment" USING btree ("projectId", "status")')
+      ).toBeInTheDocument();
+      expect(
+        await screen.findByText(
+          'EXPLAIN ANALYZE is skipped because HypoPG hypothetical indexes are only considered by EXPLAIN'
+        )
+      ).toBeInTheDocument();
+    });
+
+    test('Explain search with a history table index', async () => {
+      vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+        resourceType: 'ValueSet',
+        status: 'active',
+        expansion: { timestamp: '2021-01-01T00:00:00.000Z', contains: [{ code: 'Appointment' }] },
+      });
+
+      medplum.router.add('GET', '$db-column-statistics', async (req) => columnStatistics(req.query.tableName));
+
+      setup();
+
+      medplum.router.add('POST', '$explain', async () => {
+        return [allOk, { resourceType: 'Parameters', parameter: [] }];
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Search *'), {
+          target: { value: 'Appointment?status=booked' },
+        });
+      });
+
+      await chooseSearchableOption('Table', 'Appointment_History');
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(screen.getByLabelText('Add column')).toBeEnabled();
+      await chooseSearchableOption('Add column', 'id');
+      await chooseSearchableOption('Add column', 'lastUpdated');
+
+      expect(
+        screen.getByText('CREATE INDEX ON "Appointment_History" USING btree ("id", "lastUpdated")')
+      ).toBeInTheDocument();
+      expect(screen.queryByText('projectId')).not.toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith(
+        'fhir/R4/$explain',
+        expect.objectContaining({
+          hypotheticalIndex: 'CREATE INDEX ON "Appointment_History" USING btree ("id", "lastUpdated")',
+        }),
+        undefined,
+        expect.any(Object)
+      );
+    });
+
+    test('Explain search validation - incomplete hypothetical index', async () => {
+      vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+        resourceType: 'ValueSet',
+        status: 'active',
+        expansion: { timestamp: '2021-01-01T00:00:00.000Z', contains: [{ code: 'Appointment' }] },
+      });
+
+      setup();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Search *'), {
+          target: { value: 'Appointment?status=booked' },
+        });
+      });
+
+      await chooseSearchableOption('Table', 'Appointment');
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      expect(postSpy.mock.calls.some((call) => call[0] === 'fhir/R4/$explain')).toBe(false);
+      expect(
+        await screen.findByText('Each hypothetical index needs a table and at least one column')
+      ).toBeInTheDocument();
+    });
+
+    test('Explain with SQL instead of FHIR search', async () => {
+      setup();
+
+      medplum.router.add('POST', '$explain', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'query', valueString: 'SELECT * FROM "Patient"' },
+              { name: 'parameters', valueString: '' },
+              { name: 'explain', valueString: 'Seq Scan on Patient' },
+            ],
+          },
+        ];
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('radio', { name: 'SQL query' }));
+      });
+
+      expect(screen.getByLabelText('Search')).toBeDisabled();
+      expect(screen.getByLabelText('SQL *')).toBeEnabled();
+      // A disabled ReferenceInput drops its search field, so the placeholder is gone entirely.
+      expect(screen.queryByPlaceholderText('Project')).not.toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('Practitioner or Patient')).not.toBeInTheDocument();
+      expect(screen.getByText('Only available when query type is FHIR search.')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('SQL *'), {
+          target: { value: 'SELECT * FROM "Patient"' },
+        });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith(
+        'fhir/R4/$explain',
+        expect.objectContaining({
+          sql: 'SELECT * FROM "Patient"',
+          format: 'text',
+        }),
+        undefined,
+        expect.any(Object)
+      );
+      expect(postSpy.mock.calls.find((call) => call[0] === 'fhir/R4/$explain')?.[1]).not.toHaveProperty('query');
+
+      expect(await screen.findByText('Database Explain')).toBeInTheDocument();
+    });
+
+    test('Explain search with JSON format', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText },
+        configurable: true,
+      });
+
+      setup();
+
+      medplum.router.add('POST', '$explain', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'query', valueString: 'SELECT 1' },
+              { name: 'parameters', valueString: '[]' },
+              { name: 'explain', valueString: '{"Plan":{"Node Type":"Seq Scan"}}' },
+            ],
+          },
+        ];
+      });
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Search *'), {
+          target: { value: 'Patient?active=true' },
+        });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('JSON format'));
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith(
+        'fhir/R4/$explain',
+        expect.objectContaining({ format: 'json' }),
+        undefined,
+        expect.any(Object)
+      );
+
+      expect(await screen.findByText(/"Node Type": "Seq Scan"/)).toBeInTheDocument();
+
+      const copyButton = await screen.findByRole('button', { name: 'Copy plan' });
+      await act(async () => {
+        fireEvent.click(copyButton);
+      });
+
+      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('"Node Type": "Seq Scan"'));
+    });
+
+    test('Shows invalid JSON plan unchanged', async () => {
+      setup();
+
+      medplum.router.add('POST', '$explain', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'query', valueString: 'SELECT 1' },
+              { name: 'parameters', valueString: '[]' },
+              { name: 'explain', valueString: '{not-json' },
+            ],
+          },
+        ];
+      });
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Search *'), {
+          target: { value: 'Patient?active=true' },
+        });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('JSON format'));
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      expect(await screen.findByText('{not-json')).toBeInTheDocument();
+    });
+
+    test('Explain search validation - missing SQL', async () => {
+      setup();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('radio', { name: 'SQL query' }));
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      expect(postSpy.mock.calls.some((call) => call[0] === 'fhir/R4/$explain')).toBe(false);
+    });
+
     test('Explain search validation - missing query', async () => {
       setup();
 
@@ -802,6 +1169,22 @@ describe('SuperAdminPage', () => {
 
       expect(await screen.findByText('Forbidden')).toBeInTheDocument();
     });
+
+    async function chooseSearchableOption(label: string, query: string): Promise<void> {
+      const input = screen.getByLabelText(label);
+      await act(async () => {
+        fireEvent.click(input);
+      });
+      await act(async () => {
+        fireEvent.change(input, { target: { value: query } });
+      });
+      await act(async () => {
+        fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+      });
+      await act(async () => {
+        fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      });
+    }
 
     test('ExplainSearchForm access denied for non-super admin', async () => {
       vi.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
