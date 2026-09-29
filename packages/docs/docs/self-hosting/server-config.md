@@ -567,6 +567,14 @@ This feature can be disabled if you want to preserve the original external URL o
 
 **Default:** `true`
 
+### cacheResourcesOnWrite
+
+Optional flag to control whether creating or updating a resource writes it to the Redis resource cache. Set `MEDPLUM_CACHE_RESOURCES_ON_WRITE=false` when using environment variable config.
+
+When set to `false`, a write only refreshes a cache entry that already exists. A resource is added to the cache only when a read misses the cache. This keeps high-volume writes, such as bulk imports, from filling the cache with resources that are never read.
+
+**Default:** `true`
+
 ### allowUnsafeOutbound
 
 Optional flag to allow outbound `fetch` requests to private or local network addresses. Set `MEDPLUM_ALLOW_UNSAFE_OUTBOUND=true` when using environment variable config.

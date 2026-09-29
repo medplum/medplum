@@ -25,6 +25,43 @@ export class AsyncJobExecutor {
     this.resource = resource;
   }
 
+  /**
+   * Returns the AsyncJob managed by this executor.
+   * @returns The hydrated AsyncJob resource.
+   * @throws Error if the AsyncJob is not set.
+   */
+  getAsyncJob(): WithId<AsyncJob> {
+    if (!this.resource) {
+      throw new Error('AsyncJob missing');
+    }
+    return this.resource;
+  }
+
+  /**
+   * Reloads the managed AsyncJob from its owning repository.
+   * @returns The refreshed AsyncJob resource.
+   * @throws Error if the AsyncJob is not set.
+   */
+  async refresh(): Promise<WithId<AsyncJob>> {
+    const asyncJob = this.getAsyncJob();
+    this.resource = await this.repo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
+    return this.resource;
+  }
+
+  /**
+   * Updates the job output without changing its status. The update is conditional so it cannot
+   * overwrite a concurrent cancellation or other lifecycle change.
+   * @param output - The current job output.
+   * @returns The updated AsyncJob resource.
+   */
+  async updateOutput(output: Parameters): Promise<WithId<AsyncJob>> {
+    const asyncJob = this.getAsyncJob();
+    this.resource = await this.repo
+      .getSystemRepo()
+      .updateResource<AsyncJob>({ ...asyncJob, output }, { ifMatch: asyncJob.meta?.versionId });
+    return this.resource;
+  }
+
   async init(url: string, params?: Partial<AsyncJob>): Promise<WithId<AsyncJob>> {
     this.resource ??= await this.repo.createResource<AsyncJob>({
       ...params,
@@ -121,11 +158,12 @@ export class AsyncJobExecutor {
         version: `v${completedDataVersion}`,
       });
       await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), completedDataVersion);
-      updatedJob = await this.repo.getSystemRepo().updateResource(updatedJob);
+      this.resource = updatedJob = await this.repo.getSystemRepo().updateResource(updatedJob);
       await maybeAutoRunPendingPostDeployMigration();
       return updatedJob;
     } else {
-      return this.repo.getSystemRepo().updateResource(updatedJob);
+      this.resource = await this.repo.getSystemRepo().updateResource(updatedJob);
+      return this.resource;
     }
   }
 
@@ -166,7 +204,8 @@ export class AsyncJobExecutor {
         );
       }
     }
-    return this.repo.getSystemRepo().updateResource(failedJob);
+    this.resource = await this.repo.getSystemRepo().updateResource(failedJob);
+    return this.resource;
   }
 
   getContentLocation(baseUrl: string): string {

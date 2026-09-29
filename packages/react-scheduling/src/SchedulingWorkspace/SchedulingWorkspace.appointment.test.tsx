@@ -180,9 +180,9 @@ describe('SchedulingWorkspace appointment details', () => {
     expect(cancelButton()).toHaveAttribute('disabled');
     expect(within(details() as HTMLElement).getByText('This appointment is cancelled.')).toBeInTheDocument();
 
-    // And the grid is drawn again from the same announcement, without re-fetching.
-    await waitFor(() => expect(container.querySelector('.appointment.cancelled')).toBeInTheDocument());
-    expect(container.querySelector('.appointment.booked')).not.toBeInTheDocument();
+    // And the grid drops the visit on the same announcement, without re-fetching, since
+    // cancelled appointments are not drawn on the calendar.
+    await waitFor(() => expect(container.querySelector('.appointment')).not.toBeInTheDocument());
   });
 
   test('a refusal does not outlive the details it was raised in', async () => {

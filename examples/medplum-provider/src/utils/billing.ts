@@ -44,6 +44,8 @@ export const PROVIDER_ORGANIZATION_TYPE = 'prov';
  */
 export const MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM = 'https://www.medplum.com/provider';
 export const BILLING_ORGANIZATION_IDENTIFIER_VALUE = 'billing-organization';
+/** `system|value` token selecting billing organizations in a FHIR identifier search. */
+export const BILLING_ORGANIZATION_IDENTIFIER = `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`;
 export const BILLING_PRACTITIONER_IDENTIFIER_VALUE = 'billing-practitioner';
 
 /**

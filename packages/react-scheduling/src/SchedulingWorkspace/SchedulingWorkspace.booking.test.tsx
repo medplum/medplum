@@ -28,6 +28,7 @@ import {
   chooseSecondOfferedTime,
   clickBook,
   enterAuthorizationDetails,
+  field,
   fillAuthorizedBooking,
   fillBooking,
   hasPill,
@@ -215,7 +216,8 @@ describe('SchedulingWorkspace booking', () => {
     await clickCalendar();
 
     expect(bookingPaneHeading()).toBeInTheDocument();
-    expect(screen.getByRole('searchbox', { name: /visit type/i })).toBeInTheDocument();
+    // Scoped to the pane, since the sidebar filter wears the same label.
+    expect(field(/visit type/i)).toBeInTheDocument();
   });
 
   test('Opens the time search on the day clicked rather than today', async () => {

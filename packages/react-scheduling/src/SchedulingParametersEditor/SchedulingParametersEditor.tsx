@@ -10,6 +10,7 @@ import type { SchedulingParameterValues } from '../parameterValues';
 import {
   getHealthcareServiceSchedulingParameterValues,
   getScheduleSchedulingParameterValues,
+  SCHEDULING_PARAMETER_DEFAULTS,
   setHealthcareServiceSchedulingParameterValues,
   setScheduleSchedulingParameterValues,
 } from '../parameterValues';
@@ -23,7 +24,6 @@ import {
   getInheritedDefaults,
   getSchedulingParameterWarnings,
   getVisibleParameters,
-  SCHEDULING_PARAMETER_DEFAULTS,
   validateSchedulingParameters,
 } from './SchedulingParametersEditor.utils';
 import { SchedulingParametersFields } from './SchedulingParametersFields';

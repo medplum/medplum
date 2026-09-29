@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
+import { ServiceTypeReferenceURI } from '@medplum/core';
+import type { Appointment, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { RenderResult } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -11,11 +12,27 @@ import { installValueSetStub } from '../../stories/mockValueSet';
 import { renderWithMedplum, screen, userEvent, waitFor } from '../../test-utils/render';
 import { AppointmentDetails } from './AppointmentDetails';
 
+const SERVICE: WithId<HealthcareService> = {
+  resourceType: 'HealthcareService',
+  id: 'ultrasound-imaging',
+  name: 'Ultrasound Imaging',
+};
+
+const HELD_SCHEDULE: WithId<Schedule> = {
+  resourceType: 'Schedule',
+  id: 'schedule-dr-rivera',
+  active: true,
+  actor: [{ reference: 'Practitioner/dr-rivera', display: 'Dr. Maya Rivera' }],
+  serviceType: [
+    { extension: [{ url: ServiceTypeReferenceURI, valueReference: { reference: `HealthcareService/${SERVICE.id}` } }] },
+  ],
+};
+
 const HELD_SLOT: WithId<Slot> = {
   resourceType: 'Slot',
   id: 'slot-rivera-tue',
   status: 'busy',
-  schedule: { reference: 'Schedule/schedule-dr-rivera' },
+  schedule: { reference: `Schedule/${HELD_SCHEDULE.id}` },
   start: '2020-05-05T17:00:00Z',
   end: '2020-05-05T17:30:00Z',
 };
@@ -26,7 +43,17 @@ const BOOKED_APPOINTMENT: WithId<Appointment> = {
   status: 'booked',
   start: '2020-05-05T17:00:00Z',
   end: '2020-05-05T17:30:00Z',
-  serviceType: [{ text: 'Ultrasound Imaging' }],
+  serviceType: [
+    {
+      text: 'Ultrasound Imaging',
+      extension: [
+        {
+          url: ServiceTypeReferenceURI,
+          valueReference: { reference: `HealthcareService/${SERVICE.id}` },
+        },
+      ],
+    },
+  ],
   comment: 'Bring prior films',
   slot: [{ reference: `Slot/${HELD_SLOT.id}` }],
   participant: [
@@ -42,6 +69,8 @@ let restoreValueSet: () => void;
 
 beforeEach(async () => {
   medplum = new MockClient();
+  await medplum.createResource(SERVICE);
+  await medplum.createResource(HELD_SCHEDULE);
   await medplum.createResource(HELD_SLOT);
   await medplum.createResource(BOOKED_APPOINTMENT);
   restoreCancel = installCancelStub(medplum);
@@ -62,6 +91,10 @@ function renderDetails(appointment: WithId<Appointment>, onCancelled?: (a: WithI
  */
 function cancelButton(): HTMLElement | null {
   return screen.queryByRole('button', { name: 'Cancel Appointment' });
+}
+
+function rescheduleButton(): HTMLElement | null {
+  return screen.queryByRole('button', { name: 'Reschedule' });
 }
 
 /**
@@ -271,5 +304,49 @@ describe('AppointmentDetails', () => {
 
     expect(cancelButton()).toHaveAttribute('disabled');
     expect(screen.getByText("An appointment in 'fulfilled' status cannot be cancelled.")).toBeInTheDocument();
+  });
+
+  test('offers to reschedule a visit $reschedule would accept', () => {
+    renderDetails(BOOKED_APPOINTMENT);
+
+    expect(rescheduleButton()).toBeInTheDocument();
+  });
+
+  test('offers no reschedule for a visit $reschedule would refuse', () => {
+    renderDetails({ ...BOOKED_APPOINTMENT, status: 'cancelled' });
+
+    expect(rescheduleButton()).not.toBeInTheDocument();
+  });
+
+  test('takes back the room the reschedule form was given when the view is left', async () => {
+    // A host widens itself to lay the times beside the form; leaving the view takes the
+    // form away, so the width goes back with it whether or not a search was open.
+    const onToggleTimeFinder = vi.fn();
+    renderWithMedplum(
+      <AppointmentDetails appointment={BOOKED_APPOINTMENT} onToggleTimeFinder={onToggleTimeFinder} />,
+      medplum
+    );
+
+    await userEvent.click(rescheduleButton() as HTMLElement);
+    await userEvent.click(await screen.findByRole('button', { name: 'Back' }));
+
+    expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
+  });
+
+  test('swaps the details for the form that moves the visit, and back again', async () => {
+    // The two are one view: the same visit, described and then moved. A host showing
+    // this in a panel of its own titles it for the details, so the form says what it is.
+    renderDetails(BOOKED_APPOINTMENT);
+
+    await userEvent.click(rescheduleButton() as HTMLElement);
+
+    expect(screen.getByRole('heading', { name: 'Reschedule appointment' })).toBeInTheDocument();
+    expect(await screen.findByRole('textbox', { name: /visit type/i })).toHaveValue('Ultrasound Imaging');
+    expect(cancelButton()).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+    expect(screen.getByText('Bring prior films')).toBeInTheDocument();
+    expect(cancelButton()).toBeInTheDocument();
   });
 });

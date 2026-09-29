@@ -78,36 +78,6 @@ describe('utils', () => {
     expect(config).toEqual({ requireVerifiedEmailForProjectCreation: false });
   });
 
-  test('addDefaults preserves dataWarehouse.startDate as ISO-8601 string', () => {
-    const config = addDefaults({
-      baseUrl: 'https://example.com',
-      dataWarehouse: {
-        startDate: '2024-01-01T00:00:00.000Z',
-      },
-    } as any);
-    expect(config.dataWarehouse?.startDate).toBe('2024-01-01T00:00:00.000Z');
-  });
-
-  test('setValue stores dataWarehouse.startDate as string', () => {
-    const config = {};
-    setValue(config, 'dataWarehouse.startDate', '2024-01-01T00:00:00.000Z');
-    expect(config).toEqual({
-      dataWarehouse: {
-        startDate: '2024-01-01T00:00:00.000Z',
-      },
-    });
-  });
-
-  test('setValue stores dataWarehouse.includeResourceTypes as comma-separated list', () => {
-    const config = {};
-    setValue(config, 'dataWarehouse.includeResourceTypes', 'Patient,Observation');
-    expect(config).toEqual({
-      dataWarehouse: {
-        includeResourceTypes: ['Patient', 'Observation'],
-      },
-    });
-  });
-
   test('setValue stores blockedEmailDomains as comma-separated list', () => {
     const config = {};
     setValue(config, 'blockedEmailDomains', 'example.com,test.com');

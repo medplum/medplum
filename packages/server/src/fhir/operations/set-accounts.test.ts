@@ -18,13 +18,17 @@ import type {
 import type { Job } from 'bullmq';
 import express from 'express';
 import request from 'supertest';
+import type { Mock } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import type { MedplumServerConfig } from '../../config/types';
 import { runInAuthenticatedContext } from '../../context';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
 import type { SetAccountsJobData } from '../../workers/set-accounts';
-import { execSetAccountsJob, getSetAccountsQueue } from '../../workers/set-accounts';
+import { execSetAccountsJob, getSetAccountsQueue, initSetAccountsWorker } from '../../workers/set-accounts';
+import * as workerUtils from '../../workers/utils';
 import { setAccountsHandler } from './set-accounts';
+import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 
 const app = express();
 let accessToken: string;
@@ -36,10 +40,11 @@ let diagnosticReport: DiagnosticReport;
 let patient: Patient;
 let organization1: Organization;
 let organization2: Organization;
+let config: MedplumServerConfig;
 
 describe('Patient Set Accounts Operation', () => {
   beforeEach(async () => {
-    const config = await loadTestConfig();
+    config = await loadTestConfig();
     await initApp(app, config);
     ({ accessToken, login, membership, project } = await createTestProject({
       withAccessToken: true,
@@ -395,11 +400,13 @@ describe('Patient Set Accounts Operation', () => {
     expect(res).toHaveStatus(403);
   });
 
-  test('Supports async response', async () => {
+  test.each([
+    ['tracked', false],
+    ['legacy', true],
+  ] as const)('Supports async response with %s job data', async (_format, legacy) => {
     const queue = getSetAccountsQueue() as any;
     queue.add.mockClear();
 
-    // Start the operation
     const initRes = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -420,15 +427,30 @@ describe('Patient Set Accounts Operation', () => {
       });
     expect(initRes).toHaveStatus(202);
     expect(initRes.headers['content-location']).toBeDefined();
-
-    // Manually push through BullMQ job
     expect(queue.add).toHaveBeenCalledWith(
       'SetAccountsJobData',
       expect.objectContaining<Partial<SetAccountsJobData>>({ resourceType: 'Patient', id: patient.id })
     );
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-    queue.add.mockClear();
+    const contentLocation = new URL(initRes.headers['content-location']);
+    const queuedData = queue.add.mock.calls[0][1] as SetAccountsJobData;
+    let jobData = queuedData;
+    if (legacy) {
+      const initialStatusRes = await request(app)
+        .get(contentLocation.pathname)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(initialStatusRes).toHaveStatus(202);
+      jobData = {
+        resourceType: queuedData.resourceType,
+        id: queuedData.id,
+        accounts: queuedData.accounts,
+        authState: queuedData.authState,
+        requestId: queuedData.requestId,
+        traceId: queuedData.traceId,
+        asyncJob: initialStatusRes.body as WithId<AsyncJob>,
+      };
+    }
+    const job = { id: 1, data: jobData } as unknown as Job<SetAccountsJobData>;
 
     await runInAuthenticatedContext(
       { login, membership, project, userConfig: {} as unknown as UserConfiguration },
@@ -438,18 +460,45 @@ describe('Patient Set Accounts Operation', () => {
       () => execSetAccountsJob(job)
     );
 
-    // Check the export status
-    const contentLocation = new URL(initRes.headers['content-location']);
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
-
     const statusRes = await request(app)
       .get(contentLocation.pathname)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(statusRes).toHaveStatus(200);
-    const resBody = statusRes.body as AsyncJob;
-    expect(resBody.output?.parameter).toStrictEqual(
+    expect((statusRes.body as AsyncJob).output?.parameter).toStrictEqual(
       expect.arrayContaining([{ name: 'resourcesUpdated', valueInteger: 3 }])
     );
+  });
+
+  test('Worker logs and fails legacy async job data', async () => {
+    const loggingSpy = vi.spyOn(workerUtils, 'addVerboseQueueLogging');
+    const failSpy = vi.spyOn(AsyncJobExecutor.prototype, 'failJob');
+    const asyncJob: WithId<AsyncJob> = {
+      resourceType: 'AsyncJob',
+      id: 'legacy-async-job',
+      status: 'accepted',
+      request: '/fhir/R4/Patient/$set-accounts',
+      requestTime: new Date().toISOString(),
+    };
+    failSpy.mockResolvedValue({ ...asyncJob, status: 'error' });
+    const legacyData: SetAccountsJobData = {
+      resourceType: 'Patient',
+      id: patient.id as string,
+      accounts: [createReference(organization1)],
+      authState: { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+      asyncJob,
+    };
+    const job = { id: 1, data: legacyData } as unknown as Job<SetAccountsJobData>;
+
+    const { worker } = initSetAccountsWorker(config);
+    const logFields = loggingSpy.mock.calls.at(-1)?.[2] as (job: Job<SetAccountsJobData>) => Record<string, unknown>;
+    expect(logFields(job)).toEqual({ asyncJob: 'AsyncJob/legacy-async-job' });
+
+    const onCalls = (worker?.on as unknown as Mock).mock.calls as [string, (job: Job<SetAccountsJobData>) => unknown][];
+    const failedHandler = onCalls.filter(([event]) => event === 'failed').at(-1)?.[1];
+    expect(failedHandler).toBeDefined();
+    await expect(failedHandler?.(job)).resolves.toBeUndefined();
+    expect(failSpy).toHaveBeenCalledOnce();
   });
 
   test('Job aborts when AsyncJob.status is not continuable', async () => {

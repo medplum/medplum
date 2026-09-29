@@ -12,6 +12,7 @@ import type {
   CodeableConcept,
   Coverage,
   Encounter,
+  Organization,
   Patient,
   Practitioner,
 } from '@medplum/fhirtypes';
@@ -772,6 +773,11 @@ describe('BillingTab', () => {
     const user = userEvent.setup();
 
     mockSearchResources({ Coverage: [mockCoverage] });
+    await medplum.createResource<Organization>({
+      resourceType: 'Organization',
+      id: 'billing-org-123',
+      name: 'Test Medical Practice',
+    });
 
     // No persisted Claim; the practitioner bills under an organization via PractitionerRole.
     vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string) => {
@@ -796,8 +802,16 @@ describe('BillingTab', () => {
     await setup();
 
     await waitFor(() => {
-      expect(medplum.searchOne).toHaveBeenCalledWith('PractitionerRole', expect.anything());
+      expect(medplum.searchOne).toHaveBeenCalledWith('PractitionerRole', {
+        practitioner: 'Practitioner/practitioner-123',
+        active: 'true',
+        'organization.identifier': 'https://www.medplum.com/provider|billing-organization',
+      });
     });
+
+    // The role's organization is preselected in the picker, which stays editable.
+    expect(await screen.findByText('Test Medical Practice')).toBeInTheDocument();
+    expect(document.querySelector('.mantine-Pill-remove')).toBeInTheDocument();
 
     await user.click(screen.getByText('Export Claim'));
     await user.click(await screen.findByText('CMS 1500 Form'));

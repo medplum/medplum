@@ -167,6 +167,10 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
     [onSuccess, onSelectHealthcareService, navigate]
   );
 
+  if (schedule.active === false) {
+    return null;
+  }
+
   if (!scheduleableServices?.length) {
     return null;
   }
