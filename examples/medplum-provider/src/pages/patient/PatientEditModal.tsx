@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Box, Button } from '@mantine/core';
+import { Box, Button } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
@@ -9,15 +9,6 @@ import type { JSX } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
 import { RESOURCE_PROFILE_URLS } from '../resource/utils';
-
-const missingProfileMessage = RESOURCE_PROFILE_URLS.Patient ? (
-  <>
-    Could not find the{' '}
-    <Anchor href={RESOURCE_PROFILE_URLS.Patient} target="_blank">
-      US Core Patient Profile
-    </Anchor>
-  </>
-) : undefined;
 
 export interface PatientEditModalProps {
   readonly patient: Patient | Reference<Patient>;
@@ -70,7 +61,6 @@ export function PatientEditModal(props: PatientEditModalProps): JSX.Element {
     >
       <Box ref={bodyRef}>
         <ResourceFormWithRequiredProfile
-          missingProfileMessage={missingProfileMessage}
           defaultValue={patient}
           onSubmit={handleSubmit}
           outcome={outcome}
