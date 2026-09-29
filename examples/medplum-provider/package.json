@@ -10,7 +10,11 @@
     "lint:fix": "eslint . --fix",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "backfill:compartments": "node --env-file=.env --experimental-strip-types scripts/backfill-compartments.ts",
+    "deploy:bots": "node --env-file=.env --experimental-strip-types bots/deploy.ts",
+    "setup:tenancy": "node --env-file=.env --experimental-strip-types scripts/setup-tenancy.ts",
+    "seed:credential-key": "node --env-file=.env --experimental-strip-types scripts/seed-credential-key.ts"
   },
   "prettier": {
     "plugins": [
@@ -57,7 +61,8 @@
     "remark-gfm": "4.0.1",
     "typescript": "6.0.3",
     "vite": "8.3.1",
-    "vitest": "4.1.11"
+    "vitest": "4.1.11",
+    "esbuild": "0.28.2"
   },
   "packageManager": "npm@11.19.1",
   "engines": {

@@ -35,7 +35,7 @@ import { FaxPage } from './pages/fax/FaxPage';
 import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
 import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
-import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
+import { LyfeIntegrationsPage } from './pages/integrations/LyfeIntegrationsPage';
 import { ScriptSurePage } from './pages/integrations/ScriptSurePage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { LyfeOnboardingPage } from './pages/onboarding/LyfeOnboardingPage';
@@ -313,7 +313,9 @@ export function App(): JSX.Element | null {
               <Route path="/register" element={<RegisterPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
-              <Route path="/integrations" element={<IntegrationsPage />} />
+              {/* The Lyfe per-clinic integrations settings page replaces the stock
+                  marketing-style directory. `IntegrationsPage` is left in place, unrouted. */}
+              <Route path="/integrations" element={<LyfeIntegrationsPage />} />
               {/* Must precede the /:resourceType catch-alls below */}
               {hasBilling && <Route path="/Settings/Billing/*" element={<BillingSetupPage />} />}
               <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />

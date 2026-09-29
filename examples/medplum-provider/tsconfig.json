@@ -14,6 +14,9 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "noEmit": true,
+    // scripts/ and bots/ run under `node --experimental-strip-types`, which requires
+    // the explicit `.ts` extension on relative imports.
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx"
   },
   "exclude": ["dist"]
