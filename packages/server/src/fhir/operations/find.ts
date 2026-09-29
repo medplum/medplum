@@ -4,9 +4,9 @@ import {
   allOk,
   arrayify,
   badRequest,
-  createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
+  isDefined,
   isNotFound,
   isReference,
   OperationOutcomeError,
@@ -15,20 +15,23 @@ import {
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Appointment, Bundle, HealthcareService, Reference, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, HealthcareService, Reference, Schedule } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
+import type { Interval } from '../../util/date';
 import { addMinutes, earliest, latest } from '../../util/date';
 import type { WithPath } from '../../util/withpath';
 import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
-import { findAlignedSlotTimes, overlappingIntervals } from './utils/find';
+import { bufferTimeConflicts, findAlignedSlotTimes, overlappingIntervals } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import {
   applyExistingSlots,
   assertAllLoaded,
+  buildAppointmentSlots,
   getSchedulingParametersGroup,
+  intervalsExceedingCapacity,
   resolveAvailability,
   slotsOverlappingInterval,
 } from './utils/scheduling';
@@ -44,6 +47,7 @@ const appointmentFindOperation = makeOperationDefinition(
       { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
       { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
       { use: 'in', name: 'schedule', type: 'string', min: 1, max: '*', searchType: 'reference' },
+      { use: 'in', name: 'ignore-appointment', type: 'string', min: 0, max: '1', searchType: 'reference' },
       { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
       { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
     ],
@@ -55,6 +59,7 @@ type AppointmentFindParameters = {
   end: string;
   'service-type-reference': string;
   schedule: string | string[];
+  'ignore-appointment'?: string;
   _count?: number;
 };
 
@@ -62,6 +67,7 @@ type AppointmentFindParameters = {
 async function handler(params: {
   schedules: WithPath<Reference<Schedule> & { reference: string }>[];
   healthcareService: Reference<HealthcareService> & { reference: string };
+  ignoreAppointment?: WithPath<Reference<Appointment> & { reference: string }>;
   start: string;
   end: string;
   _count?: number;
@@ -87,7 +93,8 @@ async function handler(params: {
     throw new OperationOutcomeError(badRequest('Search range cannot exceed 31 days'));
   }
 
-  const [schedules, existingSlots, healthcareService] = await Promise.all([
+  const ignoreAppointment = params.ignoreAppointment;
+  const [schedules, allExistingSlots, healthcareService, ignoredAppointment] = await Promise.all([
     ctx.repo.readReferences(params.schedules).then((schedules) => copyPaths(params.schedules, schedules)),
     slotsOverlappingInterval(ctx.repo, params.schedules, requestedRange),
     ctx.repo.readReference<HealthcareService>(params.healthcareService).catch((err) => {
@@ -96,9 +103,22 @@ async function handler(params: {
       }
       throw err;
     }),
+    ignoreAppointment
+      ? ctx.repo.readReference<Appointment>(ignoreAppointment).catch((err) => {
+          if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
+            throw new OperationOutcomeError(badRequest('Appointment not found', getPath(ignoreAppointment)));
+          }
+          throw err;
+        })
+      : undefined,
   ]);
 
   assertAllLoaded(schedules, 'Loading schedule failed');
+
+  // The Slots held by the appointment being reassigned shouldn't block that appointment from
+  // moving, so drop them before computing availability.
+  const ignoredSlotIds = new Set((ignoredAppointment?.slot ?? []).map((ref) => resolveId(ref)).filter(isDefined));
+  const existingSlots = allExistingSlots.filter((slot) => !ignoredSlotIds.has(slot.id));
 
   const parameterGroup = await getSchedulingParametersGroup(
     ctx.repo,
@@ -150,6 +170,7 @@ async function handler(params: {
       slots: scheduleSlots,
       range: effectiveRange,
       serviceType: healthcareService.type,
+      capacity: schedulingParameters.get('slotCapacity'),
     });
 
     // Trim off bufferBefore/bufferAfter from availability
@@ -175,17 +196,46 @@ async function handler(params: {
     .reduce((acc, val) => overlappingIntervals(acc, val), allAvailability[0]);
   assert(intersectingAvailability);
 
+  // Tricky: `slotCapacity` lets an appointment overlap existing bookings, but its buffer
+  // time is exclusive — it is blocked by any existing booking, even one the appointment
+  // itself is allowed to overlap. Availability above is resolved at the appointment's own
+  // capacity, so buffers are checked against exclusively occupied time per candidate.
+  //
+  // Only schedules that allow overbooking need the check. At `slotCapacity` 1 the
+  // availability above already excludes every existing booking, and each candidate's
+  // buffers land inside the single availability window it was trimmed from, so the
+  // check could never reject a candidate.
+  const bufferChecks = schedules
+    .map((schedule) => {
+      const schedulingParameters = parameterGroup.get(schedule);
+      assert(schedulingParameters);
+      const bufferBefore = schedulingParameters.get('bufferBefore');
+      const bufferAfter = schedulingParameters.get('bufferAfter');
+      if (schedulingParameters.get('slotCapacity') === 1 || (bufferBefore === 0 && bufferAfter === 0)) {
+        return undefined;
+      }
+      const scheduleSlots = existingSlots.filter((slot) => resolveId(slot.schedule) === schedule.id);
+      return { blocked: intervalsExceedingCapacity(scheduleSlots, 1), bufferBefore, bufferAfter };
+    })
+    .filter(isDefined);
+
+  const hasBufferConflict = (interval: Interval): boolean =>
+    bufferChecks.some((check) => bufferTimeConflicts(interval, check.blocked, check));
+
+  const alignment = {
+    interval: commonParameters.alignmentInterval,
+    offset: commonParameters.alignmentOffset,
+    timezone: commonParameters.alignmentTimezone,
+  };
+
   const intervals = flatMapMax(
     intersectingAvailability,
     (interval, _idx, maxCount) =>
       findAlignedSlotTimes(interval, {
-        alignment: {
-          interval: commonParameters.alignmentInterval,
-          offset: commonParameters.alignmentOffset,
-          timezone: commonParameters.alignmentTimezone,
-        },
+        alignment,
         durationMinutes: commonParameters.duration,
         maxCount,
+        filter: (candidate) => !hasBufferConflict(candidate),
       }),
     pageSize
   );
@@ -197,39 +247,7 @@ async function handler(params: {
     const slots = schedules.flatMap((schedule) => {
       const parameters = parameterGroup.get(schedule);
       assert(parameters);
-
-      const resultSlots: Slot[] = [
-        {
-          resourceType: 'Slot',
-          start,
-          end,
-          schedule: createReference(schedule),
-          status: 'busy',
-        },
-      ];
-
-      if (parameters.get('bufferBefore')) {
-        resultSlots.push({
-          resourceType: 'Slot',
-          start: addMinutes(interval.start, -1 * parameters.get('bufferBefore')).toISOString(),
-          end: start,
-          schedule: createReference(schedule),
-          status: 'busy-unavailable',
-          comment: 'buffer before appointment',
-        });
-      }
-
-      if (parameters.get('bufferAfter')) {
-        resultSlots.push({
-          resourceType: 'Slot',
-          start: end,
-          end: addMinutes(interval.end, parameters.get('bufferAfter')).toISOString(),
-          schedule: createReference(schedule),
-          status: 'busy-unavailable',
-          comment: 'buffer after appointment',
-        });
-      }
-      return resultSlots;
+      return buildAppointmentSlots({ schedule, parameters, interval });
     });
 
     const participant = schedules.flatMap((schedule) =>
@@ -278,12 +296,25 @@ export async function appointmentFindHandler(req: FhirRequest): Promise<FhirResp
     throw new OperationOutcomeError(badRequest('Invalid schedule reference', `Parameters.schedule[${invalidIndex}]`));
   }
 
+  let ignoreAppointment: WithPath<Reference<Appointment> & { reference: string }> | undefined;
+  const ignoreAppointmentParam = params['ignore-appointment'];
+  if (ignoreAppointmentParam) {
+    const ref = { reference: ignoreAppointmentParam };
+    if (!isReference<Appointment>(ref, 'Appointment')) {
+      throw new OperationOutcomeError(
+        badRequest('Invalid ignore-appointment reference', 'Parameters.ignore-appointment')
+      );
+    }
+    ignoreAppointment = withPath(ref, 'Parameters.ignore-appointment');
+  }
+
   const appointments = await handler({
     start,
     end,
     _count,
     healthcareService: { reference: params['service-type-reference'] },
     schedules: withPaths(scheduleRefs, 'Parameters.schedule'),
+    ignoreAppointment,
   });
 
   const bundle: Bundle<Appointment> = {

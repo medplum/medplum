@@ -37,6 +37,7 @@ import type { Bundle, BundleEntry, BundleLink, Resource, ResourceType, SearchPar
 import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
 import { clamp } from './operations/utils/parameters';
+import { isPresenceOperator, shouldSearchParameterExist } from './presence';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
@@ -1086,29 +1087,21 @@ function trySpecialSearchParameter(
 ): Expression | undefined {
   switch (filter.code) {
     case '_id':
-      return buildIdSearchFilter(table, idImpl, filter);
+      return buildUuidSearchFilter(table, idImpl, filter);
     case '_lastUpdated':
       return buildDateSearchFilter(table, lastUpdatedImpl, filter);
     case '_deleted':
       return buildBooleanSearchFilter(table, deletedImpl, filter);
     case '_project': {
-      if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
-        if (
-          (filter.operator === Operator.MISSING && filter.value === 'true') ||
-          (filter.operator === Operator.PRESENT && filter.value !== 'true')
-        ) {
-          // missing
-          return new Condition(new Column(table, 'projectId'), '=', systemResourceProjectId);
-        } else {
-          // present
-          return new Condition(new Column(table, 'projectId'), '!=', systemResourceProjectId);
-        }
+      if (isPresenceOperator(filter)) {
+        const shouldExist = shouldSearchParameterExist(filter.operator, filter.value);
+        return new Condition(new Column(table, 'projectId'), shouldExist ? '!=' : '=', systemResourceProjectId);
       }
 
-      return buildIdSearchFilter(table, projectIdImpl, filter);
+      return buildUuidSearchFilter(table, projectIdImpl, filter);
     }
     case '_compartment': {
-      return buildIdSearchFilter(table, compartmentsImpl, filter);
+      return buildUuidSearchFilter(table, compartmentsImpl, filter);
     }
     case '_filter': {
       const filterExpr = parseFilterParameter(filter.value);
@@ -1242,14 +1235,33 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
 }
 
 /**
- * Adds an ID search filter as "WHERE" clause to the query builder.
+ * Builds a UUID-backed search filter as a SQL expression.
  * @param table - The resource table name or alias.
  * @param impl - The search parameter implementation info.
  * @param filter - The search filter.
  * @returns The select query condition.
  */
-function buildIdSearchFilter(table: string, impl: ColumnSearchParameterImplementation, filter: Filter): Expression {
-  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+function buildUuidSearchFilter(table: string, impl: ColumnSearchParameterImplementation, filter: Filter): Expression {
+  const column = new Column(table, impl.columnName);
+  if (isPresenceOperator(filter)) {
+    const shouldExist = shouldSearchParameterExist(filter.operator, filter.value);
+    if (impl.array) {
+      return new Condition(
+        column,
+        shouldExist ? 'ARRAY_NOT_EMPTY' : 'ARRAY_EMPTY',
+        undefined,
+        getSearchParamColumnType(impl)
+      );
+    }
+    return new Condition(column, shouldExist ? '!=' : '=', null);
+  }
+
+  if (
+    filter.operator !== Operator.EQUALS &&
+    filter.operator !== Operator.EXACT &&
+    filter.operator !== Operator.NOT &&
+    filter.operator !== Operator.NOT_EQUALS
+  ) {
     throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
   }
 
@@ -1263,7 +1275,7 @@ function buildIdSearchFilter(table: string, impl: ColumnSearchParameterImplement
     }
   }
 
-  return buildCondition(impl, filter, values, new Column(table, impl.columnName));
+  return buildCondition(impl, filter, values, column);
 }
 
 /**
@@ -1624,7 +1636,15 @@ function buildChainedSearch(
   // Special case: single-link chain of the form param._id=<id> can be rewritten as param=ResourceType/<id>
   // Note that this does slightly change the behavior of the search query: true chained search would require the
   // reference to point to an existing resource, while the rewritten query just matches the reference string
-  if (param.chain.length === 1 && param.filter?.code === '_id' && param.chain[0].direction === Direction.FORWARD) {
+  if (
+    param.chain.length === 1 &&
+    param.filter?.code === '_id' &&
+    param.chain[0].direction === Direction.FORWARD &&
+    (param.filter.operator === Operator.EQUALS ||
+      param.filter.operator === Operator.EXACT ||
+      param.filter.operator === Operator.NOT ||
+      param.filter.operator === Operator.NOT_EQUALS)
+  ) {
     const { targetType, code } = param.chain[0];
     const targetId = param.filter.value;
     return buildSearchFilterExpression(

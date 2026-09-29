@@ -41,3 +41,17 @@
 .results > * {
   flex-shrink: 0;
 }
+
+/* A code pill leads with the code and continues with its description, which runs to a dozen words.
+   Capped and clipped rather than wrapped: three of them at full width would bury the rest of the
+   form, and the code, which is the part being checked, stays readable at the front either way. The
+   full text is on the pill's `title`. */
+.codePill {
+  max-width: 14rem;
+}
+
+/* Mantine doesn't include asterisks for Checkboxes marked as required, so we add them here. */
+.requiredLabel::after {
+  content: ' *';
+  color: var(--mantine-color-error);
+}

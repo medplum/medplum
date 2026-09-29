@@ -102,7 +102,8 @@ export async function exportResourceType<T extends Resource>(
     sortRules: [{ code: '_lastUpdated', descending: false }],
   };
   await repo.processAllResources(searchRequest, async (resource) => {
-    await exporter.writeResource(resource);
+    // Cursor pagination yields each resource exactly once, so skip the exporter's dedupe tracking
+    await exporter.writeResource(resource, { skipDedupe: true });
   });
 
   // Close writer and free memory for this resource type immediately

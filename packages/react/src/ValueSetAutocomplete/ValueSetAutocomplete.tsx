@@ -60,7 +60,8 @@ function createValue(input: string): ValueSetExpansionContains {
  */
 export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Element {
   const medplum = useMedplum();
-  const { binding, creatable, clearable, expandParams, withHelpText, error, description, ...rest } = props;
+  const { binding, creatable, clearable, expandParams, withHelpText, itemComponent, error, description, ...rest } =
+    props;
   const isCreatable = creatable ?? true;
   const isUnavailable = useValueSetAvailability(binding) === false;
   const [searchError, setSearchError] = useState<string>();
@@ -140,7 +141,8 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
       toOption={toOption}
       loadOptions={loadValues}
       onCreate={createValue}
-      itemComponent={withHelpText ? ItemComponent : undefined}
+      // A caller's own row wins: `withHelpText` is the built-in one, not the only one allowed.
+      itemComponent={itemComponent ?? (withHelpText ? ItemComponent : undefined)}
     />
   );
 }

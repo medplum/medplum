@@ -28,6 +28,7 @@ import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
+import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
@@ -48,15 +49,18 @@ export async function getRepoForLogin(
   extendedMode?: boolean,
   remoteAddress?: string
 ): Promise<Repository> {
-  const { login, membership: realMembership, onBehalfOfMembership } = authState;
+  const { login, membership: realMembership, onBehalfOfMembership, project: realProject } = authState;
   const membership = onBehalfOfMembership ?? realMembership;
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  const globalSystemRepo = getGlobalSystemRepo();
   let profile: WithId<ProfileResource | Bot | ClientApplication> | undefined = authState.profile;
   if (!profile) {
     try {
-      profile = await globalSystemRepo.readReference<ProfileResource | Bot | ClientApplication>(realMembership.profile);
+      // project system repo since not all ProfileResource types are global
+      const realProjectSystemRepo = await getProjectSystemRepo(realProject);
+      profile = await realProjectSystemRepo.readReference<ProfileResource | Bot | ClientApplication>(
+        realMembership.profile
+      );
     } catch (err: unknown) {
       if (!(err instanceof OperationOutcomeError && isNotFound(err.outcome))) {
         throw err;
@@ -64,37 +68,18 @@ export async function getRepoForLogin(
     }
   }
 
-  let project = authState.project;
+  let project = realProject;
+  let globalSystemRepo: SystemRepository | undefined;
   if (membership.project.reference !== realMembership.project.reference) {
+    globalSystemRepo = getGlobalSystemRepo();
     project = await globalSystemRepo.readReference<Project>(membership.project);
   }
 
-  const allowedProjects: WithId<Project>[] = [project];
-  if (project.link) {
-    const linkedProjectRefs: Reference<Project>[] = [];
-    for (const link of project.link) {
-      if (link.project) {
-        linkedProjectRefs.push(link.project);
-      }
-    }
-
-    const systemRepo = await getProjectSystemRepo(project);
-    const linkedProjectsOrError = await systemRepo.readReferences<Project>(linkedProjectRefs);
-    for (let i = 0; i < linkedProjectsOrError.length; i++) {
-      const linkedProjectOrError = linkedProjectsOrError[i];
-      if (isResource(linkedProjectOrError)) {
-        allowedProjects.push(linkedProjectOrError);
-      } else {
-        // Ignore missing; if a super admin creates a project link to a non-existent project,
-        // searching it would be a no-op.
-        getLogger().debug('Linked project not found', { project: linkedProjectRefs[i] });
-      }
-    }
-  }
+  const allowedProjects = await getAllowedProjects(project, globalSystemRepo);
 
   return new Repository({
+    routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
     projects: allowedProjects,
-    currentProject: project,
     author: profile ? createReference(profile) : realMembership.profile,
     remoteAddress: remoteAddress ?? login.remoteAddress,
     superAdmin: project.superAdmin,
@@ -107,6 +92,42 @@ export async function getRepoForLogin(
     onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
     client: login.client,
   });
+}
+
+/**
+ * Resolves a project and the projects it links to, which its members may read from.
+ * @param project - The project whose links to resolve.
+ * @param systemRepo - Optional system repository used to read projects
+ * @returns The project followed by each linked project that could be read.
+ */
+export async function getAllowedProjects(
+  project: WithId<Project>,
+  systemRepo?: SystemRepository
+): Promise<WithId<Project>[]> {
+  const allowedProjects: WithId<Project>[] = [project];
+  if (project.link) {
+    const linkedProjectRefs: Reference<Project>[] = [];
+    for (const link of project.link) {
+      if (link.project) {
+        linkedProjectRefs.push(link.project);
+      }
+    }
+
+    const linkedProjectsOrError = await (systemRepo ?? getGlobalSystemRepo()).readReferences<Project>(
+      linkedProjectRefs
+    );
+    for (let i = 0; i < linkedProjectsOrError.length; i++) {
+      const linkedProjectOrError = linkedProjectsOrError[i];
+      if (isResource(linkedProjectOrError)) {
+        allowedProjects.push(linkedProjectOrError);
+      } else {
+        // Ignore missing; if a super admin creates a project link to a non-existent project,
+        // searching it would be a no-op.
+        getLogger().debug('Linked project not found', { project: linkedProjectRefs[i] });
+      }
+    }
+  }
+  return allowedProjects;
 }
 
 /**
@@ -354,6 +375,10 @@ function applyProjectAdminAccessPolicy(
         criteria: `User?_project=${resolveId(membership.project)}`,
         hiddenFields: ['passwordHash', 'mfaSecret'],
         readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
+      },
+      {
+        resourceType: 'Cron',
+        criteria: `Cron?_project=${resolveId(membership.project)}`,
       },
       {
         resourceType: 'Package',

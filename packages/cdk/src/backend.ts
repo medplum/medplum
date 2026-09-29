@@ -360,32 +360,14 @@ export class BackEnd extends Construct {
         // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
-          resources: [`arn:aws:s3:::${config.storageBucketName}/*`],
-        }),
-
-        // S3 Tables: Read table bucket config and write table data
-        // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3tables.html
-        new iam.PolicyStatement({
-          effect: iam.Effect.ALLOW,
           actions: [
-            's3tables:CreateNamespace',
-            's3tables:CreateTable',
-            's3tables:GetNamespace',
-            's3tables:GetTable',
-            's3tables:GetTableBucket',
-            's3tables:GetTableData',
-            's3tables:GetTableEncryption',
-            's3tables:GetTableMetadataLocation',
-            's3tables:ListNamespaces',
-            's3tables:ListTables',
-            's3tables:PutTableData',
-            's3tables:UpdateTableMetadataLocation',
+            's3:GetObject',
+            's3:PutObject',
+            's3:DeleteObject',
+            // Binary $scan reads GuardDuty scan result tags and marks pending scans
+            ...(config.guardDutyMalwareProtectionEnabled ? ['s3:GetObjectTagging', 's3:PutObjectTagging'] : []),
           ],
-          resources: [
-            `arn:aws:s3tables:${region}:${accountNumber}:bucket/*`,
-            `arn:aws:s3tables:${region}:${accountNumber}:bucket/*/table/*`,
-          ],
+          resources: [`arn:aws:s3:::${config.storageBucketName}/*`],
         }),
 
         // IAM: Pass role to innvoke lambda functions
@@ -470,6 +452,18 @@ export class BackEnd extends Construct {
         }),
       ],
     });
+
+    if (config.guardDutyMalwareProtectionEnabled) {
+      // Binary $scan: request on-demand scans
+      // https://docs.aws.amazon.com/guardduty/latest/ug/malware-protection-s3-on-demand.html
+      this.taskRolePolicies.addStatements(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['guardduty:SendObjectMalwareScan'],
+          resources: ['*'],
+        })
+      );
+    }
 
     // Task Role
     this.taskRole = new iam.Role(this, 'TaskExecutionRole', {

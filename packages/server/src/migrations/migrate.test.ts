@@ -52,6 +52,12 @@ describe('Generator', () => {
       buildSchema(schemaBuilder);
       expect(() => schemaBuilder.toString()).not.toThrow();
     });
+
+    test('creates btree_gist extension', () => {
+      const schemaBuilder = new FileBuilder();
+      buildSchema(schemaBuilder);
+      expect(schemaBuilder.toString()).toContain('CREATE EXTENSION IF NOT EXISTS btree_gist;');
+    });
   });
 
   describe('generateMigrationActions', () => {
@@ -361,6 +367,78 @@ describe('Generator', () => {
       }
     });
 
+    describe('search parameter index variants', () => {
+      function getTable(resourceType: 'Task' | 'Appointment' | 'Observation' | 'MedicationRequest'): TableDefinition {
+        const result: SchemaDefinition = { tables: [], functions: [] };
+        buildCreateTables(result, resourceType);
+        return result.tables.find((t) => t.name === resourceType) as TableDefinition;
+      }
+
+      function getIndexColumns(table: TableDefinition): string[][] {
+        return table.indexes.map((i) => i.columns.map((c) => (typeof c === 'string' ? c : c.name)));
+      }
+
+      test('Task indexes replaced with project-scoped variants', () => {
+        const columns = getIndexColumns(getTable('Task'));
+        expect(columns).toContainEqual(['projectId', 'status', 'lastUpdated']);
+        expect(columns).toContainEqual(['projectId', 'authoredOn']);
+        expect(columns).toContainEqual(['projectId', 'dueDate']);
+        expect(columns).toContainEqual(['projectId', 'priority']);
+        expect(columns).toContainEqual(['projectId', '___tag']);
+        expect(columns).toContainEqual(['projectId', '___tagTextTrgm']);
+        expect(columns).toContainEqual(['projectId', '__code']);
+        expect(columns).toContainEqual(['projectId', '__codeTextTrgm']);
+        expect(columns).toContainEqual(['projectId', '__dueDate', '__dueDateSort']);
+        expect(columns).toContainEqual(['projectId', '__authoredOn', '__authoredOnSort']);
+
+        for (const plain of [
+          ['status'],
+          ['authoredOn'],
+          ['dueDate'],
+          ['priority'],
+          ['___tag'],
+          ['___tagTextTrgm'],
+          ['__code'],
+          ['__codeTextTrgm'],
+          ['__dueDate', '__dueDateSort'],
+          ['__authoredOn', '__authoredOnSort'],
+        ]) {
+          expect(columns).not.toContainEqual(plain);
+        }
+      });
+
+      test('date project-scopes btree index but leaves range index unscoped', () => {
+        const table = getTable('Appointment');
+        const columns = getIndexColumns(table);
+        expect(columns).toContainEqual(['date']);
+        expect(columns).toContainEqual(['projectId', 'date']);
+        expect(columns).toContainEqual(['__date', '__dateSort']);
+        expect(columns).not.toContainEqual(['projectId', '__date', '__dateSort']);
+
+        const queries = getCreateTableQueries(table, { includeIfExists: false });
+        expect(queries).toContain(
+          'CREATE INDEX "Appointment___date_sorted_idx" ON "Appointment" USING gist ("__date", "__dateSort")'
+        );
+        expect(queries).toContain(
+          'CREATE INDEX "Appointment___end_sorted_idx" ON "Appointment" USING gist ("__end", "__endSort")'
+        );
+      });
+
+      test('array date is not project-scoped', () => {
+        const columns = getIndexColumns(getTable('MedicationRequest'));
+        expect(columns).toContainEqual(['date']);
+        expect(columns).toContainEqual(['__date', '__dateSort']);
+        expect(columns).not.toContainEqual(['projectId', 'date']);
+        expect(columns).not.toContainEqual(['projectId', '__date', '__dateSort']);
+      });
+
+      test('Observation subject with date sort suffix', () => {
+        const columns = getIndexColumns(getTable('Observation'));
+        expect(columns).toContainEqual(['subject']);
+        expect(columns).toContainEqual(['subject', 'date']);
+      });
+    });
+
     describe('identity columns', () => {
       test('create table', () => {
         const tableDef: TableDefinition = {
@@ -441,6 +519,33 @@ describe('Generator', () => {
   });
 
   describe('generateIndexesActions', () => {
+    test('allows a primary key to satisfy a structurally identical unique index declaration', () => {
+      const startTable: TableDefinition = {
+        name: 'Coding',
+        columns: [{ name: 'id', type: 'BIGSERIAL', primaryKey: true }],
+        indexes: [
+          {
+            columns: ['id'],
+            indexType: 'btree',
+            unique: true,
+            indexdef: 'CREATE UNIQUE INDEX "Coding_pkey" ON public."Coding" USING btree (id)',
+          },
+        ],
+      };
+      const targetTable: TableDefinition = {
+        name: 'Coding',
+        columns: [{ name: 'id', type: 'BIGSERIAL', primaryKey: true }],
+        indexes: [{ columns: ['id'], indexType: 'btree', unique: true }],
+      };
+
+      const result = generateIndexesActions(startTable, targetTable, {
+        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dropUnmatchedIndexes: true,
+      });
+
+      expect(result).toEqual({ preDeploy: [], postDeploy: [] });
+    });
+
     test('drops concurrent rebuild indexes instead of valid indexes with the same definition', () => {
       const primaryKeyDefinition = {
         columns: ['resourceId', 'targetId', 'code'],
@@ -714,13 +819,15 @@ const migrationActionTestCases: MigrationActionTestCase[] = [
   },
   {
     name: 'DROP_INVALID_INDEX',
-    action: {
-      type: 'DROP_INVALID_INDEX',
-      indexName: 'Patient_name_idx_ccnew',
-    },
-    builderExpected: 'await fns.dropInvalidIndexConcurrently(client, results, "Patient_name_idx_ccnew");',
+    action: { type: 'DROP_INVALID_INDEX', schemaName: 'public', indexName: 'Patient_name_idx_ccnew' },
+    builderExpected: "await fns.dropInvalidIndexConcurrently(client, results, 'public', 'Patient_name_idx_ccnew');",
     executionCheck: ({ mockDropInvalidIndexConcurrently, mockClient, results }) => {
-      expect(mockDropInvalidIndexConcurrently).toHaveBeenCalledWith(mockClient, results, 'Patient_name_idx_ccnew');
+      expect(mockDropInvalidIndexConcurrently).toHaveBeenCalledWith(
+        mockClient,
+        results,
+        'public',
+        'Patient_name_idx_ccnew'
+      );
     },
   },
   {

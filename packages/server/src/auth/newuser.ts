@@ -149,7 +149,7 @@ export async function createUser(request: NewUserRequest): Promise<WithId<User>>
   return result;
 }
 
-async function sendVerificationEmail(user: WithId<User>, login: WithId<Login>): Promise<void> {
+export async function sendVerificationEmail(user: WithId<User>, login: WithId<Login>): Promise<void> {
   const redirectUri = concatUrls(getConfig().appBaseUrl, `register?login=${login.id}`);
   const systemRepo = getGlobalSystemRepo();
   const { id, secret } = await verifyEmail(systemRepo, user, redirectUri);

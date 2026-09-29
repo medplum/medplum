@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString, isDefined } from '@medplum/core';
 import type { Appointment, Reference } from '@medplum/fhirtypes';
-import type { SchedulingActor } from './AppointmentFinder.roles';
+import type { SchedulingActorResource, SchedulingActorValue } from '../actors';
 
 /**
  * The longest window `Appointment/$find` accepts. Requests wider than this are
@@ -24,7 +24,7 @@ export type TimeOfDay = 'any' | 'morning' | 'afternoon';
 export interface AppointmentSlotGroup {
   /** Stable key derived from the actors, so React keys survive a refetch. */
   readonly key: string;
-  readonly actors: readonly SchedulingActor[];
+  readonly actors: readonly SchedulingActorValue[];
   readonly durationMinutes: number;
   /** Sorted by start time. */
   readonly appointments: readonly Appointment[];
@@ -99,17 +99,24 @@ function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
   };
 }
 
+export interface FormatZonedTimeOptions {
+  /** Names the zone alongside the time, e.g. "12:30 PM ET". */
+  readonly withTimezone?: boolean;
+}
+
 /**
  * Formats an instant's time of day in a given timezone (e.g. "12:30 PM").
  * @param date - The instant to format.
  * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @param options - Whether to name the zone as well.
  * @returns The formatted time.
  */
-export function formatZonedTime(date: Date, timezone?: string): string {
-  return getFormatter(`time:${timezone ?? ''}`, {
+export function formatZonedTime(date: Date, timezone?: string, options?: FormatZonedTimeOptions): string {
+  return getFormatter(`time:${timezone ?? ''}${options?.withTimezone ? ':named' : ''}`, {
     timeZone: timezone,
     hour: 'numeric',
     minute: '2-digit',
+    timeZoneName: options?.withTimezone ? TIMEZONE_NAME_STYLE : undefined,
   }).format(date);
 }
 
@@ -119,16 +126,7 @@ export function formatZonedTime(date: Date, timezone?: string): string {
  * @returns The formatted day.
  */
 export function formatDayHeading(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(date);
-}
-
-/**
- * Names a calendar day without its weekday (e.g. "July 27").
- * @param date - Local midnight of the day.
- * @returns The formatted day.
- */
-export function formatDayLabel(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, { month: 'long', day: 'numeric' }).format(date);
+  return getFormatter('dayHeading', { weekday: 'long', month: 'long', day: 'numeric' }).format(date);
 }
 
 /**
@@ -142,6 +140,43 @@ function getTimezoneOffsetMs(instant: Date, timezone: string): number {
   // No zone is offset by part of a minute, so comparing whole minutes is enough
   // and avoids having to format seconds.
   return Date.UTC(year, month - 1, day, hour, minute) - Math.floor(instant.getTime() / 60000) * 60000;
+}
+
+/**
+ * The IANA timezone the browser is set to.
+ * @returns The viewer's own timezone identifier.
+ */
+export function getBrowserTimezone(): string {
+  return getFormatter('resolved', {}).resolvedOptions().timeZone;
+}
+
+/** Timezone format to display beside a time. */
+const TIMEZONE_NAME_STYLE = 'shortGeneric' as const;
+
+/** Arbitrary instant in the browser's timezone. */
+const TIMEZONE_LABEL_INSTANT = new Date(0);
+
+/**
+ * Names a timezone the short way it is written beside a time, e.g. "ET" or "GMT+2".
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns The zone's short name.
+ */
+export function formatTimezoneLabel(timezone?: string): string {
+  const parts = getFormatter(`zoneName:${timezone ?? ''}`, {
+    timeZone: timezone,
+    timeZoneName: TIMEZONE_NAME_STYLE,
+  }).formatToParts(TIMEZONE_LABEL_INSTANT);
+  return parts.find((part) => part.type === 'timeZoneName')?.value ?? '';
+}
+
+/**
+ * Whether a timezone is the viewer's own.
+ * @param timezone - IANA timezone the times are in, or undefined when it could not be resolved.
+ * @param viewer - The viewer's IANA timezone. Defaults to the browser's
+ * @returns True when the zone is the viewer's, or when there is no zone to compare.
+ */
+export function isViewerTimezone(timezone: string | undefined, viewer?: string): boolean {
+  return !timezone || timezone === (viewer ?? getBrowserTimezone());
 }
 
 /**
@@ -172,6 +207,24 @@ export function parseZonedTime(day: Date, time: string, timezone?: string): Date
   const guess = getTimezoneOffsetMs(new Date(wallClock), timezone);
   const offset = getTimezoneOffsetMs(new Date(wallClock - guess), timezone);
   return new Date(wallClock - offset);
+}
+
+/**
+ * Reads a native datetime input's value as an instant in a timezone.
+ * @param value - A `YYYY-MM-DDTHH:MM` value, as the input reports it.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns The instant, or undefined while the value is not a complete date and time.
+ */
+export function parseZonedDateTimeInput(value: string, timezone?: string): Date | undefined {
+  const [day, time] = value.split('T');
+  if (!day || !time || !/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+    return undefined;
+  }
+  const [hour, minute] = time.split(':');
+  if (!hour || !minute) {
+    return undefined;
+  }
+  return parseZonedTime(parseDayKey(day), `${hour}:${minute}`, timezone);
 }
 
 /**
@@ -207,12 +260,15 @@ export function filterByTimeOfDay(
  * @param searched - Days to list whether or not they offer anything, so a searched day
  *   that came back empty still shows up rather than going missing. Read on the local
  *   calendar, matching how a day is picked.
+ * @param actorResources - The actors' own resources, keyed by reference, for
+ *   whichever of them the caller has already read. See {@link getAppointmentActors}.
  * @returns Days in ascending order, each holding its groups.
  */
 export function groupAppointmentsByDay(
   appointments: readonly Appointment[],
   timezone?: string,
-  searched?: DateRange
+  searched?: DateRange,
+  actorResources?: ReadonlyMap<string, SchedulingActorResource>
 ): AppointmentDay[] {
   const days = new Map<string, Map<string, Appointment[]>>();
 
@@ -250,19 +306,42 @@ export function groupAppointmentsByDay(
       key: dayKey,
       date: parseDayKey(dayKey),
       groups: [...groups.entries()]
-        .map(([groupKey, groupAppointments]) => toSlotGroup(groupKey, groupAppointments))
+        .map(([groupKey, groupAppointments]) => toSlotGroup(groupKey, groupAppointments, actorResources))
         .sort((left, right) => left.key.localeCompare(right.key)),
     }));
 }
 
-function toSlotGroup(key: string, appointments: Appointment[]): AppointmentSlotGroup {
+function toSlotGroup(
+  key: string,
+  appointments: Appointment[],
+  actorResources: ReadonlyMap<string, SchedulingActorResource> | undefined
+): AppointmentSlotGroup {
   const sorted = [...appointments].sort((left, right) => (left.start ?? '').localeCompare(right.start ?? ''));
   return {
     key,
-    actors: sorted[0]?.participant?.map((participant) => participant.actor).filter(isDefined) ?? [],
+    actors: getAppointmentActors(sorted[0], actorResources),
     durationMinutes: getDurationMinutes(sorted[0]),
     appointments: sorted,
   };
+}
+
+/**
+ * Get the actor(s) of an appointment.
+ * @param appointment - The proposed appointment.
+ * @param actorResources - Map of actor resources that have already been previously loaded.
+ * @returns List of actors. Resource if it's already loaded, reference otherwise.
+ */
+export function getAppointmentActors(
+  appointment: Appointment | undefined,
+  actorResources?: ReadonlyMap<string, SchedulingActorResource>
+): SchedulingActorValue[] {
+  return (appointment?.participant ?? [])
+    .map((participant) => participant.actor)
+    .filter(isDefined)
+    .map((actor) => {
+      const reference = getReferenceString(actor);
+      return (reference ? actorResources?.get(reference) : undefined) ?? actor;
+    });
 }
 
 /**
@@ -353,14 +432,14 @@ function pad(value: number): string {
 /**
  * Returns the input type to use for a date or time field.
  *
- * JSDOM does not fire change events for `<input type="date">` or
- * `<input type="time">`, so tests get a plain text field, matching what
+ * JSDOM does not fire change events for `<input type="date">`, `<input type="time">`
+ * or `<input type="datetime-local">`, so tests get a plain text field, matching what
  * `DateTimeInput` does.
  *
  * @param type - The native input type to use outside of tests.
  * @returns The input type for the current environment.
  */
-export function getNativeInputType(type: 'date' | 'time'): string {
+export function getNativeInputType(type: 'date' | 'time' | 'datetime-local'): string {
   return import.meta.env.NODE_ENV === 'test' ? 'text' : type;
 }
 
@@ -384,21 +463,6 @@ export function endOfDay(date: Date): Date {
   return result;
 }
 
-/**
- * Returns whether two instants fall on the same local day.
- * @param left - The first instant.
- * @param right - The second, or undefined when there is nothing to compare.
- * @returns True when both fall on the same local day.
- */
-export function isSameDay(left: Date, right: Date | undefined): boolean {
-  return (
-    !!right &&
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate()
-  );
-}
-
 export function addDays(date: Date, days: number): Date {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
@@ -409,6 +473,37 @@ export function addDays(date: Date, days: number): Date {
 export interface DateRange {
   readonly start?: Date;
   readonly end?: Date;
+}
+
+/**
+ * Local midnight of the given day, in the given timezone.
+ * @param year - The calendar year.
+ * @param month - The calendar month, 1-12.
+ * @param day - The day of the month. Out-of-range values roll over, so `day + 1` names the next day.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns The instant the day begins there. Undefined only where `parseZonedTime` rejects the time
+ * it is handed, which a literal `00:00` cannot be.
+ */
+function startOfZonedDay(year: number, month: number, day: number, timezone: string | undefined): Date | undefined {
+  return parseZonedTime(new Date(year, month - 1, day), '00:00', timezone);
+}
+
+/**
+ * Search window for a calendar day in the given timezone, starting from now if that day is already underway.
+ * @param day - The day to search, as local midnight. Bound to the site's timezone.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns Range from the start of that day, or from now, through the next day's midnight.
+ */
+export function getZonedDayRange(day: Date, timezone?: string): Required<DateRange> {
+  const now = new Date();
+  const opens = startOfZonedDay(day.getFullYear(), day.getMonth() + 1, day.getDate(), timezone) ?? day;
+  // If the day is already under way, start from now rather than from the beginning to prevent
+  // getting back times from `$find` that have already passed
+  const start = opens > now ? opens : now;
+
+  const parts = getZonedParts(start, timezone);
+  const nextMidnight = startOfZonedDay(parts.year, parts.month, parts.day + 1, timezone);
+  return { start, end: nextMidnight ?? addDays(new Date(start.getFullYear(), start.getMonth(), start.getDate()), 1) };
 }
 
 /**
@@ -461,27 +556,4 @@ export function getFindWindowError(range: DateRange): string | undefined {
  */
 export function getDayCount(start: Date, end: Date): number {
   return Math.ceil((end.getTime() - start.getTime()) / MS_PER_DAY);
-}
-
-/**
- * Says in words which days a search covers.
- * @param range - The days asked for.
- * @param formatDay - How to name one day. Defaults to naming it with its weekday.
- * @returns The range as a phrase, or undefined when both ends are open.
- */
-export function formatDateRange(
-  range: DateRange,
-  formatDay: (date: Date) => string = formatDayHeading
-): string | undefined {
-  const { start, end } = range;
-  if (start && end) {
-    return isSameDay(start, end) ? formatDay(start) : `${formatDay(start)} – ${formatDay(end)}`;
-  }
-  if (start) {
-    return `From ${formatDay(start)}`;
-  }
-  if (end) {
-    return `Through ${formatDay(end)}`;
-  }
-  return undefined;
 }

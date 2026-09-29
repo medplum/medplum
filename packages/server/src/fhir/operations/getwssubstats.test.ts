@@ -8,7 +8,7 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
-import { initTestAuth } from '../../test.setup';
+import { getSuperAdminAccessToken, initTestAuth } from '../../test.setup';
 import type { WsSubStats } from './getwssubstats';
 import { parseActiveSubKey } from './getwssubstats';
 
@@ -34,7 +34,7 @@ describe('$get-ws-sub-stats', () => {
   });
 
   test('Returns empty stats when no subscriptions exist for test key prefix', async () => {
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    const accessToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .get('/fhir/R4/$get-ws-sub-stats')
@@ -64,7 +64,7 @@ describe('$get-ws-sub-stats', () => {
     await redis.hset(getActiveSubsKey(projectId, 'Patient'), 'Subscription/sub4', 'Patient?name=Alice');
 
     try {
-      const accessToken = await initTestAuth({ project: { superAdmin: true } });
+      const accessToken = await getSuperAdminAccessToken();
 
       const res = await request(app)
         .get('/fhir/R4/$get-ws-sub-stats')
@@ -127,7 +127,7 @@ describe('$get-ws-sub-stats', () => {
     await redis.hset(`medplum:subscriptions:r4:project:${projectId}:active:v2`, 'Subscription/sub3', 'Observation');
 
     try {
-      const accessToken = await initTestAuth({ project: { superAdmin: true } });
+      const accessToken = await getSuperAdminAccessToken();
 
       const res = await request(app)
         .get('/fhir/R4/$get-ws-sub-stats')

@@ -30,9 +30,10 @@ import { loadTestConfig } from '../config/loader';
 import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { generateAccessToken } from '../oauth/keys';
+import * as otelModule from '../otel/otel';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
 import type { ReentrantBatchJobData } from '../workers/batch';
-import { execBatchJob, getBatchQueue } from '../workers/batch';
+import { execBatchJob as execBatchJobImpl, getBatchQueue } from '../workers/batch';
 import { queueRegistry } from '../workers/utils';
 import { PostgresError } from './sql';
 
@@ -57,6 +58,11 @@ function mockBatchJob(data: ReentrantBatchJobData, overrides?: Record<string, un
     ...overrides,
   };
   return job as Job<ReentrantBatchJobData>;
+}
+
+async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<void> {
+  const { authState, requestId, traceId } = job.data;
+  await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJobImpl(job));
 }
 
 describe('Batch and Transaction processing', () => {
@@ -183,11 +189,22 @@ describe('Batch and Transaction processing', () => {
         },
       ],
     };
+    const histogram = vi.spyOn(otelModule, 'recordHistogramValue');
     const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(batch);
+
+    try {
+      const metricOptions = { attributes: { bundleType: 'batch', async: false } };
+      expect(histogram).toHaveBeenCalledWith('medplum.batch.entries', 6, metricOptions);
+      expect(histogram).toHaveBeenCalledWith('medplum.batch.errors', 1, metricOptions);
+      expect(histogram).toHaveBeenCalledWith('medplum.batch.size', expect.any(Number), metricOptions);
+    } finally {
+      histogram.mockRestore();
+    }
+
     expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
 
@@ -1463,7 +1480,7 @@ describe('Batch and Transaction processing', () => {
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
+      expect.objectContaining<Partial<ReentrantBatchJobData>>({ tracking: expect.anything() })
     );
     const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
     expect(enqueued.bundle).toBeUndefined();
@@ -1514,7 +1531,7 @@ describe('Batch and Transaction processing', () => {
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
+      expect.objectContaining<Partial<ReentrantBatchJobData>>({ tracking: expect.any(Object) })
     );
     const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
     expect(enqueued.bundle).toBeUndefined();
@@ -1522,7 +1539,13 @@ describe('Batch and Transaction processing', () => {
     const job = mockBatchJob(enqueued);
     queue.add.mockClear();
 
-    await expect(execBatchJob(job)).resolves.toBe(undefined);
+    const stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    try {
+      await expect(execBatchJob(job)).resolves.toBe(undefined);
+      expect(stdoutWriteSpy).toHaveBeenCalledWith(expect.stringContaining('Unrecognized bundle type: pergola'));
+    } finally {
+      stdoutWriteSpy.mockRestore();
+    }
 
     const jobUrl = outcome.issue[0].diagnostics as string;
     const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
@@ -1948,7 +1971,7 @@ describe('Batch and Transaction processing', () => {
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
+      expect.objectContaining<Partial<ReentrantBatchJobData>>({ tracking: expect.anything() })
     );
     const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
     expect(enqueued.bundle).toBeUndefined();
@@ -1982,7 +2005,7 @@ describe('Batch and Transaction processing', () => {
       undefined,
       undefined,
       { async: true },
-      () => execBatchJob(job)
+      () => execBatchJobImpl(job)
     );
 
     await expect(jobResult).resolves.toBe(undefined);

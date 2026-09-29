@@ -4,10 +4,13 @@ import { SNOMED, createReference, indexSearchParameterBundle, indexStructureDefi
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type { Bundle, Patient, SearchParameter, ServiceRequest, Specimen } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import * as dotenv from 'dotenv';
+import { existsSync } from 'node:fs';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createOrmMessage, handler } from './send-orm-message';
-dotenv.config({ quiet: true });
+
+if (existsSync('.env')) {
+  process.loadEnvFile();
+}
 
 const CONNECTION_DETAILS = {
   SFTP_USER: { name: 'SFTP_USER', valueString: 'user' },

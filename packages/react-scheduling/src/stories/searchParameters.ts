@@ -12,7 +12,7 @@ import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
  * Written out rather than loaded from `@medplum/definitions` the way the tests do:
  * `readJson` reads from disk, and there is no disk in a browser.
  */
-const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
+export const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
   resourceType: 'Bundle',
   type: 'collection',
   entry: [
@@ -84,6 +84,20 @@ const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
         base: ['PractitionerRole'],
         type: 'token',
         expression: 'PractitionerRole.active',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'HealthcareService-active',
+        url: 'http://hl7.org/fhir/SearchParameter/HealthcareService-active',
+        name: 'active',
+        status: 'draft',
+        description: 'The Healthcare Service is currently marked as active',
+        code: 'active',
+        base: ['HealthcareService'],
+        type: 'token',
+        expression: 'HealthcareService.active',
       },
     },
     {
@@ -294,6 +308,20 @@ const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
         base: ['Slot'],
         type: 'date',
         expression: 'Slot.start',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Slot-end',
+        url: 'https://medplum.com/fhir/SearchParameter/Slot-end',
+        name: 'end',
+        status: 'draft',
+        description: 'The end time of the Slot',
+        code: 'end',
+        base: ['Slot'],
+        type: 'date',
+        expression: 'Slot.end',
       },
     },
     {

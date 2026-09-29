@@ -8,13 +8,13 @@ import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { bundleContains, withTestContext } from '../../test.setup';
-import { getGlobalSystemRepo } from '../repo';
+import { getTestProjectSystemRepo } from '../repository/test-utils';
 import type { PgQueryable } from '../sql';
 import type { HumanNameTableRow } from './humanname';
 import { getHumanNameSortValue, HumanNameTable } from './humanname';
 
 describe('HumanName Lookup Table', () => {
-  const systemRepo = getGlobalSystemRepo();
+  const systemRepo = getTestProjectSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();

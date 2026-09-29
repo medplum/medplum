@@ -68,13 +68,14 @@ When using scheduling APIs to interact with multiple `Schedule` resources at onc
 | Url                 | Type                                                        | Default Value                               | Description                                                                                                                                                             | `HealthcareService` usage notes                               | `Schedule` usage notes                                    |
 | ------------------- | ----------------------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------- |
 | `duration`          | [Duration](/docs/api/fhir/datatypes/duration)               | *none*                                      | Determines how long the time increments for a Slot are                                                                                                                  |                                                               | Recommended to prefer setting this on `HealthcareService` |
-| `timezone`          | Code                                                        | *none*                                      | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability. When not set, falls back to the `Schedule.actor`'s timezone. |                                                               |                                                           |
+| `timezone`          | Code                                                        | *none*                                      | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability. When not set, falls back to the `Schedule.actor`'s timezone. | Not recommended; set on `Schedule` or `Schedule.actor` instead |                                                           |
 | `bufferBefore`      | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes (no buffer needed)                | Sets prep-time needed before appointment start. It must be free at booking time, and will be reserved with a Slot.                                                      |                                                               |                                                           |
 | `bufferAfter`       | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes (no buffer needed)                | Sets cleanup time needed after appointment end. It must be free at booking time, and will be reserved with a Slot.                                                      |                                                               |                                                           |
 | `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration)               | 60 minutes (appointments start on-the-hour) | Start times must align to this interval (e.g., every 15 minutes)                                                                                                        |                                                               | Recommended to prefer setting this on `HealthcareService` |
 | `alignmentOffset`   | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes                                   | Shifts allowed start times by this offset (e.g., with a 15-minute alignmentInterval and a 5-minute alignmentOffset, valid starts are :05, :20, :35, :50)                |                                                               | Recommended to prefer setting this on `HealthcareService` |
 | `alignmentTimezone` | Code                                                        | 'Etc/UTC'                                   | Anchors the alignment grid to local midnight of the given timezone, keeping start times stable across DST transitions.                                                  |                                                               | Recommended to prefer setting this on `HealthcareService` |
-| `service`           | `Reference(HealthcareService)`                              | *none*                                      | Pointer to the `HealthcareService` that these parameters  should override.                                                                                              | Not permitted                                                 |                                                           |
+| `service`           | `Reference(HealthcareService)`                              | *none*                                      | Pointer to the `HealthcareService` that these parameters  should override.                                                                                              | Not permitted                                                 | Required; parameters without it are ignored               |
+| `slotCapacity`      | positiveInt                                                 | 1 (no overbooking)                          | Maximum number of appointments that may occupy a time concurrently. A value above 1 enables [overbooking](#overbooking).                                                |                                                               |                                                           |
 | `availability`      | [Nested Extension](#availability-extension)                 | Always available                            | Weekly recurring availability windows. When set, appointments must fit inside these windows.                                                                            | Not permitted (use `HealthcareService.availableTime` instead) |                                                           |
 
 <details>
@@ -163,7 +164,7 @@ Instead, use `comment` — a free-text field that's a good place for a human-rea
 
 To vary a provider's availability by location, model the variation on the service rather than the actor: create one [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) per location (for example "Office Visit — Downtown" and "Office Visit — Northside", each pointing at its own `HealthcareService.location`), and put that site's hours on each service's `availableTime`. The practitioner's Schedule lists both services in `serviceType`, and `$find` is called with the service for the location the patient is booking into.
 
-If a provider's hours at one site differ from that site's default, add a [per-service override](#override-behavior) on their Schedule. Scope the override to that service — a Schedule-level `availability` with no `service` pointer replaces the service hours everywhere.
+If a provider's hours at one site differ from that site's default, add a [per-service override](#override-behavior) on their Schedule. Scope the override to that service: scheduling matches a Schedule's `SchedulingParameters` by its `service` pointer, so one without that pointer is ignored for every service rather than applying to all of them.
 
 ### `availability` Extension
 
@@ -246,7 +247,7 @@ This means you only need to specify what differs. For example, to restrict avail
 
 1. The field value from the Schedule's `SchedulingParameters` extension for that service
 2. The field value from the HealthcareService's `SchedulingParameters` extension
-3. The system default (0 for buffers and offset; 60 minutes for alignment interval; always-available for availability)
+3. The system default (0 for buffers and offset; 60 minutes for alignment interval; 1 for slot capacity; always-available for availability)
 4. Per-actor timezone information (via `Schedule.actor`; only for `timezone` attribute)
 
 If a Schedule has **no** `SchedulingParameters` extension at all, all parameters are inherited from this chain.
@@ -261,6 +262,50 @@ Here is an example of a [Slot](/docs/api/fhir/resources/slot) resource that bloc
 
 - **With serviceType**: Blocks only that specific service
 - **Without serviceType**: Blocks all services
+
+## Overbooking
+
+By default each time holds a single appointment: once a `busy` Slot covers it, `$find` stops offering that time and `$book` rejects it. Setting `slotCapacity` above 1 lets that many appointments occupy the same time concurrently. This supports:
+
+- **Intentional double-booking** — offer the same slot to more than one patient to absorb expected no-shows.
+- **Group visits** — a single session that seats several patients (e.g. a shared medical appointment).
+- **Shared resources with multiple stations** — an infusion suite with several chairs or a lab bay with multiple stations, modeled as one `Schedule` whose capacity equals the number of stations.
+
+`slotCapacity` may be set on the `HealthcareService` (applying to every Schedule that books the type) or on an individual `Schedule` (overriding the service for that actor).
+
+:::info[Overbooking and buffers]
+
+Slots created to reserve time for `bufferBefore` or `bufferAfter` settings do not get `slotCapacity` applied to them. When combining these settings, the blocks created by the buffers would prevent a second appointment with the same settings from overbooking (as it could not overlay the buffer slots).
+
+:::
+
+<details>
+<summary>Example: a Schedule that allows overbooking</summary>
+
+<MedplumCodeBlock language="ts" selectBlocks="overbookingSchedule">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+</details>
+
+### How capacity is counted
+
+Each booking carries the overlap tolerance it was made under — its resolved `slotCapacity`. A time admits a new booking only when the number of bookings already covering it stays below **both** the new booking's capacity **and** the tolerance of every booking already there. The **strictest** limit among the bookings sharing a time wins. Two consequences:
+
+- **A `slotCapacity: 1` booking is exclusive.** Nothing may overlap it — not even a higher-capacity service booked afterward. This holds regardless of order: whichever booking is placed first, an incompatible one is rejected.
+- **Overbooking only stacks among bookings that all permit it.** Two `slotCapacity: 2` bookings can share a time; a `slotCapacity: 2` and a `slotCapacity: 3` booking cap each other at 2 (the stricter of the two) while they overlap.
+- **A Slot without explicit capacity is exclusive.** Unqualified slots are treated as though they have `slotCapacity: 1`.
+
+`$find` keeps offering a time until it is full by this rule, and `$book` enforces the same limit atomically, so concurrent requests cannot push a time past capacity. `$book` automatically applies the extension tracking this capacity to Slot resources it creates.
+
+When [booking across multiple Schedules at once](#example-3-location-specific-complex-surgical-scheduling), each Schedule's capacity applies independently: a time is offered only while **every** required Schedule still has room, so the Schedule with the least remaining capacity gates the result.
+
+:::warning[Changing `slotCapacity` does not affect existing bookings]
+
+`slotCapacity` is resolved and stamped onto each Slot at the moment it is booked — the Slot carries its own capacity from then on. Raising or lowering `slotCapacity` on the `HealthcareService` or `Schedule` only changes the limit applied to *new* bookings; it does not retroactively change the capacity of Slots that were already booked under the old value.
+
+:::
+
 
 ## Timezone Resolution
 
@@ -280,11 +325,22 @@ There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/p
 
 :::
 
+:::warning[Set `timezone` on the `Schedule`, not the `HealthcareService`]
+
+A visit type is usually offered by calendars in more than one place, and `timezone` says where a calendar's
+hours are kept, so it belongs on the [`Schedule`](/docs/api/fhir/resources/schedule) or on its actor. Setting
+it on a `HealthcareService` applies one place's clock to every calendar offering that service, including
+calendars in other time zones.
+
+A value already stored on a `HealthcareService` stays in force, since resolution still reads it. To stop it
+taking effect, remove it and set `timezone` on each `Schedule` instead.
+
+:::
 
 **Timezone Resolution Order:**
 
 1. If `timezone` is specified in the `scheduling-parameters` extension of a `Schedule` resource, use that time zone
-2. If `timezone` is specified in the `scheduling-parameters` extension of a `HealthcareService` resource, use that time zone
+2. If `timezone` is specified in the `scheduling-parameters` extension of a `HealthcareService` resource, use that time zone (supported, but not recommended; see above)
 3. Otherwise, fall back to the time zone defined on the Schedule's actor reference (Practitioner, Location, or Device)
 
 **Important Notes:**
@@ -308,7 +364,7 @@ In this example:
 
 Rather than hand-authoring the [`availability` extension](#availability-extension), the [`@medplum/react-scheduling`](https://www.npmjs.com/package/@medplum/react-scheduling) library provides a `ScheduleAvailabilityEditor` component. It edits a Schedule's weekly `availability` override for a given visit service type, or, with the `schedule` prop omitted, the [service-level default](#service-level-availability) hours themselves. It implements the [override behavior](#override-behavior) described above through a single switch, and is used in the [Medplum Provider](https://github.com/medplum/medplum/tree/main/examples/medplum-provider) example app.
 
-The helpers the component reads and writes the override through, `getEffectiveAvailability` and `setScheduleAvailability`, are exported from the same library. They are plain functions over FHIR resources, so a custom editor can use them without the component. `@medplum/core` holds the generic scheduling parameter helpers underneath them — `getScheduleParameters`, `setScheduleParameter`, and `clearScheduleParameter` — which read and write any parameter, `availability` included, as extensions.
+The helpers the component reads and writes the override through, `getEffectiveAvailability` and `setScheduleAvailability`, are exported from the same library. They are plain functions over FHIR resources, so a custom editor can use them without the component. `@medplum/core` holds the generic scheduling parameter helpers underneath them, one set per resource the extension sits on: `getScheduleSchedulingParameters`, `setScheduleSchedulingParameter`, and `clearScheduleSchedulingParameter` read and write a calendar's per-service overrides, `availability` included, while `getHealthcareServiceSchedulingParameters` and its `set`/`clear` counterparts do the same for a service's own parameters.
 
 See the [`ScheduleAvailabilityEditor` docs in Storybook](https://storybook.medplum.com/?path=/docs/medplum-scheduleavailabilityeditor--docs) for interactive examples, the behavior in detail, and the full component and utility API.
 

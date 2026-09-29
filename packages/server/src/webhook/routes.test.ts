@@ -13,7 +13,7 @@ import { createTestProject } from '../test.setup';
 const cjsCode = `
 exports.handler = async function (medplum, event) {
   console.log(JSON.stringify(event));
-  return event.input;
+  return event.headers["x-test-return-event"] ? { input: event.input } : event.input;
 };
 `;
 
@@ -157,6 +157,98 @@ describe('Anonymous webhooks', () => {
 
   afterAll(async () => {
     await shutdownApp();
+  });
+
+  test.each(['/webhook/', '/api/webhook/', '/projects/{projectId}/webhook/', '/api/projects/{projectId}/webhook/'])(
+    'Preserves parsed JSON by default through VM execution at %s',
+    async (prefix) => {
+      const rawBody = '{ "greeting" : "café 🌍", "escaped": "\\u0061" }\n';
+      const res = await request(app)
+        .post(prefix.replace('{projectId}', project.id) + botMembership.id)
+        .set('Content-Type', ContentType.JSON)
+        .set('x-test-return-event', 'true')
+        .send(rawBody);
+      expect(res).toHaveStatus(200);
+      expect(res.body).toEqual({ input: JSON.parse(rawBody) });
+    }
+  );
+
+  test('Persists the raw-input setting and selects the input representation', async () => {
+    const rawBody = '{ "value": 1.00 }\n';
+    try {
+      for (const enabled of [false, true]) {
+        const update = await request(app)
+          .patch(`/fhir/R4/Bot/${bot.id}`)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .set('Content-Type', ContentType.JSON_PATCH)
+          .send([{ op: 'add', path: '/rawBody', value: enabled }]);
+        expect(update).toHaveStatus(200);
+        expect(update.body.rawBody).toBe(enabled);
+
+        const response = await request(app)
+          .post(`/webhook/${botMembership.id}`)
+          .set('Content-Type', ContentType.JSON)
+          .set('x-test-return-event', 'true')
+          .send(rawBody);
+        expect(response).toHaveStatus(200);
+        expect(response.body).toEqual(enabled ? { input: rawBody } : { input: { value: 1 } });
+      }
+    } finally {
+      const reset = await request(app)
+        .patch(`/fhir/R4/Bot/${bot.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON_PATCH)
+        .send([{ op: 'remove', path: '/rawBody' }]);
+      expect(reset).toHaveStatus(200);
+    }
+  });
+
+  test('Does not capture raw body for non-JSON webhooks', async () => {
+    const res = await request(app)
+      .post(`/webhook/${botMembership.id}`)
+      .set('Content-Type', ContentType.TEXT)
+      .set('x-test-return-event', 'true')
+      .send('hello');
+    expect(res).toHaveStatus(200);
+    expect(res.type).toBe(ContentType.TEXT);
+    expect(JSON.parse(res.text)).toEqual({ input: 'hello' });
+  });
+
+  test('Falls back to parsed body when rawBody is enabled but content type is not JSON', async () => {
+    try {
+      const update = await request(app)
+        .patch(`/fhir/R4/Bot/${bot.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON_PATCH)
+        .send([{ op: 'add', path: '/rawBody', value: true }]);
+      expect(update).toHaveStatus(200);
+
+      const res = await request(app)
+        .post(`/webhook/${botMembership.id}`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('x-test-return-event', 'true')
+        .send('hello');
+      expect(res).toHaveStatus(200);
+      expect(JSON.parse(res.text)).toEqual({ input: 'hello' });
+    } finally {
+      const reset = await request(app)
+        .patch(`/fhir/R4/Bot/${bot.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON_PATCH)
+        .send([{ op: 'remove', path: '/rawBody' }]);
+      expect(reset).toHaveStatus(200);
+    }
+  });
+
+  test('Does not capture raw body for authenticated execute', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .set('x-test-return-event', 'true')
+      .send('{ "greeting" : "hello" }');
+    expect(res).toHaveStatus(200);
+    expect(res.body).toEqual({ input: { greeting: 'hello' } });
   });
 
   test('Missing invalid ID', async () => {

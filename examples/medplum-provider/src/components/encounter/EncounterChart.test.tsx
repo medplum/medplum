@@ -302,7 +302,8 @@ describe('EncounterChart', () => {
     await waitFor(() => {
       expect(medplum.searchResources).toHaveBeenCalledWith(
         'ClinicalImpression',
-        expect.stringContaining('encounter=Encounter/encounter-123')
+        expect.stringContaining('encounter=Encounter/encounter-123'),
+        expect.any(Object)
       );
     });
   });

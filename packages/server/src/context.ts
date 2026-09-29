@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { Logger, OperationOutcomeError, badRequest, forbidden, isUUID, parseLogLevel } from '@medplum/core';
+import { Logger, OperationOutcomeError, badRequest, forbidden, parseLogLevel } from '@medplum/core';
 import type {
   Bot,
   ClientApplication,
@@ -16,7 +16,7 @@ import { randomUUID } from 'node:crypto';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { FhirRateLimiter, getFhirQuotaConfig } from './fhir/fhirquota';
-import type { Repository, SystemRepository } from './fhir/repo';
+import type { Repository, SuperAdminRepository, SystemRepository } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
 import { getLogger, globalLogger, writeLineToStdout } from './logger';
 import type { AuthState } from './oauth/middleware';
@@ -24,7 +24,8 @@ import { authenticateTokenImpl } from './oauth/middleware';
 import { getRateLimitRedis } from './redis';
 import type { IRequestContext } from './request-context-store';
 import { requestContextStore } from './request-context-store';
-import { parseTraceparent } from './traceparent';
+import { getLogTag } from './util/log-tag';
+import { generateTraceId, getTraceId } from './util/tracing';
 
 export class RequestContext implements IRequestContext {
   readonly requestId: string;
@@ -55,10 +56,12 @@ export class RequestContext implements IRequestContext {
 export type AuthenticatedContextOptions = {
   logger?: Logger;
   async?: boolean;
+  logTag?: string; // Opaque caller-supplied string included in log output
 };
 
 export class AuthenticatedRequestContext extends RequestContext {
   readonly authState: Readonly<AuthState>;
+  readonly project: WithId<Project>;
   readonly repo: Repository;
   readonly isAsync: boolean;
   readonly fhirRateLimiter?: FhirRateLimiter;
@@ -71,7 +74,7 @@ export class AuthenticatedRequestContext extends RequestContext {
     repo: Repository,
     options?: AuthenticatedContextOptions
   ) {
-    let loggerMetadata: Record<string, any> | undefined;
+    const loggerMetadata: Record<string, any> = {};
     const projectId = repo.currentProject()?.id;
     if (projectId) {
       let profile = authState.membership.profile.reference;
@@ -79,7 +82,11 @@ export class AuthenticatedRequestContext extends RequestContext {
       if (asUserProfile && asUserProfile !== profile) {
         profile += ` (as ${asUserProfile})`;
       }
-      loggerMetadata = { projectId, profile };
+      loggerMetadata.projectId = projectId;
+      loggerMetadata.profile = profile;
+    }
+    if (options?.logTag) {
+      loggerMetadata.logTag = options.logTag;
     }
     super(requestId, traceId, options?.logger, loggerMetadata);
 
@@ -88,11 +95,12 @@ export class AuthenticatedRequestContext extends RequestContext {
 
     this.authState = authState;
     this.repo = repo;
+    const project = repo.currentProject();
+    if (!project) {
+      throw new Error('Authenticated repository must have a current project');
+    }
+    this.project = project;
     this.isAsync = options?.async ?? false;
-  }
-
-  get project(): WithId<Project> {
-    return this.authState.project;
   }
 
   get membership(): WithId<ProjectMembership> {
@@ -105,10 +113,6 @@ export class AuthenticatedRequestContext extends RequestContext {
 
   get profile(): Reference<ProfileResource | Bot | ClientApplication> {
     return this.membership.profile;
-  }
-
-  get authentication(): Readonly<AuthState> {
-    return this.authState;
   }
 
   /**
@@ -146,16 +150,33 @@ export function getAuthenticatedContext(): AuthenticatedRequestContext {
 
 export async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { requestId, traceId } = requestIds(req);
+
+  // Echo the identifiers so that a caller can correlate its own logs with Medplum's without
+  // having to supply (and have Medplum trust) an identifier of its own.
+  res.set('X-Request-Id', requestId);
+  res.set('X-Trace-Id', traceId);
+
+  let logTag: string | undefined;
+  try {
+    logTag = getLogTag(req);
+  } catch (err: any) {
+    // Ensure next() is called in a request context, so later middleware (e.g. logging) can run correctly
+    const ctx = new RequestContext(requestId, traceId);
+    requestContextStore.run(ctx, () => next(err));
+    return;
+  }
+  const loggerMetadata = logTag ? { logTag } : undefined;
+
   let ctx: RequestContext | undefined;
   try {
     const result = await authenticateTokenImpl(req);
     if (result) {
       const { authState, repo } = result;
-      ctx = new AuthenticatedRequestContext(requestId, traceId, authState, repo);
+      ctx = new AuthenticatedRequestContext(requestId, traceId, authState, repo, { logTag });
     }
   } catch (err: any) {
     // Ensure next() is called in a request context, so later middleware (e.g. logging) can run correctly
-    ctx ??= new RequestContext(requestId, traceId);
+    ctx ??= new RequestContext(requestId, traceId, undefined, loggerMetadata);
     requestContextStore.run(ctx, () => {
       getLogger().error('Authentication error', { err: err.toString(), stack: err.stack });
       const outcome = badRequest('Authentication error');
@@ -166,7 +187,7 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
     return;
   }
 
-  ctx ??= new RequestContext(requestId, traceId);
+  ctx ??= new RequestContext(requestId, traceId, undefined, loggerMetadata);
   requestContextStore.run(ctx, () => next());
 }
 
@@ -194,39 +215,9 @@ export async function runInAuthenticatedContext<T>(
 ): Promise<T> {
   const repo = await getRepoForLogin(authState, true);
   requestId ??= randomUUID();
-  traceId ??= randomUUID();
+  traceId ??= generateTraceId();
 
   return requestContextStore.run(new AuthenticatedRequestContext(requestId, traceId, authState, repo, options), fn);
-}
-
-export function getTraceId(req: Request): string | undefined {
-  const xTraceId = req.header('x-trace-id');
-  if (xTraceId && isUUID(xTraceId)) {
-    return xTraceId;
-  }
-
-  const traceparent = req.header('traceparent');
-  if (traceparent && parseTraceparent(traceparent)) {
-    return traceparent;
-  }
-
-  const amznTraceId = req.header('x-amzn-trace-id');
-  if (amznTraceId) {
-    return extractAmazonTraceId(amznTraceId);
-  }
-
-  return undefined;
-}
-
-export function extractAmazonTraceId(amznTraceId: string): string | undefined {
-  // https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-request-tracing.html
-  // Definition: Field=version-time-id
-  // Example header: X-Amzn-Trace-Id: Root=1-67891233-abcdef012345678912345678
-  // Example header: X-Amzn-Trace-Id: Self=1-67891233-12456789abcdef012345678;Root=1-67891233-abcdef012345678912345678
-  // Example in Athena: "TID_e0fbe3c75b3c5a45ab84fb156906649b"
-  const regex = /(?:Root|Self)=([^;]+)/;
-  const match = regex.exec(amznTraceId);
-  return match ? match[1] : undefined;
 }
 
 export function buildTracingExtension(): Extension | undefined {
@@ -256,8 +247,11 @@ export function buildTracingExtension(): Extension | undefined {
 }
 
 function requestIds(req: Request): { requestId: string; traceId: string } {
+  // The request ID is always minted here, never taken from the caller. A caller-controlled request
+  // ID cannot be relied upon during an incident, because a caller can collide, reuse, or forge it.
+  // Callers correlate using the X-Request-Id response header instead.
   const requestId = randomUUID();
-  const traceId = getTraceId(req) ?? randomUUID();
+  const traceId = getTraceId(req) ?? generateTraceId();
 
   return { requestId, traceId };
 }
@@ -284,9 +278,17 @@ function getResourceCap(authState: AuthState, logger?: Logger): ResourceCap | un
     : undefined;
 }
 
-export function requireSuperAdmin(): AuthenticatedRequestContext {
+type SuperAdminRequestContext = AuthenticatedRequestContext & {
+  readonly repo: SuperAdminRepository;
+};
+
+function isSuperAdminContext(ctx: AuthenticatedRequestContext): ctx is SuperAdminRequestContext {
+  return ctx.repo.isSuperAdmin();
+}
+
+export function requireSuperAdmin(): SuperAdminRequestContext {
   const ctx = getAuthenticatedContext();
-  if (!ctx.project.superAdmin) {
+  if (!isSuperAdminContext(ctx)) {
     throw new OperationOutcomeError(forbidden);
   }
   return ctx;

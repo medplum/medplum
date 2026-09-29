@@ -10,7 +10,9 @@ For a vendor-neutral overview of diagnostic ordering concepts and the FHIR data 
 
 This guide explains how laboratory orders work in the Medplum-Health Gorilla labs integration.
 
-The high-level workflow for sending laboratory & imaging orders is:
+This guide covers building an order form with Medplum's React components and `useHealthGorillaLabOrder` hook, using Medplum FHIR resources and `send-to-health-gorilla` to submit orders. The [Lab Ordering iFrame](./iframe.md) is an optional alternative that embeds Health Gorilla's hosted interface. Choose either approach for your ordering workflow; the form components and hook do not require the iframe bot.
+
+The high-level workflow for sending laboratory & imaging orders from a custom order form is:
 
 1. Present the provider with the appropriate lab order form (CPOE)
 2. Create the appropriate FHIR resources based on that information
@@ -114,6 +116,7 @@ const {
 | `createOrderBundle`             | Creates FHIR resources for the complete order                                                                   |
 | `setPerformingLab`              | Sets which lab will process the tests                                                                           |
 | `setPerformingLabAccountNumber` | Overrides the practice-level lab account number for the order (see [Lab Account Numbers](#lab-account-numbers)) |
+| `setPerformingLabPhysicianAccountNumber` | Overrides the physician-level lab account number for the order (see [Lab Account Numbers](#lab-account-numbers)) |
 | `validateOrder`                 | Checks order for required fields and valid data                                                                 |
 
 #### Example
@@ -250,6 +253,17 @@ Stored as an `identifier` on the `Practitioner` resource with type `AN` and an `
     }
   ]
 }
+```
+
+This storage model supports only one AN per (practitioner, lab) — a second `identifier` with the
+same `assigner` replaces the first on the next practitioner sync, it isn't added alongside it. If a
+practitioner needs to order under multiple physician-level accounts with the same lab (e.g. multiple
+clinic locations), you can override the account number at order time using
+`setPerformingLabPhysicianAccountNumber` from the `useHealthGorillaLabOrder` hook, instead of trying
+to store more than one account on the `Practitioner` resource:
+
+```tsx
+setPerformingLabPhysicianAccountNumber(selectedAccountNumber);
 ```
 
 ### Practice-level account number

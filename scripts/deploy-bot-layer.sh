@@ -30,7 +30,10 @@ cp -r packages/bot-layer/fonts tmp/
 cd tmp/nodejs/
 
 # Install dependencies
-npm install --omit=dev --omit=optional
+# --ignore-scripts: this layer is built with AWS credentials in CI, and nothing in
+# the dependency tree needs a lifecycle script (ssh2's only runs when its optional
+# cpu-features/nan deps are present, which --omit=optional already excludes).
+npm install --omit=dev --omit=optional --ignore-scripts
 
 # Go up one directory to the temp directory
 # The zip file must be in the parent directory.

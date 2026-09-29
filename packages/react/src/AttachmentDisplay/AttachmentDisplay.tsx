@@ -33,6 +33,11 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
           <source type={contentType} src={url} />
         </video>
       )}
+      {contentType?.startsWith('audio/') && (
+        <audio data-testid="attachment-audio" style={{ maxWidth: props.maxWidth }} controls={true}>
+          <source type={contentType} src={url} />
+        </audio>
+      )}
       {(contentType?.startsWith('text/') ||
         contentType === 'application/json' ||
         contentType === 'application/pdf') && (

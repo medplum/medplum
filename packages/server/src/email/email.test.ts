@@ -8,12 +8,11 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import { simpleParser } from 'mailparser';
-import type Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import { getTestProjectSystemRepo } from '../fhir/repository/test-utils';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { withTestContext } from '../test.setup';
@@ -31,7 +30,7 @@ vi.mock('nodemailer', () => ({
 }));
 
 describe('Email', () => {
-  const systemRepo = getGlobalSystemRepo();
+  const systemRepo = getTestProjectSystemRepo();
   let mockSESv2Client: AwsClientStub<SESv2Client>;
 
   beforeAll(async () => {
@@ -201,7 +200,7 @@ describe('Email', () => {
     await sendEmail(systemRepo, {
       to: 'alice@example.com',
       cc: null as unknown as string,
-      bcc: [null as unknown as string, {} as unknown as Mail.Address],
+      bcc: [null as unknown as string, {}],
       subject: 'Hello',
       text: 'Hello Alice',
     });

@@ -1,0 +1,23 @@
+/* SchedulingConfigWorkspace.module.css */
+
+.root {
+  display: flex;
+  align-items: stretch;
+  gap: var(--mantine-spacing-md);
+  height: 100%;
+  width: 100%;
+}
+
+.sidebar {
+  flex-shrink: 0;
+  width: 300px;
+  overflow-y: auto;
+}
+
+.detail {
+  /* Keep absolutely positioned accessibility labels inside this scroll container. */
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}

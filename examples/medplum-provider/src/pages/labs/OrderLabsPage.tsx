@@ -39,6 +39,7 @@ import { useParams } from 'react-router';
 import { PerformingLabInput } from '../../components/PerformingLabInput';
 import { CoverageInput } from '../../components/labs/CoverageInput';
 import { TestMetadataCardInput } from '../../components/labs/TestMetadataCardInput';
+import { addDiagnosesToEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 
 async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: ServiceRequest): Promise<void> {
@@ -128,6 +129,15 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
           ...serviceRequest,
           encounter: createReference(encounterResource),
         };
+        if (state.diagnoses.length > 0) {
+          // Surface diagnoses on the encounter so they flow into billing, but don't
+          // fail the already-created lab order if the sync errors.
+          try {
+            await addDiagnosesToEncounter(medplum, encounterResource, state.diagnoses);
+          } catch (error) {
+            showErrorNotification(error);
+          }
+        }
       }
       if (taskResource) {
         await medplum.updateResource({

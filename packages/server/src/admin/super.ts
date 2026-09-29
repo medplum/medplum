@@ -29,15 +29,16 @@ import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { isValidPostgresIdentifier } from '../fhir/sql';
 import { globalLogger } from '../logger';
-import { markPostDeployMigrationCompleted } from '../migration-sql';
+import { markPostDeployMigrationCompleted, setPreDeployVersion } from '../migration-sql';
 import { generateMigrationActions } from '../migrations/migrate';
 import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from '../migrations/migration-utils';
-import { getPostDeployMigrationVersions } from '../migrations/migration-versions';
+import { getPostDeployMigrationVersions, getPreDeployMigrationVersions } from '../migrations/migration-versions';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
+import { getAsyncJobTracking } from '../workers/base';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import type { LambdaCleanerOptions } from '../workers/lambda-cleaner';
 import { addLambdaCleanerJobData } from '../workers/lambda-cleaner';
@@ -267,11 +268,15 @@ superAdminRouter.post(
     const asyncJobUrl = new URL(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     asyncJobUrl.search = getQueryString(queryForUrl);
 
-    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
-    const exec = new AsyncJobExecutor(systemRepo);
+    const exec = new AsyncJobExecutor(ctx.repo);
     await exec.init(asyncJobUrl.toString());
     await exec.run(async (asyncJob) => {
-      await addLambdaCleanerJobData({ asyncJob, options, requestId: ctx.requestId, traceId: ctx.traceId });
+      await addLambdaCleanerJobData({
+        tracking: getAsyncJobTracking(asyncJob),
+        options,
+        requestId: ctx.requestId,
+        traceId: ctx.traceId,
+      });
     });
 
     const { baseUrl } = getConfig();
@@ -518,8 +523,14 @@ superAdminRouter.post(
       .isObject({ strict: true })
       .withMessage('Each target must be an object')
       .bail()
-      .custom((target) => Object.keys(target).length === 1 && 'index' in target)
-      .withMessage('Each target must contain exactly index'),
+      .custom((target) => Object.keys(target).length === 2 && 'schema' in target && 'index' in target)
+      .withMessage('Each target must contain exactly schema and index'),
+    body('targets.*.schema')
+      .isString()
+      .withMessage('Schema name must be a string')
+      .bail()
+      .custom(isValidPostgresIdentifier)
+      .withMessage('Invalid schema name'),
     body('targets.*.index')
       .isString()
       .withMessage('Index name must be a string')
@@ -543,13 +554,14 @@ superAdminRouter.post(
       preDeploy: [],
       postDeploy: targets.map((target) => ({
         type: 'DROP_INVALID_INDEX' as const,
+        schemaName: target.schema,
         indexName: target.index,
       })),
     };
 
     const requestParams = new URLSearchParams();
     for (const target of targets) {
-      requestParams.append('index', target.index);
+      requestParams.append('index', `${target.schema}.${target.index}`);
     }
 
     const exec = new AsyncJobExecutor(ctx.systemRepo);
@@ -564,7 +576,7 @@ superAdminRouter.post(
   }
 );
 
-type DropInvalidIndexTarget = { index: string };
+type DropInvalidIndexTarget = { schema: string; index: string };
 
 // POST to /admin/super/setdataversion
 // to set the data version of the database.
@@ -584,6 +596,41 @@ superAdminRouter.post(
 
     assert(req.body.dataVersion !== undefined);
     await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), req.body.dataVersion);
+
+    sendOutcome(res, allOk);
+  }
+);
+
+// POST to /admin/super/setschemaversion
+// to set the schema (pre-deploy migration) version of the database.
+// Setting a higher version skips schema migrations that do not need to be applied;
+// setting a lower version causes the subsequent schema migrations to be re-run on next server startup.
+// WARNING: This is an inherently unsafe operation; exercise caution.
+superAdminRouter.post(
+  '/setschemaversion',
+  [
+    body('schemaVersion')
+      .isInt({ min: 0 })
+      .withMessage('schemaVersion must be a non-negative integer')
+      .bail()
+      .custom((schemaVersion) => Number(schemaVersion) <= getPreDeployMigrationVersions().length)
+      .withMessage(
+        () =>
+          `schemaVersion must not be greater than the latest schema migration v${getPreDeployMigrationVersions().length}`
+      ),
+  ],
+  async (req: Request, res: Response) => {
+    requireSuperAdmin();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const schemaVersion = Number(req.body.schemaVersion);
+    await setPreDeployVersion(getDatabasePool(DatabaseMode.WRITER), schemaVersion);
+    globalLogger.info('[Super Admin]: Schema version set', { schemaVersion });
 
     sendOutcome(res, allOk);
   }
@@ -721,7 +768,7 @@ superAdminRouter.post('/reloadcron', async (req: Request, res: Response) => {
 
   await sendAsyncResponse(req, res, async () => {
     const startTime = Date.now();
-    await reloadCronBots();
+    await reloadCronBots(PLACEHOLDER_SHARD_ID);
     globalLogger.info('[Super Admin]: Cron bots reloaded', {
       durationMs: Date.now() - startTime,
     });
