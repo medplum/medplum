@@ -88,14 +88,7 @@ export function ServiceFacilitiesSection(props: ServiceFacilitiesSectionProps): 
     );
   }
 
-  return (
-    <ConfigSection
-      title="Service facilities"
-      description={`Booking filtered to a service facility offers ${actorName} only at the ones listed here, or at every one if none are.`}
-    >
-      {body}
-    </ConfigSection>
-  );
+  return <ConfigSection title="Service facilities">{body}</ConfigSection>;
 }
 
 function LockedBadge(props: { readonly name: string }): JSX.Element {
