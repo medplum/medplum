@@ -12,6 +12,20 @@ describe('PatientInfoItem', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  test('is not clickable without onClick', () => {
+    render(<PatientInfoItem value="Value C" icon={null} placeholder="Placeholder" label="Label" />);
+
+    expect(screen.getByText('Value C').closest('[class*="clickable"]')).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  test('is clickable with onClick', () => {
+    render(<PatientInfoItem value="Value D" icon={null} placeholder="Placeholder" label="Label" onClick={vi.fn()} />);
+
+    expect(screen.getByText('Value D').closest('[class*="clickable"]')).not.toBeNull();
+    expect(screen.getByRole('button')).toBeInTheDocument();
+  });
+
   test('shows the placeholder when value is empty', () => {
     render(<PatientInfoItem value={undefined} icon={null} placeholder="Add Birthdate" label="Label" />);
 

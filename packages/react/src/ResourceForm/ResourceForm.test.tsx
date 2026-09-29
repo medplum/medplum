@@ -553,4 +553,33 @@ describe('ResourceForm', () => {
     expect(screen.queryByText('Update')).not.toBeInTheDocument();
     expect(screen.queryByText('Create')).not.toBeInTheDocument();
   });
+
+  test('formId lets a submit control outside the form target it', async () => {
+    const onSubmit = vi.fn();
+
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <ResourceForm
+            defaultValue={{ resourceType: 'Practitioner', id: '123' }}
+            onSubmit={onSubmit}
+            formId="test-resource-form"
+            hideSubmitButton
+          />
+          <button type="submit" form="test-resource-form">
+            External Save
+          </button>
+        </MedplumProvider>
+      );
+    });
+
+    expect(await screen.findByText('Resource Type')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('External Save'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    expect((onSubmit.mock.calls[0][0] as Patient).resourceType).toBe('Practitioner');
+  });
 });

@@ -21,7 +21,7 @@ export const PatientInfoItem = (props: PatientInfoItemProps): JSX.Element => {
     <SummaryItem onClick={onClick}>
       <Box className={styles.patientSummaryListItem}>
         <Tooltip label={label} position="top-start" openDelay={650}>
-          <Group gap="sm" align="center" ml={6} mr={2} style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
+          <Group gap="sm" align="center" ml={6} mr={2} style={{ flexWrap: 'nowrap', minWidth: 0 }}>
             {icon}
             <Text fz="sm" fw={400} truncate c={value ? 'inherit' : 'var(--mantine-color-gray-6)'}>
               {displayText}

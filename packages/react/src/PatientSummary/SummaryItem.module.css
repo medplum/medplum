@@ -54,8 +54,8 @@
   justify-content: center;
 }
 
-.item:hover .gradient,
-.item:hover .container {
+.clickable:hover .gradient,
+.clickable:hover .container {
   opacity: 1;
   pointer-events: auto;
 }
@@ -63,6 +63,9 @@
 .item {
   position: relative;
   max-width: 100%;
+}
+
+.clickable {
   cursor: pointer;
 }
 
