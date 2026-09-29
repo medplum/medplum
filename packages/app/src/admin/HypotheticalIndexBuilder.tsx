@@ -25,13 +25,13 @@ import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { SearchableSelect } from './db/SearchableSelect';
 import { useAvailableTables } from './db/useAvailableTables';
+import type { HypopgAccessMethod, HypotheticalIndexDraft } from './hypotheticalIndexSql';
 import {
   buildHypotheticalIndexSql,
   createHypotheticalIndexDraft,
   HYPOPG_ACCESS_METHODS,
   supportsUnique,
 } from './hypotheticalIndexSql';
-import type { HypopgAccessMethod, HypotheticalIndexDraft } from './hypotheticalIndexSql';
 
 const HYPOPG_DOCS_URL = 'https://hypopg.readthedocs.io/';
 
@@ -106,8 +106,8 @@ export function HypotheticalIndexBuilder({
       description={
         <>
           Optional. Each index is passed to <Code>hypopg_create_index()</Code>. History tables are listed as{' '}
-          <Code>Patient_History</Code> and use that table's columns. Supported access methods are btree, brin,
-          hash, and bloom. GiST and GIN are not supported. See the{' '}
+          <Code>Patient_History</Code> and use that table's columns. Supported access methods are btree, brin, hash, and
+          bloom. GiST and GIN are not supported. See the{' '}
           <Anchor href={HYPOPG_DOCS_URL} target="_blank" rel="noopener noreferrer">
             HypoPG documentation
           </Anchor>

@@ -670,9 +670,7 @@ describe('SuperAdminPage', () => {
       await chooseSearchableOption('Add column', 'projectId');
       await chooseSearchableOption('Add column', 'status');
 
-      expect(
-        screen.getByText('CREATE INDEX ON "Appointment" USING btree ("projectId", "status")')
-      ).toBeInTheDocument();
+      expect(screen.getByText('CREATE INDEX ON "Appointment" USING btree ("projectId", "status")')).toBeInTheDocument();
 
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
