@@ -13,8 +13,23 @@
         "MEDPLUM_CLIENT_ID",
         "MEDPLUM_INTROSPECTION_URL",
         "MEDPLUM_REGISTER_ENABLED",
+        "MEDPLUM_PROJECT_ID",
+        "MEDPLUM_MEMBERSHIP_ID",
+        "MEDPLUM_AUTH_PROVIDER_ID",
+        "MEDPLUM_AWS_TEXTRACT_ENABLED",
         "GOOGLE_CLIENT_ID",
-        "RECAPTCHA_SITE_KEY"
+        "RECAPTCHA_SITE_KEY",
+        "EXTERNAL_ACCESS_TOKEN",
+        "EXTERNAL_AUTHORIZE_URL",
+        "EXTERNAL_CLIENT_ID",
+        "IDP_AUTHORIZE_URL",
+        "IDP_CLIENT_ID",
+        "IDP_CLIENT_SECRET",
+        "IDP_REDIRECT_URI",
+        "IDP_SCOPE",
+        "IDP_TOKEN_URL",
+        "PHOTON_CLIENT_ID",
+        "PHOTON_ORG_ID"
       ]
     },
     "test": {
