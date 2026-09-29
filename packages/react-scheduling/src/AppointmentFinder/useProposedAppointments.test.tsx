@@ -59,6 +59,7 @@ const medplumWrapper = ({ children }: { children: ReactNode }): JSX.Element => (
 interface HarnessProps {
   readonly combinations: readonly ActorCombination[];
   readonly service?: Reference<HealthcareService> | WithId<HealthcareService>;
+  readonly ignoreAppointment?: Reference<Appointment>;
 }
 
 function Harness(props: HarnessProps): JSX.Element {
@@ -66,6 +67,7 @@ function Harness(props: HarnessProps): JSX.Element {
     service: props.service ?? UltrasoundImagingService,
     combinations: props.combinations,
     range: RANGE,
+    ignoreAppointment: props.ignoreAppointment,
   });
   return (
     <div>
@@ -80,8 +82,15 @@ function Harness(props: HarnessProps): JSX.Element {
   );
 }
 
-function setup(combinations: readonly ActorCombination[], service?: HarnessProps['service']): void {
-  render(<Harness combinations={combinations} service={service} />, medplumWrapper);
+function setup(
+  combinations: readonly ActorCombination[],
+  service?: HarnessProps['service'],
+  ignoreAppointment?: HarnessProps['ignoreAppointment']
+): void {
+  render(
+    <Harness combinations={combinations} service={service} ignoreAppointment={ignoreAppointment} />,
+    medplumWrapper
+  );
 }
 
 async function settle(): Promise<void> {
@@ -123,6 +132,27 @@ describe('useProposedAppointments', () => {
     expect(url.searchParams.getAll('schedule')).toStrictEqual(['Schedule/dr-rivera']);
     expect(url.searchParams.get('service-type-reference')).toBe(`HealthcareService/${UltrasoundImagingService.id}`);
     expect(url.searchParams.get('start')).toBe(RANGE.start?.toISOString());
+  });
+
+  test('Discounts the times one appointment is holding, when asked to', async () => {
+    // For a search run on behalf of an appointment being moved: the hour it occupies is
+    // the hour it is being moved off, and left standing it blocks its own move.
+    const get = respond({ 'Schedule/dr-rivera': offered(WITH_RIVERA, '2026-08-10T15:00:00.000Z') });
+
+    setup([WITH_RIVERA], undefined, { reference: 'Appointment/appt-being-moved' });
+    await settle();
+
+    const url = new URL(get.mock.calls[0][0].toString());
+    expect(url.searchParams.get('ignore-appointment')).toBe('Appointment/appt-being-moved');
+  });
+
+  test('Discounts nothing by default', async () => {
+    const get = respond({ 'Schedule/dr-rivera': offered(WITH_RIVERA, '2026-08-10T15:00:00.000Z') });
+
+    setup([WITH_RIVERA]);
+    await settle();
+
+    expect(new URL(get.mock.calls[0][0].toString()).searchParams.has('ignore-appointment')).toBe(false);
   });
 
   test('Names a service given only as a reference, without reading it', async () => {

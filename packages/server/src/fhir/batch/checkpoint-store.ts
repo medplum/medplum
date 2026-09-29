@@ -213,7 +213,7 @@ export class BatchCheckpointStore {
 
 /** The JSON-safe on-disk form of {@link BatchInitialState}. */
 interface PersistedInitialState extends Omit<BatchInitialState, 'bundleInfo'> {
-  // TODO{v5.2} make resourceTypes required
+  // PENDING{v5.2} make resourceTypes required
   bundleInfo: Omit<BundlePreprocessInfo, 'resourceTypes'> & { resourceTypes?: ResourceType[] };
 }
 

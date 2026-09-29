@@ -52,6 +52,12 @@ describe('Generator', () => {
       buildSchema(schemaBuilder);
       expect(() => schemaBuilder.toString()).not.toThrow();
     });
+
+    test('creates btree_gist extension', () => {
+      const schemaBuilder = new FileBuilder();
+      buildSchema(schemaBuilder);
+      expect(schemaBuilder.toString()).toContain('CREATE EXTENSION IF NOT EXISTS btree_gist;');
+    });
   });
 
   describe('generateMigrationActions', () => {
@@ -359,6 +365,78 @@ describe('Generator', () => {
       for (let i = 0; i < actual.length; i++) {
         expect(columnDefinitionsEqual(table, actual[i], expected[i])).toBe(true);
       }
+    });
+
+    describe('search parameter index variants', () => {
+      function getTable(resourceType: 'Task' | 'Appointment' | 'Observation' | 'MedicationRequest'): TableDefinition {
+        const result: SchemaDefinition = { tables: [], functions: [] };
+        buildCreateTables(result, resourceType);
+        return result.tables.find((t) => t.name === resourceType) as TableDefinition;
+      }
+
+      function getIndexColumns(table: TableDefinition): string[][] {
+        return table.indexes.map((i) => i.columns.map((c) => (typeof c === 'string' ? c : c.name)));
+      }
+
+      test('Task indexes replaced with project-scoped variants', () => {
+        const columns = getIndexColumns(getTable('Task'));
+        expect(columns).toContainEqual(['projectId', 'status', 'lastUpdated']);
+        expect(columns).toContainEqual(['projectId', 'authoredOn']);
+        expect(columns).toContainEqual(['projectId', 'dueDate']);
+        expect(columns).toContainEqual(['projectId', 'priority']);
+        expect(columns).toContainEqual(['projectId', '___tag']);
+        expect(columns).toContainEqual(['projectId', '___tagTextTrgm']);
+        expect(columns).toContainEqual(['projectId', '__code']);
+        expect(columns).toContainEqual(['projectId', '__codeTextTrgm']);
+        expect(columns).toContainEqual(['projectId', '__dueDate', '__dueDateSort']);
+        expect(columns).toContainEqual(['projectId', '__authoredOn', '__authoredOnSort']);
+
+        for (const plain of [
+          ['status'],
+          ['authoredOn'],
+          ['dueDate'],
+          ['priority'],
+          ['___tag'],
+          ['___tagTextTrgm'],
+          ['__code'],
+          ['__codeTextTrgm'],
+          ['__dueDate', '__dueDateSort'],
+          ['__authoredOn', '__authoredOnSort'],
+        ]) {
+          expect(columns).not.toContainEqual(plain);
+        }
+      });
+
+      test('date project-scopes btree index but leaves range index unscoped', () => {
+        const table = getTable('Appointment');
+        const columns = getIndexColumns(table);
+        expect(columns).toContainEqual(['date']);
+        expect(columns).toContainEqual(['projectId', 'date']);
+        expect(columns).toContainEqual(['__date', '__dateSort']);
+        expect(columns).not.toContainEqual(['projectId', '__date', '__dateSort']);
+
+        const queries = getCreateTableQueries(table, { includeIfExists: false });
+        expect(queries).toContain(
+          'CREATE INDEX "Appointment___date_sorted_idx" ON "Appointment" USING gist ("__date", "__dateSort")'
+        );
+        expect(queries).toContain(
+          'CREATE INDEX "Appointment___end_sorted_idx" ON "Appointment" USING gist ("__end", "__endSort")'
+        );
+      });
+
+      test('array date is not project-scoped', () => {
+        const columns = getIndexColumns(getTable('MedicationRequest'));
+        expect(columns).toContainEqual(['date']);
+        expect(columns).toContainEqual(['__date', '__dateSort']);
+        expect(columns).not.toContainEqual(['projectId', 'date']);
+        expect(columns).not.toContainEqual(['projectId', '__date', '__dateSort']);
+      });
+
+      test('Observation subject with date sort suffix', () => {
+        const columns = getIndexColumns(getTable('Observation'));
+        expect(columns).toContainEqual(['subject']);
+        expect(columns).toContainEqual(['subject', 'date']);
+      });
     });
 
     describe('identity columns', () => {

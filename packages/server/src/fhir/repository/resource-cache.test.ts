@@ -4,7 +4,8 @@ import type { WithId } from '@medplum/core';
 import type { Patient, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config/loader';
+import { getConfig, loadTestConfig } from '../../config/loader';
+import { getCacheRedis } from '../../redis';
 import {
   deleteResourceCacheEntries,
   deleteResourceCacheEntry,
@@ -85,6 +86,45 @@ describe('Repository resource cache', () => {
 
     await expect(getResourceCacheEntry<Patient>('Patient', patient1.id)).resolves.toBeUndefined();
     await expect(getResourceCacheEntry<Patient>('Patient', patient2.id)).resolves.toBeUndefined();
+  });
+
+  describe('cacheResourcesOnWrite disabled', () => {
+    let prevCacheResourcesOnWrite: boolean | undefined;
+
+    beforeEach(() => {
+      prevCacheResourcesOnWrite = getConfig().cacheResourcesOnWrite;
+      getConfig().cacheResourcesOnWrite = false;
+    });
+
+    afterEach(() => {
+      getConfig().cacheResourcesOnWrite = prevCacheResourcesOnWrite;
+    });
+
+    test('Does not create missing cache entry', async () => {
+      const patient = buildPatient();
+
+      await setResourceCacheEntry(patient);
+
+      await expect(getResourceCacheEntry<Patient>('Patient', patient.id)).resolves.toBeUndefined();
+    });
+
+    test('Updates existing cache entry', async () => {
+      const patient = buildPatient();
+
+      try {
+        await setResourceCacheEntry(patient, { force: true });
+        await expect(getResourceCacheEntry<Patient>('Patient', patient.id)).resolves.toBeDefined();
+
+        const updated: WithId<Patient> = { ...patient, active: true };
+        await setResourceCacheEntry(updated);
+
+        const cacheEntry = await getResourceCacheEntry<Patient>('Patient', patient.id);
+        expect(cacheEntry?.resource).toStrictEqual(updated);
+        expect(await getCacheRedis().ttl(getResourceCacheKey('Patient', patient.id))).toBeGreaterThan(0);
+      } finally {
+        await deleteResourceCacheEntry('Patient', patient.id);
+      }
+    });
   });
 });
 

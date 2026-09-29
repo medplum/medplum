@@ -62337,6 +62337,10 @@
         "pictureUrl": {
           "description": "Optional picture URL from the external identity provider.",
           "$ref": "#/definitions/string"
+        },
+        "basedOn": {
+          "description": "The existing login that this login was created from, when an authorization request reused an existing session.",
+          "$ref": "#/definitions/Reference"
         }
       },
       "additionalProperties": false,
@@ -62606,6 +62610,10 @@
         },
         "publicWebhook": {
           "description": "Optional flag to indicate that the bot can be used as an unauthenticated public webhook. Note that this is a security risk and should only be used for public bots that do not require authentication.",
+          "$ref": "#/definitions/boolean"
+        },
+        "rawBody": {
+          "description": "Whether public webhooks provide the original UTF-8 JSON text in BotEvent.input instead of parsed JSON. Defaults to false. Set to true for webhook signature verification.",
           "$ref": "#/definitions/boolean"
         },
         "streamingEnabled": {

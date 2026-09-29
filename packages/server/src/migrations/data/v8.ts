@@ -22,10 +22,10 @@ export const migration: ReindexPostDeployMigration = {
     moveValueToEnd(resourceTypes, 'AuditEvent');
     moveValueToEnd(resourceTypes, 'Observation');
 
-    return prepareReindexJobData(resourceTypes, asyncJob.id, { maxResourceVersion });
+    return prepareReindexJobData(resourceTypes, asyncJob, { maxResourceVersion });
   },
-  run: async (repo, job, jobData) => {
-    return new ReindexJob(repo).execute(job, jobData);
+  run: async (_repo, job, jobData) => {
+    return (await ReindexJob.create(jobData)).execute(job);
   },
 };
 
