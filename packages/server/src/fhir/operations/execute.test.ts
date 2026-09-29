@@ -24,6 +24,7 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { inviteUser } from '../../admin/invite';
 import { initApp, shutdownApp } from '../../app';
+import { clearBotAccessTokenCache } from '../../bots/utils';
 import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import * as oathKeysModule from '../../oauth/keys';
@@ -879,6 +880,7 @@ describe('Execute', () => {
       ['systemEchoBot', 'linking'],
       ['systemEchoBot', 'own'],
     ])('Bot %s in %s project executes with correct accessToken', async (botName, whichProject) => {
+      clearBotAccessTokenCache();
       const generateAccessTokenSpy = vi.spyOn(oathKeysModule, 'generateAccessToken');
       generateAccessTokenSpy.mockClear();
 

@@ -8,10 +8,14 @@ import {
   createReference,
   getStatus,
   Hl7Message,
+  isGone,
+  isNotFound,
   isOk,
   isOperationOutcome,
   isResource,
+  LRUCache,
   normalizeErrorString,
+  normalizeOperationOutcome,
   OperationOutcomeError,
   resolveId,
   serverError,
@@ -234,8 +238,24 @@ export async function writeBotInputToStorage(request: BotExecutionRequest): Prom
   await getBinaryStorage().writeFile(key, ContentType.JSON, JSON.stringify(row));
 }
 
-export async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
+// Bot access tokens are valid for 1 hour; reusing each for only 30 minutes guarantees
+// every bot execution receives a token with at least 30 minutes of remaining lifetime
+const BOT_ACCESS_TOKEN_CACHE_MS = 30 * 60 * 1000;
+
+const botAccessTokenCache = new LRUCache<{ accessToken: string; loginId: string; expiresAt: number }>(1000);
+
+export function clearBotAccessTokenCache(): void {
+  botAccessTokenCache.clear();
+}
+
+export async function getBotAccessToken(runAs: WithId<ProjectMembership>): Promise<string> {
+  // Keying on versionId ensures any change to the membership results in a fresh token
+  const cacheKey = `${runAs.id}:${runAs.meta?.versionId}`;
+  const cached = botAccessTokenCache.get(cacheKey);
   const systemRepo = getGlobalSystemRepo();
+  if (cached && Date.now() < cached.expiresAt && (await isLoginValid(systemRepo, cached.loginId))) {
+    return cached.accessToken;
+  }
 
   // Create the Login resource
   const login = await systemRepo.createResource<Login>({
@@ -257,7 +277,32 @@ export async function getBotAccessToken(runAs: ProjectMembership): Promise<strin
     scope: 'openid',
   });
 
+  botAccessTokenCache.set(cacheKey, {
+    accessToken,
+    loginId: login.id,
+    expiresAt: Date.now() + BOT_ACCESS_TOKEN_CACHE_MS,
+  });
   return accessToken;
+}
+
+/**
+ * Checks whether a cached bot Login is still usable.
+ * Bot Logins are cache-only, so they are lost if evicted from Redis.
+ * @param systemRepo - The system repository.
+ * @param loginId - The Login ID.
+ * @returns True if the Login exists and has not been revoked.
+ */
+async function isLoginValid(systemRepo: SystemRepository, loginId: string): Promise<boolean> {
+  try {
+    const login = await systemRepo.readResource<Login>('Login', loginId);
+    return !login.revoked;
+  } catch (err) {
+    const outcome = normalizeOperationOutcome(err);
+    if (isNotFound(outcome) || isGone(outcome)) {
+      return false;
+    }
+    throw err;
+  }
 }
 
 /**
