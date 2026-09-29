@@ -218,6 +218,8 @@ function findReferences(resource: any, callback: (reference: string) => void): v
       } else {
         findReferences(value, callback);
       }
+    } else if (key === 'url' && typeof resource[key] === 'string' && resource[key].startsWith('urn:uuid:')) {
+      callback(resource[key]);
     }
   }
 }
