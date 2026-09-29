@@ -6,6 +6,7 @@ import { copyFileSync, existsSync } from 'fs';
 import path from 'path';
 import type { UserConfig } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { lyfeOnboardingDevApi } from './dev/lyfe-onboarding-dev-api';
 
 dns.setDefaultResultOrder('verbatim');
 
@@ -17,6 +18,7 @@ if (!existsSync(path.join(import.meta.dirname, '.env'))) {
 const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
   Object.entries({
     '@medplum/core': path.resolve(import.meta.dirname, '../../packages/core/src'),
+    '@medplum/dosespot-core': path.resolve(import.meta.dirname, '../../packages/dosespot-core/src'),
     '@medplum/dosespot-react': path.resolve(import.meta.dirname, '../../packages/dosespot-react/src'),
     '@medplum/scriptsure-react': path.resolve(import.meta.dirname, '../../packages/scriptsure-react/src'),
     '@medplum/react': path.resolve(import.meta.dirname, '../../packages/react/src'),
@@ -30,7 +32,7 @@ const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
 // https://vitejs.dev/config/
 export default defineConfig({
   envPrefix: ['MEDPLUM_', 'GOOGLE_', 'RECAPTCHA_'],
-  plugins: [react()],
+  plugins: [react(), lyfeOnboardingDevApi()],
   server: {
     host: 'localhost',
     port: 3001,

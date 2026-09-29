@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Title } from '@mantine/core';
-import { Document, Logo, RegisterForm, useMedplum } from '@medplum/react';
+import { Document, RegisterForm, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
+import { LyfeLogo } from '../components/brand/LyfeLogo';
 
 export function RegisterPage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -42,7 +43,7 @@ export function RegisterPage(): JSX.Element | null {
       login={searchParams.get('login') || undefined}
       onSignIn={() => navigate('/signin')?.catch(console.error)}
     >
-      <Logo size={32} />
+      <LyfeLogo size={32} />
       <Title order={3} py="lg">
         Register a new Provider account
       </Title>

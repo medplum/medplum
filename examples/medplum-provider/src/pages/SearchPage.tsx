@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Paper } from '@mantine/core';
+import { Paper, Stack } from '@mantine/core';
 import type { Filter, SearchRequest, SortRule } from '@medplum/core';
 import { DEFAULT_SEARCH_COUNT, formatSearchQuery, isReference, parseSearchRequest } from '@medplum/core';
-import type { Patient, Reference, Resource, UserConfiguration } from '@medplum/fhirtypes';
+import type { Patient, Reference, Resource, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
-import type { JSX } from 'react';
+import { IconClipboardCheck, IconFileText, IconMail, IconUsers } from '@tabler/icons-react';
+import type { JSX, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { LyfePageHeader } from '../components/brand/LyfePageHeader';
 import { useResourceType } from './resource/useResourceType';
 import classes from './SearchPage.module.css';
 
@@ -16,6 +18,7 @@ export function SearchPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
+  const [total, setTotal] = useState<number>();
 
   useEffect(() => {
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
@@ -37,27 +40,91 @@ export function SearchPage(): JSX.Element {
 
   useResourceType(search?.resourceType, { onInvalidResourceType: () => navigate('..')?.catch(console.error) });
 
+  // Counted separately from SearchControl, which does not surface its total.
+  // Reset to undefined first so the pill never shows a stale count for the
+  // resource type we just navigated away from.
+  useEffect(() => {
+    const resourceType = search?.resourceType;
+    if (!resourceType) {
+      return;
+    }
+    let cancelled = false;
+    setTotal(undefined);
+    medplum
+      .search(resourceType, '_summary=count')
+      .then((bundle) => {
+        if (!cancelled) {
+          setTotal(bundle.total);
+        }
+      })
+      .catch(console.error);
+    return () => {
+      cancelled = true;
+    };
+  }, [medplum, search?.resourceType]);
+
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
     return <Loading />;
   }
 
+  const header = HEADERS[search.resourceType];
+
   return (
-    <Paper shadow="xs" m="xs" p="xs" className={classes.paper}>
-      <SearchControl
-        checkboxesEnabled={true}
-        search={search}
-        onClick={(e) => navigate(getResourceUrl(e.resource))?.catch(console.error)}
-        onAuxClick={(e) => window.open(getResourceUrl(e.resource), '_blank')}
-        onNew={() => {
-          navigate(`/${search.resourceType}/new`)?.catch(console.error);
-        }}
-        onChange={(e) => {
-          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
-        }}
+    <Stack gap="md" m="xs">
+      <LyfePageHeader
+        icon={header?.icon}
+        eyebrow={header?.eyebrow}
+        title={header?.title ?? search.resourceType}
+        count={total}
+        description={header?.description}
       />
-    </Paper>
+      <Paper shadow="xs" p="xs" className={classes.paper}>
+        <SearchControl
+          checkboxesEnabled={true}
+          search={search}
+          onClick={(e) => navigate(getResourceUrl(e.resource))?.catch(console.error)}
+          onAuxClick={(e) => window.open(getResourceUrl(e.resource), '_blank')}
+          onNew={() => {
+            navigate(`/${search.resourceType}/new`)?.catch(console.error);
+          }}
+          onChange={(e) => {
+            navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
+          }}
+        />
+      </Paper>
+    </Stack>
   );
 }
+
+// Presentation only — the title is the name Medplum already uses for the type in
+// its own navigation, so nothing is renamed. Types without an entry fall back to
+// the bare resource type name and render no icon.
+const HEADERS: Record<string, { icon: ReactNode; eyebrow: string; title: string; description: string }> = {
+  Patient: {
+    icon: <IconUsers size={20} />,
+    eyebrow: 'Roster',
+    title: 'Patients',
+    description: 'Manage and view your patient roster',
+  },
+  Task: {
+    icon: <IconClipboardCheck size={20} />,
+    eyebrow: 'Work',
+    title: 'Tasks',
+    description: 'Track outstanding work assigned to you and your team',
+  },
+  Communication: {
+    icon: <IconMail size={20} />,
+    eyebrow: 'Inbox',
+    title: 'Messages',
+    description: 'Secure messages across your care team and patients',
+  },
+  DocumentReference: {
+    icon: <IconFileText size={20} />,
+    eyebrow: 'Records',
+    title: 'Documents',
+    description: 'Clinical documents gathered from connected sources',
+  },
+};
 
 function addSearchValues(search: SearchRequest, config: UserConfiguration | undefined): SearchRequest {
   const resourceType = search.resourceType || getDefaultResourceType(config);

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider, createTheme } from '@mantine/core';
+import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
@@ -13,31 +13,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createBrowserRouter } from 'react-router';
 import { App } from './App';
+import { lyfeTheme } from './theme';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
   baseUrl: sessionStorage.getItem('medplum_base_url') || import.meta.env.MEDPLUM_BASE_URL || undefined,
   cacheTime: 60000,
   autoBatchTime: 100,
-});
-
-const theme = createTheme({
-  headings: {
-    sizes: {
-      h1: {
-        fontSize: '1.125rem',
-        fontWeight: '500',
-        lineHeight: '2.0',
-      },
-    },
-  },
-  fontSizes: {
-    xs: '0.6875rem',
-    sm: '0.875rem',
-    md: '0.875rem',
-    lg: '1.0rem',
-    xl: '1.125rem',
-  },
 });
 
 const router = createBrowserRouter([{ path: '*', element: <App /> }]);
@@ -49,7 +31,7 @@ const root = createRoot(container);
 root.render(
   <StrictMode>
     <MedplumProvider medplum={medplum} navigate={navigate}>
-      <MantineProvider theme={theme}>
+      <MantineProvider theme={lyfeTheme}>
         <Notifications position="bottom-right" />
         <RouterProvider router={router} />
       </MantineProvider>

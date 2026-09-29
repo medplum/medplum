@@ -68,7 +68,7 @@ describe('GetStartedPage', () => {
   describe('Page content', () => {
     test('Introduces the recommended first steps', () => {
       setup();
-      expect(screen.getByText('Get Started with Medplum Provider')).toBeInTheDocument();
+      expect(screen.getByText('Get Started with LyfeAI')).toBeInTheDocument();
       expect(screen.getByText('Import Sample Data')).toBeInTheDocument();
       expect(screen.getByText('Integrate Your Services')).toBeInTheDocument();
       expect(screen.getByText('View Our User Guide')).toBeInTheDocument();

@@ -4,7 +4,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import type { SpotlightLinkAction } from '@medplum/react';
-import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
+import { AppShell, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconApps,
   IconBook2,
@@ -21,6 +21,7 @@ import {
 import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
+import { LyfeLogo } from './components/brand/LyfeLogo';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
@@ -37,6 +38,7 @@ import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotifica
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
 import { ScriptSurePage } from './pages/integrations/ScriptSurePage';
 import { MessagesPage } from './pages/messages/MessagesPage';
+import { LyfeOnboardingPage } from './pages/onboarding/LyfeOnboardingPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { CoveragePage } from './pages/patient/CoveragePage';
 import { DocumentsPage } from './pages/patient/DocumentsPage';
@@ -45,6 +47,7 @@ import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
 import { IntakeFormPage } from './pages/patient/IntakeFormPage';
 import { LabsPage } from './pages/patient/LabsPage';
+import { LyfePatientListPage } from './pages/patient/LyfePatientListPage';
 import { MedicationsPage } from './pages/patient/MedicationsPage';
 import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
@@ -137,7 +140,7 @@ export function App(): JSX.Element | null {
 
   const appShellContent = (
     <AppShell
-      logo={<Logo size={24} />}
+      logo={<LyfeLogo size={24} />}
       pathname={location.pathname}
       searchParams={searchParams}
       layoutVersion="v2"
@@ -296,7 +299,11 @@ export function App(): JSX.Element | null {
               <Route path="/Fax/Communication/new" element={<FaxPage />} />
               <Route path="/Fax/Communication/:faxId" element={<FaxPage />} />
               <Route path="/Fax/Communication/:faxId/new" element={<FaxPage />} />
-              <Route path="/onboarding" element={<IntakeFormPage />} />
+              {/* The "New Patient" nav item lands here: find the record in DrChrono first,
+                  rather than keying demographics in by hand. Medplum's own intake
+                  form is still reachable at /onboarding/intake. */}
+              <Route path="/onboarding" element={<LyfeOnboardingPage />} />
+              <Route path="/onboarding/intake" element={<IntakeFormPage />} />
               <Route path="/Calendar/Schedule" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsPage />} />
@@ -310,6 +317,9 @@ export function App(): JSX.Element | null {
               {/* Must precede the /:resourceType catch-alls below */}
               {hasBilling && <Route path="/Settings/Billing/*" element={<BillingSetupPage />} />}
               <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
+              {/* The Lyfe roster replaces the generic SearchControl for Patient only.
+                  Every other resource type still falls through to SearchPage below. */}
+              <Route path="/Patient" element={<LyfePatientListPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>

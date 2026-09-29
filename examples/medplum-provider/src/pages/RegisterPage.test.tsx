@@ -49,7 +49,7 @@ describe('RegisterPage', () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
     await setup(medplum);
 
-    expect(screen.getByText('Sign in to Provider')).toBeInTheDocument();
+    expect(screen.getByText('Sign in to LyfeAI')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
