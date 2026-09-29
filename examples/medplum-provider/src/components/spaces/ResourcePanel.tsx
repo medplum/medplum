@@ -45,6 +45,7 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
               patient={displayResource}
               sections={sections}
               headerMenuItems={headerMenuItems}
+              headerLink={displayResource}
               onEditPatient={openEditModal}
             />
             {actionsModals}

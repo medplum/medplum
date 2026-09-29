@@ -165,6 +165,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
                     s.key === 'pharmacies' ? createPharmaciesSection(PharmacyDialogComponent) : s
                   )}
                   headerMenuItems={headerMenuItems}
+                  headerLink={selectedPatient}
                   onEditPatient={openEditModal}
                 />
               </ScrollArea>

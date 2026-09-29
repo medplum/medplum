@@ -20,20 +20,13 @@ export interface PatientSummaryProps {
   readonly onRequestLabs?: () => void;
   readonly sections?: PatientSummarySectionConfig[];
   readonly headerMenuItems?: ReactNode;
-  readonly linkToPatient?: boolean;
+  readonly headerLink?: Resource | Reference | string;
   readonly onEditPatient?: () => void;
 }
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
-  const {
-    patient: propsPatient,
-    onClickResource,
-    onRequestLabs,
-    headerMenuItems,
-    linkToPatient = true,
-    onEditPatient,
-  } = props;
+  const { patient: propsPatient, onClickResource, onRequestLabs, headerMenuItems, headerLink, onEditPatient } = props;
   const [patientOutcome, setPatientOutcome] = useState<OperationOutcome | undefined>();
   const resolvedPatient = useResource(propsPatient, setPatientOutcome);
   const [modifiedPatient, setModifiedPatient] = useState<WithId<Patient> | undefined>();
@@ -89,8 +82,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     <Flex direction="column" gap={0} w="100%" h="100%" className={styles.panel}>
       <Box>
         <Group align="center" gap="sm" wrap="nowrap" py="md" pl="sm" pr={headerMenuItems ? 'xs' : 'xl'}>
-          {linkToPatient ? (
-            <MedplumLink to={patient} className={styles.headerLink} underline="never">
+          {headerLink ? (
+            <MedplumLink to={headerLink} className={styles.headerLink} underline="never">
               {headerContent}
             </MedplumLink>
           ) : (

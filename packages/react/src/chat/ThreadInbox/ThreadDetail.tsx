@@ -15,7 +15,7 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import type { Communication, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
+import type { Communication, DocumentReference, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { IconChevronDown, IconInfoCircle } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { PatientSummary } from '../../PatientSummary/PatientSummary';
@@ -28,6 +28,7 @@ import classes from './ThreadDetail.module.css';
  * @param thread - The selected thread (parent Communication) to display.
  * @param showPatientSummary - Whether to show the patient summary sidebar.
  * @param sections - Optional sections configuration for the patient summary.
+ * @param patientHeaderLink - Where the patient summary header navigates when clicked. Omit for a static header.
  * @param uploadEnabled - Whether to show the attachment upload button in the chat input.
  * @param onViewInDocuments - When provided, shows a "View in Documents" action on attachment messages that invokes this callback with the attachment's DocumentReference.
  * @param onStatusChange - Fired when the user changes the thread status from the header menu.
@@ -39,6 +40,7 @@ export interface ThreadDetailProps {
   readonly showPatientSummary?: boolean;
   readonly sections?: PatientSummarySectionConfig[];
   readonly patientHeaderMenuItems?: ReactNode;
+  readonly patientHeaderLink?: Resource | Reference | string;
   readonly onEditPatient?: () => void;
   readonly uploadEnabled?: boolean;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
@@ -59,6 +61,7 @@ export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
     showPatientSummary = false,
     sections,
     patientHeaderMenuItems,
+    patientHeaderLink,
     onEditPatient,
     uploadEnabled,
     onViewInDocuments,
@@ -143,6 +146,7 @@ export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
               patient={thread.subject as Reference<Patient>}
               sections={sections}
               headerMenuItems={patientHeaderMenuItems}
+              headerLink={patientHeaderLink}
               onEditPatient={onEditPatient}
             />
           </ScrollArea>

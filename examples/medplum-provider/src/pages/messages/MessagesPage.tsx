@@ -107,6 +107,7 @@ export function MessagesPage(): JSX.Element {
         showPatientSummary={true}
         sections={sections}
         patientHeaderMenuItems={headerMenuItems}
+        patientHeaderLink={threadPatient}
         onEditPatient={openEditModal}
         onPatientChange={setThreadPatient}
         allowPatientSelection={true}

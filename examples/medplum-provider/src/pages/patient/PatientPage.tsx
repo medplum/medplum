@@ -84,7 +84,6 @@ export function PatientPage(): JSX.Element {
               }
               sections={sections}
               headerMenuItems={headerMenuItems}
-              linkToPatient={false}
               onEditPatient={openEditModal}
             />
           </ScrollArea>

@@ -41,6 +41,19 @@ describe('PatientSummary', () => {
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
+  test('Links the header when headerLink is provided', async () => {
+    await setup({ patient: HomerSimpson, headerLink: HomerSimpson });
+
+    expect(screen.getByRole('link', { name: /Homer Simpson/ })).toHaveAttribute('href', `/Patient/${HomerSimpson.id}`);
+  });
+
+  test('Renders a static header when headerLink is omitted', async () => {
+    await setup({ patient: HomerSimpson });
+
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Homer Simpson/ })).toBeNull();
+  });
+
   test('Reflects patient updates made through the client', async () => {
     const client = new MockClient();
     await act(async () => {
