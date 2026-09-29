@@ -5,7 +5,7 @@ import type { JSX } from 'react';
 
 // Must match the ValueSet upserted by candid-scheduling's install-bots.ts. Without this,
 // SchedulingWorkspace falls back to HL7's generic appointment-cancellation-reason ValueSet.
-const CANCELLATION_REASON_VALUE_SET_URL = 'https://www.medplum.com/candid-scheduling/cancellation-reason-vs';
+const CANCELLATION_REASON_VALUE_SET_URL = 'https://www.medplum.com/candid-scheduling/oneoncology-cancellation-reason-vs';
 
 /**
  * Internal-only page for exercising `@medplum/react-scheduling`'s `SchedulingWorkspace` inside the
