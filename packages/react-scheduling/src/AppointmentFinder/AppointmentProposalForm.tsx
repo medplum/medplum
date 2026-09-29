@@ -9,6 +9,7 @@ import {
   getReferenceString,
   getSchedulingRequirements,
   getSchedulingTimezone,
+  isDefined,
   isResource,
   normalizeErrorString,
   REQUIRES_DIAGNOSIS_CODE,
@@ -64,6 +65,7 @@ import { buildElevatedBooking } from './buildElevatedBooking';
 import type { BookingConflict } from './findConflicts';
 import { describeConflict, findBookingConflicts } from './findConflicts';
 import { useDaySearch } from './useDaySearch';
+import { getRescheduleDurationMinutes } from './writeElevatedReschedule';
 
 // The visit type decides which actors can be asked for at all, so nothing below it
 // is answerable yet. Unanswered, not answered wrongly, so it reads as a prompt.
@@ -170,8 +172,8 @@ export interface AppointmentProposalFormProps {
   /** Extensions to put on every appointment this form books. */
   readonly appointmentExtensions?: readonly Extension[];
   /**
-   * Allows for manual entry of a time and length, bypassing the `$find` search and
-   * `$book` endpoint.
+   * Allows manual time entry, bypassing `$find`. Booking can edit length; rescheduling
+   * preserves the interval from the full resource supplied as `ignoreAppointment`.
    */
   readonly canBypassSchedulingRules?: boolean;
   /**
@@ -429,7 +431,18 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   // State holds the edit rather than the value, so a different visit type falls back to
   // its own default instead of keeping the last length typed.
-  const effectiveDurationMinutes = manualDurationMinutes ?? configuredDurationMinutes;
+  const storedDurationMinutes =
+    ignoreAppointment && 'resourceType' in ignoreAppointment
+      ? getRescheduleDurationMinutes(ignoreAppointment)
+      : undefined;
+  const effectiveDurationMinutes =
+    mode === 'reschedule' ? storedDurationMinutes : (manualDurationMinutes ?? configuredDurationMinutes);
+
+  // Reconcile permission changes before rendering, so a revoked choice cannot be submitted.
+  if (!canBypassSchedulingRules && manualChoice) {
+    setChosen((current) => (current === manualChoice ? undefined : current));
+    clearManualTime();
+  }
 
   /**
    * Takes the typed time and length together and proposes them, or takes the proposal
@@ -444,6 +457,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setManualDateTime(dateTime);
     setManualDurationMinutes(durationMinutes);
 
+    durationMinutes = mode === 'reschedule' ? storedDurationMinutes : durationMinutes;
     const start = parseZonedDateTimeInput(dateTime, timezone);
     if (!start || !durationMinutes || durationMinutes <= 0 || !service || candidates.length === 0) {
       setManualChoice(undefined);
@@ -483,7 +497,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
     let active = true;
     const range = { start: new Date(debouncedChoice.start), end: new Date(debouncedChoice.end) };
-    findBookingConflicts({ medplum, service, candidates, range })
+    findBookingConflicts({
+      medplum,
+      service,
+      candidates,
+      range,
+      ignoredSlotReferences:
+        ignoreAppointment && 'resourceType' in ignoreAppointment
+          ? ignoreAppointment.slot?.map(getReferenceString).filter(isDefined)
+          : undefined,
+    })
       .then((found) => {
         if (active) {
           setConflicts(found);
@@ -499,7 +522,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     return () => {
       active = false;
     };
-  }, [medplum, chosen, debouncedChoice, service, candidates]);
+  }, [medplum, chosen, debouncedChoice, service, candidates, ignoreAppointment]);
 
   function choosePatient(next: WithId<Patient> | undefined): void {
     setPatient(next);
@@ -512,7 +535,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   }
 
   async function handleSubmit(): Promise<void> {
-    if (!chosen || detailsOutstanding) {
+    if (!chosen || detailsOutstanding || (manual && !canBypassSchedulingRules)) {
       return;
     }
 
@@ -672,6 +695,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
             <ManualTime
               dateTime={manualDateTime}
               durationMinutes={effectiveDurationMinutes}
+              fixedDuration={mode === 'reschedule'}
               timezone={timezone}
               conflicts={conflicts}
               onChange={enterManualTime}
@@ -818,6 +842,7 @@ interface ManualTimeProps {
   /** A `YYYY-MM-DDTHH:MM` wall-clock value, read in the visit's timezone. */
   readonly dateTime: string;
   readonly durationMinutes: number | undefined;
+  readonly fixedDuration: boolean;
   /** IANA timezone the visit is held in. */
   readonly timezone: string | undefined;
   readonly conflicts: readonly BookingConflict[];
@@ -831,7 +856,7 @@ interface ManualTimeProps {
  * @returns The fields, and what the time entered clashes with.
  */
 function ManualTime(props: ManualTimeProps): JSX.Element {
-  const { dateTime, durationMinutes, timezone, conflicts, onChange } = props;
+  const { dateTime, durationMinutes, timezone, conflicts, onChange, fixedDuration } = props;
 
   return (
     <Stack gap={4}>
@@ -849,13 +874,21 @@ function ManualTime(props: ManualTimeProps): JSX.Element {
         <NumberInput
           label="Minutes"
           min={1}
-          allowDecimal={false}
+          allowDecimal={fixedDuration}
+          readOnly={fixedDuration}
+          disabled={fixedDuration}
+          hideControls={fixedDuration}
           w={110}
           value={durationMinutes ?? ''}
           onChange={(value) => onChange(dateTime, typeof value === 'number' ? value : undefined)}
         />
       </Group>
 
+      {fixedDuration && durationMinutes === undefined && (
+        <Text size="xs" c="red">
+          This appointment has no valid length. Choose a time from the search.
+        </Text>
+      )}
       {/* The visit is held where it is held, not where the person booking it is
           sitting, and a typed time is read there. */}
       {!isViewerTimezone(timezone) && timezone && (

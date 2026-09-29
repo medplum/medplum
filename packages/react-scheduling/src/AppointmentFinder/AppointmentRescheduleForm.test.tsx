@@ -66,13 +66,18 @@ async function setupRescheduleClient(): Promise<MockClient> {
  * Mounts the form and waits for it to open on what the visit is held on.
  * @param medplum - The client to render against.
  * @param props - Anything to override.
+ * @returns The rendered form.
  */
-async function setup(medplum: MockClient, props?: Partial<AppointmentRescheduleFormProps>): Promise<void> {
+async function setup(
+  medplum: MockClient,
+  props?: Partial<AppointmentRescheduleFormProps>
+): Promise<ReturnType<typeof renderWithMedplum>> {
   const element: JSX.Element = (
     <AppointmentRescheduleForm appointment={APPOINTMENT} onRescheduled={onRescheduled} {...props} />
   );
-  renderWithMedplum(element, medplum);
+  const rendered = renderWithMedplum(element, medplum);
   await settleAutocomplete();
+  return rendered;
 }
 
 /** Confirms the move. */
@@ -129,6 +134,107 @@ describe('AppointmentRescheduleForm', () => {
   afterEach(() => {
     restoreReschedule();
     restoreFind();
+  });
+
+  describe('Manual overrides', () => {
+    async function enterTime(): Promise<void> {
+      await openTimeFinder();
+      fireEvent.change(screen.getByLabelText('Date & time'), { target: { value: '2026-08-18T14:07' } });
+      await settleAutocomplete();
+    }
+
+    test('standard users have no manual override', async () => {
+      await setup(medplum);
+      await openTimeFinder();
+      expect(screen.queryByText('Or enter a time')).not.toBeInTheDocument();
+    });
+
+    test('admins still send searched times through $reschedule', async () => {
+      const post = vi.spyOn(medplum, 'post');
+      const execute = vi.spyOn(medplum, 'executeBatch');
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await moveToAnotherTime();
+      expect(lastRescheduleParameters(post)).toBeDefined();
+      expect(execute).not.toHaveBeenCalled();
+    });
+
+    test('moves a typed time with fixed length, notifies caches and calls back once', async () => {
+      const stored = await medplum.readResource('Appointment', APPOINTMENT.id);
+      const notify = vi.spyOn(medplum, 'notifyResourceModified');
+      const post = vi.spyOn(medplum, 'post');
+      await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });
+      await enterTime();
+      expect(screen.getByLabelText('Minutes')).toHaveAttribute('readonly');
+      expect(screen.getByLabelText('Minutes')).toHaveValue('30');
+      await clickReschedule();
+      expect(lastRescheduleParameters(post)).toBeUndefined();
+      expect(onRescheduled).toHaveBeenCalledTimes(1);
+      const result = onRescheduled.mock.calls[0][0];
+      expect(result.appointment.id).toBe(APPOINTMENT.id);
+      for (const slot of HELD_SLOTS) {
+        expect(notify).toHaveBeenCalledWith(
+          expect.objectContaining({ resourceType: 'Slot', operation: 'delete', id: slot.id })
+        );
+      }
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({ resourceType: 'Appointment', operation: 'update', id: APPOINTMENT.id })
+      );
+      for (const slot of result.slots) {
+        expect(notify).toHaveBeenCalledWith(
+          expect.objectContaining({ resourceType: 'Slot', operation: 'create', id: slot.id })
+        );
+      }
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
+    });
+
+    test('blocks manual overrides without project transaction support and keeps searched moves', async () => {
+      vi.spyOn(medplum, 'getProject').mockReturnValue(undefined);
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await openTimeFinder();
+      expect(screen.getByText(/has not confirmed transaction support/)).toBeInTheDocument();
+      expect(screen.queryByText('Or enter a time')).not.toBeInTheDocument();
+      await chooseFirstOfferedTime();
+      await clickReschedule();
+      expect(onRescheduled).toHaveBeenCalledTimes(1);
+    });
+
+    test('requires a valid original duration and never falls back to the configured duration', async () => {
+      await setup(medplum, { appointment: { ...APPOINTMENT, end: undefined }, canBypassSchedulingRules: true });
+      await enterTime();
+      expect(screen.getByText(/has no valid length/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
+    });
+
+    test('clears a manual selection if permission is withdrawn', async () => {
+      const rendered = await setup(medplum, { canBypassSchedulingRules: true });
+      await enterTime();
+      rendered.rerender(
+        <AppointmentRescheduleForm
+          appointment={APPOINTMENT}
+          onRescheduled={onRescheduled}
+          canBypassSchedulingRules={false}
+        />
+      );
+      await settleAutocomplete();
+      expect(chosenTimeField()).toBeNull();
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
+    });
+
+    test('keeps entered answers after a rejected transaction without announcing a move', async () => {
+      const stored = await medplum.readResource('Appointment', APPOINTMENT.id);
+      vi.spyOn(medplum, 'executeBatch').mockRejectedValue(new Error('Write denied'));
+      const notify = vi.spyOn(medplum, 'notifyResourceModified');
+      await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });
+      await enterTime();
+      await clickReschedule();
+      expect(screen.getByText('Write denied')).toBeInTheDocument();
+      expect(screen.getByLabelText('Minutes')).toHaveValue('30');
+      expect(screen.getAllByLabelText('Date & time').find((input) => !input.hasAttribute('readonly'))).toHaveValue(
+        '2026-08-18T14:07'
+      );
+      expect(onRescheduled).not.toHaveBeenCalled();
+      expect(notify).not.toHaveBeenCalled();
+    });
   });
 
   describe('Opening on the visit as it stands', () => {

@@ -69,13 +69,15 @@ export interface SchedulingWorkspaceProps {
    */
   readonly appointmentCancellationReasonValueSet?: string;
   /**
-   * Lets the booking form take a typed time and length, placing a visit the scheduling
+   * Lets booking take a typed time and length, and rescheduling take a typed time
+   * while preserving the existing length, placing a visit the scheduling
    * rules would refuse: over occupied or blocked time, past the configured capacity,
    * or at a time or length the visit type does not offer.
    *
    * Passing it draws the fields; it enforces nothing. Which users get it is the host
    * application's responsibility.
    *
+   * Manual rescheduling requires confirmed `transaction-bundles` support.
    * Such a booking is sent as a transaction, so the appointment and its Slots commit
    * together on projects with the `transaction-bundles` feature enabled. Without it they
    * are applied as a plain batch, where an appointment that failed to write would leave
@@ -366,6 +368,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           </Group>
           <AppointmentDetails
             appointment={openAppointment}
+            canBypassSchedulingRules={canBypassSchedulingRules}
             cancellationReasonValueSet={appointmentCancellationReasonValueSet}
             onCancelled={props.onCancelled}
             onRescheduled={props.onRescheduled}

@@ -59,6 +59,8 @@ export interface AppointmentCancelFormProps {
 }
 
 export interface AppointmentDetailsProps {
+  /** Enables manual rescheduling, preserving the current visit length. The host controls access. */
+  readonly canBypassSchedulingRules?: boolean;
   readonly appointment: WithId<Appointment>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
   /**
@@ -275,6 +277,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           appointment={appointment}
           onToggleTimeFinder={onToggleTimeFinder}
           onRescheduled={finishRescheduling}
+          canBypassSchedulingRules={props.canBypassSchedulingRules}
         />
       </Stack>
     );

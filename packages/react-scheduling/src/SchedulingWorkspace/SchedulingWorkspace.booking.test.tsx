@@ -20,6 +20,8 @@ import {
   MilesCooperPatient,
   PROCEDURE_VALUE_SET,
   ProcedureCodes,
+  RiveraImagingAppointment,
+  RiveraImagingHeldSlots,
   SatelliteClinic,
 } from '../stories/scheduling';
 import { installAutocompleteTimers, removePill, settleAutocomplete } from '../test-utils/asyncAutocomplete';
@@ -130,13 +132,17 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
             click {name}
           </button>
         ))}
-        {(props.sources ?? [])
-          .flatMap((source) => source.appointments)
-          .map((appointment) => (
-            <button key={appointment.id} type="button" onClick={() => props.onSelectAppointment?.(appointment)}>
-              click appointment {appointment.id}
-            </button>
-          ))}
+        {[
+          ...new Map(
+            (props.sources ?? [])
+              .flatMap((source) => source.appointments)
+              .map((appointment) => [appointment.id, appointment])
+          ).values(),
+        ].map((appointment) => (
+          <button key={appointment.id} type="button" onClick={() => props.onSelectAppointment?.(appointment)}>
+            click appointment {appointment.id}
+          </button>
+        ))}
         {/* Stands in for the highlight the real grid draws over the interval it is given. */}
         <div data-testid="marked-time">{props.selection ? props.selection.start.toISOString() : 'none'}</div>
       </div>
@@ -226,6 +232,27 @@ describe('SchedulingWorkspace booking', () => {
       medplum
     );
   }
+
+  test.each([false, true])(
+    'forwards manual rescheduling permission through appointment details (%s)',
+    async (canBypassSchedulingRules) => {
+      for (const slot of RiveraImagingHeldSlots) {
+        await medplum.updateResource(slot);
+      }
+      const appointment = await medplum.updateResource({
+        ...RiveraImagingAppointment,
+        start: BOOKED_VISIT.start,
+        end: BOOKED_VISIT.end,
+      });
+      renderWithMedplum(<SchedulingWorkspace canBypassSchedulingRules={canBypassSchedulingRules} />, medplum);
+      await settleAutocomplete();
+      fireEvent.click(screen.getByRole('button', { name: `click appointment ${appointment.id}` }));
+      fireEvent.click(screen.getByRole('button', { name: 'Reschedule' }));
+      await settleAutocomplete();
+      await openTimeFinder();
+      expect(screen.queryByText('Or enter a time') !== null).toBe(canBypassSchedulingRules);
+    }
+  );
 
   test('Offers no booking form until the calendar is clicked', () => {
     setup();
