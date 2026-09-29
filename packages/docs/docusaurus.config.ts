@@ -351,7 +351,27 @@ const config: Config = {
     {
       src: 'https://widget.kapa.ai/kapa-widget.bundle.js',
       'data-website-id': '5cda65f5-5f1d-4b8c-846d-1fe83121c171',
-      'data-project-name': 'medplum',
+      'data-project-name': 'Medplum',
+      // Open Color grape-8 / grape-5, matching --ifm-color-primary in custom.css.
+      'data-project-color': '#9c36b5',
+      'data-project-color-dark': '#cc5de8',
+      'data-project-logo': '/img/logo.svg',
+      // The mark is the same grape as the launcher, so it vanishes on the button.
+      // Keep the colored logo in the panel header and use a white one here.
+      'data-launcher-button-image': '/img/logo-white.svg',
+      'data-launcher-button-image-height': '28',
+      'data-launcher-button-image-width': '28',
+      // Kapa fixes the launcher at 4.5rem wide, which clips anything longer than "Ask AI".
+      'data-launcher-button-width': 'auto',
+      'data-launcher-button-padding-x': '14px',
+      'data-launcher-button-label-font-size': '14px',
+      'data-launcher-button-border': 'none',
+      'data-launcher-button-border-radius': '16px',
+      'data-launcher-button-hover-background-color': '#862e9c',
+      'data-launcher-button-text': 'Ask Us',
+      'data-modal-title': 'Ask Medplum AI',
+      'data-font-family': "'Poppins', sans-serif",
+      'data-color-scheme-selector': "[data-theme='dark']",
       // Docked right-hand panel instead of a centered modal.
       'data-view-mode': 'sidebar',
       'data-modal-size': KAPA_SIDEBAR_WIDTH,
