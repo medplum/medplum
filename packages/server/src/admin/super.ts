@@ -29,10 +29,10 @@ import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { isValidPostgresIdentifier } from '../fhir/sql';
 import { globalLogger } from '../logger';
-import { markPostDeployMigrationCompleted } from '../migration-sql';
+import { markPostDeployMigrationCompleted, setPreDeployVersion } from '../migration-sql';
 import { generateMigrationActions } from '../migrations/migrate';
 import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from '../migrations/migration-utils';
-import { getPostDeployMigrationVersions } from '../migrations/migration-versions';
+import { getPostDeployMigrationVersions, getPreDeployMigrationVersions } from '../migrations/migration-versions';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
@@ -596,6 +596,41 @@ superAdminRouter.post(
 
     assert(req.body.dataVersion !== undefined);
     await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), req.body.dataVersion);
+
+    sendOutcome(res, allOk);
+  }
+);
+
+// POST to /admin/super/setschemaversion
+// to set the schema (pre-deploy migration) version of the database.
+// Setting a higher version skips schema migrations that do not need to be applied;
+// setting a lower version causes the subsequent schema migrations to be re-run on next server startup.
+// WARNING: This is an inherently unsafe operation; exercise caution.
+superAdminRouter.post(
+  '/setschemaversion',
+  [
+    body('schemaVersion')
+      .isInt({ min: 0 })
+      .withMessage('schemaVersion must be a non-negative integer')
+      .bail()
+      .custom((schemaVersion) => Number(schemaVersion) <= getPreDeployMigrationVersions().length)
+      .withMessage(
+        () =>
+          `schemaVersion must not be greater than the latest schema migration v${getPreDeployMigrationVersions().length}`
+      ),
+  ],
+  async (req: Request, res: Response) => {
+    requireSuperAdmin();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const schemaVersion = Number(req.body.schemaVersion);
+    await setPreDeployVersion(getDatabasePool(DatabaseMode.WRITER), schemaVersion);
+    globalLogger.info('[Super Admin]: Schema version set', { schemaVersion });
 
     sendOutcome(res, allOk);
   }
