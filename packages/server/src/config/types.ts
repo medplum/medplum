@@ -254,6 +254,15 @@ export interface MedplumServerConfig {
   enabledSearchParameters?: string[];
 
   /**
+   * Optional list of resource types for which chained search is disabled.
+   * References from these types are no longer written to the `<ResourceType>_References` lookup table,
+   * and chained searches (including `_has`) that require that table are rejected.
+   * Re-enabling chained search for a type requires a reindex of that type.
+   * `ProjectMembership` is ignored, since its references are required for system functionality.
+   */
+  disableChainedSearch?: string[];
+
+  /**
    * Optional customizations to the server generated CapabilityStatement.
    */
   capabilityStatement?: MedplumCapabilityStatementConfig;

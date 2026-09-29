@@ -496,6 +496,25 @@ Optional max offset for search queries.
 
 **Default:** `10000`
 
+### disableChainedSearch
+
+Optional list of resource types for which [chained search](/docs/search/chained-search) is disabled. This is a write optimization for high-volume resource types that never need chained search. For each listed type:
+
+- References are no longer written to the `<ResourceType>_References` table on create or update.
+- Chained searches that would read that table, including `_has` reverse chains originating from the type, are rejected with `400 Bad Request`.
+
+`ProjectMembership` is always indexed and is ignored if listed.
+
+When using environment variables or parameter store, provide a comma-separated list (e.g. `Observation,AuditEvent`).
+
+:::warning
+
+Disabling chained search is intended to be a one-way operation. To re-enable chained search for a resource type, remove it from this list, restart the server, and then run a reindex of that resource type before using chained search again. Until the reindex completes, chained search results for that type will be incomplete or out of date.
+
+:::
+
+**Default:** None
+
 ### defaultBotRuntimeVersion
 
 Optional default bot runtime version. See [Bot runtime version](/docs/api/fhir/medplum/bot) for more details.

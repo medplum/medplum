@@ -58,6 +58,10 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.asyncDelayScaling ??= 5;
   config.aiRealtimeTranscriptionUrl ??= 'wss://api.openai.com/v1/realtime?intent=transcription';
 
+  if (config.disableChainedSearch?.includes('ProjectMembership')) {
+    getLogger().warn('Ignoring ProjectMembership in disableChainedSearch: its references are always indexed');
+  }
+
   // Automatically generate a signing key if using built-in storage and no signing key is provided
   if (config.storageBaseUrl.startsWith(config.baseUrl) && !config.signingKey) {
     getLogger().warn(
@@ -237,7 +241,7 @@ export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
 }
 
-const arrayKeys = new Set(['blockedEmailDomains']);
+const arrayKeys = new Set(['blockedEmailDomains', 'disableChainedSearch']);
 
 export function isArrayConfig(key: string): boolean {
   return arrayKeys.has(key);

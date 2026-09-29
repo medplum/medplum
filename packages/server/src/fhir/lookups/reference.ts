@@ -12,6 +12,7 @@ import {
   toTypedValue,
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { getConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
 import type { PgQueryable } from '../sql';
 import { InsertQuery, SelectQuery } from '../sql';
@@ -22,6 +23,17 @@ export interface ReferenceTableRow extends LookupTableRow {
   readonly resourceId: string;
   readonly targetId: string;
   readonly code: string;
+}
+
+/**
+ * Returns true if chained search is disabled for the resource type by server config,
+ * in which case its references are not written to the `<ResourceType>_References` table.
+ * @param resourceType - The resource type.
+ * @returns True if chained search is disabled for the resource type.
+ */
+export function isChainedSearchDisabled(resourceType: string): boolean {
+  // ProjectMembership_References is used to guard deletes in precommit.ts
+  return resourceType !== 'ProjectMembership' && !!getConfig().disableChainedSearch?.includes(resourceType);
 }
 
 /**
@@ -59,6 +71,9 @@ export class ReferenceTable extends LookupTable {
     }
 
     const resourceType = resources[0].resourceType;
+    if (isChainedSearchDisabled(resourceType)) {
+      return;
+    }
 
     const existingRows = create ? undefined : await this.getExistingRows(client, resources);
     if (existingRows === undefined || existingRows.length === 0) {
