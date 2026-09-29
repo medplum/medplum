@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { defineConfig } from 'vitest/config';
 import { medplumAliases } from '../../aliases.mjs';
+import { jsdomExecArgv } from '../../vitest.config';
 
 export default defineConfig({
   resolve: {
@@ -11,7 +12,8 @@ export default defineConfig({
     name: '@medplum/scriptsure-react',
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/test.setup.ts',
+    execArgv: jsdomExecArgv,
+    setupFiles: ['./src/test.setup.ts'],
     pool: 'threads',
   },
 });

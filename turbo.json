@@ -20,7 +20,15 @@
     "test": {
       "dependsOn": ["build"],
       "outputs": ["coverage/**", ".vitest-reports/**"],
-      "inputs": ["src/**/*.tsx", "src/**/*.ts"]
+      "inputs": [
+        "src/**/*.tsx",
+        "src/**/*.ts",
+        "vite.config.ts",
+        "vite.config.js",
+        "vitest.config.ts",
+        "vitest.config.js",
+        "$TURBO_ROOT$/vitest.config.ts"
+      ]
     },
     "lint": {
       "dependsOn": ["build"]

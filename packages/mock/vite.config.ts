@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { defineConfig } from 'vitest/config';
 import { medplumAliases } from '../../aliases.mjs';
+import { jsdomExecArgv } from '../../vitest.config';
 
 export default defineConfig({
   resolve: {
@@ -11,6 +12,7 @@ export default defineConfig({
     name: '@medplum/mock',
     globals: true,
     environment: 'jsdom',
+    execArgv: jsdomExecArgv,
     setupFiles: ['./src/test.setup.ts'],
     pool: 'threads',
   },
