@@ -23,7 +23,7 @@ export function usePatientActionsMenu(patient: Patient | Reference<Patient> | un
   );
 
   const actionsModals =
-    patient && editOpened ? (
+    patient ? (
       <PatientEditModal patient={patient} opened={editOpened} onClose={editHandlers.close} />
     ) : null;
 
