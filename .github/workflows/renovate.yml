@@ -40,7 +40,7 @@ jobs:
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: renovatebot/github-action@b50d2ba2bd928235abdcc14d06dfafc217f1c565 # v46.1.18
+      - uses: renovatebot/github-action@39b914146caeff8cd512e61c8992f1d5913af85c # v46.2.5
         if: steps.check-date.outputs.run == 'true'
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
