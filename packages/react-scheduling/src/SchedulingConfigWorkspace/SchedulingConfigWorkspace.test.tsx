@@ -141,14 +141,6 @@ describe('SchedulingConfigWorkspace', () => {
     expect(nameField()).toHaveValue('Ultrasound Imaging');
   });
 
-  test('the empty pane starts a new visit type', async () => {
-    await setup();
-
-    await userEvent.click(within(details()).getByRole('button', { name: 'New visit type' }));
-
-    expect(within(details()).getByText('Not saved yet')).toBeInTheDocument();
-  });
-
   test('clicking the row already open does not ask, and leaves the unsaved-changes guard in place', async () => {
     await setup();
     await userEvent.click(row('Telehealth Consult'));

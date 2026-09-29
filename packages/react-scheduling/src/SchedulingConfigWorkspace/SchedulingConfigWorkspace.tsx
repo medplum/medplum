@@ -175,7 +175,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       detail = <ConfigEmptyState notFound />;
     }
   } else {
-    detail = <ConfigEmptyState onCreate={startNew} />;
+    detail = <ConfigEmptyState />;
   }
 
   const sections: ConfigPanelSection[] = [
