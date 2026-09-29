@@ -78,6 +78,7 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
       />
       <LocationField
         label={noun === 'room' ? 'Service facility' : 'Location'}
+        placeholder={noun === 'room' ? 'None: hidden when booking by location' : 'None: shown at every location'}
         value={value.location}
         onChange={(location) => update({ location })}
       />
@@ -122,17 +123,18 @@ function TimezoneField(props: {
 
 interface LocationFieldProps {
   readonly label: string;
+  readonly placeholder: string;
   readonly value: Reference<Location> | undefined;
   readonly onChange: (value: Reference<Location> | undefined) => void;
 }
 
 /**
  * Picks one of the service facilities booking's site filter offers.
- * @param props - The label, the Location referenced, and a change handler.
+ * @param props - The label, what to show when blank, the Location referenced, and a change handler.
  * @returns The field.
  */
 function LocationField(props: LocationFieldProps): JSX.Element {
-  const { label, value, onChange } = props;
+  const { label, placeholder, value, onChange } = props;
   // The input holds its own selection, so it is remounted when `value` is reset from outside, as Discard does.
   const [inputKey, setInputKey] = useState(0);
   const reported = useRef(value);
@@ -150,7 +152,7 @@ function LocationField(props: LocationFieldProps): JSX.Element {
       resourceType="Location"
       name={label.toLowerCase().replace(' ', '-')}
       label={label}
-      placeholder="Not set"
+      placeholder={placeholder}
       searchCriteria={LOCATION_SEARCH_CRITERIA}
       defaultValue={value}
       onChange={(location) => {

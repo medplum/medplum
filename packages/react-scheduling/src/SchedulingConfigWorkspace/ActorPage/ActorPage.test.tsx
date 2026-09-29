@@ -689,6 +689,10 @@ describe('ActorPage', () => {
         const { partOf: _partOf, ...unplaced } = room3;
         const { medplum, onStored } = await setup(unplaced);
 
+        expect(within(general()).getByRole('searchbox', { name: 'Service facility' })).toHaveAttribute(
+          'placeholder',
+          'None: hidden when booking by location'
+        );
         await pick('Service facility', 'Downtown Clinic');
         await saveNow();
 
@@ -704,6 +708,10 @@ describe('ActorPage', () => {
         };
         const { medplum, onStored } = await setup(device);
 
+        expect(within(general()).getByRole('searchbox', { name: 'Location' })).toHaveAttribute(
+          'placeholder',
+          'None: shown at every location'
+        );
         fireEvent.change(within(general()).getByRole('textbox', { name: /Name/ }), {
           target: { value: 'Ultrasound 2' },
         });
