@@ -121,8 +121,11 @@ export async function createBot(
     executableCode,
   });
 
+  // AccessPolicy is project-scoped and cannot be written through global-only routing.
+  // ProjectMembership is a global resource type, so it stays on the global repo.
+  const accessPolicy =
+    params.accessPolicy ?? (await createDefaultBotAccessPolicy(repo.getSystemRepo(), project.id, params.name));
   const systemRepo = getGlobalSystemRepo();
-  const accessPolicy = params.accessPolicy ?? (await createDefaultBotAccessPolicy(systemRepo, project.id, params.name));
   await systemRepo.createResource<ProjectMembership>({
     meta: {
       project: project.id,
