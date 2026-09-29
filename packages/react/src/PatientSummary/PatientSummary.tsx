@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Divider, Flex, Group, Menu, Skeleton, Stack, Text, Tooltip } from '@mantine/core';
-import type { MedplumClient } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
 import { formatDate, formatHumanName, resolveId } from '@medplum/core';
 import type { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
-import { useMedplum, usePatientSummaryData, useResource } from '@medplum/react-hooks';
+import { useMedplum, usePatientSummaryData, useResource, useResourceModified } from '@medplum/react-hooks';
 import { IconDots } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
@@ -35,8 +35,17 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     onEditPatient,
   } = props;
   const [patientOutcome, setPatientOutcome] = useState<OperationOutcome | undefined>();
-  const patient = useResource(propsPatient, setPatientOutcome);
+  const resolvedPatient = useResource(propsPatient, setPatientOutcome);
+  const [modifiedPatient, setModifiedPatient] = useState<WithId<Patient> | undefined>();
   const [createdDate, setCreatedDate] = useState<string | undefined>();
+
+  useResourceModified('Patient', (event) => {
+    if (event.resource && event.resource.id === resolvedPatient?.id) {
+      setModifiedPatient(event.resource);
+    }
+  });
+
+  const patient = modifiedPatient?.id === resolvedPatient?.id ? modifiedPatient : resolvedPatient;
 
   // Determine sections: custom or default
   const defaultSections = useMemo(() => getDefaultSections(onRequestLabs), [onRequestLabs]);

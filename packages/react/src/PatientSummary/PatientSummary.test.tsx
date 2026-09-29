@@ -41,6 +41,47 @@ describe('PatientSummary', () => {
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
+  test('Reflects patient updates made through the client', async () => {
+    const client = new MockClient();
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={client}>
+          <PatientSummary patient={HomerSimpson} />
+        </MedplumProvider>
+      );
+    });
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      await client.updateResource({ ...HomerSimpson, name: [{ given: ['Max'], family: 'Power' }] });
+    });
+
+    expect(screen.getByText('Max Power')).toBeInTheDocument();
+    expect(screen.queryByText('Homer Simpson')).toBeNull();
+  });
+
+  test('Ignores updates to other patients', async () => {
+    const client = new MockClient();
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={client}>
+          <PatientSummary patient={HomerSimpson} />
+        </MedplumProvider>
+      );
+    });
+
+    await act(async () => {
+      await client.updateResource({
+        ...HomerSimpson,
+        id: 'other-patient',
+        name: [{ given: ['Max'], family: 'Power' }],
+      });
+    });
+
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.queryByText('Max Power')).toBeNull();
+  });
+
   test('Shows skeleton while loading, then hides it', async () => {
     render(
       <MedplumProvider medplum={medplum}>

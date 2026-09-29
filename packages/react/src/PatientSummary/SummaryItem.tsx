@@ -7,7 +7,7 @@ import styles from './SummaryItem.module.css';
 
 interface SummaryItemProps {
   children: ReactNode;
-  onClick: () => void;
+  onClick?: () => void;
 }
 
 export default function SummaryItem(props: SummaryItemProps): JSX.Element {
