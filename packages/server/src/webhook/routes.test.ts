@@ -345,7 +345,7 @@ describe('Anonymous webhooks', () => {
     expect(res3.text).toStrictEqual('Bot is not configured for public webhook access');
   });
 
-  test('Bot without access policy', async () => {
+  test('Default access policy allows a public webhook', async () => {
     const res1 = await request(app)
       .post('/admin/projects/' + project.id + '/bot')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -355,31 +355,78 @@ describe('Anonymous webhooks', () => {
         description: 'Alice bot description',
       });
     expect(res1).toHaveStatus(201);
-    expect(res1.body.resourceType).toBe('Bot');
-    expect(res1.body.id).toBeDefined();
-
-    const botWithoutPublicWebhook = res1.body as WithId<Bot>;
+    const createdBot = res1.body as WithId<Bot>;
 
     const res2 = await request(app)
-      .get(`/fhir/R4/ProjectMembership?profile=Bot/${botWithoutPublicWebhook.id}`)
+      .get(`/fhir/R4/ProjectMembership?profile=Bot/${createdBot.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2).toHaveStatus(200);
-    expect(res2.body.entry).toBeDefined();
-    expect(res2.body.entry.length).toBe(1);
-
     const projectMembership = res2.body.entry[0].resource as WithId<ProjectMembership>;
+    expect(projectMembership.accessPolicy?.reference).toBeDefined();
+
+    const policyRes = await request(app)
+      .get('/fhir/R4/' + projectMembership.accessPolicy?.reference)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(policyRes).toHaveStatus(200);
+    expect(policyRes.body).toMatchObject({
+      name: 'Alice personal bot Bot Access Policy',
+      resource: [{ resourceType: '*' }],
+    });
+
+    const deploy = await request(app)
+      .post(`/fhir/R4/Bot/${createdBot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: cjsCode });
+    expect(deploy).toHaveStatus(200);
 
     const res3 = await request(app)
-      .patch(`/fhir/R4/Bot/${botWithoutPublicWebhook.id}`)
+      .patch(`/fhir/R4/Bot/${createdBot.id}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.JSON_PATCH)
-      .send([
-        {
-          op: 'add',
-          path: '/publicWebhook',
-          value: true,
-        },
-      ]);
+      .send([{ op: 'add', path: '/publicWebhook', value: true }]);
+    expect(res3).toHaveStatus(200);
+
+    const res4 = await request(app)
+      .post(`/webhook/${projectMembership.id}`)
+      .set('Content-Type', ContentType.TEXT)
+      .set('x-signature', 'signature')
+      .send('input');
+    expect(res4).toHaveStatus(200);
+    expect(res4.text).toBe('input');
+  });
+
+  test('Bot without access policy does not allow a public webhook (default is somehow removed)', async () => {
+    const res1 = await request(app)
+      .post('/admin/projects/' + project.id + '/bot')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        name: 'Alice personal bot',
+        description: 'Alice bot description',
+      });
+    expect(res1).toHaveStatus(201);
+    const createdBot = res1.body as WithId<Bot>;
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ProjectMembership?profile=Bot/${createdBot.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2).toHaveStatus(200);
+    const projectMembership = res2.body.entry[0].resource as WithId<ProjectMembership>;
+
+    // Creation assigns a default policy. Remove it to cover a user clearing that policy.
+    const cleared = await request(app)
+      .patch(`/fhir/R4/ProjectMembership/${projectMembership.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON_PATCH)
+      .send([{ op: 'remove', path: '/accessPolicy' }]);
+    expect(cleared).toHaveStatus(200);
+
+    const res3 = await request(app)
+      .patch(`/fhir/R4/Bot/${createdBot.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON_PATCH)
+      .send([{ op: 'add', path: '/publicWebhook', value: true }]);
     expect(res3).toHaveStatus(200);
 
     const res4 = await request(app)
