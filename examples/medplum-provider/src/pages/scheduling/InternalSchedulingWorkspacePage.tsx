@@ -3,6 +3,10 @@
 import { SchedulingWorkspace } from '@medplum/react-scheduling';
 import type { JSX } from 'react';
 
+// Must match the ValueSet upserted by candid-scheduling's install-bots.ts. Without this,
+// SchedulingWorkspace falls back to HL7's generic appointment-cancellation-reason ValueSet.
+const CANCELLATION_REASON_VALUE_SET_URL = 'https://www.medplum.com/candid-scheduling/cancellation-reason-vs';
+
 /**
  * Internal-only page for exercising `@medplum/react-scheduling`'s `SchedulingWorkspace` inside the
  * Provider app. Reachable only by navigating directly to its route — intentionally not linked from the
@@ -13,7 +17,7 @@ import type { JSX } from 'react';
 export function InternalSchedulingWorkspacePage(): JSX.Element {
   return (
     <div style={{ height: '100dvh', padding: '1rem', boxSizing: 'border-box' }}>
-      <SchedulingWorkspace />
+      <SchedulingWorkspace appointmentCancellationReasonValueSet={CANCELLATION_REASON_VALUE_SET_URL} />
     </div>
   );
 }
