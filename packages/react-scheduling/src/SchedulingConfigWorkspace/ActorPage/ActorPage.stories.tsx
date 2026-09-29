@@ -91,9 +91,10 @@ export const ProviderWithOverrides = (): JSX.Element => (
 export const RoomWithNoCalendar = (): JSX.Element => <StoredActor resourceType="Location" id={ExamRoomC.id} />;
 
 /**
- * Dr. Elena Brooks works at both clinics. Another system linked her to the main clinic, so it is locked: hover the
- * badge to see why. The satellite clinic was linked here, so it can be removed. Remove it and Satellite Follow-up,
- * held only there, is marked as not bookable before anything is saved.
+ * Dr. Elena Brooks works at both clinics. Another system linked her to the main clinic, so it is listed under
+ * Linked by another system and can't be removed. The satellite clinic was linked here, so it is in the Service
+ * facilities field. Remove it and Satellite Follow-up, held only there, is marked as not bookable before anything
+ * is saved. Nothing asks first, since the main clinic still limits where she is offered.
  *
  * Saving turns the satellite's role off rather than deleting it, and adding the satellite back turns the same role
  * on again.

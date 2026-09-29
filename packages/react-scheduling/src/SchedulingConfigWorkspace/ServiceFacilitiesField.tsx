@@ -6,14 +6,18 @@ import type { Location, Reference } from '@medplum/fhirtypes';
 import { MultiResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { LOCATION_SEARCH_CRITERIA } from '../../constants';
+import { LOCATION_SEARCH_CRITERIA } from '../constants';
+import { normalizeReference } from './serviceFacilities';
 
 export interface ServiceFacilitiesFieldProps {
-  /** The service facilities the visit type names. Empty means every service facility. */
+  /** The service facilities named. Empty means every service facility, unless `linked` names some. */
   readonly value: readonly Reference<Location>[];
   readonly onChange: (value: Reference<Location>[]) => void;
-  /** The visit type's name, for the confirmation text. */
-  readonly serviceName: string;
+  /** The visit type's or provider's name, for the confirmation text. */
+  readonly name: string;
+  /** Service facilities it is also at, which this field can't edit, so an empty field doesn't mean every one. */
+  readonly linked?: readonly Reference<Location>[];
+  readonly description?: string;
 }
 
 interface PendingChange {
@@ -23,18 +27,19 @@ interface PendingChange {
 }
 
 /**
- * Edits the service facilities a visit type can be booked at, `HealthcareService.location`. An empty list
- * means every service facility, so the two edits that cross between empty and not empty are confirmed first.
- * @param props - The service facilities named, a change handler, and the visit type's name.
+ * Edits the service facilities a visit type or provider can be booked at. An empty list means every service
+ * facility, so the two edits that cross between empty and not empty are confirmed first.
+ * @param props - The service facilities named, a change handler, and the visit type's or provider's name.
  * @returns The field.
  */
 export function ServiceFacilitiesField(props: ServiceFacilitiesFieldProps): JSX.Element {
-  const { value, onChange, serviceName } = props;
+  const { value, onChange, name, linked = [], description } = props;
   const [pending, setPending] = useState<PendingChange>();
   // The input holds its own selection, so it is remounted on `value` whenever the two part: a change the viewer
   // declines, or `value` reset from outside, as Discard does.
   const [inputKey, setInputKey] = useState(0);
   const reported = useRef(value);
+  const everywhere = value.length === 0 && linked.length === 0;
 
   useEffect(() => {
     if (!deepEquals(value, reported.current)) {
@@ -49,10 +54,17 @@ export function ServiceFacilitiesField(props: ServiceFacilitiesFieldProps): JSX.
   }
 
   function handleChange(locations: Location[]): void {
-    const next = locations.map((location) => createReference(location));
-    if (value.length === 0 && next.length > 0) {
-      setPending({ next, added: getDisplayString(locations[0]) });
-    } else if (value.length > 0 && next.length === 0) {
+    const linkedReferences = new Set(linked.flatMap((facility) => normalizeReference(facility.reference) ?? []));
+    const picked = locations.filter((location) => !linkedReferences.has(`Location/${location.id}`));
+    if (picked.length < locations.length) {
+      // A linked service facility is already listed beside the field, so picking it here changes nothing.
+      setInputKey((key) => key + 1);
+      return;
+    }
+    const next = picked.map((location) => createReference(location));
+    if (linked.length === 0 && value.length === 0 && next.length > 0) {
+      setPending({ next, added: getDisplayString(picked[0]) });
+    } else if (linked.length === 0 && value.length > 0 && next.length === 0) {
       setPending({ next });
     } else {
       report(next);
@@ -71,23 +83,25 @@ export function ServiceFacilitiesField(props: ServiceFacilitiesFieldProps): JSX.
         resourceType="Location"
         name="service-facilities"
         label="Service facilities"
-        placeholder={value.length === 0 ? 'Offered at every service facility' : 'Add a service facility'}
+        placeholder={everywhere ? 'Offered at every service facility' : 'Add a service facility'}
         searchCriteria={LOCATION_SEARCH_CRITERIA}
         defaultValue={[...value]}
         onChange={handleChange}
       />
-      <Text size="xs" c="dimmed">
-        Booking filtered to a service facility offers this visit type only if it's listed here, or if none are.
-      </Text>
+      {description && (
+        <Text size="xs" c="dimmed">
+          {description}
+        </Text>
+      )}
       <Modal
         opened={pending !== undefined}
         onClose={cancel}
-        title={pending && confirmationTitle(pending, serviceName)}
+        title={pending && confirmationTitle(pending, name)}
         centered
       >
         {pending && (
           <Stack gap="md">
-            <Text size="sm">{confirmationBody(pending, serviceName)}</Text>
+            <Text size="sm">{confirmationBody(pending, name)}</Text>
             <Group justify="flex-end" gap="sm">
               <Button variant="default" onClick={cancel}>
                 Cancel
@@ -108,14 +122,12 @@ export function ServiceFacilitiesField(props: ServiceFacilitiesFieldProps): JSX.
   );
 }
 
-function confirmationTitle(pending: PendingChange, serviceName: string): string {
-  return pending.added
-    ? `Offer ${serviceName} only at ${pending.added}?`
-    : `Offer ${serviceName} at every service facility?`;
+function confirmationTitle(pending: PendingChange, name: string): string {
+  return pending.added ? `Offer ${name} only at ${pending.added}?` : `Offer ${name} at every service facility?`;
 }
 
-function confirmationBody(pending: PendingChange, serviceName: string): string {
+function confirmationBody(pending: PendingChange, name: string): string {
   return pending.added
-    ? `${serviceName} is offered at every service facility now. Adding ${pending.added} limits it to ${pending.added} only, once you save.`
-    : `That leaves no service facilities listed, which means ${serviceName} is offered at every one of them once you save.`;
+    ? `${name} is offered at every service facility now, and only at ${pending.added} once you save.`
+    : `That leaves no service facilities listed, which means ${name} is offered at every one of them once you save.`;
 }

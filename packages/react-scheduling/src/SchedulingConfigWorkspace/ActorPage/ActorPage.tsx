@@ -60,8 +60,8 @@ import { useActorFacilities } from '../useActorFacilities';
 import type { CalendarFields, OfferingFields } from './calendarDraft';
 import { buildCalendar, calendarFieldsOf, describeOverrides, newOfferingFields } from './calendarDraft';
 import { OfferingEntry } from './OfferingEntry';
+import { ProviderFacilitiesFields } from './ProviderFacilitiesFields';
 import { buildRoleChanges, providerFacilitiesOf } from './roleDraft';
-import { ServiceFacilitiesSection } from './ServiceFacilitiesSection';
 import { useProviderRoles } from './useProviderRoles';
 
 export interface ActorPageProps {
@@ -122,11 +122,16 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const storedRoles = providerRoles?.value;
   const [facilityEdits, setFacilityEdits] = useState<Reference<Location>[]>();
   const storedFacilities = storedRoles && providerFacilitiesOf(storedRoles.roles);
-  const providerFacilities = (facilityEdits ?? storedFacilities?.facilities)?.map((facility): Reference<Location> => ({
+  const isLinked = (facility: Reference<Location>): boolean =>
+    !!storedFacilities?.locked.has(normalizeReference(facility.reference) ?? '');
+  const editableFacilities = facilityEdits ?? storedFacilities?.facilities.filter((facility) => !isLinked(facility));
+  const named = (facility: Reference<Location>): Reference<Location> => ({
     ...facility,
     display:
       storedRoles?.names.get(normalizeReference(facility.reference) ?? '') ?? facility.display ?? facility.reference,
-  }));
+  });
+  const linkedFacilities = (storedFacilities?.facilities.filter(isLinked) ?? []).map(named);
+  const providerFacilities = editableFacilities && [...linkedFacilities, ...editableFacilities.map(named)];
   const roleChanges: ConfigChange<PractitionerRole>[] =
     storedRoles && providerFacilities
       ? buildRoleChanges(storedRoles.roles, createReference(resource as WithId<Practitioner>), providerFacilities)
@@ -326,17 +331,16 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
       <ConfigSection title="General">
         <ActorGeneral resource={resource} />
+        {providerRoles && (
+          <ProviderFacilitiesFields
+            actorName={actorName}
+            value={editableFacilities}
+            linked={linkedFacilities}
+            error={providerRoles.error}
+            onChange={setFacilityEdits}
+          />
+        )}
       </ConfigSection>
-
-      {providerRoles && (
-        <ServiceFacilitiesSection
-          actorName={actorName}
-          value={providerFacilities}
-          locked={storedFacilities?.locked ?? new Set()}
-          error={providerRoles.error}
-          onChange={setFacilityEdits}
-        />
-      )}
 
       <ConfigSection title="Visit types offered">
         {schedule && (
