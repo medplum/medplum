@@ -9,18 +9,17 @@ import type { JSX } from 'react';
 import { useCallback } from 'react';
 import type { AppointmentWrite } from './AppointmentFinder.writes';
 import { readAppointmentWrite } from './AppointmentFinder.writes';
-import type { AppointmentProposalFormProps } from './AppointmentProposalForm';
+import type { AppointmentProposalFormProps, BookOptions } from './AppointmentProposalForm';
 import { AppointmentProposalForm } from './AppointmentProposalForm';
 import { useRescheduleDefaults } from './useRescheduleDefaults';
+import { writeElevatedReschedule } from './writeElevatedReschedule';
 
 /** Joins names the way a sentence listing all of them would. */
 const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
 
-/** What a reschedule wrote, as `Appointment/[id]/$reschedule` returned it. */
+/** The updated appointment and the slots reserved by a reschedule. */
 export type AppointmentReschedule = AppointmentWrite;
 
-// Coming soon: support for `canBypassSchedulingRules`.
-// https://github.com/medplum/medplum/issues/10597
 export interface AppointmentRescheduleFormProps extends Omit<
   AppointmentProposalFormProps,
   | 'onSubmit'
@@ -32,7 +31,6 @@ export interface AppointmentRescheduleFormProps extends Omit<
   | 'mrnSystem'
   | 'procedureBinding'
   | 'diagnosisBinding'
-  | 'canBypassSchedulingRules'
   | 'appointmentExtensions'
 > {
   /** The appointment being moved. */
@@ -56,7 +54,8 @@ export interface AppointmentRescheduleFormProps extends Omit<
  * moved off, so `$find` is told to ignore it, which is what lets the same hour in a
  * different room be found.
  *
- * Posts `Appointment/[id]/$reschedule`, announces the appointment, the times it gave up
+ * Searched times use `Appointment/[id]/$reschedule`; manually entered times use an atomic
+ * transaction and preserve the existing length. Announces the appointment, the times it gave up
  * and the times it took, so views reading them refresh, then reports what was written
  * through `onRescheduled`.
  *
@@ -72,12 +71,16 @@ export interface AppointmentRescheduleFormProps extends Omit<
  * @returns The form.
  */
 export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps): JSX.Element {
-  const { appointment, onRescheduled, defaultStart, ...formProps } = props;
+  const { appointment, onRescheduled, defaultStart, canBypassSchedulingRules, ...formProps } = props;
   const medplum = useMedplum();
   const defaults = useRescheduleDefaults(appointment);
+  const supportsTransactions = medplum.getProject()?.features?.includes('transaction-bundles') === true;
 
   const reschedule = useCallback(
-    async (proposal: Appointment): Promise<void> => {
+    async (proposal: Appointment, options: BookOptions): Promise<void> => {
+      if (options.manual && !canBypassSchedulingRules) {
+        throw new Error('Manual rescheduling is no longer enabled. Choose a time from the search.');
+      }
       const schedules = getProposedSchedules(proposal);
 
       // Assert that the shape we received matches what we need for `$reschedule`;
@@ -93,17 +96,21 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
       // back pointing at the times it took instead.
       const releasedSlotIds = (appointment.slot ?? []).map(resolveId).filter(isDefined);
 
-      const written = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
-        medplum.fhirUrl('Appointment', appointment.id, '$reschedule'),
-        {
-          resourceType: 'Parameters',
-          parameter: [
-            { name: 'start', valueDateTime: proposal.start },
-            ...schedules.map((reference) => ({ name: 'schedule', valueReference: { reference } })),
-          ],
-        } satisfies Parameters
-      );
-      const result = readAppointmentWrite(written, '$reschedule');
+      const result = options.manual
+        ? await writeElevatedReschedule(medplum, appointment, proposal)
+        : readAppointmentWrite(
+            await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
+              medplum.fhirUrl('Appointment', appointment.id, '$reschedule'),
+              {
+                resourceType: 'Parameters',
+                parameter: [
+                  { name: 'start', valueDateTime: proposal.start },
+                  ...schedules.map((reference) => ({ name: 'schedule', valueReference: { reference } })),
+                ],
+              } satisfies Parameters
+            ),
+            '$reschedule'
+          );
 
       // `$reschedule` is a custom operation, so the client cannot tell what it changed.
       // It deletes the existing slots, creates new ones, and updates `appointment.slot`
@@ -127,7 +134,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
         console.error(error);
       }
     },
-    [appointment, medplum, onRescheduled]
+    [appointment, medplum, onRescheduled, canBypassSchedulingRules]
   );
 
   const serviceRefs = extractServiceTypeReferences(appointment.serviceType);
@@ -166,9 +173,16 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
           if you continue: {droppedNames}
         </Alert>
       )}
+      {canBypassSchedulingRules && !supportsTransactions && (
+        <Alert color="yellow" mb="sm">
+          Manual rescheduling is unavailable because this project has not confirmed transaction support. You can still
+          choose a time from the search.
+        </Alert>
+      )}
       <AppointmentProposalForm
         {...formProps}
         mode="reschedule"
+        canBypassSchedulingRules={canBypassSchedulingRules && supportsTransactions}
         defaultService={defaults.service}
         defaultSelections={defaults.selections}
         defaultStart={defaultStart ?? getOpeningDay(appointment)}
