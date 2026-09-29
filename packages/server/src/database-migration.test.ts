@@ -793,6 +793,59 @@ describe('Database migrations', () => {
       });
     });
 
+    describe('Set schema version', () => {
+      let setPreDeployVersionSpy: MockInstance<typeof migrationSql.setPreDeployVersion>;
+
+      beforeEach(() => {
+        setPreDeployVersionSpy = vi
+          .spyOn(migrationSql, 'setPreDeployVersion')
+          .mockImplementation(async (_client, version) => version);
+        vi.spyOn(migrationVersions, 'getPreDeployMigrationVersions').mockReturnValue([1, 2, 3]);
+      });
+
+      test.each([0, 2, 3])('Set schema version -- valid schemaVersion - %s', async (schemaVersion) => {
+        const res1 = await request(app)
+          .post('/admin/super/setschemaversion')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .type('json')
+          .send({ schemaVersion });
+
+        expect(res1).toHaveStatus(200);
+        expect(res1.body).toMatchObject(allOk);
+        expect(setPreDeployVersionSpy).toHaveBeenCalledTimes(1);
+        expect(setPreDeployVersionSpy).toHaveBeenCalledWith(expect.anything(), schemaVersion);
+      });
+
+      test.each([undefined, 'v1', '3.3.0', 1.5, -1])(
+        'Set schema version -- invalid schemaVersion - %s',
+        async (schemaVersion) => {
+          const res1 = await request(app)
+            .post('/admin/super/setschemaversion')
+            .set('Authorization', 'Bearer ' + adminAccessToken)
+            .type('json')
+            .send({ schemaVersion });
+
+          expect(res1).toHaveStatus(400);
+          expect(res1.body).toMatchObject(badRequest('schemaVersion must be a non-negative integer'));
+          expect(setPreDeployVersionSpy).not.toHaveBeenCalled();
+        }
+      );
+
+      test('Set schema version -- greater than latest schema migration', async () => {
+        const res1 = await request(app)
+          .post('/admin/super/setschemaversion')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .type('json')
+          .send({ schemaVersion: 4 });
+
+        expect(res1).toHaveStatus(400);
+        expect(res1.body).toMatchObject(
+          badRequest('schemaVersion must not be greater than the latest schema migration v3')
+        );
+        expect(setPreDeployVersionSpy).not.toHaveBeenCalled();
+      });
+    });
+
     describe('Reconcile schema drift', () => {
       let generateMigrationActionsSpy: MockInstance<typeof migrateModule.generateMigrationActions>;
 
