@@ -7,7 +7,7 @@ import type { OperationOutcome, Patient, Reference, Resource } from '@medplum/fh
 import { useMedplum, usePatientSummaryData, useResource } from '@medplum/react-hooks';
 import { IconDots } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import styles from './PatientSummary.module.css';
@@ -37,8 +37,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const [patientOutcome, setPatientOutcome] = useState<OperationOutcome | undefined>();
   const patient = useResource(propsPatient, setPatientOutcome);
   const [createdDate, setCreatedDate] = useState<string | undefined>();
-  const nameRef = useRef<HTMLParagraphElement>(null);
-  const [isNameTruncated, setIsNameTruncated] = useState(false);
 
   // Determine sections: custom or default
   const defaultSections = useMemo(() => getDefaultSections(onRequestLabs), [onRequestLabs]);
@@ -56,16 +54,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     }
   }, [propsPatient, medplum]);
 
-  useEffect(() => {
-    const checkTruncation = (): void => {
-      const el = nameRef.current;
-      setIsNameTruncated(!!el && el.scrollWidth > el.clientWidth);
-    };
-    checkTruncation();
-    window.addEventListener('resize', checkTruncation);
-    return () => window.removeEventListener('resize', checkTruncation);
-  }, [patient]);
-
   if (!patient) {
     return patientOutcome ? null : <PatientSummarySkeleton sections={Math.max(sections.length - 1, 1)} />;
   }
@@ -74,13 +62,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     <Group align="center" gap="sm" wrap="nowrap" className={styles.headerContent}>
       <ResourceAvatar value={patient} size={48} radius={48} />
       <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-        <Tooltip
-          label={formatHumanName(patient.name?.[0])}
-          position="top-start"
-          openDelay={650}
-          disabled={!isNameTruncated}
-        >
-          <Text ref={nameRef} fz="h4" fw={800} truncate style={{ minWidth: 0 }}>
+        <Tooltip label={formatHumanName(patient.name?.[0])} position="top-start" openDelay={650}>
+          <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }}>
             {formatHumanName(patient.name?.[0])}
           </Text>
         </Tooltip>
