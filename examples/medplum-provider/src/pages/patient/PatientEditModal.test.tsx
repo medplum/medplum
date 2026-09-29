@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { loadDataType } from '@medplum/core';
-import type { StructureDefinition } from '@medplum/fhirtypes';
+import type { Patient, Reference, StructureDefinition } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -39,13 +39,17 @@ describe('PatientEditModal', () => {
     vi.spyOn(medplum, 'requestProfileSchema').mockResolvedValue(undefined);
   });
 
-  const setup = (opened = true, onClose = vi.fn()): ReturnType<typeof render> => {
+  const setup = (
+    opened = true,
+    onClose = vi.fn(),
+    patient: Patient | Reference<Patient> = HomerSimpson
+  ): ReturnType<typeof render> => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <PatientEditModal patient={HomerSimpson} opened={opened} onClose={onClose} />
+            <PatientEditModal patient={patient} opened={opened} onClose={onClose} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -63,21 +67,25 @@ describe('PatientEditModal', () => {
     return form;
   };
 
-  test('Loads patient data when opened', async () => {
+  test('Renders the edit form from the patient prop', async () => {
     const readResourceSpy = vi.spyOn(medplum, 'readResource');
     setup(true);
 
-    await waitFor(() => {
-      expect(readResourceSpy).toHaveBeenCalledWith('Patient', HomerSimpson.id);
-    });
+    await getForm();
+    expect(readResourceSpy).not.toHaveBeenCalled();
     expect(screen.getByText('Edit Patient Profile Details')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
   });
 
-  test('Does not load patient data when closed', () => {
-    const readResourceSpy = vi.spyOn(medplum, 'readResource');
+  test('Resolves a patient reference', async () => {
+    setup(true, vi.fn(), { reference: `Patient/${HomerSimpson.id}` });
+
+    await getForm();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+  });
+
+  test('Renders nothing when closed', () => {
     setup(false);
-    expect(readResourceSpy).not.toHaveBeenCalled();
     expect(screen.queryByText('Edit Patient Profile Details')).not.toBeInTheDocument();
   });
 
@@ -110,14 +118,5 @@ describe('PatientEditModal', () => {
       expect(screen.getByText(/failed to update patient/i)).toBeInTheDocument();
     });
     expect(onClose).not.toHaveBeenCalled();
-  });
-
-  test('Shows an error when the patient cannot be loaded', async () => {
-    vi.spyOn(medplum, 'readResource').mockRejectedValue(new Error('Patient not found'));
-    setup(true);
-
-    await waitFor(() => {
-      expect(screen.getByText(/patient not found/i)).toBeInTheDocument();
-    });
   });
 });

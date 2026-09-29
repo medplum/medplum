@@ -3,7 +3,6 @@
 import { Menu, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { Patient, Reference } from '@medplum/fhirtypes';
-import { useResource } from '@medplum/react';
 import { IconEdit } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { PatientEditModal } from './PatientEditModal';
@@ -14,8 +13,7 @@ export interface PatientActionsMenu {
   readonly openEditModal: () => void;
 }
 
-export function usePatientActionsMenu(patientArg: Patient | Reference<Patient> | undefined): PatientActionsMenu {
-  const patient = useResource(patientArg);
+export function usePatientActionsMenu(patient: Patient | Reference<Patient> | undefined): PatientActionsMenu {
   const [editOpened, editHandlers] = useDisclosure(false);
 
   const headerMenuItems = (
