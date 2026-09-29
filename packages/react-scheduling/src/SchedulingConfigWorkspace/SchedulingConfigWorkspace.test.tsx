@@ -69,10 +69,11 @@ describe('SchedulingConfigWorkspace', () => {
     expect(row('Discontinued Consult')).toHaveTextContent('Inactive');
   });
 
-  test('nothing is selected until something is picked, and the empty pane offers to start one', async () => {
+  test('nothing is selected until something is picked', async () => {
     await setup();
 
     expect(within(details()).getByText('Nothing selected')).toBeInTheDocument();
+    expect(within(details()).queryByRole('button')).not.toBeInTheDocument();
     expect(
       within(sidebar())
         .queryAllByRole('button')
