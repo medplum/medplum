@@ -52,14 +52,6 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
   const noun = resource.resourceType === 'Location' ? 'room' : 'device';
   return (
     <Stack gap="md">
-      <TextInput
-        label="Name"
-        required
-        value={value.name}
-        onChange={(event) => update({ name: event.currentTarget.value })}
-        error={nameError}
-        placeholder={noun === 'room' ? 'e.g. Exam Room 3' : 'e.g. Ultrasound 2'}
-      />
       {!creating && (
         <Stack gap={4}>
           <Switch
@@ -76,6 +68,14 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
           </Text>
         </Stack>
       )}
+      <TextInput
+        label="Name"
+        required
+        value={value.name}
+        onChange={(event) => update({ name: event.currentTarget.value })}
+        error={nameError}
+        placeholder={noun === 'room' ? 'e.g. Exam Room 3' : 'e.g. Ultrasound 2'}
+      />
       <LocationField
         label={noun === 'room' ? 'Service facility' : 'Location'}
         value={value.location}
