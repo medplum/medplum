@@ -170,7 +170,9 @@ describe('writeElevatedReschedule', () => {
     async (features) => {
       vi.spyOn(medplum, 'getProject').mockReturnValue(features ? { resourceType: 'Project', features } : undefined);
       const execute = vi.spyOn(medplum, 'executeBatch');
-      await expect(writeElevatedReschedule(medplum, existing, proposal())).rejects.toThrow('transaction support');
+      await expect(writeElevatedReschedule(medplum, existing, proposal())).rejects.toThrow(
+        'transaction-bundles project feature'
+      );
       expect(execute).not.toHaveBeenCalled();
     }
   );

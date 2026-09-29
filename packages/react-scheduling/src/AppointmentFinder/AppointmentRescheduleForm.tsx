@@ -79,7 +79,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
   const reschedule = useCallback(
     async (proposal: Appointment, options: BookOptions): Promise<void> => {
       if (options.manual && !canBypassSchedulingRules) {
-        throw new Error('Manual rescheduling is no longer enabled. Choose a time from the search.');
+        throw new Error('Scheduling rule overrides are no longer enabled. Choose a time from the search.');
       }
       const schedules = getProposedSchedules(proposal);
 
@@ -175,8 +175,8 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
       )}
       {canBypassSchedulingRules && !supportsTransactions && (
         <Alert color="yellow" mb="sm">
-          Manual rescheduling is unavailable because this project has not confirmed transaction support. You can still
-          choose a time from the search.
+          Scheduling rule overrides require the transaction-bundles project feature to be enabled and available to the
+          client. You can still choose a time from the search.
         </Alert>
       )}
       <AppointmentProposalForm

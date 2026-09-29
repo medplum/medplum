@@ -189,7 +189,7 @@ describe('AppointmentRescheduleForm', () => {
       vi.spyOn(medplum, 'getProject').mockReturnValue(undefined);
       await setup(medplum, { canBypassSchedulingRules: true });
       await openTimeFinder();
-      expect(screen.getByText(/has not confirmed transaction support/)).toBeInTheDocument();
+      expect(screen.getByText(/transaction-bundles project feature/)).toBeInTheDocument();
       expect(screen.queryByText('Or enter a time')).not.toBeInTheDocument();
       await chooseFirstOfferedTime();
       await clickReschedule();

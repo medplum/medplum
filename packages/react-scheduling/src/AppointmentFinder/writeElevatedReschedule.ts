@@ -38,7 +38,9 @@ export async function writeElevatedReschedule(
   proposal: Appointment
 ): Promise<AppointmentWrite> {
   if (!medplum.getProject()?.features?.includes('transaction-bundles')) {
-    throw new Error('Manual rescheduling requires transaction support for this project.');
+    throw new Error(
+      'Override rescheduling requires the transaction-bundles project feature to be enabled and available to the client.'
+    );
   }
   if (!existing.meta?.versionId) {
     throw new Error('Reload this appointment before manually rescheduling it; its version is missing.');
