@@ -27,7 +27,6 @@ export interface ResourceFormProps {
   readonly onDelete?: (resource: Resource) => void;
   /** (optional) URL of the resource profile used to display the form. Takes priority over schemaName. */
   readonly profileUrl?: string;
-  readonly formId?: string;
   readonly hideSubmitButton?: boolean;
 }
 
@@ -106,7 +105,6 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
 
   return (
     <form
-      id={props.formId}
       noValidate
       autoComplete="off"
       onSubmit={(e: FormEvent) => {

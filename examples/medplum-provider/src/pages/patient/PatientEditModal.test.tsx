@@ -93,10 +93,10 @@ describe('PatientEditModal', () => {
     const onClose = vi.fn();
     setup(true, onClose);
 
-    const form = await getForm();
+    await getForm();
     const updateSpy = vi.spyOn(medplum, 'updateResource').mockResolvedValue(HomerSimpson as any);
 
-    fireEvent.submit(form);
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => {
       expect(updateSpy).toHaveBeenCalled();
