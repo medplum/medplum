@@ -321,6 +321,23 @@ describe('SchedulingConfigWorkspace', () => {
     expect(groupTitles(offeringSchedules())).toEqual(['Providers']);
   });
 
+  test('Schedules offering this visit type says why one sharing no service facility with it can’t be booked', async () => {
+    await setup();
+
+    await userEvent.click(row('Ultrasound Imaging'));
+
+    const satellite = within(offeringSchedules()).getByText('Satellite Exam Room').closest('button') as HTMLElement;
+    await waitFor(() =>
+      expect(satellite).toHaveTextContent(
+        "Can't be booked: Ultrasound Imaging isn't held at Uro Associates - Satellite."
+      )
+    );
+    // Exam Room B is a floor below the main clinic, which holds the visit type.
+    expect(within(offeringSchedules()).getByText('Exam Room B').closest('button')).not.toHaveTextContent(
+      "Can't be booked"
+    );
+  });
+
   test("selecting a Schedule offering a visit type opens its actor's page from the top, with that visit type's entry open", async () => {
     await setup();
     await userEvent.click(row('Telehealth Consult'));

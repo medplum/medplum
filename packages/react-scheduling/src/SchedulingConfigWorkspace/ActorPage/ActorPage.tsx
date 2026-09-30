@@ -40,8 +40,10 @@ import { saveConfigChanges } from '../ConfigPage/configSave';
 import { ConfirmModal } from '../ConfirmModal';
 import { summarizeOffering } from '../offeringSummary';
 import { getActorStatus, isActorInactive } from '../SchedulingConfigWorkspace.utils';
+import { describeNoSharedFacility, isHeldEverywhere, sharesServiceFacility } from '../serviceFacilities';
 import type { ConfigStatus } from '../StatusBadge';
 import { StatusBadge } from '../StatusBadge';
+import { useActorFacilities } from '../useActorFacilities';
 import { OfferingEditor, OfferingMenu, OfferingSummary } from './OfferingEditor';
 import { OfferPicker } from './OfferPicker';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
@@ -97,6 +99,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'>>();
   const [reloading, setReloading] = useState(false);
 
+  const facilities = useActorFacilities([resource])?.get(getReferenceString(resource));
+
   const draft = buildScheduleDraft(schedule, actorDraft, fields, initial, servicesById);
   const actorDirty = !deepEquals(actorDraft, resource);
   // Compares the fields rather than the draft, so edits the draft can't store yet, like an emptied week, still
@@ -146,6 +150,12 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   function handleActorActiveChange(active: boolean): void {
     setActorDraft(active === !isActorInactive(resource) ? resource : withActorActive(resource, active));
     setFields((current) => ({ ...current, active: active && initial.active }));
+  }
+
+  function notBookableReason(service: WithId<HealthcareService>): string | undefined {
+    return facilities && !sharesServiceFacility(service, facilities)
+      ? describeNoSharedFacility(service.name ?? 'This visit type', facilities)
+      : undefined;
   }
 
   function updateOffering(id: string, value: OfferingFields): void {
@@ -267,6 +277,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           <Accordion variant="separated" value={open} onChange={setOpen}>
             {checks.map(({ service, errors, availabilityError }) => {
               const timezone = getSchedulingTimezone(service, draft, resource);
+              const notBookable = notBookableReason(service);
               return (
                 <Accordion.Item key={service.id} value={service.id}>
                   {/* Beside the control rather than in it, which is itself a button. */}
@@ -277,6 +288,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
                         value={fields.offerings[service.id]}
                         summary={draft ? summarizeOffering(service, draft) : ''}
                         dirty={isOfferingDirty(service)}
+                        notBookableReason={notBookable}
                       />
                     </Accordion.Control>
                     <OfferingMenu service={service} onStopOffering={() => setStopping(service)} />
@@ -291,6 +303,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
                         onChange={(value) => updateOffering(service.id, value)}
                         errors={errors}
                         availabilityError={triedToSave ? availabilityError : undefined}
+                        notBookableReason={notBookable}
                         timezone={
                           timezone
                             ? {
@@ -308,7 +321,12 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           </Accordion>
         )}
 
-        <OfferPicker services={offerable} onOffer={offer} />
+        <OfferPicker
+          services={offerable}
+          checking={(service) => !facilities && !isHeldEverywhere(service.location)}
+          disabledReason={notBookableReason}
+          onOffer={offer}
+        />
       </ConfigSection>
 
       <ConfirmModal

@@ -48,7 +48,8 @@ listed once it is saved.
   with the same fields as `ScheduleAvailabilityEditor`.
 - **Schedules offering this visit type:** every provider, room, and device whose Schedule offers it, grouped as the
   sidebar lists them, and marked **Customized** when the Schedule sets anything of its own for it. One that is turned
-  off, or whose Schedule is, is left out, as booking skips both. Picking one opens that actor's page on this visit type.
+  off, or whose Schedule is, is left out, as booking skips both. One that shares no service facility with the visit
+  type is marked as not bookable. Picking one opens that actor's page on this visit type.
 
 ## A provider's, room's, or device's page
 
@@ -63,8 +64,9 @@ listed once it is saved.
   opened from a visit type's page, which opens that visit type's entry.
 
 **Offer visit types** opens a searchable list of every active visit type not offered yet. Tick any number to offer
-them together. Offering an actor's first visit type creates its Schedule when the page is saved, and not before.
-**Stop offering** asks first, then removes the settings the Schedule holds for that visit type with it.
+them together. One held only at service facilities the actor isn't at is listed disabled, with the reason. Offering
+an actor's first visit type creates its Schedule when the page is saved, and not before. **Stop offering** asks
+first, then removes the settings the Schedule holds for that visit type with it.
 
 ## Saving
 

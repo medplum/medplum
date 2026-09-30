@@ -334,6 +334,7 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
         <OfferingSchedulesSection
           service={service}
           serviceName={serviceName}
+          location={fields.location}
           groups={offeringGroups}
           loading={offeringsLoading}
           onOpen={onOpenOffering}

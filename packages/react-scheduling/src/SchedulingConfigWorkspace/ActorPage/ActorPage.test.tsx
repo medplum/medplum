@@ -9,6 +9,7 @@ import {
 } from '@medplum/core';
 import type { Bundle, HealthcareService, Location, Practitioner, Resource, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import type { ReactNode } from 'react';
 import { describe, expect, test, vi } from 'vitest';
 import { setScheduleAvailability } from '../../availability';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
@@ -139,6 +140,7 @@ function syncedSchedule(onSynced: Setup['onSynced']): WithId<Schedule> {
 
 async function openOfferPicker(): Promise<void> {
   await userEvent.click(await screen.findByRole('button', { name: 'Offer visit types' }));
+  await waitFor(() => expect(screen.queryByLabelText('Checking service facilities')).not.toBeInTheDocument());
 }
 
 async function chooseStopOffering(name: string): Promise<void> {
@@ -402,6 +404,76 @@ describe('ActorPage', () => {
 
     await openOfferPicker();
     expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Follow-up', 'Cystoscopy']);
+  });
+
+  test("lists a visit type held away from a room's service facility as disabled, saying why", async () => {
+    await setup(room3);
+
+    await openOfferPicker();
+
+    expect(screen.getByRole('option', { name: 'Initial Visit' })).toHaveAttribute('aria-disabled', 'false');
+    const held = screen.getByRole('option', { name: /^Cystoscopy/ });
+    expect(held).toHaveAttribute('aria-disabled', 'true');
+    expect(held).toHaveTextContent("Cystoscopy isn't held at Downtown Clinic");
+  });
+
+  test('the offer button is ready at once, and only visit types held somewhere wait on where the actor is', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
+    for (const resource of [downtown, northside, ...services, drSmith]) {
+      await medplum.createResource(resource);
+    }
+    vi.spyOn(medplum, 'searchResources').mockReturnValue(new Promise(() => {}) as never);
+    renderWithMedplum(
+      <ActorPage actor={{ resource: drSmith, schedules: [] }} services={services} onSynced={vi.fn()} />,
+      medplum
+    );
+
+    const button = screen.getByRole('button', { name: 'Offer visit types' });
+    expect(button).not.toHaveAttribute('data-loading');
+    await userEvent.click(button);
+
+    expect(screen.getByRole('option', { name: 'Initial Visit' })).toHaveAttribute('aria-disabled', 'false');
+    const held = screen.getByRole('option', { name: /^Cystoscopy/ });
+    expect(held).toHaveAttribute('aria-disabled', 'true');
+    expect(within(held).getByLabelText('Checking service facilities')).toBeInTheDocument();
+  });
+
+  test('moving a room away from where an offered visit type is held marks it as not bookable, and keeps it offered', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
+    for (const resource of [downtown, northside, ...services]) {
+      await medplum.createResource(resource);
+    }
+    const atNorthside = await medplum.createResource<Location>({
+      ...room3,
+      partOf: { reference: 'Location/northside' },
+    });
+    const schedule = await medplum.createResource(makeSchedule('Location/room-3', [cystoscopy]));
+    const heldDowntown: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      id: 'ultrasound',
+      name: 'Ultrasound',
+      location: [{ reference: 'Location/downtown' }],
+    };
+    const page = (resource: WithId<Location>): ReactNode => (
+      <ActorPage
+        actor={{ resource, schedules: [schedule] }}
+        services={[...services, heldDowntown]}
+        initialOpenServiceId={cystoscopy.id}
+        onSynced={vi.fn()}
+      />
+    );
+    const { rerender } = renderWithMedplum(page(atNorthside), medplum);
+    await openOfferPicker();
+    expect(screen.getByRole('option', { name: /^Ultrasound/ })).toHaveTextContent("isn't held at Northside");
+    await userEvent.keyboard('{Escape}');
+    expect(entry('Cystoscopy')).not.toHaveTextContent("Can't be booked");
+
+    rerender(page({ ...atNorthside, partOf: { reference: 'Location/downtown' } }));
+
+    await waitFor(() => expect(entry('Cystoscopy')).toHaveTextContent("Can't be booked"));
+    expect(
+      within(panel('Cystoscopy')).getByText("Can't be booked here: Cystoscopy isn't held at Downtown Clinic.")
+    ).toBeVisible();
   });
 
   test('offers several visit types at once, closed, and then says none are left to offer', async () => {
