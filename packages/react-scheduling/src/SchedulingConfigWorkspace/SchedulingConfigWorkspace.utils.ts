@@ -1,20 +1,34 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { extractServiceTypeReferences, getDisplayString, isDefined, resolveId } from '@medplum/core';
-import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
+import {
+  extractServiceTypeReferences,
+  getDisplayString,
+  getReferenceString,
+  isDefined,
+  resolveId,
+} from '@medplum/core';
+import type { HealthcareService, Resource, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType } from '../actors';
+import { isBookableActorType } from '../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../configSearch';
 import type { ConfigPanelItem } from './ConfigPanel/ConfigPanel';
 
 /**
  * What the detail pane shows: a stored visit type or actor, kept by id so it survives a save replacing it in
- * the list, or a visit type being created, which has no id until it is saved.
+ * the list, or a visit type being created, which has no id until it is saved. An actor's page may be opened on
+ * one of the visit types it offers.
  */
 export type ConfigSelection =
   | { readonly kind: 'service'; readonly id: string }
   | { readonly kind: 'new-service'; readonly key: number }
-  | { readonly kind: 'actor'; readonly resourceType: BookableActorType; readonly id: string };
+  | {
+      readonly kind: 'actor';
+      readonly resourceType: BookableActorType;
+      readonly id: string;
+      /** The visit type whose entry is open, or null for none. Left out, the page decides. */
+      readonly openServiceId?: string | null;
+    };
 
 /**
  * Whether two selections open the same page.
@@ -118,6 +132,16 @@ export function getOfferedServices(
 }
 
 /**
+ * What still needs finishing on an actor, as the sidebar marks it.
+ * @param actor - The actor and its Schedules. The first Schedule is the one the workspace edits.
+ * @returns The notices to show on its row.
+ */
+export function getActorNotices(actor: ConfigurableActor): string[] {
+  const [schedule] = actor.schedules;
+  return schedule?.active === false ? ['Schedule inactive'] : [];
+}
+
+/**
  * Builds the rows of a Providers, Rooms, or Devices section, narrowed by the filter.
  * @param actors - Every actor of the section's type loaded.
  * @param selection - What is selected, if anything.
@@ -138,6 +162,7 @@ export function buildActorItems(
       label: getDisplayString(actor.resource),
       selected: isActorSelected(actor, selection),
       inactive: isActorInactive(actor.resource),
+      notices: getActorNotices(actor),
     }))
     .filter((item) => matchesFilter(item.label, filter));
 }
@@ -148,4 +173,39 @@ function isActorSelected(actor: ConfigurableActor, selection: ConfigSelection | 
     selection.resourceType === actor.resource.resourceType &&
     selection.id === actor.resource.id
   );
+}
+
+/**
+ * Puts a stored resource into the actors listed, so a save shows at once without refetching: an actor replaces
+ * the version it was loaded as, and a Schedule replaces or joins the Schedules of its only actor. Anything
+ * else, or anything about an actor not listed, leaves the list as it was.
+ * @param actors - The actors listed.
+ * @param stored - The resource as the server now holds it.
+ * @returns The new list.
+ */
+export function withStoredActorResource<T extends ConfigurableActor>(
+  actors: readonly T[],
+  stored: WithId<Resource>
+): T[] {
+  if (isBookableActorType(stored.resourceType)) {
+    return actors.map((actor) =>
+      actor.resource.resourceType === stored.resourceType && actor.resource.id === stored.id
+        ? { ...actor, resource: stored }
+        : actor
+    );
+  }
+  if (stored.resourceType !== 'Schedule' || stored.actor.length !== 1) {
+    return [...actors];
+  }
+  const owner = stored.actor[0].reference;
+  return actors.map((actor) => {
+    if (getReferenceString(actor.resource) !== owner) {
+      return actor;
+    }
+    const index = actor.schedules.findIndex((schedule) => schedule.id === stored.id);
+    return {
+      ...actor,
+      schedules: index < 0 ? [...actor.schedules, stored] : actor.schedules.with(index, stored),
+    };
+  });
 }
