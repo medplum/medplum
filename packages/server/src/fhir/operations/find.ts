@@ -15,7 +15,7 @@ import {
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Appointment, Bundle, HealthcareService, Reference, Schedule } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, HealthcareService, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
@@ -31,6 +31,7 @@ import {
   assertAllLoaded,
   buildAppointmentSlots,
   getSchedulingParametersGroup,
+  intersectIntervals,
   intervalsExceedingCapacity,
   resolveAvailability,
   slotsOverlappingInterval,
@@ -93,10 +94,12 @@ async function handler(params: {
     throw new OperationOutcomeError(badRequest('Search range cannot exceed 31 days'));
   }
 
+  const requestedRanges = [requestedRange];
+
   const ignoreAppointment = params.ignoreAppointment;
-  const [schedules, allExistingSlots, healthcareService, ignoredAppointment] = await Promise.all([
+  const [schedules, allSlotsByRange, healthcareService, ignoredAppointment] = await Promise.all([
     ctx.repo.readReferences(params.schedules).then((schedules) => copyPaths(params.schedules, schedules)),
-    slotsOverlappingInterval(ctx.repo, params.schedules, requestedRange),
+    Promise.all(requestedRanges.map((range) => slotsOverlappingInterval(ctx.repo, params.schedules, range))),
     ctx.repo.readReference<HealthcareService>(params.healthcareService).catch((err) => {
       if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
         throw new OperationOutcomeError(badRequest('HealthcareService not found'));
@@ -118,7 +121,7 @@ async function handler(params: {
   // The Slots held by the appointment being reassigned shouldn't block that appointment from
   // moving, so drop them before computing availability.
   const ignoredSlotIds = new Set((ignoredAppointment?.slot ?? []).map((ref) => resolveId(ref)).filter(isDefined));
-  const existingSlots = allExistingSlots.filter((slot) => !ignoredSlotIds.has(slot.id));
+  const slotsByRange = allSlotsByRange.map((slots) => slots.filter((slot) => !ignoredSlotIds.has(slot.id)));
 
   const parameterGroup = await getSchedulingParametersGroup(
     ctx.repo,
@@ -159,68 +162,86 @@ async function handler(params: {
   const commonParameters = extractCommonParameters([...parameterGroup.values()]);
   const serviceType = toServiceTypeCodeableConcepts(healthcareService);
 
-  const allAvailability = schedules.map((schedule) => {
-    const schedulingParameters = parameterGroup.get(schedule);
-    assert(schedulingParameters);
-
-    const scheduleSlots = existingSlots.filter((slot) => resolveId(slot.schedule) === schedule.id);
-    let availability = resolveAvailability(schedulingParameters, effectiveRange, schedulingParameters.get('timezone'));
-    availability = applyExistingSlots({
-      availability,
-      slots: scheduleSlots,
-      range: effectiveRange,
-      serviceType: healthcareService.type,
-      capacity: schedulingParameters.get('slotCapacity'),
-    });
-
-    // Trim off bufferBefore/bufferAfter from availability
-    availability = availability.map((interval) => ({
-      start: addMinutes(interval.start, schedulingParameters.get('bufferBefore')),
-      end: addMinutes(interval.end, -1 * schedulingParameters.get('bufferAfter')),
-    }));
-
-    // Optimization: restrict to windows long enough for the requested duration
-    // here before trying to do intersections with other schedules later. This
-    // also ensures that we don't return intervals having an `end` before the
-    // `start` after our previous buffer-trimming step.
-    availability = availability.filter((interval) => {
-      const durationMs = interval.end.getTime() - interval.start.getTime();
-      return durationMs >= schedulingParameters.get('duration') * 60 * 1000;
-    });
-
-    return availability;
-  });
-
-  const intersectingAvailability = allAvailability
-    .slice(1)
-    .reduce((acc, val) => overlappingIntervals(acc, val), allAvailability[0]);
-  assert(intersectingAvailability);
-
-  // Tricky: `slotCapacity` lets an appointment overlap existing bookings, but its buffer
-  // time is exclusive — it is blocked by any existing booking, even one the appointment
-  // itself is allowed to overlap. Availability above is resolved at the appointment's own
-  // capacity, so buffers are checked against exclusively occupied time per candidate.
-  //
-  // Only schedules that allow overbooking need the check. At `slotCapacity` 1 the
-  // availability above already excludes every existing booking, and each candidate's
-  // buffers land inside the single availability window it was trimmed from, so the
-  // check could never reject a candidate.
-  const bufferChecks = schedules
-    .map((schedule) => {
+  // Where an appointment can go within `range`, given the Slots fetched for it.
+  const findAvailability = (
+    range: Interval,
+    slots: Slot[]
+  ): { availability: Interval[]; hasBufferConflict: (interval: Interval) => boolean } => {
+    const allAvailability = schedules.map((schedule) => {
       const schedulingParameters = parameterGroup.get(schedule);
       assert(schedulingParameters);
-      const bufferBefore = schedulingParameters.get('bufferBefore');
-      const bufferAfter = schedulingParameters.get('bufferAfter');
-      if (schedulingParameters.get('slotCapacity') === 1 || (bufferBefore === 0 && bufferAfter === 0)) {
-        return undefined;
-      }
-      const scheduleSlots = existingSlots.filter((slot) => resolveId(slot.schedule) === schedule.id);
-      return { blocked: intervalsExceedingCapacity(scheduleSlots, 1), bufferBefore, bufferAfter };
-    })
-    .filter(isDefined);
 
-  const hasBufferConflict = (interval: Interval): boolean =>
-    bufferChecks.some((check) => bufferTimeConflicts(interval, check.blocked, check));
+      const scheduleSlots = slots.filter((slot) => resolveId(slot.schedule) === schedule.id);
+      let availability = resolveAvailability(schedulingParameters, range, schedulingParameters.get('timezone'));
+      availability = applyExistingSlots({
+        availability,
+        slots: scheduleSlots,
+        range,
+        serviceType: healthcareService.type,
+        capacity: schedulingParameters.get('slotCapacity'),
+      });
+
+      // Trim off bufferBefore/bufferAfter from availability
+      availability = availability.map((interval) => ({
+        start: addMinutes(interval.start, schedulingParameters.get('bufferBefore')),
+        end: addMinutes(interval.end, -1 * schedulingParameters.get('bufferAfter')),
+      }));
+
+      // Optimization: restrict to windows long enough for the requested duration
+      // here before trying to do intersections with other schedules later. This
+      // also ensures that we don't return intervals having an `end` before the
+      // `start` after our previous buffer-trimming step.
+      availability = availability.filter((interval) => {
+        const durationMs = interval.end.getTime() - interval.start.getTime();
+        return durationMs >= schedulingParameters.get('duration') * 60 * 1000;
+      });
+
+      return availability;
+    });
+
+    const intersectingAvailability = allAvailability
+      .slice(1)
+      .reduce((acc, val) => overlappingIntervals(acc, val), allAvailability[0]);
+    assert(intersectingAvailability);
+
+    // Tricky: `slotCapacity` lets an appointment overlap existing bookings, but its buffer
+    // time is exclusive — it is blocked by any existing booking, even one the appointment
+    // itself is allowed to overlap. Availability above is resolved at the appointment's own
+    // capacity, so buffers are checked against exclusively occupied time per candidate.
+    //
+    // Only schedules that allow overbooking need the check. At `slotCapacity` 1 the
+    // availability above already excludes every existing booking, and each candidate's
+    // buffers land inside the single availability window it was trimmed from, so the
+    // check could never reject a candidate.
+    const bufferChecks = schedules
+      .map((schedule) => {
+        const schedulingParameters = parameterGroup.get(schedule);
+        assert(schedulingParameters);
+        const bufferBefore = schedulingParameters.get('bufferBefore');
+        const bufferAfter = schedulingParameters.get('bufferAfter');
+        if (schedulingParameters.get('slotCapacity') === 1 || (bufferBefore === 0 && bufferAfter === 0)) {
+          return undefined;
+        }
+        const scheduleSlots = slots.filter((slot) => resolveId(slot.schedule) === schedule.id);
+        return { blocked: intervalsExceedingCapacity(scheduleSlots, 1), bufferBefore, bufferAfter };
+      })
+      .filter(isDefined);
+
+    return {
+      availability: intersectingAvailability,
+      hasBufferConflict: (interval) =>
+        bufferChecks.some((check) => bufferTimeConflicts(interval, check.blocked, check)),
+    };
+  };
+
+  // Each week is resolved against only the Slots fetched for it. A week the planning horizons
+  // exclude has no availability.
+  const [firstWeek] = requestedRanges.map((range, idx) => {
+    const clamped = intersectIntervals(range, effectiveRange);
+    return clamped
+      ? findAvailability(clamped, slotsByRange[idx])
+      : { availability: [], hasBufferConflict: () => false };
+  });
 
   const alignment = {
     interval: commonParameters.alignmentInterval,
@@ -229,13 +250,13 @@ async function handler(params: {
   };
 
   const intervals = flatMapMax(
-    intersectingAvailability,
+    firstWeek.availability,
     (interval, _idx, maxCount) =>
       findAlignedSlotTimes(interval, {
         alignment,
         durationMinutes: commonParameters.duration,
         maxCount,
-        filter: (candidate) => !hasBufferConflict(candidate),
+        filter: (candidate) => !firstWeek.hasBufferConflict(candidate),
       }),
     pageSize
   );
