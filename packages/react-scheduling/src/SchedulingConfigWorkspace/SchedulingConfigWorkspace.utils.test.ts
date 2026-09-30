@@ -2,16 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ServiceTypeReferenceURI, toServiceTypeCodeableConcepts } from '@medplum/core';
-import type { HealthcareService, Practitioner, Schedule } from '@medplum/fhirtypes';
+import type { HealthcareService, Location, Practitioner, Schedule } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import type { ConfigurableActor } from '../configSearch';
 import { setHealthcareServiceSchedulingParameterValues } from '../parameterValues';
 import {
   buildActorItems,
   buildServiceItems,
+  getActorNotices,
   getOfferedServices,
   isSameSelection,
   matchesFilter,
+  withStoredActorResource,
   withStoredService,
 } from './SchedulingConfigWorkspace.utils';
 
@@ -86,14 +88,19 @@ describe('isSameSelection', () => {
     expect(isSameSelection({ kind: 'service', id: 'exam' }, undefined)).toBe(false);
   });
 
-  test('matches the same actor', () => {
+  test('matches the same actor, whichever of its visit types is open', () => {
     const smith = { kind: 'actor', resourceType: 'Practitioner', id: 'dr-smith' } as const;
 
-    expect(isSameSelection(smith, { ...smith })).toBe(true);
+    expect(isSameSelection(smith, { ...smith, openServiceId: 'exam' })).toBe(true);
     expect(isSameSelection(smith, { ...smith, resourceType: 'Device' })).toBe(false);
     expect(isSameSelection(smith, { kind: 'service', id: 'dr-smith' })).toBe(false);
   });
 });
+
+const timed = setHealthcareServiceSchedulingParameterValues(
+  { resourceType: 'HealthcareService', id: 'timed', name: 'Timed' } satisfies WithId<HealthcareService>,
+  { timezone: 'America/New_York' }
+);
 
 const drSmith: WithId<Practitioner> = { resourceType: 'Practitioner', id: 'dr-smith', name: [{ family: 'Smith' }] };
 const drLeft: WithId<Practitioner> = {
@@ -102,15 +109,36 @@ const drLeft: WithId<Practitioner> = {
   name: [{ family: 'Left' }],
   active: false,
 };
+const typedRoom: WithId<Location> = {
+  resourceType: 'Location',
+  id: 'room-1',
+  name: 'Room 1',
+  physicalType: { coding: [{ code: 'ro' }] },
+};
 
-function makeSchedule(id: string, actor: string, offered: WithId<HealthcareService>[]): WithId<Schedule> {
+function makeSchedule(
+  id: string,
+  actor: string,
+  offered: WithId<HealthcareService>[],
+  extra?: Partial<Schedule>
+): WithId<Schedule> {
   return {
     resourceType: 'Schedule',
     id,
     actor: [{ reference: actor }],
     serviceType: offered.flatMap((service) => toServiceTypeCodeableConcepts(service)),
+    ...extra,
   };
 }
+
+describe('getActorNotices', () => {
+  test('marks an actor whose Schedule is inactive', () => {
+    const off = makeSchedule('s', 'Location/procedure', [timed], { active: false });
+
+    expect(getActorNotices({ resource: typedRoom, schedules: [off] })).toEqual(['Schedule inactive']);
+    expect(getActorNotices({ resource: drSmith, schedules: [] })).toEqual([]);
+  });
+});
 
 describe('buildActorItems', () => {
   const actors: ConfigurableActor[] = [
@@ -129,6 +157,36 @@ describe('buildActorItems', () => {
       ['Left', true],
       ['Smith', false],
     ]);
+  });
+});
+
+describe('withStoredActorResource', () => {
+  const smithSchedule = makeSchedule('s', 'Practitioner/dr-smith', [configured]);
+  const actors: ConfigurableActor[] = [{ resource: drSmith, schedules: [smithSchedule] }];
+
+  test('replaces a Schedule its only actor holds, and adds one just created', () => {
+    const updated = { ...smithSchedule, active: false };
+    const created = makeSchedule('new', 'Practitioner/dr-smith', [timed]);
+
+    expect(withStoredActorResource(actors, updated)[0].schedules).toEqual([updated]);
+    expect(withStoredActorResource(actors, created)[0].schedules).toEqual([smithSchedule, created]);
+  });
+
+  test('replaces the actor itself', () => {
+    const renamed = { ...drSmith, name: [{ family: 'Smythe' }] };
+
+    expect(withStoredActorResource(actors, renamed)[0].resource).toEqual(renamed);
+  });
+
+  test('ignores a Schedule of an actor not listed, or one held by several', () => {
+    const shared = {
+      ...smithSchedule,
+      id: 'shared',
+      actor: [{ reference: 'Practitioner/dr-smith' }, { reference: 'Location/room-1' }],
+    };
+
+    expect(withStoredActorResource(actors, makeSchedule('x', 'Practitioner/dr-other', []))).toEqual(actors);
+    expect(withStoredActorResource(actors, shared)).toEqual(actors);
   });
 });
 

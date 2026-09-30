@@ -30,7 +30,7 @@ filters button, and are then marked **Inactive**.
 
 Schedules are not rows of their own: each actor's Schedule is part of its page. Rooms are the
 Locations typed as a room or a bed, and any Location with a Schedule, which booking lists as a room whatever its
-type.
+type. A row is marked **Schedule inactive** when the actor's Schedule is turned off.
 
 Each section reads one page of up to 1000, and says so when there are more. A section that can't be read is
 named above the page, and the others still list. The **+** beside Visit types starts a new visit type, which is
@@ -48,18 +48,22 @@ listed once it is saved.
 
 ## A provider's, room's, or device's page
 
-- **General:** its name, its own status, and its Schedule's status. A note says when it can't be booked: because
-  it is inactive, or because its Schedule is switched off.
-- **Visit types offered:** what its Schedule offers, each visit type showing its duration in effect and where its
-  hours come from: the visit type's default hours, custom hours this Schedule sets, or none.
+- **General:** its name, its own status, and its Schedule's status, which a switch turns off to pause booking
+  without losing anything. A note says when it can't be booked: because it is inactive, or because its Schedule
+  is switched off.
+- **Visit types offered:** what its Schedule offers. Each visit type offered is an entry showing its duration in
+  effect and where its hours come from; opening one shows the Schedule's own scheduling parameters and hours for
+  it, each empty field showing what it inherits. At most one entry is open at a time, and an entry with unsaved
+  edits is marked. Every entry starts closed, except when the Schedule offers only one visit type.
 
 ## Saving
 
 Nothing is written as it is typed. A save bar appears while the page differs from what is stored, and Save sends
 only what changed, as one transaction bundle, each update conditional on the version the page opened. When
-another user or system saved the visit type in the meantime, nothing is written over it: the page says so and
+another user or system saved the same resource in the meantime, nothing is written over it: the page says so and
 offers to reload it. A field the editor would reject blocks Save, with the reason; a value already stored out of
 range does not, unless it is edited.
 
 Switching to another row with unsaved changes asks before discarding them. Nothing in the workspace deletes a
-resource: a visit type is taken out of use by turning it off, which leaves its existing appointments untouched.
+resource: a visit type or a Schedule is taken out of use by turning it off, which leaves its existing appointments
+untouched.

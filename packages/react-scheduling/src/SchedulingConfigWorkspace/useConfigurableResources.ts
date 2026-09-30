@@ -8,7 +8,7 @@ import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
 import type { ConfigurableActor } from '../configSearch';
 import { searchConfigurableActors, searchConfigurableServices } from '../configSearch';
-import { withStoredService } from './SchedulingConfigWorkspace.utils';
+import { withStoredActorResource, withStoredService } from './SchedulingConfigWorkspace.utils';
 
 /** One section's read. */
 export interface ResourceList<T> {
@@ -85,6 +85,18 @@ export function useConfigurableResources(): ConfigurableResources {
       (list, resource) => (resource.resourceType === 'HealthcareService' ? withStoredService(list, resource) : list),
       services.items
     );
-    return { services: { ...services, items }, actors, store };
+    const withSaved = (list: ResourceList<ConfigurableActor>): ResourceList<ConfigurableActor> => ({
+      ...list,
+      items: saved.reduce((actorItems, resource) => withStoredActorResource(actorItems, resource), [...list.items]),
+    });
+    return {
+      services: { ...services, items },
+      actors: {
+        Practitioner: withSaved(actors.Practitioner),
+        Location: withSaved(actors.Location),
+        Device: withSaved(actors.Device),
+      },
+      store,
+    };
   }, [services, actors, saved, store]);
 }
