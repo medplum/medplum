@@ -145,31 +145,6 @@ describe('Reindex Worker', () => {
     });
   });
 
-  test('creates a job from a legacy payload', () =>
-    withTestContext(async () => {
-      const asyncJob = await repo.createResource<AsyncJob>({
-        resourceType: 'AsyncJob',
-        status: 'accepted',
-        requestTime: new Date().toISOString(),
-        request: '/admin/super/reindex',
-      });
-      const jobData: ReindexJobData = {
-        type: 'reindex',
-        asyncJobId: asyncJob.id,
-        resourceTypes: ['MedicinalProductManufactured'],
-        endTimestamp: new Date(Date.now() + 60_000).toISOString(),
-        startTime: Date.now(),
-        results: Object.create(null),
-      };
-
-      const reindexJob = await ReindexJob.create(jobData);
-      await expect(reindexJob.execute(undefined)).resolves.toBe('finished');
-
-      await expect(repo.readResource<AsyncJob>('AsyncJob', asyncJob.id)).resolves.toMatchObject({
-        status: 'completed',
-      });
-    }));
-
   test('Multiple iterations when more than one batchSize exist', () =>
     withTestContext(async () => {
       let asyncJob = await repo.createResource<AsyncJob>({

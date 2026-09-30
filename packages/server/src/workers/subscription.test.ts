@@ -2474,6 +2474,7 @@ describe('Subscription Worker', () => {
 
         const ctx = tryGetRequestContext();
         const jobData: SubscriptionJobData = {
+          target: { kind: 'project', projectId: subscription.meta?.project as string },
           subscriptionId: subscription.id,
           resourceType: resource.resourceType,
           channelType: subscription.channel.type,
