@@ -8,6 +8,7 @@ import {
   getSearchParameters,
   isResource,
   isUUID,
+  projectAdminResourceTypes,
   resolveId,
   toTypedValue,
 } from '@medplum/core';
@@ -32,8 +33,9 @@ export interface ReferenceTableRow extends LookupTableRow {
  * @returns True if chained search is disabled for the resource type.
  */
 export function isChainedSearchDisabled(resourceType: string): boolean {
-  // ProjectMembership_References is used to guard deletes in precommit.ts
-  return resourceType !== 'ProjectMembership' && !!getConfig().disableChainedSearch?.includes(resourceType);
+  return Boolean(
+    getConfig().disableChainedSearch?.includes(resourceType) && !projectAdminResourceTypes.includes(resourceType)
+  );
 }
 
 /**
