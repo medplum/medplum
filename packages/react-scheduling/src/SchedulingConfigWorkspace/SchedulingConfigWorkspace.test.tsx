@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { ReadablePromise } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
@@ -75,7 +76,7 @@ describe('SchedulingConfigWorkspace', () => {
 
   test('a saved rename shows in the sidebar at once, without refetching the list', async () => {
     const medplum = await setup();
-    const search = vi.spyOn(medplum, 'searchResourcePages');
+    const search = vi.spyOn(medplum, 'searchResources');
     await userEvent.click(row('Telehealth Consult'));
 
     await userEvent.type(nameField(), ' (video)');
@@ -84,7 +85,7 @@ describe('SchedulingConfigWorkspace', () => {
     await waitFor(() => expect(within(sidebar()).getByText('Telehealth Consult (video)')).toBeInTheDocument());
     expect(row('Telehealth Consult (video)')).toHaveAttribute('aria-current', 'true');
     expect(screen.queryByRole('region', { name: 'Unsaved changes' })).not.toBeInTheDocument();
-    expect(search).not.toHaveBeenCalled();
+    expect(search).not.toHaveBeenCalledWith('HealthcareService', expect.anything(), expect.anything());
   });
 
   test('a new visit type is not listed until saved, then listed and selected though it starts turned off', async () => {
@@ -150,21 +151,23 @@ describe('SchedulingConfigWorkspace', () => {
     for (const resource of ConfigFixtures) {
       await medplum.createResource(resource);
     }
-    // The search reads the project now, before the create, and hands back its pages only once released.
-    const search = medplum.searchResourcePages.bind(medplum);
+    // The search reads the project now, before the create, and hands back its result only once released.
+    const search = medplum.searchResources.bind(medplum);
     let release = (): void => undefined;
     const released = new Promise<void>((resolve) => {
       release = resolve;
     });
-    vi.spyOn(medplum, 'searchResourcePages').mockImplementation(((...args: Parameters<typeof search>) =>
-      (async function* () {
-        const pages = [];
-        for await (const page of search(...args)) {
-          pages.push(page);
-        }
-        await released;
-        yield* pages;
-      })()) as typeof search);
+    vi.spyOn(medplum, 'searchResources').mockImplementation((...args: Parameters<typeof search>) => {
+      const result = search(...args);
+      return args[0] === 'HealthcareService'
+        ? new ReadablePromise(
+            result.then(async (found) => {
+              await released;
+              return found;
+            })
+          )
+        : result;
+    });
     renderWithMedplum(<SchedulingConfigWorkspace />, medplum);
 
     await userEvent.click(within(sidebar()).getByRole('button', { name: 'New visit type' }));
@@ -191,9 +194,7 @@ describe('SchedulingConfigWorkspace', () => {
 
   test('says when the visit types could not be loaded', async () => {
     const medplum = new MockClient({ seedDefaultData: false });
-    vi.spyOn(medplum, 'searchResourcePages').mockImplementation(() => {
-      throw new Error('Search is down');
-    });
+    vi.spyOn(medplum, 'searchResources').mockRejectedValue(new Error('Search is down'));
 
     renderWithMedplum(<SchedulingConfigWorkspace />, medplum);
 
