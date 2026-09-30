@@ -10,24 +10,18 @@ import { getDisplayString } from '@medplum/core';
 import type { Bundle, Device, HealthcareService, Location, Practitioner, Resource, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType } from './actors';
 
-// The list waits for every page before it renders, so fewer, larger requests finish sooner. 1000 is also
-// what `searchResourcePages` asks for when `_count` is left unset.
-const DEFAULT_PAGE_SIZE = 1000;
-
-const DEFAULT_LIMIT = 2000;
+// The most the server returns in one page. Each list reads a single page; a project with more needs a paginated
+// list rather than a longer read.
+const PAGE_SIZE = '1000';
 
 export interface ConfigSearchOptions {
   readonly signal?: AbortSignal;
-  /** How many resources to read per request. Defaults to 1000. */
-  readonly pageSize?: number;
-  /** The most resources to read. Reading stops there and the result reports itself incomplete. Defaults to 2000. */
-  readonly limit?: number;
 }
 
 export interface ConfigurableServicesResult {
   /** The visit types found, by name. */
   readonly services: WithId<HealthcareService>[];
-  /** False when `limit` stopped the read with more left, so this is a prefix of the project rather than all of it. */
+  /** False when the project holds more than one page, so this is a prefix of it rather than all of it. */
   readonly complete: boolean;
 }
 
@@ -45,7 +39,7 @@ export interface ConfigurableActor<T extends ConfigurableActorResource = Configu
 export interface ConfigurableActorsResult<T extends ConfigurableActorResource = ConfigurableActorResource> {
   /** The actors found, by name. */
   readonly actors: ConfigurableActor<T>[];
-  /** False when `limit` stopped the read with more left. */
+  /** False when the project holds more than one page. */
   readonly complete: boolean;
 }
 
@@ -62,76 +56,58 @@ const ACTOR_CRITERIA: Record<BookableActorType, Record<string, string>> = {
  * Finds every visit type a project holds, including deactivated ones and ones with no scheduling parameters.
  * The search behind `AppointmentServiceSelect` drops both, since neither can be booked.
  * @param medplum - The Medplum client.
- * @param options - An abort signal, and the read's bounds.
- * @returns The visit types by name, and whether the read reached the end.
+ * @param options - An abort signal.
+ * @returns The visit types by name, and whether that is all of them.
  */
 export async function searchConfigurableServices(
   medplum: MedplumClient,
   options: ConfigSearchOptions = {}
 ): Promise<ConfigurableServicesResult> {
-  const { signal, pageSize = DEFAULT_PAGE_SIZE, limit = DEFAULT_LIMIT } = options;
-  const services: WithId<HealthcareService>[] = [];
-
-  const pages = medplum.searchResourcePages(
+  const services = await medplum.searchResources(
     'HealthcareService',
-    { _sort: 'name', _count: pageSize.toString() },
-    { signal }
+    { _sort: 'name', _count: PAGE_SIZE },
+    { signal: options.signal }
   );
-  for await (const page of pages) {
-    signal?.throwIfAborted();
-    services.push(...page);
-    if (services.length >= limit) {
-      return { services: services.slice(0, limit), complete: !hasMore(services.length, limit, page.bundle) };
-    }
-  }
-
-  return { services, complete: true };
+  // A cached result resolves whether or not the signal has since aborted.
+  options.signal?.throwIfAborted();
+  return { services, complete: !hasNextPage(services.bundle) };
 }
 
 /**
  * Finds every provider, room, or device that a project holds, with each actor's linked Schedules, if they exist.
  * @param medplum - The Medplum client.
  * @param resourceType - Which actors to read.
- * @param options - An abort signal, and the read's bounds.
- * @returns The actors by name, and whether the read reached the end.
+ * @param options - An abort signal.
+ * @returns The actors by name, and whether that is all of them.
  */
 export async function searchConfigurableActors<K extends BookableActorType>(
   medplum: MedplumClient,
   resourceType: K,
   options: ConfigSearchOptions = {}
 ): Promise<ConfigurableActorsResult<ActorOf<K>>> {
-  const { signal, pageSize = DEFAULT_PAGE_SIZE, limit = DEFAULT_LIMIT } = options;
+  const page = await medplum.searchResources(
+    resourceType,
+    { ...ACTOR_CRITERIA[resourceType], _count: PAGE_SIZE, _revinclude: 'Schedule:actor' },
+    { signal: options.signal }
+  );
+  options.signal?.throwIfAborted();
   const actors: ActorOf<K>[] = [];
   const schedules: WithId<Schedule>[] = [];
-  let complete = true;
-
-  const pages = medplum.searchResourcePages(
-    resourceType,
-    { ...ACTOR_CRITERIA[resourceType], _count: pageSize.toString(), _revinclude: 'Schedule:actor' },
-    { signal }
-  );
-  for await (const page of pages) {
-    signal?.throwIfAborted();
-    // The page is typed as the actors, but `_revinclude` puts their Schedules in the same array.
-    for (const resource of page as readonly WithId<Resource>[]) {
-      if (resource.resourceType === resourceType) {
-        actors.push(resource as ActorOf<K>);
-      } else if (resource.resourceType === 'Schedule') {
-        schedules.push(resource);
-      }
-    }
-    if (actors.length >= limit) {
-      complete = !hasMore(actors.length, limit, page.bundle);
-      break;
+  // The page is typed as the actors, but `_revinclude` puts their Schedules in the same array.
+  for (const resource of page as readonly WithId<Resource>[]) {
+    if (resource.resourceType === resourceType) {
+      actors.push(resource as ActorOf<K>);
+    } else if (resource.resourceType === 'Schedule') {
+      schedules.push(resource);
     }
   }
 
   const byActor = groupBySoleActor(schedules);
-  const found = actors.slice(0, limit).map((resource) => ({
+  const found = actors.map((resource) => ({
     resource,
     schedules: byActor.get(`${resource.resourceType}/${resource.id}`) ?? [],
   }));
-  return { actors: sortByName(found), complete };
+  return { actors: sortByName(found), complete: !hasNextPage(page.bundle) };
 }
 
 function groupBySoleActor(schedules: readonly WithId<Schedule>[]): Map<string, WithId<Schedule>[]> {
@@ -149,8 +125,6 @@ function sortByName<T extends ConfigurableActor>(actors: T[]): T[] {
   return actors.sort((left, right) => getDisplayString(left.resource).localeCompare(getDisplayString(right.resource)));
 }
 
-// Reading exactly `limit` is only a prefix when something was left over, either on the page just read or
-// behind the next one.
-function hasMore(read: number, limit: number, bundle: Bundle): boolean {
-  return read > limit || !!bundle.link?.some((link) => link.relation === 'next');
+function hasNextPage(bundle: Bundle): boolean {
+  return !!bundle.link?.some((link) => link.relation === 'next');
 }

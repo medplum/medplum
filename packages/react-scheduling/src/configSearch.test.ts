@@ -38,9 +38,8 @@ async function setupClient(resources: readonly Resource[]): Promise<MockClient> 
   return medplum;
 }
 
-// `searchResourcePages` hands `search` a URLSearchParams rather than the record it was given.
-function querySentTo(medplum: MockClient, index = 0): Record<string, string> {
-  return Object.fromEntries(vi.mocked(medplum.search).mock.calls[index][1] as URLSearchParams);
+function querySentTo(medplum: MockClient): Record<string, string> {
+  return vi.mocked(medplum.search).mock.calls[0][1] as Record<string, string>;
 }
 
 function searchset<T extends WithId<Resource>>(resources: T[], next?: string): Bundle<T> {
@@ -70,50 +69,16 @@ describe('searchConfigurableServices', () => {
     expect(querySentTo(medplum)).toEqual({ _sort: 'name', _count: '1000' });
   });
 
-  test('reading exactly the limit, with nothing left over, is complete', async () => {
-    const medplum = await setupClient([configured, unconfigured]);
-
-    const { services, complete } = await searchConfigurableServices(medplum, { limit: 2 });
-
-    expect(services).toHaveLength(2);
-    expect(complete).toBe(true);
-  });
-
-  test('stops at the limit and reports the rest missing', async () => {
-    const medplum = await setupClient([configured, unconfigured, deactivated]);
-
-    const { services, complete } = await searchConfigurableServices(medplum, { limit: 2 });
-
-    expect(services).toHaveLength(2);
-    expect(complete).toBe(false);
-  });
-
-  // MockClient's bundles never carry a `next` link, so it only ever serves one page. Stubbing `search` still
-  // runs the real paging loop, which is what calls it.
-  test('reads every page', async () => {
-    const medplum = await setupClient([]);
-    vi.mocked(medplum.search)
-      .mockResolvedValueOnce(
-        searchset([configured, unconfigured], 'https://example.com/fhir/R4/HealthcareService?_offset=2')
-      )
-      .mockResolvedValueOnce(searchset([deactivated]));
-
-    const { services, complete } = await searchConfigurableServices(medplum, { pageSize: 2 });
-
-    expect(services.map((service) => service.id)).toEqual(['configured', 'unconfigured', 'deactivated']);
-    expect(complete).toBe(true);
-    expect(querySentTo(medplum, 1)._offset).toBe('2');
-  });
-
-  test('a limit reached on a page with a next link is incomplete', async () => {
+  // MockClient's bundles never carry a `next` link, so a project too big for one page has to be stubbed.
+  test('reads one page, and reports a project with more than that incomplete', async () => {
     const medplum = await setupClient([]);
     vi.mocked(medplum.search).mockResolvedValueOnce(
-      searchset([configured, unconfigured], 'https://example.com/fhir/R4/HealthcareService?_offset=2')
+      searchset([configured, unconfigured], 'https://example.com/fhir/R4/HealthcareService?_offset=1000')
     );
 
-    const { services, complete } = await searchConfigurableServices(medplum, { pageSize: 2, limit: 2 });
+    const { services, complete } = await searchConfigurableServices(medplum);
 
-    expect(services).toHaveLength(2);
+    expect(services.map((service) => service.id)).toEqual(['configured', 'unconfigured']);
     expect(complete).toBe(false);
     expect(medplum.search).toHaveBeenCalledTimes(1);
   });
@@ -219,40 +184,19 @@ describe('searchConfigurableActors', () => {
     expect(actors.map((actor) => [actor.resource.id, scheduleIds(actor)])).toEqual([['ultrasound', ['us']]]);
   });
 
-  test('stops at the limit, counting actors rather than their Schedules', async () => {
-    const medplum = await setupClient([
-      drAdams,
-      drBaker,
-      makeSchedule('a', ['Practitioner/dr-adams']),
-      makeSchedule('b', ['Practitioner/dr-baker']),
-    ]);
-
-    const all = await searchConfigurableActors(medplum, 'Practitioner', { limit: 2 });
-    const one = await searchConfigurableActors(medplum, 'Practitioner', { limit: 1 });
-
-    expect(all.actors).toHaveLength(2);
-    expect(all.complete).toBe(true);
-    expect(one.actors).toHaveLength(1);
-    expect(one.complete).toBe(false);
-  });
-
-  test('reads every page, keeping the Schedules each page includes', async () => {
+  test('reads one page with its Schedules, and reports a project with more than that incomplete', async () => {
     const medplum = await setupClient([]);
-    vi.mocked(medplum.search)
-      .mockResolvedValueOnce(
-        searchset<WithId<Resource>>(
-          [drAdams, makeSchedule('a', ['Practitioner/dr-adams'])],
-          'https://example.com/fhir/R4/Practitioner?_offset=1'
-        )
+    vi.mocked(medplum.search).mockResolvedValueOnce(
+      searchset<WithId<Resource>>(
+        [drAdams, makeSchedule('a', ['Practitioner/dr-adams'])],
+        'https://example.com/fhir/R4/Practitioner?_offset=1000'
       )
-      .mockResolvedValueOnce(searchset<WithId<Resource>>([drBaker, makeSchedule('b', ['Practitioner/dr-baker'])]));
+    );
 
-    const { actors, complete } = await searchConfigurableActors(medplum, 'Practitioner', { pageSize: 1 });
+    const { actors, complete } = await searchConfigurableActors(medplum, 'Practitioner');
 
-    expect(actors.map((actor) => [actor.resource.id, scheduleIds(actor)])).toEqual([
-      ['dr-adams', ['a']],
-      ['dr-baker', ['b']],
-    ]);
-    expect(complete).toBe(true);
+    expect(actors.map((actor) => [actor.resource.id, scheduleIds(actor)])).toEqual([['dr-adams', ['a']]]);
+    expect(complete).toBe(false);
+    expect(medplum.search).toHaveBeenCalledTimes(1);
   });
 });
