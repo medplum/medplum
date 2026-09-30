@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getScheduleSchedulingParameters, TimezoneExtensionURI, toServiceTypeCodeableConcepts } from '@medplum/core';
+import {
+  getScheduleSchedulingParameters,
+  serviceTypeIncludesService,
+  TimezoneExtensionURI,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type { Bundle, HealthcareService, Location, Practitioner, Resource, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
@@ -16,6 +21,7 @@ import { renderWithMedplum, screen, userEvent, waitFor, within } from '../../tes
 import { ActorPage } from './ActorPage';
 
 const downtown: WithId<Location> = { resourceType: 'Location', id: 'downtown', name: 'Downtown Clinic' };
+const northside: WithId<Location> = { resourceType: 'Location', id: 'northside', name: 'Northside' };
 const room3: WithId<Location> = {
   resourceType: 'Location',
   id: 'room-3',
@@ -38,7 +44,19 @@ const followUp = setHealthcareServiceSchedulingParameterValues(
   { resourceType: 'HealthcareService', id: 'follow-up', name: 'Follow-up' } satisfies WithId<HealthcareService>,
   { duration: 30, timezone: 'America/New_York' }
 );
-const services: WithId<HealthcareService>[] = [initialVisit, followUp];
+const cystoscopy: WithId<HealthcareService> = {
+  resourceType: 'HealthcareService',
+  id: 'cystoscopy',
+  name: 'Cystoscopy',
+  location: [{ reference: 'Location/northside' }],
+};
+const discontinued: WithId<HealthcareService> = {
+  resourceType: 'HealthcareService',
+  id: 'discontinued',
+  name: 'Discontinued',
+  active: false,
+};
+const services = [initialVisit, followUp, cystoscopy, discontinued];
 
 const drSmith: WithId<Practitioner> = {
   resourceType: 'Practitioner',
@@ -73,7 +91,7 @@ async function setup(
   initialOpenServiceId?: string
 ): Promise<Setup> {
   const medplum = new MockClient({ seedDefaultData: false });
-  for (const resource of [downtown, ...services, actor, ...extra]) {
+  for (const resource of [downtown, northside, ...services, actor, ...extra]) {
     await medplum.createResource(resource);
   }
   const stored: WithId<Schedule>[] = [];
@@ -117,6 +135,10 @@ function sentBundle(medplum: MockClient): Bundle {
 
 function syncedSchedule(onSynced: Setup['onSynced']): WithId<Schedule> {
   return onSynced.mock.calls.at(-1)?.[0].find((resource: Resource) => resource.resourceType === 'Schedule');
+}
+
+async function openOfferMenu(): Promise<void> {
+  await userEvent.click(await screen.findByRole('button', { name: 'Offer a visit type' }));
 }
 
 describe('ActorPage', () => {
@@ -168,10 +190,11 @@ describe('ActorPage', () => {
     expect(within(panel('Initial Visit')).getByRole('heading', { name: 'Availability' })).toBeVisible();
   });
 
-  test('a room with no Schedule offers nothing yet', async () => {
+  test('a room with no Schedule offers nothing yet, and offers to add one', async () => {
     await setup(room3);
 
     expect(screen.getByText('Room 3 offers no visit types yet.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Offer a visit type' })).toBeInTheDocument();
     expect(screen.queryByText('Schedule status')).not.toBeInTheDocument();
   });
 
@@ -331,6 +354,117 @@ describe('ActorPage', () => {
     await userEvent.click(entry('Initial Visit'));
     expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'false');
     expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('a first visit type for a room creates one active Schedule held by the room alone', async () => {
+    const { medplum, onSynced } = await setup(room3);
+
+    await openOfferMenu();
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Initial Visit' }));
+    expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'true');
+    expect(medplum.executeBatch).not.toHaveBeenCalled();
+    await save();
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(sentBundle(medplum).entry?.[0].request).toEqual({ method: 'POST', url: 'Schedule' });
+    const created = syncedSchedule(onSynced);
+    expect(created.active).toBe(true);
+    expect(created.actor).toEqual([expect.objectContaining({ reference: 'Location/room-3' })]);
+    expect(serviceTypeIncludesService(created.serviceType, initialVisit)).toBe(true);
+  });
+
+  test('discarding a first offering writes nothing and leaves the room without a Schedule', async () => {
+    const { medplum } = await setup(room3);
+
+    await openOfferMenu();
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Initial Visit' }));
+    await userEvent.click(within(saveBar() as HTMLElement).getByRole('button', { name: 'Discard' }));
+
+    expect(screen.getByText('Room 3 offers no visit types yet.')).toBeInTheDocument();
+    expect(saveBar()).toBeNull();
+    expect(medplum.executeBatch).not.toHaveBeenCalled();
+  });
+
+  test('offers only active visit types, and says when every one is already offered', async () => {
+    await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit, followUp])]);
+
+    await openOfferMenu();
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Cystoscopy']);
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Cystoscopy' }));
+
+    expect(
+      screen.getByText('There is nothing more to offer: every active visit type is offered here.')
+    ).toBeInTheDocument();
+  });
+
+  test('stopping a visit type asks first, then drops it and every override for it', async () => {
+    const withOverrides = setScheduleAvailability(
+      setScheduleSchedulingParameterValues(
+        makeSchedule('Practitioner/dr-smith', [initialVisit, followUp]),
+        initialVisit,
+        {
+          bufferAfter: 10,
+        }
+      ),
+      initialVisit,
+      [{ daysOfWeek: ['tue'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
+    );
+    const { onSynced } = await setup(drSmith, [withOverrides]);
+    await userEvent.click(entry('Initial Visit'));
+
+    await userEvent.click(
+      await within(panel('Initial Visit')).findByRole('button', { name: 'Stop offering Initial Visit' })
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Stop offering Initial Visit?' });
+    expect(dialog).toHaveTextContent("Existing appointments aren't changed.");
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Stop offering' }));
+
+    expect(screen.queryByRole('button', { name: /^Initial Visit/ })).not.toBeInTheDocument();
+    expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'false');
+    await save();
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    const saved = syncedSchedule(onSynced);
+    expect(serviceTypeIncludesService(saved.serviceType, initialVisit)).toBe(false);
+    expect(getScheduleSchedulingParameters(saved, initialVisit, 'bufferAfter')).toEqual([]);
+    expect(getScheduleSchedulingParameters(saved, initialVisit, 'availability')).toEqual([]);
+  });
+
+  test('stopping a visit type and offering it again saves nothing, and leaves the page clean', async () => {
+    const { medplum, onSynced } = await setup(drSmith, [
+      makeSchedule('Practitioner/dr-smith', [initialVisit, followUp]),
+    ]);
+    await userEvent.click(entry('Initial Visit'));
+    await userEvent.click(
+      await within(panel('Initial Visit')).findByRole('button', { name: 'Stop offering Initial Visit' })
+    );
+    await userEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Stop offering Initial Visit?' })).getByRole('button', {
+        name: 'Stop offering',
+      })
+    );
+    await openOfferMenu();
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Initial Visit' }));
+    expect(saveBar()).not.toBeNull();
+
+    await save();
+
+    await waitFor(() => expect(saveBar()).toBeNull());
+    expect(medplum.executeBatch).not.toHaveBeenCalled();
+    expect(onSynced).not.toHaveBeenCalled();
+  });
+
+  test('keeping a visit type from the confirmation changes nothing', async () => {
+    await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+
+    await userEvent.click(entry('Initial Visit'));
+    await userEvent.click(
+      await within(panel('Initial Visit')).findByRole('button', { name: 'Stop offering Initial Visit' })
+    );
+    await userEvent.click(await screen.findByRole('button', { name: 'Keep offering' }));
+
+    expect(entry('Initial Visit')).toBeInTheDocument();
+    expect(saveBar()).toBeNull();
   });
 
   test("custom hours start from the visit type's, and save as this Schedule's hours for it", async () => {

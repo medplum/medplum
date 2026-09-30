@@ -775,7 +775,7 @@ export const Ultrasound3Schedule: WithId<Schedule> = {
   active: false,
 };
 
-/** A room with no Schedule, so it offers nothing. */
+/** A room with no Schedule, so it offers nothing until one is offered from its page. */
 export const ExamRoomC: WithId<Location> = {
   resourceType: 'Location',
   id: 'exam-room-c',

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Divider, Group, Stack, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core';
+import { Box, Button, Divider, Group, Stack, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
@@ -64,7 +64,7 @@ export function OfferingSummary(props: OfferingSummaryProps): JSX.Element {
 export interface OfferingEditorProps {
   readonly service: WithId<HealthcareService>;
   readonly value: OfferingFields;
-  /** What the Schedule set for the visit type when the page opened. */
+  /** What the Schedule set for the visit type when the page opened, empty for one offered since. */
   readonly initialParameters: SchedulingParameterValues;
   readonly onChange: (value: OfferingFields) => void;
   readonly errors: SchedulingParameterErrors;
@@ -72,6 +72,7 @@ export interface OfferingEditorProps {
   readonly availabilityError?: string;
   /** The time zone the hours are read in, and where it comes from. Absent when none resolves. */
   readonly timezone?: { readonly zone: string; readonly source: string };
+  readonly onStopOffering: () => void;
 }
 
 /**
@@ -133,6 +134,12 @@ export function OfferingEditor(props: OfferingEditorProps): JSX.Element {
           </Text>
         )}
       </Stack>
+
+      <Group justify="flex-end">
+        <Button variant="subtle" color="red" onClick={props.onStopOffering}>
+          Stop offering {serviceName}
+        </Button>
+      </Group>
     </Stack>
   );
 }

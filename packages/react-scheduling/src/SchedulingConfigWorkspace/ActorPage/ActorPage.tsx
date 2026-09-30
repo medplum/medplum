@@ -4,7 +4,10 @@ import {
   Accordion,
   Alert,
   Box,
+  Button,
   Group,
+  Menu,
+  Modal,
   SimpleGrid,
   Stack,
   Switch,
@@ -17,6 +20,7 @@ import type { WithId } from '@medplum/core';
 import { capitalize, deepEquals, getDisplayString, getSchedulingTimezone, normalizeErrorString } from '@medplum/core';
 import type { HealthcareService, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import { IconChevronDown } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { getActorTypeLabel } from '../../actors';
@@ -35,12 +39,12 @@ import type { ConfigStatus } from '../StatusBadge';
 import { StatusBadge } from '../StatusBadge';
 import { OfferingEditor, OfferingSummary } from './OfferingEditor';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
-import { buildScheduleDraft, scheduleFieldsOf } from './scheduleDraft';
+import { buildScheduleDraft, newOfferingFields, scheduleFieldsOf } from './scheduleDraft';
 
 export interface ActorPageProps {
   /** The provider, room, or device, with its Schedules as stored. The first Schedule is the one edited. */
   readonly actor: ConfigurableActor;
-  /** Every visit type loaded. */
+  /** Every visit type loaded, which is what can be offered. */
   readonly services: readonly WithId<HealthcareService>[];
   /**
    * The visit type whose entry opens, when the actor offers it. Left out, every entry starts closed.
@@ -58,6 +62,8 @@ export interface ActorPageProps {
 /**
  * The page for one provider, room, or device: its own fields, and the visit types its Schedule offers, each
  * opening to the Schedule's own parameters and hours for it. Everything is saved together.
+ *
+ * An actor with no Schedule gets one, on save, once it offers a visit type.
  *
  * It opens on what is stored and is not reset by a change of props, so the caller remounts it with a `key`
  * when the actor or its Schedule is replaced.
@@ -79,12 +85,13 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [open, setOpen] = useState<string | null>(() =>
     initialOpenServiceId && Object.hasOwn(initial.offerings, initialOpenServiceId) ? initialOpenServiceId : null
   );
+  const [stopping, setStopping] = useState<WithId<HealthcareService>>();
   const [saving, setSaving] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
   const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'>>();
   const [reloading, setReloading] = useState(false);
 
-  const draft = schedule && buildScheduleDraft(schedule, fields, initial, servicesById);
+  const draft = buildScheduleDraft(schedule, actorDraft, fields, initial, servicesById);
   const actorDirty = !deepEquals(actorDraft, resource);
   // Compares the fields rather than the draft, so edits the draft can't store yet, like an emptied week, still
   // count and the save bar can say why it refuses.
@@ -101,21 +108,21 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     return getBlockingErrors(
       validateSchedulingParameters(current.parameters),
       current.parameters,
-      initial.offerings[service.id].parameters
+      initial.offerings[service.id]?.parameters ?? {}
     );
   }
 
   function availabilityErrorFor(service: WithId<HealthcareService>): string | undefined {
     const current = fields.offerings[service.id];
     const before = initial.offerings[service.id];
-    return deepEquals(current.availability, before.availability)
+    return before && deepEquals(current.availability, before.availability)
       ? undefined
       : getAvailabilityFieldsError(current.availability, service, 'override');
   }
 
   function isOfferingDirty(service: WithId<HealthcareService>): boolean {
     const before = initial.offerings[service.id];
-    return !deepEquals(fields.offerings[service.id], before);
+    return !before || !deepEquals(fields.offerings[service.id], before);
   }
 
   const checks = offered.map((service) => ({
@@ -140,6 +147,21 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     setFields((current) => ({ ...current, offerings: { ...current.offerings, [id]: value } }));
   }
 
+  function offer(service: WithId<HealthcareService>): void {
+    setFields((current) => ({
+      ...current,
+      offerings: { ...current.offerings, [service.id]: newOfferingFields(service) },
+    }));
+    setOpen(service.id);
+  }
+
+  function stopOffering(service: WithId<HealthcareService>): void {
+    const { [service.id]: _removed, ...offerings } = fields.offerings;
+    setFields({ ...fields, offerings });
+    setOpen(null);
+    setStopping(undefined);
+  }
+
   async function handleSave(): Promise<void> {
     if (blockedReason) {
       setTriedToSave(true);
@@ -149,14 +171,15 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     setFailure(undefined);
     try {
       const changes: ConfigChange[] = [{ stored: resource, draft: actorDraft }];
-      if (schedule && draft) {
+      if (draft) {
         changes.push({ stored: schedule, draft });
       }
       const result = await saveConfigChanges(medplum, changes);
       if (result.failures.length > 0) {
         setFailure(result.failures[0]);
       } else if (result.saved.length === 0) {
-        // Nothing differed from what is stored, so no new version remounts the page.
+        // Nothing differed from what is stored (say, a visit type stopped and offered again), so no new version
+        // remounts the page.
         handleDiscard();
       } else {
         onSynced(
@@ -172,6 +195,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   function handleDiscard(): void {
     setFields(initial);
     setActorDraft(resource);
+    setOpen((current) => (current && Object.hasOwn(initial.offerings, current) ? current : null));
     setTriedToSave(false);
     setFailure(undefined);
   }
@@ -192,6 +216,9 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   }
 
   const conflictSubject = actorDirty ? `${actorName} or its Schedule` : `The Schedule for ${actorName}`;
+  const offerable = services.filter(
+    (service) => service.active !== false && !Object.hasOwn(fields.offerings, service.id)
+  );
 
   return (
     <Stack gap="lg">
@@ -249,7 +276,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
                     <OfferingEditor
                       service={service}
                       value={fields.offerings[service.id]}
-                      initialParameters={initial.offerings[service.id].parameters}
+                      initialParameters={initial.offerings[service.id]?.parameters ?? {}}
                       onChange={(value) => updateOffering(service.id, value)}
                       errors={errors}
                       availabilityError={triedToSave ? availabilityError : undefined}
@@ -258,6 +285,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
                           ? { zone: timezone, source: timezoneSource(fields.offerings[service.id], service, actorName) }
                           : undefined
                       }
+                      onStopOffering={() => setStopping(service)}
                     />
                   </Accordion.Panel>
                 </Accordion.Item>
@@ -265,7 +293,33 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
             })}
           </Accordion>
         )}
+
+        <OfferMenu services={offerable} onOffer={offer} />
       </ConfigSection>
+
+      <Modal
+        opened={stopping !== undefined}
+        onClose={() => setStopping(undefined)}
+        title={stopping && `Stop offering ${stopping.name ?? 'this visit type'}?`}
+        centered
+      >
+        {stopping && (
+          <Stack gap="md">
+            <Text size="sm">
+              {actorName} will no longer be offered for {stopping.name ?? 'this visit type'} once you save. Existing
+              appointments aren't changed.
+            </Text>
+            <Group justify="flex-end" gap="sm">
+              <Button variant="default" onClick={() => setStopping(undefined)}>
+                Keep offering
+              </Button>
+              <Button color="red" onClick={() => stopOffering(stopping)}>
+                Stop offering
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </Modal>
 
       <SaveBar
         dirty={dirty}
@@ -384,6 +438,43 @@ function ReadOnlyField(props: { readonly label: string; readonly value: string }
       </Text>
       <Text size="sm">{props.value}</Text>
     </Stack>
+  );
+}
+
+interface OfferMenuProps {
+  /** The active visit types the Schedule doesn't offer yet. */
+  readonly services: readonly WithId<HealthcareService>[];
+  readonly onOffer: (service: WithId<HealthcareService>) => void;
+}
+
+function OfferMenu(props: OfferMenuProps): JSX.Element {
+  const { services, onOffer } = props;
+  if (services.length === 0) {
+    return (
+      <Text size="sm" c="dimmed">
+        There is nothing more to offer: every active visit type is offered here.
+      </Text>
+    );
+  }
+  return (
+    <Group>
+      <Menu position="bottom-start" withinPortal>
+        <Menu.Target>
+          <Button variant="light" rightSection={<IconChevronDown size={16} />}>
+            Offer a visit type
+          </Button>
+        </Menu.Target>
+        <Menu.Dropdown>
+          {services.map((service) => {
+            return (
+              <Menu.Item key={service.id} onClick={() => onOffer(service)}>
+                <Text size="sm">{service.name ?? 'Untitled visit type'}</Text>
+              </Menu.Item>
+            );
+          })}
+        </Menu.Dropdown>
+      </Menu>
+    </Group>
   );
 }
 

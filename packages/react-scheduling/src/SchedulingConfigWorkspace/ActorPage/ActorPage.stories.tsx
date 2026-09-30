@@ -71,6 +71,8 @@ function StoredActor(props: { readonly resourceType: BookableActorType; readonly
  * Dr. Linh Nguyen offers two visit types. Ultrasound Imaging follows the visit type in everything. Telehealth
  * Consult has a longer buffer after and custom hours on this Schedule: open its entry to see both, with every
  * field it leaves empty showing what it inherits.
+ *
+ * Offer another visit type, or stop offering one, and the save bar appears.
  * @returns The story.
  */
 export const ProviderWithOverrides = (): JSX.Element => (
@@ -86,7 +88,8 @@ export const ProviderOnLeave = (): JSX.Element => (
 );
 
 /**
- * Exam Room C has no Schedule, so it offers nothing and there is no Schedule status switch.
+ * Exam Room C has no Schedule, so it offers nothing and there is no Schedule status switch. Offering a first
+ * visit type creates its Schedule when you save, and not before.
  * @returns The story.
  */
 export const RoomWithNoSchedule = (): JSX.Element => <StoredActor resourceType="Location" id={ExamRoomC.id} />;
