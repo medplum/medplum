@@ -678,4 +678,30 @@ describe('Post-Deploy Migration Worker', () => {
       ],
     });
   });
+
+  test('Run custom migration rethrows DelayedError without failing the job', async () => {
+    const asyncJob = await systemRepo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      status: 'accepted',
+      dataVersion: 123,
+      requestTime: new Date().toISOString(),
+      request: '/admin/super/migrate',
+    });
+
+    const jobData: CustomPostDeployMigrationJobData = {
+      type: 'custom',
+      asyncJobId: asyncJob.id,
+      requestId: '123',
+      traceId: '456',
+    };
+
+    await expect(
+      runCustomMigration(systemRepo, undefined, jobData, async () => {
+        throw new DelayedError('Delayed since queue is closing');
+      })
+    ).rejects.toBeInstanceOf(DelayedError);
+
+    const updatedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
+    expect(updatedJob.status).toBe('accepted');
+  });
 });
