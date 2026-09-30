@@ -45,12 +45,15 @@ export interface ConfigurableActorsResult<T extends ConfigurableActorResource = 
 
 type ActorOf<K extends BookableActorType> = Extract<ConfigurableActorResource, { resourceType: K }>;
 
-/** Locations are only those typed as a room or a bed, leaving out service facilities. */
+// Sorted on the server so that a project with more than one page lists its first actors by name rather than
+// an arbitrary thousand.
 const ACTOR_CRITERIA: Record<BookableActorType, Record<string, string>> = {
-  Practitioner: {},
-  Location: { 'physical-type': 'ro,bd' },
-  Device: {},
+  Practitioner: { _sort: 'name' },
+  Location: { _sort: 'name' },
+  Device: { _sort: 'device-name' },
 };
+
+const ROOM_PHYSICAL_TYPES = new Set(['ro', 'bd']);
 
 /**
  * Finds every visit type a project holds, including deactivated ones and ones with no scheduling parameters.
@@ -103,11 +106,22 @@ export async function searchConfigurableActors<K extends BookableActorType>(
   }
 
   const byActor = groupBySoleActor(schedules);
-  const found = actors.map((resource) => ({
-    resource,
-    schedules: byActor.get(`${resource.resourceType}/${resource.id}`) ?? [],
-  }));
+  const found = actors
+    .map((resource) => ({ resource, schedules: byActor.get(`${resource.resourceType}/${resource.id}`) ?? [] }))
+    .filter(isConfigurable);
   return { actors: sortByName(found), complete: !hasNextPage(page.bundle) };
+}
+
+// Rooms are the Locations typed as a room or a bed, and any Location with a calendar, which booking lists as a
+// room whatever its type. Every other Location is a service facility, not an actor.
+function isConfigurable(actor: ConfigurableActor): boolean {
+  if (actor.resource.resourceType !== 'Location') {
+    return true;
+  }
+  return (
+    actor.schedules.length > 0 ||
+    (actor.resource.physicalType?.coding ?? []).some((coding) => ROOM_PHYSICAL_TYPES.has(coding.code ?? ''))
+  );
 }
 
 function groupBySoleActor(schedules: readonly WithId<Schedule>[]): Map<string, WithId<Schedule>[]> {
