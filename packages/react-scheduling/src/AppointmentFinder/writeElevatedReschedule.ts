@@ -6,6 +6,7 @@ import {
   generateId,
   getReferenceString,
   isDefined,
+  isValidDate,
   serviceTypeIncludesService,
 } from '@medplum/core';
 import type { Appointment, Bundle, Schedule, Slot } from '@medplum/fhirtypes';
@@ -50,7 +51,7 @@ export async function writeElevatedReschedule(
   }
   const durationMinutes = getRescheduleDurationMinutes(existing);
   const start = new Date(proposal.start ?? '');
-  if (!durationMinutes || !Number.isFinite(start.getTime())) {
+  if (!durationMinutes || !isValidDate(start)) {
     throw new Error('Manual rescheduling requires a valid start and an existing appointment length.');
   }
   const serviceRefs = extractServiceTypeReferences(existing.serviceType);

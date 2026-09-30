@@ -20,7 +20,7 @@ import {
 } from '@medplum/core';
 import type { Appointment, Extension, HealthcareService, Location, Patient, Reference } from '@medplum/fhirtypes';
 import { CalendarDateInput, ResourceInput, ResourceName } from '@medplum/react';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconAlertCircle, IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -173,7 +173,7 @@ export interface AppointmentProposalFormProps {
   readonly appointmentExtensions?: readonly Extension[];
   /**
    * Allows manual time entry, bypassing `$find`. Booking can edit length; rescheduling
-   * preserves the interval from the full resource supplied as `ignoreAppointment`.
+   * preserves the interval of `ignoreAppointment`.
    */
   readonly canBypassSchedulingRules?: boolean;
   /**
@@ -429,12 +429,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     [service, candidates]
   );
 
+  const ignoredResource = useResource<Appointment>(ignoreAppointment);
   // State holds the edit rather than the value, so a different visit type falls back to
   // its own default instead of keeping the last length typed.
-  const storedDurationMinutes =
-    ignoreAppointment && 'resourceType' in ignoreAppointment
-      ? getRescheduleDurationMinutes(ignoreAppointment)
-      : undefined;
+  const storedDurationMinutes = ignoredResource ? getRescheduleDurationMinutes(ignoredResource) : undefined;
   const effectiveDurationMinutes =
     mode === 'reschedule' ? storedDurationMinutes : (manualDurationMinutes ?? configuredDurationMinutes);
 
@@ -502,10 +500,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       service,
       candidates,
       range,
-      ignoredSlotReferences:
-        ignoreAppointment && 'resourceType' in ignoreAppointment
-          ? ignoreAppointment.slot?.map(getReferenceString).filter(isDefined)
-          : undefined,
+      ignoredSlotReferences: ignoredResource?.slot?.map(getReferenceString).filter(isDefined),
     })
       .then((found) => {
         if (active) {
@@ -522,7 +517,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     return () => {
       active = false;
     };
-  }, [medplum, chosen, debouncedChoice, service, candidates, ignoreAppointment]);
+  }, [medplum, chosen, debouncedChoice, service, candidates, ignoredResource]);
 
   function choosePatient(next: WithId<Patient> | undefined): void {
     setPatient(next);

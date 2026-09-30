@@ -28,8 +28,10 @@ import {
   setupBookingClient,
 } from '../test-utils/bookingForm';
 import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
+import { AppointmentProposalForm } from './AppointmentProposalForm';
 import type { AppointmentReschedule, AppointmentRescheduleFormProps } from './AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from './AppointmentRescheduleForm';
+import { useRescheduleDefaults } from './useRescheduleDefaults';
 
 installAutocompleteTimers();
 
@@ -203,6 +205,37 @@ describe('AppointmentRescheduleForm', () => {
       await enterTime();
       expect(screen.getByText(/has no valid length/)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
+    });
+
+    test('reads a referenced appointment for its length and its own slots', async () => {
+      function ProposalByReference(): JSX.Element | null {
+        const defaults = useRescheduleDefaults(APPOINTMENT);
+        if (defaults.loading) {
+          return null;
+        }
+        return (
+          <AppointmentProposalForm
+            mode="reschedule"
+            canBypassSchedulingRules
+            defaultService={defaults.service}
+            defaultSelections={defaults.selections}
+            defaultStart={new Date(APPOINTMENT.start as string)}
+            ignoreAppointment={createReference(APPOINTMENT)}
+            onSubmit={vi.fn()}
+          />
+        );
+      }
+
+      medplum.invalidateAll();
+      renderWithMedplum(<ProposalByReference />, medplum);
+      await settleAutocomplete();
+      await openTimeFinder();
+      // 11:00 in New York is 15:00Z, the time the appointment's own slots hold.
+      fireEvent.change(screen.getByLabelText('Date & time'), { target: { value: '2026-08-18T11:00' } });
+      await settleAutocomplete();
+      expect(screen.getByLabelText('Minutes')).toHaveValue('30');
+      expect(screen.queryByText(/has no valid length/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Overlaps/)).not.toBeInTheDocument();
     });
 
     test('clears a manual selection if permission is withdrawn', async () => {
