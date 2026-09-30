@@ -46,6 +46,8 @@ listed once it is saved.
   warnings as `SchedulingParametersEditor`.
 - **Default availability:** the weekly hours every calendar offering it follows unless it sets its own, edited
   with the same fields as `ScheduleAvailabilityEditor`.
+- **Offered by:** every provider, room, and device whose Schedule offers it, with the duration in effect there and
+  where its hours come from. Picking one opens that actor's page on this visit type.
 
 ## A provider's, room's, or device's page
 
@@ -56,7 +58,8 @@ listed once it is saved.
 - **Visit types offered:** what its Schedule offers. Each visit type offered is an entry showing its duration in
   effect and where its hours come from; opening one shows the Schedule's own scheduling parameters and hours for
   it, each empty field showing what it inherits. At most one entry is open at a time, and an entry with unsaved
-  edits is marked **Unsaved**. Every entry starts closed, including a visit type just offered.
+  edits is marked **Unsaved**. Every entry starts closed, including a visit type just offered, unless the page was
+  opened from a visit type's Offered by, which opens that visit type's entry.
 
 **Offer visit types** opens a searchable list of every active visit type not offered yet. Tick any number to offer
 them together. Offering an actor's first visit type creates its Schedule when the page is saved, and not before.

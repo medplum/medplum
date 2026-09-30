@@ -75,7 +75,7 @@ describe('VisitTypePage', () => {
     await setup();
 
     const headings = screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent);
-    expect(headings).toEqual(['General', 'Scheduling parameters', 'Default availability']);
+    expect(headings).toEqual(['General', 'Scheduling parameters', 'Default availability', 'Offered by']);
     expect(screen.getByLabelText(/Name/)).toHaveValue('Initial Visit');
     expect(screen.getByRole('switch', { name: 'Active' })).toBeChecked();
     expect(parameter('duration')).toHaveValue('60 min');

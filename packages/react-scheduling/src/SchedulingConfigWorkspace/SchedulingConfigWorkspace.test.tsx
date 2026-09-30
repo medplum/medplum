@@ -272,6 +272,49 @@ describe('SchedulingConfigWorkspace', () => {
     expect(row('Exam Room C')).toHaveAttribute('aria-current', 'true');
   });
 
+  test('Offered by marks the actors whose Schedules customize the visit type', async () => {
+    await setup();
+
+    await userEvent.click(row('Telehealth Consult'));
+    const telehealth = within(details()).getByRole('region', { name: 'Offered by' });
+    expect(await within(telehealth).findByText('Customized')).toHaveTextContent(
+      'Parameter values defined here override those on the Telehealth Consult visit type.'
+    );
+    expect(within(telehealth).getAllByText('Customized')).toHaveLength(1);
+
+    await userEvent.click(row('Ultrasound Imaging'));
+    const ultrasound = within(details()).getByRole('region', { name: 'Offered by' });
+    const okafor = (await within(ultrasound).findByText('Dr. Tunde Okafor')).closest('button') as HTMLElement;
+    expect(within(okafor).getByText('Customized')).toBeInTheDocument();
+    const nguyen = within(ultrasound).getByText('Dr. Linh Nguyen').closest('button') as HTMLElement;
+    expect(within(nguyen).queryByText('Customized')).not.toBeInTheDocument();
+  });
+
+  test("selecting an actor in Offered by opens its page with that visit type's entry open", async () => {
+    await setup();
+    await userEvent.click(row('Telehealth Consult'));
+
+    const offeredBy = within(details()).getByRole('region', { name: 'Offered by' });
+    await userEvent.click(within(offeredBy).getByText('Dr. Linh Nguyen'));
+
+    expect(within(details()).getByRole('heading', { name: 'Dr. Linh Nguyen' })).toBeInTheDocument();
+    expect(entry('Telehealth Consult')).toHaveAttribute('aria-expanded', 'true');
+    expect(entry('Ultrasound Imaging')).toHaveAttribute('aria-expanded', 'false');
+    expect(row('Dr. Linh Nguyen')).toHaveAttribute('aria-current', 'true');
+  });
+
+  test('Offered by says when nothing offers the visit type, and where visit types are offered from', async () => {
+    await setup();
+
+    await userEvent.click(row('Unconfigured Visit'));
+
+    expect(
+      within(details()).getByText(
+        "Nothing offers Unconfigured Visit yet. Visit types are offered from a provider's, room's, or device's page."
+      )
+    ).toBeInTheDocument();
+  });
+
   test('an empty project says each section has nothing yet, and still offers to create a visit type', async () => {
     const medplum = new MockClient({ seedDefaultData: false });
     renderWithMedplum(<SchedulingConfigWorkspace />, medplum);

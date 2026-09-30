@@ -11,6 +11,7 @@ import {
   buildServiceItems,
   getActorNotices,
   getOfferedServices,
+  getOfferings,
   isSameSelection,
   matchesFilter,
   withStoredActorResource,
@@ -196,8 +197,24 @@ describe('withStoredActorResource', () => {
   });
 });
 
-describe('getOfferedServices', () => {
-  test('lists a visit type the Schedule names by a versioned reference once', () => {
+describe('getOfferings', () => {
+  test('lists the actors whose edited Schedule offers the visit type', () => {
+    const offering = makeSchedule('s', 'Practitioner/dr-smith', [configured]);
+    const second = makeSchedule('t', 'Location/room-1', [unconfigured]);
+    const other = makeSchedule('u', 'Location/room-1', [configured]);
+
+    const found = getOfferings(
+      [
+        { resource: drSmith, schedules: [offering] },
+        { resource: typedRoom, schedules: [second, other] },
+      ],
+      configured
+    );
+
+    expect(found.map((item) => item.schedule.id)).toEqual(['s']);
+  });
+
+  test('finds a Schedule naming the visit type by a versioned reference, as the actor page lists it', () => {
     const versioned: WithId<Schedule> = {
       ...makeSchedule('s', 'Practitioner/dr-smith', []),
       serviceType: [
@@ -210,6 +227,7 @@ describe('getOfferedServices', () => {
       ],
     };
 
+    expect(getOfferings([{ resource: drSmith, schedules: [versioned] }], configured)).toHaveLength(1);
     expect(getOfferedServices(versioned, new Map([[configured.id, configured]]))).toEqual([configured]);
   });
 });

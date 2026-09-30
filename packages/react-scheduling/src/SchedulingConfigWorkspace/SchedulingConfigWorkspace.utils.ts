@@ -236,3 +236,33 @@ export function withStoredActorResource(
     };
   });
 }
+
+/** An actor whose Schedule offers a visit type. */
+export interface ConfigOffering {
+  readonly actor: ConfigurableActor;
+  /** The Schedule the workspace edits for the actor, which offers the visit type. */
+  readonly schedule: WithId<Schedule>;
+}
+
+/**
+ * Finds every actor whose Schedule offers a visit type. Only the Schedule the workspace edits counts, since
+ * that is the one its page opens.
+ * @param actors - Every provider, room, and device loaded.
+ * @param service - The visit type.
+ * @returns The offerings, in the order the actors were given.
+ */
+export function getOfferings(
+  actors: readonly ConfigurableActor[],
+  service: WithId<HealthcareService>
+): ConfigOffering[] {
+  return actors.flatMap((actor) => {
+    const [schedule] = actor.schedules;
+    if (!schedule) {
+      return [];
+    }
+    const offered = extractServiceTypeReferences(schedule.serviceType).some(
+      (reference) => resolveId(reference) === service.id
+    );
+    return offered ? [{ actor, schedule }] : [];
+  });
+}

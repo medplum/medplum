@@ -36,7 +36,8 @@ function Workspace(): JSX.Element {
  * still active, with the Schedule switched off. Exam Room C is listed though it has no Schedule.
  *
  * Pick one to edit it in place. Switching to another with unsaved changes asks first. The **+** beside Visit
- * types starts a new one, which is listed once it is saved.
+ * types starts a new one, which is listed once it is saved. A visit type's Offered by opens the page of each
+ * provider, room, or device offering it.
  *
  * @returns The story.
  */

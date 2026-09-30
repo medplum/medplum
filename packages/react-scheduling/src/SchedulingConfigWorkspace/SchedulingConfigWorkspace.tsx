@@ -16,8 +16,8 @@ import type { ConfigPanelSection } from './ConfigPanel/ConfigPanel';
 import { ConfigPanel } from './ConfigPanel/ConfigPanel';
 import { ConfirmModal } from './ConfirmModal';
 import classes from './SchedulingConfigWorkspace.module.css';
-import type { ConfigSelection } from './SchedulingConfigWorkspace.utils';
-import { buildActorItems, buildServiceItems, isSameSelection } from './SchedulingConfigWorkspace.utils';
+import type { ConfigOffering, ConfigSelection } from './SchedulingConfigWorkspace.utils';
+import { buildActorItems, buildServiceItems, getOfferings, isSameSelection } from './SchedulingConfigWorkspace.utils';
 import { useConfigurableResources } from './useConfigurableResources';
 import { VisitTypePage } from './VisitTypePage/VisitTypePage';
 
@@ -108,6 +108,14 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     setDirty(false);
   }, []);
 
+  function openOffering(offering: ConfigOffering, serviceId: string): void {
+    const { resource } = offering.actor;
+    select({ kind: 'actor', resourceType: resource.resourceType, id: resource.id, openServiceId: serviceId });
+  }
+
+  const allActors = ACTOR_SECTIONS.flatMap(({ resourceType }) => actors[resourceType].items);
+  const actorsLoading = ACTOR_SECTIONS.some(({ resourceType }) => actors[resourceType].loading);
+
   let detail: JSX.Element;
   if (selection?.kind === 'new-service') {
     detail = (
@@ -127,6 +135,9 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         service={service}
         onSynced={handleSynced}
         onDirtyChange={setDirty}
+        offerings={getOfferings(allActors, service)}
+        offeringsLoading={actorsLoading}
+        onOpenOffering={(offering) => openOffering(offering, service.id)}
       />
     ) : (
       <ConfigEmptyState notFound />
