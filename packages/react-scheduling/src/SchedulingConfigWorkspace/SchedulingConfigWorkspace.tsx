@@ -4,13 +4,12 @@ import { Alert, Box, Button, Center, Group, Loader, Modal, Stack, Text } from '@
 import type { WithId } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
-import { IconCalendarEvent, IconDeviceHeartMonitor, IconDoor } from '@tabler/icons-react';
+import { IconCalculatorFilled, IconCalendarEvent, IconMapPinFilled } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { isBookableActorType } from '../actors';
-import type { ConfigurableActor } from '../configSearch';
 import { ActorPage } from './ActorPage/ActorPage';
 import { ConfigEmptyState } from './ConfigPage/ConfigEmptyState';
 import type { ConfigPanelSection } from './ConfigPanel/ConfigPanel';
@@ -18,8 +17,7 @@ import { ConfigPanel } from './ConfigPanel/ConfigPanel';
 import classes from './SchedulingConfigWorkspace.module.css';
 import type { ConfigSelection } from './SchedulingConfigWorkspace.utils';
 import { buildActorItems, buildServiceItems, isSameSelection } from './SchedulingConfigWorkspace.utils';
-import type { ConfigList } from './useConfigData';
-import { useConfigData } from './useConfigData';
+import { useConfigurableResources } from './useConfigurableResources';
 import { VisitTypePage } from './VisitTypePage/VisitTypePage';
 
 export interface SchedulingConfigWorkspaceProps {
@@ -27,16 +25,18 @@ export interface SchedulingConfigWorkspaceProps {
 }
 
 interface ActorSectionConfig {
+  readonly resourceType: BookableActorType;
   readonly title: string;
   readonly noun: string;
   readonly icon?: JSX.Element;
 }
 
-const ACTOR_SECTIONS: Record<BookableActorType, ActorSectionConfig> = {
-  Practitioner: { title: 'Providers', noun: 'providers' },
-  Location: { title: 'Rooms', noun: 'rooms', icon: <IconDoor size={12} /> },
-  Device: { title: 'Devices', noun: 'devices', icon: <IconDeviceHeartMonitor size={12} /> },
-};
+/** In the order `SchedulingWorkspace` lists them. */
+const ACTOR_SECTIONS: readonly ActorSectionConfig[] = [
+  { resourceType: 'Practitioner', title: 'Providers', noun: 'providers' },
+  { resourceType: 'Device', title: 'Devices', noun: 'devices', icon: <IconCalculatorFilled size={12} /> },
+  { resourceType: 'Location', title: 'Rooms', noun: 'rooms', icon: <IconMapPinFilled size={12} /> },
+];
 
 /**
  * Where an admin sets up scheduling: every visit type, provider, room, and device listed down the side, and the
@@ -49,13 +49,7 @@ const ACTOR_SECTIONS: Record<BookableActorType, ActorSectionConfig> = {
  * @returns The workspace.
  */
 export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps): JSX.Element {
-  const data = useConfigData();
-  const { services, providers, rooms, devices, store } = data;
-  const actorLists: Record<BookableActorType, ConfigList<ConfigurableActor>> = {
-    Practitioner: providers,
-    Location: rooms,
-    Device: devices,
-  };
+  const { services, actors, store } = useConfigurableResources();
 
   const [selection, setSelection] = useState<ConfigSelection>();
   const [filter, setFilter] = useState('');
@@ -127,7 +121,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       <ConfigEmptyState notFound />
     );
   } else if (selection?.kind === 'actor') {
-    const list = actorLists[selection.resourceType];
+    const list = actors[selection.resourceType];
     const actor = list.items.find((item) => item.resource.id === selection.id);
     if (list.loading || services.loading) {
       detail = (
@@ -156,20 +150,18 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       createLabel: 'New visit type',
       onCreate: startNew,
     },
-    ...(Object.keys(ACTOR_SECTIONS) as BookableActorType[]).map((resourceType): ConfigPanelSection => ({
+    ...ACTOR_SECTIONS.map(({ resourceType, ...section }): ConfigPanelSection => ({
       key: resourceType,
-      ...ACTOR_SECTIONS[resourceType],
-      items: buildActorItems(actorLists[resourceType].items, selection, filter, showInactive),
-      loading: actorLists[resourceType].loading,
-      incomplete: !actorLists[resourceType].complete,
+      ...section,
+      items: buildActorItems(actors[resourceType].items, selection, filter, showInactive),
+      loading: actors[resourceType].loading,
+      incomplete: !actors[resourceType].complete,
     })),
   ];
 
   const loadErrors: [string, unknown][] = [
     ['Visit types', services.error],
-    ['Providers', providers.error],
-    ['Rooms', rooms.error],
-    ['Devices', devices.error],
+    ...ACTOR_SECTIONS.map(({ resourceType, title }): [string, unknown] => [title, actors[resourceType].error]),
   ];
 
   return (
