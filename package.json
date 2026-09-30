@@ -64,7 +64,7 @@
     "vitest": "4.1.11",
     "vitest-websocket-mock": "0.5.0"
   },
-  "packageManager": "npm@11.20.0",
+  "packageManager": "npm@11.20.0+sha512.745dc40c5c1b60df8de51522a7e6580ded0d79444ae4182a28e72f4f588db546214cc4e5d05c16841b97ad2ecab57c9dbaac93312e5a6906ab7a09c70c0c4d83",
   "engines": {
     "node": ">=22.22.0 <23.0.0 || >=24.2.0 <25.0.0"
   }
