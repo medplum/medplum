@@ -180,14 +180,9 @@
     "requiredBefore": "5.2.0"
   },
   "v50": {
-<<<<<<< Updated upstream
-    "serverVersion": "5.1.44",
-    "requiredBefore": "5.2.0"
-=======
     "serverVersion": "5.1.44"
   },
   "v51": {
     "serverVersion": "5.1.45"
->>>>>>> Stashed changes
   }
 }
