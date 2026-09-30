@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Text } from '@mantine/core';
+import { Box, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
-import { Document } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
@@ -54,9 +53,9 @@ function StoredActor(props: { readonly resourceType: BookableActorType; readonly
     return <Text c="dimmed">Loading…</Text>;
   }
   return (
-    <Document>
+    <Box p="md">
       <ActorPage actor={loaded.actor} services={loaded.services} />
-    </Document>
+    </Box>
   );
 }
 
