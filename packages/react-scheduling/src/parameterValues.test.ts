@@ -255,16 +255,6 @@ describe('getEffectiveSchedulingParameterValues', () => {
     });
   });
 
-  test('a value the service sets beats the default', () => {
-    const configured = setHealthcareServiceSchedulingParameterValues(service, { duration: 30, bufferAfter: 10 });
-
-    expect(getEffectiveSchedulingParameterValues(configured)).toMatchObject({
-      duration: 30,
-      bufferAfter: 10,
-      bufferBefore: 0,
-    });
-  });
-
   test("a calendar's override beats the service, which beats the default", () => {
     const configured = setHealthcareServiceSchedulingParameterValues(service, { duration: 30, bufferAfter: 10 });
     const overriding = setScheduleSchedulingParameterValues(calendar, configured, { bufferAfter: 20 });

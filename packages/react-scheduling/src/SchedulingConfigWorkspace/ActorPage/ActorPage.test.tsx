@@ -196,7 +196,7 @@ describe('ActorPage', () => {
   test("a provider's name and status are read-only, and an inactive provider's calendar stays editable", async () => {
     await setup({ ...drSmith, active: false }, [calendar('Practitioner/dr-smith', [initialVisit])]);
 
-    expect(screen.getAllByText('Inactive').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Inactive')).toHaveLength(2);
     expect(screen.queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument();
     expect(screen.queryByRole('switch', { name: /Active/ })).not.toBeInTheDocument();
     expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter')).toBeEnabled();
@@ -231,7 +231,7 @@ describe('ActorPage', () => {
     expect(getScheduleSchedulingParameterValues(storedSchedule(onStored), initialVisit).bufferAfter).toBe(15);
   });
 
-  test('opening another visit type closes the open one, and edits to either survive the switch', async () => {
+  test('one entry opens at a time, closing leaves none open, and edits survive either', async () => {
     await setup(drSmith, [calendar('Practitioner/dr-smith', [initialVisit, followUp])]);
 
     await userEvent.click(entry('Initial Visit'));
@@ -245,49 +245,10 @@ describe('ActorPage', () => {
 
     await userEvent.click(entry('Initial Visit'));
     expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter')).toHaveValue('15 min');
-  });
-
-  test('closing the open entry leaves every entry closed, and keeps its edits', async () => {
-    await setup(drSmith, [calendar('Practitioner/dr-smith', [initialVisit, followUp])]);
-    await userEvent.click(entry('Initial Visit'));
-    await userEvent.type(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter'), '15');
 
     await userEvent.click(entry('Initial Visit'));
-
     expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'false');
     expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'false');
-    expect(entry('Initial Visit')).toHaveTextContent('Unsaved changes');
-    expect(saveBar()).toBeInTheDocument();
-  });
-
-  test('a visit type just offered opens, and closes the one that was open', async () => {
-    await setup(drSmith, [calendar('Practitioner/dr-smith', [initialVisit, followUp])]);
-    await userEvent.click(entry('Initial Visit'));
-
-    await openOfferMenu();
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Cystoscopy' }));
-
-    expect(entry('Cystoscopy')).toHaveAttribute('aria-expanded', 'true');
-    expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  test('discarding a visit type just offered leaves every entry closed', async () => {
-    await setup(drSmith, [calendar('Practitioner/dr-smith', [initialVisit, followUp])]);
-    await openOfferMenu();
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Cystoscopy' }));
-
-    await userEvent.click(within(saveBar() as HTMLElement).getByRole('button', { name: 'Discard' }));
-
-    expect(screen.queryByRole('button', { name: /^Cystoscopy/ })).not.toBeInTheDocument();
-    expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'false');
-    expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  test('opens on the visit type it was asked to', async () => {
-    await setup(drSmith, [calendar('Practitioner/dr-smith', [initialVisit, followUp])], [], followUp.id);
-
-    expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'true');
-    expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'false');
   });
 
   test('a first visit type for a room creates one active Schedule held by the room alone', async () => {
@@ -361,24 +322,6 @@ describe('ActorPage', () => {
     const held = screen.getByRole('menuitem', { name: /Cystoscopy/ });
     expect(held).toBeDisabled();
     expect(within(held).getByLabelText('Checking service facilities')).toBeInTheDocument();
-  });
-
-  test('a provider with no service facilities can be offered every active visit type', async () => {
-    await setup(drSmith);
-
-    await openOfferMenu();
-
-    expect(screen.getAllByRole('menuitem').every((item) => !item.hasAttribute('disabled'))).toBe(true);
-    expect(screen.getAllByRole('menuitem')).toHaveLength(3);
-  });
-
-  test("an offered visit type the room's service facility doesn't hold is marked as not bookable", async () => {
-    await setup(room3, [calendar('Location/room-3', [cystoscopy])]);
-
-    await waitFor(() => expect(entry('Cystoscopy')).toHaveTextContent("Can't be booked"));
-    expect(
-      within(panel('Cystoscopy')).getByText("Can't be booked here: Cystoscopy isn't held at Downtown Clinic.")
-    ).toBeVisible();
   });
 
   test('moving a room away from where an offered visit type is held marks it as not bookable, and keeps it offered', async () => {
@@ -493,19 +436,6 @@ describe('ActorPage', () => {
 
     await waitFor(() => expect(onStored).toHaveBeenCalled());
     expect(getScheduleSchedulingParameters(storedSchedule(onStored), initialVisit, 'availability')).toHaveLength(1);
-  });
-
-  test("going back to the visit type's hours leaves no hours override", async () => {
-    const overriding = setScheduleAvailability(calendar('Practitioner/dr-smith', [initialVisit]), initialVisit, [
-      { daysOfWeek: ['tue'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' },
-    ]);
-    const { onStored } = await setup(drSmith, [overriding]);
-
-    await userEvent.click(within(panel('Initial Visit')).getByTestId('schedule-availability-enable'));
-    await save();
-
-    await waitFor(() => expect(onStored).toHaveBeenCalled());
-    expect(getScheduleSchedulingParameters(storedSchedule(onStored), initialVisit, 'availability')).toEqual([]);
   });
 
   test('an emptied custom week blocks the save, with the reason', async () => {

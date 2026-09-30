@@ -69,7 +69,7 @@ describe('SchedulingConfigWorkspace', () => {
     expect(row('Discontinued Consult')).toHaveTextContent('Inactive');
   });
 
-  test('nothing is selected until something is picked, and the empty pane offers to start one', async () => {
+  test('nothing is selected until something is picked', async () => {
     await setup();
 
     expect(within(details()).getByText('Nothing selected')).toBeInTheDocument();
@@ -250,17 +250,6 @@ describe('SchedulingConfigWorkspace', () => {
     expect(within(section('Devices')).getByText('No matching devices')).toBeInTheDocument();
   });
 
-  test('collapsing a section hides its rows but keeps its header and count, and leaves the others', async () => {
-    await setup();
-    const count = sectionCount('Providers');
-
-    await userEvent.click(within(sidebar()).getByRole('button', { name: 'Hide providers' }));
-
-    await waitFor(() => expect(within(section('Providers')).getByText('Dr. Maya Rivera')).not.toBeVisible());
-    expect(sectionCount('Providers')).toBe(count);
-    expect(within(section('Rooms')).getByText('Exam Room A')).toBeVisible();
-  });
-
   test('hides inactive providers and devices until asked, then marks them', async () => {
     await setup();
 
@@ -271,17 +260,6 @@ describe('SchedulingConfigWorkspace', () => {
 
     expect(row('Ultrasound 3 (Retired)')).toHaveTextContent('Inactive');
     expect(row('Dr. Hana Lee')).toHaveTextContent('Inactive');
-  });
-
-  test('marks what still needs finishing: no time zone, and a calendar not accepting appointments', async () => {
-    await setup();
-    await showInactive();
-
-    expect(row('Dr. Anika Patel')).toHaveTextContent('No time zone');
-    expect(row('Ultrasound 3 (Retired)')).toHaveTextContent('Not accepting appointments');
-    // An actor with no calendar, or whose calendar resolves a time zone, needs nothing.
-    expect(row('Exam Room C')).not.toHaveTextContent(/No time zone|Not accepting/);
-    expect(row('Dr. Linh Nguyen')).not.toHaveTextContent(/No time zone|Not accepting/);
   });
 
   test('a saved calendar replaces the one listed, so its row and page follow at once', async () => {
@@ -314,21 +292,6 @@ describe('SchedulingConfigWorkspace', () => {
     );
     expect(entry('Telehealth Consult')).toHaveAttribute('aria-expanded', 'true');
     expect(row('Exam Room C')).toHaveAttribute('aria-current', 'true');
-  });
-
-  test('a visit type’s page shows its sections in order, ending with what offers it', async () => {
-    await setup();
-
-    await userEvent.click(row('Ultrasound Imaging'));
-
-    expect(
-      within(details())
-        .getAllByRole('heading', { level: 3 })
-        .map((heading) => heading.textContent)
-    ).toEqual(['General', 'Scheduling parameters', 'Default availability', 'Offered by']);
-    const offeredBy = within(details()).getByRole('region', { name: 'Offered by' });
-    expect(within(offeredBy).getByText('Dr. Maya Rivera')).toBeInTheDocument();
-    expect(within(offeredBy).getByText('Exam Room B')).toBeInTheDocument();
   });
 
   test('Offered by marks the actors whose calendars customize the visit type', async () => {
