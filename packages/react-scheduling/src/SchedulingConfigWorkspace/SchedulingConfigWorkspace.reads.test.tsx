@@ -7,7 +7,7 @@ import { ConfigFixtures } from '../stories/scheduling';
 import { renderWithMedplum, screen, within } from '../test-utils/render';
 import { SchedulingConfigWorkspace } from './SchedulingConfigWorkspace';
 
-// Stubbed at the module, since reaching a read limit for real means rendering thousands of rows.
+// Stubbed at the module, since a second page for real means over a thousand rows.
 vi.mock('../configSearch', async (importOriginal) => {
   const actual = await importOriginal<typeof configSearch>();
   return { ...actual, searchConfigurableActors: vi.fn(actual.searchConfigurableActors) };

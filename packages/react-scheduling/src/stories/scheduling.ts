@@ -758,7 +758,7 @@ export const DrNguyenSchedule = setScheduleAvailability(
   [{ daysOfWeek: ['tue', 'thu'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
 ) as WithId<Schedule>;
 
-/** Retired, and its calendar switched off, so it is hidden until inactive resources are shown. */
+/** Retired, so it is hidden until inactive resources are shown. Its calendar is switched off too. */
 export const Ultrasound3Device: WithId<Device> = {
   resourceType: 'Device',
   id: 'ultrasound-3',

@@ -22,8 +22,6 @@ export interface ActorPageProps {
 /**
  * The page for one provider, room, or device: its own fields, and the visit types its calendar offers, each
  * with a line saying how it is scheduled.
- *
- * The actor's calendar isn't a thing of its own here.
  * @param props - The actor and its calendars, and the visit types.
  * @returns The page.
  */
