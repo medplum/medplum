@@ -2591,6 +2591,21 @@
             }
           },
           {
+            "id" : "Bot.rawBody",
+            "path" : "Bot.rawBody",
+            "definition" : "Whether public webhooks provide the original UTF-8 JSON text in BotEvent.input instead of parsed JSON. Defaults to false. Set to true for webhook signature verification.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "base" : {
+              "path" : "Bot.rawBody",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "Bot.streamingEnabled",
             "path" : "Bot.streamingEnabled",
             "definition" : "Optional flag to indicate that the bot should be deployed in a streaming-enabled context, allowing it to execute with streaming responses.",
@@ -3400,6 +3415,22 @@
             }],
             "base" : {
               "path" : "Login.pictureUrl",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Login.basedOn",
+            "path" : "Login.basedOn",
+            "definition" : "The existing login that this login was created from, when an authorization request reused an existing session.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Login"]
+            }],
+            "base" : {
+              "path" : "Login.basedOn",
               "min" : 0,
               "max" : "1"
             }

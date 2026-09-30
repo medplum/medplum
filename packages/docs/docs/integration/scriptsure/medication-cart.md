@@ -144,3 +144,57 @@ Calls `POST /fhir/R4/MedicationRequest/$clear-cart`. Removes every item from the
 | `vendorPatientId` | `number` | Vendor-side patient id |
 | `removedCount` | `number` | Number of items successfully removed |
 | `items` | `MedicationCartItemResult[]` | Per-line result with `status: 'removed'` or `status: 'failed'` |
+
+## `getCart`
+
+Calls `POST /fhir/R4/MedicationRequest/$get-cart`. Reads the MedCart as ScriptSure holds it and reconciles it against the patient's draft `MedicationRequest`s. Read-only—it never writes to Medplum and never mutates the MedCart.
+
+Use this whenever a cart count or list is shown to a prescriber. Counting drafts alone gives a lower bound: it misses items staged through another UI, cannot confirm whether a failed `removeFromCart` actually left the vendor item behind, and gives no drift check before checkout—the mismatch otherwise surfaces only when the prescriber is already looking at the signing widget.
+
+**Request fields:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `patientId` | `string` | yes | Medplum `Patient` resource id |
+
+**Response fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| `vendorPatientId` | `number` | Vendor-side patient id |
+| `vendorTotal` | `number` | Number of items ScriptSure holds—what the prescriber will see in the widget |
+| `draftCount` | `number` | Number of draft `MedicationRequest`s in Medplum |
+| `locked` | `boolean` | `true` when ScriptSure reports the cart locked; a write may conflict |
+| `items` | `MedicationCartLine[]` | One reconciled line per item either side holds (see below) |
+
+Each `items` entry:
+
+| Field | Type | Description |
+|---|---|---|
+| `status` | `MedicationCartLineStatus` | Reconciliation verdict (see below) |
+| `medicationRequestId` | `string` | Medplum draft id; absent for `vendor-only` lines |
+| `vendorLineId` | `string` | MedCart `rxId`; absent for `not-staged` drafts |
+| `drugName`, `ndc`, `rxnorm`, `quantity` | | Display fields off the vendor line; absent for `not-staged` drafts |
+| `validationState` | `string` | Vendor readiness hint (`Ready`, `Incomplete`)—echoed from what was submitted, not a guarantee the line will send |
+| `createdBy`, `createdAt` | `string` | Who staged the line and when, per the vendor |
+
+`status` values:
+
+| Value | Meaning |
+|---|---|
+| `in-sync` | Vendor line matched a draft. The normal case. |
+| `vendor-only` | ScriptSure holds a line with no Medplum draft—staged elsewhere. The prescriber will still see it in the widget. |
+| `not-staged` | Draft not checked out yet, so ScriptSure legitimately does not hold it. Benign, not drift. |
+| `missing-from-vendor` | Draft stamped with an `rxId` ScriptSure no longer returns—the line is gone and the draft is stale. |
+
+```tsx
+const { getCart } = useScriptSureCart();
+
+const cart = await getCart({ patientId });
+const badgeCount = cart.vendorTotal + cart.items.filter((i) => i.status === 'not-staged').length;
+const unexpected = cart.items.filter((i) => i.status === 'vendor-only');
+```
+
+:::note
+A failed vendor read throws rather than returning an empty cart—reporting "the cart is empty" when ScriptSure is merely unreachable is the failure this operation exists to prevent.
+:::

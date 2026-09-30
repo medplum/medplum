@@ -49,7 +49,7 @@ _Companion to the [Charting](/docs/charting) docs (SOAP notes, diagnoses, vitals
 
 The recommended baseline is one Visit Template (PlanDefinition) per distinct visit type, combining structured forms (Questionnaires) with embedded order actions (ActivityDefinitions). `$apply` generates the CarePlan and Tasks at visit start.
 
-**⚠ Visit types are the bridge to scheduling.** A Visit Template links to a HealthcareService by `serviceType` code — the same code that drives scheduling. See the Scheduling Discovery and Decision Guide.
+**⚠ Visit types are the bridge to scheduling.** Define the mapping between charting Visit Templates and bookable HealthcareService offerings. Scheduling operations use explicit HealthcareService references, not code matching alone. See the [Scheduling Decision Guide](/docs/decision-guides/scheduling).
 
 **Questions:**
 
@@ -153,4 +153,3 @@ If clinical ops needs to edit directly, the Medplum App provides a builder inter
 | :---- | :---- |
 | Engineering implements from a spec (default) | API or migration scripts; treated as code-reviewed artifacts |
 | Clinical ops edits directly | Use the Medplum App's builder interface out of the box; build a custom admin UI on top if a more visual / user-friendly experience is required |
-

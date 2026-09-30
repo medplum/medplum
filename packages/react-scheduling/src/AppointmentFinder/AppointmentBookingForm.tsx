@@ -1,22 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { isDefined } from '@medplum/core';
 import type { Appointment, Bundle, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
-import type { AppointmentProposalFormProps } from './AppointmentProposalForm';
+import type { AppointmentWrite } from './AppointmentFinder.writes';
+import { readAppointmentWrite } from './AppointmentFinder.writes';
+import type { AppointmentProposalFormProps, BookOptions } from './AppointmentProposalForm';
 import { AppointmentProposalForm } from './AppointmentProposalForm';
+import { writeElevatedBooking } from './buildElevatedBooking';
 
 /** What a booking wrote, as `Appointment/$book` returned it. */
-export interface AppointmentBooking {
-  readonly appointment: WithId<Appointment>;
-  /** The times reserved for it, one per schedule it is held on. */
-  readonly slots: readonly WithId<Slot>[];
-}
+export type AppointmentBooking = AppointmentWrite;
 
-export interface AppointmentBookingFormProps extends Omit<AppointmentProposalFormProps, 'onBook'> {
+export interface AppointmentBookingFormProps extends Omit<
+  AppointmentProposalFormProps,
+  'onSubmit' | 'mode' | 'ignoreAppointment'
+> {
   /**
    * Called with what the booking wrote.
    *
@@ -31,7 +32,7 @@ export interface AppointmentBookingFormProps extends Omit<AppointmentProposalFor
 /**
  * The booking form, writing the booking itself.
  *
- * Wraps {@link AppointmentProposalForm}: posts `Appointment/$book`, announces the
+ * Wraps {@link AppointmentProposalForm}: writes the booking, announces the
  * appointment and every time it reserved so views reading them refresh, then
  * reports what was written through `onBooked` — the only required prop.
  *
@@ -45,15 +46,17 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
   const medplum = useMedplum();
 
   const book = useCallback(
-    async (proposal: Appointment): Promise<void> => {
-      const written = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
-        medplum.fhirUrl('Appointment', '$book'),
-        { resourceType: 'Parameters', parameter: [{ name: 'appointment', resource: proposal }] }
-      );
-      const booking = readBooking(written);
+    async (proposal: Appointment, options: BookOptions): Promise<void> => {
+      // A typed time would be refused by `$book`: nothing checked it.
+      const written = options.manual
+        ? await writeElevatedBooking(medplum, proposal)
+        : await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(medplum.fhirUrl('Appointment', '$book'), {
+            resourceType: 'Parameters',
+            parameter: [{ name: 'appointment', resource: proposal }],
+          });
+      const booking = readAppointmentWrite(written, options.manual ? 'manual booking' : '$book');
 
-      // `$book` is a custom operation, so the client cannot tell what it changed.
-      // Announcing it is what refreshes a host's calendar beside this form.
+      // Neither path above notifies the client what it changed.
       medplum.notifyResourceModified({
         resourceType: 'Appointment',
         operation: 'create',
@@ -75,21 +78,5 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
     [medplum, onBooked]
   );
 
-  return <AppointmentProposalForm {...formProps} onBook={book} />;
-}
-
-/**
- * Reads what `$book` wrote out of the bundle it answers with.
- * @param written - The bundle `$book` returned.
- * @returns The appointment and the times reserved for it.
- */
-function readBooking(written: Bundle<WithId<Appointment> | WithId<Slot>>): AppointmentBooking {
-  const resources = (written.entry ?? []).map((entry) => entry.resource).filter(isDefined);
-  const appointment = resources.find((resource) => resource.resourceType === 'Appointment');
-  if (!appointment) {
-    // Cannot happen against a server that honoured the request, and the host is
-    // owed an appointment rather than a silent success.
-    throw new Error('$book returned no appointment');
-  }
-  return { appointment, slots: resources.filter((resource) => resource.resourceType === 'Slot') };
+  return <AppointmentProposalForm {...formProps} onSubmit={book} />;
 }

@@ -31,6 +31,7 @@ import type {
   Project,
   ProjectMembership,
   Questionnaire,
+  Reference,
   ResearchDefinition,
   ResourceType,
   ServiceRequest,
@@ -44,7 +45,6 @@ import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
-import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorageKey } from '../storage/base';
@@ -63,6 +63,8 @@ import { getRepoForLogin } from './accesspolicy';
 import type { SystemRepository } from './repo';
 import { getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
+import { getResourceCacheEntry } from './repository/resource-cache';
+import { ExpungedHistoryTag } from './repository/row-builder';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
@@ -206,6 +208,14 @@ describe('FHIR Repo', () => {
       }));
   });
 
+  test('getSearchProjectIds', () => {
+    expect(testProjectRepo.getSearchProjectIds('Patient')).toStrictEqual([testProject.id]);
+    expect(new Repository({ ...testProjectRepo.getConfig(), superAdmin: true }).getSearchProjectIds('Patient')).toBe(
+      undefined
+    );
+    expect(getShardSystemRepo(PLACEHOLDER_SHARD_ID).getSearchProjectIds('Patient')).toBe(undefined);
+  });
+
   test('Read resource with undefined id', async () => {
     try {
       await systemRepo.readResource('Patient', undefined as unknown as string);
@@ -321,6 +331,36 @@ describe('FHIR Repo', () => {
     // Re-read resource; should get the updated data
     auditEvent = await systemRepo.readResource('AuditEvent', auditEvent.id);
     expect(updatedEvent.outcomeDesc).toStrictEqual(auditEvent.outcomeDesc);
+  });
+
+  test('Only caches on read when cacheResourcesOnWrite is disabled', async () => {
+    const prevCacheResourcesOnWrite = getConfig().cacheResourcesOnWrite;
+    getConfig().cacheResourcesOnWrite = false;
+    try {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: testProject.id },
+      });
+      await expect(getResourceCacheEntry('Patient', patient.id)).resolves.toBeUndefined();
+
+      await systemRepo.readResource('Patient', patient.id);
+      await expect(getResourceCacheEntry('Patient', patient.id)).resolves.toBeDefined();
+
+      const updated = await systemRepo.updateResource<Patient>({ ...patient, active: true });
+      const cacheEntry = await getResourceCacheEntry<Patient>('Patient', patient.id);
+      expect(cacheEntry?.resource.meta?.versionId).toStrictEqual(updated.meta?.versionId);
+
+      // Cache-only resources must still be written to the cache
+      const login = await systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        authMethod: 'client',
+        user: { reference: 'ClientApplication/' + randomUUID() },
+        authTime: new Date().toISOString(),
+      });
+      await expect(getResourceCacheEntry('Login', login.id)).resolves.toBeDefined();
+    } finally {
+      getConfig().cacheResourcesOnWrite = prevCacheResourcesOnWrite;
+    }
   });
 
   test('Repo read malformed reference', async () => {
@@ -1465,10 +1505,25 @@ describe('FHIR Repo', () => {
       return (await systemRepo.sqlRead(query, 'Patient')).length;
     }
 
-    async function expectPatientExpunged(patient: WithId<Patient>): Promise<void> {
+    async function expectPatientExpunged(patient: WithId<Patient>, author: Reference): Promise<void> {
       await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow();
       expect(await countRows('Patient', patient.id)).toStrictEqual(0);
-      expect(await countRows('Patient_History', patient.id)).toStrictEqual(0);
+      const rows = await systemRepo.sqlRead<{ content: string; versionId: string }>(
+        new SelectQuery('Patient_History').column('content').column('versionId').where('id', '=', patient.id),
+        'Patient'
+      );
+      expect(rows).toHaveLength(1);
+      const tombstone = JSON.parse(rows[0].content);
+      expect(tombstone).toMatchObject({
+        resourceType: 'Patient',
+        id: patient.id,
+        meta: {
+          author,
+          project: patient.meta?.project,
+          deleted: true,
+          tag: [ExpungedHistoryTag],
+        },
+      });
     }
 
     async function expectPatientPresent(patient: WithId<Patient>): Promise<void> {
@@ -1477,9 +1532,9 @@ describe('FHIR Repo', () => {
       expect(await countRows('Patient_History', patient.id)).toBeGreaterThan(0);
     }
 
-    async function expectPatientsExpunged(...patients: WithId<Patient>[]): Promise<void> {
+    async function expectPatientsExpunged(author: Reference, ...patients: WithId<Patient>[]): Promise<void> {
       for (const patient of patients) {
-        await expectPatientExpunged(patient);
+        await expectPatientExpunged(patient, author);
       }
     }
 
@@ -1492,6 +1547,7 @@ describe('FHIR Repo', () => {
     async function expectExpungeResult(
       expunge: () => Promise<void>,
       forbidden: boolean,
+      author: Reference,
       expunged: WithId<Patient>[],
       present: WithId<Patient>[] = []
     ): Promise<void> {
@@ -1500,7 +1556,7 @@ describe('FHIR Repo', () => {
         await expectPatientsPresent(...expunged, ...present);
       } else {
         await expunge();
-        await expectPatientsExpunged(...expunged);
+        await expectPatientsExpunged(author, ...expunged);
         await expectPatientsPresent(...present);
       }
     }
@@ -1539,6 +1595,7 @@ describe('FHIR Repo', () => {
           await expectExpungeResult(
             () => repo.expungeResource('Patient', patient.id),
             Boolean(forbidden),
+            repo.getAuthor(),
             [patient],
             [untouchedPatient]
           );
@@ -1552,6 +1609,7 @@ describe('FHIR Repo', () => {
           await expectExpungeResult(
             () => repo.expungeResources('Patient', [patient1.id, patient2.id]),
             Boolean(forbidden),
+            repo.getAuthor(),
             [patient1, patient2],
             [untouchedPatient]
           );
@@ -1576,6 +1634,7 @@ describe('FHIR Repo', () => {
           await expectExpungeResult(
             () => repo.expungeResource('Patient', otherProjectPatient.id),
             Boolean(forbidden),
+            repo.getAuthor(),
             expungedPatients,
             presentPatients
           );
@@ -1600,11 +1659,42 @@ describe('FHIR Repo', () => {
           await expectExpungeResult(
             () => repo.expungeResources('Patient', [ownPatient.id, otherProjectPatient.id]),
             Boolean(forbidden),
+            repo.getAuthor(),
             expungedPatients,
             presentPatients
           );
         }));
     });
+
+    test('Expunged tombstone has gone semantics after the resource ID is recreated', () =>
+      withTestContext(async () => {
+        const patient = await createPatient(systemRepo);
+        await systemRepo.expungeResource('Patient', patient.id);
+        const rows = await systemRepo.sqlRead<{ versionId: string }>(
+          new SelectQuery('Patient_History').column('versionId').where('id', '=', patient.id),
+          'Patient'
+        );
+
+        await systemRepo.createResource<Patient>({ resourceType: 'Patient', id: patient.id }, { assignedId: true });
+
+        const history = await systemRepo.readHistory('Patient', patient.id);
+        const tombstoneEntry = history.entry?.find((entry) => entry.request?.method === 'DELETE');
+        expect(tombstoneEntry).toMatchObject({
+          request: { method: 'DELETE', url: `Patient/${patient.id}` },
+          response: {
+            status: '410',
+            outcome: { issue: [{ details: { text: expect.stringMatching(/^Deleted on /) } }] },
+          },
+        });
+        expect(tombstoneEntry?.resource).toBeUndefined();
+
+        try {
+          await systemRepo.readVersion('Patient', patient.id, rows[0].versionId);
+          expect.fail('Expected error');
+        } catch (err) {
+          expect(isGone((err as OperationOutcomeError).outcome)).toBe(true);
+        }
+      }));
 
     test('Expunge Binary deletes the stored object for every version', () =>
       withTestContext(async () => {
@@ -1651,6 +1741,33 @@ describe('FHIR Repo', () => {
         } finally {
           deleteFile.mockRestore();
         }
+      }));
+
+    test('Super admin can expunge AuditEvent', () =>
+      withTestContext(async () => {
+        const target = await systemRepo.createResource<AuditEvent>({
+          resourceType: 'AuditEvent',
+          type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+          recorded: new Date().toISOString(),
+          agent: [{ requestor: true, who: { reference: 'Practitioner/' + randomUUID() } }],
+          source: { observer: { identifier: { value: 'test' } } },
+        });
+        await systemRepo.expungeResource('AuditEvent', target.id);
+        await expect(systemRepo.readResource('AuditEvent', target.id)).rejects.toThrow();
+      }));
+
+    test('Project admin can expunge AuditEvent', () =>
+      withTestContext(async () => {
+        const { repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
+        const target = await repo.createResource<AuditEvent>({
+          resourceType: 'AuditEvent',
+          type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+          recorded: new Date().toISOString(),
+          agent: [{ requestor: true, who: { reference: 'Practitioner/' + randomUUID() } }],
+          source: { observer: { identifier: { value: 'test' } } },
+        });
+        await repo.expungeResource('AuditEvent', target.id);
+        await expect(repo.readResource('AuditEvent', target.id)).rejects.toThrow();
       }));
   });
 
@@ -1965,37 +2082,6 @@ describe('FHIR Repo', () => {
     });
     expect(sub3.meta?.project).toBeUndefined();
     expect(await getProjectIdColumn('Subscription', sub3.id)).toStrictEqual(systemResourceProjectId);
-  });
-
-  test('Async quota delay is applied after transaction commit', async () => {
-    const { repo, project, client, login, membership } = await createTestProject({
-      withRepo: true,
-      withClient: true,
-      withAccessToken: true,
-    });
-    const userConfig: UserConfiguration = { resourceType: 'UserConfiguration' };
-
-    await runInAuthenticatedContext(
-      { project, profile: client, login, membership, userConfig },
-      undefined,
-      undefined,
-      { async: true },
-      async () => {
-        const startTime = Date.now();
-        await repo.withTransaction(
-          async (txRepo) => {
-            await txRepo.createResource({ resourceType: 'Patient' });
-            expect(Date.now() - startTime).toBeLessThan(100);
-          },
-          {
-            source: 'repo.test.asyncQuotaDelay',
-
-            resourceTypes: ['Patient'],
-          }
-        );
-        expect(Date.now() - startTime).toBeGreaterThan(100);
-      }
-    );
   });
 
   test('Handles resources with many entries stored in lookup table', async () =>

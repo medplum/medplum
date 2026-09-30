@@ -11,7 +11,6 @@ import { loadGcpConfig } from '../cloud/gcp/config';
 import type { MedplumServerConfig } from './types';
 import type { ServerConfig } from './utils';
 import { addDefaults, isArrayConfig, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
-import { warnInvalidDataWarehouseConfig } from './validate-config';
 
 let cachedConfig: ServerConfig | undefined = undefined;
 
@@ -65,7 +64,6 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
   }
 
   const withDefaults = addDefaults(config);
-  warnInvalidDataWarehouseConfig(withDefaults);
   cachedConfig = withDefaults;
   return cachedConfig;
 }
@@ -160,7 +158,6 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.defaultSuperAdminClientId = randomUUID();
   config.defaultSuperAdminClientSecret = randomUUID();
   config.mtlsCertHeader = 'x-mtls-cert';
-  warnInvalidDataWarehouseConfig(config);
   return config;
 }
 
@@ -236,10 +233,6 @@ function loadEnvConfig(): MedplumServerConfig {
       key = key.substring('WORKERS_'.length);
       currConfig = config.workers ??= {};
       section = 'workers';
-    } else if (key.startsWith('DATA_WAREHOUSE_')) {
-      key = key.substring('DATA_WAREHOUSE_'.length);
-      currConfig = config.dataWarehouse ??= {};
-      section = 'dataWarehouse';
     }
 
     // Convert key from CAPITAL_CASE to camelCase

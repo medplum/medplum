@@ -210,6 +210,24 @@ export function parseZonedTime(day: Date, time: string, timezone?: string): Date
 }
 
 /**
+ * Reads a native datetime input's value as an instant in a timezone.
+ * @param value - A `YYYY-MM-DDTHH:MM` value, as the input reports it.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns The instant, or undefined while the value is not a complete date and time.
+ */
+export function parseZonedDateTimeInput(value: string, timezone?: string): Date | undefined {
+  const [day, time] = value.split('T');
+  if (!day || !time || !/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+    return undefined;
+  }
+  const [hour, minute] = time.split(':');
+  if (!hour || !minute) {
+    return undefined;
+  }
+  return parseZonedTime(parseDayKey(day), `${hour}:${minute}`, timezone);
+}
+
+/**
  * Restricts appointments to a half of the day, read in the scheduling timezone.
  * @param appointments - Appointments to filter.
  * @param timeOfDay - The half of the day to keep, or `any` to keep all.
@@ -414,14 +432,14 @@ function pad(value: number): string {
 /**
  * Returns the input type to use for a date or time field.
  *
- * JSDOM does not fire change events for `<input type="date">` or
- * `<input type="time">`, so tests get a plain text field, matching what
+ * JSDOM does not fire change events for `<input type="date">`, `<input type="time">`
+ * or `<input type="datetime-local">`, so tests get a plain text field, matching what
  * `DateTimeInput` does.
  *
  * @param type - The native input type to use outside of tests.
  * @returns The input type for the current environment.
  */
-export function getNativeInputType(type: 'date' | 'time'): string {
+export function getNativeInputType(type: 'date' | 'time' | 'datetime-local'): string {
   return import.meta.env.NODE_ENV === 'test' ? 'text' : type;
 }
 

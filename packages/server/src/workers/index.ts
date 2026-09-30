@@ -6,7 +6,6 @@ import type { MedplumServerConfig, WorkerName } from '../config/types';
 import { getLogger, globalLogger } from '../logger';
 import { initBatchWorker } from './batch';
 import { initCronWorker } from './cron';
-import { initDataWarehouseSyncWorker } from './data-warehouse-sync';
 import { initDicomWorker } from './dicom';
 import { addDispatchJobs, initDispatchWorker } from './dispatch';
 import { initDownloadWorker } from './download';
@@ -28,7 +27,6 @@ const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
   { name: 'post-deploy-migration', init: initPostDeployMigrationWorker },
   { name: 'set-accounts', init: initSetAccountsWorker },
   { name: 'lambda-cleaner', init: initLambdaCleanerWorker },
-  { name: 'data-warehouse-sync', init: initDataWarehouseSyncWorker },
   { name: 'dicom', init: initDicomWorker },
 ];
 

@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import type { MedicationRequest, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import type { Mock } from 'vitest';
-import { vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { DEFAULT_POLL_MS } from '../../hooks/useMedicationRequestSyncPolling';
 import { ScriptSureMessageTaskActions } from './ScriptSureMessageTaskActions';
 import {
   SCRIPTSURE_REPLACEMENT_OUTPUT_CODE,
@@ -16,6 +18,7 @@ import {
 } from './ScriptSureMessageTaskActions.utils';
 
 const notificationMocks = vi.hoisted(() => ({ showErrorNotification: vi.fn() }));
+const { showErrorNotification } = notificationMocks;
 vi.mock('../../utils/notifications', () => notificationMocks);
 vi.mock('../../pages/meds/OrderMedicationPage', () => ({
   OrderMedicationPage: (props: {
@@ -75,7 +78,35 @@ function setup(
   return { medplum, onTaskChange, unmount: result.unmount };
 }
 
+async function setupWithReplacement(
+  status: MedicationRequest['status']
+): Promise<{ medplum: MockClient; replacement: WithId<MedicationRequest>; task: Task; onTaskChange: Mock }> {
+  const medplum = new MockClient();
+  const replacement = await medplum.createResource<MedicationRequest>({
+    resourceType: 'MedicationRequest',
+    status,
+    intent: 'order',
+    subject: { reference: 'Patient/patient-1' },
+    medicationCodeableConcept: { text: 'Alinia 500 mg tablet' },
+  });
+  const task: Task = {
+    ...scriptSureTask,
+    id: 'task-with-replacement',
+    output: [
+      {
+        type: { coding: [{ system: SCRIPTSURE_REPLACEMENT_OUTPUT_SYSTEM, code: SCRIPTSURE_REPLACEMENT_OUTPUT_CODE }] },
+        valueReference: { reference: `MedicationRequest/${replacement.id}` },
+      },
+    ],
+  };
+  const { onTaskChange } = setup(task, vi.fn(), medplum);
+  return { medplum, replacement, task, onTaskChange };
+}
+
 describe('ScriptSureMessageTaskActions', () => {
+  beforeEach(() => showErrorNotification.mockClear());
+  afterEach(() => vi.useRealTimers());
+
   test('does not render for a generic Task', () => {
     setup({
       resourceType: 'Task',
@@ -283,5 +314,96 @@ describe('ScriptSureMessageTaskActions', () => {
     ).toBeInTheDocument();
     expect(updateResource).not.toHaveBeenCalled();
     expect(notificationMocks.showErrorNotification).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ['Open ScriptSure patient Messages', { ...scriptSureTask, id: undefined }, 'Task must be saved'],
+    ['Open ScriptSure patient Messages', scriptSureTask, 'did not return a Messages widget URL'],
+    ['Acknowledge error', scriptSureTask, 'Acknowledge failed'],
+  ])('reports a failed "%s" action instead of changing the Task', async (buttonName, task, message) => {
+    const { medplum, onTaskChange } = setup(task);
+    vi.spyOn(medplum, 'executeBot').mockImplementation(async (_identifier, request) =>
+      request.action === 'acknowledge' ? Promise.reject(new Error('Acknowledge failed')) : { task: scriptSureTask }
+    );
+
+    await userEvent.setup().click(screen.getByRole('button', { name: buttonName }));
+
+    await waitFor(() => expect(showErrorNotification).toHaveBeenCalled());
+    expect(showErrorNotification.mock.calls[0][0].message).toContain(message);
+    expect(onTaskChange).not.toHaveBeenCalled();
+    expect(screen.queryByTitle('ScriptSure patient Messages')).not.toBeInTheDocument();
+  });
+
+  test('links to the bare MedicationRequest route and reports a failed reconcile after the Messages widget closes', async () => {
+    const user = userEvent.setup();
+    const { medplum } = setup({ ...scriptSureTask, for: undefined });
+    const executeBot = vi
+      .spyOn(medplum, 'executeBot')
+      .mockImplementation(async (_identifier, request) =>
+        request.action === 'launch'
+          ? { task: scriptSureTask, launchUrl: 'https://scriptsure.example/widgets/message/patient-1' }
+          : Promise.reject(new Error('Reconcile failed'))
+      );
+
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/MedicationRequest/rx-1');
+    await user.click(screen.getByRole('button', { name: 'Open ScriptSure patient Messages' }));
+    expect(await screen.findByTitle('ScriptSure patient Messages')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => expect(showErrorNotification).toHaveBeenCalled());
+    expect(showErrorNotification.mock.calls[0][0].message).toBe('Reconcile failed');
+    expect(executeBot.mock.calls.map(([, request]) => request.action)).toEqual(['launch', 'reconcile']);
+  });
+
+  test('reconciles immediately when the recorded replacement is already active', async () => {
+    const { medplum, task, onTaskChange } = await setupWithReplacement('active');
+    const reconciledTask = { ...task, status: 'completed' as const };
+    const executeBot = vi.spyOn(medplum, 'executeBot').mockResolvedValue({ task: reconciledTask });
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Re-prescribe' }));
+
+    await waitFor(() => expect(onTaskChange).toHaveBeenCalledWith(reconciledTask));
+    expect(executeBot).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ action: 'reconcile' }));
+    expect(screen.queryByText('Edit replacement prescription')).not.toBeInTheDocument();
+    expect(showErrorNotification).not.toHaveBeenCalled();
+  });
+
+  test('refuses to edit a replacement that is no longer a draft', async () => {
+    const { medplum, onTaskChange } = await setupWithReplacement('on-hold');
+    const executeBot = vi.spyOn(medplum, 'executeBot');
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Re-prescribe' }));
+
+    await waitFor(() => expect(showErrorNotification).toHaveBeenCalled());
+    expect(showErrorNotification.mock.calls[0][0].message).toBe(
+      'Replacement MedicationRequest is not editable in status on-hold'
+    );
+    expect(executeBot).not.toHaveBeenCalled();
+    expect(onTaskChange).not.toHaveBeenCalled();
+    expect(screen.queryByText('Edit replacement prescription')).not.toBeInTheDocument();
+  });
+
+  test('reconciles the Task once the replacement prescription syncs back from ScriptSure', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const { medplum, replacement, task, onTaskChange } = await setupWithReplacement('draft');
+    const reconciledTask = { ...task, status: 'completed' as const };
+    const executeBot = vi.spyOn(medplum, 'executeBot').mockResolvedValue({ task: reconciledTask });
+    const readResource = vi.spyOn(medplum, 'readResource');
+
+    await user.click(screen.getByRole('button', { name: 'Re-prescribe' }));
+    await user.click(await screen.findByRole('button', { name: 'Submit replacement form for Alinia 500 mg tablet' }));
+    expect(await screen.findByTitle('Review replacement prescription')).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(readResource).toHaveBeenCalledWith('MedicationRequest', replacement.id, expect.anything())
+    );
+    await medplum.updateResource<MedicationRequest>({ ...replacement, status: 'active' });
+    await act(async () => vi.advanceTimersByTime(DEFAULT_POLL_MS + 100));
+
+    await waitFor(() => expect(onTaskChange).toHaveBeenCalledWith(reconciledTask));
+    expect(executeBot).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ action: 'reconcile' }));
+    await waitFor(() => expect(screen.queryByTitle('Review replacement prescription')).not.toBeInTheDocument());
+    expect(showErrorNotification).not.toHaveBeenCalled();
   });
 });

@@ -19,7 +19,7 @@
       "versioning": "docker",
       "groupName": "DHI images",
       "groupSlug": "dhi-images",
-      "pinDigests": false,
+      "pinDigests": true,
       "minimumReleaseAge": "3 days",
       "minimumReleaseAgeBehaviour": "timestamp-optional"
     },
@@ -29,7 +29,7 @@
       "excludePackageNames": ["dhi.io/node"],
       "groupName": "Docker images",
       "groupSlug": "docker-images",
-      "pinDigests": false
+      "pinDigests": true
     },
     {
       "description": "Ignore setup-node runtime versions",

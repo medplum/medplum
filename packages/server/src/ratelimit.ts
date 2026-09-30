@@ -10,10 +10,11 @@ import { AuthenticatedRequestContext, getRequestContext } from './context';
 import { getRateLimitRedis } from './redis';
 import { getNormalizedPath } from './util/url';
 
-// There are three separate rate limits:
+// There are four separate rate limits:
 // 1. "Login" rate limit - applies only to `/auth/login` and `/auth/register` endpoints
-// 2. "Auth" rate limit - applies to all other `/auth/*` and `/oauth2/*` endpoints (e.g., `/auth/me`, `/oauth2/token`)
-// 3. Default rate limit - applies to all other API endpoints (e.g., `/fhir/R4/Patient`)
+// 2. "MFA" rate limit - applies to unauthenticated MFA verification endpoints
+// 3. "Auth" rate limit - applies to all other `/auth/*` and `/oauth2/*` endpoints (e.g., `/auth/me`, `/oauth2/token`)
+// 4. Default rate limit - applies to all other API endpoints (e.g., `/fhir/R4/Patient`)
 
 // History:
 // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
@@ -36,6 +37,13 @@ const categories: RateLimitCategoryConfig[] = [
     systemSettingName: 'loginRateLimit',
     defaultLimitPerMinute: 5,
     matchesUrl: (url: string) => url === '/auth/login' || url === '/auth/newuser' || url === '/auth/newproject',
+  },
+  {
+    name: 'mfa',
+    serverConfigKey: 'defaultMfaRateLimit',
+    systemSettingName: 'mfaRateLimit',
+    defaultLimitPerMinute: 10,
+    matchesUrl: (url: string) => url === '/auth/mfa/verify' || url === '/auth/mfa/login-enroll',
   },
   {
     name: 'auth',

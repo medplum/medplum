@@ -87,8 +87,10 @@ deployment:
   replicaCount: 1
   image:
     repository: medplum/medplum-server
-    tag: '5.1.38'
-  env: []
+    tag: '5.1.43'
+  env:
+    # - name: SQL_DEBUG
+    #   value: '*'
   resources:
     requests:
       memory: '1Gi'

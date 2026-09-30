@@ -34,8 +34,11 @@
   margin-top: var(--mantine-spacing-xs);
 }
 
-/* The booking form, only present while a day is being booked. */
-.bookingPane {
+/*
+ * The pane beside the calendar, holding either the booking form or the details of
+ * the appointment that is open. Never both — one takes the other's place.
+ */
+.pane {
   flex-shrink: 0;
   width: 320px;
   display: flex;
@@ -43,7 +46,7 @@
   overflow-y: auto;
 }
 
-.bookingPaneWide {
+.paneWide {
   width: 760px;
 }
 

@@ -3,7 +3,7 @@
 import { showNotification } from '@mantine/notifications';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
-import { IconCalendarCancel, IconCalendarCheck } from '@tabler/icons-react';
+import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import {
   withBookStub,
@@ -11,6 +11,7 @@ import {
   withFindStub,
   withFixtures,
   withMockedDate,
+  withRescheduleStub,
   withValueSetStub,
 } from '../stories/decorators';
 import {
@@ -45,7 +46,14 @@ const LOCAL_FIXTURES = inViewerTimezone(ELSEWHERE_FIXTURES);
 export default {
   title: 'Medplum/SchedulingWorkspace',
   component: SchedulingWorkspace,
-  decorators: [withBookStub(), withCancelStub(), withValueSetStub(), withFindStub(), withMockedDate],
+  decorators: [
+    withBookStub(),
+    withCancelStub(),
+    withRescheduleStub(),
+    withValueSetStub(),
+    withFindStub(),
+    withMockedDate,
+  ],
   parameters: {
     // Default seeding includes a lot of cluttering Slot resources for Dr. Alice Smith; skip it.
     skipDefaultSeeding: true,
@@ -76,12 +84,22 @@ export default {
  * clears the answers; clicking again inside the day already open leaves them alone.
  *
  * Clicking a booked appointment instead — the Tuesday and Wednesday imaging visits, or
- * anything booked from the form — opens its details over the calendar. A reason has to be
- * searched for and picked before anything can be called off; "Cancel Appointment" then
- * runs the visit through `Appointment/:id/$cancel`: the drawer comes back describing a
+ * anything booked from the form — opens its details in the same pane the booking form
+ * uses, closing the form if one was open; clicking open time again puts the form back.
+ * "Cancel Appointment" turns the pane over to a page asking what the visit is being
+ * called off for; a reason has to be searched for and picked before it can be confirmed,
+ * and "Back" leaves without touching the visit. Confirming runs it through
+ * `Appointment/:id/$cancel`: the pane lands back on the details, now describing a
  * cancelled appointment, showing the reason and with no button left on it, and the event
- * behind it is drawn as cancelled without a reload, because the cancellation announces
+ * beside it is drawn as cancelled without a reload, because the cancellation announces
  * what it wrote the way booking does.
+ *
+ * The same drawer offers to move the visit. "Reschedule" swaps the details for the form
+ * that finds it another time, opened on the visit type and the actors it is held on —
+ * for Tuesday's imaging visit, Dr. Rivera, Ultrasound 1 and Exam Room A. Swap the room
+ * and find a time and its own hour is offered again, since the search is told to ignore
+ * the visit being moved. Move it and the drawer goes back to the details, with the event
+ * redrawn at its new time behind them.
  *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
@@ -113,16 +131,61 @@ export const FromADifferentTimezone = (): JSX.Element => <Workspace />;
 FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
 
 /**
+ * The workspace when the host lets a user enter a time of their own.
+ *
+ * Everything in `Basic` still works: a time picked from the search is booked through
+ * `$book`, which checks it. What this adds is a **Date & time** and a **Minutes** field
+ * above the times on offer, for placing a visit the rules would refuse. The read-only
+ * time on the left stays where it is; both ways of answering land in it.
+ *
+ * To see a clash: select **Providers → Dr. Maya Rivera**, and find her booked imaging
+ * visit for Miles Cooper on the Tuesday. Click any open time to open the form, choose
+ * **Ultrasound Imaging** and **Dr. Maya Rivera**, then **Find a time**. Above the times
+ * that come back, type that Tuesday and *the time the visit on the calendar starts* —
+ * read it off the event rather than copying a time from here, since the fixtures are
+ * kept on your own clock. A line appears under the fields:
+ *
+ * > Overlaps an existing appointment on Dr. Maya Rivera's schedule
+ *
+ * It names the calendar, not the patient on it. **It does not stop you booking**: the
+ * point is to show what you are sitting on top of, not to refuse. Book it and a second
+ * visit appears over the first.
+ *
+ * Blocked time reads differently. Select **Rooms → Exam Room A**, which is closed
+ * Thursday for equipment maintenance, and type a time inside it:
+ *
+ * > Overlaps blocked time on Exam Room A's schedule
+ *
+ * Nothing warns while the fields are incomplete, and the warning is taken down the
+ * moment any of them changes, because what was looked up was about a different time.
+ *
+ * Two things happen out of sight. A typed time is written directly as a transaction
+ * rather than through `$book`, which would refuse it, and the appointment it writes
+ * carries a `SchedulingUnvalidatedBooking` extension — the only durable record that
+ * the rules were not applied to it.
+ *
+ * @returns The story.
+ */
+export const BypassSchedulingRules = (): JSX.Element => <Workspace canBypassSchedulingRules />;
+BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
+
+interface WorkspaceProps {
+  readonly canBypassSchedulingRules?: boolean;
+}
+
+/**
  * Fills the viewport under the package banner, which is 72px.
+ * @param props - Whether the story lets a time be typed.
  * @returns The workspace as a host would mount it.
  */
-function Workspace(): JSX.Element {
+function Workspace(props: WorkspaceProps): JSX.Element {
   // The workspace fills whatever it is given, so the story hands it the rest of the
   // viewport rather than a fixed height: the calendar and the booking pane both scroll
   // inside it, and a short host makes each of them look cramped for reasons of its own.
   return (
     <div style={{ height: 'calc(100vh - 72px)', padding: '1em', boxSizing: 'border-box' }}>
       <SchedulingWorkspace
+        canBypassSchedulingRules={props.canBypassSchedulingRules}
         onBooked={({ appointment }) => {
           showNotification({
             color: 'green',
@@ -136,6 +199,14 @@ function Workspace(): JSX.Element {
             color: 'red',
             icon: <IconCalendarCancel size={18} />,
             title: 'Appointment cancelled',
+            message: describeBooking(appointment),
+          });
+        }}
+        onRescheduled={({ appointment }) => {
+          showNotification({
+            color: 'blue',
+            icon: <IconCalendarEvent size={18} />,
+            title: 'Appointment rescheduled',
             message: describeBooking(appointment),
           });
         }}

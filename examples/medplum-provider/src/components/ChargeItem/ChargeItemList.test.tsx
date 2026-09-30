@@ -6,9 +6,10 @@ import type { WithId } from '@medplum/core';
 import type { ChargeItem, ChargeItemDefinition, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { CPT_COPYRIGHT_NOTICE } from '../../config/constants';
 import * as chargeItemsUtils from '../../utils/chargeitems';
 import { ChargeItemList } from './ChargeItemList';
 
@@ -96,6 +97,19 @@ describe('ChargeItemList', () => {
     expect(screen.getByDisplayValue('$100.00')).toBeInTheDocument();
   });
 
+  test('renders the AMA CPT copyright notice once, under the Charge Items heading', () => {
+    const item2 = { ...mockChargeItem, id: 'charge-456' };
+    setup({ chargeItems: [mockChargeItem, item2] });
+
+    expect(screen.getAllByText(CPT_COPYRIGHT_NOTICE)).toHaveLength(1);
+  });
+
+  test('renders the AMA CPT copyright notice even when there are no charge items', () => {
+    setup({ chargeItems: [] });
+
+    expect(screen.getByText(CPT_COPYRIGHT_NOTICE)).toBeInTheDocument();
+  });
+
   test('calculates total price', () => {
     const item2 = { ...mockChargeItem, id: 'charge-456', priceOverride: { value: 50 } };
     setup({ chargeItems: [mockChargeItem, item2] });
@@ -142,6 +156,8 @@ describe('ChargeItemList', () => {
     expect(screen.getByText('Add Charge Item', { selector: '.mantine-Modal-title' })).toBeInTheDocument();
 
     expect(screen.getByText('CPT Code')).toBeInTheDocument();
+    // Scoped to the dialog: the list behind it renders the same notice.
+    expect(within(screen.getByRole('dialog')).getByText(CPT_COPYRIGHT_NOTICE)).toBeInTheDocument();
     expect(screen.getByText('Charge Item Definition')).toBeInTheDocument();
 
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();

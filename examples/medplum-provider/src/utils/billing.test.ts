@@ -15,7 +15,9 @@ import {
   buildUpdatedOrganization,
   buildUpdatedPractitioner,
   formatPayerCategory,
+  getMissingBillingOrganizationFields,
   getPayerCategory,
+  isBillingOrganization,
   isPayerNotFoundError,
   isValidBillingPhone,
   parsePayerSearchPage,
@@ -441,6 +443,60 @@ describe('billing utils', () => {
         { url: CANDID_IS_BILLING_PROVIDER_EXTENSION, valueBoolean: false },
         { url: CANDID_IS_RENDERING_PROVIDER_EXTENSION, valueBoolean: true },
       ]);
+    });
+  });
+
+  describe('isBillingOrganization', () => {
+    test('is true only with the billing organization marker', () => {
+      expect(
+        isBillingOrganization({
+          resourceType: 'Organization',
+          identifier: [{ system: MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM, value: BILLING_ORGANIZATION_IDENTIFIER_VALUE }],
+        })
+      ).toBe(true);
+      expect(
+        isBillingOrganization({
+          resourceType: 'Organization',
+          identifier: [{ system: MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM, value: BILLING_PRACTITIONER_IDENTIFIER_VALUE }],
+        })
+      ).toBe(false);
+      expect(isBillingOrganization({ resourceType: 'Organization', name: 'Plain' })).toBe(false);
+    });
+  });
+
+  describe('getMissingBillingOrganizationFields', () => {
+    test('lists every billing field a bare organization lacks, in form order', () => {
+      expect(getMissingBillingOrganizationFields({ resourceType: 'Organization', name: 'Plain' })).toEqual([
+        'NPI',
+        'Tax ID',
+        'phone',
+        'address',
+      ]);
+    });
+
+    test('lists only what is missing', () => {
+      expect(
+        getMissingBillingOrganizationFields({
+          resourceType: 'Organization',
+          identifier: [{ system: NPI_SYSTEM, value: '1234567890' }],
+          telecom: [{ system: 'email', value: 'billing@example.com' }],
+          address: [{ line: ['1 Main St'], city: 'Boston', state: 'MA', postalCode: '02101' }],
+        })
+      ).toEqual(['Tax ID', 'phone']);
+    });
+
+    test('is empty when the organization has everything', () => {
+      expect(
+        getMissingBillingOrganizationFields({
+          resourceType: 'Organization',
+          identifier: [
+            { system: NPI_SYSTEM, value: '1234567890' },
+            { system: EIN_SYSTEM, value: '123456789' },
+          ],
+          telecom: [{ system: 'phone', value: '6175550142' }],
+          address: [{ line: ['1 Main St'], city: 'Boston', state: 'MA', postalCode: '02101' }],
+        })
+      ).toEqual([]);
     });
   });
 });

@@ -294,6 +294,35 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.queryByText('Previously reported as 167 mg/dL on 2/3/2023, 8:40:14 PM')).toBeNull();
   });
 
+  test('Hides DNR observations', async () => {
+    const dnrObs = await medplum.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'cancelled',
+      code: { text: 'RBC' },
+      valueString: 'DNR',
+    });
+    const reportedObs = await medplum.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'PROTEIN' },
+      valueString: '1+',
+    });
+    const dnrReport = await medplum.createResource<DiagnosticReport>({
+      resourceType: 'DiagnosticReport',
+      status: 'final',
+      code: { text: 'Urinalysis' },
+      subject: createReference(HomerSimpson),
+      result: [createReference(dnrObs), createReference(reportedObs)],
+    });
+
+    await act(async () => {
+      setup({ value: dnrReport });
+    });
+
+    expect(screen.queryByText('DNR')).toBeNull();
+    expect(screen.getByText('1+')).toBeInTheDocument();
+  });
+
   test('Renders specimen note', async () => {
     await act(async () => {
       setup({ value: syntheaReport });

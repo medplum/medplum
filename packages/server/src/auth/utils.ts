@@ -29,9 +29,8 @@ import { sendEmail } from '../email/email';
 import { getProjectAppName } from '../email/utils';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
@@ -453,7 +452,7 @@ export async function getProjectIdByClientId(
  * @param projectId - Optional project ID from the client.
  * @returns Project if found, otherwise undefined.
  */
-export function getProjectByRecaptchaSiteKey(
+function getProjectByRecaptchaSiteKey(
   recaptchaSiteKey: string,
   projectId: string | undefined
 ): Promise<WithId<Project> | undefined> {
@@ -473,8 +472,7 @@ export function getProjectByRecaptchaSiteKey(
     });
   }
 
-  const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // not shard ready; would require searching all shards
-  return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
+  return getGlobalSystemRepo().searchOne<Project>({ resourceType: 'Project', filters });
 }
 
 /**
