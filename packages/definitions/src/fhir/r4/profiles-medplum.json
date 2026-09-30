@@ -3418,6 +3418,22 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "Login.basedOn",
+            "path" : "Login.basedOn",
+            "definition" : "The existing login that this login was created from, when an authorization request reused an existing session.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Login"]
+            }],
+            "base" : {
+              "path" : "Login.basedOn",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
