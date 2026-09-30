@@ -15,8 +15,7 @@ export function LandingPage(): JSX.Element {
           <Anchor href="https://www.medplum.com/docs/auth/pre-authorized-code" target="_blank">
             OID4VCI pre-authorized code flow
           </Anchor>
-          . A practitioner generates a magic link that lets a patient fill out a PHQ-A questionnaire without needing to
-          log in.
+          . A practitioner sends a patient a magic link to review and sign consent forms without needing to log in.
         </Text>
         <Text ta="center" c="dimmed" size="sm">
           Sign in as a project admin to get started.

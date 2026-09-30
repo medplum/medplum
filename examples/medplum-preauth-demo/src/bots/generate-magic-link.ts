@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BotEvent, MedplumClient } from '@medplum/core';
-import type { Patient } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { DEMO_TAG, SIGNER_ACCESS_POLICY_NAME } from '../constants';
 
 interface MagicLinkInput {
   patientId: string;
-  questionnaireId: string;
 }
 
 interface MagicLinkOutput {
@@ -18,39 +18,62 @@ export async function handler(medplum: MedplumClient, event: BotEvent<MagicLinkI
   const { patientId } = event.input;
   const clientId = event.secrets['CLIENT_ID']?.valueString;
 
+  if (!patientId) {
+    throw new Error('Missing required input: patientId');
+  }
+
   if (!clientId) {
     throw new Error('Bot secret CLIENT_ID is not configured.');
   }
 
-  // Ensure the patient has a ProjectMembership so the pre-authorized code can be issued on their behalf.
-  // If Patient resource exists, but no auth identity, create a User and ProjectMembership on demand.
-  const membershipBundle = await medplum.get(medplum.fhirUrl('ProjectMembership') + `?profile=Patient/${patientId}`);
+  const patientReference = `Patient/${patientId}`;
 
-  if (!membershipBundle.entry?.length) {
-    const patient = (await medplum.readResource('Patient', patientId)) as Patient;
+  // This bot runs as Project Admin, and anyone who can read Bots can execute it, so it only issues links for the
+  // tagged demo patient. That also keeps it from replacing the access policy on a real patient's membership.
+  const patient = await medplum.readResource('Patient', patientId);
+  if (!patient.meta?.tag?.some((tag) => tag.system === DEMO_TAG.system && tag.code === DEMO_TAG.code)) {
+    throw new Error(`${patientReference} is not the demo patient (missing the ${DEMO_TAG.code} tag)`);
+  }
+
+  const accessPolicy = await medplum.searchOne('AccessPolicy', { name: SIGNER_ACCESS_POLICY_NAME });
+  if (!accessPolicy) {
+    throw new Error(`AccessPolicy "${SIGNER_ACCESS_POLICY_NAME}" not found. Run npm run build:bots.`);
+  }
+  const accessPolicyReference = createReference(accessPolicy);
+
+  // Ensure the patient has a ProjectMembership, scoped to the signer AccessPolicy, so the pre-authorized code
+  // can be issued on their behalf. If the Patient resource exists but has no auth identity, invite them on demand.
+  const membership = await medplum.searchOne('ProjectMembership', { profile: patientReference });
+
+  if (!membership) {
     const projectId = patient.meta?.project;
     if (!projectId) {
-      throw new Error(`Could not determine project for Patient/${patientId}`);
+      throw new Error(`Could not determine project for ${patientReference}`);
     }
-    const given = patient.name?.[0]?.given?.[0] ?? 'Unknown';
-    const family = patient.name?.[0]?.family ?? 'Unknown';
-    // In production, explicitly pass an accessPolicy here to scope the patient's token to their own data.
-    // e.g. membership: { profile: ..., accessPolicy: { reference: 'AccessPolicy/<id>' } }
-    // Default patient access policy is not automatically applied to admin invites (https://github.com/medplum/medplum/issues/8843)
-    await medplum.post(`admin/projects/${projectId}/invite`, {
+    const firstName = patient.name?.[0]?.given?.[0];
+    const lastName = patient.name?.[0]?.family;
+    if (!firstName || !lastName) {
+      throw new Error(`${patientReference} must have a given and family name to create a login`);
+    }
+    await medplum.invite(projectId, {
       resourceType: 'Patient',
-      firstName: given,
-      lastName: family,
+      firstName,
+      lastName,
+      // An invite needs an email or an externalId. The demo patient has no email, so use its ID.
       externalId: patientId,
-      membership: { profile: { reference: `Patient/${patientId}` } },
+      membership: { profile: { reference: patientReference }, accessPolicy: accessPolicyReference },
     });
+  } else if (membership.accessPolicy?.reference !== accessPolicyReference.reference) {
+    await medplum.updateResource({ ...membership, accessPolicy: accessPolicyReference });
   }
 
   const result = await medplum.post(
     'auth/preauthorize',
     { clientId, scope: 'openid', expiresIn: 3600 },
     'application/json',
-    { headers: { 'X-Medplum-On-Behalf-Of': `Patient/${patientId}` } }
+    {
+      headers: { 'X-Medplum-On-Behalf-Of': patientReference },
+    }
   );
 
   return {

@@ -13,7 +13,9 @@ if (!existsSync(path.join(__dirname, '.env'))) {
 }
 
 export default defineConfig({
-  envPrefix: ['MEDPLUM_', 'GOOGLE_'],
+  // Only the variables the app reads (src/config.ts). A broad MEDPLUM_ prefix would also expose
+  // MEDPLUM_CLIENT_SECRET, which the dev server serves to the browser.
+  envPrefix: ['MEDPLUM_CLIENT_ID', 'MEDPLUM_BOT_ID', 'GOOGLE_CLIENT_ID'],
   plugins: [react()],
   server: {
     host: 'localhost',
