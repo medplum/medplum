@@ -20,6 +20,7 @@ export type TestMetadata = LabOrderTestMetadata & {
 export type HealthGorillaLabOrderState = {
   performingLab: LabOrganization | undefined;
   performingLabAccountNumber: string | undefined;
+  performingLabPhysicianAccountNumber: string | undefined;
   selectedTests: TestCoding[];
   testMetadata: Record<string, TestMetadata | undefined>;
   diagnoses: DiagnosisCodeableConcept[];
@@ -42,6 +43,11 @@ export type UseHealthGorillaLabOrderReturn = {
    * `HEALTH_GORILLA_SUBTENANT_ACCOUNT_NUMBER` `Project.secret` is used.
    */
   setPerformingLabAccountNumber: (accountNumber: string | undefined) => void;
+  /**
+   * Sets the physician-level account number for the performing lab, overriding whichever account
+   * number is otherwise resolved from the requesting `Practitioner`'s stored identifiers.
+   */
+  setPerformingLabPhysicianAccountNumber: (accountNumber: string | undefined) => void;
 
   searchAvailableTests: (query: string) => Promise<TestCoding[]>;
   addTest: (test: TestCoding) => void;

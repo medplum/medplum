@@ -318,6 +318,7 @@ describe('useHealthGorilla', () => {
       result.current.setTests([RWS_AOE_TEST]);
       result.current.setPerformingLab({ resourceType: 'Organization', id: 'Lab-123' });
       result.current.setPerformingLabAccountNumber('123');
+      result.current.setPerformingLabPhysicianAccountNumber('456');
       result.current.updateBillingInformation({ billTo: 'patient' });
       result.current.setDiagnoses(DIAGNOSES);
       result.current.addDiagnosis(DIAGNOSES[0]);
@@ -400,6 +401,7 @@ function getDefaultState(): HealthGorillaLabOrderState {
   return deepClone({
     performingLab: undefined,
     performingLabAccountNumber: undefined,
+    performingLabPhysicianAccountNumber: undefined,
     billingInformation: {},
     selectedTests: [],
     testMetadata: {},

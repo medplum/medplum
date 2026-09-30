@@ -59,6 +59,16 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
 
+      # publish.sh authenticates only via trusted publishing (OIDC), so fail early if this npm
+      # lacks it. `npm trust` (npm >= 11.10.0) is the closest public probe for that support.
+      - name: Install npm from packageManager
+        run: |
+          corepack enable npm
+          if ! npm trust --help > /dev/null 2>&1; then
+            echo "::error::npm $(npm -v) does not support trusted publishing (no 'npm trust' command)"
+            exit 1
+          fi
+
       - name: Cache node modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
@@ -91,13 +101,6 @@ jobs:
           MEDPLUM_AWS_TEXTRACT_ENABLED: '__MEDPLUM_AWS_TEXTRACT_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
-
-      # npm 12.0.0 (npm@latest as of 2026-07-08) ships without the bundled `sigstore`
-      # dependency that `npm publish --provenance` requires, causing MODULE_NOT_FOUND
-      # on the first package publish. Pin npm 11.x until https://github.com/npm/cli/issues/9722 is fixed.
-      # Node 24's bundled npm may be older than 11.5.1, which trusted publishing needs.
-      - name: Pin npm 11 for provenance publish
-        run: npm install -g npm@11
 
       - name: Publish to NPM
         run: ./scripts/publish.sh

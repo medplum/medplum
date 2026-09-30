@@ -83,6 +83,13 @@ export const SchedulingSlotCapacityURI = 'https://medplum.com/fhir/StructureDefi
 export const SchedulingUnvalidatedBookingURI =
   'https://medplum.com/fhir/StructureDefinition/SchedulingUnvalidatedBooking';
 
+/**
+ * This extension marks an `Appointment` created by the `$book` operation. Its
+ * value is a string recording the Medplum server version that handled the booking.
+ */
+export const SchedulingBookedByOperationURI =
+  'https://medplum.com/fhir/StructureDefinition/SchedulingBookedByOperation';
+
 /** Extension URI marking which `Appointment.supportingInformation` entry is the site. */
 export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSite';
 
