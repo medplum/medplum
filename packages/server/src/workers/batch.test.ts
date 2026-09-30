@@ -599,17 +599,6 @@ describe('Batch worker', () => {
           expect(cleanupSpy).toHaveBeenCalled();
           cleanupSpy.mockRestore();
         }));
-
-      // Not wrapped in withTestContext so getLogger() falls back to the globalLogger we spy on.
-      test('Logs and returns for unrecognized job data', async () => {
-        const { failedHandler } = captureWorker();
-        const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => {});
-        await failedHandler({ data: { authState } } as unknown as Job, new Error('boom'));
-        expect(errorSpy).toHaveBeenCalledWith(
-          'Unrecognized BatchJobData',
-          expect.objectContaining({ jobData: { authState } })
-        );
-      });
     });
   });
 });

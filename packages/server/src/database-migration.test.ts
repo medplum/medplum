@@ -252,7 +252,7 @@ describe('Database migrations', () => {
           expect(queueAddSpy).toHaveBeenCalledTimes(1);
           const jobData = queueAddSpy.mock.calls[0][1];
 
-          const asyncJobId = jobData.asyncJobId !== undefined ? jobData.asyncJobId : jobData.tracking.asyncJobId;
+          const asyncJobId = jobData.tracking.asyncJobId;
           const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJobId);
 
           expect(jobData).toEqual(
@@ -931,7 +931,7 @@ describe('Database migrations', () => {
             ],
           },
         });
-        const asyncJobId = jobData.asyncJobId !== undefined ? jobData.asyncJobId : jobData.tracking.asyncJobId;
+        const asyncJobId = jobData.tracking.asyncJobId;
         const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJobId);
         expect(asyncJob.request).toBe('/admin/super/rebuild-index?index=Patient_name_idx&table=Observation');
         expect(asyncJob.meta?.project).toBeUndefined();
@@ -1016,7 +1016,7 @@ describe('Database migrations', () => {
             ],
           },
         });
-        const asyncJobId = jobData.asyncJobId !== undefined ? jobData.asyncJobId : jobData.tracking.asyncJobId;
+        const asyncJobId = jobData.tracking.asyncJobId;
         const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJobId);
         expect(asyncJob.request).toBe(
           '/admin/super/drop-invalid-indexes?index=public.AuditEvent_References_pkey_ccnew&index=pg_toast.pg_toast_2539493_index_ccnew'
