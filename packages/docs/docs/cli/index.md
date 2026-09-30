@@ -456,3 +456,34 @@ medplum bulk import [options] <filename>
 - `-d, --target-directory <targetDirectory>`
 
   - Target directory of file to be imported.
+
+### Generate Types
+
+`generate-types` generates TypeScript definitions from FHIR StructureDefinitions, such as your own profiles. Generated interfaces enforce profile constraints that can be expressed at the type level, such as required and prohibited elements and restricted choice types, and import base FHIR types from `@medplum/fhirtypes`.
+
+Input files can contain a single StructureDefinition, an array of StructureDefinitions, or a Bundle. StructureDefinitions must include a `snapshot`.
+
+```bash
+medplum generate-types [options] <files...>
+```
+
+For example:
+
+```bash
+medplum generate-types us-core-profiles.json --output-dir src/types/us-core
+```
+
+##### optional flags for `generate-types`
+
+- `-o, --output-dir <outputDir>`
+
+  - Output directory for the generated `.d.ts` files. Defaults to the current directory.
+
+The same generator is available in `@medplum/core` as `generateTypeScriptDefinitions`, which returns a map of file names to file contents:
+
+```ts
+import { generateTypeScriptDefinitions } from '@medplum/core';
+
+const files = generateTypeScriptDefinitions(structureDefinitions);
+// { 'USCorePatientProfile.d.ts': '...', 'index.d.ts': '...' }
+```
