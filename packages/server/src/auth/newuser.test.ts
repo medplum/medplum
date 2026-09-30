@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
 import { Operator, badRequest } from '@medplum/core';
-import type { OperationOutcome, Project, User } from '@medplum/fhirtypes';
+import type { OperationOutcome, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -17,16 +16,6 @@ import { registerNew } from './register';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
-
-async function addAllowedEmailDomain(project: WithId<Project>, domain: string): Promise<WithId<Project>> {
-  const systemRepo = await getProjectSystemRepo(project);
-  return withTestContext(() =>
-    systemRepo.updateResource<Project>({
-      ...project,
-      setting: [...(project.setting ?? []), { name: 'allowedEmailDomain', valueString: domain }],
-    })
-  );
-}
 
 describe('New user', () => {
   let prevRecaptchaSecretKey: string | undefined;
@@ -677,175 +666,5 @@ describe('New user', () => {
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
     expect(res.body.emailVerificationRequired).toBe(true);
-  });
-
-  test('Allowed email domain succeeds', async () => {
-    const { project } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Owner',
-        lastName: 'Owner',
-        projectName: 'AllowedDomainTest',
-        email: `owner${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
-    const restricted = await addAllowedEmailDomain(project, 'allowed.example.com');
-
-    const res = await request(app)
-      .post('/auth/newuser')
-      .type('json')
-      .send({
-        projectId: restricted.id,
-        firstName: 'Patient',
-        lastName: 'Allowed',
-        email: `patient${randomUUID()}@allowed.example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res).toHaveStatus(200);
-    expect(res.body.login).toBeDefined();
-  });
-
-  test('Disallowed email domain is rejected', async () => {
-    const { project } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Owner',
-        lastName: 'Owner',
-        projectName: 'DisallowedDomainTest',
-        email: `owner${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
-    const restricted = await addAllowedEmailDomain(project, 'allowed.example.com');
-
-    const res = await request(app)
-      .post('/auth/newuser')
-      .type('json')
-      .send({
-        projectId: restricted.id,
-        firstName: 'Patient',
-        lastName: 'Disallowed',
-        email: `patient${randomUUID()}@other.example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res).toHaveStatus(400);
-    expect(res.body).toMatchObject(badRequest('Email domain is not allowed for this project', 'email'));
-  });
-
-  test('Email matching either of multiple allowed domains succeeds', async () => {
-    const { project } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Owner',
-        lastName: 'Owner',
-        projectName: 'MultiDomainTest',
-        email: `owner${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
-    let restricted = await addAllowedEmailDomain(project, 'first.example.com');
-    restricted = await addAllowedEmailDomain(restricted, 'second.example.com');
-
-    const res1 = await request(app)
-      .post('/auth/newuser')
-      .type('json')
-      .send({
-        projectId: restricted.id,
-        firstName: 'Patient',
-        lastName: 'One',
-        email: `patient${randomUUID()}@first.example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-    expect(res1).toHaveStatus(200);
-
-    const res2 = await request(app)
-      .post('/auth/newuser')
-      .type('json')
-      .send({
-        projectId: restricted.id,
-        firstName: 'Patient',
-        lastName: 'Two',
-        email: `patient${randomUUID()}@second.example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-    expect(res2).toHaveStatus(200);
-  });
-
-  test('New project registration is unaffected by allowed domain restrictions', async () => {
-    const res = await request(app)
-      .post('/auth/newuser')
-      .type('json')
-      .send({
-        firstName: 'Brand',
-        lastName: 'New',
-        email: `brandnew${randomUUID()}@anydomain.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-        projectId: 'new',
-      });
-
-    expect(res).toHaveStatus(200);
-    expect(res.body.login).toBeDefined();
-  });
-
-  test('Blocked email domain is rejected even without project restrictions', async () => {
-    const { project } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Owner',
-        lastName: 'Owner',
-        projectName: 'BlockedDomainTest',
-        email: `owner${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
-    getConfig().blockedEmailDomains = ['blocked.example.com'];
-
-    const res = await request(app)
-      .post('/auth/newuser')
-      .type('json')
-      .send({
-        projectId: project.id,
-        firstName: 'Patient',
-        lastName: 'Blocked',
-        email: `patient${randomUUID()}@blocked.example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res).toHaveStatus(400);
-    expect(res.body).toMatchObject(badRequest('Email domain is not allowed for this project', 'email'));
-  });
-
-  test('Blocked email domain takes precedence over an allowed domain setting', async () => {
-    const { project } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Owner',
-        lastName: 'Owner',
-        projectName: 'BlockedOverridesAllowedTest',
-        email: `owner${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
-    const restricted = await addAllowedEmailDomain(project, 'blocked.example.com');
-    getConfig().blockedEmailDomains = ['blocked.example.com'];
-
-    const res = await request(app)
-      .post('/auth/newuser')
-      .type('json')
-      .send({
-        projectId: restricted.id,
-        firstName: 'Patient',
-        lastName: 'Blocked',
-        email: `patient${randomUUID()}@blocked.example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res).toHaveStatus(400);
-    expect(res.body).toMatchObject(badRequest('Email domain is not allowed for this project', 'email'));
   });
 });

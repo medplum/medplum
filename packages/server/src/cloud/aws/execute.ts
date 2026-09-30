@@ -6,6 +6,7 @@ import type { Bot } from '@medplum/fhirtypes';
 import { TextDecoder, TextEncoder } from 'node:util';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
+import { buildTraceparent } from '../../util/tracing';
 
 let client: LambdaClient;
 
@@ -37,6 +38,7 @@ export function buildLambdaPayload(request: BotExecutionContext): Record<string,
     contentType,
     secrets,
     traceId,
+    traceparent: buildTraceparent(traceId),
     headers,
   };
 }

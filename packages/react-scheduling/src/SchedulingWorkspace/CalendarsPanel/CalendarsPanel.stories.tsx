@@ -3,72 +3,111 @@
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
+import type { BookableActorType } from '../../actors';
+import { withFixtures } from '../../stories/decorators';
+import { SchedulingFixtures } from '../../stories/scheduling';
+import { CalendarFilters } from '../CalendarFilters';
 import type { CalendarsPanelItem } from './CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel';
+
+// Nothing in these stories narrows the lists below, so a choice goes nowhere.
+const IGNORE_FILTER_CHOICE = (): void => undefined;
 
 export default {
   title: 'Medplum/SchedulingWorkspace/CalendarsPanel',
   component: CalendarsPanel,
 } as Meta;
 
-// Providers, Devices, and Rooms are multi-select: any subset may be selected/visible.
-const providers: CalendarsPanelItem[] = [
-  { id: 'prov-1', label: 'Lisa Caddy', color: 'indigo' },
-  { id: 'prov-2', label: 'Michelle Bryant', color: 'teal' },
-  { id: 'prov-3', label: 'Gerald Miller', color: 'pink' },
-  { id: 'prov-4', label: 'Tomas Erikson', color: 'violet' },
-];
+type PanelItems = Record<BookableActorType, CalendarsPanelItem[]>;
 
-const devices: CalendarsPanelItem[] = [
-  { id: 'dev-1', label: 'Ultrasound Machine 1', color: 'blue' },
-  { id: 'dev-2', label: 'Ultrasound Machine 2', color: 'cyan' },
-];
+// Every section is multi-select: any subset may be selected/visible.
+const items: PanelItems = {
+  Practitioner: [
+    { id: 'prov-1', label: 'Lisa Caddy', color: 'indigo' },
+    { id: 'prov-2', label: 'Michelle Bryant', color: 'teal' },
+    { id: 'prov-3', label: 'Gerald Miller', color: 'pink' },
+    { id: 'prov-4', label: 'Tomas Erikson', color: 'violet' },
+  ],
+  Device: [
+    { id: 'dev-1', label: 'Ultrasound Machine 1', color: 'blue' },
+    { id: 'dev-2', label: 'Ultrasound Machine 2', color: 'cyan' },
+  ],
+  Location: [
+    { id: 'room-1', label: 'Exam Room A', color: 'lime' },
+    { id: 'room-2', label: 'Exam Room B', color: 'red' },
+    { id: 'room-3', label: 'Exam Room C', color: 'yellow' },
+  ],
+};
 
-const rooms: CalendarsPanelItem[] = [
-  { id: 'room-1', label: 'Exam Room A', color: 'lime' },
-  { id: 'room-2', label: 'Exam Room B', color: 'red' },
-  { id: 'room-3', label: 'Exam Room C', color: 'yellow' },
-];
+const noItems: PanelItems = { Practitioner: [], Device: [], Location: [] };
 
-function toggleItem(items: CalendarsPanelItem[], id: string): CalendarsPanelItem[] {
-  return items.map((item) => (item.id === id ? { ...item, selected: !(item.selected ?? true) } : item));
+function toggleItem(items: PanelItems, actorType: BookableActorType, id: string): PanelItems {
+  return {
+    ...items,
+    [actorType]: items[actorType].map((item) =>
+      item.id === id ? { ...item, selected: !(item.selected ?? true) } : item
+    ),
+  };
 }
 
 export const Basic = (): JSX.Element => {
-  const [providerItems, setProviderItems] = useState(providers);
-  const [deviceItems, setDeviceItems] = useState(devices);
-  const [roomItems, setRoomItems] = useState(rooms);
+  const [panelItems, setPanelItems] = useState(items);
 
   return (
     <div style={{ width: 300 }}>
       <CalendarsPanel
-        providers={providerItems}
-        devices={deviceItems}
-        rooms={roomItems}
-        onToggleProvider={(id) => setProviderItems((items) => toggleItem(items, id))}
-        onToggleDevice={(id) => setDeviceItems((items) => toggleItem(items, id))}
-        onToggleRoom={(id) => setRoomItems((items) => toggleItem(items, id))}
+        items={panelItems}
+        onToggle={(actorType, id) => setPanelItems((prev) => toggleItem(prev, actorType, id))}
       />
     </div>
   );
 };
 
-// While the Location or Service Type filter changes, the candidates for Providers & Staff,
-// Devices, and Rooms are re-fetched together — `candidatesLoading` reflects that single fetch.
-export const CandidatesLoading = (): JSX.Element => {
+/**
+ * The filters above the lists, as the workspace passes them: two typeaheads searching the
+ * server, so neither is limited to what a first page happened to hold. Clicking a field
+ * without typing offers a first page anyway, which is what a small clinic sees.
+ *
+ * Narrowing the calendars to what was picked is the host's job, and there is no host
+ * here, so a choice goes nowhere. The fields couple themselves either way — a newly
+ * chosen site drops a chosen visit type it does not hold.
+ *
+ * @returns The story.
+ */
+export const WithFilters = (): JSX.Element => {
+  const [panelItems, setPanelItems] = useState(items);
+
   return (
     <div style={{ width: 300 }}>
-      <CalendarsPanel providers={[]} devices={[]} rooms={[]} candidatesLoading />
+      <CalendarsPanel
+        items={panelItems}
+        onToggle={(actorType, id) => setPanelItems((prev) => toggleItem(prev, actorType, id))}
+        filters={<CalendarFilters onChange={IGNORE_FILTER_CHOICE} />}
+      />
     </div>
   );
 };
+WithFilters.decorators = [withFixtures(SchedulingFixtures)];
 
-// A soloed Location/Service Type can narrow the candidates down to nothing for a role —
+// While a filter changes, the candidates for every section are re-fetched together —
+// `candidatesLoading` reflects that single fetch. The filter fields keep their own
+// spinners, inside themselves, so a filter is answerable while the lists are still coming.
+export const CandidatesLoading = (): JSX.Element => {
+  return (
+    <div style={{ width: 300 }}>
+      <CalendarsPanel items={noItems} filters={<CalendarFilters onChange={IGNORE_FILTER_CHOICE} />} candidatesLoading />
+    </div>
+  );
+};
+CandidatesLoading.decorators = [withFixtures(SchedulingFixtures)];
+
+// A chosen site or visit type can narrow the candidates down to nothing for an actor type —
 // each empty section shows dim placeholder text in place of its (now empty) list.
 export const NoCandidates = (): JSX.Element => {
   return (
     <div style={{ width: 300 }}>
-      <CalendarsPanel providers={[]} devices={[]} rooms={[]} />
+      <CalendarsPanel items={noItems} filters={<CalendarFilters onChange={IGNORE_FILTER_CHOICE} />} />
     </div>
   );
 };
+NoCandidates.decorators = [withFixtures(SchedulingFixtures)];

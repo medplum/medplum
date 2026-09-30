@@ -12,6 +12,7 @@ import type {
   CodeableConcept,
   Coverage,
   Encounter,
+  Organization,
   Patient,
   Practitioner,
 } from '@medplum/fhirtypes';
@@ -21,7 +22,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { SAVE_TIMEOUT_MS } from '../../config/constants';
+import { CPT_COPYRIGHT_NOTICE, SAVE_TIMEOUT_MS } from '../../config/constants';
 import { ChartNoteStatus } from '../../types/encounter';
 import * as chargeItemsUtils from '../../utils/chargeitems';
 import { BillingTab } from './BillingTab';
@@ -202,6 +203,13 @@ describe('BillingTab', () => {
     expect(screen.getByText('Diagnosis')).toBeInTheDocument();
     expect(screen.getByText('Add Diagnosis')).toBeInTheDocument();
     expect(screen.queryByText('Headache')).not.toBeInTheDocument();
+  });
+
+  test('renders the AMA CPT copyright notice', async () => {
+    mockChargeItems([mockChargeItem]);
+    await setup();
+
+    expect(screen.getByText(CPT_COPYRIGHT_NOTICE)).toBeInTheDocument();
   });
 
   test('renders charge item list when charge items are provided', async () => {
@@ -765,6 +773,11 @@ describe('BillingTab', () => {
     const user = userEvent.setup();
 
     mockSearchResources({ Coverage: [mockCoverage] });
+    await medplum.createResource<Organization>({
+      resourceType: 'Organization',
+      id: 'billing-org-123',
+      name: 'Test Medical Practice',
+    });
 
     // No persisted Claim; the practitioner bills under an organization via PractitionerRole.
     vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string) => {
@@ -789,8 +802,16 @@ describe('BillingTab', () => {
     await setup();
 
     await waitFor(() => {
-      expect(medplum.searchOne).toHaveBeenCalledWith('PractitionerRole', expect.anything());
+      expect(medplum.searchOne).toHaveBeenCalledWith('PractitionerRole', {
+        practitioner: 'Practitioner/practitioner-123',
+        active: 'true',
+        'organization.identifier': 'https://www.medplum.com/provider|billing-organization',
+      });
     });
+
+    // The role's organization is preselected in the picker, which stays editable.
+    expect(await screen.findByText('Test Medical Practice')).toBeInTheDocument();
+    expect(document.querySelector('.mantine-Pill-remove')).toBeInTheDocument();
 
     await user.click(screen.getByText('Export Claim'));
     await user.click(await screen.findByText('CMS 1500 Form'));

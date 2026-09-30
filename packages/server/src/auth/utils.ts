@@ -29,9 +29,8 @@ import { sendEmail } from '../email/email';
 import { getProjectAppName } from '../email/utils';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
@@ -66,24 +65,24 @@ export function getAllowedMfaMethods(project: Project | undefined): MfaMethod[] 
 export function getAllowedEmailDomains(project: Project | undefined): string[] {
   return (
     project?.setting
-      ?.filter((s) => s.name === 'allowedEmailDomain')
+      ?.filter((s) => s.name === 'allowedPractitionerEmailDomain')
       .map((s) => s.valueString?.trim().toLowerCase())
       .filter((domain): domain is string => !!domain) ?? []
   );
 }
 
 /**
- * Determines whether an email address is allowed to be used for a new user or invite.
+ * Determines whether an email address is allowed to be used for a new Practitioner user or invite.
  *
  * `blockedDomains` (typically the server-wide `blockedEmailDomains` config setting) always
  * takes precedence: a blocked domain is rejected even if it also appears in the project's
- * `allowedEmailDomain` setting.
+ * `allowedPractitionerEmailDomain` setting.
  * @param email - The email address to check.
  * @param project - The project the email is being used with, if known.
  * @param blockedDomains - Domains that are never allowed, regardless of project settings.
  * @returns True if the email's domain is allowed.
  */
-export function isEmailDomainAllowed(
+export function isPractitionerEmailDomainAllowed(
   email: string,
   project: Project | undefined,
   blockedDomains: string[] = []
@@ -100,6 +99,18 @@ export function isEmailDomainAllowed(
     return true;
   }
   return allowedDomains.includes(domain);
+}
+
+/**
+ * Determines whether a project accepts open self-registration.
+ * @param project - The project a user is attempting to register into.
+ * @returns An OperationOutcome describing the rejection, or undefined if registration is allowed.
+ */
+export function projectRegistrationAllowed(project: Project): OperationOutcome | undefined {
+  if (!project.defaultPatientAccessPolicy) {
+    return badRequest('Project does not allow open registration');
+  }
+  return undefined;
 }
 
 /**
@@ -441,7 +452,7 @@ export async function getProjectIdByClientId(
  * @param projectId - Optional project ID from the client.
  * @returns Project if found, otherwise undefined.
  */
-export function getProjectByRecaptchaSiteKey(
+function getProjectByRecaptchaSiteKey(
   recaptchaSiteKey: string,
   projectId: string | undefined
 ): Promise<WithId<Project> | undefined> {
@@ -461,8 +472,7 @@ export function getProjectByRecaptchaSiteKey(
     });
   }
 
-  const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // not shard ready; would require searching all shards
-  return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
+  return getGlobalSystemRepo().searchOne<Project>({ resourceType: 'Project', filters });
 }
 
 /**

@@ -18,7 +18,7 @@ import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SearchableMultiSelect } from './SearchableMultiSelect';
 import { useAvailableTables } from './useAvailableTables';
 import { formatBytes } from './utils';
@@ -38,6 +38,18 @@ interface IndexBloatInfo {
   liveTuplesPerPage?: number;
 }
 
+interface InvalidIndexInfo {
+  schemaName: string;
+  tableName: string;
+  indexName: string;
+  status: string;
+  indexSize: string;
+  indexSizeBytes: number;
+  indexType: string;
+  isPrimary: boolean;
+  isUnique: boolean;
+}
+
 type SortKey = keyof Pick<
   IndexBloatInfo,
   | 'schemaName'
@@ -53,7 +65,7 @@ type SortKey = keyof Pick<
 >;
 type SortDirection = 'asc' | 'desc';
 
-export function IndexBloat(): JSX.Element {
+export function IndexHealth(): JSX.Element {
   const medplum = useMedplum();
   const [tableNames, setTableNames] = useState<string[]>([]);
   const [availableTables, setAvailableTables] = useState<string[]>([]);
@@ -62,10 +74,35 @@ export function IndexBloat(): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [indexes, setIndexes] = useState<IndexBloatInfo[] | undefined>();
+  const [invalidIndexes, setInvalidIndexes] = useState<InvalidIndexInfo[] | undefined>();
+  const [invalidIndexesError, setInvalidIndexesError] = useState<string | undefined>();
   const [sortKey, setSortKey] = useState<SortKey>('indexSize');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   useAvailableTables({ medplum, onChange: setAvailableTables });
+
+  useEffect(() => {
+    let active = true;
+    medplum
+      .post('fhir/R4/$db-invalid-indexes', {})
+      .then((response: Parameters) => {
+        if (active) {
+          setInvalidIndexes(
+            response.parameter
+              ?.filter((parameter) => parameter.name === 'invalidIndex' && parameter.valueString)
+              .map((parameter) => parseInvalidIndexInfo(parameter.valueString as string)) ?? []
+          );
+        }
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          setInvalidIndexesError(normalizeErrorString(err));
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [medplum]);
 
   const sortedIndexes = useMemo(() => {
     return [...(indexes ?? [])].sort((a, b) => {
@@ -136,10 +173,74 @@ export function IndexBloat(): JSX.Element {
     typeof minBloatMegabytes === 'number' &&
     minBloatMegabytes >= 0;
 
+  const invalidIndexSize = invalidIndexes?.reduce((total, index) => total + index.indexSizeBytes, 0) ?? 0;
+
   return (
     <Stack gap="md">
       <div>
-        <Title order={2}>Index bloat</Title>
+        <Title order={2}>Index health</Title>
+        <Text c="dimmed" size="sm">
+          Review invalid indexes and analyze valid indexes for bloat. Invalid indexes are excluded from bloat estimates.
+        </Text>
+      </div>
+
+      <div>
+        <Title order={3}>Invalid indexes</Title>
+        <Text c="dimmed" size="sm">
+          Invalid indexes cannot serve queries, but may still consume disk and add write overhead.
+        </Text>
+      </div>
+
+      {invalidIndexesError && (
+        <Alert color="red" title="Unable to load invalid indexes">
+          {invalidIndexesError}
+        </Alert>
+      )}
+      {invalidIndexes === undefined && !invalidIndexesError && <Text c="dimmed">Loading invalid indexes…</Text>}
+      {invalidIndexes?.length === 0 && <Text c="dimmed">No invalid indexes detected.</Text>}
+      {invalidIndexes && invalidIndexes.length > 0 && (
+        <>
+          <Alert
+            color="yellow"
+            title={`${invalidIndexes.length} invalid ${invalidIndexes.length === 1 ? 'index' : 'indexes'} detected`}
+          >
+            These indexes occupy {formatBytes(invalidIndexSize)} and are not included in the bloat analysis below.
+          </Alert>
+          <Table.ScrollContainer minWidth={900}>
+            <Table striped highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Schema</Table.Th>
+                  <Table.Th>Table</Table.Th>
+                  <Table.Th>Index</Table.Th>
+                  <Table.Th>Status</Table.Th>
+                  <Table.Th>Type</Table.Th>
+                  <Table.Th>Size</Table.Th>
+                  <Table.Th>Unique</Table.Th>
+                  <Table.Th>Primary</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {invalidIndexes.map((index) => (
+                  <Table.Tr key={`${index.schemaName}.${index.indexName}`}>
+                    <Table.Td>{index.schemaName}</Table.Td>
+                    <Table.Td>{index.tableName}</Table.Td>
+                    <Table.Td>{index.indexName}</Table.Td>
+                    <Table.Td>{index.status}</Table.Td>
+                    <Table.Td>{index.indexType.toUpperCase()}</Table.Td>
+                    <Table.Td>{index.indexSize}</Table.Td>
+                    <Table.Td>{index.isUnique ? 'Yes' : 'No'}</Table.Td>
+                    <Table.Td>{index.isPrimary ? 'Yes' : 'No'}</Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        </>
+      )}
+
+      <div>
+        <Title order={3}>Index bloat</Title>
         <Text c="dimmed" size="sm">
           B-tree rows show an estimated bloat percentage. GIN rows show live tuples per allocated page; a low ratio on a
           large index is a signal to consider REINDEX CONCURRENTLY. Live tuple estimates are updated by VACUUM and
@@ -329,6 +430,51 @@ function parseIndexBloatInfo(parameter: ParametersParameter): IndexBloatInfo {
     allocatedPages: getOptionalNumberPart(parts, 'allocatedPages'),
     liveTuplesPerPage: getOptionalNumberPart(parts, 'liveTuplesPerPage'),
   };
+}
+
+function parseInvalidIndexInfo(value: string): InvalidIndexInfo {
+  const values = new Map<string, string>();
+  for (const line of value.split('\n')) {
+    const match = /^\s*\[([^:]+):\s*(.*)]$/.exec(line);
+    if (match) {
+      values.set(match[1], match[2]);
+    }
+  }
+
+  const schemaName = values.get('schema') ?? '';
+  const qualifiedIndexName = value.split('\n', 1)[0].replace(/:$/, '');
+  const indexName = qualifiedIndexName.replace(new RegExp(`^${escapeRegExp(schemaName)}\\.`), '').replace(/^"|"$/g, '');
+  const indexSize = values.get('index_size') ?? '0 bytes';
+  return {
+    schemaName,
+    tableName: values.get('table') ?? '',
+    indexName,
+    status: values.get('index_status') ?? '',
+    indexSize,
+    indexSizeBytes: parsePostgresSize(indexSize),
+    indexType: values.get('index_type') ?? '',
+    isPrimary: values.get('is_primary') === 'true',
+    isUnique: values.get('is_unique') === 'true',
+  };
+}
+
+function parsePostgresSize(value: string): number {
+  const match = /^(\d+(?:\.\d+)?)\s*(bytes|kB|MB|GB|TB)$/.exec(value);
+  if (!match) {
+    return 0;
+  }
+  const multipliers: Record<string, number> = {
+    bytes: 1,
+    kB: 1024,
+    MB: 1024 ** 2,
+    GB: 1024 ** 3,
+    TB: 1024 ** 4,
+  };
+  return Number(match[1]) * (multipliers[match[2]] ?? 0);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function getStringPart(parts: ParametersParameter[], name: string): string {

@@ -101,7 +101,8 @@ fi
 # otplib - version 13+ requires ESM, holding back until server supports ESM
 # @mantine/* - version 9 has a few small backwards-incompatible changes, namely affecting at least our `PatientSummary` component, which would make it hard to support both Mantine 8 and 9 simultaneously
 # typescript - v7 needs us to do some work before we can use it
-MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp node-fetch npm zod otplib @mantine/* typescript"
+# vitest - v5 needs to wait until our mock libraries can catch up on compatibility
+MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp node-fetch npm zod otplib @mantine/* typescript vitest @vitest/coverage-v8 @vitest/ui"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
@@ -114,6 +115,9 @@ if [ "$LAST_STEP" -lt 1 ]; then
     # "minor" - Upgrade to the highest minor version without bumping the major version
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
     npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE" --target minor --enginesNode
+
+    # Re-pin packageManager (with its integrity hash) in case ncu bumped it
+    corepack use $(node -p "require('./package.json').packageManager")
 
     # Commit and push before running NPM install
     git add -u .
@@ -155,6 +159,9 @@ if [ "$LAST_STEP" -lt 3 ]; then
     # "latest" - Upgrade to whatever the package's "latest" git tag points to.
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
     npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE $MAJOR_EXCLUDE" --target greatest --pre 0 --enginesNode
+
+    # Re-pin packageManager (with its integrity hash) in case ncu bumped it
+    corepack use $(node -p "require('./package.json').packageManager")
 
     # Check for changes in the working directory
     if git diff --quiet; then

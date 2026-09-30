@@ -56,13 +56,13 @@ describe('DatabaseToolsPage', () => {
     expect(screen.getByRole('tab', { name: 'Array Column Padding' })).toBeInTheDocument();
   });
 
-  test('Index Bloat tab exists', async () => {
+  test('Index Health tab exists', async () => {
     setup();
-    expect(screen.getByRole('tab', { name: 'Index Bloat' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Index Health' })).toBeInTheDocument();
   });
 
-  test('Index Bloat tab route', async () => {
+  test('Index Health tab route', async () => {
     setup();
-    expect(screen.getByRole('link', { name: 'Index Bloat' })).toHaveAttribute('href', '/admin/super/db/index-bloat');
+    expect(screen.getByRole('link', { name: 'Index Health' })).toHaveAttribute('href', '/admin/super/db/index-health');
   });
 });

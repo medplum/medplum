@@ -7,6 +7,7 @@ import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
 import type { ActorCombination } from './AppointmentFinder.schedules';
 import type { DateRange } from './AppointmentFinder.times';
+import { getFindWindowError } from './AppointmentFinder.times';
 
 /** `$find`'s own default page size, applied per combination. */
 const DEFAULT_COUNT = 20;
@@ -27,6 +28,14 @@ export interface UseProposedAppointmentsOptions {
   readonly range: DateRange;
   /** Times to ask for per combination. Defaults to 20. */
   readonly count?: number;
+  /**
+   * An appointment whose own times are not to count as taken.
+   *
+   * For searching on behalf of an appointment that already exists: the times it holds
+   * are the times it is being moved off, and left standing they would block every
+   * search that keeps any of the actors it is held on.
+   */
+  readonly ignoreAppointment?: Reference<Appointment> | WithId<Appointment>;
 }
 
 export interface UseProposedAppointmentsResult {
@@ -39,23 +48,33 @@ export interface UseProposedAppointmentsResult {
   readonly loading: boolean;
   /** Set only when every combination failed. */
   readonly error: Error | undefined;
+  /** A window `$find` will not answer, caught before the request is made. */
+  readonly windowError: string | undefined;
 }
 
 /**
  * Searches for the times an appointment could be held at.
+ *
+ * A window `$find` would refuse is caught here rather than sent: this is the layer that
+ * decides whether the request is made, so it is the layer that says why it was not.
+ *
  * @param options - The service, actor combinations, days, and page size.
  * @returns The times offered, plus load and error state.
  */
 export function useProposedAppointments(options: UseProposedAppointmentsOptions): UseProposedAppointmentsResult {
-  const { service, combinations, range, count = DEFAULT_COUNT } = options;
+  const { service, combinations, range, count = DEFAULT_COUNT, ignoreAppointment } = options;
   const medplum = useMedplum();
   const [answered, setAnswered] = useState<SearchState>(NOTHING_ASKED);
 
   const { start, end } = range;
+  const windowError = getFindWindowError(range);
   const serviceReference = service && getReferenceString(service);
+  const ignoreReference = ignoreAppointment && getReferenceString(ignoreAppointment);
   const urls =
-    serviceReference && start && end
-      ? combinations.map((combination) => buildFindUrl(medplum, serviceReference, combination, start, end, count))
+    serviceReference && start && end && !windowError
+      ? combinations.map((combination) =>
+          buildFindUrl(medplum, serviceReference, combination, start, end, count, ignoreReference)
+        )
       : [];
   const urlsKey = urls.join(URL_SEPARATOR);
 
@@ -99,6 +118,7 @@ export function useProposedAppointments(options: UseProposedAppointmentsOptions)
     requestCount: urls.length,
     loading: urls.length > 0 && stale,
     error: stale ? undefined : answered.error,
+    windowError,
   };
 }
 
@@ -121,7 +141,8 @@ function buildFindUrl(
   combination: ActorCombination,
   start: Date,
   end: Date,
-  count: number
+  count: number,
+  ignoreReference?: string
 ): string {
   const url = medplum.fhirUrl('Appointment', '$find');
   url.searchParams.set('start', start.toISOString());
@@ -131,6 +152,9 @@ function buildFindUrl(
     if (schedule.reference) {
       url.searchParams.append('schedule', schedule.reference);
     }
+  }
+  if (ignoreReference) {
+    url.searchParams.set('ignore-appointment', ignoreReference);
   }
   url.searchParams.set('_count', count.toString());
   return url.toString();

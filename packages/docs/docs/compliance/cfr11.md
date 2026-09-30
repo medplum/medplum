@@ -1,3 +1,7 @@
+---
+sidebar_position: 9
+---
+
 # CFR Part 11 Certification
 
 :::caution[Note]

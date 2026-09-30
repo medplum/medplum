@@ -16,7 +16,17 @@ let mountCount = 0;
 // transition to/from zero mounted wrappers, rather than once per wrapper.
 function acquireSharedClock(): void {
   if (!sharedClock) {
-    sharedClock = createFakeClock({ now: MOCKED_DATE, shouldAdvanceTime: false, toFake: ['Date'] });
+    sharedClock = createFakeClock({
+      now: MOCKED_DATE,
+      shouldAdvanceTime: false,
+      toFake: ['Date'],
+      // Storybook bundles a separate copy of sinon per package, and it loads the next story's
+      // module before tearing down the current one. Without `global`, fake-timers captures the
+      // "native" Date at module load, which may be another copy's fake Date. Faking on top of
+      // a fake Date throws "Cannot redefine property: constructor". Passing `global` makes it
+      // capture Date at install time instead. sinon honors this option but its typings omit it.
+      global: globalThis,
+    } as Parameters<typeof createFakeClock>[0]);
   }
   mountCount++;
 }

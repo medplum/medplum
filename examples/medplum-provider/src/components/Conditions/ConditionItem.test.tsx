@@ -22,6 +22,14 @@ const mockCondition: Condition = {
   },
 };
 
+async function expectNoWindowError(interaction: () => Promise<void>): Promise<void> {
+  const onError = vi.fn((event: ErrorEvent) => event.preventDefault());
+  window.addEventListener('error', onError);
+  await interaction();
+  window.removeEventListener('error', onError);
+  expect(onError).not.toHaveBeenCalled();
+}
+
 describe('ConditionItem', () => {
   const setup = (props: Partial<Parameters<typeof ConditionItem>[0]> = {}): ReturnType<typeof render> => {
     return render(
@@ -88,5 +96,33 @@ describe('ConditionItem', () => {
     const buttons = screen.getAllByRole('button', { hidden: true });
     const removeButton = buttons.find((btn) => btn.querySelector('svg'));
     expect(removeButton).toBeInTheDocument();
+  });
+
+  test('renders one rank option per condition and calls onChange with the selected rank', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    setup({ onChange });
+    await user.click(screen.getByRole('textbox'));
+    const options = await screen.findAllByRole('option', { hidden: true });
+    expect(options.map((option) => option.textContent)).toEqual(['1', '2', '3']);
+    await user.click(options[2]);
+    expect(onChange).toHaveBeenCalledWith(mockCondition, '3');
+  });
+
+  test('does not throw when selecting a rank without an onChange handler', async () => {
+    const user = userEvent.setup();
+    setup({ onChange: undefined });
+    await expectNoWindowError(async () => {
+      await user.click(screen.getByRole('textbox'));
+      await user.click(await screen.findByRole('option', { name: '2', hidden: true }));
+    });
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+  });
+
+  test('does not throw when removing without an onRemove handler', async () => {
+    setup({ onRemove: undefined });
+    const removeButton = screen.getAllByRole('button', { hidden: true }).find((btn) => btn.querySelector('svg'));
+    await expectNoWindowError(() => userEvent.setup().click(removeButton as HTMLElement));
+    expect(screen.getByText('Acute bronchitis')).toBeInTheDocument();
   });
 });

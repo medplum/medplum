@@ -9,6 +9,7 @@ import { getConfig } from '../config/loader';
 import { RequestContext } from '../context';
 import { globalLogger } from '../logger';
 import { requestContextStore } from '../request-context-store';
+import { getNormalizedPath } from '../util/url';
 import { handleAgentConnection, stopAgentHeartbeat } from './agent';
 import { handleAiRealtimeConnection, stopAiRealtimeHeartbeat } from './ai-realtime';
 import { handleEchoConnection, initEchoHeartbeat, stopEchoHeartbeat } from './echo';
@@ -116,8 +117,16 @@ export function initWebSockets(server: http.Server): void {
   initEchoHeartbeat();
 }
 
+/**
+ * Returns the handler key for a WebSocket upgrade request.
+ *
+ * The URL is normalized first so that the `/api` and `/projects/{projectId}` mount prefixes used by
+ * the HTTP API resolve to the same handler as the bare path.
+ * @param path - The upgrade request URL.
+ * @returns The handler key, e.g. `subscriptions-r4`.
+ */
 function getWebSocketPath(path: string): string {
-  return path.split('/').filter(Boolean)[1];
+  return getNormalizedPath(path).split('/').filter(Boolean)[1];
 }
 
 /**

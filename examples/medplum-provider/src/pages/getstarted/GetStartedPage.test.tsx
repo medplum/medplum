@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Bundle, Parameters, ValueSet } from '@medplum/fhirtypes';
+import type { ActivityDefinition, Bundle, Parameters, PlanDefinition, ValueSet } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -78,7 +78,7 @@ describe('GetStartedPage', () => {
     test('Names each sample dataset', () => {
       setup();
       expect(screen.getByText('David James Williams')).toBeInTheDocument();
-      expect(screen.getByText('Simple Initial Visit')).toBeInTheDocument();
+      expect(screen.getByText('Simple Initial Visit + Billing')).toBeInTheDocument();
       expect(screen.getByText('ICD-10-CM Billable Codes')).toBeInTheDocument();
       expect(screen.getByText('Geriatric T2DM Starter')).toBeInTheDocument();
     });
@@ -164,10 +164,44 @@ describe('GetStartedPage', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'Import Care Template' }));
 
-      expect(await screen.findByText('Imported 2 resources for Simple Initial Visit template')).toBeInTheDocument();
+      expect(
+        await screen.findByText('Imported 2 resources for Simple Initial Visit + Billing template')
+      ).toBeInTheDocument();
       // Already a transaction bundle, so it is posted unconverted.
       expect(executeBatch.mock.calls[0][0].type).toBe('transaction');
       expect(executeBatch.mock.calls[0][0].entry?.length).toBeGreaterThan(0);
+    });
+
+    test('Deletes earlier copies of the template before importing', async () => {
+      const stale = await medplum.createResource<ActivityDefinition>({
+        resourceType: 'ActivityDefinition',
+        status: 'active',
+        url: 'https://www.medplum.com/activitydefinition/venipuncture',
+      });
+      const stalePlan = await medplum.createResource<PlanDefinition>({
+        resourceType: 'PlanDefinition',
+        status: 'active',
+        url: 'https://www.medplum.com/plandefinition/simple-initial-visit',
+      });
+      const executeBatch = vi.spyOn(medplum, 'executeBatch').mockResolvedValue(batchResponse('201', '201'));
+      setup();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Import Care Template' }));
+
+      expect(
+        await screen.findByText(
+          'Imported 2 resources for Simple Initial Visit + Billing template (replaced 2 existing)'
+        )
+      ).toBeInTheDocument();
+      const deletes = executeBatch.mock.calls[0][0].entry?.map((e) => e.request);
+      expect(deletes).toEqual(
+        expect.arrayContaining([
+          { method: 'DELETE', url: `ActivityDefinition/${stale.id}` },
+          { method: 'DELETE', url: `PlanDefinition/${stalePlan.id}` },
+        ])
+      );
+      expect(deletes).toHaveLength(2);
+      expect(executeBatch.mock.calls[1][0].entry?.[0].resource?.resourceType).toBe('ActivityDefinition');
     });
 
     test('Reports a failed import', async () => {
@@ -186,7 +220,9 @@ describe('GetStartedPage', () => {
       setup();
 
       await userEvent.click(screen.getByRole('button', { name: 'Import Care Template' }));
-      expect(await screen.findByText('Imported 0 resources for Simple Initial Visit template')).toBeInTheDocument();
+      expect(
+        await screen.findByText('Imported 0 resources for Simple Initial Visit + Billing template')
+      ).toBeInTheDocument();
 
       await userEvent.click(screen.getByRole('button', { name: 'Import Order Set' }));
       expect(await screen.findByText('Imported 0 resources for Geriatric T2DM Order Set')).toBeInTheDocument();

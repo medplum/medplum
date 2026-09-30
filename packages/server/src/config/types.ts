@@ -71,6 +71,8 @@ export interface MedplumServerConfig {
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
   botCustomFunctionsEnabled?: boolean;
+  /** Write each bot invocation's input to binary storage (e.g. S3) for debugging and analytics. Default is `true`. */
+  storeBotInput?: boolean;
   logRequests?: boolean;
   logAuditEvents?: boolean;
   saveAuditEvents?: boolean;
@@ -100,6 +102,7 @@ export interface MedplumServerConfig {
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;
   defaultLoginRateLimit?: number;
+  defaultMfaRateLimit?: number;
   /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
   defaultFhirQuota?: number;
   /** Milliseconds of delay added per quota unit in async context, in lieu of consuming quota units. */
@@ -133,6 +136,13 @@ export interface MedplumServerConfig {
 
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
+
+  /**
+   * Whether writes create resource cache entries (default 'true').
+   * When 'false', writes only update cache entries that already exist, and entries are created only
+   * when a read misses the cache. This prevents bulk writes from filling the cache.
+   */
+  cacheResourcesOnWrite?: boolean;
 
   /** Flag to enable pre-commit subscriptions for the interceptor pattern (default: false) */
   preCommitSubscriptionsEnabled?: boolean;
@@ -201,12 +211,6 @@ export interface MedplumServerConfig {
   workers?: MedplumWorkersConfig;
 
   /**
-   * Optional configuration for scheduled data warehouse sync jobs.
-   * Runs incremental in-server data warehouse sync jobs on a fixed cron pattern.
-   */
-  dataWarehouse?: MedplumDataWarehouseConfig;
-
-  /**
    * Optional mTLS certificate header for incoming requests.
    * If set, the server will attempt to extract the client certificate from the specified header.
    * Header name should be all lowercase.
@@ -230,7 +234,7 @@ export interface MedplumServerConfig {
 
   /**
    * Optional list of email domains that are blocked server-wide, regardless of
-   * any project-level `allowedEmailDomain` setting (e.g. disposable email providers).
+   * any project-level `allowedPractitionerEmailDomain` setting (e.g. disposable email providers).
    * Matched case-insensitively against the domain portion of the email address.
    */
   blockedEmailDomains?: string[];
@@ -248,6 +252,51 @@ export interface MedplumServerConfig {
    * as they are necesary for system functionality.
    */
   enabledSearchParameters?: string[];
+
+  /**
+   * Optional customizations to the server generated CapabilityStatement.
+   */
+  capabilityStatement?: MedplumCapabilityStatementConfig;
+}
+
+export interface MedplumCapabilityStatementConfig {
+  /**
+   * Partial CapabilityStatement merged over the server generated statement.
+   * Top level fields replace the generated values wholesale, so setting `rest` here replaces the
+   * generated `rest` entirely; prefer the filters below to restrict it.
+   */
+  overlay?: Record<string, unknown>;
+
+  /**
+   * Optional allowlist of advertised resource types. Cannot be combined with `excludeResourceTypes`.
+   */
+  includeResourceTypes?: string[];
+
+  /**
+   * Optional denylist of advertised resource types. Cannot be combined with `includeResourceTypes`.
+   */
+  excludeResourceTypes?: string[];
+
+  /**
+   * Optional advertised interactions, keyed by resource type.
+   * The `*` key sets the default for resource types that are not listed explicitly.
+   * An empty array advertises no interactions for that resource type.
+   */
+  interactions?: Record<string, string[]>;
+
+  /**
+   * Optional advertised system level interactions, such as `transaction` and `batch`.
+   */
+  systemInteractions?: string[];
+
+  /**
+   * Controls the advertised `supportedProfile` for each resource type.
+   * - `true` or omitted: advertise the server generated profiles (US Core).
+   * - `false`: omit `supportedProfile` entirely.
+   * - object: per resource type override, keyed by resource type. Listed types replace the generated
+   *   profiles (an empty array advertises none for that type); unlisted types keep the generated defaults.
+   */
+  supportedProfiles?: boolean | Record<string, string[]>;
 }
 
 export interface SubscriptionAutoDisableTrigger {
@@ -370,7 +419,6 @@ export type WorkerName =
   | 'post-deploy-migration'
   | 'set-accounts'
   | 'lambda-cleaner'
-  | 'data-warehouse-sync'
   | 'dicom';
 
 export interface MedplumWorkersConfig {
@@ -386,36 +434,6 @@ export interface MedplumWorkersConfig {
    * Only takes effect for workers that are enabled.
    */
   bullmq?: Partial<Record<WorkerName, Partial<MedplumBullmqConfig>>>;
-}
-
-export type MedplumDataWarehouseDestinationType = 's3tables' | 'local';
-
-export interface MedplumDataWarehouseConfig {
-  /**
-   * Enables/disables the scheduled sync worker. Defaults to false.
-   */
-  enabled?: boolean;
-  /**
-   * BullMQ cron pattern used to schedule sync runs.
-   */
-  cron?: string;
-  /** Warehouse export destination type. */
-  destination?: MedplumDataWarehouseDestinationType;
-  /** Required when destination is `s3tables`. */
-  awsS3TableArn?: string;
-  /** Required when destination is `local`. */
-  localBasePath?: string;
-  /** Optional Iceberg namespace used by sync. */
-  namespace?: string;
-  /**
-   * Earliest resource `lastUpdated` timestamp to include in sync (ISO-8601 date or date-time string).
-   * History rows with `lastUpdated` before this value are excluded.
-   */
-  startDate?: string;
-  /** FHIR resource types to include (e.g. `Patient`, `Observation`). When omitted, all types are candidates. */
-  includeResourceTypes?: string[];
-  /** FHIR resource types to exclude from sync. Cannot be set together with `includeResourceTypes`. */
-  excludeResourceTypes?: string[];
 }
 
 export interface MedplumFissionConfig {

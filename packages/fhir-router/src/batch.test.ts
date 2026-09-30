@@ -29,7 +29,7 @@ import type {
   Subscription,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import type { BatchInitialState } from './batch';
+import type { BatchEvent, BatchInitialState } from './batch';
 import { BatchProcessor, buildBatchResponseBundle, processBatch } from './batch';
 import type { FhirRequest } from './fhirrouter';
 import { FhirRouter } from './fhirrouter';
@@ -1283,6 +1283,35 @@ describe('Batch', () => {
       ],
     });
     expect(bundle.entry?.map((e) => e.response?.status)).toStrictEqual(['200', '201', '200']);
+  });
+
+  test('Dispatches batch telemetry once across transaction retries', async () => {
+    const events: BatchEvent[] = [];
+    const listener = (event: BatchEvent): void => {
+      events.push(event);
+    };
+    router.addEventListener('batch', listener as (e: any) => void);
+
+    // withTransaction re-runs its callback on a retryable failure, so stand in for one that
+    // succeeds on the second attempt.
+    const spy = vi
+      .spyOn(repo, 'withTransaction')
+      .mockImplementation(async (callback: any) => callback(repo).then(() => callback(repo)));
+    try {
+      await processBatch(req, repo, router, {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ request: { method: 'GET', url: 'Patient?name=alice' } }],
+      });
+
+      // The pre-event carries `count` and `size`, which feed histograms; emitting it per attempt
+      // would inflate them by the retry count.
+      expect(events.filter((e) => e.size !== undefined)).toHaveLength(1);
+      expect(events).toHaveLength(2); // one pre, one post
+    } finally {
+      spy.mockRestore();
+      router.removeEventListener('batch', listener as (e: any) => void);
+    }
   });
 
   describe('Process Transactions', () => {

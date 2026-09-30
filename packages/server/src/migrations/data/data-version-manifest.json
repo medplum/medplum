@@ -162,5 +162,25 @@
   },
   "v44": {
     "serverVersion": "5.1.33"
+  },
+  "v45": {
+    "serverVersion": "5.1.37"
+  },
+  "v46": {
+    "serverVersion": "5.1.39"
+  },
+  "v47": {
+    "serverVersion": "5.1.40"
+  },
+  "v48": {
+    "serverVersion": "5.1.42"
+  },
+  "v49": {
+    "serverVersion": "5.1.43",
+    "requiredBefore": "5.2.0"
+  },
+  "v50": {
+    "serverVersion": "5.1.44",
+    "requiredBefore": "5.2.0"
   }
 }

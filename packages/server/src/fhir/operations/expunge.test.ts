@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, LOINC } from '@medplum/core';
-import type { Observation, Patient } from '@medplum/fhirtypes';
+import type { AuditEvent, Observation, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -9,12 +9,17 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getCacheRedis } from '../../redis';
-import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { getGlobalSystemRepo } from '../repo';
+import {
+  createTestProject,
+  getSuperAdminAccessToken,
+  initTestAuth,
+  waitForAsyncJob,
+  withTestContext,
+} from '../../test.setup';
+import { ExpungedHistoryTag } from '../repository/row-builder';
+import { getTestProjectSystemRepo } from '../repository/test-utils';
 import { SelectQuery } from '../sql';
 import { Expunger } from './expunge';
-
-const systemRepo = getGlobalSystemRepo();
 
 describe('Expunge', () => {
   const app = express();
@@ -24,7 +29,7 @@ describe('Expunge', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    superAdminAccessToken = await getSuperAdminAccessToken();
   });
 
   afterAll(async () => {
@@ -42,13 +47,13 @@ describe('Expunge', () => {
   });
 
   test('Expunge single resource', async () => {
+    const systemRepo = getTestProjectSystemRepo();
     const patient = await withTestContext(() =>
       systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
       })
     );
-    expect(patient).toBeDefined();
 
     // Expect the patient to be in the "Patient" and "Patient_History" tables
     expect(await existsInDatabase('Patient', patient.id)).toBe(true);
@@ -64,10 +69,7 @@ describe('Expunge', () => {
       .send({});
     expect(res).toHaveStatus(200);
 
-    // Expect the patient to be removed from both tables
-    expect(await existsInDatabase('Patient', patient.id)).toBe(false);
-    expect(await existsInDatabase('Patient_History', patient.id)).toBe(false);
-    // Also expect lookup table to be cleaned up
+    await expectExpungeTombstone('Patient', patient.id);
     expect(await existsInLookupTable('HumanName', patient.id)).toBe(false);
   });
 
@@ -90,36 +92,33 @@ describe('Expunge', () => {
       membership: { admin: true },
     });
 
-    const { project, client, membership, accessToken } = await createTestProject({
+    const { project, client, membership, accessToken, repo } = await createTestProject({
       withClient: true,
       withAccessToken: true,
+      withRepo: true,
       membership: opts.membership,
       project: { link: [{ project: createReference(linkedProject) }] },
     });
 
     const linkedPatient = await linkedRepo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: linkedProject.id },
       name: [{ given: ['Linked'], family: 'Patient' }],
     });
 
-    const patient = await systemRepo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: project.id },
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     const linkedObs = await linkedRepo.createResource<Observation>({
       resourceType: 'Observation',
-      meta: { project: linkedProject.id },
       status: 'final',
       code: { coding: [{ system: LOINC, code: '12345-6' }] },
       subject: { reference: 'Patient/' + linkedPatient.id },
     });
 
-    const obs = await systemRepo.createResource<Observation>({
+    const obs = await repo.createResource<Observation>({
       resourceType: 'Observation',
-      meta: { project: project.id },
       status: 'final',
       code: { coding: [{ system: LOINC, code: '12345-6' }] },
       subject: { reference: 'Patient/' + patient.id },
@@ -145,37 +144,36 @@ describe('Expunge', () => {
       const mainResourcesExists = opts.project === 'linked';
       const linkedResourcesExist = opts.project === 'main';
 
-      expect(await existsInDatabase('Patient', patient.id)).toBe(mainResourcesExists);
-      expect(await existsInDatabase('Observation', obs.id)).toBe(mainResourcesExists);
-      expect(await existsInDatabase('Project', project.id)).toBe(mainResourcesExists);
-      expect(await existsInDatabase('ClientApplication', client.id)).toBe(mainResourcesExists);
-      expect(await existsInDatabase('ProjectMembership', membership.id)).toBe(mainResourcesExists);
+      await expectExpungeOutcome('Patient', patient.id, mainResourcesExists);
+      await expectExpungeOutcome('Observation', obs.id, mainResourcesExists);
+      await expectExpungeOutcome('Project', project.id, mainResourcesExists);
+      await expectExpungeOutcome('ClientApplication', client.id, mainResourcesExists);
+      await expectExpungeOutcome('ProjectMembership', membership.id, mainResourcesExists);
 
-      expect(await existsInDatabase('Patient', linkedPatient.id)).toBe(linkedResourcesExist);
-      expect(await existsInDatabase('Observation', linkedObs.id)).toBe(linkedResourcesExist);
-      expect(await existsInDatabase('Project', linkedProject.id)).toBe(linkedResourcesExist);
-      expect(await existsInDatabase('ClientApplication', linkedClient.id)).toBe(linkedResourcesExist);
-      expect(await existsInDatabase('ProjectMembership', linkedMembership.id)).toBe(linkedResourcesExist);
+      await expectExpungeOutcome('Patient', linkedPatient.id, linkedResourcesExist);
+      await expectExpungeOutcome('Observation', linkedObs.id, linkedResourcesExist);
+      await expectExpungeOutcome('Project', linkedProject.id, linkedResourcesExist);
+      await expectExpungeOutcome('ClientApplication', linkedClient.id, linkedResourcesExist);
+      await expectExpungeOutcome('ProjectMembership', linkedMembership.id, linkedResourcesExist);
     } else {
       expect(res).toHaveStatus(403);
     }
   });
 
   test('Project admin can expunge patient everything within own project', async () => {
-    const { project, accessToken } = await createTestProject({
+    const { accessToken, repo } = await createTestProject({
       withAccessToken: true,
+      withRepo: true,
       membership: { admin: true },
     });
 
-    const patient = await systemRepo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: project.id },
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    const obs = await systemRepo.createResource<Observation>({
+    const obs = await repo.createResource<Observation>({
       resourceType: 'Observation',
-      meta: { project: project.id },
       status: 'final',
       code: { coding: [{ system: LOINC, code: '12345-6' }] },
       subject: { reference: 'Patient/' + patient.id },
@@ -197,17 +195,15 @@ describe('Expunge', () => {
     // must skip the ones a project admin cannot search rather than erroring out.
     expect(asyncJob.status).toBe('completed');
 
-    // Both the patient and its compartment resources should be expunged
-    expect(await existsInDatabase('Patient', patient.id)).toBe(false);
-    expect(await existsInDatabase('Observation', obs.id)).toBe(false);
+    await expectExpungeTombstone('Patient', patient.id);
+    await expectExpungeTombstone('Observation', obs.id);
   });
 
   test('Project admin cannot expunge patient everything in another project', async () => {
     // Patient belongs to an unrelated project
-    const { project: otherProject } = await createTestProject({});
-    const otherPatient = await systemRepo.createResource<Patient>({
+    const { repo: otherRepo } = await createTestProject({ withRepo: true });
+    const otherPatient = await otherRepo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: otherProject.id },
       name: [{ given: ['Bob'], family: 'Jones' }],
     });
 
@@ -232,38 +228,38 @@ describe('Expunge', () => {
   });
 
   test('Expunger.expunge() expunges all resource types', async () => {
-    //setup
-    const { project, client, membership } = await createTestProject({ withClient: true });
-    expect(project).toBeDefined();
-    expect(client).toBeDefined();
-    expect(membership).toBeDefined();
+    const { project, client, membership, repo } = await createTestProject({
+      withClient: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
 
-    const patient = await systemRepo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: project.id },
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-    expect(patient).toBeDefined();
-    const patient2 = await systemRepo.createResource<Patient>({
+    const patient2 = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: project.id },
       name: [{ given: ['Bob'], family: 'Smith' }],
     });
-    const patient3 = await systemRepo.createResource<Patient>({
+    const patient3 = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: { project: project.id },
       name: [{ given: ['Bob'], family: 'Smith' }],
     });
-    expect(patient3).toBeDefined();
 
-    const obs = await systemRepo.createResource<Observation>({
+    const obs = await repo.createResource<Observation>({
       resourceType: 'Observation',
-      meta: { project: project.id },
       status: 'final',
       code: { coding: [{ system: LOINC, code: '12345-6' }] },
       subject: { reference: 'Patient/' + patient.id },
     });
-    expect(obs).toBeDefined();
+    const auditEvent = await repo.createResource<AuditEvent>({
+      resourceType: 'AuditEvent',
+      type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+      recorded: new Date().toISOString(),
+      agent: [{ requestor: true, who: { reference: 'Patient/' + patient.id } }],
+      source: { observer: { identifier: { value: 'test' } } },
+    });
 
     expect(await existsInCache('Project', project.id)).toBe(true);
     expect(await existsInCache('ClientApplication', client.id)).toBe(true);
@@ -274,28 +270,18 @@ describe('Expunge', () => {
     expect(await existsInCache('Observation', obs.id)).toBe(true);
 
     //execute
-    await new Expunger(systemRepo, project.id, 2).expunge();
+    await new Expunger(repo, project.id, 2).expunge();
 
     //result
 
-    expect(await existsInDatabase('Project', project.id)).toBe(false);
-    expect(await existsInDatabase('Project_History', project.id)).toBe(false);
-
-    expect(await existsInDatabase('ClientApplication', client.id)).toBe(false);
-    expect(await existsInDatabase('ClientApplication_History', client.id)).toBe(false);
-
-    expect(await existsInDatabase('ProjectMembership', membership.id)).toBe(false);
-    expect(await existsInDatabase('ProjectMembership_History', membership.id)).toBe(false);
-
-    expect(await existsInDatabase('Patient', patient.id)).toBe(false);
-    expect(await existsInDatabase('Patient_History', patient.id)).toBe(false);
-    expect(await existsInDatabase('Patient', patient2.id)).toBe(false);
-    expect(await existsInDatabase('Patient_History', patient2.id)).toBe(false);
-    expect(await existsInDatabase('Patient', patient3.id)).toBe(false);
-    expect(await existsInDatabase('Patient_History', patient3.id)).toBe(false);
-
-    expect(await existsInDatabase('Observation', obs.id)).toBe(false);
-    expect(await existsInDatabase('Observation_History', obs.id)).toBe(false);
+    await expectExpungeTombstone('Project', project.id);
+    await expectExpungeTombstone('ClientApplication', client.id);
+    await expectExpungeTombstone('ProjectMembership', membership.id);
+    await expectExpungeTombstone('Patient', patient.id);
+    await expectExpungeTombstone('Patient', patient2.id);
+    await expectExpungeTombstone('Patient', patient3.id);
+    await expectExpungeTombstone('Observation', obs.id);
+    await expectExpungeTombstone('AuditEvent', auditEvent.id);
 
     expect(await existsInCache('Project', project.id)).toBe(false);
     expect(await existsInCache('ClientApplication', client.id)).toBe(false);
@@ -304,6 +290,26 @@ describe('Expunge', () => {
     expect(await existsInCache('Patient', patient2.id)).toBe(false);
     expect(await existsInCache('Patient', patient3.id)).toBe(false);
     expect(await existsInCache('Observation', obs.id)).toBe(false);
+  });
+
+  test('Expunger expunges AuditEvent and leaves a history tombstone', async () => {
+    const { project, repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+    const auditEvent = await repo.createResource<AuditEvent>({
+      resourceType: 'AuditEvent',
+      type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+      recorded: new Date().toISOString(),
+      agent: [{ requestor: true, who: { reference: 'Patient/' + patient.id } }],
+      source: { observer: { identifier: { value: 'test' } } },
+    });
+
+    await new Expunger(repo, project.id, 2).expunge();
+
+    await expectExpungeTombstone('Patient', patient.id);
+    await expectExpungeTombstone('AuditEvent', auditEvent.id);
   });
 });
 
@@ -326,4 +332,32 @@ async function existsInLookupTable(tableName: string, id: string | undefined): P
     .where('resourceId', '=', id)
     .execute(getDatabasePool(DatabaseMode.READER));
   return rows.length > 0;
+}
+
+async function expectExpungeTombstone(resourceType: string, id: string | undefined): Promise<void> {
+  expect(await existsInDatabase(resourceType, id)).toBe(false);
+
+  const rows = await new SelectQuery(resourceType + '_History')
+    .column('content')
+    .where('id', '=', id)
+    .execute(getDatabasePool(DatabaseMode.READER));
+
+  expect(rows).toHaveLength(1);
+  const tombstone = JSON.parse(rows[0].content);
+  expect(tombstone.meta.tag).toEqual([ExpungedHistoryTag]);
+  expect(tombstone).toMatchObject({ resourceType, id, meta: { deleted: true } });
+  expect(tombstone.meta.project).toBeDefined();
+  expect(Object.keys(tombstone).sort()).toEqual(['id', 'meta', 'resourceType']);
+}
+
+async function expectExpungeOutcome(
+  resourceType: string,
+  id: string | undefined,
+  stillPresent: boolean
+): Promise<void> {
+  if (stillPresent) {
+    expect(await existsInDatabase(resourceType, id)).toBe(true);
+  } else {
+    await expectExpungeTombstone(resourceType, id);
+  }
 }

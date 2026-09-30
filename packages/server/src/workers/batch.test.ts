@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { AsyncJob, Binary, Bundle } from '@medplum/fhirtypes';
+import type { AsyncJob, Binary, Bundle, BundleEntry } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError, Worker } from 'bullmq';
+import { randomUUID } from 'node:crypto';
 import type { Mock, MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getUserConfiguration } from '../auth/me';
@@ -14,16 +15,15 @@ import { runInAuthenticatedContext } from '../context';
 import { BatchCheckpointStore } from '../fhir/batch/checkpoint-store';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { Repository, SystemRepository } from '../fhir/repo';
-import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import * as otelModule from '../otel/otel';
 import { BASE_METRIC_OPTIONS } from '../otel/otel';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject, streamToString, withTestContext } from '../test.setup';
-import type { LegacyBatchJobData, ReentrantBatchJobData } from './batch';
-import { execBatchJob, execLegacyBatchJob, getBatchQueue, initBatchWorker, queueBatchProcessing } from './batch';
+import { getAsyncJobTracking } from './base';
+import type { BatchJobData } from './batch';
+import { execBatchJob as execBatchJobImpl, getBatchQueue, initBatchWorker, queueBatchProcessing } from './batch';
 import * as workerUtils from './utils';
 import { queueRegistry } from './utils';
 
@@ -35,32 +35,25 @@ import { queueRegistry } from './utils';
  * @param overrides - Optional overrides applied on top of the defaults.
  * @returns A mock Job usable with execBatchJob.
  */
-function makeReentrantJob(
-  data: ReentrantBatchJobData,
-  overrides?: Record<string, unknown>
-): Job<ReentrantBatchJobData> {
+function makeReentrantJob(data: BatchJobData, overrides?: Record<string, unknown>): Job<BatchJobData> {
   const job: any = {
     id: 'test-job',
     name: 'BatchJobData',
     data,
     queueName: 'BatchQueue',
     token: 'test-token',
-    async updateData(newData: ReentrantBatchJobData) {
+    async updateData(newData: BatchJobData) {
       job.data = newData;
     },
     moveToDelayed: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
-  return job as Job<ReentrantBatchJobData>;
+  return job as Job<BatchJobData>;
 }
 
-function makeLegacyJob(data: LegacyBatchJobData): Job<LegacyBatchJobData> {
-  return {
-    id: 'legacy-job',
-    name: 'BatchJobData',
-    data,
-    queueName: 'BatchQueue',
-  } as unknown as Job<LegacyBatchJobData>;
+async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
+  const { authState, requestId, traceId } = job.data;
+  await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJobImpl(job));
 }
 
 const singleEntryBundle = (): Bundle => ({
@@ -94,7 +87,7 @@ describe('Batch worker', () => {
 
     const project = await createTestProject({ withClient: true, withAccessToken: true, withRepo: true });
     repo = project.repo;
-    systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
+    systemRepo = repo.getSystemRepo();
     const userConfig = await getUserConfiguration(systemRepo, project.project, project.membership);
     authState = { login: project.login, project: project.project, membership: project.membership, userConfig };
   });
@@ -127,12 +120,12 @@ describe('Batch worker', () => {
   // Sets up durable state for a re-entrant batch: creates the AsyncJob and stores the input bundle.
   async function setupReentrantJob(
     bundle: Bundle,
-    extra?: Partial<ReentrantBatchJobData>,
+    extra?: Partial<BatchJobData>,
     status: AsyncJob['status'] = 'accepted'
-  ): Promise<{ asyncJob: WithId<AsyncJob>; job: Job<ReentrantBatchJobData> }> {
+  ): Promise<{ asyncJob: WithId<AsyncJob>; job: Job<BatchJobData> }> {
     const asyncJob = await createAsyncJob(status);
     await new BatchCheckpointStore(asyncJob.id, globalLogger).saveInputBundle(bundle);
-    const job = makeReentrantJob({ asyncJobId: asyncJob.id, authState, ...extra });
+    const job = makeReentrantJob({ tracking: getAsyncJobTracking(asyncJob), authState, ...extra });
     return { asyncJob, job };
   }
 
@@ -152,6 +145,16 @@ describe('Batch worker', () => {
   }
 
   describe('execBatchJob (re-entrant)', () => {
+    test('Processes job data', () =>
+      withTestContext(async () => {
+        const asyncJob = await createAsyncJob();
+        await new BatchCheckpointStore(asyncJob.id, globalLogger).saveInputBundle(singleEntryBundle());
+        const job = makeReentrantJob({ tracking: getAsyncJobTracking(asyncJob), authState });
+        await expect(execBatchJob(job)).resolves.toBeUndefined();
+
+        expect((await readAsyncJob(asyncJob.id)).status).toStrictEqual('completed');
+      }));
+
     test('Processes a batch to completion', () =>
       withTestContext(async () => {
         const { asyncJob, job } = await setupReentrantJob(multiEntryBundle(3));
@@ -262,6 +265,75 @@ describe('Batch worker', () => {
         expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201']);
       }));
 
+    // EventTarget.dispatchEvent swallows listener errors, so the metric counts also verify that
+    // the authenticated test helper provided the context the telemetry listeners require.
+    test('Dispatches batch telemetry once across a delayed and resumed job', () =>
+      runInAuthenticatedContext(authState, undefined, undefined, { async: true }, async () => {
+        const histogram = vi.spyOn(otelModule, 'recordHistogramValue');
+        const countOf = (name: string): number => histogram.mock.calls.filter((call) => call[0] === name).length;
+        try {
+          // One entry succeeds, one 404s, so the terminal event carries a non-zero error count.
+          const bundle = multiEntryBundle(1);
+          (bundle.entry as BundleEntry[]).push({ request: { method: 'GET', url: 'Patient/' + randomUUID() } });
+          const { job } = await setupReentrantJob(bundle);
+
+          // Process one entry, then report the queue as closing so the job is checkpointed.
+          let checks = 0;
+          const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => checks++ >= 1);
+          await expect(execBatchJobImpl(job)).rejects.toBeInstanceOf(DelayedError);
+          isClosingSpy.mockRestore();
+
+          // Preprocessing dispatched the pre-event. Being delayed for another worker to pick up is
+          // not terminal, so nothing closes it out yet.
+          expect(countOf('medplum.batch.entries')).toStrictEqual(1);
+          expect(countOf('medplum.batch.size')).toStrictEqual(1);
+          expect(countOf('medplum.batch.errors')).toStrictEqual(0);
+
+          await expect(execBatchJobImpl(makeReentrantJob(job.data))).resolves.toBeUndefined();
+
+          // Resume rehydrates via fromState, which skips preprocessing, so the pre-event is not
+          // repeated. Completion is terminal and reports the whole job's errors exactly once.
+          expect(countOf('medplum.batch.entries')).toStrictEqual(1);
+          expect(countOf('medplum.batch.size')).toStrictEqual(1);
+          expect(countOf('medplum.batch.errors')).toStrictEqual(1);
+          expect(histogram).toHaveBeenCalledWith('medplum.batch.entries', 2, {
+            attributes: { bundleType: 'batch', async: true },
+          });
+          expect(histogram).toHaveBeenCalledWith('medplum.batch.errors', 1, {
+            attributes: { bundleType: 'batch', async: true },
+          });
+        } finally {
+          histogram.mockRestore();
+        }
+      }));
+
+    test('Dispatches terminal batch telemetry once when completing the AsyncJob fails', async () => {
+      const histogram = vi.spyOn(otelModule, 'recordHistogramValue');
+      const completeJobSpy = vi
+        .spyOn(AsyncJobExecutor.prototype, 'completeJob')
+        .mockRejectedValue(new Error('completeJob failed'));
+      const countOf = (name: string): number => histogram.mock.calls.filter((call) => call[0] === name).length;
+
+      try {
+        const bundle = multiEntryBundle(1);
+        (bundle.entry as BundleEntry[]).push({ request: { method: 'GET', url: 'Patient/' + randomUUID() } });
+        const { asyncJob, job } = await setupReentrantJob(bundle);
+
+        await expect(execBatchJob(job)).resolves.toBeUndefined();
+
+        // Processing completed and dispatched its terminal event before completeJob failed. The
+        // catch path must fail the AsyncJob without dispatching that terminal event a second time.
+        expect(completeJobSpy).toHaveBeenCalledOnce();
+        expect(countOf('medplum.batch.entries')).toStrictEqual(1);
+        expect(countOf('medplum.batch.size')).toStrictEqual(1);
+        expect(countOf('medplum.batch.errors')).toStrictEqual(1);
+        expect((await readAsyncJob(asyncJob.id)).status).toStrictEqual('error');
+      } finally {
+        completeJobSpy.mockRestore();
+        histogram.mockRestore();
+      }
+    });
+
     test('Publishes partial results when the AsyncJob was cancelled out of band', () =>
       withTestContext(async () => {
         const bundle = multiEntryBundle(3);
@@ -288,7 +360,7 @@ describe('Batch worker', () => {
 
         // Cancel the job, then run: it should not process further, only publish partial results.
         await repo.patchResource('AsyncJob', asyncJob.id, [{ op: 'add', path: '/status', value: 'cancelled' }]);
-        const job = makeReentrantJob({ asyncJobId: asyncJob.id, authState, position: 1, chunkSeq: 1 });
+        const job = makeReentrantJob({ tracking: getAsyncJobTracking(asyncJob), authState, position: 1, chunkSeq: 1 });
         const cleanupSpy = vi.spyOn(BatchCheckpointStore.prototype, 'cleanup');
 
         await expect(execBatchJob(job)).resolves.toBeUndefined();
@@ -372,61 +444,6 @@ describe('Batch worker', () => {
       }));
   });
 
-  describe('execLegacyBatchJob (deprecated)', () => {
-    test('Processes a legacy batch to completion, counting per-entry errors', () =>
-      withTestContext(async () => {
-        const asyncJob = await createAsyncJob();
-        // One successful create and one failing read, so the worker's error tally is exercised.
-        const bundle: Bundle = {
-          resourceType: 'Bundle',
-          type: 'batch',
-          entry: [
-            { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
-            { request: { method: 'GET', url: 'Patient/00000000-0000-4000-8000-000000000000' } },
-          ],
-        };
-        const job = makeLegacyJob({ asyncJob, bundle, authState });
-
-        await expect(execLegacyBatchJob(job)).resolves.toBeUndefined();
-
-        const finished = await readAsyncJob(asyncJob.id);
-        expect(finished.status).toStrictEqual('completed');
-        const results = await readResultsBundle(finished);
-        expect(results.entry).toHaveLength(2);
-        expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '404']);
-      }));
-
-    test('Fails the job when the batch request returns a non-ok outcome', () =>
-      withTestContext(async () => {
-        const asyncJob = await createAsyncJob();
-        const job = makeLegacyJob({
-          asyncJob,
-          bundle: { resourceType: 'Bundle', type: 'pergola' as Bundle['type'] },
-          authState,
-        });
-
-        await expect(execLegacyBatchJob(job)).resolves.toBeUndefined();
-
-        const finished = await readAsyncJob(asyncJob.id);
-        expect(finished.status).toStrictEqual('error');
-        expect(finished.output?.parameter?.[0]).toMatchObject({ name: 'outcome' });
-      }));
-
-    test('Fails the job when an unexpected error is thrown', () =>
-      withTestContext(async () => {
-        const asyncJob = await createAsyncJob();
-        const job = makeLegacyJob({ asyncJob, bundle: singleEntryBundle(), authState });
-
-        const writeSpy = vi.spyOn(getBinaryStorage(), 'writeBinary').mockRejectedValue(new Error('storage exploded'));
-
-        await expect(execLegacyBatchJob(job)).resolves.toBeUndefined();
-
-        const finished = await readAsyncJob(asyncJob.id);
-        expect(finished.status).toStrictEqual('error');
-        writeSpy.mockRestore();
-      }));
-  });
-
   // The hostname attribute is asserted because a dashboard grouping by host shows no series without it.
   describe('entriesProcessed metric', () => {
     const METRIC = 'medplum.batch.entriesProcessed';
@@ -453,30 +470,6 @@ describe('Batch worker', () => {
           expect(call[2]).toBeUndefined();
         }
       }));
-
-    test('Legacy path counts the whole bundle in a single call', () =>
-      withTestContext(async () => {
-        const asyncJob = await createAsyncJob();
-        const job = makeLegacyJob({ asyncJob, bundle: multiEntryBundle(2), authState });
-
-        await expect(execLegacyBatchJob(job)).resolves.toBeUndefined();
-
-        expect(entriesProcessedCalls()).toStrictEqual([[METRIC, BASE_METRIC_OPTIONS, 2]]);
-      }));
-
-    test('Legacy path counts nothing when the batch request fails', () =>
-      withTestContext(async () => {
-        const asyncJob = await createAsyncJob();
-        const job = makeLegacyJob({
-          asyncJob,
-          bundle: { resourceType: 'Bundle', type: 'pergola' as Bundle['type'] },
-          authState,
-        });
-
-        await expect(execLegacyBatchJob(job)).resolves.toBeUndefined();
-
-        expect(entriesProcessedCalls()).toHaveLength(0);
-      }));
   });
 
   describe('queueBatchProcessing', () => {
@@ -492,12 +485,15 @@ describe('Batch worker', () => {
           queueBatchProcessing(bundle, asyncJob)
         );
 
-        // Enqueued data carries asyncJobId and authState, but NOT the bundle (#9124).
+        // Enqueued data carries AsyncJob tracking and authState, but NOT the bundle (#9124).
         expect(queue.add).toHaveBeenCalledWith(
           'BatchJobData',
-          expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: asyncJob.id, authState })
+          expect.objectContaining<Partial<BatchJobData>>({
+            tracking: getAsyncJobTracking(asyncJob),
+            authState,
+          })
         );
-        const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
+        const enqueued = queue.add.mock.calls[0][1] as BatchJobData & { bundle?: unknown };
         expect(enqueued.bundle).toBeUndefined();
 
         // The bundle was persisted to durable storage.
@@ -544,33 +540,23 @@ describe('Batch worker', () => {
         expect((await readAsyncJob(asyncJob.id)).status).toStrictEqual('completed');
       }));
 
-    test('Dispatches legacy jobs to execLegacyBatchJob', () =>
-      withTestContext(async () => {
-        const { processor } = captureWorker();
-        const asyncJob = await createAsyncJob();
-        const job = makeLegacyJob({ asyncJob, bundle: singleEntryBundle(), authState });
-
-        await expect(processor(job)).resolves.toBeUndefined();
-        expect((await readAsyncJob(asyncJob.id)).status).toStrictEqual('completed');
-      }));
-
     test('Throws on unrecognized job data', () =>
       withTestContext(async () => {
         const { processor } = captureWorker();
         await expect(processor({ data: { authState } } as unknown as Job)).rejects.toThrow(TypeError);
       }));
 
-    test('Verbose logging fields resolve the async job reference for both job shapes', () =>
+    test('Verbose logging fields resolve the async job reference', () =>
       withTestContext(async () => {
         const spy = vi.spyOn(workerUtils, 'addVerboseQueueLogging');
         initBatchWorker(config);
         const logFields = spy.mock.calls.at(-1)?.[2] as (job: Job) => Record<string, unknown>;
         const asyncJob = await createAsyncJob();
+        const job = makeReentrantJob({ tracking: getAsyncJobTracking(asyncJob), authState });
 
-        expect(logFields(makeLegacyJob({ asyncJob, bundle: singleEntryBundle(), authState }))).toMatchObject({
+        expect(logFields(job)).toMatchObject({
           asyncJob: getReferenceString(asyncJob),
         });
-        expect(logFields(makeReentrantJob({ asyncJobId: asyncJob.id, authState }))).toHaveProperty('asyncJob');
       }));
 
     describe('failed handler', () => {
@@ -587,18 +573,11 @@ describe('Batch worker', () => {
           expect((await readAsyncJob(asyncJob.id)).status).toStrictEqual('accepted');
         }));
 
-      test('Fails the AsyncJob for a legacy job', () =>
-        withTestContext(async () => {
-          const { failedHandler } = captureWorker();
-          const asyncJob = await createAsyncJob();
-          await failedHandler(makeLegacyJob({ asyncJob, bundle: singleEntryBundle(), authState }), new Error('boom'));
-          expect((await readAsyncJob(asyncJob.id)).status).toStrictEqual('error');
-        }));
-
       test('Fails the active AsyncJob and cleans up for a re-entrant job', () =>
         withTestContext(async () => {
           const { failedHandler } = captureWorker();
-          const { asyncJob, job } = await setupReentrantJob(singleEntryBundle(), { chunkSeq: 0 });
+          const asyncJob = await createAsyncJob();
+          const job = makeReentrantJob({ tracking: getAsyncJobTracking(asyncJob), authState, chunkSeq: 0 });
           const cleanupSpy = vi.spyOn(BatchCheckpointStore.prototype, 'cleanup');
 
           await failedHandler(job, new Error('boom'));
@@ -620,17 +599,6 @@ describe('Batch worker', () => {
           expect(cleanupSpy).toHaveBeenCalled();
           cleanupSpy.mockRestore();
         }));
-
-      // Not wrapped in withTestContext so getLogger() falls back to the globalLogger we spy on.
-      test('Logs and returns for unrecognized job data', async () => {
-        const { failedHandler } = captureWorker();
-        const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => {});
-        await failedHandler({ data: { authState } } as unknown as Job, new Error('boom'));
-        expect(errorSpy).toHaveBeenCalledWith(
-          'Unrecognized BatchJobData',
-          expect.objectContaining({ jobData: { authState } })
-        );
-      });
     });
   });
 });

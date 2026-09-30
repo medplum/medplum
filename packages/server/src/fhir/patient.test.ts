@@ -14,7 +14,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { withTestContext } from '../test.setup';
 import { getPatientCompartmentParams, getPatientResourceTypes, getPatients } from './patient';
-import { getGlobalSystemRepo } from './repo';
+import { getTestProjectSystemRepo } from './repository/test-utils';
 
 describe('FHIR Patient utils', () => {
   beforeAll(async () => {
@@ -158,7 +158,7 @@ describe('FHIR Patient utils', () => {
       // and that resource has a reference to a patient,
       // but the patient reference is an external patient ID,
       // we should silently ignore the patient reference
-      const systemRepo = getGlobalSystemRepo();
+      const systemRepo = getTestProjectSystemRepo();
       const eob = await systemRepo.createResource<ExplanationOfBenefit>({
         resourceType: 'ExplanationOfBenefit',
         status: 'active',

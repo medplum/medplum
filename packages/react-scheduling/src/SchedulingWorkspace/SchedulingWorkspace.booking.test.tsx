@@ -1,14 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { getExtensionValue, SchedulingMedicalNecessityURI } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
+import { useEffect } from 'react';
 import type { MockInstance } from 'vitest';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
 import { installBookStub } from '../stories/mockBook';
 import { installFindStub } from '../stories/mockFind';
-import { ElderJordanPatient } from '../stories/scheduling';
-import { installAutocompleteTimers } from '../test-utils/asyncAutocomplete';
+import { installValueSetStub } from '../stories/mockValueSet';
+import {
+  AuthorizationValueSets,
+  DIAGNOSIS_VALUE_SET,
+  DiagnosisCodes,
+  ElderJordanPatient,
+  PROCEDURE_VALUE_SET,
+  ProcedureCodes,
+} from '../stories/scheduling';
+import { installAutocompleteTimers, settleAutocomplete } from '../test-utils/asyncAutocomplete';
 import {
   chooseActor,
   chooseDay,
@@ -16,6 +27,9 @@ import {
   choosePatient,
   chooseSecondOfferedTime,
   clickBook,
+  enterAuthorizationDetails,
+  field,
+  fillAuthorizedBooking,
   fillBooking,
   hasPill,
   lastFindStart,
@@ -39,6 +53,23 @@ const TUESDAY_MORNING = new Date(2026, 7, 18, 9, 0, 0);
 const TUESDAY_AFTERNOON = new Date(2026, 7, 18, 14, 0, 0);
 const THURSDAY_MORNING = new Date(2026, 7, 20, 9, 0, 0);
 
+/** The week the stubbed grid stands for, which is the week every click below lands in. */
+const CALENDAR_WEEK = { start: new Date(2026, 7, 16), end: new Date(2026, 7, 22, 23, 59, 59) };
+
+/** A visit already on Dr. Rivera's calendar that week, for the grid to offer a click on. */
+const BOOKED_VISIT: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-rivera-tue',
+  status: 'booked',
+  start: new Date(2026, 7, 18, 11, 0, 0).toISOString(),
+  end: new Date(2026, 7, 18, 11, 30, 0).toISOString(),
+  serviceType: [{ text: 'Ultrasound Imaging' }],
+  participant: [
+    { status: 'accepted', actor: { reference: 'Patient/pt-cooper', display: 'Miles Cooper' } },
+    { status: 'accepted', actor: { reference: 'Practitioner/dr-rivera', display: 'Dr. Maya Rivera' } },
+  ],
+};
+
 const CLICK_TARGETS = {
   'tuesday morning': TUESDAY_MORNING,
   'tuesday afternoon': TUESDAY_AFTERNOON,
@@ -56,26 +87,43 @@ type ClickTarget = keyof typeof CLICK_TARGETS;
  */
 vi.mock('../MultiCalendar/MultiCalendar', () => ({
   MultiCalendar: (props: {
+    sources?: { appointments: Appointment[] }[];
     onSelectInterval?: (interval: { start: Date; end: Date }) => void;
+    onSelectAppointment?: (appointment: Appointment) => void;
+    onRangeChange?: (range: { start: Date; end: Date }) => void;
     selection?: { start: Date; end: Date };
-  }): JSX.Element => (
-    <div>
-      {Object.entries(CLICK_TARGETS).map(([name, target]) => (
-        <button
-          key={name}
-          type="button"
-          // A new Date per click, as the real calendar reports them: handing back one
-          // instance would make every same-day click look identical by reference and
-          // hide whether the day is actually being compared.
-          onClick={() => props.onSelectInterval?.({ start: new Date(target), end: new Date(target) })}
-        >
-          click {name}
-        </button>
-      ))}
-      {/* Stands in for the highlight the real grid draws over the interval it is given. */}
-      <div data-testid="marked-time">{props.selection ? props.selection.start.toISOString() : 'none'}</div>
-    </div>
-  ),
+  }): JSX.Element => {
+    // The real grid announces the week it opened on, and nothing is loaded onto the
+    // calendar until it does. Announced once, as a grid that is never paged announces it.
+    const { onRangeChange } = props;
+    useEffect(() => onRangeChange?.(CALENDAR_WEEK), [onRangeChange]);
+
+    return (
+      <div>
+        {Object.entries(CLICK_TARGETS).map(([name, target]) => (
+          <button
+            key={name}
+            type="button"
+            // A new Date per click, as the real calendar reports them: handing back one
+            // instance would make every same-day click look identical by reference and
+            // hide whether the day is actually being compared.
+            onClick={() => props.onSelectInterval?.({ start: new Date(target), end: new Date(target) })}
+          >
+            click {name}
+          </button>
+        ))}
+        {(props.sources ?? [])
+          .flatMap((source) => source.appointments)
+          .map((appointment) => (
+            <button key={appointment.id} type="button" onClick={() => props.onSelectAppointment?.(appointment)}>
+              click appointment {appointment.id}
+            </button>
+          ))}
+        {/* Stands in for the highlight the real grid draws over the interval it is given. */}
+        <div data-testid="marked-time">{props.selection ? props.selection.start.toISOString() : 'none'}</div>
+      </div>
+    );
+  },
 }));
 
 /**
@@ -90,6 +138,21 @@ async function clickCalendar(target: ClickTarget = 'tuesday morning'): Promise<v
 
 function bookingPaneHeading(): HTMLElement | null {
   return screen.queryByRole('heading', { name: /book appointment/i });
+}
+
+/**
+ * The details of the appointment that is open, as far as any is.
+ * @returns The pane they are shown in, or null while none is open.
+ */
+function detailsPane(): HTMLElement | null {
+  return screen.queryByRole('region', { name: 'Appointment details' });
+}
+
+/** Clicks the booked visit on the calendar, the way a user opens its details. */
+async function clickBookedVisit(): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: `click appointment ${BOOKED_VISIT.id}` }));
+  });
 }
 
 /**
@@ -115,21 +178,31 @@ describe('SchedulingWorkspace booking', () => {
   let medplum: MockClient;
   let restoreFind: () => void;
   let restoreBook: () => void;
+  let restoreValueSets: () => void;
 
   beforeEach(async () => {
     vi.setSystemTime(MONDAY_MORNING);
     medplum = await setupBookingClient();
     restoreFind = installFindStub(medplum);
     restoreBook = installBookStub(medplum);
+    restoreValueSets = installValueSetStub(medplum, AuthorizationValueSets);
   });
 
   afterEach(() => {
+    restoreValueSets();
     restoreBook();
     restoreFind();
   });
 
   function setup(onBooked?: (booking: AppointmentBooking) => void): void {
-    renderWithMedplum(<SchedulingWorkspace onBooked={onBooked} />, medplum);
+    renderWithMedplum(
+      <SchedulingWorkspace
+        procedureBinding={PROCEDURE_VALUE_SET}
+        diagnosisBinding={DIAGNOSIS_VALUE_SET}
+        onBooked={onBooked}
+      />,
+      medplum
+    );
   }
 
   test('Offers no booking form until the calendar is clicked', () => {
@@ -143,7 +216,8 @@ describe('SchedulingWorkspace booking', () => {
     await clickCalendar();
 
     expect(bookingPaneHeading()).toBeInTheDocument();
-    expect(screen.getByRole('searchbox', { name: /visit type/i })).toBeInTheDocument();
+    // Scoped to the pane, since the sidebar filter wears the same label.
+    expect(field(/visit type/i)).toBeInTheDocument();
   });
 
   test('Opens the time search on the day clicked rather than today', async () => {
@@ -277,6 +351,91 @@ describe('SchedulingWorkspace booking', () => {
       await chooseDay('19');
 
       expect(markedTime()).toBe('none');
+    });
+  });
+
+  describe('Visit types that require information supporting prior authorization', () => {
+    test('Will not book one until its codes are given', async () => {
+      const post = vi.spyOn(medplum, 'post');
+      setup();
+      await clickCalendar();
+
+      await fillAuthorizedBooking();
+      await clickBook();
+
+      expect(post.mock.calls.some(([url]) => String(url).includes('Appointment/$book'))).toBe(false);
+      // Still open, with every other answer kept, so the codes are one field away.
+      expect(bookingPaneHeading()).toBeInTheDocument();
+    });
+
+    test('Sends the codes to the server on the appointment itself', async () => {
+      const post = vi.spyOn(medplum, 'post');
+      setup();
+      await clickCalendar();
+
+      await fillAuthorizedBooking();
+      await enterAuthorizationDetails();
+      await clickBook();
+
+      // On the appointment rather than beside it, so that the write that books the visit is the
+      // same write that records what it was authorized for.
+      const proposal = bookedProposal(post);
+      expect(proposal.reasonCode).toEqual([{ coding: [DiagnosisCodes[0]] }]);
+      expect(proposal.serviceType?.slice(1)).toEqual([{ coding: [ProcedureCodes[0]] }]);
+      expect(getExtensionValue(proposal, SchedulingMedicalNecessityURI)).toBe(true);
+    });
+
+    test('Reports what was booked with the codes on it', async () => {
+      const onBooked = vi.fn();
+      setup(onBooked);
+      await clickCalendar();
+
+      await fillAuthorizedBooking();
+      await enterAuthorizationDetails();
+      await clickBook();
+
+      // The host reads the codes off the appointment it is handed, so nothing extra is threaded
+      // through the components between here and the form to carry them.
+      const [booking] = onBooked.mock.calls[0] as [AppointmentBooking];
+      expect(booking.appointment.reasonCode?.[0]?.coding?.[0]?.code).toBe(DiagnosisCodes[0].code);
+      expect(booking.appointment.serviceType?.at(-1)?.coding?.[0]?.code).toBe(ProcedureCodes[0].code);
+    });
+  });
+
+  describe('One pane at a time', () => {
+    beforeEach(async () => {
+      await medplum.createResource(BOOKED_VISIT);
+    });
+
+    /** Renders and waits for the visit the grid offers a click on to be loaded onto it. */
+    async function setupWithVisit(): Promise<void> {
+      setup();
+      await settleAutocomplete();
+    }
+
+    test('Opening an appointment puts its details where the booking form was', async () => {
+      await setupWithVisit();
+      await clickCalendar();
+      expect(bookingPaneHeading()).toBeInTheDocument();
+
+      await clickBookedVisit();
+
+      // The details take the pane over rather than opening beside or above it, so the
+      // part-filled form is gone and the time it was holding is no longer marked.
+      expect(detailsPane()).toBeInTheDocument();
+      expect(bookingPaneHeading()).not.toBeInTheDocument();
+      expect(markedTime()).toBe('none');
+    });
+
+    test('Clicking open time puts the booking form back over the details', async () => {
+      await setupWithVisit();
+      await clickBookedVisit();
+      expect(detailsPane()).toBeInTheDocument();
+
+      await clickCalendar();
+
+      expect(bookingPaneHeading()).toBeInTheDocument();
+      expect(detailsPane()).not.toBeInTheDocument();
     });
   });
 });

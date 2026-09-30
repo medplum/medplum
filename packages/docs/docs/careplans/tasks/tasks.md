@@ -174,7 +174,71 @@ Well maintained `Task.focus` elements are critical for data hygiene and streamli
 
 ## Task start / due dates
 
-The `Task.restriction.period` field describes the time period over which the [`Task`](/docs/api/fhir/resources/task) should be fulfilled, with `Task.restriction.period.end` representing the _due date_, and `Task.restriction.period.start` representing the (potentially optional) start date.
+The `Task.restriction.period` field describes the time period over which the [`Task`](/docs/api/fhir/resources/task) should be fulfilled, with `Task.restriction.period.end` representing the _due date_, and `Task.restriction.period.start` representing the (potentially optional) start date. A task that cannot be started until November 1 and is due at the end of December looks like this:
+
+```ts
+{
+  resourceType: 'Task',
+  status: 'requested',
+  intent: 'order',
+  restriction: {
+    period: {
+      start: '2026-11-01T00:00:00.000Z',
+      end: '2026-12-31T23:59:59.999Z',
+    },
+  },
+}
+```
+
+### Searching by due date range
+
+The `due-date` search parameter searches `Task.restriction.period`. Prefixes such as `le`, `ge`, `sa`, and `eb` are described in [Searching by comparison](/docs/search/basic-search#searching-by-comparison).
+
+With the default index, Medplum stores one timestamp for `due-date`: `period.start` when it is set, and `period.end` when the start is missing. Every prefix compares that single value. On the task above, `due-date=le2026-11-30` matches, because November 1 is on or before November 30, even though the due date is December 31. The same task matches `due-date=lt2026-12-01` as soon as November 1 has passed, so it shows up in an overdue list while it is still on time.
+
+Enable the [`range-search`](/docs/self-hosting/project-settings#project-feature-flags) project feature to compare both bounds. This allows for "start dates" or future scheduled tasks. A missing start is treated as the beginning of time, and a missing end as the end of time. A date with no time covers that calendar day, so `le2026-09-30` includes a start later on September 30 and excludes a start on October 1.
+
+:::tip[Medplum hosted service]
+If you use Medplum's hosted service, please email [support@medplum.com](mailto:support@medplum.com) to enable `range-search` for your project.
+:::
+
+The examples below assume `range-search` is on and that today is 2026-09-30.
+
+**Hide tasks scheduled for the future.** Returns tasks whose start is today or earlier, including overdue tasks and tasks that have an end but no start. The sample task stays out until November 1.
+
+```
+GET [base]/Task?due-date=le2026-09-30
+```
+
+Tasks with no `restriction.period` are omitted, because there is no period to compare. To keep them, combine the date test with a missing check in [`_filter`](/docs/search/filter-search-parameter):
+
+```
+GET [base]/Task?_filter=due-date le 2026-09-30 or due-date pr false
+```
+
+**Actionable today.** The period overlaps today: the start has arrived and the due date has not passed. The sample task is excluded in September, included through December, and excluded again in January.
+
+```
+GET [base]/Task?due-date=2026-09-30
+```
+
+**Overdue.** The period ended before today. The sample task is excluded until after December 31. Use `eb` for this query. `lt` compares the start, so `due-date=lt2026-11-15` includes the sample task during November, while the due date is still in December.
+
+```
+GET [base]/Task?due-date=eb2026-09-30
+```
+
+**Due on or before the end of November.** The period ends before December 1. The sample task is excluded. A task due on November 29 is included.
+
+```
+GET [base]/Task?due-date=eb2026-12-01
+```
+
+**Scheduled for the future.** The start is after today. The sample task is included until November 1.
+
+```
+GET [base]/Task?due-date=sa2026-09-30
+```
 
 ## Task completion times
 

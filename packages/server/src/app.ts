@@ -35,6 +35,7 @@ import { dicomRouter } from './dicom/routes';
 import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
 import { smartHealthLinkRouter } from './fhir/operations/smarthealthlinks';
+import { closeAgentCallbackSubscriber } from './fhir/operations/utils/agentcallback';
 import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
 import { loadStructureDefinitions } from './fhir/structure';
@@ -58,7 +59,7 @@ import { seedDatabase } from './seed';
 import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
-import { webhookRouter } from './webhook/routes';
+import { WEBHOOK_PATHS, webhookRouter } from './webhook/routes';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
 import { closeWebSockets, initWebSockets } from './ws/routes';
@@ -206,7 +207,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(attachRequestContext);
 
   app.use(rateLimitHandler(config));
-  app.use('/dicomweb/', dicomRouter);
+  app.use(
+    ['/dicomweb', '/api/dicomweb', '/projects/:projectId/dicomweb', '/api/projects/:projectId/dicomweb'],
+    dicomRouter
+  );
   app.use(
     [
       '/fhir/R4/Binary',
@@ -222,6 +226,17 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
     ['/fhir/R4', '/api/fhir/R4', '/projects/:projectId/fhir/R4', '/api/projects/:projectId/fhir/R4'],
     authenticateRequest,
     asyncBatchHandler(config)
+  );
+
+  app.use(
+    WEBHOOK_PATHS,
+    json({
+      type: JSON_TYPE,
+      limit: config.maxJsonSize,
+      verify: (req, _res, buf) => {
+        (req as any).rawBody = buf;
+      },
+    })
   );
 
   app.use(urlencoded({ extended: false }));
@@ -297,6 +312,7 @@ export async function shutdownApp(): Promise<void> {
 
   await closeWorkers();
   await closeDatabase();
+  closeAgentCallbackSubscriber();
   await closeRedis();
   closeRateLimiter();
 

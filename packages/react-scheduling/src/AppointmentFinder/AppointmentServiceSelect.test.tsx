@@ -146,12 +146,11 @@ describe('AppointmentServiceSelect', () => {
       ['Ultrasound', '25', 'name'],
       ['Ultrasound', '25', 'name'],
     ]);
-    expect(screen.getByText(/Showing visit types offered at/)).toBeInTheDocument();
     searchResources.mockRestore();
   });
 
-  // A caller holding a reference should not have to read the Location first: narrowing
-  // needs only the reference string, and the site is fetched to name it.
+  // A caller holding a reference should not have to read the Location first:
+  // narrowing needs only the reference string.
   test('Narrows the services to a location given as a reference', async () => {
     const searchResources = vi.spyOn(medplum, 'searchResources');
     setup({ location: { reference: 'Location/main-clinic' } });
@@ -159,9 +158,6 @@ describe('AppointmentServiceSelect', () => {
     await typeInAutocomplete(searchBox(), 'Ultrasound');
 
     expect(serviceSearches(searchResources)[0].get('location')).toBe('Location/main-clinic');
-    expect(
-      await screen.findByText(`Showing visit types offered at ${MainClinic.name}, plus those not tied to a site.`)
-    ).toBeInTheDocument();
     searchResources.mockRestore();
   });
 

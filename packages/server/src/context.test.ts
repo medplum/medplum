@@ -1,14 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Request } from 'express';
 import { loadTestConfig } from './config/loader';
 import {
   RequestContext,
   buildTracingExtension,
-  extractAmazonTraceId,
   getAuthenticatedContext,
   getRequestContext,
-  getTraceId,
   tryGetRequestContext,
   tryRunInRequestContext,
 } from './context';
@@ -49,18 +46,6 @@ describe('RequestContext', () => {
     tryRunInRequestContext('request', 'trace', () => {
       expect(tryGetRequestContext()).toBeDefined();
     });
-  });
-
-  test('getTraceId', () => {
-    expect(getTraceId(mockRequest({}))).toBeUndefined();
-    expect(getTraceId(mockRequest({ 'x-trace-id': 'foo' }))).toBeUndefined();
-    expect(getTraceId(mockRequest({ traceparent: 'foo' }))).toBeUndefined();
-
-    const uuid = '00000000-0000-0000-0000-000000000000';
-    expect(getTraceId(mockRequest({ 'x-trace-id': uuid }))).toStrictEqual(uuid);
-
-    const tpid = '00-12345678901234567890123456789012-3456789012345678-01';
-    expect(getTraceId(mockRequest({ traceparent: tpid }))).toStrictEqual(tpid);
   });
 
   describe('buildTracingExtension', () => {
@@ -142,29 +127,4 @@ describe('RequestContext', () => {
       }
     );
   });
-
-  test('x-amzn-trace-id', () => {
-    const amzn = '1-67891233-abcdef012345678912345678';
-    expect(getTraceId(mockRequest({ 'x-amzn-trace-id': `Root=${amzn}` }))).toStrictEqual(amzn);
-
-    // x-trace-id should take precedence
-    const uuid = '00000000-0000-0000-0000-000000000000';
-    expect(getTraceId(mockRequest({ 'x-amzn-trace-id': amzn, 'x-trace-id': uuid }))).toStrictEqual(uuid);
-  });
-
-  test('extractAmazonTraceId', () => {
-    expect(extractAmazonTraceId('')).toBeUndefined();
-    expect(extractAmazonTraceId('Root=foo')).toBe('foo');
-    expect(extractAmazonTraceId('Self=foo')).toBe('foo');
-    expect(extractAmazonTraceId('Root=foo;Self=bar')).toBe('foo');
-    expect(extractAmazonTraceId('Custom=x;Root=foo;Self=bar')).toBe('foo');
-  });
 });
-
-function mockRequest(headers: Record<string, string>): Request {
-  return {
-    header(name: string): string | undefined {
-      return headers[name];
-    },
-  } as unknown as Request;
-}

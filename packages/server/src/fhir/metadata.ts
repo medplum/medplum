@@ -19,6 +19,12 @@ import type {
   CapabilityStatementRestSecurity,
   ResourceType,
 } from '@medplum/fhirtypes';
+import {
+  getResourceInteractions,
+  getSupportedProfiles,
+  getSystemInteractions,
+  isResourceTypeAdvertised,
+} from '../config/capabilitystatement';
 import { getConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 
@@ -188,7 +194,12 @@ export function getCapabilityStatement(): CapabilityStatement {
   return capabilityStatement;
 }
 
-function buildCapabilityStatement(): CapabilityStatement {
+/**
+ * Builds the CapabilityStatement from the server configuration.
+ * Exported for testing; use {@link getCapabilityStatement} to read the cached statement.
+ * @returns The generated CapabilityStatement.
+ */
+export function buildCapabilityStatement(): CapabilityStatement {
   const name = 'medplum';
   const version = MEDPLUM_VERSION;
   const config = getConfig();
@@ -208,6 +219,7 @@ function buildCapabilityStatement(): CapabilityStatement {
       url: fhirBaseUrl,
     },
     rest: buildRest(config),
+    ...config.capabilityStatement?.overlay,
   };
 }
 
@@ -216,8 +228,8 @@ function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {
     {
       mode: 'server',
       security: buildSecurity(config),
-      resource: buildResourceTypes(),
-      interaction: [{ code: 'transaction' }, { code: 'batch' }],
+      resource: buildResourceTypes(config),
+      interaction: getSystemInteractions(config.capabilityStatement),
       searchParam: supportedSearchParams,
       extension: [
         // See: https://build.fhir.org/ig/HL7/fhircast-docs/CapabilityStatement-fhircast-capabilitystatement-example.json
@@ -268,30 +280,23 @@ function buildSecurity(config: MedplumServerConfig): CapabilityStatementRestSecu
   };
 }
 
-function buildResourceTypes(): CapabilityStatementRestResource[] {
+function buildResourceTypes(config: MedplumServerConfig): CapabilityStatementRestResource[] {
+  const csConfig = config.capabilityStatement;
   return Object.entries(getAllDataTypes())
     .filter(
       ([resourceType, typeSchema]) =>
         isResourceType(resourceType) &&
         typeSchema.url?.startsWith('http://hl7.org/fhir/StructureDefinition/') &&
-        typeSchema.version === '4.0.1'
+        typeSchema.version === '4.0.1' &&
+        isResourceTypeAdvertised(resourceType, csConfig)
     )
     .map(
       ([resourceType, typeSchema]) =>
         ({
           type: resourceType as ResourceType,
           profile: typeSchema.url,
-          supportedProfile: supportedProfiles[resourceType] || undefined,
-          interaction: [
-            { code: 'read' }, // Read the current state of the resource.
-            { code: 'vread' }, // Read the state of a specific version of the resource.
-            { code: 'update' }, // Update an existing resource by its id.
-            { code: 'patch' }, // Update an existing resource by posting a set of changes to it.
-            { code: 'delete' }, // Delete a resource.
-            { code: 'history-instance' }, // Retrieve the change history for a particular resource.
-            { code: 'create' }, // Create a new resource with a server assigned id.
-            { code: 'search-type' }, // Search all resources of the specified type based on some filter criteria.
-          ],
+          supportedProfile: getSupportedProfiles(resourceType, supportedProfiles[resourceType], csConfig),
+          interaction: getResourceInteractions(resourceType, csConfig),
           versioning: 'versioned',
           readHistory: true,
           updateCreate: false,

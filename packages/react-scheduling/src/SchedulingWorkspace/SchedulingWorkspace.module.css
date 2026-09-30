@@ -16,19 +16,37 @@
 
 .calendar {
   position: relative;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
   overflow-x: auto;
 }
 
-/* The booking form, only present while a day is being booked. */
-.bookingPane {
+/* Shrink to fit, so the calendar's own 100% height does not push the notice out of view. */
+.multiCalendar {
+  flex: 1;
+  min-height: 0;
+}
+
+.timezoneNotice {
+  flex-shrink: 0;
+  margin-top: var(--mantine-spacing-xs);
+}
+
+/*
+ * The pane beside the calendar, holding either the booking form or the details of
+ * the appointment that is open. Never both — one takes the other's place.
+ */
+.pane {
   flex-shrink: 0;
   width: 320px;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
 }
 
-.bookingPaneWide {
+.paneWide {
   width: 760px;
 }
 

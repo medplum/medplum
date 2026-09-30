@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
 import type { AsyncJob } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -10,7 +9,6 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
-import { Repository } from './repo';
 
 const app = express();
 
@@ -28,14 +26,9 @@ describe('Job status', () => {
   });
 
   beforeEach(async () => {
-    const testProject = await createTestProject({ withAccessToken: true });
+    const testProject = await createTestProject({ withAccessToken: true, withRepo: true });
     accessToken = testProject.accessToken;
-    asyncJobManager = new AsyncJobExecutor(
-      new Repository({
-        projects: [testProject.project],
-        author: { reference: 'User/' + randomUUID() },
-      })
-    );
+    asyncJobManager = new AsyncJobExecutor(testProject.repo);
   });
 
   test('in progress', () =>

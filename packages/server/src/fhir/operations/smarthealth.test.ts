@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, ContentType } from '@medplum/core';
+import { badRequest, ContentType, generateId } from '@medplum/core';
 import type { Binary, Bundle, Parameters, Patient, SmartHealthLink } from '@medplum/fhirtypes';
 import express from 'express';
 import { base64url, CompactEncrypt, CompactSign, exportJWK, generateKeyPair } from 'jose';
@@ -10,16 +10,18 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { KeyLike } from '../../oauth/keys';
-import { createTestProject, initTestAuth } from '../../test.setup';
+import { createTestProject } from '../../test.setup';
+import type { Repository } from '../repo';
 
 const app = express();
 let accessToken: string;
+let repo: Repository;
 
 describe('SMART Health operations', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    ({ repo, accessToken } = await createTestProject({ withAccessToken: true, withRepo: true }));
   });
 
   afterAll(async () => {
@@ -639,8 +641,7 @@ describe('SMART Health operations', () => {
     const directUrl = new URL(getStringParameter(generateResponse.body, 'url'));
     const smartHealthLink = await readGeneratedSmartHealthLink(directUrl.pathname);
     const binaryId = getBinaryId(smartHealthLink);
-    const { getGlobalSystemRepo } = await import('../repo');
-    await getGlobalSystemRepo().deleteResource('Binary', binaryId);
+    await repo.deleteResource('Binary', binaryId);
 
     const payloadResponse = await request(app).get(directUrl.pathname).query({ recipient: 'Test Recipient' });
     expect(payloadResponse).toHaveStatus(404);
@@ -718,21 +719,17 @@ async function createPatient(): Promise<Patient> {
 async function readGeneratedSmartHealthLink(pathname: string): Promise<SmartHealthLink> {
   const id = pathname.match(/^\/shl\/([^/]+)\//)?.[1];
   expect(id).toBeDefined();
-  const { getGlobalSystemRepo } = await import('../repo');
-  return getGlobalSystemRepo().readResource<SmartHealthLink>('SmartHealthLink', id as string);
+  return repo.readResource<SmartHealthLink>('SmartHealthLink', id as string);
 }
 
 async function updateGeneratedSmartHealthLink(smartHealthLink: SmartHealthLink): Promise<void> {
-  const { getGlobalSystemRepo } = await import('../repo');
-  await getGlobalSystemRepo().updateResource(smartHealthLink);
+  await repo.updateResource(smartHealthLink);
 }
 
 async function createBinaryInAnotherProject(): Promise<Binary> {
-  const { project } = await createTestProject();
-  const { getGlobalSystemRepo } = await import('../repo');
-  return getGlobalSystemRepo().createResource<Binary>({
+  return repo.getSystemRepo().createResource<Binary>({
     resourceType: 'Binary',
-    meta: { project: project.id },
+    meta: { project: generateId() },
     contentType: ContentType.JOSE,
   });
 }

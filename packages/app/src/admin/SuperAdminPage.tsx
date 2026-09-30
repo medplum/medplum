@@ -4,6 +4,7 @@ import {
   Button,
   Checkbox,
   Code,
+  CopyButton,
   Divider,
   Grid,
   Group,
@@ -124,8 +125,22 @@ export function SuperAdminPage(): JSX.Element {
           : undefined
       )
       .then((params) => {
+        const statsText = params.parameter?.find((p) => p.name === 'tableString')?.valueString ?? '';
         setModalTitle('Database Stats');
-        setModalContent(<pre>{params.parameter?.find((p) => p.name === 'tableString')?.valueString}</pre>);
+        setModalContent(
+          <Stack>
+            <Group justify="flex-end">
+              <CopyButton value={statsText}>
+                {({ copied, copy }) => (
+                  <Button variant="light" size="xs" color={copied ? 'teal' : 'blue'} onClick={copy}>
+                    {copied ? 'Copied' : 'Copy to clipboard'}
+                  </Button>
+                )}
+              </CopyButton>
+            </Group>
+            <pre>{statsText}</pre>
+          </Stack>
+        );
         open();
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
@@ -164,8 +179,8 @@ export function SuperAdminPage(): JSX.Element {
     startAsyncJob(medplum, 'Reconcile Schema Diff', 'admin/super/reconcile-db-schema-drift');
   }
 
-  function reindexDatabase(targets: DatabaseReindexTarget[]): void {
-    startAsyncJob(medplum, 'Reindexing Database', 'admin/super/reindex-database', { targets });
+  function rebuildIndex(targets: DatabaseReindexTarget[]): void {
+    startAsyncJob(medplum, 'Rebuilding indexes', 'admin/super/rebuild-index', { targets });
   }
 
   return (
@@ -350,12 +365,12 @@ export function SuperAdminPage(): JSX.Element {
       <Divider my="lg" />
       <RescopeUserWidget />
       <Divider my="lg" />
-      <Title order={2}>Reindex Database</Title>
+      <Title order={2}>Rebuild Indexes</Title>
       <p>
         Rebuild one or more PostgreSQL table or index targets concurrently. The operation runs asynchronously and may
         take a long time to complete.
       </p>
-      <DatabaseReindexForm onSubmit={reindexDatabase} />
+      <DatabaseReindexForm onSubmit={rebuildIndex} />
     </Document>
   );
 }
@@ -426,7 +441,7 @@ function DatabaseReindexForm({
             Add Target
           </Button>
           <Button type="submit" disabled={targets.some((target) => !target.name.trim())}>
-            Reindex Database
+            Rebuild Indexes
           </Button>
         </Group>
       </Stack>

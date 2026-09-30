@@ -9,11 +9,13 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { withTestContext } from '../test.setup';
-import { Repository, getGlobalSystemRepo } from './repo';
+import { Repository, getShardSystemRepo } from './repo';
 import { RewriteMode, rewriteAttachments } from './rewrite';
+import { PLACEHOLDER_SHARD_ID } from './sharding';
 
 describe('URL rewrite', () => {
-  const systemRepo = getGlobalSystemRepo();
+  const shardId = PLACEHOLDER_SHARD_ID;
+  const systemRepo = getShardSystemRepo(shardId);
   let config: MedplumServerConfig;
   let binary: WithId<Binary>;
 
@@ -309,6 +311,7 @@ describe('URL rewrite', () => {
     // Repo1: Can read both Binary and Patient
     // This should successfully rewrite the binary to a presigned URL
     const repo1 = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
       author: createReference(patient),
       accessPolicy: {
         resourceType: 'AccessPolicy',
@@ -322,6 +325,7 @@ describe('URL rewrite', () => {
     // Repo2: Can only read Binary, not Patient
     // This should not rewrite the binary to a presigned URL
     const repo2 = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
       author: createReference(patient),
       accessPolicy: {
         resourceType: 'AccessPolicy',
@@ -335,6 +339,7 @@ describe('URL rewrite', () => {
     // Repo3: AccessPolicy limits to specific Patient
     // This should successfully rewrite the binary to a presigned URL
     const repo3 = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
       author: createReference(patient),
       accessPolicy: {
         resourceType: 'AccessPolicy',
@@ -348,6 +353,7 @@ describe('URL rewrite', () => {
     // Repo3: AccessPolicy limits to different Patient
     // This should not rewrite the binary to a presigned URL
     const repo4 = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
       author: createReference(patient),
       accessPolicy: {
         resourceType: 'AccessPolicy',

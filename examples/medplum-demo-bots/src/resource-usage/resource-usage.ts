@@ -250,7 +250,6 @@ export const RESOURCE_TYPES = [
   'Organization',
   'OrganizationAffiliation',
   'Parameters',
-  'PasswordChangeRequest',
   'Patient',
   'PaymentNotice',
   'PaymentReconciliation',
