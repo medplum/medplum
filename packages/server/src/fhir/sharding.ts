@@ -73,8 +73,16 @@ export function getDefaultShardId(): string {
   return GLOBAL_SHARD_ID;
 }
 
-export function* getAllShards(): Generator<MedplumShardConfig> {
-  yield getGlobalShardConfig();
+/**
+ * Returns all shard configurations, including the global shard.
+ * @param excludeGlobal - If true, the global shard will not be included in the iteration. (default: false)
+ * @returns An iterator over all shard configurations, including the global shard.
+ * @yields Each shard configuration, including the global shard.
+ */
+export function* getAllShards(excludeGlobal: boolean = false): Generator<MedplumShardConfig> {
+  if (!excludeGlobal) {
+    yield getGlobalShardConfig();
+  }
   const shards = getConfig().shards;
   if (shards) {
     for (const [_id, config] of Object.entries(shards)) {
