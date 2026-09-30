@@ -20,6 +20,11 @@ export interface TypeScriptGeneratorOptions {
   getImportPath?: (typeName: string) => string;
 }
 
+interface GeneratorContext extends TypeScriptGeneratorOptions {
+  /** Set when generating a profile. Maps inner type names (e.g. "PatientContact") to profile-specific names. */
+  profileInnerTypeNames?: Map<string, string>;
+}
+
 /**
  * Generates TypeScript definitions for FHIR StructureDefinitions, such as profiles.
  *
@@ -76,9 +81,18 @@ export function generateTypeScriptDefinition(
     return undefined;
   }
 
+  const context: GeneratorContext = { ...options };
+  // A profile constrains a base type (e.g. USCorePatientProfile on Patient). Other StructureDefinitions define their
+  // own type, which is either the same as the name (e.g. Patient) or a URL (e.g. logical models).
+  if (fhirType.name !== fhirType.type && !fhirType.type.includes('/')) {
+    context.profileInnerTypeNames = new Map(
+      fhirType.innerTypes.map((t) => [t.name, fhirType.name + t.name.replace(fhirType.type, '')])
+    );
+  }
+
   const includedTypes = new Set<string>();
   const referencedTypes = new Set<string>();
-  buildImports(fhirType, includedTypes, referencedTypes, options);
+  buildImports(fhirType, includedTypes, referencedTypes, context);
 
   const getImportPath = options.getImportPath ?? ((typeName: string) => './' + typeName + '.d.ts');
   const importsByPath = new Map<string, string[]>();
@@ -94,16 +108,16 @@ export function generateTypeScriptDefinition(
     b.append('import type { ' + typeNames.join(', ') + " } from '" + importPath + "';");
   }
 
-  writeInterface(b, fhirType, options);
+  writeInterface(b, fhirType, context);
   return b.toString();
 }
 
-function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema, options: TypeScriptGeneratorOptions): void {
+function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema, options: GeneratorContext): void {
   if (Object.values(fhirType.elements).length === 0) {
     return;
   }
 
-  const typeName = fhirType.name;
+  const typeName = getTypeName(fhirType, options);
   const genericTypes = ['Bundle', 'BundleEntry', 'Reference'];
   const genericModifier = genericTypes.includes(typeName) ? '<T extends Resource = Resource>' : '';
 
@@ -150,9 +164,9 @@ function writeInterfaceProperty(
   fhirType: InternalTypeSchema,
   property: InternalSchemaElement,
   path: string,
-  options: TypeScriptGeneratorOptions
+  options: GeneratorContext
 ): void {
-  for (const typeScriptProperty of getTypeScriptProperties(property, path, fhirType.name, options)) {
+  for (const typeScriptProperty of getTypeScriptProperties(property, path, fhirType, options)) {
     b.newLine();
     generateJavadoc(b, property.description);
     b.append(
@@ -161,17 +175,13 @@ function writeInterfaceProperty(
   }
 }
 
-function writeChoiceOfTypeDefinitions(
-  b: FileBuilder,
-  fhirType: InternalTypeSchema,
-  options: TypeScriptGeneratorOptions
-): void {
+function writeChoiceOfTypeDefinitions(b: FileBuilder, fhirType: InternalTypeSchema, options: GeneratorContext): void {
   for (const [path, property] of getDirectElements(fhirType)) {
     if (property.type.length > 1) {
       b.newLine();
       generateJavadoc(b, property.description);
-      const unionName = fhirType.name + capitalize(path.replaceAll('[x]', ''));
-      const typesArray = getTypeScriptProperties(property, path, fhirType.name, options);
+      const unionName = getTypeName(fhirType, options) + capitalize(path.replaceAll('[x]', ''));
+      const typesArray = getTypeScriptProperties(property, path, fhirType, options);
       const typesSet = new Set(typesArray.map((t) => t.typeName));
       const sortedTypesArray = Array.from(typesSet);
       sortedTypesArray.sort((a, b) => a.localeCompare(b));
@@ -184,13 +194,13 @@ function buildImports(
   fhirType: InternalTypeSchema,
   includedTypes: Set<string>,
   referencedTypes: Set<string>,
-  options: TypeScriptGeneratorOptions
+  options: GeneratorContext
 ): void {
-  const typeName = fhirType.name;
+  const typeName = getTypeName(fhirType, options);
   includedTypes.add(typeName);
 
   for (const [path, property] of getDirectElements(fhirType)) {
-    for (const typeScriptProperty of getTypeScriptProperties(property, path, fhirType.name, options)) {
+    for (const typeScriptProperty of getTypeScriptProperties(property, path, fhirType, options)) {
       cleanReferencedType(typeScriptProperty.typeName).forEach((cleanName) => referencedTypes.add(cleanName));
     }
   }
@@ -205,6 +215,10 @@ function buildImports(
   }
 }
 
+function getTypeName(fhirType: InternalTypeSchema, options: GeneratorContext): string {
+  return options.profileInnerTypeNames?.get(fhirType.name) ?? fhirType.name;
+}
+
 // Profiles can also constrain elements of complex data types (e.g. "identifier.system"), which are not generated
 function getDirectElements(fhirType: InternalTypeSchema): [string, InternalSchemaElement][] {
   return Object.entries(fhirType.elements).filter(([path]) => !path.includes('.'));
@@ -213,6 +227,10 @@ function getDirectElements(fhirType: InternalTypeSchema): [string, InternalSchem
 function cleanReferencedType(typeName: string): string[] {
   if (typeName === 'T') {
     return ['Resource'];
+  }
+
+  if (typeName.startsWith('NonNullable<')) {
+    return [typeName.substring('NonNullable<'.length, typeName.indexOf('['))];
   }
 
   if (
@@ -236,10 +254,14 @@ function cleanReferencedType(typeName: string): string[] {
 function getTypeScriptProperties(
   property: InternalSchemaElement,
   path: string,
-  typeName: string,
-  options: TypeScriptGeneratorOptions
+  fhirType: InternalTypeSchema,
+  options: GeneratorContext
 ): { name: string; typeName: string; required?: boolean }[] {
   const required = property.min > 0;
+  const typeName = fhirType.name;
+  // In profiles, types that cannot be resolved fall back to the base type's property, e.g. Patient['gender']
+  const getBaseProperty = (name: string): string | undefined =>
+    options.profileInnerTypeNames ? `NonNullable<${fhirType.type}['${name}']>` : undefined;
 
   if ((typeName === 'BundleEntry' && path === 'resource') || (typeName === 'Reference' && path === 'resource')) {
     return [{ name: 'resource', typeName: 'T', required }];
@@ -254,15 +276,16 @@ function getTypeScriptProperties(
     const propertyTypes = property.type as ElementDefinitionType[];
     for (const propertyType of propertyTypes) {
       const code = propertyType.code;
+      const propertyName = baseName + capitalize(code);
       result.push({
-        name: baseName + capitalize(code),
-        typeName: getTypeScriptTypeForProperty(property, propertyType, path, options),
+        name: propertyName,
+        typeName: getTypeScriptTypeForProperty(property, propertyType, path, options, getBaseProperty(propertyName)),
       });
     }
   } else {
     result.push({
       name,
-      typeName: getTypeScriptTypeForProperty(property, property.type?.[0], path, options),
+      typeName: getTypeScriptTypeForProperty(property, property.type?.[0], path, options, getBaseProperty(name)),
       required,
     });
   }
@@ -290,7 +313,8 @@ function getTypeScriptTypeForProperty(
   property: InternalSchemaElement,
   typeDefinition: ElementDefinitionType,
   path: string,
-  options: TypeScriptGeneratorOptions
+  options: GeneratorContext,
+  baseProperty: string | undefined
 ): string {
   let baseType = typeDefinition.code;
   let binding: string | undefined;
@@ -322,6 +346,8 @@ function getTypeScriptTypeForProperty(
           const values = options.getValueSetValues?.(binding);
           if (values && values.length > 0) {
             baseType = "'" + values.join("' | '") + "'";
+          } else if (baseProperty) {
+            return baseProperty;
           }
         }
       }
@@ -354,13 +380,19 @@ function getTypeScriptTypeForProperty(
 
     case 'Reference':
       if (typeDefinition.targetProfile?.length) {
-        const targetTypes = new Set(typeDefinition.targetProfile.map(getReferenceTargetType));
-        baseType += '<' + Array.from(targetTypes).join(' | ') + '>';
+        const targetTypes = typeDefinition.targetProfile.map(getReferenceTargetType);
+        if (baseProperty && targetTypes.includes(undefined)) {
+          return baseProperty;
+        }
+        baseType += '<' + Array.from(new Set(targetTypes.map((t) => t ?? 'Resource'))).join(' | ') + '>';
       }
       break;
   }
 
-  if (property.max > 1) {
+  baseType = options.profileInnerTypeNames?.get(baseType) ?? baseType;
+
+  // Profiles can restrict the cardinality of array elements (e.g. 0..1), but they are still arrays in JSON
+  if (property.isArray ?? property.max > 1) {
     if (baseType.includes("' | '")) {
       return `(${baseType})[]`;
     }
@@ -369,11 +401,11 @@ function getTypeScriptTypeForProperty(
   return baseType;
 }
 
-function getReferenceTargetType(targetProfile: string): string {
+function getReferenceTargetType(targetProfile: string): string | undefined {
   const profile = tryGetProfile(targetProfile);
   if (profile) {
     return profile.type;
   }
   const typeName = targetProfile.split('/').pop() as string;
-  return isResourceType(typeName) ? typeName : 'Resource';
+  return isResourceType(typeName) ? typeName : undefined;
 }

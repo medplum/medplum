@@ -459,7 +459,7 @@ medplum bulk import [options] <filename>
 
 ### Generate Types
 
-`generate-types` generates TypeScript definitions from FHIR StructureDefinitions, such as your own profiles. Generated interfaces enforce profile constraints that can be expressed at the type level, such as required and prohibited elements and restricted choice types, and import base FHIR types from `@medplum/fhirtypes`.
+`generate-types` generates TypeScript definitions from FHIR StructureDefinitions, such as your own profiles. Generated interfaces enforce profile constraints that can be expressed at the type level, such as required and prohibited elements and restricted choice types, and import base FHIR types from `@medplum/fhirtypes`. Generated profile types are assignable to their base types, so they can be passed directly to `MedplumClient` methods such as `createResource`.
 
 Input files can contain a single StructureDefinition, an array of StructureDefinitions, or a Bundle. StructureDefinitions must include a `snapshot`.
 

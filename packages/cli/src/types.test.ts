@@ -33,6 +33,11 @@ describe('CLI generate-types', () => {
     expect(patient).toContain('export interface USCorePatientProfile {');
     expect(patient).toContain("readonly resourceType: 'Patient';");
     expect(patient).toContain('identifier: Identifier[];');
+    expect(patient).toContain("gender: NonNullable<Patient['gender']>;");
+
+    // Profiles can restrict arrays to 0..1, but they are still arrays in JSON
+    const device = readFileSync(join(outputDir, 'USCoreImplantableDeviceProfile.d.ts'), 'utf8');
+    expect(device).toContain('udiCarrier?: USCoreImplantableDeviceProfileUdiCarrier[];');
 
     const bloodPressure = readFileSync(join(outputDir, 'USCoreBloodPressureProfile.d.ts'), 'utf8');
     expect(bloodPressure).toContain('subject: Reference<Patient>;');

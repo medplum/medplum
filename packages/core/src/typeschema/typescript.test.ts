@@ -41,7 +41,12 @@ describe('generateTypeScriptDefinition', () => {
     expect(result).toContain("readonly resourceType: 'Patient';");
     expect(result).toContain('identifier: Identifier[];');
     expect(result).toContain('name: HumanName[];');
-    expect(result).toContain('gender: string;');
+    // Unresolved bindings fall back to the base property type
+    expect(result).toContain("gender: NonNullable<Patient['gender']>;");
+    // Inner types are renamed so they don't conflict with the base types
+    expect(result).toContain('contact?: USCorePatientProfileContact[];');
+    expect(result).toContain('export interface USCorePatientProfileContact {');
+    expect(result).toContain("gender?: NonNullable<PatientContact['gender']>;");
     // Constraints on data type elements (e.g. "identifier.system") are not flattened into the resource
     expect(result).not.toMatch(/^ {2}system/m);
   });
@@ -62,6 +67,8 @@ describe('generateTypeScriptDefinition', () => {
     expect(files['index.d.ts']).toContain("export type { USCorePatientProfile } from './USCorePatientProfile.d.ts';");
     expect(files['USCoreBloodPressureProfile.d.ts']).toContain("readonly resourceType: 'Observation';");
     expect(files['USCoreBloodPressureProfile.d.ts']).toContain('subject: Reference<Patient>;');
+    // References to profiles that are not loaded fall back to the base property type
+    expect(files['USCoreBloodPressureProfile.d.ts']).toContain("hasMember?: NonNullable<Observation['hasMember']>;");
   });
 
   test('No elements', () => {
