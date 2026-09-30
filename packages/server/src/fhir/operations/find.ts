@@ -109,61 +109,40 @@ function weeklyRecurrenceTemplate(start: Date, occurrenceCount: number, timezone
   };
 }
 
+// The requested range. A series is searched for one local week at a time, which runs an hour
+// longer across a DST transition.
+function parseSearchRange(start: string, end: string, occurrenceCount: number | undefined): Interval {
+  const range = { start: new Date(start), end: new Date(end) };
+  if (range.start >= range.end) {
+    throw new OperationOutcomeError(badRequest('Invalid search time range'));
+  }
+  const [maxDays, slackDays] = occurrenceCount ? [7, 1 / 24] : [31, 0];
+  const diffDays = (range.end.valueOf() - range.start.valueOf()) / (24 * 60 * 60 * 1000);
+  if (diffDays > maxDays + slackDays) {
+    throw new OperationOutcomeError(badRequest(`Search range cannot exceed ${maxDays} days`));
+  }
+  return range;
+}
+
 // Internal implementation of $find logic
 async function handler(params: {
   schedules: WithPath<Reference<Schedule> & { reference: string }>[];
   healthcareService: Reference<HealthcareService> & { reference: string };
   ignoreAppointment?: WithPath<Reference<Appointment> & { reference: string }>;
-  start: string;
-  end: string;
+  searchRange: Interval;
+  pageSize: number;
   occurrenceCount?: number;
-  _count?: number;
 }): Promise<Appointment[]> {
   const ctx = getAuthenticatedContext();
-
-  const pageSize = params._count ?? DEFAULT_SEARCH_COUNT;
-  if (pageSize < 1) {
-    throw new OperationOutcomeError(badRequest('Invalid _count, minimum required is 1'));
-  }
-  if (pageSize > DEFAULT_MAX_SEARCH_COUNT) {
-    throw new OperationOutcomeError(badRequest(`Invalid _count, maximum allowed is ${DEFAULT_MAX_SEARCH_COUNT}`));
-  }
-
-  const occurrenceCount = params.occurrenceCount;
-  if (occurrenceCount !== undefined && (occurrenceCount < 1 || occurrenceCount > MAX_OCCURRENCE_COUNT)) {
-    throw new OperationOutcomeError(
-      badRequest(
-        `Invalid occurrence-count, must be between 1 and ${MAX_OCCURRENCE_COUNT}`,
-        'Parameters.occurrence-count'
-      )
-    );
-  }
-  if (occurrenceCount !== undefined && params.ignoreAppointment) {
-    throw new OperationOutcomeError(
-      badRequest('ignore-appointment cannot be combined with occurrence-count', 'Parameters.ignore-appointment')
-    );
-  }
-
-  const requestedRange = { start: new Date(params.start), end: new Date(params.end) };
-  if (requestedRange.start >= requestedRange.end) {
-    throw new OperationOutcomeError(badRequest('Invalid search time range'));
-  }
-
-  const diffMilliseconds = requestedRange.end.valueOf() - requestedRange.start.valueOf();
-  const diffDays = diffMilliseconds / (24 * 60 * 60 * 1000);
-  // A series is searched for one week at a time. A local week runs an hour longer across a DST transition.
-  const maxDays = occurrenceCount ? 7 : 31;
-  if (diffDays > maxDays + (occurrenceCount ? 1 / 24 : 0)) {
-    throw new OperationOutcomeError(badRequest(`Search range cannot exceed ${maxDays} days`));
-  }
+  const { searchRange, pageSize, occurrenceCount } = params;
 
   // A series is checked over the same range in each later week, widened by the hour a DST
   // transition can move a local time.
-  const requestedRanges = [requestedRange];
+  const requestedRanges = [searchRange];
   for (let weeks = 1; weeks < (occurrenceCount ?? 1); weeks++) {
     requestedRanges.push({
-      start: addMinutes(requestedRange.start, weeks * WEEK_MINUTES - 60),
-      end: addMinutes(requestedRange.end, weeks * WEEK_MINUTES + 60),
+      start: addMinutes(searchRange.start, weeks * WEEK_MINUTES - 60),
+      end: addMinutes(searchRange.end, weeks * WEEK_MINUTES + 60),
     });
   }
 
@@ -213,7 +192,7 @@ async function handler(params: {
   );
 
   // Spans every week of a series, so planning horizons clamp later weeks too.
-  const effectiveRange = { start: requestedRange.start, end: requestedRanges[requestedRanges.length - 1].end };
+  const effectiveRange = { start: searchRange.start, end: requestedRanges[requestedRanges.length - 1].end };
   schedules.forEach((schedule) => {
     if (!serviceTypeIncludesService(schedule.serviceType, healthcareService)) {
       throw new OperationOutcomeError(
@@ -417,10 +396,9 @@ async function handler(params: {
  */
 export async function appointmentFindHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<AppointmentFindParameters>(appointmentFindOperation, req);
+  const occurrenceCount = params['occurrence-count'];
 
-  const { schedule, start, end, _count } = params;
-
-  const scheduleRefs = arrayify(schedule).map((reference) => ({ reference }));
+  const scheduleRefs = arrayify(params.schedule).map((reference) => ({ reference }));
   const invalidIndex = scheduleRefs.findIndex((ref) => !isReference(ref, 'Schedule'));
   if (invalidIndex !== -1) {
     throw new OperationOutcomeError(badRequest('Invalid schedule reference', `Parameters.schedule[${invalidIndex}]`));
@@ -438,14 +416,38 @@ export async function appointmentFindHandler(req: FhirRequest): Promise<FhirResp
     ignoreAppointment = withPath(ref, 'Parameters.ignore-appointment');
   }
 
+  const pageSize = params._count ?? DEFAULT_SEARCH_COUNT;
+  if (pageSize < 1) {
+    throw new OperationOutcomeError(badRequest('Invalid _count, minimum required is 1'));
+  }
+  if (pageSize > DEFAULT_MAX_SEARCH_COUNT) {
+    throw new OperationOutcomeError(badRequest(`Invalid _count, maximum allowed is ${DEFAULT_MAX_SEARCH_COUNT}`));
+  }
+
+  if (occurrenceCount !== undefined && (occurrenceCount < 1 || occurrenceCount > MAX_OCCURRENCE_COUNT)) {
+    throw new OperationOutcomeError(
+      badRequest(
+        `Invalid occurrence-count, must be between 1 and ${MAX_OCCURRENCE_COUNT}`,
+        'Parameters.occurrence-count'
+      )
+    );
+  }
+
+  if (occurrenceCount !== undefined && ignoreAppointment) {
+    throw new OperationOutcomeError(
+      badRequest('ignore-appointment cannot be combined with occurrence-count', 'Parameters.ignore-appointment')
+    );
+  }
+
+  const searchRange = parseSearchRange(params.start, params.end, occurrenceCount);
+
   const appointments = await handler({
-    start,
-    end,
-    _count,
+    searchRange,
+    pageSize,
     healthcareService: { reference: params['service-type-reference'] },
     schedules: withPaths(scheduleRefs, 'Parameters.schedule'),
     ignoreAppointment,
-    occurrenceCount: params['occurrence-count'],
+    occurrenceCount,
   });
 
   const bundle: Bundle<Appointment> = {
