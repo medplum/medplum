@@ -5,7 +5,7 @@ import { ActionIcon, Box, Center, Flex, Skeleton, Stack, Text, ThemeIcon, Toolti
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
-import { normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
+import { isReference, normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Practitioner, Reference, Resource } from '@medplum/fhirtypes';
 import { useThreadInbox } from '@medplum/react-hooks';
 import { IconMessageCircle, IconPlus } from '@tabler/icons-react';
@@ -128,10 +128,11 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     threadId,
   });
 
-  const subjectReference = (selectedThread?.subject as Reference<Patient> | undefined)?.reference;
+  const threadSubject = selectedThread?.subject;
+  const patientReference = isReference<Patient>(threadSubject, 'Patient') ? threadSubject.reference : undefined;
   useEffect(() => {
-    onPatientChange?.(subjectReference ? { reference: subjectReference } : undefined);
-  }, [subjectReference, onPatientChange]);
+    onPatientChange?.(patientReference ? { reference: patientReference } : undefined);
+  }, [patientReference, onPatientChange]);
 
   const handleParticipantsChange = useCallback(
     (participants: Reference<Patient | Practitioner>[]) => {
