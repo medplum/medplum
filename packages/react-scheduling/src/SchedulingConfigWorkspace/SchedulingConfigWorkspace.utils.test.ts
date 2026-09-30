@@ -1,11 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { HealthcareService } from '@medplum/fhirtypes';
+import { ServiceTypeReferenceURI, toServiceTypeCodeableConcepts } from '@medplum/core';
+import type { Device, HealthcareService, Practitioner, Schedule } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
+import type { ConfigurableActor } from '../configSearch';
 import { setHealthcareServiceSchedulingParameterValues } from '../parameterValues';
 import {
+  buildActorItems,
   buildServiceItems,
+  getOfferedServices,
   isSameSelection,
   matchesFilter,
   withStoredService,
@@ -80,6 +84,79 @@ describe('isSameSelection', () => {
     expect(isSameSelection({ kind: 'new-service', key: 1 }, { kind: 'new-service', key: 1 })).toBe(true);
     expect(isSameSelection({ kind: 'new-service', key: 1 }, { kind: 'new-service', key: 2 })).toBe(false);
     expect(isSameSelection({ kind: 'service', id: 'exam' }, undefined)).toBe(false);
+  });
+
+  test('matches the same actor', () => {
+    const smith = { kind: 'actor', resourceType: 'Practitioner', id: 'dr-smith' } as const;
+
+    expect(isSameSelection(smith, { ...smith })).toBe(true);
+    expect(isSameSelection(smith, { ...smith, resourceType: 'Device' })).toBe(false);
+    expect(isSameSelection(smith, { kind: 'service', id: 'dr-smith' })).toBe(false);
+  });
+});
+
+const drSmith: WithId<Practitioner> = { resourceType: 'Practitioner', id: 'dr-smith', name: [{ family: 'Smith' }] };
+const drLeft: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-left',
+  name: [{ family: 'Left' }],
+  active: false,
+};
+const retired: WithId<Device> = {
+  resourceType: 'Device',
+  id: 'retired',
+  deviceName: [{ name: 'Retired scope', type: 'user-friendly-name' }],
+  status: 'inactive',
+};
+
+function calendar(id: string, actor: string, offered: WithId<HealthcareService>[]): WithId<Schedule> {
+  return {
+    resourceType: 'Schedule',
+    id,
+    actor: [{ reference: actor }],
+    serviceType: offered.flatMap((service) => toServiceTypeCodeableConcepts(service)),
+  };
+}
+
+describe('buildActorItems', () => {
+  const actors: ConfigurableActor[] = [
+    { resource: drLeft, schedules: [] },
+    { resource: drSmith, schedules: [] },
+  ];
+
+  test('hides inactive actors unless asked, but always lists the selected one', () => {
+    expect(buildActorItems(actors, undefined, '', false).map((item) => item.label)).toEqual(['Smith']);
+    expect(buildActorItems(actors, undefined, '', true).map((item) => [item.label, item.inactive])).toEqual([
+      ['Left', true],
+      ['Smith', false],
+    ]);
+    const selected = buildActorItems(actors, { kind: 'actor', resourceType: 'Practitioner', id: 'dr-left' }, '', false);
+    expect(selected.map((item) => [item.label, item.selected])).toEqual([
+      ['Left', true],
+      ['Smith', false],
+    ]);
+  });
+
+  test('a retired device counts as inactive', () => {
+    expect(buildActorItems([{ resource: retired, schedules: [] }], undefined, '', false)).toEqual([]);
+  });
+});
+
+describe('getOfferedServices', () => {
+  test('lists a visit type the calendar names by a versioned reference once', () => {
+    const versioned: WithId<Schedule> = {
+      ...calendar('s', 'Practitioner/dr-smith', []),
+      serviceType: [
+        {
+          extension: [
+            { url: ServiceTypeReferenceURI, valueReference: { reference: 'HealthcareService/exam/_history/2' } },
+          ],
+        },
+        ...toServiceTypeCodeableConcepts(configured),
+      ],
+    };
+
+    expect(getOfferedServices(versioned, new Map([[configured.id, configured]]))).toEqual([configured]);
   });
 });
 

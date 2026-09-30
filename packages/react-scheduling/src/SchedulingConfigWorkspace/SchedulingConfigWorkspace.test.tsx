@@ -26,6 +26,19 @@ function row(label: string): HTMLElement {
   return within(sidebar()).getByText(label).closest('button') as HTMLElement;
 }
 
+function section(title: string): HTMLElement {
+  return within(sidebar()).getByText(title, { selector: 'p' }).closest('.mantine-Stack-root') as HTMLElement;
+}
+
+function sectionCount(title: string): string | null {
+  return within(section(title)).getByTestId('section-count').textContent;
+}
+
+async function showInactive(): Promise<void> {
+  await userEvent.click(within(sidebar()).getByRole('button', { name: 'Filters' }));
+  await userEvent.click(screen.getByLabelText('Show inactive'));
+}
+
 function details(): HTMLElement {
   return screen.getByRole('region', { name: 'Configuration details' });
 }
@@ -53,10 +66,10 @@ describe('SchedulingConfigWorkspace', () => {
     expect(row('Discontinued Consult')).toHaveTextContent('Inactive');
   });
 
-  test('nothing is selected until something is picked, and the empty pane offers to start one', async () => {
+  test('nothing is selected until something is picked', async () => {
     await setup();
 
-    expect(within(details()).getByText('No visit type selected')).toBeInTheDocument();
+    expect(within(details()).getByText('Nothing selected')).toBeInTheDocument();
     expect(
       within(sidebar())
         .queryAllByRole('button')
@@ -125,14 +138,6 @@ describe('SchedulingConfigWorkspace', () => {
     expect(nameField()).toHaveValue('Ultrasound Imaging');
   });
 
-  test('the empty pane starts a new visit type', async () => {
-    await setup();
-
-    await userEvent.click(within(details()).getByRole('button', { name: 'New visit type' }));
-
-    expect(within(details()).getByText('Not saved yet')).toBeInTheDocument();
-  });
-
   test('clicking the row already open does not ask, and leaves the unsaved-changes guard in place', async () => {
     await setup();
     await userEvent.click(row('Telehealth Consult'));
@@ -190,6 +195,66 @@ describe('SchedulingConfigWorkspace', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(nameField()).toHaveValue('Ultrasound Imaging');
+  });
+
+  test('lists each provider, room, and device once, whether or not it has a calendar, and no calendar as a row', async () => {
+    await setup();
+
+    expect(within(section('Providers')).getAllByText('Dr. Maya Rivera')).toHaveLength(1);
+    expect(within(section('Providers')).getAllByText('Dr. Anika Patel')).toHaveLength(1);
+    expect(within(section('Devices')).getByText('Ultrasound 1 (Main Campus)')).toBeInTheDocument();
+    expect(within(section('Rooms')).getByText('Exam Room C')).toBeInTheDocument();
+    expect(within(sidebar()).queryByText(/availability$/)).not.toBeInTheDocument();
+  });
+
+  test('rooms are the Locations typed as rooms, and never a service facility', async () => {
+    await setup();
+
+    expect(within(section('Rooms')).getByText('Exam Room A Bed 1')).toBeInTheDocument();
+    expect(within(sidebar()).queryByText('Uro Associates - Main Clinic')).not.toBeInTheDocument();
+    expect(within(sidebar()).queryByText('Second Floor')).not.toBeInTheDocument();
+  });
+
+  test('offers to create visit types, and never providers', async () => {
+    await setup();
+
+    expect(within(section('Visit types')).getByRole('button', { name: 'New visit type' })).toBeInTheDocument();
+    expect(within(section('Providers')).queryByRole('button', { name: /^New/ })).not.toBeInTheDocument();
+  });
+
+  test('the text filter narrows every section, and the counts follow it', async () => {
+    await setup();
+    const providers = Number(sectionCount('Providers')?.replace(/\D/g, ''));
+    expect(providers).toBeGreaterThan(3);
+
+    await userEvent.type(within(sidebar()).getByRole('textbox', { name: 'Filter' }), 'NGUYEN');
+
+    expect(sectionCount('Providers')).toBe('1 listed');
+    expect(row('Dr. Linh Nguyen')).toBeInTheDocument();
+    expect(within(section('Rooms')).getByText('No matching rooms')).toBeInTheDocument();
+    expect(within(section('Devices')).getByText('No matching devices')).toBeInTheDocument();
+  });
+
+  test('hides inactive providers and devices until asked, then marks them', async () => {
+    await setup();
+
+    expect(within(sidebar()).queryByText('Ultrasound 3 (Retired)')).not.toBeInTheDocument();
+    expect(within(sidebar()).queryByText('Dr. Hana Lee')).not.toBeInTheDocument();
+
+    await showInactive();
+
+    expect(row('Ultrasound 3 (Retired)')).toHaveTextContent('Inactive');
+    expect(row('Dr. Hana Lee')).toHaveTextContent('Inactive');
+  });
+
+  test('an empty project says each section has nothing yet, and still offers to create a visit type', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
+    renderWithMedplum(<SchedulingConfigWorkspace />, medplum);
+
+    for (const noun of ['visit types', 'providers', 'rooms', 'devices']) {
+      expect(await within(sidebar()).findByText(`No ${noun} yet`)).toBeInTheDocument();
+    }
+    expect(within(sidebar()).getByRole('button', { name: 'New visit type' })).toBeInTheDocument();
   });
 
   test('says when the visit types could not be loaded', async () => {

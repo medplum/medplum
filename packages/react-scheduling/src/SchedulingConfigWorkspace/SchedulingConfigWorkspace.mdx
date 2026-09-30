@@ -5,9 +5,10 @@ import * as SchedulingConfigWorkspaceStories from './SchedulingConfigWorkspace.s
 
 # SchedulingConfigWorkspace
 
-Where an admin sets up scheduling. Every visit type (`HealthcareService`) is listed down the side; pick one and
-its page opens beside it, showing how it is configured and editing it in place. It is the configuration
-counterpart to `SchedulingWorkspace`, which books. For the data model underneath it, see
+Where an admin sets up scheduling. Every visit type (`HealthcareService`), provider (`Practitioner`), room
+(`Location`), and device (`Device`) is listed down the side; pick one and its page opens beside it, showing how it
+is configured and editing it in place. It is the configuration counterpart to `SchedulingWorkspace`, which books.
+For the data model underneath it, see
 [Defining Availability](https://www.medplum.com/docs/scheduling/defining-availability).
 
 ```tsx
@@ -23,11 +24,16 @@ refused.
 ## What it lists
 
 The sidebar lists what booking leaves out, since that is often what an admin is looking for: visit types with
-no duration in effect, which booking never offers, and visit types that are turned off. Turned-off ones are hidden
-until **Show inactive** is ticked under the filters button, and are then marked **Inactive**.
+no duration in effect, which booking never offers, visit types and actors that are turned off, and providers,
+rooms, and devices with no calendar yet. Turned-off ones are hidden until **Show inactive** is ticked under the
+filters button, and are then marked **Inactive**.
 
-The list is read in pages up to a limit, and says so when it stops short. The **+** beside the section starts a
-new visit type, which is listed once it is saved.
+Calendars (`Schedule`) are not rows of their own: each actor's calendar is part of its page. Rooms are the
+Locations typed as a room or a bed.
+
+Each section is read in pages up to a limit, and says so when it stops short. A section that can't be read is
+named above the page, and the others still list. The **+** beside Visit types starts a new visit type, which is
+listed once it is saved.
 
 ## A visit type's page
 
@@ -39,6 +45,11 @@ new visit type, which is listed once it is saved.
 - **Default availability:** the weekly hours every calendar offering it follows unless it sets its own, edited
   with the same fields as `ScheduleAvailabilityEditor`.
 
+## A provider's, room's, or device's page
+
+- **General:** its name and status.
+- **Visit types offered:** what its calendar offers, each visit type showing its duration and hours in effect.
+
 ## Saving
 
 Nothing is written as it is typed. A save bar appears while the page differs from what is stored, and Save sends
@@ -47,6 +58,5 @@ another user or system saved the visit type in the meantime, nothing is written 
 offers to reload it. A field the editor would reject blocks Save, with the reason; a value already stored out of
 range does not, unless it is edited.
 
-Switching to another visit type with unsaved changes asks before discarding them. Nothing in the workspace
-deletes a resource: a visit type is taken out of use by turning it off, which leaves its existing appointments
-untouched.
+Switching to another row with unsaved changes asks before discarding them. Nothing in the workspace deletes a
+resource: a visit type is taken out of use by turning it off, which leaves its existing appointments untouched.
