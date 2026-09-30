@@ -43,6 +43,7 @@ Fill in your values:
 MEDPLUM_CLIENT_ID=<your ClientApplication ID>
 MEDPLUM_CLIENT_SECRET=<your ClientApplication secret>
 MEDPLUM_BOT_ID=        # fill in after step 5
+MEDPLUM_BASE_URL=      # optional, defaults to https://api.medplum.com/ (set it for a self-hosted server)
 ```
 
 > **Note:** `MEDPLUM_CLIENT_SECRET` is only read by the `build:bots` deploy script. `vite.config.ts` exposes only the variables the app needs to the browser, so the secret stays out of it.

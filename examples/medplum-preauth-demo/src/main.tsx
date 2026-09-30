@@ -11,9 +11,11 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import { App } from './App';
+import { getConfig } from './config';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
+  baseUrl: getConfig().baseUrl,
 });
 
 const theme = createTheme({

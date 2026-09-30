@@ -66,8 +66,9 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  console.log('Connecting to https://api.medplum.com/...');
-  const medplum = new MedplumClient({ clientId });
+  const baseUrl = process.env.MEDPLUM_BASE_URL || 'https://api.medplum.com/';
+  console.log(`Connecting to ${baseUrl}...`);
+  const medplum = new MedplumClient({ baseUrl, clientId });
   await medplum.startClientLogin(clientId, clientSecret);
 
   const projectId = resolveId(medplum.getActiveLogin()?.project);
