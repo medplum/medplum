@@ -129,6 +129,32 @@ describe('SearchFilterPopover', () => {
     expect(lastArg.filters).toMatchObject([{ code: 'name', operator: Operator.CONTAINS, value: 'Simpson' }]);
   });
 
+  test('Numeric fields support comparison operators', async () => {
+    const { onChange } = await setup({
+      resourceType: 'RiskAssessment',
+      filters: [{ code: 'probability', operator: Operator.EQUALS, value: '0.1' }],
+    });
+    await openPopover();
+
+    const operatorInput = screen.getByLabelText('Filter 1 operator', { selector: 'input' });
+    expect(operatorInput).not.toBeDisabled();
+    await act(async () => {
+      fireEvent.click(operatorInput);
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('option', { name: 'greater than', exact: true }));
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('filter-0-value'), { target: { value: '0.5' } });
+    });
+
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        filters: [{ code: 'probability', operator: Operator.GREATER_THAN, value: '0.5' }],
+      })
+    );
+  });
+
   test('Deleting a row keeps the next row showing its own value', async () => {
     await setup({
       resourceType: 'Patient',

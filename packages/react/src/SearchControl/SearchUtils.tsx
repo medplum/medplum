@@ -32,7 +32,7 @@ const searchParamToOperators: Record<string, Operator[]> = {
   fulltext: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
   token: [Operator.EQUALS, Operator.NOT, Operator.TEXT],
   reference: [Operator.EQUALS, Operator.NOT],
-  numeric: [
+  number: [
     Operator.EQUALS,
     Operator.NOT_EQUALS,
     Operator.GREATER_THAN,
