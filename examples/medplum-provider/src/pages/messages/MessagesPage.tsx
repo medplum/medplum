@@ -24,7 +24,7 @@ export function MessagesPage(): JSX.Element {
   const medplum = useMedplum();
   const PharmacyDialogComponent = usePharmacyDialog();
   const [threadPatient, setThreadPatient] = useState<Reference<Patient>>();
-  const { headerMenuItems, actionsModals } = usePatientActionsMenu(threadPatient);
+  const { headerMenuItems, actionsModals, openEditModal } = usePatientActionsMenu(threadPatient);
 
   const currentSearch = useMemo(() => (location.search ? location.search.substring(1) : ''), [location.search]);
 
@@ -107,6 +107,8 @@ export function MessagesPage(): JSX.Element {
         showPatientSummary={true}
         sections={sections}
         patientHeaderMenuItems={headerMenuItems}
+        patientHeaderLink={threadPatient}
+        onEditPatient={openEditModal}
         onPatientChange={setThreadPatient}
         allowPatientSelection={true}
         onNew={onNew}

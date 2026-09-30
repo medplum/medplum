@@ -44,7 +44,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
 
   const patientRef = task?.for as Reference<Patient>;
   const selectedPatient = useResource<Patient>(patientRef);
-  const { headerMenuItems, actionsModals } = usePatientActionsMenu(selectedPatient);
+  const { headerMenuItems, actionsModals, openEditModal } = usePatientActionsMenu(selectedPatient);
 
   if (!task) {
     return (
@@ -165,6 +165,8 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
                     s.key === 'pharmacies' ? createPharmaciesSection(PharmacyDialogComponent) : s
                   )}
                   headerMenuItems={headerMenuItems}
+                  headerLink={selectedPatient}
+                  onEditPatient={openEditModal}
                 />
               </ScrollArea>
             )}

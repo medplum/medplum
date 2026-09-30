@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { CommanderError, Option } from 'commander';
-import dotenv from 'dotenv';
+import { existsSync } from 'node:fs';
 import { agent } from './agent';
 import { login, token, whoami } from './auth';
 import { buildAwsCommand } from './aws/index';
@@ -141,7 +141,9 @@ function writeErrorToStderr(err: unknown, verbose = false): void {
 }
 
 export async function run(): Promise<void> {
-  dotenv.config({ quiet: true });
+  if (existsSync('.env')) {
+    process.loadEnvFile();
+  }
   await main(process.argv);
 }
 

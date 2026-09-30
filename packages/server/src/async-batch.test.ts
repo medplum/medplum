@@ -56,13 +56,13 @@ describe('Async batch handler', () => {
 
   test('Defaults to re-entrant processing', async () => {
     const jobData = await submitAsyncBatch();
-    expect(jobData).toMatchObject<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.any(String) });
+    expect(jobData).toMatchObject<Partial<ReentrantBatchJobData>>({ tracking: expect.any(Object) });
     expect(jobData).not.toHaveProperty('bundle');
   });
 
   test('Uses re-entrant processing when opted in explicitly', async () => {
     const jobData = await submitAsyncBatch([{ name: 'reentrantAsyncBatch', valueBoolean: true }]);
-    expect(jobData).toMatchObject<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.any(String) });
+    expect(jobData).toMatchObject<Partial<ReentrantBatchJobData>>({ tracking: expect.any(Object) });
     expect(jobData).not.toHaveProperty('bundle');
   });
 

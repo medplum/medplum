@@ -32,7 +32,7 @@ import { getBinaryStorage } from '../storage/loader';
 import type { TestProjectResult } from '../test.setup';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { CronJobData } from './cron';
-import { convertTimingToCron, execBot, getCronQueue } from './cron';
+import { buildCronJobData, convertTimingToCron, execBot, getCronQueue } from './cron';
 import { findAndExecDispatchJob } from './test-utils';
 
 describe('Cron Worker', () => {
@@ -191,7 +191,6 @@ describe('Cron Worker', () => {
 
   test('Job should not be in queue if cron is not enabled', () =>
     withTestContext(async () => {
-      // Create a simple project with no advanced features enabled
       const queue = getCronQueue() as any;
       queue.upsertJobScheduler.mockClear();
 
@@ -203,7 +202,7 @@ describe('Cron Worker', () => {
       });
 
       const repo = new Repository({
-        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+        routing: { kind: 'project-shard', shardId: systemRepo.shardId },
         extendedMode: true,
         projects: [testProject],
         author: { reference: 'ClientApplication/' + randomUUID() },
@@ -251,10 +250,7 @@ describe('Cron Worker', () => {
       // Create a job object to pass to execBot
       const job: Job<CronJobData> = {
         id: bot.id,
-        data: {
-          resourceType: 'Bot',
-          botId: bot.id,
-        },
+        data: buildCronJobData(bot),
       } as Job<CronJobData>;
 
       await execBot(job);
@@ -312,12 +308,8 @@ describe('Cron resource', () => {
     );
 
     // meta.account is a project admin write, which is also who may author a Cron
-    projectAdminRepo = new Repository({
-      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
-      extendedMode: true,
-      strictMode: true,
+    projectAdminRepo = repo.clone({
       projectAdmin: true,
-      projects: [project],
       author: createReference(bot),
     });
   });
@@ -375,7 +367,7 @@ describe('Cron resource', () => {
       expect(queue.upsertJobScheduler).toHaveBeenCalledWith(
         `Cron/${cron.id}`,
         { pattern: '* * * * *' },
-        { data: { resourceType: 'Cron', cronId: cron.id } }
+        { data: buildCronJobData(cron) }
       );
     }));
 
@@ -429,7 +421,7 @@ describe('Cron resource', () => {
       expect(queue.upsertJobScheduler).toHaveBeenCalledWith(
         `Cron/${cron.id}`,
         { pattern: '* * * * *' },
-        { data: { resourceType: 'Cron', cronId: cron.id } }
+        { data: buildCronJobData(cron) }
       );
     }));
 
@@ -440,7 +432,9 @@ describe('Cron resource', () => {
       const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
 
       const cron = await repo.createResource<Cron>({ ...validCron(), endTime: '2020-01-01T00:00:00.000Z' });
-      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+      await execBot({
+        data: buildCronJobData(cron),
+      } as Job<CronJobData>);
 
       expect(executeBotSpy).not.toHaveBeenCalled();
       expect(queue.removeJobScheduler).toHaveBeenCalledWith(`Cron/${cron.id}`);
@@ -459,7 +453,7 @@ describe('Cron resource', () => {
       expect(queue.upsertJobScheduler).toHaveBeenCalledWith(
         `Cron/${cron.id}`,
         { pattern: '0 */3 * * *' },
-        { data: { resourceType: 'Cron', cronId: cron.id } }
+        { data: buildCronJobData(cron) }
       );
     }));
 
@@ -549,7 +543,7 @@ describe('Cron resource', () => {
       expect(accountedBot.meta?.accounts).toMatchObject([botAccount]);
       expect(cron.meta?.accounts).toMatchObject([cronAccount]);
 
-      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+      await execBot({ data: buildCronJobData(cron) } as Job<CronJobData>);
 
       const auditEvent = await systemRepo.searchOne<AuditEvent>({
         resourceType: 'AuditEvent',
@@ -573,7 +567,9 @@ describe('Cron resource', () => {
         targetReference: createReference(accountedBot),
       });
 
-      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+      await execBot({
+        data: buildCronJobData(cron),
+      } as Job<CronJobData>);
 
       const auditEvent = await systemRepo.searchOne<AuditEvent>({
         resourceType: 'AuditEvent',
@@ -607,7 +603,7 @@ describe('Cron resource', () => {
 
       const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
 
-      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+      await execBot({ data: buildCronJobData(cron) } as Job<CronJobData>);
 
       expect(executeBotSpy).toHaveBeenCalledTimes(1);
       const args = executeBotSpy.mock.calls[0][0];
@@ -710,7 +706,7 @@ describe('Cron resource', () => {
       queue.removeJobScheduler.mockClear();
       const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
 
-      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+      await execBot({ data: buildCronJobData(cron) } as Job<CronJobData>);
 
       expect(executeBotSpy).not.toHaveBeenCalled();
       expect(queue.removeJobScheduler).toHaveBeenCalledWith(`Cron/${cron.id}`);
@@ -729,9 +725,7 @@ describe('Cron resource', () => {
         .spyOn(Repository.prototype, 'readReference')
         .mockRejectedValueOnce(new OperationOutcomeError(serverError(new Error('database is down'))));
 
-      await expect(execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>)).rejects.toThrow(
-        'database is down'
-      );
+      await expect(execBot({ data: buildCronJobData(cron) } as Job<CronJobData>)).rejects.toThrow('database is down');
       expect(queue.removeJobScheduler).not.toHaveBeenCalled();
       readSpy.mockRestore();
     }));
@@ -746,7 +740,7 @@ describe('Cron resource', () => {
       queue.removeJobScheduler.mockClear();
       const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
 
-      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+      await execBot({ data: buildCronJobData(cron) } as Job<CronJobData>);
 
       expect(executeBotSpy).not.toHaveBeenCalled();
       expect(queue.removeJobScheduler).toHaveBeenCalledWith(`Cron/${cron.id}`);
@@ -784,7 +778,7 @@ describe('Cron resource', () => {
       queue.removeJobScheduler.mockClear();
       const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
 
-      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+      await execBot({ data: buildCronJobData(cron) } as Job<CronJobData>);
 
       expect(executeBotSpy).not.toHaveBeenCalled();
       // The feature can come back, and nothing re-registers a job that was dropped
@@ -872,7 +866,7 @@ describe('Cron across linked projects', () => {
       const cron = await customerRepo.createResource<Cron>(validCron());
 
       const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
-      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+      await execBot({ data: buildCronJobData(cron) } as Job<CronJobData>);
 
       expect(executeBotSpy).toHaveBeenCalledTimes(1);
       const args = executeBotSpy.mock.calls[0][0];
@@ -897,7 +891,7 @@ describe('Cron across linked projects', () => {
       });
 
       const writeFileSpy = vi.spyOn(getBinaryStorage(), 'writeFile');
-      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+      await execBot({ data: buildCronJobData(cron) } as Job<CronJobData>);
 
       const [key, , body] = writeFileSpy.mock.calls[0];
       expect(key).toStrictEqual(expect.stringContaining(`bot/${customer.project.id}/`));
@@ -993,7 +987,7 @@ describe('Cron across linked projects', () => {
         targetReference: createReference(bot),
       });
 
-      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+      await execBot({ data: buildCronJobData(cron) } as Job<CronJobData>);
 
       const auditEvent = await systemRepo.searchOne<AuditEvent>({
         resourceType: 'AuditEvent',
@@ -1027,7 +1021,7 @@ describe('Cron across linked projects', () => {
       queue.removeJobScheduler.mockClear();
       const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
 
-      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+      await execBot({ data: buildCronJobData(cron) } as Job<CronJobData>);
 
       expect(executeBotSpy).not.toHaveBeenCalled();
       expect(queue.removeJobScheduler).toHaveBeenCalledWith(`Cron/${cron.id}`);

@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Divider, Flex, Group, Menu, Skeleton, Stack, Text, Tooltip } from '@mantine/core';
-import type { MedplumClient } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
 import { formatDate, formatHumanName, resolveId } from '@medplum/core';
 import type { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
-import { useMedplum, usePatientSummaryData, useResource } from '@medplum/react-hooks';
+import { useMedplum, usePatientSummaryData, useResource, useResourceModified } from '@medplum/react-hooks';
 import { IconDots } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -20,17 +20,27 @@ export interface PatientSummaryProps {
   readonly onRequestLabs?: () => void;
   readonly sections?: PatientSummarySectionConfig[];
   readonly headerMenuItems?: ReactNode;
-  readonly linkToPatient?: boolean;
+  readonly headerLink?: Resource | Reference | string;
+  readonly onEditPatient?: () => void;
 }
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { patient: propsPatient, onClickResource, onRequestLabs, headerMenuItems, linkToPatient = true } = props;
+  const { patient: propsPatient, onClickResource, onRequestLabs, headerMenuItems, headerLink, onEditPatient } = props;
   const [patientOutcome, setPatientOutcome] = useState<OperationOutcome | undefined>();
-  const patient = useResource(propsPatient, setPatientOutcome);
+  const resolvedPatient = useResource(propsPatient, setPatientOutcome);
+  const [modifiedPatient, setModifiedPatient] = useState<WithId<Patient> | undefined>();
   const [createdDate, setCreatedDate] = useState<string | undefined>();
   const nameRef = useRef<HTMLParagraphElement>(null);
   const [isNameTruncated, setIsNameTruncated] = useState(false);
+
+  useResourceModified('Patient', (event) => {
+    if (event.resource && event.resource.id === resolvedPatient?.id) {
+      setModifiedPatient(event.resource);
+    }
+  });
+
+  const patient = modifiedPatient?.id === resolvedPatient?.id ? modifiedPatient : resolvedPatient;
 
   // Determine sections: custom or default
   const defaultSections = useMemo(() => getDefaultSections(onRequestLabs), [onRequestLabs]);
@@ -89,8 +99,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     <Flex direction="column" gap={0} w="100%" h="100%" className={styles.panel}>
       <Box>
         <Group align="center" gap="sm" wrap="nowrap" py="md" pl="sm" pr={headerMenuItems ? 'xs' : 'xl'}>
-          {linkToPatient ? (
-            <MedplumLink to={patient} className={styles.headerLink} underline="never">
+          {headerLink ? (
+            <MedplumLink to={headerLink} className={styles.headerLink} underline="never">
               {headerContent}
             </MedplumLink>
           ) : (
@@ -134,6 +144,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                   <SectionComponent
                     patient={patient}
                     onClickResource={onClickResource}
+                    onEditPatient={onEditPatient}
                     results={sectionData[index] ?? {}}
                   />
                   <Divider />

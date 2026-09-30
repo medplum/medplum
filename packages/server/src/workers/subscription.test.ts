@@ -39,6 +39,7 @@ import type { MedplumServerConfig } from '../config/types';
 import type * as Constants from '../constants';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
+import * as projectMembershipUtils from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
 import { setResourceCacheEntry } from '../fhir/repository/resource-cache';
@@ -65,7 +66,6 @@ import {
   recordSubscriptionFailure,
 } from './subscription-failure-tracker';
 import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
-import * as workerUtils from './utils';
 
 const wsSubscriptionTestChannels = vi.hoisted(() => {
   const suffix = process.env.VITEST_WORKER_ID ?? process.env.VITEST_POOL_ID ?? `pid-${process.pid}`;
@@ -2160,7 +2160,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      const spy = vi.spyOn(workerUtils, 'findProjectMembership');
+      const spy = vi.spyOn(projectMembershipUtils, 'findProjectMembership');
 
       await addSubscriptionJobs(patient, undefined, { project, interaction: 'create' });
 
@@ -2759,7 +2759,10 @@ describe('Subscription Worker', () => {
 
         // Whichever membership the unordered lookup returns first gets the denying policy, so a
         // worker that fell back to `findProjectMembership` would deny the allowed subscription.
-        const firstFound = await workerUtils.findProjectMembership(wsProject.id, createReference(practitioner));
+        const firstFound = await projectMembershipUtils.findProjectMembership(
+          wsProject.id,
+          createReference(practitioner)
+        );
         expect([membershipA.id, membershipB.id]).toContain(firstFound?.id);
         const [noAccessMembership, hasAccessMembership] =
           firstFound?.id === membershipA.id ? [membershipA, membershipB] : [membershipB, membershipA];

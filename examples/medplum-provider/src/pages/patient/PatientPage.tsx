@@ -30,7 +30,7 @@ export function PatientPage(): JSX.Element {
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const patient = usePatient({ setOutcome });
   const [isLabsModalOpen, setIsLabsModalOpen] = useState(false);
-  const { headerMenuItems, actionsModals } = usePatientActionsMenu(patient);
+  const { headerMenuItems, actionsModals, openEditModal } = usePatientActionsMenu(patient);
   const PharmacyDialogComponent = usePharmacyDialog();
   const { hasAccess: hasDoseSpotAccess } = useDoseSpotAccess();
   const tabs = getPatientPageTabs(membership, { hasDoseSpotAccess });
@@ -84,7 +84,7 @@ export function PatientPage(): JSX.Element {
               }
               sections={sections}
               headerMenuItems={headerMenuItems}
-              linkToPatient={false}
+              onEditPatient={openEditModal}
             />
           </ScrollArea>
         </div>

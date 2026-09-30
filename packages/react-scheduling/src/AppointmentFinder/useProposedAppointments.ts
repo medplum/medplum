@@ -28,6 +28,14 @@ export interface UseProposedAppointmentsOptions {
   readonly range: DateRange;
   /** Times to ask for per combination. Defaults to 20. */
   readonly count?: number;
+  /**
+   * An appointment whose own times are not to count as taken.
+   *
+   * For searching on behalf of an appointment that already exists: the times it holds
+   * are the times it is being moved off, and left standing they would block every
+   * search that keeps any of the actors it is held on.
+   */
+  readonly ignoreAppointment?: Reference<Appointment> | WithId<Appointment>;
 }
 
 export interface UseProposedAppointmentsResult {
@@ -54,16 +62,19 @@ export interface UseProposedAppointmentsResult {
  * @returns The times offered, plus load and error state.
  */
 export function useProposedAppointments(options: UseProposedAppointmentsOptions): UseProposedAppointmentsResult {
-  const { service, combinations, range, count = DEFAULT_COUNT } = options;
+  const { service, combinations, range, count = DEFAULT_COUNT, ignoreAppointment } = options;
   const medplum = useMedplum();
   const [answered, setAnswered] = useState<SearchState>(NOTHING_ASKED);
 
   const { start, end } = range;
   const windowError = getFindWindowError(range);
   const serviceReference = service && getReferenceString(service);
+  const ignoreReference = ignoreAppointment && getReferenceString(ignoreAppointment);
   const urls =
     serviceReference && start && end && !windowError
-      ? combinations.map((combination) => buildFindUrl(medplum, serviceReference, combination, start, end, count))
+      ? combinations.map((combination) =>
+          buildFindUrl(medplum, serviceReference, combination, start, end, count, ignoreReference)
+        )
       : [];
   const urlsKey = urls.join(URL_SEPARATOR);
 
@@ -130,7 +141,8 @@ function buildFindUrl(
   combination: ActorCombination,
   start: Date,
   end: Date,
-  count: number
+  count: number,
+  ignoreReference?: string
 ): string {
   const url = medplum.fhirUrl('Appointment', '$find');
   url.searchParams.set('start', start.toISOString());
@@ -140,6 +152,9 @@ function buildFindUrl(
     if (schedule.reference) {
       url.searchParams.append('schedule', schedule.reference);
     }
+  }
+  if (ignoreReference) {
+    url.searchParams.set('ignore-appointment', ignoreReference);
   }
   url.searchParams.set('_count', count.toString());
   return url.toString();

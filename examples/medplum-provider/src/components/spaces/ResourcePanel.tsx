@@ -26,7 +26,7 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
   const displayResource = useResource(resource);
   const PharmacyDialogComponent = usePharmacyDialog();
   const patientForActions = displayResource?.resourceType === 'Patient' ? (displayResource as Patient) : undefined;
-  const { headerMenuItems, actionsModals } = usePatientActionsMenu(patientForActions);
+  const { headerMenuItems, actionsModals, openEditModal } = usePatientActionsMenu(patientForActions);
 
   const sections = getDefaultSections().map((s) =>
     s.key === 'pharmacies' ? createPharmaciesSection(PharmacyDialogComponent) : s
@@ -41,7 +41,13 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
       case 'Patient':
         return (
           <>
-            <PatientSummary patient={displayResource} sections={sections} headerMenuItems={headerMenuItems} />
+            <PatientSummary
+              patient={displayResource}
+              sections={sections}
+              headerMenuItems={headerMenuItems}
+              headerLink={displayResource}
+              onEditPatient={openEditModal}
+            />
             {actionsModals}
           </>
         );
