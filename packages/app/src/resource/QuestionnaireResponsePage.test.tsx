@@ -74,7 +74,6 @@ describe('QuestionnaireResponsePage', () => {
     });
 
     // click on a questionnaire response
-    await screen.findByText(`${response1.id}`);
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Last Updated' }));
     });

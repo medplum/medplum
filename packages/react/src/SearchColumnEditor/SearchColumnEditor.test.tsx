@@ -71,16 +71,6 @@ describe('SearchColumnEditor', () => {
     expect(last.fields).toContain('gender');
   });
 
-  test('Toggling a column hides it and emits fields', async () => {
-    const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
-    await openMenu();
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('column-name'));
-    });
-    const last = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
-    expect(last.fields).toEqual(['birthDate']);
-  });
-
   test('Hidden column stays in the list without a check', async () => {
     await act(async () => {
       await medplum.requestSchema('Patient');

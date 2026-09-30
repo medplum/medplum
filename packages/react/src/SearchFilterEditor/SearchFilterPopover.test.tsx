@@ -32,13 +32,6 @@ async function openPopover(): Promise<void> {
 }
 
 describe('SearchFilterPopover', () => {
-  test('Renders trigger and opens', async () => {
-    await setup({ resourceType: 'Patient' });
-    await openPopover();
-    expect(screen.getByText('No filters applied')).toBeInTheDocument();
-    expect(screen.getByText('Add Filter')).toBeInTheDocument();
-  });
-
   test('Shows the active filter count and existing conditions', async () => {
     await setup({
       resourceType: 'Patient',

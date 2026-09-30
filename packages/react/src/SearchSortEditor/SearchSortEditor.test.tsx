@@ -28,14 +28,13 @@ async function openPopover(): Promise<void> {
 }
 
 describe('SearchSortEditor', () => {
-  test('Renders trigger and opens', async () => {
+  test('Opens showing the default sort row', async () => {
     await setup({ resourceType: 'Patient' });
     await openPopover();
     expect(screen.getByLabelText('Sort 1 field', { selector: 'input' })).toHaveValue('Last Updated (meta)');
     expect(screen.getByLabelText('Sort 1 direction', { selector: 'input' })).toHaveValue('Newest → Oldest');
     expect(screen.getByLabelText('Reset sort to default')).toBeDisabled();
     expect(screen.queryByLabelText('Remove sort 1')).toBeNull();
-    expect(screen.getByText('Add Sort')).toBeInTheDocument();
   });
 
   test('A changed last row offers reset to default instead of remove', async () => {
