@@ -441,8 +441,16 @@ async function findAvailableSeries(params: {
     laterWeeks.push({ projections, range: { start: window.start, end } });
   }
 
+  // The caller never sent a later week's bounds, only `start`/`end`, which narrow them too.
   const laterWeekSlots = await Promise.all(
-    laterWeeks.map(async ({ range }) => slotsOverlappingInterval(ctx.repo, params.schedules, range))
+    laterWeeks.map(async ({ range }, idx) =>
+      slotsOverlappingInterval(
+        ctx.repo,
+        params.schedules,
+        range,
+        `Too many slots found for occurrence ${idx + 2}, between ${range.start.toISOString()} and ${range.end.toISOString()}; try searching with smaller bounds`
+      )
+    )
   );
   const laterWeekChecks = laterWeeks.map(({ projections, range }, idx) => ({
     projections,

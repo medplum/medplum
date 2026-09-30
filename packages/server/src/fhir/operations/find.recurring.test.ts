@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import {
   createReference,
+  DEFAULT_MAX_SEARCH_COUNT,
   isResource,
   SchedulingSlotCapacityURI,
   TimezoneExtensionURI,
@@ -20,9 +21,11 @@ import type {
 } from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
+import { Repository } from '../../fhir/repo';
 import { createTestProject } from '../../test.setup';
 import { withPath } from '../../util/withpath';
 import { expandWeeklySeries, readWeeklyTemplate, weeklyTemplate } from './utils/recurrence';
@@ -666,6 +669,40 @@ describe('Appointment/$find with occurrence-count', () => {
 
     expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toBe('Search range cannot exceed 7 days');
+  });
+
+  test('names the later occurrence whose week has too many slots', async () => {
+    const schedule = await makeSchedule(mondayNineToNoon);
+
+    // Only the third occurrence's week, which the 9am-12pm candidates project to, fills a page.
+    const originalSearch = Repository.prototype.searchResources;
+    const searchSpy = vi.spyOn(Repository.prototype, 'searchResources').mockImplementation(async function (
+      this: Repository,
+      searchRequest
+    ) {
+      const after = searchRequest.filters?.find((filter) => filter.code === 'end')?.value;
+      if (searchRequest.resourceType === 'Slot' && after === '2026-03-23T13:00:00.000Z') {
+        return Array.from({ length: DEFAULT_MAX_SEARCH_COUNT }, () => ({}) as WithId<Slot>);
+      }
+      return originalSearch.call(this, searchRequest);
+    });
+
+    try {
+      const response = await makeRequest({
+        start: new Date('2026-03-09T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-10T00:00:00-04:00').toISOString(),
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        schedule: `Schedule/${schedule.id}`,
+        'occurrence-count': '3',
+      });
+
+      expect(response).toHaveStatus(400);
+      expect(response.body.issue[0].details.text).toBe(
+        'Too many slots found for occurrence 3, between 2026-03-23T13:00:00.000Z and 2026-03-23T16:00:00.000Z; try searching with smaller bounds'
+      );
+    } finally {
+      searchSpy.mockRestore();
+    }
   });
 
   test.each([0, 7])('rejects an out-of-range occurrence-count of %i', async (occurrenceCount) => {

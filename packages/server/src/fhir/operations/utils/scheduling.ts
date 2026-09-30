@@ -663,7 +663,8 @@ export function assertAllMatch<T extends object>(
 export async function slotsOverlappingInterval(
   repo: Repository,
   schedules: (WithId<Schedule> | (Reference<Schedule> & { reference: string }))[],
-  interval: Interval
+  interval: Interval,
+  tooManyMessage = 'Too many slots found in range; try searching with smaller bounds'
 ): Promise<WithId<Slot>[]> {
   const results = await repo.searchResources<Slot>({
     resourceType: 'Slot',
@@ -687,7 +688,7 @@ export async function slotsOverlappingInterval(
   // If we filled a full search page of slots, then there may be slots we
   // didn't fetch that would impact availability. Fail loudly here.
   if (results.length === DEFAULT_MAX_SEARCH_COUNT) {
-    throw new OperationOutcomeError(badRequest('Too many slots found in range; try searching with smaller bounds'));
+    throw new OperationOutcomeError(badRequest(tooManyMessage));
   }
   return results;
 }
