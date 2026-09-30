@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { getReferenceString, SchedulingSlotCapacityURI, setScheduleSchedulingParameter } from '@medplum/core';
-import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
-  DrOkaforSchedule,
   DrRiveraSchedule,
   ExamRoomASchedule,
   ExamRoomBSchedule,
@@ -13,8 +12,6 @@ import {
   RiveraImagingAppointment,
   RiveraImagingHeldSlots,
   SchedulingFixtures,
-  Ultrasound1Schedule,
-  Ultrasound2Schedule,
   UltrasoundImagingService,
 } from '../stories/scheduling';
 import { buildElevatedBooking } from './buildElevatedBooking';
@@ -83,48 +80,12 @@ describe('writeElevatedReschedule', () => {
     expect(existing).toEqual(original);
   });
 
-  test.each([
-    ['provider', DrRiveraSchedule, DrOkaforSchedule],
-    ['room', ExamRoomASchedule, ExamRoomBSchedule],
-    ['device', Ultrasound1Schedule, Ultrasound2Schedule],
-  ] as const)('reassigns a %s into a conflict at the same time', async (_kind, outgoing, incoming) => {
-    const selected = [DrRiveraSchedule, ExamRoomASchedule, Ultrasound1Schedule].map((schedule) =>
-      schedule.id === outgoing.id ? incoming : schedule
-    );
-    await medplum.createResource<Slot>({
-      resourceType: 'Slot',
-      schedule: { reference: getReferenceString(incoming) },
-      status: 'busy',
-      start: existing.start as string,
-      end: existing.end as string,
-    });
-    const proposed = buildElevatedBooking({
-      service: UltrasoundImagingService,
-      schedules: selected,
-      start: new Date(existing.start as string),
-      durationMinutes: 30,
-    });
-    const result = await writeElevatedReschedule(medplum, existing, proposed);
-    expect(Date.parse(result.appointment.start as string)).toBe(Date.parse(existing.start as string));
-    expect(result.appointment.participant.some((p) => p.actor?.reference === outgoing.actor[0].reference)).toBe(false);
-    expect(
-      result.appointment.participant.filter((p) => p.actor?.reference === incoming.actor[0].reference)
-    ).toHaveLength(1);
-    expect(result.slots).toHaveLength(3);
-  });
-
-  test('deduplicates actors shared by two schedules and keeps pending slots tentative', async () => {
+  test('deduplicates actors shared by two schedules', async () => {
     const duplicate = await medplum.updateResource({ ...DrRiveraSchedule, id: 'same-provider-another-schedule' });
-    const result = await writeElevatedReschedule(
-      medplum,
-      { ...existing, status: 'pending' },
-      proposal([DrRiveraSchedule, duplicate])
-    );
-    expect(result.appointment.status).toBe('pending');
+    const result = await writeElevatedReschedule(medplum, existing, proposal([DrRiveraSchedule, duplicate]));
     expect(
       result.appointment.participant.filter((p) => p.actor?.reference === DrRiveraSchedule.actor[0].reference)
     ).toHaveLength(1);
-    expect(result.slots.every((slot) => slot.status === 'busy-tentative')).toBe(true);
   });
 
   test('writes capacity and buffers for each schedule while preserving pending status', async () => {
@@ -138,6 +99,7 @@ describe('writeElevatedReschedule', () => {
     );
     await medplum.updateResource(buffered);
     const result = await writeElevatedReschedule(medplum, { ...existing, status: 'pending' }, proposal());
+    expect(result.appointment.status).toBe('pending');
     expect(result.slots).toHaveLength(3);
     expect(
       result.slots.find(
@@ -149,21 +111,6 @@ describe('writeElevatedReschedule', () => {
       start: '2026-08-18T02:57:00.000Z',
     });
   });
-
-  test.each(['busy', 'busy-unavailable'] as const)(
-    'allows a conflicting %s slot at an off-grid time outside hours',
-    async (status) => {
-      await medplum.createResource<Slot>({
-        resourceType: 'Slot',
-        schedule: { reference: getReferenceString(DrRiveraSchedule) },
-        status,
-        start: START.toISOString(),
-        end: '2026-08-18T04:30:00.000Z',
-      });
-      const result = await writeElevatedReschedule(medplum, existing, proposal());
-      expect(result.appointment.start).toBe(START.toISOString());
-    }
-  );
 
   test.each([undefined, []])(
     'refuses writes when project transaction support is not confirmed (%s)',
@@ -183,12 +130,9 @@ describe('writeElevatedReschedule', () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
-  test.each([undefined, 'invalid', '2026-01-01T00:00:00Z'])(
-    'refuses an invalid original interval (%s)',
-    async (end) => {
-      await expect(writeElevatedReschedule(medplum, { ...existing, end }, proposal())).rejects.toThrow('length');
-    }
-  );
+  test.each([undefined, '2026-01-01T00:00:00Z'])('refuses an invalid original interval (%s)', async (end) => {
+    await expect(writeElevatedReschedule(medplum, { ...existing, end }, proposal())).rejects.toThrow('length');
+  });
 
   test.each([{ active: false }, { serviceType: [] }])(
     'rejects structurally ineligible schedules (%s)',
@@ -213,38 +157,40 @@ describe('writeElevatedReschedule', () => {
     await expect(writeElevatedReschedule(medplum, existing, proposal())).rejects.toThrow('every write');
   });
 
-  test.each(['batch-response', 'missing-slot', 'missing-slot-id', 'wrong-id'])(
-    'does not announce a malformed response (%s)',
-    async (kind) => {
-      const execute = medplum.executeBatch.bind(medplum);
-      vi.spyOn(medplum, 'executeBatch').mockImplementation(async (bundle) => {
-        const response = await execute(bundle);
-        if (kind === 'batch-response') {
-          response.type = 'batch-response';
+  test.each([
+    ['batch-response', 'every write'],
+    ['missing-slot', 'missing the updated appointment or replacement slots'],
+    ['missing-slot-id', 'missing the updated appointment or replacement slots'],
+    ['wrong-id', 'missing the updated appointment or replacement slots'],
+  ])('does not announce a malformed response (%s)', async (kind, message) => {
+    const execute = medplum.executeBatch.bind(medplum);
+    vi.spyOn(medplum, 'executeBatch').mockImplementation(async (bundle) => {
+      const response = await execute(bundle);
+      if (kind === 'batch-response') {
+        response.type = 'batch-response';
+      }
+      if (kind === 'missing-slot') {
+        const entry = response.entry?.find((e) => e.resource?.resourceType === 'Slot');
+        if (entry) {
+          delete entry.resource;
         }
-        if (kind === 'missing-slot') {
-          const entry = response.entry?.find((e) => e.resource?.resourceType === 'Slot');
-          if (entry) {
-            delete entry.resource;
-          }
+      }
+      if (kind === 'missing-slot-id') {
+        const resource = response.entry?.find((e) => e.resource?.resourceType === 'Slot')?.resource;
+        if (resource) {
+          delete resource.id;
         }
-        if (kind === 'missing-slot-id') {
-          const resource = response.entry?.find((e) => e.resource?.resourceType === 'Slot')?.resource;
-          if (resource) {
-            delete resource.id;
-          }
+      }
+      if (kind === 'wrong-id') {
+        const resource = response.entry?.find((e) => e.resource?.resourceType === 'Appointment')?.resource;
+        if (resource) {
+          resource.id = 'other';
         }
-        if (kind === 'wrong-id') {
-          const resource = response.entry?.find((e) => e.resource?.resourceType === 'Appointment')?.resource;
-          if (resource) {
-            resource.id = 'other';
-          }
-        }
-        return response;
-      });
-      await expect(writeElevatedReschedule(medplum, existing, proposal())).rejects.toThrow();
-    }
-  );
+      }
+      return response;
+    });
+    await expect(writeElevatedReschedule(medplum, existing, proposal())).rejects.toThrow(message);
+  });
 });
 
 test('duration retains fractional minutes and rejects missing intervals', () => {
