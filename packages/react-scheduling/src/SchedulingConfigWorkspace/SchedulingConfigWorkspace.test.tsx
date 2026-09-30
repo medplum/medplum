@@ -88,7 +88,7 @@ describe('SchedulingConfigWorkspace', () => {
 
   test('a saved rename shows in the sidebar at once, without refetching the list', async () => {
     const medplum = await setup();
-    const search = vi.spyOn(medplum, 'searchResourcePages');
+    const search = vi.spyOn(medplum, 'searchResources');
     await userEvent.click(row('Telehealth Consult'));
 
     await userEvent.type(nameField(), ' (video)');
@@ -155,21 +155,19 @@ describe('SchedulingConfigWorkspace', () => {
     for (const resource of ConfigFixtures) {
       await medplum.createResource(resource);
     }
-    // The search reads the project now, before the create, and hands back its pages only once released.
-    const search = medplum.searchResourcePages.bind(medplum);
+    // The visit type search reads the project now, before the create, and hands back its page only once released.
+    const search = medplum.searchResources.bind(medplum);
     let release = (): void => undefined;
     const released = new Promise<void>((resolve) => {
       release = resolve;
     });
-    vi.spyOn(medplum, 'searchResourcePages').mockImplementation(((...args: Parameters<typeof search>) =>
-      (async function* () {
-        const pages = [];
-        for await (const page of search(...args)) {
-          pages.push(page);
-        }
+    vi.spyOn(medplum, 'searchResources').mockImplementation((async (...args: Parameters<typeof search>) => {
+      const page = await search(...args);
+      if (args[0] === 'HealthcareService') {
         await released;
-        yield* pages;
-      })()) as typeof search);
+      }
+      return page;
+    }) as typeof search);
     renderWithMedplum(<SchedulingConfigWorkspace />, medplum);
 
     await userEvent.click(within(sidebar()).getByRole('button', { name: 'New visit type' }));
@@ -256,7 +254,7 @@ describe('SchedulingConfigWorkspace', () => {
 
   test('says when the visit types could not be loaded', async () => {
     const medplum = new MockClient({ seedDefaultData: false });
-    vi.spyOn(medplum, 'searchResourcePages').mockImplementation(() => {
+    vi.spyOn(medplum, 'searchResources').mockImplementation(() => {
       throw new Error('Search is down');
     });
 
