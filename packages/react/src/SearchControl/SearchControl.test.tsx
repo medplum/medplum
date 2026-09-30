@@ -97,6 +97,35 @@ describe('SearchControl', () => {
     }
   });
 
+  test.each([undefined, 'Patient/external'])('Renders reference display text with reference %s', async (reference) => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [
+        {
+          resource: {
+            resourceType: 'Observation',
+            id: 'observation-1',
+            status: 'final',
+            code: { text: 'Reference display test' },
+            subject: { reference, display: 'External Patient' },
+          },
+        },
+      ],
+    };
+
+    await setup({ search: { resourceType: 'Observation', fields: ['id', 'subject'] } }, bundle);
+
+    const name = screen.getByText('External Patient');
+    expect(name).toBeInTheDocument();
+    if (reference) {
+      expect(name.closest('a')).toHaveAttribute('href', `/${reference}`);
+    } else {
+      expect(name.closest('a')).toBeNull();
+    }
+  });
+
   test('Renders additional columns', async () => {
     const props: SearchControlProps = {
       search: {
@@ -898,6 +927,11 @@ describe('SearchControl', () => {
     expect(props.onLoad).toHaveBeenCalled();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.queryByText('Patient')).not.toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Name' }));
+    });
+    expect(await screen.findByText('Sort A to Z')).toBeInTheDocument();
+    expect(screen.queryByText('Filter by this column')).not.toBeInTheDocument();
   });
 
   test('Deprecated hideFilters is still accepted and has no effect', async () => {

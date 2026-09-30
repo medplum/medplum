@@ -727,11 +727,14 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                               search={memoizedSearch}
                               searchParams={field.searchParams}
                               onChange={(result) => emitSearchChange(result)}
-                              onFilterByColumn={(searchParam) =>
-                                setState((s) => ({
-                                  ...s,
-                                  requestFilterField: { code: searchParam.code, nonce: Date.now() },
-                                }))
+                              onFilterByColumn={
+                                props.hideToolbar
+                                  ? undefined
+                                  : (searchParam) =>
+                                      setState((s) => ({
+                                        ...s,
+                                        requestFilterField: { code: searchParam.code, nonce: Date.now() },
+                                      }))
                               }
                             />
                           </Menu>

@@ -677,17 +677,16 @@ function renderRichValue(propertyType: string, value: unknown, code: string): JS
 function ReferenceAvatarLink({ value }: { readonly value: Reference }): JSX.Element {
   const openContextMenu = useReferenceContextMenu();
   const href = getReferenceHref(useSearchControlLinks(), value);
+  const name = value.display || <ResourceName value={value} />;
   return (
     <Group gap="xs" wrap="nowrap" onContextMenu={(e) => openContextMenu(e, value)}>
       <ResourceAvatar value={value} radius="xl" size={28} />
       {href ? (
         <MedplumLink to={href} size="sm" className={classes.nameLink}>
-          <ResourceName value={value} />
+          {name}
         </MedplumLink>
       ) : (
-        <Text size="sm">
-          <ResourceName value={value} />
-        </Text>
+        <Text size="sm">{name}</Text>
       )}
     </Group>
   );
