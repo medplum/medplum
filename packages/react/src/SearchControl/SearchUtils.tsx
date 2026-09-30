@@ -650,11 +650,17 @@ function renderNameWithAvatar(resource: Resource): JSX.Element {
  * @returns A rich display element, or undefined to fall back to {@link ResourcePropertyDisplay}.
  */
 function renderRichValue(propertyType: string, value: unknown, code: string): JSX.Element | undefined {
-  if (propertyType === PropertyType.Reference) {
+  if (propertyType === PropertyType.Reference && !Array.isArray(value)) {
     return <ReferenceAvatarLink value={value as Reference} />;
   }
   if (code === 'status' && typeof value === 'string') {
-    return <StatusBadge status={value} variant="light" />;
+    return (
+      <StatusBadge
+        status={value}
+        variant="light"
+        classNames={{ root: classes.statusBadge, label: classes.statusBadgeLabel }}
+      />
+    );
   }
   return undefined;
 }

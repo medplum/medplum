@@ -165,3 +165,12 @@
 .toolbarButton :global(.mantine-Button-section[data-position='left']) {
   margin-inline-end: 6px;
 }
+
+.statusBadge {
+  overflow: visible;
+  max-width: none;
+}
+
+.statusBadgeLabel {
+  overflow: visible;
+}
