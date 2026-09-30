@@ -45,9 +45,8 @@ import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
 import { findProjectMembership } from '../fhir/projectmembership';
 import type { ResendSubscriptionsOptions, SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
-import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
@@ -117,7 +116,7 @@ const MAX_DELAY = 8 * 60 * 60_000;
  */
 
 export interface SubscriptionJobData {
-  readonly target?: ProjectJobTarget; // PENDING{v5.2} make required and tighten up based on that throughout
+  readonly target: ProjectJobTarget;
   readonly subscriptionId: string;
   readonly resourceType: ResourceType;
   readonly channelType?: Subscription['channel']['type'];
@@ -618,7 +617,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
 
   try {
     const { subscriptionId, resourceType, id, versionId, verbose } = job.data;
-    systemRepo = job.data.target ? await getJobSystemRepo(job.data.target) : getShardSystemRepo(TODO_SHARD_ID);
+    systemRepo = await getJobSystemRepo(job.data.target);
     const logger = getLogger();
     const logFn = verbose ? logger.info : logger.debug;
 
