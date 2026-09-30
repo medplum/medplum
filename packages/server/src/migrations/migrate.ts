@@ -655,7 +655,7 @@ function buildIdentifierTable(result: SchemaDefinition): void {
 }
 
 function buildHumanNameTable(result: SchemaDefinition): void {
-  buildLookupTable(
+  const tableDefinition = buildLookupTable(
     result,
     'HumanName',
     ['name', 'given', 'family'],
@@ -692,6 +692,17 @@ function buildHumanNameTable(result: SchemaDefinition): void {
       },
     ]
   );
+
+  // Unscoped btree indexes stay for searches without a project filter; a multicolumn GIN index serves conditions
+  // on any subset of its columns, so the scoped GIN indexes replace the unscoped ones
+  tableDefinition.columns.push({ name: 'projectId', type: 'UUID' });
+  tableDefinition.indexes = tableDefinition.indexes.flatMap((index) => {
+    if (index.columns[0] === 'resourceId') {
+      return [index];
+    }
+    const scoped = applyIndexVariant(index, ProjectScoped);
+    return index.indexType === 'gin' ? [scoped] : [index, scoped];
+  });
 }
 
 function buildLookupTable(
@@ -699,7 +710,7 @@ function buildLookupTable(
   tableName: string,
   columns: string[],
   additionalIndexes?: IndexDefinition[]
-): void {
+): TableDefinition {
   const tableDefinition: TableDefinition = {
     name: tableName,
     columns: [{ name: 'resourceId', type: 'UUID', notNull: true }],
@@ -716,6 +727,7 @@ function buildLookupTable(
   }
 
   result.tables.push(tableDefinition);
+  return tableDefinition;
 }
 
 function buildCodingTable(result: SchemaDefinition): void {

@@ -287,6 +287,10 @@ You can use the `--dryrun` option to preview the changes:
 npx medplum aws update-bucket-policies [env name] --dryrun
 ```
 
+With `guardDutyMalwareProtectionEnabled`, also pass `--guardduty-malware-protection` so CloudFront only serves Binaries
+GuardDuty found clean. With `guardDutyMalwareProtectionOnDemandOnly`, add `--guardduty-on-demand-only` to only block
+Binaries GuardDuty found threats in. Running the command again with this flag replaces an existing clean-only gate.
+
 ### Deploy the app
 
 :::tip[]
