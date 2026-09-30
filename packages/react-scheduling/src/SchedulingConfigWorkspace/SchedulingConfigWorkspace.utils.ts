@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { extractServiceTypeReferences, getDisplayString } from '@medplum/core';
+import { extractServiceTypeReferences, getDisplayString, isDefined, resolveId } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType } from '../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../configSearch';
@@ -110,7 +110,9 @@ export function getOfferedServices(
   servicesById: ReadonlyMap<string, WithId<HealthcareService>>
 ): WithId<HealthcareService>[] {
   const ids = new Set(
-    extractServiceTypeReferences(schedule?.serviceType).map(({ reference }) => reference.split('/')[1])
+    extractServiceTypeReferences(schedule?.serviceType)
+      .map((reference) => resolveId(reference))
+      .filter(isDefined)
   );
   return [...ids].flatMap((id) => servicesById.get(id) ?? []);
 }

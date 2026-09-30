@@ -7,7 +7,7 @@ import type { HealthcareService } from '@medplum/fhirtypes';
 import { IconCalculatorFilled, IconCalendarEvent, IconMapPinFilled } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { isBookableActorType } from '../actors';
 import { ActorPage } from './ActorPage/ActorPage';
@@ -59,8 +59,6 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
   const [pending, setPending] = useState<ConfigSelection>();
   const [nextNewKey, setNextNewKey] = useState(1);
 
-  const servicesById = useMemo(() => new Map(services.items.map((service) => [service.id, service])), [services.items]);
-
   function select(next: ConfigSelection): void {
     if (isSameSelection(next, selection)) {
       return;
@@ -108,7 +106,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       />
     );
   } else if (selection?.kind === 'service') {
-    const service = servicesById.get(selection.id);
+    const service = services.items.find((service) => service.id === selection.id);
     detail = service ? (
       <VisitTypePage
         // The version is in the key, so a save or reload remounts the page on what was stored.
