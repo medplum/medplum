@@ -170,7 +170,19 @@ async function handler(params: {
   const ignoreAppointment = params.ignoreAppointment;
   const [schedules, allSlotsByRange, healthcareService, ignoredAppointment] = await Promise.all([
     ctx.repo.readReferences(params.schedules).then((schedules) => copyPaths(params.schedules, schedules)),
-    Promise.all(requestedRanges.map((range) => slotsOverlappingInterval(ctx.repo, params.schedules, range))),
+    Promise.all(
+      requestedRanges.map((range, idx) =>
+        slotsOverlappingInterval(
+          ctx.repo,
+          params.schedules,
+          range,
+          // The caller never sent a later week's bounds, so name them.
+          idx === 0
+            ? undefined
+            : `Too many slots found for occurrence ${idx + 1}, between ${range.start.toISOString()} and ${range.end.toISOString()}; try searching with smaller bounds`
+        )
+      )
+    ),
     ctx.repo.readReference<HealthcareService>(params.healthcareService).catch((err) => {
       if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
         throw new OperationOutcomeError(badRequest('HealthcareService not found'));

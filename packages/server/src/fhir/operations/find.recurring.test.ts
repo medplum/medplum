@@ -3,6 +3,7 @@
 import type { DayOfWeek, WithId } from '@medplum/core';
 import {
   createReference,
+  DEFAULT_MAX_SEARCH_COUNT,
   RecurrenceTemplateExtensionURI,
   SchedulingSlotCapacityURI,
   TimezoneExtensionURI,
@@ -20,9 +21,11 @@ import type {
 } from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
+import { Repository } from '../../fhir/repo';
 import { createTestProject } from '../../test.setup';
 import type { SchedulingParametersExtensionExtension } from './utils/scheduling-parameters';
 
@@ -286,6 +289,33 @@ describe('Appointment/$find with occurrence-count', () => {
     const response = await find(schedule, { ...monday, 'occurrence-count': '2' });
     expect(response).toHaveStatus(200);
     expect(starts(response)).toEqual(['2026-03-09T15:00:00.000Z']);
+  });
+
+  test('names the later week whose Slots fill a search page', async () => {
+    const schedule = await makeSchedule(availableOn('mon', '09:00:00', '10:00:00'));
+
+    // The 3rd occurrence's week: the requested Monday, two weeks on, widened an hour each side.
+    const originalSearch = Repository.prototype.searchResources;
+    const searchSpy = vi.spyOn(Repository.prototype, 'searchResources').mockImplementation(async function (
+      this: Repository,
+      searchRequest
+    ) {
+      const after = searchRequest.filters?.find((filter) => filter.code === 'end')?.value;
+      if (searchRequest.resourceType === 'Slot' && after === '2026-03-23T03:00:00.000Z') {
+        return Array.from({ length: DEFAULT_MAX_SEARCH_COUNT }, () => ({}) as WithId<Slot>);
+      }
+      return originalSearch.call(this, searchRequest);
+    });
+
+    try {
+      const response = await find(schedule, { ...monday, 'occurrence-count': '3' });
+      expect(response).toHaveStatus(400);
+      expect(response.body.issue[0].details.text).toBe(
+        'Too many slots found for occurrence 3, between 2026-03-23T03:00:00.000Z and 2026-03-24T05:00:00.000Z; try searching with smaller bounds'
+      );
+    } finally {
+      searchSpy.mockRestore();
+    }
   });
 
   test('validates recurring searches', async () => {
