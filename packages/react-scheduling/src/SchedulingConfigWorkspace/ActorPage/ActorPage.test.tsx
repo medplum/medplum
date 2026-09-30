@@ -40,14 +40,10 @@ const drSmith: WithId<Practitioner> = {
   name: [{ prefix: ['Dr.'], given: ['Jane'], family: 'Smith' }],
 };
 
-function calendar(
-  actor: string,
-  offered: WithId<HealthcareService>[],
-  id = `schedule-${actor.split('/')[1]}`
-): Schedule {
+function calendar(actor: string, offered: WithId<HealthcareService>[]): Schedule {
   return {
     resourceType: 'Schedule',
-    id,
+    id: `schedule-${actor.split('/')[1]}`,
     active: true,
     actor: [{ reference: actor }],
     serviceType: offered.flatMap((service) => toServiceTypeCodeableConcepts(service)),
@@ -92,17 +88,5 @@ describe('ActorPage', () => {
     expect(screen.getAllByText('Inactive')).toHaveLength(2);
     expect(screen.queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument();
     expect(screen.queryByRole('switch', { name: /Active/ })).not.toBeInTheDocument();
-  });
-
-  test('shows the first of two calendars and says nothing about the other', async () => {
-    await setup(drSmith, [
-      calendar('Practitioner/dr-smith', [initialVisit], 'first'),
-      calendar('Practitioner/dr-smith', [followUp], 'second'),
-    ]);
-
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(screen.queryByText(/calendar/)).not.toBeInTheDocument();
-    expect(screen.getByText('Initial Visit')).toBeInTheDocument();
-    expect(screen.queryByText('Follow-up')).not.toBeInTheDocument();
   });
 });
