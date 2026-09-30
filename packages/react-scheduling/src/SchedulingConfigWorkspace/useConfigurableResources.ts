@@ -14,7 +14,7 @@ import { withStoredService } from './SchedulingConfigWorkspace.utils';
 export interface ResourceList<T> {
   readonly items: readonly T[];
   readonly loading: boolean;
-  /** False when the read stopped at its limit with more left. */
+  /** False when the project holds more than the one page read. */
   readonly complete: boolean;
   /** Why the read failed, when it did. */
   readonly error?: unknown;
