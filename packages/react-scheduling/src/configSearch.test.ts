@@ -151,7 +151,7 @@ describe('searchConfigurableActors', () => {
       ['dr-baker', []],
     ]);
     expect(complete).toBe(true);
-    expect(querySentTo(medplum)).toEqual({ _count: '1000', _revinclude: 'Schedule:actor' });
+    expect(querySentTo(medplum)).toEqual({ _sort: 'name', _count: '1000', _revinclude: 'Schedule:actor' });
   });
 
   test('attaches only the Schedules an actor holds alone', async () => {
@@ -167,13 +167,20 @@ describe('searchConfigurableActors', () => {
     expect(scheduleIds(actors[0]).sort()).toEqual(['first', 'second']);
   });
 
-  test('rooms are the Locations typed as a room or a bed, and not the service facilities', async () => {
-    const medplum = await setupClient([room1, bed1, clinic, untypedFacility]);
+  test('rooms are the Locations typed as a room or a bed, or holding a calendar, and not the other facilities', async () => {
+    const medplum = await setupClient([
+      room1,
+      bed1,
+      clinic,
+      untypedFacility,
+      location('facility-scheduled', 'Annex', undefined),
+      makeSchedule('annex', ['Location/facility-scheduled']),
+    ]);
 
     const { actors } = await searchConfigurableActors(medplum, 'Location');
 
-    expect(actors.map((actor) => actor.resource.id)).toEqual(['bed-1', 'room-1']);
-    expect(querySentTo(medplum)).toEqual({ 'physical-type': 'ro,bd', _count: '1000', _revinclude: 'Schedule:actor' });
+    expect(actors.map((actor) => actor.resource.id)).toEqual(['facility-scheduled', 'bed-1', 'room-1']);
+    expect(querySentTo(medplum)).toEqual({ _sort: 'name', _count: '1000', _revinclude: 'Schedule:actor' });
   });
 
   test('lists devices, including retired ones', async () => {
@@ -182,6 +189,7 @@ describe('searchConfigurableActors', () => {
     const { actors } = await searchConfigurableActors(medplum, 'Device');
 
     expect(actors.map((actor) => [actor.resource.id, scheduleIds(actor)])).toEqual([['ultrasound', ['us']]]);
+    expect(querySentTo(medplum)).toEqual({ _sort: 'device-name', _count: '1000', _revinclude: 'Schedule:actor' });
   });
 
   test('reads one page with its Schedules, and reports a project with more than that incomplete', async () => {
