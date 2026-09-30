@@ -5,6 +5,7 @@ import type { Resource } from '@medplum/fhirtypes';
 import type { MedplumServerConfig, WorkerName } from '../config/types';
 import { getLogger, globalLogger } from '../logger';
 import { initBatchWorker } from './batch';
+import { initBulkExportWorker } from './bulk-export';
 import { initCronWorker } from './cron';
 import { initDicomWorker } from './dicom';
 import { addDispatchJobs, initDispatchWorker } from './dispatch';
@@ -24,6 +25,7 @@ const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
   { name: 'cron', init: initCronWorker },
   { name: 'reindex', init: initReindexWorker },
   { name: 'batch', init: initBatchWorker },
+  { name: 'bulk-export', init: initBulkExportWorker },
   { name: 'post-deploy-migration', init: initPostDeployMigrationWorker },
   { name: 'set-accounts', init: initSetAccountsWorker },
   { name: 'lambda-cleaner', init: initLambdaCleanerWorker },

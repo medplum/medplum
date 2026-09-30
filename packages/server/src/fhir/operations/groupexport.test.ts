@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, getReferenceString } from '@medplum/core';
+import { assert, ContentType, getReferenceString } from '@medplum/core';
 import type { BulkDataExportOutput, Group, Organization, Patient, Project } from '@medplum/fhirtypes';
+import type { Job } from 'bullmq';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -11,9 +12,10 @@ import { getConfig, loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { execBulkExportJob } from '../../workers/bulk-export';
+import { queueRegistry } from '../../workers/utils';
 import type { Repository, SystemRepository } from '../repo';
-import { groupExportResources } from './groupexport';
-import { BulkExporter } from './utils/bulkexporter';
+import { BulkExporter, groupExportResources } from './utils/bulkexporter';
 
 describe('Group Export', () => {
   const app = express();
@@ -25,6 +27,13 @@ describe('Group Export', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    const queue = queueRegistry.get('BulkExportQueue');
+    assert(queue);
+    vi.mocked(queue.add).mockImplementation(async (name, data) => {
+      const job = { name, data, queueName: 'BulkExportQueue' } as Job;
+      await execBulkExportJob(job);
+      return job;
+    });
     ({ project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true }));
     systemRepo = repo.getSystemRepo();
   });

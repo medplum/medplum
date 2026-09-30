@@ -416,6 +416,7 @@ export type WorkerName =
   | 'cron'
   | 'reindex'
   | 'batch'
+  | 'bulk-export'
   | 'post-deploy-migration'
   | 'set-accounts'
   | 'lambda-cleaner'
