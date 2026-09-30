@@ -37,7 +37,7 @@ import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
-import { getProjectScopedUrl, safeFetch } from '../util/url';
+import { getProjectIdFromUrl, getProjectScopedUrl, safeFetch } from '../util/url';
 import { validateClientCert } from './cert';
 import type { MedplumRefreshTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
@@ -143,7 +143,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const membership = await getClientApplicationMembership(systemRepo, client);
+  const membership = await getClientApplicationMembership(systemRepo, client, getProjectIdFromUrl(req.originalUrl));
   if (!membership) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
