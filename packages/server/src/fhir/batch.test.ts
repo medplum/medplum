@@ -32,7 +32,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { generateAccessToken } from '../oauth/keys';
 import * as otelModule from '../otel/otel';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
-import type { ReentrantBatchJobData } from '../workers/batch';
+import type { BatchJobData } from '../workers/batch';
 import { execBatchJob as execBatchJobImpl, getBatchQueue } from '../workers/batch';
 import { queueRegistry } from '../workers/utils';
 import { PostgresError } from './sql';
@@ -45,22 +45,22 @@ import { PostgresError } from './sql';
  * @param overrides - Optional overrides applied on top of the defaults.
  * @returns A mock Job usable with execBatchJob.
  */
-function mockBatchJob(data: ReentrantBatchJobData, overrides?: Record<string, unknown>): Job<ReentrantBatchJobData> {
+function mockBatchJob(data: BatchJobData, overrides?: Record<string, unknown>): Job<BatchJobData> {
   const job: any = {
     id: '1',
     data,
     queueName: 'BatchQueue',
     token: 'test-token',
-    async updateData(newData: ReentrantBatchJobData) {
+    async updateData(newData: BatchJobData) {
       job.data = newData;
     },
     async moveToDelayed() {},
     ...overrides,
   };
-  return job as Job<ReentrantBatchJobData>;
+  return job as Job<BatchJobData>;
 }
 
-async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<void> {
+async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
   const { authState, requestId, traceId } = job.data;
   await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJobImpl(job));
 }
@@ -1480,9 +1480,9 @@ describe('Batch and Transaction processing', () => {
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<ReentrantBatchJobData>>({ tracking: expect.anything() })
+      expect.objectContaining<Partial<BatchJobData>>({ tracking: expect.anything() })
     );
-    const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
+    const enqueued = queue.add.mock.calls[0][1] as BatchJobData & { bundle?: unknown };
     expect(enqueued.bundle).toBeUndefined();
 
     const job = mockBatchJob(enqueued);
@@ -1531,9 +1531,9 @@ describe('Batch and Transaction processing', () => {
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<ReentrantBatchJobData>>({ tracking: expect.any(Object) })
+      expect.objectContaining<Partial<BatchJobData>>({ tracking: expect.any(Object) })
     );
-    const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
+    const enqueued = queue.add.mock.calls[0][1] as BatchJobData & { bundle?: unknown };
     expect(enqueued.bundle).toBeUndefined();
 
     const job = mockBatchJob(enqueued);
@@ -1592,7 +1592,7 @@ describe('Batch and Transaction processing', () => {
     expect(res).toHaveStatus(202);
     const outcome = res.body as OperationOutcome;
 
-    const job = mockBatchJob(queue.add.mock.calls[0][1] as ReentrantBatchJobData);
+    const job = mockBatchJob(queue.add.mock.calls[0][1] as BatchJobData);
     queue.add.mockClear();
 
     // Simulate the queue closing after the first two entries are processed. isClosing is checked
@@ -1663,7 +1663,7 @@ describe('Batch and Transaction processing', () => {
     const jobUrl = outcome.issue[0].diagnostics as string;
     const asyncJobId = new URL(jobUrl).pathname.split('/').at(-2) as string;
 
-    const job = mockBatchJob(queue.add.mock.calls[0][1] as ReentrantBatchJobData);
+    const job = mockBatchJob(queue.add.mock.calls[0][1] as BatchJobData);
     queue.add.mockClear();
 
     // Process two entries, then delay (simulating a shutdown) to leave durable partial state.
@@ -1971,9 +1971,9 @@ describe('Batch and Transaction processing', () => {
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<ReentrantBatchJobData>>({ tracking: expect.anything() })
+      expect.objectContaining<Partial<BatchJobData>>({ tracking: expect.anything() })
     );
-    const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
+    const enqueued = queue.add.mock.calls[0][1] as BatchJobData & { bundle?: unknown };
     expect(enqueued.bundle).toBeUndefined();
 
     const job = mockBatchJob(enqueued);

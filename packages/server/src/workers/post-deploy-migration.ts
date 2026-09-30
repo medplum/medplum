@@ -9,7 +9,7 @@ import type { PoolClient } from 'pg';
 import * as semver from 'semver';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
+import type { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
@@ -47,12 +47,6 @@ import {
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
 
 function getJobDataLoggingFields(job: Job<PostDeployJobData>): Record<string, string> {
-  if (job.data.asyncJobId !== undefined) {
-    return {
-      asyncJob: 'AsyncJob/' + job.data.asyncJobId,
-      jobType: job.data.type,
-    };
-  }
   return {
     asyncJob: 'AsyncJob/' + job.data.tracking.asyncJobId,
     jobType: job.data.type,
@@ -93,15 +87,7 @@ export async function isClusterCompatible(migrationNumber: number): Promise<bool
 }
 
 export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
-  let exec: AsyncJobExecutor;
-  if ('tracking' in job.data) {
-    exec = await getTrackingAsyncJobExecutor(job.data.tracking);
-  } else {
-    // PENDING{v5.2} remove else branch
-    const asyncJobSystemRepo = getShardSystemRepo(TODO_SHARD_ID);
-    const asyncJob = await asyncJobSystemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
-    exec = new AsyncJobExecutor(asyncJobSystemRepo, asyncJob);
-  }
+  const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
   const asyncJob = exec.getAsyncJob();
 
   if (!isJobCompatible(asyncJob)) {
@@ -151,9 +137,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
     );
   }
 
-  // PENDING{v5.2+} remove legacy else branch and use getJobSystemRepo
-  const shardId = 'target' in job.data ? job.data.target.shardId : TODO_SHARD_ID;
-  const systemRepo = getShardSystemRepo(shardId);
+  const systemRepo = getShardSystemRepo(job.data.target.shardId);
   const result: PostDeployJobRunResult = await migration.run(systemRepo, job, job.data);
 
   switch (result) {
@@ -211,13 +195,7 @@ export async function runCustomMigration(
     jobData: CustomPostDeployMigrationJobData
   ) => Promise<void>
 ): Promise<PostDeployJobRunResult> {
-  let exec: AsyncJobExecutor;
-  if ('tracking' in jobData) {
-    exec = await getTrackingAsyncJobExecutor(jobData.tracking);
-  } else {
-    const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
-    exec = new AsyncJobExecutor(systemRepo, asyncJob);
-  }
+  const exec = await getTrackingAsyncJobExecutor(jobData.tracking);
   const asyncJob = exec.getAsyncJob();
 
   if (jobData.skipInFirstBootMode && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER)))) {
