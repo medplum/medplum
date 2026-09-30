@@ -17,8 +17,6 @@ import { Queue, Worker } from 'bullmq';
 import { Readable } from 'node:stream';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
-import { getShardSystemRepo } from '../fhir/repo';
-import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { buildTraceparent } from '../util/tracing';
@@ -40,7 +38,7 @@ import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetr
  */
 
 export interface DownloadJobData {
-  readonly target?: ProjectJobTarget; // PENDING{v5.2} make target required and tighten up based on that throughout
+  readonly target: ProjectJobTarget;
   readonly resourceType: ResourceType;
   readonly id: string;
   readonly url: string;
@@ -213,7 +211,7 @@ async function addDownloadJobData(job: DownloadJobData): Promise<void> {
  * @param job - The download job details.
  */
 export async function execDownloadJob<T extends Resource = Resource>(job: Job<DownloadJobData>): Promise<void> {
-  const systemRepo = job.data.target ? await getJobSystemRepo(job.data.target) : getShardSystemRepo(TODO_SHARD_ID);
+  const systemRepo = await getJobSystemRepo(job.data.target);
   const log = getLogger();
   const { resourceType, id, url } = job.data;
 
