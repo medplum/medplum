@@ -88,6 +88,10 @@ export function buildAwsCommand(): MedplumCommand {
       'Adds the GuardDuty Malware Protection for S3 read-gating deny to the storage bucket policy.'
     )
     .option(
+      '--guardduty-on-demand-only',
+      'With --guardduty-malware-protection, only denies objects GuardDuty tagged THREATS_FOUND.'
+    )
+    .option(
       '--dryrun',
       'Displays the operations that would be performed using the specified command without actually running them.'
     )

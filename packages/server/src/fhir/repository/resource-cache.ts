@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { stringify } from '@medplum/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
+import { getConfig } from '../../config/loader';
 import { getCacheRedis } from '../../redis';
 
 const RESOURCE_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
@@ -68,16 +69,19 @@ export async function getResourceCacheEntries(references: Reference[]): Promise<
 
 /**
  * Writes a cache entry to Redis.
+ * If the `cacheResourcesOnWrite` server config is disabled, does not create a new cache entry unless `force` is set.
  * @param resource - The resource to cache.
+ * @param options - Optional write options.
+ * @param options.force - Create the entry even if it does not already exist.
  */
-export async function setResourceCacheEntry(resource: WithId<Resource>): Promise<void> {
-  const projectId = resource.meta?.project;
-  await getCacheRedis().set(
-    getResourceCacheKey(resource.resourceType, resource.id),
-    stringify({ resource, projectId }),
-    'EX',
-    RESOURCE_CACHE_EX_SECONDS
-  );
+export async function setResourceCacheEntry(resource: WithId<Resource>, options?: { force?: boolean }): Promise<void> {
+  const key = getResourceCacheKey(resource.resourceType, resource.id);
+  const value = stringify({ resource, projectId: resource.meta?.project });
+  if (!options?.force && getConfig().cacheResourcesOnWrite === false) {
+    await getCacheRedis().set(key, value, 'EX', RESOURCE_CACHE_EX_SECONDS, 'XX');
+  } else {
+    await getCacheRedis().set(key, value, 'EX', RESOURCE_CACHE_EX_SECONDS);
+  }
 }
 
 /**

@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { HealthcareServiceSchedulingParameterUrl, WithId } from '@medplum/core';
 import {
-  getExtensions,
-  getScheduleParameters,
+  getHealthcareServiceSchedulingParameters,
+  getScheduleSchedulingParameters,
   schedulingDurationToMinutes,
-  SchedulingParametersURI,
 } from '@medplum/core';
 import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
 
@@ -45,14 +44,13 @@ export interface BookingGeometry {
 function resolveSchedulingParameter(
   service: WithId<HealthcareService>,
   schedule: Schedule | undefined,
-  url: string
+  url: HealthcareServiceSchedulingParameterUrl
 ): Extension | undefined {
-  const fromSchedule = schedule ? getScheduleParameters(schedule, service, url)[0] : undefined;
+  const fromSchedule = schedule ? getScheduleSchedulingParameters(schedule, service, url)[0] : undefined;
   if (fromSchedule) {
     return fromSchedule;
   }
-  // A HealthcareService's parameters are about itself, so there is no service reference to match on.
-  return getExtensions(service, [SchedulingParametersURI, url])[0];
+  return getHealthcareServiceSchedulingParameters(service, url)[0];
 }
 
 /**
@@ -67,7 +65,7 @@ function resolveSchedulingParameter(
  * @returns The duration, buffers and capacity that apply.
  */
 export function resolveBookingGeometry(service: WithId<HealthcareService>, schedule?: Schedule): BookingGeometry {
-  const minutes = (url: string): number | undefined =>
+  const minutes = (url: HealthcareServiceSchedulingParameterUrl): number | undefined =>
     schedulingDurationToMinutes(resolveSchedulingParameter(service, schedule, url)?.valueDuration);
 
   const capacity = resolveSchedulingParameter(service, schedule, 'slotCapacity')?.valuePositiveInt;

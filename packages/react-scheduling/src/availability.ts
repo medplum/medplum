@@ -8,13 +8,13 @@
  * design: a parameter is any sub-extension. The typed availability layer lives here instead, next to the
  * only caller of it, because this package is still alpha and can change it freely.
  */
-import type { WithId } from '@medplum/core';
+import type { SchedulingParameterExtension, WithId } from '@medplum/core';
 import {
   getExtensions,
-  getScheduleParameters,
+  getScheduleSchedulingParameters,
   isDayOfWeek,
   OperationOutcomeError,
-  setScheduleParameter,
+  setScheduleSchedulingParameter,
   validationError,
 } from '@medplum/core';
 import type { Extension, HealthcareService, HealthcareServiceAvailableTime, Schedule } from '@medplum/fhirtypes';
@@ -55,12 +55,12 @@ function toAvailableTime(availableTime: Extension): HealthcareServiceAvailableTi
 
 // The hours a Schedule sets for a service, ignoring the service default, or undefined when it sets none.
 // Kept internal: `getEffectiveAvailability` answers what is in effect, and a caller asking the narrower
-// question of whether the calendar has hours of its own reads `getScheduleParameters`.
+// question of whether the calendar has hours of its own reads `getScheduleSchedulingParameters`.
 function getScheduleAvailability(
   schedule: Schedule,
   service: WithId<HealthcareService>
 ): HealthcareServiceAvailableTime[] | undefined {
-  const availability = getScheduleParameters(schedule, service, 'availability');
+  const availability = getScheduleSchedulingParameters(schedule, service, 'availability');
 
   if (!availability.length) {
     return undefined;
@@ -138,7 +138,7 @@ function buildAvailableTimeExtension(entry: HealthcareServiceAvailableTime): Ext
  * either `allDay` or both times.
  * @returns An availability extension containing availableTime entries
  */
-function buildAvailabilityExtension(availableTime: HealthcareServiceAvailableTime[]): Extension {
+function buildAvailabilityExtension(availableTime: HealthcareServiceAvailableTime[]): SchedulingParameterExtension {
   // No entries would serialize to `{ url: 'availability', extension: [] }`, an extension with neither a
   // value nor sub-extensions, which fails ext-1. Refused rather than treated as no override, because
   // "explicitly no hours" and "follow the service default" are the two states `getEffectiveAvailability`
@@ -159,10 +159,10 @@ function buildAvailabilityExtension(availableTime: HealthcareServiceAvailableTim
 /**
  * Immutably gives a Schedule its own hours for a HealthcareService, in place of the service default.
  * Reads back through `getEffectiveAvailability`; to drop the calendar back to the default, clear the
- * parameter with `clearScheduleParameter(schedule, service, 'availability')` from `@medplum/core`.
+ * parameter with `clearScheduleSchedulingParameter(schedule, service, 'availability')` from `@medplum/core`.
  *
  * Availability is the one parameter with a typed wrapper, because it is the only one that is not a single
- * `value[x]`: `bufferBefore` and the rest go through `setScheduleParameter` directly, already legible as
+ * `value[x]`: `bufferBefore` and the rest go through `setScheduleSchedulingParameter` directly, already legible as
  * `{ url: 'bufferBefore', valueDuration: { value: 10, unit: 'min' } }`. Availability is a repeating nested
  * structure, so hand-building it at every call site would mean re-deriving the encoding.
  *
@@ -182,5 +182,5 @@ export function setScheduleAvailability(
   service: WithId<HealthcareService>,
   availableTime: HealthcareServiceAvailableTime[]
 ): Schedule {
-  return setScheduleParameter(schedule, service, buildAvailabilityExtension(availableTime));
+  return setScheduleSchedulingParameter(schedule, service, buildAvailabilityExtension(availableTime));
 }

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import type { Task } from '@medplum/fhirtypes';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { TaskStatusPanel } from './TaskStatusPanel';
@@ -38,7 +38,7 @@ describe('TaskStatusPanel', () => {
   const setup = async (task: Task, enabled = true): Promise<void> => {
     await act(async () => {
       render(
-        <MantineProvider>
+        <MantineProvider env="test">
           <TaskStatusPanel
             task={task}
             enabled={enabled}
@@ -90,39 +90,22 @@ describe('TaskStatusPanel', () => {
     const user = userEvent.setup();
     await setup(mockTask, true);
 
-    const badge = screen.getAllByText('In Progress')[0];
-    await user.click(badge);
+    await user.click(screen.getByText('In Progress'));
 
-    await waitFor(
-      () => {
-        const menuItems = screen.getAllByRole('menuitem');
-        expect(menuItems.length).toBe(5);
-      },
-      { timeout: 5000 }
-    );
-
-    expect(screen.getByText('Completed')).toBeInTheDocument();
-    expect(screen.getByText('Ready')).toBeInTheDocument();
-    expect(screen.getByText('On Hold')).toBeInTheDocument();
-    expect(screen.getByText('Cancelled')).toBeInTheDocument();
+    const menuItems = await screen.findAllByRole('menuitem');
+    expect(menuItems).toHaveLength(5);
+    expect(screen.getByRole('menuitem', { name: 'Completed' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Ready' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'On Hold' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Cancelled' })).toBeInTheDocument();
   });
 
   test('calls onChangeStatus when menu item is clicked', async () => {
     const user = userEvent.setup();
     await setup(mockTask, true);
 
-    const badge = screen.getByText('In Progress');
-    await user.click(badge);
-
-    await waitFor(
-      () => {
-        expect(screen.getByText('Completed')).toBeInTheDocument();
-      },
-      { timeout: 5000 }
-    );
-
-    const completedItem = screen.getByText('Completed');
-    await user.click(completedItem);
+    await user.click(screen.getByText('In Progress'));
+    await user.click(await screen.findByRole('menuitem', { name: 'Completed' }));
 
     expect(mockOnChangeStatus).toHaveBeenCalledWith('completed');
   });
@@ -131,69 +114,35 @@ describe('TaskStatusPanel', () => {
     const user = userEvent.setup();
     await setup(mockTask, true);
 
-    const badge = screen.getAllByText('In Progress')[0];
-    await user.click(badge);
+    await user.click(screen.getByText('In Progress'));
 
-    let menuItems: HTMLElement[] = [];
-    await waitFor(
-      () => {
-        menuItems = screen.getAllByRole('menuitem');
-        expect(menuItems.length).toBeGreaterThan(0);
-        // Verify menu is visible by checking opacity or display style
-        const menuDropdown = document.querySelector('[role="menu"]');
-        if (menuDropdown) {
-          const style = window.getComputedStyle(menuDropdown);
-          expect(style.display).not.toBe('none');
-        }
-      },
-      { timeout: 5000 }
-    );
-
-    const inProgressItem = menuItems.find((item) => item.textContent?.includes('In Progress'));
-    expect(inProgressItem).toBeDefined();
-    // Check that the menu item has an SVG icon (IconCheck renders as SVG)
-    const icon = inProgressItem?.querySelector('svg');
-    expect(icon).toBeInTheDocument();
+    const inProgressItem = await screen.findByRole('menuitem', { name: 'In Progress' });
+    expect(inProgressItem.querySelector('svg')).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Completed' }).querySelector('svg')).toBeNull();
   });
 
   test('handles all status options in menu', async () => {
     const user = userEvent.setup();
     await setup(mockTask, true);
 
-    const badge = screen.getAllByText('In Progress')[0];
-    await user.click(badge);
+    await user.click(screen.getByText('In Progress'));
 
-    await waitFor(
-      () => {
-        const menuItems = screen.getAllByRole('menuitem');
-        expect(menuItems.length).toBe(5);
-
-        const statusOptions = ['Completed', 'Ready', 'In Progress', 'On Hold', 'Cancelled'];
-        statusOptions.forEach((status) => {
-          const menuItem = menuItems.find((item) => item.textContent?.includes(status));
-          expect(menuItem).toBeInTheDocument();
-        });
-      },
-      { timeout: 5000 }
-    );
+    const menuItems = await screen.findAllByRole('menuitem');
+    expect(menuItems.map((item) => item.textContent)).toEqual([
+      'Completed',
+      'Ready',
+      'In Progress',
+      'On Hold',
+      'Cancelled',
+    ]);
   });
 
   test('calls onChangeStatus with correct status for each menu item', async () => {
     const user = userEvent.setup();
     await setup(mockTask, true);
 
-    const badge = screen.getByText('In Progress');
-    await user.click(badge);
-
-    await waitFor(
-      () => {
-        expect(screen.getByText('Ready')).toBeInTheDocument();
-      },
-      { timeout: 5000 }
-    );
-
-    const readyItem = screen.getByText('Ready');
-    await user.click(readyItem);
+    await user.click(screen.getByText('In Progress'));
+    await user.click(await screen.findByRole('menuitem', { name: 'Ready' }));
 
     expect(mockOnChangeStatus).toHaveBeenCalledWith('ready');
   });

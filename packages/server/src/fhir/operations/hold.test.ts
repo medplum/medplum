@@ -5,7 +5,9 @@ import {
   createReference,
   isDefined,
   isResource,
+  MEDPLUM_VERSION,
   parseSearchRequest,
+  SchedulingBookedByOperationURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
@@ -230,6 +232,11 @@ describe('Appointment/$hold', () => {
     expect(appointments[0]).toHaveProperty('status', 'pending');
     // Hold strips contained resources from the appointment — they should not be persisted
     expect(appointments[0]).not.toHaveProperty('contained');
+
+    expect(appointments[0].extension).toContainEqual({
+      url: SchedulingBookedByOperationURI,
+      valueString: MEDPLUM_VERSION,
+    });
 
     // The main slot should be busy-tentative, not busy
     const slots = entries.filter(isSlot);

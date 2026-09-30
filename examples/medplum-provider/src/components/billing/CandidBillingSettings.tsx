@@ -27,7 +27,8 @@ const TABS: { label: string; value: BillingSettingsTab; path: string }[] = [
 /**
  * Props for the billing settings. `baseUrl` is where they are mounted, without a trailing slash, and `path` is
  * the rest of the URL below it, so the selected tab and open modal survive a reload and can be linked to:
- * `Organizations`, `Organizations/:id`, `Organizations/new`, `Practitioners`, `Practitioners/:id`,
+ * `Organizations`, `Organizations/:id`, `Organizations/new`, `Organizations/existing`, `Practitioners`,
+ * `Practitioners/:id`,
  * `Payers/Organization`, `Payers/Organization/:id` or `Directory`. Payer directory search results are not
  * persisted, so their details modal stays off the URL. Tabs are links under `baseUrl`, so they can be opened in
  * a new window; the component never navigates itself but calls `onNavigate` with the path below `baseUrl` the

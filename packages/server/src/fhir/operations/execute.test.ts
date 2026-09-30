@@ -297,6 +297,24 @@ describe('Execute', () => {
     expect(row.botId).toStrictEqual(bots.systemEchoBot.id);
     expect(row.hl7MessageType).toStrictEqual('ACK');
     expect(row.hl7Version).toStrictEqual('2.6.1');
+    writeFileSpy.mockRestore();
+  });
+
+  test('Does not store input when storeBotInput is false', async () => {
+    const writeFileSpy = vi.spyOn(getBinaryStorage(), 'writeFile');
+    getConfig().storeBotInput = false;
+    try {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send('input');
+      expect(res).toHaveStatus(200);
+      expect(writeFileSpy).not.toHaveBeenCalled();
+    } finally {
+      getConfig().storeBotInput = true;
+      writeFileSpy.mockRestore();
+    }
   });
 
   test('Execute without code', async () => {

@@ -72,6 +72,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'scheduling/state-by-state-licensure' },
         { type: 'doc', id: 'scheduling/appointment-find' },
         { type: 'doc', id: 'scheduling/appointment-book' },
+        { type: 'doc', id: 'scheduling/appointment-reschedule' },
         { type: 'doc', id: 'scheduling/timezones' },
         { type: 'doc', id: 'scheduling/beta-changelog' },
       ],
@@ -623,6 +624,7 @@ const sidebars: SidebarsConfig = {
                 { type: 'doc', id: 'api/fhir/operations/ccda-export' },
                 { type: 'doc', id: 'api/fhir/operations/claim-export' },
                 { type: 'doc', id: 'api/fhir/operations/binary-presigned-url' },
+                { type: 'doc', id: 'api/fhir/operations/binary-scan' },
 
                 { type: 'html', value: '<strong class="menu__link">Clinical Decision Support</strong>' },
                 { type: 'doc', id: 'api/fhir/operations/ai' },

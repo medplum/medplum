@@ -13,6 +13,7 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
+import { assertMfaLoginActive } from './mfalimit';
 import type { MfaMethod } from './utils';
 import {
   buildTotpEnrollment,
@@ -118,12 +119,14 @@ mfaRouter.post(
 
     const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
-    const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
+    const user = await systemRepo.readReference<User>(login.user as Reference<User>);
     if (user.mfaEnrolled) {
       sendOutcome(res, badRequest('Already enrolled'));
       return;
     }
+
+    assertMfaLoginActive(login);
 
     const method = parseMfaMethod(req.body.method);
 
@@ -265,19 +268,7 @@ mfaRouter.post(
 
     const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
-
-    if (login.revoked) {
-      sendOutcome(res, badRequest('Login revoked'));
-      return;
-    }
-    if (login.granted) {
-      sendOutcome(res, badRequest('Login granted'));
-      return;
-    }
-    if (login.mfaVerified) {
-      sendOutcome(res, badRequest('Login already verified'));
-      return;
-    }
+    assertMfaLoginActive(login);
 
     const user = await systemRepo.readReference<User>(login.user as Reference<User>);
     if (!user.mfaEnrolled || !getEnrolledMfaMethods(user).includes('email')) {

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { setScheduleParameter } from '@medplum/core';
+import { setScheduleSchedulingParameter } from '@medplum/core';
 import type { Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { DrRiveraSchedule, UltrasoundImagingService } from '../stories/scheduling';
@@ -77,10 +77,10 @@ describe('findBookingConflicts', () => {
   });
 
   describe('on a schedule that overbooks', () => {
-    const capacity3 = setScheduleParameter(DrRiveraSchedule, UltrasoundImagingService, {
+    const capacity3 = setScheduleSchedulingParameter(DrRiveraSchedule, UltrasoundImagingService, {
       url: 'slotCapacity',
       valuePositiveInt: 3,
-    }) as WithId<Schedule>;
+    });
 
     test('stays quiet while there is still room', async () => {
       found = [

@@ -541,6 +541,24 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Login-project",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Login-project",
+        "url": "https://medplum.com/fhir/SearchParameter/Login-project",
+        "version": "4.0.1",
+        "name": "project",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The project of the login",
+        "code": "project",
+        "base": ["Login"],
+        "type": "reference",
+        "expression": "Login.project",
+        "target": ["Project"]
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Login-pre-authorized-code-hash",
       "resource": {
         "resourceType": "SearchParameter",

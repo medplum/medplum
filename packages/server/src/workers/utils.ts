@@ -1,47 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getExtension, Operator } from '@medplum/core';
-import type { AsyncJob, Parameters, ProjectMembership, Reference, Subscription } from '@medplum/fhirtypes';
+import { getExtension } from '@medplum/core';
+import type { AsyncJob, Parameters, Subscription } from '@medplum/fhirtypes';
 import type { ConnectionOptions, Job, Processor, Queue, QueueOptions, Worker, WorkerOptions } from 'bullmq';
 import { DelayedError } from 'bullmq';
 import * as semver from 'semver';
 import type { MedplumBullmqConfig, MedplumServerConfig, WorkerName } from '../config/types';
 import type { Repository } from '../fhir/repo';
-import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { addToUpDownCounter, BASE_METRIC_OPTIONS, getQueueMetricName, incrementCounter } from '../otel/otel';
 import { reconnectOnError } from '../redis';
 import { getServerVersion } from '../util/version';
-
-/**
- *
- * @param projectId - The ID of the project to search in.
- * @param profile - The profile to find a project membership for.
- * @throws An error whenever there are multiple project memberships for the given user.
- * @returns A promise that resolves to a `ProjectMembership` or `undefined` if no `ProjectMembership` found.
- */
-export function findProjectMembership(
-  projectId: string,
-  profile: Reference
-): Promise<WithId<ProjectMembership> | undefined> {
-  const systemRepo = getGlobalSystemRepo();
-  return systemRepo.searchOne<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [
-      {
-        code: 'project',
-        operator: Operator.EQUALS,
-        value: `Project/${projectId}`,
-      },
-      {
-        code: 'profile',
-        operator: Operator.EQUALS,
-        value: profile.reference as string,
-      },
-    ],
-  });
-}
 
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
   const successCodes = getExtension(

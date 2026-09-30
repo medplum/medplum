@@ -1,7 +1,7 @@
 ---
 title: Access Control Decision Guide
 sidebar_label: Access Control
-sidebar_position: 5
+sidebar_position: 9
 download_slug: access-control
 ---
 

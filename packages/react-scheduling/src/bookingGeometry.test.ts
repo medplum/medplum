@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
-import { SchedulingParametersURI, setScheduleParameter } from '@medplum/core';
+import type { SchedulingParameterExtension, WithId } from '@medplum/core';
+import { SchedulingParametersURI, setScheduleSchedulingParameter } from '@medplum/core';
 import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { resolveBookingGeometry } from './bookingGeometry';
 
@@ -17,8 +17,8 @@ describe('resolveBookingGeometry', () => {
     extension: [{ url: SchedulingParametersURI, extension: parameters }],
   });
 
-  const scheduleFor = (target: WithId<HealthcareService>, ...parameters: Extension[]): Schedule =>
-    parameters.reduce<Schedule>((schedule, parameter) => setScheduleParameter(schedule, target, parameter), {
+  const scheduleFor = (target: WithId<HealthcareService>, ...parameters: SchedulingParameterExtension[]): Schedule =>
+    parameters.reduce<Schedule>((schedule, parameter) => setScheduleSchedulingParameter(schedule, target, parameter), {
       resourceType: 'Schedule',
       id: 'schedule-1',
       actor: [{ reference: 'Practitioner/123' }],
