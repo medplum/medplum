@@ -695,7 +695,7 @@ function buildHumanNameTable(result: SchemaDefinition): void {
 
   // Unscoped btree indexes stay for searches without a project filter; a multicolumn GIN index serves conditions
   // on any subset of its columns, so the scoped GIN indexes replace the unscoped ones
-  tableDefinition.columns.push({ name: 'projectId', type: 'UUID' });
+  tableDefinition.columns.push({ name: 'projectId', type: 'UUID', notNull: true });
   tableDefinition.indexes = tableDefinition.indexes.flatMap((index) => {
     if (index.columns[0] === 'resourceId') {
       return [index];
