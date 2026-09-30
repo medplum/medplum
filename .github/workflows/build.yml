@@ -441,6 +441,22 @@ jobs:
           POSTGRES_PORT: 5432
           SERVER_TEST_CACHE_KEY: NODE${{ matrix.node-version }}-PG${{ matrix.pg-version }}-REDIS${{ matrix.redis-version }}
           NO_COVERAGE: ${{ case(matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7, '', '1') }}
+      - name: Summarize test timing
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: node scripts/analyze-test-timing.mjs packages/server/.vitest-reports .turbo/runs >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload test timing
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-timing-node-${{ matrix.node-version }}-pg-${{ matrix.pg-version }}-redis-${{ matrix.redis-version }}
+          path: |
+            packages/server/.vitest-reports/timing*.ndjson
+            .turbo/runs/
+          # Both paths are under dot-directories, which are skipped by default
+          include-hidden-files: true
+          retention-days: 30
+          if-no-files-found: warn
 
       - name: Coveralls GitHub Action
         if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}

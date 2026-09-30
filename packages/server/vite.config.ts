@@ -7,6 +7,7 @@ import type { TestSpecification } from 'vitest/node';
 import { BaseSequencer } from 'vitest/node';
 import { medplumAliases } from '../../aliases.mjs';
 import packageJson from './package.json' with { type: 'json' };
+import { timingReporterPlugin } from './src/test.timing-reporter';
 
 const serverDir = dirname(fileURLToPath(import.meta.url));
 
@@ -31,6 +32,7 @@ class CustomSequencer extends BaseSequencer {
 }
 
 export default defineConfig({
+  plugins: [timingReporterPlugin('timing.ndjson')],
   define: {
     'import.meta.env.MEDPLUM_VERSION': JSON.stringify(`${packageJson.version}-test`),
   },
@@ -61,6 +63,10 @@ export default defineConfig({
     sequence: {
       sequencer: CustomSequencer,
     },
+    // For the timing reporter; the default limit of 0 records no import timings
+    experimental: {
+      importDurations: { limit: 10 },
+    },
     include: ['src/**/*.test.ts'],
     coverage: {
       provider: 'v8',
@@ -73,6 +79,8 @@ export default defineConfig({
         'src/migrations/migrate-main.ts',
         'src/migrations/schema/**',
         'src/migrations/data/**',
+        // Runs in the main process, which worker coverage does not see
+        'src/test.timing-reporter.ts',
       ],
     },
   },

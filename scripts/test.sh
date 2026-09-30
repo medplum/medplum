@@ -30,7 +30,7 @@ fi
 # This is a special "test" which runs all of the seed logic, such as setting up structure definitions
 # On a normal developer machine, this is run only rarely when setting up a new database
 # This test must be run first, and cannot be run concurrently with other tests
-SHOULD_RUN_SEED_TEST=$(date) time npx turbo run test:seed --filter=./packages/server -- $SEED_COVERAGE_FLAGS
+SHOULD_RUN_SEED_TEST=$(date) time npx turbo run test:seed --summarize --filter=./packages/server -- $SEED_COVERAGE_FLAGS
 if [ -z "$NO_COVERAGE" ]; then
   cp "packages/server/.vitest-reports/blob-seed.json" ".vitest-reports/blob-server-seed.json"
 fi
@@ -38,7 +38,7 @@ fi
 # Test
 # Even though docs do not have a "test" action, we still will build the docs via the
 # global "build" job unless we filter it out
-npx turbo run test --concurrency=1 --filter='!@medplum/docs' --filter='!./examples/*' -- $COVERAGE_FLAGS
+npx turbo run test --summarize --concurrency=1 --filter='!@medplum/docs' --filter='!./examples/*' -- $COVERAGE_FLAGS
 
 if [ -z "$NO_COVERAGE" ]; then
   # A package missing its blob drops out of the merged report entirely, which reads as a
