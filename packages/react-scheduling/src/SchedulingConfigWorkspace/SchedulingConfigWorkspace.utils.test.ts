@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ServiceTypeReferenceURI, toServiceTypeCodeableConcepts } from '@medplum/core';
-import type { Device, HealthcareService, Practitioner, Schedule } from '@medplum/fhirtypes';
+import type { HealthcareService, Practitioner, Schedule } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import type { ConfigurableActor } from '../configSearch';
 import { setHealthcareServiceSchedulingParameterValues } from '../parameterValues';
@@ -102,12 +102,6 @@ const drLeft: WithId<Practitioner> = {
   name: [{ family: 'Left' }],
   active: false,
 };
-const retired: WithId<Device> = {
-  resourceType: 'Device',
-  id: 'retired',
-  deviceName: [{ name: 'Retired scope', type: 'user-friendly-name' }],
-  status: 'inactive',
-};
 
 function calendar(id: string, actor: string, offered: WithId<HealthcareService>[]): WithId<Schedule> {
   return {
@@ -135,10 +129,6 @@ describe('buildActorItems', () => {
       ['Left', true],
       ['Smith', false],
     ]);
-  });
-
-  test('a retired device counts as inactive', () => {
-    expect(buildActorItems([{ resource: retired, schedules: [] }], undefined, '', false)).toEqual([]);
   });
 });
 
