@@ -10,13 +10,16 @@ import {
   isNotFound,
   isReference,
   OperationOutcomeError,
+  RecurrenceTemplateExtensionURI,
   resolveId,
   serviceTypeIncludesService,
   toServiceTypeCodeableConcepts,
+  UCUM,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Appointment, Bundle, HealthcareService, Reference, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, Extension, HealthcareService, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import assert from 'node:assert';
+import { Temporal } from 'temporal-polyfill';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
 import type { Interval } from '../../util/date';
@@ -33,6 +36,7 @@ import {
   getSchedulingParametersGroup,
   intersectIntervals,
   intervalsExceedingCapacity,
+  isAlignedToGrid,
   resolveAvailability,
   slotsOverlappingInterval,
 } from './utils/scheduling';
@@ -49,6 +53,7 @@ const appointmentFindOperation = makeOperationDefinition(
       { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
       { use: 'in', name: 'schedule', type: 'string', min: 1, max: '*', searchType: 'reference' },
       { use: 'in', name: 'ignore-appointment', type: 'string', min: 0, max: '1', searchType: 'reference' },
+      { use: 'in', name: 'occurrence-count', type: 'positiveInt', min: 0, max: '1' },
       { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
       { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
     ],
@@ -61,8 +66,48 @@ type AppointmentFindParameters = {
   'service-type-reference': string;
   schedule: string | string[];
   'ignore-appointment'?: string;
+  'occurrence-count'?: number;
   _count?: number;
 };
+
+// The most occurrences a weekly series searched for with `occurrence-count` may have.
+const MAX_OCCURRENCE_COUNT = 6;
+
+const WEEK_MINUTES = 7 * 24 * 60;
+
+// Indexed by `Temporal.ZonedDateTime.dayOfWeek - 1`, and named for R5's `weeklyTemplate` elements.
+const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+
+// Projects an instant forward by whole weeks, keeping its wall-clock time in `timezone` across
+// DST transitions. Undefined if that wall-clock time doesn't exist that week, as in a DST gap.
+function projectWeeksForward(start: Date, weeks: number, timezone: string): Date | undefined {
+  const local = Temporal.Instant.fromEpochMilliseconds(start.valueOf()).toZonedDateTimeISO(timezone);
+  const projected = local.add({ weeks });
+  return projected.toPlainTime().equals(local.toPlainTime()) ? new Date(projected.epochMilliseconds) : undefined;
+}
+
+// R5's `recurrenceTemplate` for a weekly series starting at `start`, as the R4 cross-version extension.
+function weeklyRecurrenceTemplate(start: Date, occurrenceCount: number, timezone: string): Extension {
+  const local = Temporal.Instant.fromEpochMilliseconds(start.valueOf()).toZonedDateTimeISO(timezone);
+  return {
+    url: RecurrenceTemplateExtensionURI,
+    extension: [
+      {
+        url: 'timezone',
+        valueCodeableConcept: { coding: [{ system: 'https://www.iana.org/time-zones', code: timezone }] },
+      },
+      { url: 'recurrenceType', valueCodeableConcept: { coding: [{ system: UCUM, code: 'wk', display: 'week' }] } },
+      { url: 'occurrenceCount', valuePositiveInt: occurrenceCount },
+      {
+        url: 'weeklyTemplate',
+        extension: [
+          { url: WEEKDAYS[local.dayOfWeek - 1], valueBoolean: true },
+          { url: 'weekInterval', valuePositiveInt: 1 },
+        ],
+      },
+    ],
+  };
+}
 
 // Internal implementation of $find logic
 async function handler(params: {
@@ -71,6 +116,7 @@ async function handler(params: {
   ignoreAppointment?: WithPath<Reference<Appointment> & { reference: string }>;
   start: string;
   end: string;
+  occurrenceCount?: number;
   _count?: number;
 }): Promise<Appointment[]> {
   const ctx = getAuthenticatedContext();
@@ -83,6 +129,21 @@ async function handler(params: {
     throw new OperationOutcomeError(badRequest(`Invalid _count, maximum allowed is ${DEFAULT_MAX_SEARCH_COUNT}`));
   }
 
+  const occurrenceCount = params.occurrenceCount;
+  if (occurrenceCount !== undefined && (occurrenceCount < 1 || occurrenceCount > MAX_OCCURRENCE_COUNT)) {
+    throw new OperationOutcomeError(
+      badRequest(
+        `Invalid occurrence-count, must be between 1 and ${MAX_OCCURRENCE_COUNT}`,
+        'Parameters.occurrence-count'
+      )
+    );
+  }
+  if (occurrenceCount !== undefined && params.ignoreAppointment) {
+    throw new OperationOutcomeError(
+      badRequest('ignore-appointment cannot be combined with occurrence-count', 'Parameters.ignore-appointment')
+    );
+  }
+
   const requestedRange = { start: new Date(params.start), end: new Date(params.end) };
   if (requestedRange.start >= requestedRange.end) {
     throw new OperationOutcomeError(badRequest('Invalid search time range'));
@@ -90,11 +151,21 @@ async function handler(params: {
 
   const diffMilliseconds = requestedRange.end.valueOf() - requestedRange.start.valueOf();
   const diffDays = diffMilliseconds / (24 * 60 * 60 * 1000);
-  if (diffDays > 31) {
-    throw new OperationOutcomeError(badRequest('Search range cannot exceed 31 days'));
+  // A series is searched for one week at a time. A local week runs an hour longer across a DST transition.
+  const maxDays = occurrenceCount ? 7 : 31;
+  if (diffDays > maxDays + (occurrenceCount ? 1 / 24 : 0)) {
+    throw new OperationOutcomeError(badRequest(`Search range cannot exceed ${maxDays} days`));
   }
 
+  // A series is checked over the same range in each later week, widened by the hour a DST
+  // transition can move a local time.
   const requestedRanges = [requestedRange];
+  for (let weeks = 1; weeks < (occurrenceCount ?? 1); weeks++) {
+    requestedRanges.push({
+      start: addMinutes(requestedRange.start, weeks * WEEK_MINUTES - 60),
+      end: addMinutes(requestedRange.end, weeks * WEEK_MINUTES + 60),
+    });
+  }
 
   const ignoreAppointment = params.ignoreAppointment;
   const [schedules, allSlotsByRange, healthcareService, ignoredAppointment] = await Promise.all([
@@ -129,7 +200,8 @@ async function handler(params: {
     withPath(healthcareService, 'Parameters.service-type-reference')
   );
 
-  const effectiveRange = { start: requestedRange.start, end: requestedRange.end };
+  // Spans every week of a series, so planning horizons clamp later weeks too.
+  const effectiveRange = { start: requestedRange.start, end: requestedRanges[requestedRanges.length - 1].end };
   schedules.forEach((schedule) => {
     if (!serviceTypeIncludesService(schedule.serviceType, healthcareService)) {
       throw new OperationOutcomeError(
@@ -158,6 +230,13 @@ async function handler(params: {
       effectiveRange.end = earliest([effectiveRange.end, horizonEnd]);
     }
   });
+
+  // A series keeps its local time in the timezone its schedules' availability is defined in.
+  const timezones = new Set([...parameterGroup.values()].map((parameters) => parameters.get('timezone')));
+  if (occurrenceCount && timezones.size > 1) {
+    throw new OperationOutcomeError(badRequest('All schedules must share one timezone to find a recurring series'));
+  }
+  const [timezone] = timezones;
 
   const commonParameters = extractCommonParameters([...parameterGroup.values()]);
   const serviceType = toServiceTypeCodeableConcepts(healthcareService);
@@ -234,9 +313,9 @@ async function handler(params: {
     };
   };
 
-  // Each week is resolved against only the Slots fetched for it. A week the planning horizons
-  // exclude has no availability.
-  const [firstWeek] = requestedRanges.map((range, idx) => {
+  // Each week is resolved against only the Slots fetched for it, and a later occurrence is checked
+  // against its own week alone. A week the planning horizons exclude has no availability.
+  const [firstWeek, ...laterWeeks] = requestedRanges.map((range, idx) => {
     const clamped = intersectIntervals(range, effectiveRange);
     return clamped
       ? findAvailability(clamped, slotsByRange[idx])
@@ -249,6 +328,21 @@ async function handler(params: {
     timezone: commonParameters.alignmentTimezone,
   };
 
+  // Each later occurrence of a series starts at the same local time, whole weeks later, and must be
+  // bookable just as the first is.
+  const isBookableEveryWeek = (candidate: Interval): boolean =>
+    laterWeeks.every((week, idx) => {
+      const start = projectWeeksForward(candidate.start, idx + 1, timezone);
+      if (!start || !isAlignedToGrid(start, alignment)) {
+        return false;
+      }
+      const occurrence = { start, end: addMinutes(start, commonParameters.duration) };
+      return (
+        week.availability.some((interval) => interval.start <= occurrence.start && occurrence.end <= interval.end) &&
+        !week.hasBufferConflict(occurrence)
+      );
+    });
+
   const intervals = flatMapMax(
     firstWeek.availability,
     (interval, _idx, maxCount) =>
@@ -256,7 +350,7 @@ async function handler(params: {
         alignment,
         durationMinutes: commonParameters.duration,
         maxCount,
-        filter: (candidate) => !firstWeek.hasBufferConflict(candidate),
+        filter: (candidate) => !firstWeek.hasBufferConflict(candidate) && isBookableEveryWeek(candidate),
       }),
     pageSize
   );
@@ -290,6 +384,9 @@ async function handler(params: {
       serviceType,
       participant,
       contained: slots,
+      ...(occurrenceCount !== undefined && {
+        extension: [weeklyRecurrenceTemplate(interval.start, occurrenceCount, timezone)],
+      }),
     } satisfies Appointment;
 
     return appointment;
@@ -336,6 +433,7 @@ export async function appointmentFindHandler(req: FhirRequest): Promise<FhirResp
     healthcareService: { reference: params['service-type-reference'] },
     schedules: withPaths(scheduleRefs, 'Parameters.schedule'),
     ignoreAppointment,
+    occurrenceCount: params['occurrence-count'],
   });
 
   const bundle: Bundle<Appointment> = {

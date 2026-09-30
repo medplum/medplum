@@ -120,6 +120,16 @@ export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/S
 export const ServiceTypeReferenceURI = 'https://medplum.com/fhir/service-type-reference';
 export const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/timezone';
 
+/**
+ * R5's `Appointment.recurrenceTemplate`, as the R4 cross-version extension. `Appointment/$find`
+ * with `occurrence-count` adds it to each proposed first occurrence of a weekly series.
+ * Sub-extensions are named for R5's child elements: `timezone` (valueCodeableConcept, IANA),
+ * `recurrenceType` (valueCodeableConcept, UCUM `wk`), `occurrenceCount` (valuePositiveInt), and
+ * `weeklyTemplate` (the weekday, e.g. `monday`: valueBoolean true, and `weekInterval`: valuePositiveInt).
+ */
+export const RecurrenceTemplateExtensionURI =
+  'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceTemplate';
+
 export const DAYS_OF_WEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
 export type DayOfWeek = (typeof DAYS_OF_WEEK)[number];
