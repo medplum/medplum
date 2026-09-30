@@ -9,8 +9,6 @@ import { Queue, Worker } from 'bullmq';
 import dcmjs from 'dcmjs';
 import { Readable } from 'node:stream';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
-import { getShardSystemRepo } from '../fhir/repo';
-import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import type { ProjectJobTarget } from './base';
@@ -29,7 +27,7 @@ const { DicomMetadataListener } = utilities;
  */
 
 export interface DicomJobData {
-  readonly target?: ProjectJobTarget; // PENDING{v5.2} make target required and tighten up based on that throughout
+  readonly target: ProjectJobTarget;
   readonly id: string;
   readonly requestId?: string;
   readonly traceId?: string;
@@ -111,7 +109,7 @@ async function addDicomJobData(job: DicomJobData): Promise<void> {
  * @param job - The DICOM processor job details.
  */
 export async function execDicomJob(job: Job<DicomJobData>): Promise<void> {
-  const systemRepo = job.data.target ? await getJobSystemRepo(job.data.target) : getShardSystemRepo(TODO_SHARD_ID);
+  const systemRepo = await getJobSystemRepo(job.data.target);
   const log = getLogger();
   const { id } = job.data;
 

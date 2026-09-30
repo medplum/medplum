@@ -11,7 +11,6 @@ import { getAllowedProjects } from '../fhir/accesspolicy';
 import { findProjectMembership } from '../fhir/projectmembership';
 import type { Repository } from '../fhir/repo';
 import { getPermittedProjectIds, getShardSystemRepo } from '../fhir/repo';
-import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { ProjectJobTarget } from './base';
 import { getJobSystemRepo, getProjectJobTarget } from './base';
@@ -27,15 +26,14 @@ const MAX_BOTS_PER_PAGE = 500;
  * Cron job
  */
 
-// PENDING{v5.2} make target required and tighten up based on that throughout
 export type CronJobData =
   | {
-      readonly target?: ProjectJobTarget;
+      readonly target: ProjectJobTarget;
       readonly resourceType: 'Bot';
       readonly botId: string;
     }
   | {
-      readonly target?: ProjectJobTarget;
+      readonly target: ProjectJobTarget;
       readonly resourceType: 'Cron';
       readonly cronId: string;
     };
@@ -375,7 +373,7 @@ async function resolveCronJob(
 }
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
-  const systemRepo = job.data.target ? await getJobSystemRepo(job.data.target) : getShardSystemRepo(TODO_SHARD_ID);
+  const systemRepo = await getJobSystemRepo(job.data.target);
 
   let bot: WithId<Bot>;
   let runAs: WithId<ProjectMembership> | undefined;
