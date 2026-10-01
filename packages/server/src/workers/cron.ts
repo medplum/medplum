@@ -459,11 +459,17 @@ async function reloadCronJob(
   resource: WithId<Bot> | WithId<Cron>
 ): Promise<void> {
   try {
-    const projectId = resource.meta?.project as string;
-    let project = projects.get(projectId);
+    const projectId = resource.meta?.project;
+    let project = projectId ? projects.get(projectId) : undefined;
+    if (projectId && !project) {
+      project = await readIfPresent(() => systemRepo.readResource<Project>('Project', projectId));
+      if (project) {
+        projects.set(projectId, project);
+      }
+    }
     if (!project) {
-      project = await systemRepo.readResource<Project>('Project', projectId);
-      projects.set(projectId, project);
+      globalLogger.error('Cannot reload cron job, project not found', { ...getResourceIds(resource), projectId });
+      return;
     }
     // We pass `undefined` as previous version to make sure that the latest cron string is used
     await addCronJobs(resource, undefined, { project, interaction: 'update' });

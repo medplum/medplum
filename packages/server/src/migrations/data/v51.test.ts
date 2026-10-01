@@ -24,18 +24,19 @@ describe('Post-deploy migration v51', () => {
     await shutdownApp();
   });
 
-  test('Re-registers cron schedules with current job data, skipping unreadable ones', () =>
+  test('Re-registers cron schedules with current job data, skipping ones without a project', () =>
     withTestContext(async () => {
       const { project, repo } = await createTestProject({ withRepo: true });
       const bot = await repo.createResource<Bot>({ resourceType: 'Bot', cronString: '*/20 * * * *' });
       const sameProjectBot = await repo.createResource<Bot>({ resourceType: 'Bot', cronString: '0 * * * *' });
 
-      // A bot whose project is gone can't be re-registered, but must not stop the rest of the reload
+      // Bots without a readable project can't be re-registered, but must not stop the rest of the reload
       const orphanedBot = await systemRepo.createResource<Bot>({
         resourceType: 'Bot',
         meta: { project: randomUUID() },
         cronString: '*/20 * * * *',
       });
+      const projectlessBot = await systemRepo.createResource<Bot>({ resourceType: 'Bot', cronString: '*/20 * * * *' });
 
       const asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
@@ -48,7 +49,7 @@ describe('Post-deploy migration v51', () => {
       const cronQueue = getCronQueue() as Queue<CronJobData>;
       const obliterateSpy = vi.spyOn(cronQueue, 'obliterate');
       const upsertJobSchedulerSpy = vi.spyOn(cronQueue, 'upsertJobScheduler');
-      const warnSpy = vi.spyOn(globalLogger, 'warn');
+      const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
       const readResourceSpy = vi.spyOn(Repository.prototype, 'readResource');
 
       const result = await migration.run(systemRepo, undefined, migration.prepareJobData(asyncJob));
@@ -66,10 +67,14 @@ describe('Post-deploy migration v51', () => {
         expect.any(Object)
       );
       expect(readResourceSpy.mock.calls.filter(([, id]) => id === project.id)).toHaveLength(1);
-      expect(warnSpy).toHaveBeenCalledWith(
-        'Failed to reload cron job',
-        expect.objectContaining({ botId: orphanedBot.id })
-      );
+      expect(errorSpy).toHaveBeenCalledWith('Cannot reload cron job, project not found', {
+        botId: orphanedBot.id,
+        projectId: orphanedBot.meta?.project,
+      });
+      expect(errorSpy).toHaveBeenCalledWith('Cannot reload cron job, project not found', {
+        botId: projectlessBot.id,
+        projectId: undefined,
+      });
       const updatedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
       expect(updatedJob.status).toBe('completed');
     }));
