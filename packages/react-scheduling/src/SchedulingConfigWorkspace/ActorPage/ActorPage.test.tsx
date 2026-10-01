@@ -101,12 +101,12 @@ describe('ActorPage', () => {
     ['shows', 'an inactive provider whose Schedule is still active', false, true],
     ['hides', 'an inactive provider whose Schedule is switched off', false, false],
     ['hides', 'an active provider', true, true],
-  ])('%s the still-bookable warning for %s', async (verb, _case, providerActive, scheduleActive) => {
+  ])('%s the inactive-but-scheduled warning for %s', async (verb, _case, providerActive, scheduleActive) => {
     await setup({ ...drSmith, active: providerActive }, [
       { ...makeSchedule('Practitioner/dr-smith', [initialVisit]), active: scheduleActive },
     ]);
 
-    const warning = screen.queryByText(/is inactive, but the Schedule is still active/);
+    const warning = screen.queryByText(/is inactive, so booking won't offer the visit types below/);
     expect(!!warning).toBe(verb === 'shows');
   });
 });

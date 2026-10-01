@@ -54,7 +54,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
       {inactive && schedule && schedule.active !== false && (
         <Alert color="yellow">
-          {actorName} is inactive, but the Schedule is still active, so booking still offers the visit types below.
+          {actorName} is inactive, so booking won't offer the visit types below, even though the Schedule is still
+          active.
         </Alert>
       )}
 
