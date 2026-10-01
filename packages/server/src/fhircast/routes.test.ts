@@ -18,12 +18,15 @@ import type { DiagnosticReport, Project } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
+import type { Response as SupertestResponse } from 'supertest';
 import request from 'superwstest';
+import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import type { RawData } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import * as pubsub from '../pubsub';
 import { getCacheRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { EventCategory } from './routes';
@@ -1412,6 +1415,189 @@ describe('FHIRcast routes', () => {
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', details: { text: 'No DiagnosticReport currently open for this topic' } }],
+    });
+  });
+
+  describe('Derived events', () => {
+    const report = {
+      id: 'report-1',
+      resourceType: 'DiagnosticReport',
+      status: 'final',
+      code: { text: 'test' },
+    } as const;
+    const patient = { id: 'patient-1', resourceType: 'Patient' } as const;
+    const encounter = {
+      id: 'encounter-1',
+      resourceType: 'Encounter',
+      status: 'in-progress',
+      class: { code: 'AMB' },
+    } as const;
+    const study = {
+      id: 'study-1',
+      resourceType: 'ImagingStudy',
+      status: 'available',
+      subject: {},
+    } as const;
+
+    let publishAllSpy: MockInstance<typeof pubsub.publishAll>;
+
+    beforeEach(() => {
+      publishAllSpy = vi.spyOn(pubsub, 'publishAll');
+    });
+
+    afterEach(() => {
+      publishAllSpy.mockRestore();
+      delete config.fhircastDerivedEventsEnabled;
+    });
+
+    function lastPublishedEventNames(): string[] {
+      const calls = publishAllSpy.mock.calls;
+      const [, messages] = calls[calls.length - 1];
+      return messages.map((message) => JSON.parse(message as string).payload.event['hub.event']);
+    }
+
+    async function publishEvent(payload: object): Promise<SupertestResponse> {
+      return request(server)
+        .post(STU3_BASE_ROUTE)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(payload);
+    }
+
+    test('A `DiagnosticReport-open` publishes its derived events ahead of itself', async () => {
+      const topic = randomUUID();
+      const res = await publishEvent(
+        createFhircastMessagePayload(topic, 'DiagnosticReport-open', [
+          { key: 'report', resource: report },
+          { key: 'patient', resource: patient },
+          { key: 'encounter', resource: encounter },
+          { key: 'study', resource: study },
+        ])
+      );
+      expect(res).toHaveStatus(202);
+      expect(lastPublishedEventNames()).toStrictEqual([
+        'Patient-open',
+        'Encounter-open',
+        'ImagingStudy-open',
+        'DiagnosticReport-open',
+      ]);
+    });
+
+    test('A `DiagnosticReport-close` unwinds its derived events after itself', async () => {
+      const topic = randomUUID();
+      const res = await publishEvent(
+        createFhircastMessagePayload(topic, 'DiagnosticReport-close', [
+          { key: 'report', resource: report },
+          { key: 'patient', resource: patient },
+          { key: 'encounter', resource: encounter },
+        ])
+      );
+      expect(res).toHaveStatus(202);
+      expect(lastPublishedEventNames()).toStrictEqual(['DiagnosticReport-close', 'Encounter-close', 'Patient-close']);
+    });
+
+    test('The response body still describes only the published event', async () => {
+      const topic = randomUUID();
+      const payload = createFhircastMessagePayload(topic, 'DiagnosticReport-open', [
+        { key: 'report', resource: report },
+        { key: 'patient', resource: patient },
+      ]);
+      const res = await publishEvent(payload);
+      expect(res).toHaveStatus(202);
+      expect(res.body.event.id).toStrictEqual(payload.id);
+      expect(res.body.event.event['hub.event']).toStrictEqual('DiagnosticReport-open');
+      expect(Object.keys(res.body)).toStrictEqual(['success', 'event']);
+    });
+
+    test('Derived events do not establish a context of their own', async () => {
+      const topic = randomUUID();
+      const res = await publishEvent(
+        createFhircastMessagePayload(topic, 'DiagnosticReport-open', [
+          { key: 'report', resource: report },
+          { key: 'patient', resource: patient },
+          { key: 'encounter', resource: encounter },
+          { key: 'study', resource: study },
+        ])
+      );
+      expect(res).toHaveStatus(202);
+
+      // The topic is still anchored on the DiagnosticReport that was actually opened
+      const contextRes = await request(server)
+        .get(`${STU3_BASE_ROUTE}/${topic}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(contextRes).toHaveStatus(200);
+      expect(contextRes.body['context.type']).toStrictEqual('DiagnosticReport');
+      expect(contextRes.body['context.versionId']).toStrictEqual(res.body.event.event['context.versionId']);
+    });
+
+    test('Derived events carry the source `context.versionId`', async () => {
+      const topic = randomUUID();
+      const res = await publishEvent(
+        createFhircastMessagePayload(topic, 'DiagnosticReport-open', [
+          { key: 'report', resource: report },
+          { key: 'patient', resource: patient },
+        ])
+      );
+      expect(res).toHaveStatus(202);
+      const versionId = res.body.event.event['context.versionId'];
+      expect(versionId).toBeDefined();
+
+      const calls = publishAllSpy.mock.calls;
+      const [, messages] = calls[calls.length - 1];
+      for (const message of messages) {
+        expect(JSON.parse(message as string).payload.event['context.versionId']).toStrictEqual(versionId);
+      }
+    });
+
+    test('Events with nothing to derive publish as just themselves', async () => {
+      for (const eventName of ['Home-open', 'syncerror', 'userlogout', 'Patient-open']) {
+        const topic = randomUUID();
+        const res = await publishEvent({
+          id: generateId(),
+          timestamp: new Date().toISOString(),
+          event: {
+            'hub.topic': topic,
+            'hub.event': eventName,
+            context: [{ key: 'patient', resource: patient }],
+          },
+        });
+        expect(res).toHaveStatus(202);
+        expect(lastPublishedEventNames()).toStrictEqual([eventName]);
+      }
+    });
+
+    test('A context the Hub cannot make sense of still publishes', async () => {
+      const topic = randomUUID();
+      // The publish route never validates context shape, so derivation has to tolerate this
+      const res = await publishEvent({
+        id: generateId(),
+        timestamp: new Date().toISOString(),
+        event: {
+          'hub.topic': topic,
+          'hub.event': 'DiagnosticReport-open',
+          context: [
+            { key: 'report', resource: report },
+            { key: 'patient', resource: { resourceType: 'Patient' } }, // no id
+            'not-a-context',
+          ],
+        },
+      });
+      expect(res).toHaveStatus(202);
+      expect(lastPublishedEventNames()).toStrictEqual(['DiagnosticReport-open']);
+    });
+
+    test('Derivation can be turned off', async () => {
+      config.fhircastDerivedEventsEnabled = false;
+      const topic = randomUUID();
+      const res = await publishEvent(
+        createFhircastMessagePayload(topic, 'DiagnosticReport-open', [
+          { key: 'report', resource: report },
+          { key: 'patient', resource: patient },
+          { key: 'encounter', resource: encounter },
+        ])
+      );
+      expect(res).toHaveStatus(202);
+      expect(lastPublishedEventNames()).toStrictEqual(['DiagnosticReport-open']);
     });
   });
 });

@@ -13,7 +13,7 @@ import type {
 import { generateId } from '../crypto';
 import { TypedEventTarget } from '../eventtarget';
 import { OperationOutcomeError, validationError } from '../outcomes';
-import { isReference } from '../types';
+import { isReference, isResource } from '../types';
 import type {
   IReconnectingWebSocket,
   IReconnectingWebSocketCtor,
@@ -531,6 +531,239 @@ export function createFhircastMessagePayload<
       ...(versionId ? { 'context.versionId': versionId } : {}),
     },
   };
+}
+
+/*
+ * Derived events
+ *
+ * A context change carries every resource the anchor event needs, and the spec guarantees those
+ * resources are named the same way in any event derivable from it:
+ *
+ * > In the case in which other events are derivable from the event in question, additional
+ * > non-anchor FHIR resources included in the event SHALL be named what they are named in the
+ * > derivable event.
+ * > Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-3-Events.html
+ *
+ * So a `DiagnosticReport-open` carrying `patient`, `encounter` and `study` contexts already holds
+ * everything a `Patient-open`, an `Encounter-open` and an `ImagingStudy-open` would carry, and the
+ * Hub can synthesize them for the subscribers that asked for those events instead.
+ */
+
+/** The anchor resource types that take part in derivation, ordered least to most specific. */
+export const FHIRCAST_ANCHOR_SPECIFICITY = ['Patient', 'Encounter', 'ImagingStudy', 'DiagnosticReport'] as const;
+
+/** The anchor types that can be *derived*. Nothing is less specific than `Patient`, so `DiagnosticReport` is never a target. */
+export type FhircastDerivedAnchorResourceType = 'Patient' | 'Encounter' | 'ImagingStudy';
+
+/** The `-open`/`-close` events derivation can synthesize. */
+export type FhircastDerivedEventName = `${FhircastDerivedAnchorResourceType}-${'open' | 'close'}`;
+
+type FhircastContextKey = FhircastResourceContext['key'];
+
+/** The resource type each context key must hold for derivation to treat it as usable. */
+const FHIRCAST_DERIVED_CONTEXT_RESOURCE_TYPES = {
+  patient: 'Patient',
+  encounter: 'Encounter',
+  study: 'ImagingStudy',
+  report: 'DiagnosticReport',
+} as const satisfies Partial<Record<FhircastContextKey, FhircastResourceType>>;
+
+type FhircastDerivedContextKey = keyof typeof FHIRCAST_DERIVED_CONTEXT_RESOURCE_TYPES;
+
+type FhircastDerivedEventRule = {
+  /** Keys without which the event cannot be synthesized at all. */
+  required: readonly FhircastDerivedContextKey[];
+  /**
+   * Keys copied onto the derived event when the source carries them.
+   *
+   * Hand-written rather than read off the `optional` flags in `FHIRCAST_EVENT_RESOURCES`, which
+   * describes the *union* of STU2 and STU3: `encounter` on `Patient-open` is STU2-only and was
+   * removed in STU3. At publish time the Hub does not know which version a subscriber speaks, so
+   * `Patient-open` is derived without it. Nothing is lost — a source carrying an `encounter` also
+   * derives `Encounter-open`, which owns that key in both versions.
+   */
+  optional: readonly FhircastDerivedContextKey[];
+  /** When set, one derived event is emitted per distinct resource under this key. */
+  fanOutKey?: FhircastDerivedContextKey;
+};
+
+const FHIRCAST_DERIVED_EVENT_RULES = {
+  Patient: { required: ['patient'], optional: [] },
+  Encounter: { required: ['encounter', 'patient'], optional: [] },
+  // `ImagingStudy-open` allows exactly one `study`, but a `DiagnosticReport-open` may carry many,
+  // so each study becomes its own event rather than being dropped or crammed into one.
+  ImagingStudy: { required: ['study'], optional: ['encounter', 'patient'], fanOutKey: 'study' },
+} as const satisfies Record<FhircastDerivedAnchorResourceType, FhircastDerivedEventRule>;
+
+/**
+ * The events derivation knows how to derive *from*, keyed by lowercased name.
+ *
+ * Lookups against this map are what keep derivation total: `Home-open`, `userlogout`,
+ * `DiagnosticReport-select`, `DiagnosticReport-update`, `syncerror` and anything unrecognized are
+ * simply absent, and derive nothing. Every publish flows through here, so an event name must never
+ * be parsed by splitting on `-`.
+ */
+const FHIRCAST_DERIVABLE_SOURCES: Record<string, { anchorIndex: number; suffix: 'open' | 'close' }> =
+  Object.fromEntries(
+    FHIRCAST_ANCHOR_SPECIFICITY.flatMap((anchor, anchorIndex) =>
+      (['open', 'close'] as const).map((suffix) => [`${anchor}-${suffix}`.toLowerCase(), { anchorIndex, suffix }])
+    )
+  );
+
+/**
+ * Groups the usable resource contexts of a source event by key, preserving source order.
+ *
+ * The publish route validates only that `context` is present, never its shape, so every entry here
+ * is untrusted: entries that are not objects, carry a `reference` instead of a `resource`, hold the
+ * wrong resource type, or lack an `id` are dropped rather than passed on to be rejected later.
+ * Resources repeated under one key are deduplicated by id.
+ * @param contexts - The source event's context array.
+ * @returns Usable resources by context key, in source order.
+ */
+function collectDerivableContexts(contexts: unknown): Map<FhircastDerivedContextKey, Resource[]> {
+  const collected = new Map<FhircastDerivedContextKey, Resource[]>();
+  if (!Array.isArray(contexts)) {
+    return collected;
+  }
+  for (const context of contexts) {
+    if (!context || typeof context !== 'object') {
+      continue;
+    }
+    const key = (context as { key?: unknown }).key as FhircastDerivedContextKey;
+    const expectedResourceType = FHIRCAST_DERIVED_CONTEXT_RESOURCE_TYPES[key];
+    if (!expectedResourceType) {
+      continue;
+    }
+    const resource = (context as { resource?: unknown }).resource;
+    if (!isResource(resource, expectedResourceType) || !resource.id || typeof resource.id !== 'string') {
+      continue;
+    }
+    let resources = collected.get(key);
+    if (!resources) {
+      resources = [];
+      collected.set(key, resources);
+    }
+    if (!resources.some((existing) => existing.id === resource.id)) {
+      resources.push(resource);
+    }
+  }
+  return collected;
+}
+
+/**
+ * Assembles the context array for one derived event, or gives up if a required key is missing.
+ * @param rule - The rule for the event being derived.
+ * @param collected - The source event's usable contexts, by key.
+ * @param fanOutResource - The resource to use for the rule's `fanOutKey`, when it has one.
+ * @returns The derived contexts, or `undefined` if the event cannot be derived.
+ */
+function buildDerivedContexts(
+  rule: FhircastDerivedEventRule,
+  collected: Map<FhircastDerivedContextKey, Resource[]>,
+  fanOutResource?: Resource
+): FhircastResourceContext[] | undefined {
+  const derivedContexts: FhircastResourceContext[] = [];
+  for (const key of rule.required) {
+    const resource = key === rule.fanOutKey ? fanOutResource : collected.get(key)?.[0];
+    if (!resource) {
+      return undefined;
+    }
+    derivedContexts.push({ key, resource } as FhircastResourceContext);
+  }
+  for (const key of rule.optional) {
+    const resource = collected.get(key)?.[0];
+    if (resource) {
+      derivedContexts.push({ key, resource } as FhircastResourceContext);
+    }
+  }
+  return derivedContexts;
+}
+
+/**
+ * Synthesizes the less specific `-open`/`-close` events implied by a source event's contexts.
+ *
+ * The returned events are always ordered least to most specific, whichever suffix the source has;
+ * `buildFhircastPublishSequence` reverses them for a `-close`. Each one is a new notification with
+ * its own `id` and `timestamp`, carrying the source's `hub.topic` and its `context.versionId` when
+ * it has one — a derived event describes the same Hub context as the event it came from, so it
+ * names that context's version rather than inventing one.
+ *
+ * This never throws and never rejects its input: a source that derives nothing, including
+ * `Home-open`, `DiagnosticReport-select`, `DiagnosticReport-update`, `syncerror` and unrecognized
+ * event names, simply yields an empty array. Publishing the source event must not come to depend on
+ * the shape of what it carries.
+ * @param source - The published notification to derive from.
+ * @returns The derived notifications, least to most specific. Empty if nothing is derivable.
+ */
+export function deriveFhircastEventPayloads(source: FhircastMessagePayload): FhircastMessagePayload[] {
+  const derived: FhircastMessagePayload[] = [];
+  try {
+    const event = source?.event;
+    const eventName = event?.['hub.event'];
+    const topic = event?.['hub.topic'];
+    if (typeof eventName !== 'string' || typeof topic !== 'string' || !topic) {
+      return derived;
+    }
+    const sourceDetails = FHIRCAST_DERIVABLE_SOURCES[eventName.toLowerCase()];
+    if (!sourceDetails) {
+      return derived;
+    }
+    const versionId = event['context.versionId'];
+    const collected = collectDerivableContexts(event.context);
+
+    // Only anchors strictly less specific than the source's are derivable from it, which is also
+    // what makes derivation terminate: a derived event can never derive its own source back.
+    for (let anchorIndex = 0; anchorIndex < sourceDetails.anchorIndex; anchorIndex++) {
+      const anchor = FHIRCAST_ANCHOR_SPECIFICITY[anchorIndex] as FhircastDerivedAnchorResourceType;
+      const rule = FHIRCAST_DERIVED_EVENT_RULES[anchor] as FhircastDerivedEventRule;
+      // The event name is rebuilt from the canonical anchor rather than the source's own spelling,
+      // which arrives in whatever case the publisher used.
+      const derivedEventName: FhircastDerivedEventName = `${anchor}-${sourceDetails.suffix}`;
+      const fanOutResources = rule.fanOutKey ? (collected.get(rule.fanOutKey) ?? []) : [undefined];
+      for (const fanOutResource of fanOutResources) {
+        const derivedContexts = buildDerivedContexts(rule, collected, fanOutResource);
+        if (!derivedContexts) {
+          continue;
+        }
+        try {
+          derived.push(
+            createFhircastMessagePayload(
+              topic,
+              derivedEventName,
+              derivedContexts as FhircastEventContext<FhircastDerivedEventName>[],
+              versionId
+            )
+          );
+        } catch (_err) {
+          // A single unsynthesizable event is skipped; the rest of the sequence still goes out
+        }
+      }
+    }
+  } catch (_err) {
+    return [];
+  }
+  return derived;
+}
+
+/**
+ * Builds the ordered list of notifications the Hub publishes for one context change.
+ *
+ * An `-open` runs least to most specific so a subscriber sees the patient opened before the report
+ * that sits inside it; a `-close` unwinds in the opposite order, closing the report before the
+ * patient. Anything that derives nothing publishes as just itself.
+ *
+ * The source is passed through by reference, so its `id` and `timestamp` are the ones the publisher
+ * was handed in the `202` response.
+ * @param source - The published notification.
+ * @returns The notifications to publish to the topic, in order.
+ */
+export function buildFhircastPublishSequence(source: FhircastMessagePayload): FhircastMessagePayload[] {
+  const derived = deriveFhircastEventPayloads(source);
+  if (!derived.length) {
+    return [source];
+  }
+  const sourceDetails = FHIRCAST_DERIVABLE_SOURCES[source.event['hub.event'].toLowerCase()];
+  return sourceDetails?.suffix === 'close' ? [source, ...derived.reverse()] : [...derived, source];
 }
 
 export type FhircastConnectEvent = { type: 'connect' };

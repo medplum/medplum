@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { FhircastMessagePayload, WithId } from '@medplum/core';
+import type { FhircastEventName, FhircastMessagePayload, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
@@ -10,14 +10,16 @@ import {
   getReferenceString,
   serializeFhircastSubscriptionRequest,
 } from '@medplum/core';
-import type { DiagnosticReport, Observation, Patient } from '@medplum/fhirtypes';
+import type { DiagnosticReport, ImagingStudy, Observation, Patient } from '@medplum/fhirtypes';
 import type { Express } from 'express';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import type { IncomingMessage, Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import request from 'superwstest';
-import type { WebSocket } from 'ws';
+import type { RawData, WebSocket } from 'ws';
+import { WebSocket as WebSocketClient } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
@@ -1125,6 +1127,253 @@ describe('FHIRcast WebSocket', () => {
             );
           })
           .expectClosed();
+      }));
+  });
+
+  describe('Derived events', () => {
+    let app: Express;
+    let config: MedplumServerConfig;
+    let server: Server;
+    let accessToken: string;
+
+    const patient = { resourceType: 'Patient', id: 'derived-patient' } as const;
+    const encounter = {
+      resourceType: 'Encounter',
+      id: 'derived-encounter',
+      status: 'in-progress',
+      class: { code: 'AMB' },
+    } as const;
+    const report = {
+      resourceType: 'DiagnosticReport',
+      id: 'derived-report',
+      status: 'final',
+      code: { text: 'test' },
+    } as const;
+    const study = (id: string): ImagingStudy => ({
+      resourceType: 'ImagingStudy',
+      id,
+      status: 'available',
+      subject: { reference: `Patient/${patient.id}` },
+    });
+
+    beforeAll(async () => {
+      vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+      app = express();
+      config = await loadTestConfig();
+      config.heartbeatEnabled = false;
+      server = await initApp(app, config);
+      accessToken = await initTestAuth({ membership: { admin: true } });
+      await new Promise<void>((resolve) => {
+        server.listen(0, 'localhost', 8520, resolve);
+      });
+    });
+
+    afterAll(async () => {
+      await shutdownApp();
+    });
+
+    async function subscribe(topic: string, events: FhircastEventName[]): Promise<string> {
+      const res = await request(server)
+        .post('/fhircast/STU3')
+        .set('Content-Type', ContentType.FORM_URL_ENCODED)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(serializeFhircastSubscriptionRequest({ mode: 'subscribe', channelType: 'websocket', topic, events }));
+      expect(res).toHaveStatus(202);
+      return new URL(res.body['hub.channel.endpoint']).pathname;
+    }
+
+    async function publishEvent(topic: string, payload: FhircastMessagePayload): Promise<void> {
+      const res = await request(server)
+        .post(`/fhircast/STU3/${topic}`)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(payload);
+      expect(res).toHaveStatus(202);
+    }
+
+    function reportOpen(
+      topic: string,
+      event: 'DiagnosticReport-open' | 'DiagnosticReport-close',
+      studies: string[] = []
+    ): FhircastMessagePayload<'DiagnosticReport-open' | 'DiagnosticReport-close'> {
+      return createFhircastMessagePayload(topic, event, [
+        { key: 'report', resource: report },
+        { key: 'patient', resource: patient },
+        { key: 'encounter', resource: encounter },
+        ...studies.map((id) => ({ key: 'study', resource: study(id) }) as const),
+      ]);
+    }
+
+    test('A subscriber on only the lesser event receives it derived from the greater one', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+        const path = await subscribe(topic, ['Patient-open', 'Patient-close']);
+
+        await request(server)
+          .ws(path)
+          .expectJson((obj) => {
+            expect(obj['hub.events']).toBe('Patient-open,Patient-close');
+          })
+          .exec(async () => {
+            await publishEvent(topic, reportOpen(topic, 'DiagnosticReport-open', ['study-1']));
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('Patient-open');
+            // Derived from the report's contexts, and without the STU2-only `encounter` key
+            expect(obj.event.context).toStrictEqual([{ key: 'patient', resource: patient }]);
+          })
+          .exec(async () => {
+            // Nothing else from that publish reached this subscriber: the next thing it hears is
+            // the event published after it
+            await publishEvent(
+              topic,
+              createFhircastMessagePayload(topic, 'Patient-close', [{ key: 'patient', resource: patient }])
+            );
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('Patient-close');
+          })
+          .close()
+          .expectClosed();
+      }));
+
+    test('A subscriber on both levels receives both, least specific first', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+        const path = await subscribe(topic, ['DiagnosticReport-open', 'Patient-open']);
+
+        await request(server)
+          .ws(path)
+          .expectJson()
+          .exec(async () => {
+            await publishEvent(topic, reportOpen(topic, 'DiagnosticReport-open'));
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('Patient-open');
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('DiagnosticReport-open');
+          })
+          .close()
+          .expectClosed();
+      }));
+
+    test('A close sequence unwinds in the opposite order', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+        const path = await subscribe(topic, ['DiagnosticReport-close', 'Patient-close']);
+
+        await request(server)
+          .ws(path)
+          .expectJson()
+          .exec(async () => {
+            await publishEvent(topic, reportOpen(topic, 'DiagnosticReport-close'));
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('DiagnosticReport-close');
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('Patient-close');
+          })
+          .close()
+          .expectClosed();
+      }));
+
+    test('Each study in the source becomes its own ImagingStudy-open', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+        const path = await subscribe(topic, ['ImagingStudy-open']);
+
+        await request(server)
+          .ws(path)
+          .expectJson()
+          .exec(async () => {
+            await publishEvent(topic, reportOpen(topic, 'DiagnosticReport-open', ['study-1', 'study-2']));
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('ImagingStudy-open');
+            expect(obj.event.context).toStrictEqual([
+              { key: 'study', resource: study('study-1') },
+              { key: 'encounter', resource: encounter },
+              { key: 'patient', resource: patient },
+            ]);
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('ImagingStudy-open');
+            expect(obj.event.context[0]).toStrictEqual({ key: 'study', resource: study('study-2') });
+          })
+          .close()
+          .expectClosed();
+      }));
+
+    test('An event the source cannot support is not derived', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+        const path = await subscribe(topic, ['Encounter-open']);
+
+        await request(server)
+          .ws(path)
+          .expectJson()
+          .exec(async () => {
+            // No `encounter` context, so there is no `Encounter-open` to derive
+            await publishEvent(
+              topic,
+              createFhircastMessagePayload(topic, 'DiagnosticReport-open', [
+                { key: 'report', resource: report },
+                { key: 'patient', resource: patient },
+              ])
+            );
+            await publishEvent(
+              topic,
+              createFhircastMessagePayload(topic, 'Encounter-open', [
+                { key: 'encounter', resource: encounter },
+                { key: 'patient', resource: patient },
+              ])
+            );
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            // The directly published event, not one derived from the report
+            expect(obj.event['hub.event']).toBe('Encounter-open');
+            expect(obj.id).toBeDefined();
+          })
+          .close()
+          .expectClosed();
+      }));
+
+    test('Every subscriber sees the same derived event', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+        const paths = [await subscribe(topic, ['Patient-open']), await subscribe(topic, ['Patient-open'])];
+
+        const { port } = server.address() as AddressInfo;
+        const sockets = await Promise.all(
+          paths.map(async (path) => {
+            const socket = new WebSocketClient(`ws://localhost:${port}${path}`);
+            const messages: FhircastMessagePayload[] = [];
+            socket.on('message', (data: RawData) => messages.push(JSON.parse((data as Buffer).toString('utf8'))));
+            await once(socket, 'open');
+            return { socket, messages };
+          })
+        );
+
+        try {
+          await publishEvent(topic, reportOpen(topic, 'DiagnosticReport-open'));
+          for (const { messages } of sockets) {
+            // The connection confirmation, then the derived event
+            await vi.waitFor(() => expect(messages).toHaveLength(2));
+          }
+
+          const [first, second] = sockets.map(({ messages }) => messages[1]);
+          expect(first.event['hub.event']).toBe('Patient-open');
+          // A derived event is one notification, so both subscribers can ack the same id
+          expect(second.id).toStrictEqual(first.id);
+          expect(second.timestamp).toStrictEqual(first.timestamp);
+          expect(second.event).toStrictEqual(first.event);
+        } finally {
+          for (const { socket } of sockets) {
+            socket.close();
+          }
+        }
       }));
   });
 

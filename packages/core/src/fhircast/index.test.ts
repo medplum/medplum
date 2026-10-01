@@ -15,7 +15,10 @@ import type {
 } from '.';
 import {
   assertContextVersionOptional,
+  buildFhircastPublishSequence,
   createFhircastMessagePayload,
+  deriveFhircastEventPayloads,
+  FHIRCAST_ANCHOR_SPECIFICITY,
   FHIRCAST_EVENT_VERSION_REQUIRED,
   FhircastConnection,
   isContextVersionRequired,
@@ -882,5 +885,357 @@ describe('assertContextVersionOptional', () => {
   test('Version optional: false', () => {
     expect(FHIRCAST_EVENT_VERSION_REQUIRED.includes('DiagnosticReport-update')).toStrictEqual(true);
     expect(() => assertContextVersionOptional('DiagnosticReport-update')).toThrow(OperationOutcomeError);
+  });
+});
+
+describe('deriveFhircastEventPayloads', () => {
+  const topic = 'derived-topic';
+  const patient = { resourceType: 'Patient', id: 'patient-1' } as const;
+  const encounter = {
+    resourceType: 'Encounter',
+    id: 'encounter-1',
+    status: 'in-progress',
+    class: { code: 'AMB' },
+  } as const;
+  const study1 = {
+    resourceType: 'ImagingStudy',
+    id: 'study-1',
+    status: 'available',
+    subject: { reference: 'Patient/patient-1' },
+  } as const;
+  const study2 = {
+    resourceType: 'ImagingStudy',
+    id: 'study-2',
+    status: 'available',
+    subject: { reference: 'Patient/patient-1' },
+  } as const;
+  const report = {
+    resourceType: 'DiagnosticReport',
+    id: 'report-1',
+    status: 'final',
+    code: { text: 'Test report' },
+  } as const;
+
+  function makeSource(event: string, context: unknown[], extra?: Record<string, unknown>): FhircastMessagePayload {
+    return {
+      id: 'source-id',
+      timestamp: '2026-09-17T00:00:00.000Z',
+      event: { 'hub.topic': topic, 'hub.event': event, context, ...extra },
+    } as unknown as FhircastMessagePayload;
+  }
+
+  const fullReportContext = [
+    { key: 'report', resource: report },
+    { key: 'patient', resource: patient },
+    { key: 'encounter', resource: encounter },
+    { key: 'study', resource: study1 },
+    { key: 'study', resource: study2 },
+  ];
+
+  function summarize(payloads: FhircastMessagePayload[]): [string, string[]][] {
+    return payloads.map((payload) => [
+      payload.event['hub.event'],
+      payload.event.context.map((context) => {
+        const resource = (context as { resource?: { id?: string } }).resource;
+        return `${context.key}:${resource?.id}`;
+      }),
+    ]);
+  }
+
+  test('DiagnosticReport-open derives patient, encounter, and one event per study', () => {
+    const derived = deriveFhircastEventPayloads(makeSource('DiagnosticReport-open', fullReportContext));
+    expect(summarize(derived)).toStrictEqual([
+      ['Patient-open', ['patient:patient-1']],
+      ['Encounter-open', ['encounter:encounter-1', 'patient:patient-1']],
+      ['ImagingStudy-open', ['study:study-1', 'encounter:encounter-1', 'patient:patient-1']],
+      ['ImagingStudy-open', ['study:study-2', 'encounter:encounter-1', 'patient:patient-1']],
+    ]);
+  });
+
+  test('Derived Patient-open never carries the encounter', () => {
+    const derived = deriveFhircastEventPayloads(makeSource('DiagnosticReport-open', fullReportContext));
+    const patientOpen = derived.find((payload) => payload.event['hub.event'] === 'Patient-open');
+    expect(patientOpen?.event.context).toStrictEqual([{ key: 'patient', resource: patient }]);
+  });
+
+  test('Missing optional contexts derive fewer events', () => {
+    expect(
+      summarize(
+        deriveFhircastEventPayloads(
+          makeSource('DiagnosticReport-open', [
+            { key: 'report', resource: report },
+            { key: 'patient', resource: patient },
+          ])
+        )
+      )
+    ).toStrictEqual([['Patient-open', ['patient:patient-1']]]);
+  });
+
+  test('ImagingStudy-open derives what its contexts support', () => {
+    expect(
+      summarize(
+        deriveFhircastEventPayloads(
+          makeSource('ImagingStudy-open', [
+            { key: 'study', resource: study1 },
+            { key: 'patient', resource: patient },
+          ])
+        )
+      )
+    ).toStrictEqual([['Patient-open', ['patient:patient-1']]]);
+
+    expect(
+      summarize(
+        deriveFhircastEventPayloads(
+          makeSource('ImagingStudy-open', [
+            { key: 'study', resource: study1 },
+            { key: 'patient', resource: patient },
+            { key: 'encounter', resource: encounter },
+          ])
+        )
+      )
+    ).toStrictEqual([
+      ['Patient-open', ['patient:patient-1']],
+      ['Encounter-open', ['encounter:encounter-1', 'patient:patient-1']],
+    ]);
+
+    // `patient` is optional on `ImagingStudy-open`, and nothing is derivable without it
+    expect(
+      deriveFhircastEventPayloads(makeSource('ImagingStudy-open', [{ key: 'study', resource: study1 }]))
+    ).toStrictEqual([]);
+  });
+
+  test('Encounter-open derives Patient-open, Patient-open derives nothing', () => {
+    expect(
+      summarize(
+        deriveFhircastEventPayloads(
+          makeSource('Encounter-open', [
+            { key: 'encounter', resource: encounter },
+            { key: 'patient', resource: patient },
+          ])
+        )
+      )
+    ).toStrictEqual([['Patient-open', ['patient:patient-1']]]);
+
+    expect(
+      deriveFhircastEventPayloads(makeSource('Patient-open', [{ key: 'patient', resource: patient }]))
+    ).toStrictEqual([]);
+  });
+
+  test('context.versionId is copied from the source, never invented', () => {
+    const withVersion = deriveFhircastEventPayloads(
+      makeSource('DiagnosticReport-open', fullReportContext, { 'context.versionId': 'version-1' })
+    );
+    expect(withVersion).not.toHaveLength(0);
+    for (const payload of withVersion) {
+      expect(payload.event['context.versionId']).toStrictEqual('version-1');
+    }
+
+    const withoutVersion = deriveFhircastEventPayloads(makeSource('DiagnosticReport-close', fullReportContext));
+    expect(withoutVersion).not.toHaveLength(0);
+    for (const payload of withoutVersion) {
+      expect(payload.event['context.versionId']).toBeUndefined();
+    }
+  });
+
+  test('Each derived event gets its own id and the source topic', () => {
+    const derived = deriveFhircastEventPayloads(makeSource('DiagnosticReport-open', fullReportContext));
+    const ids = derived.map((payload) => payload.id);
+    expect(new Set(ids).size).toStrictEqual(ids.length);
+    expect(ids).not.toContain('source-id');
+    for (const payload of derived) {
+      expect(payload.event['hub.topic']).toStrictEqual(topic);
+      expect(new Date(payload.timestamp).toISOString()).toStrictEqual(payload.timestamp);
+    }
+  });
+
+  test('Derivation strictly decreases specificity, so it cannot cycle', () => {
+    // Derivation is single-pass in the publish path, so a derived `Encounter-open` deriving its own
+    // `Patient-open` never happens there. What has to hold is that it could not loop if it did.
+    const rank = (event: string): number =>
+      (FHIRCAST_ANCHOR_SPECIFICITY as readonly string[]).indexOf(event.split('-')[0]);
+
+    const derived = deriveFhircastEventPayloads(makeSource('DiagnosticReport-open', fullReportContext));
+    expect(derived).not.toHaveLength(0);
+    for (const payload of derived) {
+      const derivedRank = rank(payload.event['hub.event']);
+      expect(derivedRank).toBeLessThan(rank('DiagnosticReport-open'));
+      for (const grandchild of deriveFhircastEventPayloads(payload)) {
+        expect(rank(grandchild.event['hub.event'])).toBeLessThan(derivedRank);
+      }
+    }
+
+    // `Patient` is the least specific anchor, so it is the fixed point the chain bottoms out at
+    expect(
+      deriveFhircastEventPayloads(makeSource('Patient-open', [{ key: 'patient', resource: patient }]))
+    ).toStrictEqual([]);
+  });
+
+  test('Non-derivable sources derive nothing', () => {
+    // `Home-open` only borrows the `-open` suffix and has no anchor resource at all
+    for (const event of [
+      'Home-open',
+      'DiagnosticReport-select',
+      'DiagnosticReport-update',
+      'syncerror',
+      'heartbeat',
+      'userlogout',
+      'userhibernate',
+      'Observation-open',
+      '',
+    ]) {
+      expect(deriveFhircastEventPayloads(makeSource(event, fullReportContext))).toStrictEqual([]);
+    }
+  });
+
+  test('Source event name is matched case-insensitively and emitted canonically', () => {
+    const derived = deriveFhircastEventPayloads(makeSource('DIAGNOSTICREPORT-OPEN', fullReportContext));
+    expect(derived.map((payload) => payload.event['hub.event'])).toStrictEqual([
+      'Patient-open',
+      'Encounter-open',
+      'ImagingStudy-open',
+      'ImagingStudy-open',
+    ]);
+  });
+
+  test('Malformed contexts are skipped rather than thrown on', () => {
+    // The publish route never validates context shape, so derivation must tolerate anything
+    const malformed = [
+      undefined,
+      null,
+      'not-an-object',
+      42,
+      { key: 'patient' }, // no resource
+      { key: 'patient', resource: { resourceType: 'Patient' } }, // no id
+      { key: 'patient', resource: { resourceType: 'Encounter', id: 'wrong-type' } },
+      { key: 'report', reference: { reference: 'DiagnosticReport/report-1' } }, // a reference, not a resource
+      { resource: patient }, // no key
+      { key: 'unknown-key', resource: patient },
+    ];
+    expect(deriveFhircastEventPayloads(makeSource('DiagnosticReport-open', malformed))).toStrictEqual([]);
+
+    for (const context of [[], undefined, null, 'nope', {}]) {
+      expect(deriveFhircastEventPayloads(makeSource('DiagnosticReport-open', context as unknown[]))).toStrictEqual([]);
+    }
+
+    expect(deriveFhircastEventPayloads(undefined as unknown as FhircastMessagePayload)).toStrictEqual([]);
+    expect(deriveFhircastEventPayloads({} as unknown as FhircastMessagePayload)).toStrictEqual([]);
+    expect(
+      deriveFhircastEventPayloads(makeSource('DiagnosticReport-open', fullReportContext, { 'hub.topic': '' }))
+    ).toStrictEqual([]);
+  });
+
+  test('The first usable resource wins for a singleton key', () => {
+    const otherPatient = { resourceType: 'Patient', id: 'patient-2' } as const;
+    const derived = deriveFhircastEventPayloads(
+      makeSource('DiagnosticReport-open', [
+        { key: 'report', resource: report },
+        { key: 'patient', resource: { resourceType: 'Patient' } }, // unusable, no id
+        { key: 'patient', resource: patient },
+        { key: 'patient', resource: otherPatient },
+      ])
+    );
+    expect(summarize(derived)).toStrictEqual([['Patient-open', ['patient:patient-1']]]);
+  });
+
+  test('Studies repeated under one key are deduplicated by id', () => {
+    const derived = deriveFhircastEventPayloads(
+      makeSource('DiagnosticReport-open', [
+        { key: 'report', resource: report },
+        { key: 'patient', resource: patient },
+        { key: 'study', resource: study1 },
+        { key: 'study', resource: { ...study1 } },
+      ])
+    );
+    expect(summarize(derived)).toStrictEqual([
+      ['Patient-open', ['patient:patient-1']],
+      ['ImagingStudy-open', ['study:study-1', 'patient:patient-1']],
+    ]);
+  });
+});
+
+describe('buildFhircastPublishSequence', () => {
+  const topic = 'sequence-topic';
+  const patient = { resourceType: 'Patient', id: 'patient-1' } as const;
+  const encounter = {
+    resourceType: 'Encounter',
+    id: 'encounter-1',
+    status: 'in-progress',
+    class: { code: 'AMB' },
+  } as const;
+  const study1 = {
+    resourceType: 'ImagingStudy',
+    id: 'study-1',
+    status: 'available',
+    subject: { reference: 'Patient/patient-1' },
+  } as const;
+  const study2 = {
+    resourceType: 'ImagingStudy',
+    id: 'study-2',
+    status: 'available',
+    subject: { reference: 'Patient/patient-1' },
+  } as const;
+  const report = {
+    resourceType: 'DiagnosticReport',
+    id: 'report-1',
+    status: 'final',
+    code: { text: 'Test report' },
+  } as const;
+
+  function makeSource(event: string): FhircastMessagePayload {
+    return {
+      id: 'source-id',
+      timestamp: '2026-09-17T00:00:00.000Z',
+      event: {
+        'hub.topic': topic,
+        'hub.event': event,
+        context: [
+          { key: 'report', resource: report },
+          { key: 'patient', resource: patient },
+          { key: 'encounter', resource: encounter },
+          { key: 'study', resource: study1 },
+          { key: 'study', resource: study2 },
+        ],
+      },
+    } as unknown as FhircastMessagePayload;
+  }
+
+  test('An open sequence runs least to most specific, source last', () => {
+    const source = makeSource('DiagnosticReport-open');
+    const sequence = buildFhircastPublishSequence(source);
+    expect(sequence.map((payload) => payload.event['hub.event'])).toStrictEqual([
+      'Patient-open',
+      'Encounter-open',
+      'ImagingStudy-open',
+      'ImagingStudy-open',
+      'DiagnosticReport-open',
+    ]);
+    // The source is passed through untouched, so the publisher's `202` body still describes it
+    expect(sequence[sequence.length - 1]).toBe(source);
+  });
+
+  test('A close sequence unwinds in the opposite order, source first', () => {
+    const source = makeSource('DiagnosticReport-close');
+    const sequence = buildFhircastPublishSequence(source);
+    expect(sequence.map((payload) => payload.event['hub.event'])).toStrictEqual([
+      'DiagnosticReport-close',
+      'ImagingStudy-close',
+      'ImagingStudy-close',
+      'Encounter-close',
+      'Patient-close',
+    ]);
+    expect(sequence[0]).toBe(source);
+    // Studies close in the reverse of the order they opened in
+    expect(
+      sequence
+        .filter((payload) => payload.event['hub.event'] === 'ImagingStudy-close')
+        .map((payload) => (payload.event.context[0] as { resource: { id: string } }).resource.id)
+    ).toStrictEqual(['study-2', 'study-1']);
+  });
+
+  test('An event that derives nothing publishes as just itself', () => {
+    for (const event of ['Patient-open', 'Home-open', 'syncerror', 'DiagnosticReport-update']) {
+      const source = makeSource(event);
+      expect(buildFhircastPublishSequence(source)).toStrictEqual([source]);
+    }
   });
 });
