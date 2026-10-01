@@ -503,7 +503,7 @@ Optional list of resource types for which [chained search](/docs/search/chained-
 - References are no longer written to the `<ResourceType>_References` table on create or update.
 - Chained searches that would read that table, including `_has` reverse chains originating from the type, are rejected with `400 Bad Request`.
 
-`ProjectMembership` is always indexed and is ignored if listed.
+Project Admin resource types (e.g. `ProjectMembership`) are always indexed and are ignored if listed.
 
 When using environment variables or parameter store, provide a comma-separated list (e.g. `Observation,AuditEvent`).
 
