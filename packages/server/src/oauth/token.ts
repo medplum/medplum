@@ -363,10 +363,15 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     }
   }
 
-  const updatedLogin = await rotateLoginRefreshSecret(login, claims.refresh_secret, {
-    remoteAddress: req.ip,
-    userAgent: req.get('User-Agent'),
-  });
+  // Use a timing-safe-equal here so that we don't expose timing information which could be
+  // used to infer the secret value. A mismatch skips the rotation and goes straight to the
+  // grace period and reuse checks below.
+  const updatedLogin = timingSafeEqualStr(login.refreshSecret, claims.refresh_secret)
+    ? await rotateLoginRefreshSecret(login, claims.refresh_secret, {
+        remoteAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+      })
+    : undefined;
 
   if (updatedLogin) {
     await sendTokenResponse(req, res, updatedLogin, client);
