@@ -109,6 +109,15 @@ describe('Config', () => {
     });
   });
 
+  test('Env config parses rate limit and subscription limits as integers', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DEFAULT_LOGIN_RATE_LIMIT', '50');
+    setEnv('MEDPLUM_DEFAULT_MAX_USER_WEB_SOCKET_SUBSCRIPTIONS', '100');
+    const config = await loadConfig('env');
+    expect(config.defaultLoginRateLimit).toBe(50);
+    expect(config.defaultMaxUserWebSocketSubscriptions).toBe(100);
+  });
+
   test('Env config ignores non-MEDPLUM_ variables', async () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('NOT_MEDPLUM_SOMETHING', 'ignored');

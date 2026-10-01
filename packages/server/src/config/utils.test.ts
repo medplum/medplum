@@ -19,6 +19,8 @@ describe('utils', () => {
     expect(isIntegerConfig('baseUrl')).toBe(false);
     expect(isIntegerConfig('port')).toBe(true);
     expect(isIntegerConfig('defaultMfaRateLimit')).toBe(true);
+    expect(isIntegerConfig('defaultLoginRateLimit')).toBe(true);
+    expect(isIntegerConfig('defaultMaxUserWebSocketSubscriptions')).toBe(true);
   });
 
   test('addDefaults sets maxSearchOffset default', () => {
