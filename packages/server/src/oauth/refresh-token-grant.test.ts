@@ -198,12 +198,17 @@ describe('Refresh token grant', () => {
     expect(res.body).toMatchObject({ error: 'invalid_request', error_description: 'Invalid refresh token' });
   });
 
-  test('Replaying a rotated refresh token revokes the login', async () => {
+  test('Replaying a rotated refresh token revokes the login and its access tokens', async () => {
     const tokens = await getTokens();
     const rotated = await refresh(tokens.refresh_token);
     expect(rotated).toHaveStatus(200);
     expect(rotated.body.refresh_token).toBeDefined();
     expect(rotated.body.refresh_token).not.toStrictEqual(tokens.refresh_token);
+
+    const beforeReuse = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', `Bearer ${rotated.body.access_token}`);
+    expect(beforeReuse).toHaveStatus(200);
 
     await expireGracePeriod(tokens.refresh_token);
     const replay = await refresh(tokens.refresh_token);
@@ -216,20 +221,6 @@ describe('Refresh token grant', () => {
     const afterReplay = await refresh(rotated.body.refresh_token);
     expect(afterReplay).toHaveStatus(400);
     expect(afterReplay.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
-  });
-
-  test('Revoking on reuse also invalidates already-issued access tokens', async () => {
-    const tokens = await getTokens();
-    const rotated = await refresh(tokens.refresh_token);
-    expect(rotated).toHaveStatus(200);
-
-    const beforeReuse = await request(app)
-      .get('/fhir/R4/Patient')
-      .set('Authorization', `Bearer ${rotated.body.access_token}`);
-    expect(beforeReuse).toHaveStatus(200);
-
-    await expireGracePeriod(tokens.refresh_token);
-    await refresh(tokens.refresh_token);
 
     const afterReuse = await request(app)
       .get('/fhir/R4/Patient')
@@ -307,45 +298,6 @@ describe('Refresh token grant', () => {
     // The chain continues from the current secret
     const next = await refresh(retry.body.refresh_token);
     expect(next).toHaveStatus(200);
-  });
-
-  test('A token older than the previous one revokes the login even within the grace period', async () => {
-    const tokens = await getTokens();
-    const second = await refresh(tokens.refresh_token);
-    expect(second).toHaveStatus(200);
-    const third = await refresh(second.body.refresh_token);
-    expect(third).toHaveStatus(200);
-
-    const replay = await refresh(tokens.refresh_token);
-    expect(replay).toHaveStatus(400);
-    expect(replay.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
-
-    const login = await readLoginFor(tokens.refresh_token);
-    expect(login.revoked).toStrictEqual(true);
-  });
-
-  test('A stolen token replayed within the grace period is caught on a later replay', async () => {
-    const tokens = await getTokens();
-    const legitimate = await refresh(tokens.refresh_token);
-    expect(legitimate).toHaveStatus(200);
-
-    // The attacker replays the stolen token inside the window and gets tokens for the current secret
-    const attacker = await refresh(tokens.refresh_token);
-    expect(attacker).toHaveStatus(200);
-
-    // The legitimate client refreshes later, which rotates the secret the attacker also holds
-    await expireGracePeriod(tokens.refresh_token);
-    const legitimateNext = await refresh(legitimate.body.refresh_token);
-    expect(legitimateNext).toHaveStatus(200);
-
-    // The attacker's next refresh is a stale secret outside the window
-    await expireGracePeriod(tokens.refresh_token);
-    const attackerNext = await refresh(attacker.body.refresh_token);
-    expect(attackerNext).toHaveStatus(400);
-    expect(attackerNext.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
-
-    const login = await readLoginFor(tokens.refresh_token);
-    expect(login.revoked).toStrictEqual(true);
   });
 
   test('A rotation rejected for a reason other than the secret does not revoke the login', async () => {

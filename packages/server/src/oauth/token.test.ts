@@ -1444,7 +1444,8 @@ describe('OAuth2 Token', () => {
     expect(res4.body.access_token).toBeDefined();
     expect(res4.body.refresh_token).toBeDefined();
 
-    // 5) Verify that the first refresh token is invalid, and that replaying it revokes the login
+    // 5) Verify that the first refresh token is invalid, and that replaying it revokes the login.
+    //    It is older than the previous token, so the grace period does not apply.
     const res5 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'refresh_token',
       refresh_token: res2.body.refresh_token,
