@@ -425,13 +425,15 @@ export async function reloadCronBots(shardId: string): Promise<void> {
     await queue.obliterate({ force: true });
 
     const systemRepo = getShardSystemRepo(shardId);
+    // Many schedules share a project, so each project is read once per reload
+    const projects = new Map<string, WithId<Project>>();
 
     await systemRepo.processAllResources<Bot>(
       { resourceType: 'Bot', count: MAX_BOTS_PER_PAGE },
       async (bot) => {
         // If the bot has a cron, then add a scheduler for it
         if (bot.cronString || bot.cronTiming) {
-          await reloadCronJob(systemRepo, bot);
+          await reloadCronJob(systemRepo, projects, bot);
         }
       },
       { delayBetweenPagesMs: 1000 }
@@ -443,7 +445,7 @@ export async function reloadCronBots(shardId: string): Promise<void> {
       { resourceType: 'Cron', count: MAX_BOTS_PER_PAGE },
       async (cron) => {
         if (cron.active) {
-          await reloadCronJob(systemRepo, cron);
+          await reloadCronJob(systemRepo, projects, cron);
         }
       },
       { delayBetweenPagesMs: 1000 }
@@ -451,9 +453,18 @@ export async function reloadCronBots(shardId: string): Promise<void> {
   }
 }
 
-async function reloadCronJob(systemRepo: Repository, resource: WithId<Bot> | WithId<Cron>): Promise<void> {
+async function reloadCronJob(
+  systemRepo: Repository,
+  projects: Map<string, WithId<Project>>,
+  resource: WithId<Bot> | WithId<Cron>
+): Promise<void> {
   try {
-    const project = await systemRepo.readResource<Project>('Project', resource.meta?.project as string);
+    const projectId = resource.meta?.project as string;
+    let project = projects.get(projectId);
+    if (!project) {
+      project = await systemRepo.readResource<Project>('Project', projectId);
+      projects.set(projectId, project);
+    }
     // We pass `undefined` as previous version to make sure that the latest cron string is used
     await addCronJobs(resource, undefined, { project, interaction: 'update' });
   } catch (err) {

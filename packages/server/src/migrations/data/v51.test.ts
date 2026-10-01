@@ -5,7 +5,7 @@ import type { Queue } from 'bullmq';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getShardSystemRepo } from '../../fhir/repo';
+import { getShardSystemRepo, Repository } from '../../fhir/repo';
 import { GLOBAL_SHARD_ID } from '../../fhir/sharding';
 import { globalLogger } from '../../logger';
 import { createTestProject, withTestContext } from '../../test.setup';
@@ -26,8 +26,9 @@ describe('Post-deploy migration v51', () => {
 
   test('Re-registers cron schedules with current job data, skipping unreadable ones', () =>
     withTestContext(async () => {
-      const { repo } = await createTestProject({ withRepo: true });
+      const { project, repo } = await createTestProject({ withRepo: true });
       const bot = await repo.createResource<Bot>({ resourceType: 'Bot', cronString: '*/20 * * * *' });
+      const sameProjectBot = await repo.createResource<Bot>({ resourceType: 'Bot', cronString: '0 * * * *' });
 
       // A bot whose project is gone can't be re-registered, but must not stop the rest of the reload
       const orphanedBot = await systemRepo.createResource<Bot>({
@@ -48,6 +49,7 @@ describe('Post-deploy migration v51', () => {
       const obliterateSpy = vi.spyOn(cronQueue, 'obliterate');
       const upsertJobSchedulerSpy = vi.spyOn(cronQueue, 'upsertJobScheduler');
       const warnSpy = vi.spyOn(globalLogger, 'warn');
+      const readResourceSpy = vi.spyOn(Repository.prototype, 'readResource');
 
       const result = await migration.run(systemRepo, undefined, migration.prepareJobData(asyncJob));
 
@@ -58,6 +60,12 @@ describe('Post-deploy migration v51', () => {
         { pattern: '*/20 * * * *' },
         { data: { resourceType: 'Bot', botId: bot.id, target: expect.objectContaining({ kind: 'project' }) } }
       );
+      expect(upsertJobSchedulerSpy).toHaveBeenCalledWith(
+        sameProjectBot.id,
+        { pattern: '0 * * * *' },
+        expect.any(Object)
+      );
+      expect(readResourceSpy.mock.calls.filter(([, id]) => id === project.id)).toHaveLength(1);
       expect(warnSpy).toHaveBeenCalledWith(
         'Failed to reload cron job',
         expect.objectContaining({ botId: orphanedBot.id })
