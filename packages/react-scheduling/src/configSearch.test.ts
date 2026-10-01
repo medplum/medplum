@@ -55,7 +55,7 @@ describe('searchConfigurableServices', () => {
   test('returns deactivated and unconfigured visit types, which booking leaves out', async () => {
     const medplum = await setupClient([configured, unconfigured, deactivated]);
 
-    const { services, complete } = await searchConfigurableServices(medplum);
+    const { items: services, complete } = await searchConfigurableServices(medplum);
 
     expect(services.map((service) => service.id).sort()).toEqual(['configured', 'deactivated', 'unconfigured']);
     expect(complete).toBe(true);
@@ -76,7 +76,7 @@ describe('searchConfigurableServices', () => {
       searchset([configured, unconfigured], 'https://example.com/fhir/R4/HealthcareService?_offset=1000')
     );
 
-    const { services, complete } = await searchConfigurableServices(medplum);
+    const { items: services, complete } = await searchConfigurableServices(medplum);
 
     expect(services.map((service) => service.id)).toEqual(['configured', 'unconfigured']);
     expect(complete).toBe(false);
@@ -144,7 +144,7 @@ describe('searchConfigurableActors', () => {
   test('lists every provider, with a Schedule or without, turned off or not', async () => {
     const medplum = await setupClient([drAdams, drBaker, makeSchedule('adams', ['Practitioner/dr-adams'], false)]);
 
-    const { actors, complete } = await searchConfigurableActors(medplum, 'Practitioner');
+    const { items: actors, complete } = await searchConfigurableActors(medplum, 'Practitioner');
 
     expect(actors.map((actor) => [actor.resource.id, scheduleIds(actor)])).toEqual([
       ['dr-adams', ['adams']],
@@ -162,7 +162,7 @@ describe('searchConfigurableActors', () => {
       makeSchedule('second', ['Practitioner/dr-adams']),
     ]);
 
-    const { actors } = await searchConfigurableActors(medplum, 'Practitioner');
+    const { items: actors } = await searchConfigurableActors(medplum, 'Practitioner');
 
     expect(scheduleIds(actors[0]).sort()).toEqual(['first', 'second']);
   });
@@ -177,7 +177,7 @@ describe('searchConfigurableActors', () => {
       makeSchedule('annex', ['Location/facility-scheduled']),
     ]);
 
-    const { actors } = await searchConfigurableActors(medplum, 'Location');
+    const { items: actors } = await searchConfigurableActors(medplum, 'Location');
 
     expect(actors.map((actor) => actor.resource.id)).toEqual(['facility-scheduled', 'bed-1', 'room-1']);
     expect(querySentTo(medplum)).toEqual({ _sort: 'name', _count: '1000', _revinclude: 'Schedule:actor' });
@@ -186,7 +186,7 @@ describe('searchConfigurableActors', () => {
   test('lists devices, including retired ones', async () => {
     const medplum = await setupClient([ultrasound, makeSchedule('us', ['Device/ultrasound'])]);
 
-    const { actors } = await searchConfigurableActors(medplum, 'Device');
+    const { items: actors } = await searchConfigurableActors(medplum, 'Device');
 
     expect(actors.map((actor) => [actor.resource.id, scheduleIds(actor)])).toEqual([['ultrasound', ['us']]]);
     expect(querySentTo(medplum)).toEqual({ _sort: 'device-name', _count: '1000', _revinclude: 'Schedule:actor' });
@@ -201,7 +201,7 @@ describe('searchConfigurableActors', () => {
       )
     );
 
-    const { actors, complete } = await searchConfigurableActors(medplum, 'Practitioner');
+    const { items: actors, complete } = await searchConfigurableActors(medplum, 'Practitioner');
 
     expect(actors.map((actor) => [actor.resource.id, scheduleIds(actor)])).toEqual([['dr-adams', ['a']]]);
     expect(complete).toBe(false);

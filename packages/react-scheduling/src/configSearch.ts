@@ -20,7 +20,7 @@ export interface ConfigSearchOptions {
 
 export interface ConfigurableServicesResult {
   /** The visit types found, by name. */
-  readonly services: WithId<HealthcareService>[];
+  readonly items: WithId<HealthcareService>[];
   /** False when the project holds more than one page, so this is a prefix of it rather than all of it. */
   readonly complete: boolean;
 }
@@ -38,7 +38,7 @@ export interface ConfigurableActor<T extends ConfigurableActorResource = Configu
 /** Actor resources which are configurable in the scheduling system. */
 export interface ConfigurableActorsResult<T extends ConfigurableActorResource = ConfigurableActorResource> {
   /** The actors found, by name. */
-  readonly actors: ConfigurableActor<T>[];
+  readonly items: ConfigurableActor<T>[];
   /** False when the project holds more than one page. */
   readonly complete: boolean;
 }
@@ -73,7 +73,7 @@ export async function searchConfigurableServices(
   );
   // A cached result resolves whether or not the signal has since aborted.
   options.signal?.throwIfAborted();
-  return { services, complete: !hasNextPage(services.bundle) };
+  return { items: services, complete: !hasNextPage(services.bundle) };
 }
 
 /**
@@ -109,7 +109,7 @@ export async function searchConfigurableActors<K extends BookableActorType>(
   const found = actors
     .map((resource) => ({ resource, schedules: byActor.get(`${resource.resourceType}/${resource.id}`) ?? [] }))
     .filter(isConfigurable);
-  return { actors: sortByName(found), complete: !hasNextPage(page.bundle) };
+  return { items: sortByName(found), complete: !hasNextPage(page.bundle) };
 }
 
 // Rooms are the Locations typed as a room or a bed, and any Location with a calendar, which booking lists as a

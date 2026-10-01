@@ -41,9 +41,9 @@ function StoredActor(props: { readonly resourceType: BookableActorType; readonly
   useEffect(() => {
     Promise.all([searchConfigurableActors(medplum, resourceType, {}), searchConfigurableServices(medplum, {})])
       .then(([actors, services]) => {
-        const actor = actors.actors.find((found) => found.resource.id === id);
+        const actor = actors.items.find((found) => found.resource.id === id);
         if (actor) {
-          setLoaded({ actor, services: services.services });
+          setLoaded({ actor, services: services.items });
         }
       })
       .catch(console.error);

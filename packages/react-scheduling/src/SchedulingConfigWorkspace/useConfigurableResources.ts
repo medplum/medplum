@@ -58,20 +58,10 @@ export function useConfigurableResources(): ConfigurableResources {
           (error: unknown) => !controller.signal.aborted && set({ items: [], complete: true, loading: false, error })
         );
     }
-    settle(
-      searchConfigurableServices(medplum, options).then((result) => ({
-        items: result.services,
-        complete: result.complete,
-      })),
-      setServices
-    );
+    settle(searchConfigurableServices(medplum, options), setServices);
     for (const resourceType of BOOKABLE_ACTOR_TYPES) {
-      settle(
-        searchConfigurableActors(medplum, resourceType, options).then((result) => ({
-          items: result.actors,
-          complete: result.complete,
-        })),
-        (list) => setActors((current) => ({ ...current, [resourceType]: list }))
+      settle(searchConfigurableActors(medplum, resourceType, options), (list) =>
+        setActors((current) => ({ ...current, [resourceType]: list }))
       );
     }
     return () => controller.abort();
