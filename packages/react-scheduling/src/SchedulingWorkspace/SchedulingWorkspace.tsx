@@ -138,9 +138,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // Owned by `CalendarFilters`, which reports both whenever either changes. Held here
   // because the candidate search below is keyed on them.
-  const [initialFilters] = useState<CalendarFilterValues>(() =>
-    defaultLocation ? { location: defaultLocation } : NO_FILTERS
-  );
+  const initialFilters: CalendarFilterValues = defaultLocation ? { location: defaultLocation } : NO_FILTERS;
   const [filters, setFilters] = useState<CalendarFilterValues>(initialFilters);
   const { service: selectedService, location: selectedLocation } = filters;
 
