@@ -33,7 +33,6 @@ import type { AsyncAutocompleteOption } from '@medplum/react';
 import { CalendarDateInput, ResourceInput, ResourceName, ValueSetAutocomplete } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle, IconCalendarSearch, IconCheck } from '@tabler/icons-react';
-import dayjs from 'dayjs';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SchedulingActorValue } from '../actors';
@@ -609,7 +608,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                   label={formatMonth(month ?? new Date())}
                   date={month ?? new Date()}
                   minDate={new Date()}
-                  onChange={(value) => setMonth(dayjs(value).toDate())}
+                  onChange={setMonth}
                 />
               }
             />
