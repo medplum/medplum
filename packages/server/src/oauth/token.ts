@@ -463,10 +463,14 @@ export async function rotateLoginRefreshSecret(
   try {
     return await systemRepo.patchResource<Login>('Login', login.id, patch);
   } catch (err) {
-    // The patch is fixed in shape, so the only content it can be rejected over is the test
-    // operation. A connection loss or an exhausted retry says nothing about the secret.
+    // A 400 means the test operation failed, unless the presented secret is still current, in which
+    // case the patch was rejected for some other reason. That, like a connection loss or an
+    // exhausted retry, says nothing about reuse.
     if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 400) {
-      return undefined;
+      const current = await systemRepo.readResource<Login>('Login', login.id);
+      if (!timingSafeEqualStr(current.refreshSecret, expectedSecret)) {
+        return undefined;
+      }
     }
     throw err;
   }

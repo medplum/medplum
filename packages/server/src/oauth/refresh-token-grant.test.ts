@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, sleep } from '@medplum/core';
+import { badRequest, createReference, OperationOutcomeError, sleep } from '@medplum/core';
 import type { AccessPolicy, ClientApplication, Login, Project } from '@medplum/fhirtypes';
 import express from 'express';
 import { decodeJwt } from 'jose';
@@ -12,7 +12,7 @@ import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { rotateLoginRefreshSecret } from './token';
 
@@ -346,6 +346,25 @@ describe('Refresh token grant', () => {
 
     const login = await readLoginFor(tokens.refresh_token);
     expect(login.revoked).toStrictEqual(true);
+  });
+
+  test('A rotation rejected for a reason other than the secret does not revoke the login', async () => {
+    const tokens = await getTokens();
+    const patchSpy = vi
+      .spyOn(Repository.prototype, 'patchResource')
+      .mockRejectedValueOnce(new OperationOutcomeError(badRequest('Unrelated validation failure')));
+
+    const failed = await refresh(tokens.refresh_token);
+    patchSpy.mockRestore();
+    expect(failed.status).not.toStrictEqual(200);
+    expect(failed.body.error_description).not.toStrictEqual('Token revoked');
+
+    const login = await readLoginFor(tokens.refresh_token);
+    expect(login.revoked).toBeUndefined();
+
+    // The same token still works once the failure clears
+    const retry = await refresh(tokens.refresh_token);
+    expect(retry).toHaveStatus(200);
   });
 
   /*
