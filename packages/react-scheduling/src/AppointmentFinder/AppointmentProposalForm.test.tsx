@@ -3,6 +3,7 @@
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   CPT,
+  createReference,
   extractServiceTypeReferences,
   getAppointmentSite,
   getExtensionValue,
@@ -1290,8 +1291,11 @@ describe('AppointmentProposalForm', () => {
   });
 
   describe('Booking the appointment', () => {
-    test('Records the site the booking was made at', async () => {
-      setup(medplum, { defaultLocation: MainClinic });
+    test.each([
+      ['the Location', MainClinic],
+      ['a reference to it', createReference(MainClinic)],
+    ])('Records the site the booking was made at, given %s', async (_, defaultLocation) => {
+      setup(medplum, { defaultLocation });
       await fillBooking();
       await clickBook();
 
