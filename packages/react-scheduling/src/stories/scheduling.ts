@@ -758,6 +758,18 @@ export const DrNguyenSchedule = setScheduleAvailability(
   [{ daysOfWeek: ['tue', 'thu'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
 ) as WithId<Schedule>;
 
+/** A provider on leave: still active, with the Schedule switched off until they return. */
+export const DrReyesPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-reyes',
+  name: [{ given: ['Sofia'], family: 'Reyes', prefix: ['Dr.'] }],
+};
+
+export const DrReyesSchedule: WithId<Schedule> = {
+  ...buildSchedule('schedule-dr-reyes', 'Practitioner/dr-reyes', 'Dr. Sofia Reyes'),
+  active: false,
+};
+
 /** Retired, so it is hidden until inactive resources are shown. Its Schedule is switched off too. */
 export const Ultrasound3Device: WithId<Device> = {
   resourceType: 'Device',
@@ -796,7 +808,8 @@ export const DrPatelSchedule = buildSchedule('schedule-dr-patel', 'Practitioner/
  * The clinic as an administrator configuring it sees it: `SchedulingFixtures`, with its visit types filled out
  * the way a clinic would set them, more visit types covering service facilities, split hours, and group
  * capacity, and what booking hides. Visit types that have no duration or are turned off, a provider who left, a
- * retired device, a room with no Schedule, and a provider with no time zone.
+ * provider on leave whose Schedule is switched off, a retired device, a room with no Schedule, and a provider with
+ * no time zone.
  *
  * Kept out of `SchedulingFixtures`, whose tests read the whole list.
  */
@@ -810,6 +823,8 @@ export const ConfigFixtures = [
   DrLeeSchedule,
   DrNguyenPractitioner,
   DrNguyenSchedule,
+  DrReyesPractitioner,
+  DrReyesSchedule,
   Ultrasound3Device,
   Ultrasound3Schedule,
   ExamRoomC,
