@@ -16,14 +16,13 @@ export interface ResourceList<T> {
   readonly loading: boolean;
   /** False when the project holds more than the one page read. */
   readonly complete: boolean;
-  /** Why the read failed, when it did. */
   readonly error?: unknown;
 }
 
 export interface ConfigurableResources {
   readonly services: ResourceList<WithId<HealthcareService>>;
   readonly actors: Record<BookableActorType, ResourceList<ConfigurableActor>>;
-  /** Puts resources the server now holds into the lists, in place of what they were loaded as. */
+  /** Puts saved visit types into the list in place of what was loaded. Other resources are ignored. */
   readonly store: (resources: readonly WithId<Resource>[]) => void;
 }
 

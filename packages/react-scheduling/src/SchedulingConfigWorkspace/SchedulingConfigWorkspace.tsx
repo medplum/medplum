@@ -40,7 +40,7 @@ const ACTOR_SECTIONS: readonly ActorSectionConfig[] = [
 
 /**
  * Where an admin sets up scheduling: every visit type, provider, room, and device listed down the side, and the
- * one picked edited in place beside it. The configuration counterpart to `SchedulingWorkspace`, which books.
+ * one picked opened beside it. The configuration counterpart to `SchedulingWorkspace`, which books.
  *
  * It fetches its own resources, including what booking hides: visit types that are turned off or have no
  * duration, and actors that are turned off or have no calendar yet. Nothing is written until the page's Save,
