@@ -27,6 +27,11 @@ export interface ScriptSurePracticeContextValue {
   readonly loading: boolean;
 }
 
+export interface ScriptSurePracticeProviderProps {
+  /** Child nodes rendered within the provider. */
+  readonly children: ReactNode;
+}
+
 const ScriptSurePracticeContext = createContext<ScriptSurePracticeContextValue>({
   practices: [],
   selectedOrganizationId: undefined,
@@ -75,10 +80,9 @@ function resolvePractitionerId(profile: Practitioner | PractitionerRole | undefi
  * selection is restored only when it is still in the affiliation set.
  *
  * @param props - Component props.
- * @param props.children - Child nodes rendered within the provider.
  * @returns The context provider element.
  */
-export function ScriptSurePracticeProvider(props: { readonly children: ReactNode }): JSX.Element {
+export function ScriptSurePracticeProvider(props: ScriptSurePracticeProviderProps): JSX.Element {
   const medplum = useMedplum();
   const [practices, setPractices] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
