@@ -8,8 +8,7 @@ import {
   setHealthcareServiceSchedulingParameterValues,
   setScheduleSchedulingParameterValues,
 } from '../parameterValues';
-import { blankWeeklyAvailability } from '../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
-import { summarizeOffering, summarizeWeek } from './offeringSummary';
+import { summarizeOffering } from './offeringSummary';
 
 const initialVisit = setHealthcareServiceSchedulingParameterValues(
   {
@@ -32,25 +31,16 @@ describe('summarizeOffering', () => {
       [{ daysOfWeek: ['tue', 'thu'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
     );
 
-    expect(summarizeOffering(initialVisit, overriding)).toBe('45 min · Tue, Thu 8:00 AM–12:00 PM');
+    expect(summarizeOffering(initialVisit, overriding)).toBe('45 min · Custom hours');
+  });
+
+  test("a Schedule that sets no hours of its own follows the visit type's", () => {
+    expect(summarizeOffering(initialVisit, schedule)).toBe("60 min · Visit type's default hours");
   });
 
   test('says when there is no duration or no hours', () => {
     const bare: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'bare', name: 'Walk-in' };
 
-    expect(summarizeOffering(bare, schedule)).toBe('No duration · Any time (no hours set)');
-  });
-});
-
-describe('summarizeWeek', () => {
-  test('groups the days that share hours, and collapses runs of days', () => {
-    const weekly = blankWeeklyAvailability();
-    for (const day of ['mon', 'tue', 'wed'] as const) {
-      weekly[day] = { available: true, ranges: [{ start: 540, end: 1020 }] };
-    }
-    weekly.sat = { available: true, ranges: [{ start: 540, end: 720 }] };
-
-    expect(summarizeWeek(weekly)).toBe('Mon–Wed 9:00 AM–5:00 PM; Sat 9:00 AM–12:00 PM');
-    expect(summarizeWeek(blankWeeklyAvailability())).toBe('No hours');
+    expect(summarizeOffering(bare, schedule)).toBe('No duration · No hours set');
   });
 });

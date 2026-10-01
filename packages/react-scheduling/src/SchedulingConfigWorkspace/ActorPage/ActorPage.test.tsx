@@ -72,9 +72,9 @@ describe('ActorPage', () => {
       'Visit types offered',
     ]);
     expect(screen.getByText('Initial Visit')).toBeInTheDocument();
-    expect(screen.getByText('60 min · Mon 9:00 AM–5:00 PM')).toBeInTheDocument();
+    expect(screen.getByText("60 min · Visit type's default hours")).toBeInTheDocument();
     expect(screen.getByText('Follow-up')).toBeInTheDocument();
-    expect(screen.getByText('30 min · Any time (no hours set)')).toBeInTheDocument();
+    expect(screen.getByText('30 min · No hours set')).toBeInTheDocument();
   });
 
   test('a room with no Schedule offers nothing yet', async () => {
