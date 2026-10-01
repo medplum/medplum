@@ -23,7 +23,7 @@ import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type { SystemRepository } from '../fhir/repo';
-import { getProjectSystemRepo, Repository } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from '../fhir/repo';
 import {
   addTestUser,
   createTestProject,
@@ -481,6 +481,44 @@ describe('OAuth2 Token', () => {
 
     const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`).send();
     expect(res2).toHaveStatus(401);
+  });
+
+  test('Client credentials on project-scoped URL uses membership for that project', async () => {
+    const { client, project: homeProject } = await createTestProject({ withClient: true });
+    const { project: otherProject } = await createTestProject();
+    await withTestContext(() =>
+      getGlobalSystemRepo().createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(otherProject),
+        user: createReference(client),
+        profile: createReference(client),
+      })
+    );
+
+    for (const target of [homeProject, otherProject]) {
+      const res = await request(app).post(`/projects/${target.id}/oauth2/token`).type('form').send({
+        grant_type: 'client_credentials',
+        client_id: client.id,
+        client_secret: client.secret,
+      });
+      expect(res).toHaveStatus(200);
+      expect(res.body.project.reference).toBe(getReferenceString(target));
+    }
+
+    const basicAuth = 'Basic ' + encodeBase64(client.id + ':' + client.secret);
+    const res2 = await request(app)
+      .get(`/projects/${otherProject.id}/fhir/R4/Patient`)
+      .set('Authorization', basicAuth)
+      .send();
+    expect(res2).toHaveStatus(200);
+
+    const res3 = await request(app).post(`/projects/${randomUUID()}/oauth2/token`).type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res3).toHaveStatus(400);
+    expect(res3.body.error_description).toBe('Invalid client');
   });
 
   test('Client credentials IP address restriction', async () => {
