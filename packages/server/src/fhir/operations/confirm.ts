@@ -1,13 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, extractServiceTypeReferences, flatMapFilter, OperationOutcomeError } from '@medplum/core';
+import type { Filter } from '@medplum/core';
+import {
+  allOk,
+  badRequest,
+  DEFAULT_MAX_SEARCH_COUNT,
+  extractServiceTypeReferences,
+  flatMapFilter,
+  getIdentifier,
+  OperationOutcomeError,
+  Operator,
+  RecurringAppointmentSeriesIdentifierSystem,
+  serverError,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Appointment, Resource, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import type { Repository } from '../repo';
 import { makeOperationDefinition } from './definitions';
-import { buildOutputParameters } from './utils/parameters';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { assertAllLoaded } from './utils/scheduling';
 
 const confirmOperation = makeOperationDefinition(
@@ -15,9 +27,19 @@ const confirmOperation = makeOperationDefinition(
   {
     name: 'confirm',
     code: 'confirm',
-    parameter: [{ use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' }],
+    parameter: [
+      { use: 'in', name: 'occurrences', type: 'code', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
+    ],
   }
 );
+
+// Which occurrences of a recurring series to confirm, as a calendar asks when changing one event of many.
+const OCCURRENCES = ['this', 'this-and-following', 'all'];
+
+type ConfirmParameters = {
+  occurrences?: string;
+};
 
 /**
  * Confirms one held Appointment, marking it "booked" and its `busy-tentative` Slots "busy".
@@ -82,7 +104,8 @@ async function confirmAppointment(txRepo: Repository, appointment: Appointment):
 /**
  * Handles HTTP requests for the Appointment $confirm operation.
  *
- * Marks an Appointment created via `$hold` as "booked".
+ * Marks an Appointment created via `$hold` as "booked". With `occurrences`, also confirms the
+ * pending occurrences of its recurring series that follow it, or all of them.
  *
  * Endpoints:
  *   [fhir base]/Appointment/:id/$confirm
@@ -93,6 +116,13 @@ async function confirmAppointment(txRepo: Repository, appointment: Appointment):
  */
 export async function appointmentConfirmHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
+  const params = parseInputParameters<ConfirmParameters>(confirmOperation, req);
+  const occurrences = params.occurrences ?? 'this';
+  if (!OCCURRENCES.includes(occurrences)) {
+    throw new OperationOutcomeError(
+      badRequest(`occurrences must be one of ${OCCURRENCES.join(', ')}`, 'Parameters.occurrences')
+    );
+  }
   const appointmentId = req.params.id;
   const updatedResources = await ctx.repo.withTransaction(
     async (txRepo) => {
@@ -102,7 +132,62 @@ export async function appointmentConfirmHandler(req: FhirRequest): Promise<FhirR
           badRequest(`Appointment cannot be confirmed in '${appointment.status}' status`)
         );
       }
-      return confirmAppointment(txRepo, appointment);
+      if (occurrences === 'this') {
+        return confirmAppointment(txRepo, appointment);
+      }
+      const seriesId = getIdentifier(appointment, RecurringAppointmentSeriesIdentifierSystem);
+      if (!seriesId) {
+        throw new OperationOutcomeError(
+          badRequest('Appointment is not part of a recurring series', 'Parameters.occurrences')
+        );
+      }
+      // These would change the identifier search below rather than match themselves.
+      if (/[,\\|$]/.test(seriesId) || seriesId.trim() !== seriesId) {
+        throw new OperationOutcomeError(
+          badRequest(
+            'A series identifier with a comma, backslash, pipe, dollar sign, or surrounding whitespace cannot be searched'
+          )
+        );
+      }
+
+      // Having passed its status check, the Appointment is among the occurrences this finds.
+      const filters: Filter[] = [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: `${RecurringAppointmentSeriesIdentifierSystem}|${seriesId}`,
+        },
+        // Occurrences already booked or cancelled are left alone.
+        { code: 'status', operator: Operator.EQUALS, value: 'pending,proposed' },
+      ];
+      if (occurrences === 'this-and-following') {
+        if (!appointment.start) {
+          throw new OperationOutcomeError(
+            badRequest('An Appointment without a start has no following occurrences', 'Parameters.occurrences')
+          );
+        }
+        // Following by start rather than recurrenceId, which is a searchable/sortable parameter.
+        filters.push({ code: 'date', operator: Operator.GREATER_THAN_OR_EQUALS, value: appointment.start });
+      }
+      const series = await txRepo.searchResources<Appointment>({
+        resourceType: 'Appointment',
+        // A series isn't capped at $book's occurrence count: $book can add sessions to one.
+        count: DEFAULT_MAX_SEARCH_COUNT,
+        filters,
+        sortRules: [{ code: 'date' }],
+      });
+
+      if (!series.some((occurrence) => occurrence.id === appointment.id)) {
+        throw new OperationOutcomeError(
+          serverError(new Error('Search for the series missed the Appointment confirmed'))
+        );
+      }
+
+      const updated: Resource[] = [];
+      for (const occurrence of series) {
+        updated.push(...(await confirmAppointment(txRepo, occurrence)));
+      }
+      return updated;
     },
     {
       serializable: true,

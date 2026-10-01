@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, isDefined, isResource, toServiceTypeCodeableConcepts } from '@medplum/core';
+import {
+  createReference,
+  isDefined,
+  isResource,
+  RecurringAppointmentSeriesIdentifierSystem,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type {
   Appointment,
   Bundle,
@@ -448,5 +454,89 @@ describe('Appointment/:id/$confirm', () => {
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', details: { text: 'Loading slots failed' } }],
     });
+  });
+
+  test('Returns 400 for occurrences=all on an appointment outside a series', async () => {
+    const appointment = await makeAppointment('pending', [await makeSlot('busy-tentative')]);
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: 'all' }] });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toEqual('Appointment is not part of a recurring series');
+    expect(response.body.issue[0].expression).toEqual(['Parameters.occurrences']);
+    expect((await systemRepo.readResource<Appointment>('Appointment', appointment.id)).status).toBe('pending');
+  });
+
+  test('Returns 400 for an unknown occurrences', async () => {
+    const appointment = await makeAppointment('pending', [await makeSlot('busy-tentative')]);
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: 'every-other' }] });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].expression).toEqual(['Parameters.occurrences']);
+    expect((await systemRepo.readResource<Appointment>('Appointment', appointment.id)).status).toBe('pending');
+  });
+
+  test('Returns 400 for occurrences=this-and-following on an appointment without a start', async () => {
+    const appointment = await systemRepo.createResource<Appointment>({
+      resourceType: 'Appointment',
+      status: 'proposed',
+      identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'no-start-series' }],
+      participant: [{ actor: createReference(practitioner), status: 'accepted' }],
+      meta: { project: project.project.id },
+    });
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: 'this-and-following' }] });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].expression).toEqual(['Parameters.occurrences']);
+  });
+
+  test('Returns 400 for occurrences=all on a series identifier the search would misread', async () => {
+    const appointment = await systemRepo.createResource<Appointment>({
+      resourceType: 'Appointment',
+      status: 'pending',
+      start: '2026-05-15T14:00:00Z',
+      end: '2026-05-15T15:00:00Z',
+      identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'one,two' }],
+      participant: [{ actor: createReference(practitioner), status: 'accepted' }],
+      slot: [createReference(await makeSlot('busy-tentative'))],
+      meta: { project: project.project.id },
+    });
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: 'all' }] });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toContain('cannot be searched');
+    expect((await systemRepo.readResource<Appointment>('Appointment', appointment.id)).status).toBe('pending');
+  });
+
+  test('Succeeds as a batch entry without a resource', async () => {
+    const appointment = await makeAppointment('pending', [await makeSlot('busy-tentative')]);
+
+    const response = await request
+      .post('/fhir/R4')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [{ request: { method: 'POST', url: `Appointment/${appointment.id}/$confirm` } }],
+      });
+
+    expect(response).toHaveStatus(200);
+    expect((response.body as Bundle).entry?.[0]?.response?.status).toBe('200');
+    expect((await systemRepo.readResource<Appointment>('Appointment', appointment.id)).status).toBe('booked');
   });
 });
