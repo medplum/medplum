@@ -739,7 +739,7 @@ export async function checkWebSocketSubscriptionLimit(project: WithId<Project>, 
   const maxUserWsSubs: number =
     project.systemSetting?.find((setting) => setting.name === 'maxUserWebSocketSubscriptions')?.valueInteger ??
     // We know this is defined in defaults so this is safe to cast
-    (getConfig().defaultMaxUserWebSocketSubscriptions);
+    getConfig().defaultMaxUserWebSocketSubscriptions;
   const userSubCount = await getUserActiveWebSocketSubscriptionCount(authorRef);
   if (userSubCount >= maxUserWsSubs) {
     throw new OperationOutcomeError(
