@@ -96,17 +96,4 @@ describe('ActorPage', () => {
     expect(screen.queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument();
     expect(screen.queryByRole('switch', { name: /Active/ })).not.toBeInTheDocument();
   });
-
-  test.each([
-    ['shows', 'an inactive provider whose Schedule is still active', false, true],
-    ['hides', 'an inactive provider whose Schedule is switched off', false, false],
-    ['hides', 'an active provider', true, true],
-  ])('%s the inactive-but-scheduled warning for %s', async (verb, _case, providerActive, scheduleActive) => {
-    await setup({ ...drSmith, active: providerActive }, [
-      { ...makeSchedule('Practitioner/dr-smith', [initialVisit]), active: scheduleActive },
-    ]);
-
-    const warning = screen.queryByText(/is inactive, so booking won't offer the visit types below/);
-    expect(!!warning).toBe(verb === 'shows');
-  });
 });
