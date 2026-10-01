@@ -130,6 +130,16 @@ export const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/tim
 export const RecurrenceTemplateExtensionURI =
   'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceTemplate';
 
+/**
+ * R5's `Appointment.recurrenceId`, as the R4 cross-version extension: an occurrence's 1-based
+ * position (valuePositiveInt) in a series booked via `Appointment/$book`.
+ */
+export const RecurrenceIdExtensionURI =
+  'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceId';
+
+/** Identifier system for the `Appointment.identifier` shared by every occurrence of one booked recurring series. */
+export const RecurringAppointmentSeriesIdentifierSystem = 'https://medplum.com/fhir/recurring-appointment-series';
+
 export const DAYS_OF_WEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
 export type DayOfWeek = (typeof DAYS_OF_WEEK)[number];
