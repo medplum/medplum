@@ -87,7 +87,7 @@ export interface SchedulingWorkspaceProps {
 }
 
 /**
- * A data-coordination component pairing {@link CalendarsPanel} with {@link MultiCalendar}.
+ * A data-coordination component pairing `CalendarsPanel` with {@link MultiCalendar}.
  *
  * - Picks a color for each Schedule so that it can render consistently across
  *   those components.
@@ -96,7 +96,7 @@ export interface SchedulingWorkspaceProps {
  *   The form writes the booking and announces what it wrote, which is what puts the
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
- * - Shows what is booked: clicking an appointment opens {@link AppointmentDetails} in the
+ * - Shows what is booked: clicking an appointment opens `AppointmentDetails` in the
  *   same pane the booking form uses, describing the visit and offering to cancel or
  *   reschedule it.
  * - Highlights the time last chosen, wherever it was chosen: the click that opened the
