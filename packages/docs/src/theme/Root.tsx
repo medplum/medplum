@@ -46,17 +46,18 @@ export default function Root({ children }: { readonly children: ReactNode }): Re
   const history = useHistory();
 
   useEffect(() => {
-    const kapa = window.Kapa;
-    if (!kapa) {
+    if (!window.Kapa) {
       return undefined;
     }
     const onOpen = (): void => document.documentElement.setAttribute(OPEN_ATTRIBUTE, 'open');
     const onClose = (): void => document.documentElement.removeAttribute(OPEN_ATTRIBUTE);
-    kapa('onModalOpen', onOpen);
-    kapa('onModalClose', onClose);
+    window.Kapa('onModalOpen', onOpen);
+    window.Kapa('onModalClose', onClose);
     return () => {
-      kapa('onModalOpen', onOpen, 'remove');
-      kapa('onModalClose', onClose, 'remove');
+      // Read window.Kapa again: by now the widget bundle has usually replaced the queue shim, and
+      // removals sent to the shim would never reach the real listeners.
+      window.Kapa?.('onModalOpen', onOpen, 'remove');
+      window.Kapa?.('onModalClose', onClose, 'remove');
       onClose();
     };
   }, []);
