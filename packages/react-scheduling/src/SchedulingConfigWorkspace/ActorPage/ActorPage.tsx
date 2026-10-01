@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { Alert, Badge, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getDisplayString } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
@@ -34,6 +34,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
   const servicesById = useMemo(() => new Map(services.map((service) => [service.id, service])), [services]);
   const offered = getOfferedServices(schedule, servicesById);
+  const inactive = isActorInactive(resource);
 
   return (
     <Stack gap="lg">
@@ -43,13 +44,19 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         </Text>
         <Group gap="sm">
           <Title order={2}>{actorName}</Title>
-          {isActorInactive(resource) && (
+          {inactive && (
             <Badge variant="light" color="gray">
               Inactive
             </Badge>
           )}
         </Group>
       </Stack>
+
+      {inactive && schedule && schedule.active !== false && (
+        <Alert color="yellow">
+          {actorName} is inactive, but the Schedule is still active, so booking still offers the visit types below.
+        </Alert>
+      )}
 
       <ConfigSection title="General">
         <ActorGeneral resource={resource} />
