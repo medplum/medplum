@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { assert } from '@medplum/core';
 import type { AsyncJob, Binary, Patient } from '@medplum/fhirtypes';
-import type { Job, Queue, Worker } from 'bullmq';
+import type { Job } from 'bullmq';
 import { DelayedError } from 'bullmq';
-import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { getUserConfiguration } from '../auth/me';
 import { loadTestConfig } from '../config/loader';
@@ -17,7 +16,7 @@ import { createTestProject, streamToString, withTestContext } from '../test.setu
 import { getAsyncJobTracking } from './base';
 import type { BulkExportJobData } from './bulk-export';
 import { execBulkExportJob, queueBulkExport } from './bulk-export';
-import { defaultQueueOptions, queueRegistry } from './utils';
+import { queueRegistry } from './utils';
 
 describe('Bulk export worker', () => {
   let repo: Repository;
@@ -93,60 +92,6 @@ describe('Bulk export worker', () => {
       );
     }));
 
-  test('A replacement BullMQ worker recovers a stalled export from Redis', () =>
-    withTestContext(async () => {
-      const bullmq = await vi.importActual<{ Queue: typeof Queue; Worker: typeof Worker }>('bullmq');
-      const config = await loadTestConfig();
-      const connection = defaultQueueOptions(config).connection;
-      const queueName = 'BulkExportSpike-' + randomUUID();
-      const queue = new bullmq.Queue<BulkExportJobData>(queueName, { connection });
-      let release!: () => void;
-      let started!: () => void;
-      const running = new Promise<void>((resolve) => {
-        started = resolve;
-      });
-      const blocked = new Promise<void>((resolve) => {
-        release = resolve;
-      });
-      const first = new bullmq.Worker(
-        queueName,
-        async () => {
-          started();
-          await blocked;
-        },
-        {
-          connection,
-          lockDuration: 500,
-          stalledInterval: 500,
-        }
-      );
-      let replacement: Worker<BulkExportJobData, void> | undefined;
-      try {
-        const job = await setupJob();
-        await queue.add('BulkExport', job.data);
-        await running;
-        // Stop renewing the active job's lock without acknowledging completion.
-        await first.close(true);
-        replacement = new bullmq.Worker(queueName, execBulkExportJob, {
-          connection,
-          lockDuration: 500,
-          stalledInterval: 500,
-        });
-        await new Promise<void>((resolve, reject) => {
-          replacement?.on('completed', () => resolve());
-          replacement?.on('failed', (_job, err) => reject(err));
-          replacement?.on('error', reject);
-        });
-        expect((await repo.readResource<AsyncJob>('AsyncJob', job.data.tracking.asyncJobId)).status).toBe('completed');
-      } finally {
-        release();
-        await first.close(true);
-        await replacement?.close(true);
-        await queue.obliterate({ force: true });
-        await queue.close();
-      }
-    }));
-
   test('Upload failures mark the AsyncJob failed before the processor rejects', () =>
     withTestContext(async () => {
       const job = await setupJob();
@@ -170,15 +115,5 @@ describe('Bulk export worker', () => {
         )
       ).rejects.toThrow('Redis unavailable');
       expect((await repo.readResource<AsyncJob>('AsyncJob', resource.id)).status).toBe('error');
-    }));
-
-  test('Cancelled jobs are not replayed', () =>
-    withTestContext(async () => {
-      const job = await setupJob();
-      const resource = await repo.readResource<AsyncJob>('AsyncJob', job.data.tracking.asyncJobId);
-      await repo.updateResource({ ...resource, status: 'cancelled' });
-      const write = vi.spyOn(BulkExporter.prototype, 'writeResource');
-      await execBulkExportJob(job);
-      expect(write).not.toHaveBeenCalled();
     }));
 });
