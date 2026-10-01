@@ -40,7 +40,7 @@ const drSmith: WithId<Practitioner> = {
   name: [{ prefix: ['Dr.'], given: ['Jane'], family: 'Smith' }],
 };
 
-function calendar(actor: string, offered: WithId<HealthcareService>[]): Schedule {
+function makeSchedule(actor: string, offered: WithId<HealthcareService>[]): Schedule {
   return {
     resourceType: 'Schedule',
     id: `schedule-${actor.split('/')[1]}`,
@@ -65,7 +65,7 @@ async function setup(actor: ConfigurableActorResource, schedules: Schedule[] = [
 
 describe('ActorPage', () => {
   test("a provider's page shows General and Visit types, with every visit type's summary", async () => {
-    await setup(drSmith, [calendar('Practitioner/dr-smith', [initialVisit, followUp])]);
+    await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit, followUp])]);
 
     expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual([
       'General',
@@ -77,14 +77,14 @@ describe('ActorPage', () => {
     expect(screen.getByText('30 min · Any time (no hours set)')).toBeInTheDocument();
   });
 
-  test('a room with no calendar offers nothing yet', async () => {
+  test('a room with no Schedule offers nothing yet', async () => {
     await setup(room3);
 
     expect(screen.getByText('Room 3 offers no visit types yet.')).toBeInTheDocument();
   });
 
   test("a provider's name and status are read-only", async () => {
-    await setup({ ...drSmith, active: false }, [calendar('Practitioner/dr-smith', [initialVisit])]);
+    await setup({ ...drSmith, active: false }, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
 
     expect(screen.getAllByText('Inactive')).toHaveLength(2);
     expect(screen.queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument();

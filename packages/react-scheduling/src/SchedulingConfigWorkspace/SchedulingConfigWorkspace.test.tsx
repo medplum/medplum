@@ -197,7 +197,7 @@ describe('SchedulingConfigWorkspace', () => {
     expect(nameField()).toHaveValue('Ultrasound Imaging');
   });
 
-  test('lists each provider, room, and device once, whether or not it has a calendar, and no calendar as a row', async () => {
+  test('lists each provider, room, and device once, whether or not it has a Schedule, and no Schedule as a row', async () => {
     await setup();
 
     expect(within(section('Providers')).getAllByText('Dr. Maya Rivera')).toHaveLength(1);

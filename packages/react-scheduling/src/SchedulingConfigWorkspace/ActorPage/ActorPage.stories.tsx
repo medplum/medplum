@@ -61,7 +61,7 @@ function StoredActor(props: { readonly resourceType: BookableActorType; readonly
 
 /**
  * Dr. Linh Nguyen offers two visit types. Ultrasound Imaging follows the visit type in everything. Telehealth
- * Consult has a longer buffer after and custom hours on this calendar.
+ * Consult has a longer buffer after and custom hours on this Schedule.
  * @returns The story.
  */
 export const ProviderWithOverrides = (): JSX.Element => (
@@ -69,7 +69,7 @@ export const ProviderWithOverrides = (): JSX.Element => (
 );
 
 /**
- * Exam Room C has no calendar, so it offers nothing.
+ * Exam Room C has no Schedule, so it offers nothing.
  * @returns The story.
  */
-export const RoomWithNoCalendar = (): JSX.Element => <StoredActor resourceType="Location" id={ExamRoomC.id} />;
+export const RoomWithNoSchedule = (): JSX.Element => <StoredActor resourceType="Location" id={ExamRoomC.id} />;

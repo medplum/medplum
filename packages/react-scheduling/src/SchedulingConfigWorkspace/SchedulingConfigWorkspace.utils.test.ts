@@ -103,7 +103,7 @@ const drLeft: WithId<Practitioner> = {
   active: false,
 };
 
-function calendar(id: string, actor: string, offered: WithId<HealthcareService>[]): WithId<Schedule> {
+function makeSchedule(id: string, actor: string, offered: WithId<HealthcareService>[]): WithId<Schedule> {
   return {
     resourceType: 'Schedule',
     id,
@@ -133,9 +133,9 @@ describe('buildActorItems', () => {
 });
 
 describe('getOfferedServices', () => {
-  test('lists a visit type the calendar names by a versioned reference once', () => {
+  test('lists a visit type the Schedule names by a versioned reference once', () => {
     const versioned: WithId<Schedule> = {
-      ...calendar('s', 'Practitioner/dr-smith', []),
+      ...makeSchedule('s', 'Practitioner/dr-smith', []),
       serviceType: [
         {
           extension: [

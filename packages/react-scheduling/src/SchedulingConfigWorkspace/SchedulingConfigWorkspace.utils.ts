@@ -100,8 +100,8 @@ export function isActorInactive(resource: ConfigurableActorResource): boolean {
 }
 
 /**
- * The visit types a calendar offers, in the order it lists them. A visit type that isn't loaded is left out.
- * @param schedule - The calendar.
+ * The visit types a Schedule offers, in the order it lists them. A visit type that isn't loaded is left out.
+ * @param schedule - The Schedule.
  * @param servicesById - Every visit type loaded.
  * @returns The visit types it offers.
  */

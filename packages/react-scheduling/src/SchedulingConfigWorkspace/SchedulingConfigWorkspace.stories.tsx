@@ -33,7 +33,7 @@ function Workspace(): JSX.Element {
  * so it is offered at every one. Unconfigured Visit and Walk-in Clinic have no duration, so booking never offers
  * them, but they are listed here to be finished. Discontinued Consult, Dr. Hana Lee, and Ultrasound 3 are turned
  * off, so they are hidden until **Show inactive** is ticked under the filters button. Exam Room C is listed though
- * it has no calendar.
+ * it has no Schedule.
  *
  * Pick one to edit it in place. Switching to another with unsaved changes asks first. The **+** beside Visit
  * types starts a new one, which is listed once it is saved.

@@ -13,16 +13,16 @@ import { summarizeOffering } from '../offeringSummary';
 import { getOfferedServices, isActorInactive } from '../SchedulingConfigWorkspace.utils';
 
 export interface ActorPageProps {
-  /** The provider, room, or device, with its calendars as stored. The first calendar is the one shown. */
+  /** The provider, room, or device, with its Schedules as stored. The first Schedule is the one shown. */
   readonly actor: ConfigurableActor;
   /** Every visit type loaded. */
   readonly services: readonly WithId<HealthcareService>[];
 }
 
 /**
- * The page for one provider, room, or device: its own fields, and the visit types its calendar offers, each
+ * The page for one provider, room, or device: its own fields, and the visit types its Schedule offers, each
  * with a line saying how it is scheduled.
- * @param props - The actor and its calendars, and the visit types.
+ * @param props - The actor and its Schedules, and the visit types.
  * @returns The page.
  */
 export function ActorPage(props: ActorPageProps): JSX.Element {

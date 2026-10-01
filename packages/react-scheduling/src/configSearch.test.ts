@@ -167,7 +167,7 @@ describe('searchConfigurableActors', () => {
     expect(scheduleIds(actors[0]).sort()).toEqual(['first', 'second']);
   });
 
-  test('rooms are the Locations typed as a room or a bed, or holding a calendar, and not the other facilities', async () => {
+  test('rooms are the Locations typed as a room or a bed, or holding a Schedule, and not the other facilities', async () => {
     const medplum = await setupClient([
       room1,
       bed1,

@@ -112,7 +112,7 @@ export async function searchConfigurableActors<K extends BookableActorType>(
   return { actors: sortByName(found), complete: !hasNextPage(page.bundle) };
 }
 
-// Rooms are the Locations typed as a room or a bed, and any Location with a calendar, which booking lists as a
+// Rooms are the Locations typed as a room or a bed, and any Location with a Schedule, which booking lists as a
 // room whatever its type. Every other Location is a service facility, not an actor.
 function isConfigurable(actor: ConfigurableActor): boolean {
   if (actor.resource.resourceType !== 'Location') {

@@ -242,7 +242,7 @@ describe('flat scheduling parameters', () => {
 });
 
 describe('getEffectiveSchedulingParameterValues', () => {
-  const calendar: Schedule = { resourceType: 'Schedule', id: 'schedule-1', actor: [{ reference: 'Practitioner/123' }] };
+  const schedule: Schedule = { resourceType: 'Schedule', id: 'schedule-1', actor: [{ reference: 'Practitioner/123' }] };
 
   test('a service that sets nothing gets scheduling defaults, with no duration or timezone', () => {
     expect(getEffectiveSchedulingParameterValues(service)).toEqual({
@@ -255,9 +255,9 @@ describe('getEffectiveSchedulingParameterValues', () => {
     });
   });
 
-  test("a calendar's override beats the service, which beats the default", () => {
+  test("a Schedule's override beats the service, which beats the default", () => {
     const configured = setHealthcareServiceSchedulingParameterValues(service, { duration: 30, bufferAfter: 10 });
-    const overriding = setScheduleSchedulingParameterValues(calendar, configured, { bufferAfter: 20 });
+    const overriding = setScheduleSchedulingParameterValues(schedule, configured, { bufferAfter: 20 });
 
     expect(getEffectiveSchedulingParameterValues(configured, overriding)).toMatchObject({
       duration: 30,

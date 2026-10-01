@@ -22,12 +22,12 @@ const initialVisit = setHealthcareServiceSchedulingParameterValues(
   } satisfies WithId<HealthcareService>,
   { duration: 60 }
 );
-const calendar: Schedule = { resourceType: 'Schedule', actor: [{ reference: 'Practitioner/dr-smith' }] };
+const schedule: Schedule = { resourceType: 'Schedule', actor: [{ reference: 'Practitioner/dr-smith' }] };
 
 describe('summarizeOffering', () => {
-  test("a calendar's own duration and hours win", () => {
+  test("a Schedule's own duration and hours win", () => {
     const overriding = setScheduleAvailability(
-      setScheduleSchedulingParameterValues(calendar, initialVisit, { duration: 45 }),
+      setScheduleSchedulingParameterValues(schedule, initialVisit, { duration: 45 }),
       initialVisit,
       [{ daysOfWeek: ['tue', 'thu'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
     );
@@ -38,7 +38,7 @@ describe('summarizeOffering', () => {
   test('says when there is no duration or no hours', () => {
     const bare: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'bare', name: 'Walk-in' };
 
-    expect(summarizeOffering(bare, calendar)).toBe('No duration · Any time (no hours set)');
+    expect(summarizeOffering(bare, schedule)).toBe('No duration · Any time (no hours set)');
   });
 });
 

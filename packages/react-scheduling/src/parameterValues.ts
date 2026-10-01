@@ -197,11 +197,11 @@ export function getHealthcareServiceSchedulingParameterValues(service: Healthcar
 }
 
 /**
- * Resolves the scheduling parameters in effect for a HealthcareService, on a given calendar or on its own.
+ * Resolves the scheduling parameters in effect for a HealthcareService, on a given Schedule or on its own.
  * A parameter the Schedule sets for the service wins, then the service's own, then scheduling's default.
  *
  * `duration` and `timezone` come back undefined when nothing sets them, because neither has a default.
- * A calendar's `timezone` also falls back to its actor, which this does not read; `getSchedulingTimezone`
+ * A Schedule's `timezone` also falls back to its actor, which this does not read; `getSchedulingTimezone`
  * from `@medplum/core` does.
  * @param service - HealthcareService providing the parameters
  * @param schedule - Schedule that may override them for the service

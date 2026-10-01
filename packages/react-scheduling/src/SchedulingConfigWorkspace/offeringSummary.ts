@@ -22,9 +22,9 @@ const SHORT_DAYS: Record<DayOfWeek, string> = {
 };
 
 /**
- * One line saying how a visit type is scheduled on a calendar: the duration and the weekly hours in effect.
+ * One line saying how a Schedule offers a visit type: the duration and the weekly hours in effect.
  * @param service - The visit type.
- * @param schedule - The calendar offering it, whose overrides win.
+ * @param schedule - The Schedule offering it, whose overrides win.
  * @returns The summary, such as `30 min · Mon–Fri 9:00 AM–5:00 PM`.
  */
 export function summarizeOffering(service: WithId<HealthcareService>, schedule: Schedule): string {

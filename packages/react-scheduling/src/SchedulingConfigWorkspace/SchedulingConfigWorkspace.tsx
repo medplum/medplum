@@ -43,7 +43,7 @@ const ACTOR_SECTIONS: readonly ActorSectionConfig[] = [
  * one picked opened beside it. The configuration counterpart to `SchedulingWorkspace`, which books.
  *
  * It fetches its own resources, including what booking hides: visit types that are turned off or have no
- * duration, and actors that are turned off or have no calendar yet. Nothing is written until the page's Save,
+ * duration, and actors that are turned off or have no Schedule yet. Nothing is written until the page's Save,
  * and switching away from unsaved changes asks first.
  * @param props - Component props.
  * @returns The workspace.

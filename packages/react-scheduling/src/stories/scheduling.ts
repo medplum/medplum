@@ -721,7 +721,7 @@ const CONFIGURED_SERVICES = new Map<string, Resource>([
   [UltrasoundImagingService.id, ConfiguredUltrasoundService],
 ]);
 
-/** A provider who has left the practice, whose calendar nobody switched off. */
+/** A provider who has left the practice, whose Schedule nobody switched off. */
 export const DrLeePractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'dr-lee',
@@ -758,7 +758,7 @@ export const DrNguyenSchedule = setScheduleAvailability(
   [{ daysOfWeek: ['tue', 'thu'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
 ) as WithId<Schedule>;
 
-/** Retired, so it is hidden until inactive resources are shown. Its calendar is switched off too. */
+/** Retired, so it is hidden until inactive resources are shown. Its Schedule is switched off too. */
 export const Ultrasound3Device: WithId<Device> = {
   resourceType: 'Device',
   id: 'ultrasound-3',
@@ -771,7 +771,7 @@ export const Ultrasound3Schedule: WithId<Schedule> = {
   active: false,
 };
 
-/** A room with no calendar, so it offers nothing. */
+/** A room with no Schedule, so it offers nothing. */
 export const ExamRoomC: WithId<Location> = {
   resourceType: 'Location',
   id: 'exam-room-c',
@@ -796,7 +796,7 @@ export const DrPatelSchedule = buildSchedule('schedule-dr-patel', 'Practitioner/
  * The clinic as an administrator configuring it sees it: `SchedulingFixtures`, with its visit types filled out
  * the way a clinic would set them, more visit types covering service facilities, split hours, and group
  * capacity, and what booking hides. Visit types that have no duration or are turned off, a provider who left, a
- * retired device, a room with no calendar, and a provider with no time zone.
+ * retired device, a room with no Schedule, and a provider with no time zone.
  *
  * Kept out of `SchedulingFixtures`, whose tests read the whole list.
  */
