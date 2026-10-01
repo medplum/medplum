@@ -18,6 +18,7 @@ import type {
   Parameters,
   Patient,
   Project,
+  Reference,
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
@@ -287,7 +288,7 @@ function getResourceTypesByExportLevel(exportLevel: string): ResourceType[] {
   return getResourceTypes();
 }
 
-const unexportedResourceTypes = [
+const unexportedResourceTypes = new Set([
   'Binary',
   'CodeSystem',
   'SearchParameter',
@@ -296,10 +297,10 @@ const unexportedResourceTypes = [
   'BulkDataExport',
   'AsyncJob',
   'AuditEvent',
-];
+]);
 
 function canBeExported(resourceType: string): boolean {
-  return !unexportedResourceTypes.includes(resourceType) && !protectedResourceTypes.includes(resourceType);
+  return !unexportedResourceTypes.has(resourceType) && !protectedResourceTypes.includes(resourceType);
 }
 
 export async function groupExportResources(
@@ -309,34 +310,42 @@ export async function groupExportResources(
   group: Group,
   params?: PatientEverythingParameters
 ): Promise<void> {
-  // Read all patients in the group
-  if (group.member) {
-    for (const member of group.member) {
-      if (!member.entity?.reference) {
-        continue;
-      }
-      const [resourceType, memberId] = parseReference(member.entity);
-      let bundle;
-      let resource;
-      try {
-        if (resourceType === 'Patient') {
-          const patient = await repo.readResource<Patient>('Patient', memberId);
-          bundle = await getPatientEverything(repo, patient, params);
-        } else {
-          resource = await repo.readResource(resourceType, memberId);
-        }
-      } catch {
-        getLogger().warn('Unable to read patient for group export', {
-          reference: member.entity.reference,
-        });
-        continue;
-      }
-      if (bundle) {
-        await exporter.writeBundle(bundle);
-      } else if (resource) {
-        await exporter.writeResource(resource);
-      }
+  for (const member of group.member ?? EMPTY) {
+    if (!member.entity?.reference) {
+      continue;
+    }
+    const output = await readGroupMember(repo, member.entity, params);
+    if (output?.bundle) {
+      await exporter.writeBundle(output.bundle);
+    } else if (output?.resource) {
+      await exporter.writeResource(output.resource);
     }
   }
   await exporter.close(project);
+}
+
+/**
+ * Reads a group member for export: a Patient's everything bundle, or the resource itself.
+ * Read failures are logged and skipped; write failures stay with the caller so interruptions propagate.
+ * @param repo - The repository.
+ * @param entity - The member reference.
+ * @param params - The $everything parameters.
+ * @returns The member output, or undefined if it could not be read.
+ */
+async function readGroupMember(
+  repo: Repository,
+  entity: Reference,
+  params: PatientEverythingParameters | undefined
+): Promise<{ bundle?: Bundle<WithId<Resource>>; resource?: WithId<Resource> } | undefined> {
+  const [resourceType, memberId] = parseReference(entity);
+  try {
+    if (resourceType === 'Patient') {
+      const patient = await repo.readResource<Patient>('Patient', memberId);
+      return { bundle: await getPatientEverything(repo, patient, params) };
+    }
+    return { resource: await repo.readResource(resourceType, memberId) };
+  } catch {
+    getLogger().warn('Unable to read patient for group export', { reference: entity.reference });
+    return undefined;
+  }
 }
