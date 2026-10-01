@@ -57,6 +57,8 @@ There is also a new [scheduling decision guide](/docs/decision-guides/scheduling
 
 The [Provider App](https://provider.medplum.com) billing surface introduced in August became a complete setup flow ([roadmap](/blog/2026-roadmap#provider-application)):
 
+<img src="/img/blog/2026-09-provider-get-started-visit-billing.png" alt="Provider App get started checklist including an initial visit and billing setup" style={{maxHeight: '400px', maxWidth: '100%'}} />
+
 - **Billing providers** — A billing providers tab lists and edits the organizations and practitioners claims are rendered by. Saving a practitioner writes NPI and taxonomy and either points the active `PractitionerRole` at a billing organization or clears it so the practitioner bills individually. Individual billers with an incomplete address are flagged. An existing `Organization` can be added as a billing provider rather than re-entered
 - **Live registration check** — As an NPI is typed, the app looks it up against the claims processor and shows whether the provider is registered, unregistered, or the check failed, and the save button waits on the result. Existing providers take an edit path rather than a duplicate create. Provider contracts are checked too, so a claim is not built against a provider with no effective contract
 
@@ -68,9 +70,6 @@ The [Provider App](https://provider.medplum.com) billing surface introduced in A
 
 - **Diagnoses from lab orders** — When lab orders are submitted during an encounter, the diagnoses on the order are added to the encounter as conditions, so the chart and the claim agree without re-entry
 - **Encounter review** — A `ClinicalImpression` is created on review if the encounter does not have one, which matters for encounters created outside the Provider App
-
-<img src="/img/blog/2026-09-provider-get-started-visit-billing.png" alt="Provider App get started checklist including an initial visit and billing setup" style={{maxHeight: '400px', maxWidth: '100%'}} />
-
 - **Lab results display** — Leaf observations whose value is `DNR` (Do Not Report) are suppressed in `DiagnosticReportDisplay`, and `NoteDisplay` preserves line breaks and renders in monospace, so a microbiology antibiogram delivered as a pre-formatted note keeps its columns ([Finn Bergquist](https://github.com/finnbergquist))
 - **Polish** — Loading states in the timeline and patient summary, an encounter title overlap fix, and audio attachments play inline in the Medplum App ([Andy Stoneman](https://github.com/andystoneman))
 - **`PlanDefinition/$apply`** — Prefers the active version of a canonical definition when several versions exist
@@ -149,7 +148,6 @@ The Provider App work above rides on a set of [revenue cycle](/blog/2026-roadmap
 - **Operations** — A server config setting controls write-through cache behavior, a Super Admin schema version override, a copy-to-clipboard button on the DB stats output, and reentrant async batch processing by default with sync and async batches distinguished in telemetry
 - **Health check recovery** — `/healthcheck` reserves a database connection and reuses it so a saturated pool does not fail the check. If that connection dropped, every later check returned 500 until restart, and a load balancer would take the instance out of rotation while the server itself kept working. It now recovers ([Cody Ebberson](https://github.com/codyebberson))
 - **Managed Postgres** — Schema migration v117 no longer tries to create the `pgstattuple` extension, which blocked upgrades on managed Postgres without superuser privileges
-- **Data warehouse** — The DuckDB and Iceberg data warehouse module was removed from the open source server. Analytics workloads should use [Bulk FHIR export](/docs/api/fhir/operations/bulk-fhir), and the [analytics](/docs/analytics) docs were updated accordingly
 - **`Enterprise` resource** — A new [`Enterprise`](/docs/api/fhir/medplum/enterprise) resource type represents a group of projects managed together ([Maddy Li](https://github.com/maddyli))
 - **Email** — An incomplete project SMTP configuration returns 400 instead of 500 ([Darren Eam](https://github.com/deam65)), the SMTP options were [clarified in the docs](/docs/self-hosting/sendgrid), and the environment variable for requiring a verified email before project creation now works ([Cody Ebberson](https://github.com/codyebberson))
 - **Agent and subscriptions** — The [Agent](/docs/agent) upgrader names its log at spawn time rather than module load, so each upgrade attempt leaves its own evidence instead of overwriting the last. WebSocket subscription notifications now honor `AccessPolicy.hiddenFields`, which every other read path already applied ([Derrick Farris](https://github.com/ThatOneBro))
