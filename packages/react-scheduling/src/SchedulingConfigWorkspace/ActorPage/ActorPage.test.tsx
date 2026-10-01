@@ -83,6 +83,12 @@ describe('ActorPage', () => {
     expect(screen.getByText('Room 3 offers no visit types yet.')).toBeInTheDocument();
   });
 
+  test('a room with no status reads as active', async () => {
+    await setup({ ...room3, status: undefined });
+
+    expect(screen.getByText('Active')).toBeInTheDocument();
+  });
+
   test("a provider's name and status are read-only", async () => {
     await setup({ ...drSmith, active: false }, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
 

@@ -85,7 +85,7 @@ function ActorGeneral(props: { readonly resource: ConfigurableActorResource }): 
   if (resource.resourceType === 'Practitioner') {
     status = resource.active === false ? 'Inactive' : 'Active';
   } else {
-    status = resource.status ? resource.status.charAt(0).toUpperCase() + resource.status.slice(1) : 'Not set';
+    status = resource.status ? resource.status.charAt(0).toUpperCase() + resource.status.slice(1) : 'Active';
   }
   return (
     <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
