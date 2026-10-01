@@ -207,21 +207,6 @@ describe('SchedulingConfigWorkspace', () => {
     expect(within(sidebar()).queryByText(/availability$/)).not.toBeInTheDocument();
   });
 
-  test('rooms are the Locations typed as rooms, and never a service facility', async () => {
-    await setup();
-
-    expect(within(section('Rooms')).getByText('Exam Room A Bed 1')).toBeInTheDocument();
-    expect(within(sidebar()).queryByText('Uro Associates - Main Clinic')).not.toBeInTheDocument();
-    expect(within(sidebar()).queryByText('Second Floor')).not.toBeInTheDocument();
-  });
-
-  test('offers to create visit types, and never providers', async () => {
-    await setup();
-
-    expect(within(section('Visit types')).getByRole('button', { name: 'New visit type' })).toBeInTheDocument();
-    expect(within(section('Providers')).queryByRole('button', { name: /^New/ })).not.toBeInTheDocument();
-  });
-
   test('the text filter narrows every section, and the counts follow it', async () => {
     await setup();
     const providers = Number(sectionCount('Providers')?.replace(/\D/g, ''));

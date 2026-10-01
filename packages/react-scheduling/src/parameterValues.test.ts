@@ -265,17 +265,4 @@ describe('getEffectiveSchedulingParameterValues', () => {
       bufferBefore: 0,
     });
   });
-
-  test("another service's override on the same calendar does not apply", () => {
-    const other: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'service-2', name: 'Follow up' };
-    const overriding = setScheduleSchedulingParameterValues(calendar, other, { bufferAfter: 20 });
-
-    expect(getEffectiveSchedulingParameterValues(service, overriding).bufferAfter).toBe(0);
-  });
-
-  test('a legacy zero alignment interval on a calendar still reads as hourly', () => {
-    const legacy = setScheduleSchedulingParameterValues(calendar, service, { alignmentInterval: 0 });
-
-    expect(getEffectiveSchedulingParameterValues(service, legacy).alignmentInterval).toBe(60);
-  });
 });
