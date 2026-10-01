@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "5.1.42",
+  "version": "5.2.0",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -64,7 +64,7 @@
     "vitest": "4.1.11",
     "vitest-websocket-mock": "0.5.0"
   },
-  "packageManager": "npm@11.19.1",
+  "packageManager": "npm@11.19.1+sha512.cedb312b1b7f92421a02cfb68b4194e88f8346651dacd6acc5364a25ef5309d4a32b19616a1ff8aff865e7280c0fa5c0835a99f5cd93368991e2a80ec9da75d2",
   "engines": {
     "node": ">=22.22.0 <23.0.0 || >=24.2.0 <25.0.0"
   }
