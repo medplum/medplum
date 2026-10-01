@@ -339,10 +339,10 @@ describe('Appointment/$find with occurrence-count', () => {
     expect(eightDays).toHaveStatus(400);
     expect(eightDays.body.issue[0].details.text).toBe('Search range cannot exceed 7 days');
 
-    for (const occurrenceCount of ['0', '7']) {
+    for (const occurrenceCount of ['0', '1', '7']) {
       const response = await find(schedule, { ...monday, 'occurrence-count': occurrenceCount });
       expect(response).toHaveStatus(400);
-      expect(response.body.issue[0].details.text).toBe('Invalid occurrence-count, must be between 1 and 6');
+      expect(response.body.issue[0].details.text).toBe('Invalid occurrence-count, must be between 2 and 6');
     }
 
     const withIgnore = await find(schedule, {

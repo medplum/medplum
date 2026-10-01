@@ -72,7 +72,7 @@ curl -G 'https://api.medplum.com/fhir/R4/Appointment/$find' \
 | `service-type-reference` | `reference(HealthcareService)`   | The HealthcareService describing the type of appointment to be scheduled.                    | Yes      |
 | `schedule`               | `reference(Schedule)`            | A schedule to check for availability. May be passed multiple times with different schedules. | Yes      |
 | `ignore-appointment`     | `reference(Appointment)`         | Compute availability as if this Appointment did not exist. See [Reassigning an existing appointment](#reassigning-an-existing-appointment). | No       |
-| `occurrence-count`       | `positiveInt`                    | Find a weekly series of this many occurrences (1 to 6). See [Finding a recurring series](#finding-a-recurring-series). | No       |
+| `occurrence-count`       | `positiveInt`                    | Find a weekly series of this many occurrences (2 to 6). See [Finding a recurring series](#finding-a-recurring-series). | No       |
 | `_count`                 | `integer`                        | Maximum number of Appointment resources to return. Defaults to 20. Maximum is 1000.          | No       |
 
 ### Constraints

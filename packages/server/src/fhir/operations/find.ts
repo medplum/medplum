@@ -429,10 +429,10 @@ export async function appointmentFindHandler(req: FhirRequest): Promise<FhirResp
     throw new OperationOutcomeError(badRequest(`Invalid _count, maximum allowed is ${DEFAULT_MAX_SEARCH_COUNT}`));
   }
 
-  if (occurrenceCount !== undefined && (occurrenceCount < 1 || occurrenceCount > MAX_OCCURRENCE_COUNT)) {
+  if (occurrenceCount !== undefined && (occurrenceCount < 2 || occurrenceCount > MAX_OCCURRENCE_COUNT)) {
     throw new OperationOutcomeError(
       badRequest(
-        `Invalid occurrence-count, must be between 1 and ${MAX_OCCURRENCE_COUNT}`,
+        `Invalid occurrence-count, must be between 2 and ${MAX_OCCURRENCE_COUNT}`,
         'Parameters.occurrence-count'
       )
     );
