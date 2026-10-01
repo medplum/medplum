@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
-import type { Appointment } from '@medplum/fhirtypes';
+import type { Appointment, Location, Reference } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -173,7 +173,7 @@ BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
  * The workspace as a host opens it on one site, such as the facility a user launched
  * scheduling from.
  *
- * The host passes the Location's id, and the Location filter starts on **Uro Associates
+ * The host passes a reference to the Location, and the Location filter starts on **Uro Associates
  * - Satellite**: only the calendars held there are listed, and the visit types on offer
  * are the ones the satellite holds. Click open time and the booking form starts on the
  * satellite too, which is the site the booked appointment records.
@@ -182,12 +182,12 @@ BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
  *
  * @returns The story.
  */
-export const AtASite = (): JSX.Element => <Workspace defaultLocation="satellite-clinic" />;
+export const AtASite = (): JSX.Element => <Workspace defaultLocation={{ reference: 'Location/satellite-clinic' }} />;
 AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
 
 interface WorkspaceProps {
   readonly canBypassSchedulingRules?: boolean;
-  readonly defaultLocation?: string;
+  readonly defaultLocation?: Reference<Location>;
 }
 
 /**

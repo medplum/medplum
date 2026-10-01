@@ -12,6 +12,7 @@ import {
   getReferenceString,
   getSchedulingRequirements,
   getSchedulingTimezone,
+  isResource,
   MRN_IDENTIFIER_TYPE,
   normalizeErrorString,
   REQUIRES_DIAGNOSIS_CODE,
@@ -109,7 +110,7 @@ export interface AppointmentProposalFormProps {
   /** What the proposal is for. Defaults to booking a new visit. */
   readonly mode?: AppointmentProposalMode;
   /** Pre-fills where the visit is, for a host that already knows. */
-  readonly defaultLocation?: WithId<Location>;
+  readonly defaultLocation?: Reference<Location> | WithId<Location>;
   /** Pre-fills the visit type, for a deep link or a reschedule. */
   readonly defaultService?: WithId<HealthcareService>;
   /** Pre-fills who the visit is for, for a host launching from a patient's chart. */
@@ -222,7 +223,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     appointmentExtensions,
   } = props;
 
-  const [location, setLocation] = useState<WithId<Location> | undefined>(defaultLocation);
+  const [location, setLocation] = useState<Reference<Location> | WithId<Location> | undefined>(defaultLocation);
   const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultService);
   const [selections, setSelections] = useState<ActorSelections>(defaultSelections ?? {});
   const [month, setMonth] = useState<Date | undefined>(defaultStart);
@@ -512,11 +513,14 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         if (!patient) {
           throw new Error('No patient specified for booking');
         }
+        // The site stamped on the booking carries its name, so a pre-filled reference is
+        // read here rather than holding up the form while it loads.
+        const site = location && (isResource(location) ? location : await medplum.readReference(location));
         const booking = buildBooking({
           proposal: chosen,
           patient,
           values: requirementValues,
-          site: location,
+          site,
           requirements,
           extensions: appointmentExtensions,
         });
@@ -545,7 +549,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           label="Location"
           placeholder="Any location"
           searchCriteria={LOCATION_SEARCH_CRITERIA}
-          defaultValue={defaultLocation}
+          defaultValue={defaultLocation as WithId<Location> | Reference<WithId<Location>> | undefined}
           onChange={chooseLocation}
           clearable={false}
         />

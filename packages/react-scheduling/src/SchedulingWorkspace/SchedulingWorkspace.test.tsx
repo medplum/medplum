@@ -194,7 +194,7 @@ describe('SchedulingWorkspace', () => {
   describe('starting on a site the host chose', () => {
     test.each([
       ['the Location', SatelliteClinic],
-      ['its id', 'satellite-clinic'],
+      ['a reference to it', { reference: 'Location/satellite-clinic' }],
     ])('given %s, lists only the calendars held there', async (_, defaultLocation) => {
       const medplum = await setupClient();
       renderWithMedplum(<SchedulingWorkspace defaultLocation={defaultLocation} />, medplum);
@@ -209,7 +209,7 @@ describe('SchedulingWorkspace', () => {
     test('searches the calendars only once', async () => {
       const medplum = await setupClient();
       const search = vi.spyOn(medplum, 'search');
-      renderWithMedplum(<SchedulingWorkspace defaultLocation="satellite-clinic" />, medplum);
+      renderWithMedplum(<SchedulingWorkspace defaultLocation={{ reference: 'Location/satellite-clinic' }} />, medplum);
 
       await waitFor(() => expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument());
       await waitFor(() => expect(screen.queryByLabelText(/^Loading /)).not.toBeInTheDocument());
@@ -227,15 +227,6 @@ describe('SchedulingWorkspace', () => {
       await clearFilter('Uro Associates - Satellite');
 
       await waitFor(() => expect(screen.getByText('Exam Room A')).toBeInTheDocument());
-    });
-
-    test('says so when the site cannot be read, and shows every calendar', async () => {
-      const medplum = await setupClient();
-      renderWithMedplum(<SchedulingWorkspace defaultLocation="no-such-site" />, medplum);
-
-      await waitFor(() => expect(screen.getByText('Exam Room A')).toBeInTheDocument());
-      expect(screen.getByRole('alert')).toHaveTextContent(/not found/i);
-      expect(screen.getByPlaceholderText('All locations')).toBeInTheDocument();
     });
   });
 

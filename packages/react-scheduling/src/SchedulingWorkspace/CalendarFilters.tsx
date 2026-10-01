@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Stack } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import type { HealthcareService, Location } from '@medplum/fhirtypes';
+import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
 import { ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
@@ -19,8 +19,11 @@ import { LOCATION_SEARCH_CRITERIA } from '../constants';
  * the choice stands, so a caller can key an effect on them.
  */
 export interface CalendarFilterValues {
-  /** The chosen site, or absent for every site. */
-  readonly location?: WithId<Location>;
+  /**
+   * The chosen site, or absent for every site. A reference only when it is the site the
+   * filters started on and the user has not changed it.
+   */
+  readonly location?: Reference<Location> | WithId<Location>;
   /** The chosen visit type, or absent for every visit type. */
   readonly service?: WithId<HealthcareService>;
 }
@@ -52,7 +55,7 @@ export interface CalendarFiltersProps {
  */
 export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
   const { defaultValue, onChange } = props;
-  const [location, setLocation] = useState<WithId<Location> | undefined>(defaultValue?.location);
+  const [location, setLocation] = useState<Reference<Location> | WithId<Location> | undefined>(defaultValue?.location);
   const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultValue?.service);
 
   // Key to remount field relying on `defaultValue` on change
@@ -89,7 +92,7 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
         label="Location"
         placeholder="All locations"
         searchCriteria={LOCATION_SEARCH_CRITERIA}
-        defaultValue={location}
+        defaultValue={location as WithId<Location> | Reference<WithId<Location>> | undefined}
         onChange={selectLocation}
         clearable={false}
       />
