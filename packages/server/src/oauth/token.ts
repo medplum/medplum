@@ -59,6 +59,12 @@ type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: str
 type FhircastProps = { 'hub.topic': string; 'hub.url': string };
 
 /**
+ * How long after a rotation the previous refresh token is still accepted, so that a retry after a
+ * lost response, or a concurrent refresh with the same token, does not revoke the login.
+ */
+const REFRESH_GRACE_PERIOD_MS = 30_000;
+
+/**
  * Handles the OAuth/OpenID Token Endpoint.
  *
  * Implements the following authorization flows:
@@ -362,23 +368,49 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     userAgent: req.get('User-Agent'),
   });
 
-  if (!updatedLogin) {
-    // A refresh secret is only written at login creation and at rotation, and `verifyJwt` has
-    // already proved this server minted this token for this login. A mismatch is therefore a
-    // superseded token, never a guess, so it is reuse. See the OAuth 2.0 Security BCP, 4.14.2.
-    //
-    // Patched rather than `revokeLogin`, which writes back the caller's snapshot: `login` was read
-    // before the rotation it lost, so its superseded secret would be restored with `revoked`.
-    await systemRepo.patchResource<Login>('Login', login.id, [{ op: 'add', path: '/revoked', value: true }]);
-    getLogger().warn('Refresh token reuse detected, login revoked', {
-      login: login.id,
-      remoteAddress: req.ip,
-    });
-    sendTokenError(res, 'invalid_grant', 'Token revoked');
+  if (updatedLogin) {
+    await sendTokenResponse(req, res, updatedLogin, client);
     return;
   }
 
-  await sendTokenResponse(req, res, updatedLogin, client);
+  // Re-read, because `login` is stale if this request lost a race with a concurrent refresh.
+  const currentLogin = await systemRepo.readResource<Login>('Login', login.id);
+  if (isWithinRefreshGracePeriod(currentLogin, claims.refresh_secret)) {
+    // The secret was rotated moments ago, so this is most likely a retry after a lost response or
+    // a concurrent refresh. Issue tokens for the current secret without rotating again.
+    await sendTokenResponse(req, res, currentLogin, client);
+    return;
+  }
+
+  // `verifyJwt` proved this server minted the token for this login, so a stale secret outside the
+  // grace period is treated as reuse. See the OAuth 2.0 Security BCP, 4.14.2.
+  //
+  // Patched rather than `revokeLogin`, which writes back the caller's snapshot and could restore a
+  // superseded secret along with `revoked`.
+  await systemRepo.patchResource<Login>('Login', login.id, [{ op: 'add', path: '/revoked', value: true }]);
+  getLogger().warn('Refresh token reuse detected, login revoked', {
+    login: login.id,
+    remoteAddress: req.ip,
+  });
+  sendTokenError(res, 'invalid_grant', 'Token revoked');
+}
+
+/**
+ * Returns true if the presented secret is the one replaced by the most recent rotation, and that
+ * rotation happened within the grace period.
+ * @param login - The current login, read after the rotation attempt failed.
+ * @param presentedSecret - The refresh secret presented by the caller.
+ * @returns True if the refresh should succeed with the current secret.
+ */
+function isWithinRefreshGracePeriod(login: Login, presentedSecret: string): boolean {
+  if (login.revoked || !login.refreshSecret || !login.previousRefreshSecret || !login.refreshSecretRotatedAt) {
+    return false;
+  }
+  if (!timingSafeEqualStr(login.previousRefreshSecret, presentedSecret)) {
+    return false;
+  }
+  const elapsed = Date.now() - new Date(login.refreshSecretRotatedAt).getTime();
+  return elapsed >= 0 && elapsed < REFRESH_GRACE_PERIOD_MS;
 }
 
 /**
@@ -389,6 +421,9 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
  * patch is rejected if it has moved on. A concurrent caller writing the same row raises a
  * serialization failure, which `withTransaction` retries by re-running the callback; the retry
  * re-reads, fails the test, and so takes the same path as any other replay.
+ *
+ * The replaced secret and the rotation time are recorded so that a retry with the previous token
+ * can be recognized within the grace period.
  *
  * The rotation is applied via `patchResource` rather than a full
  * `updateResource` of a `{ ...login }` snapshot. `patchResource` re-reads the
@@ -414,7 +449,9 @@ export async function rotateLoginRefreshSecret(
   const systemRepo = getGlobalSystemRepo();
   const patch: Operation[] = [
     { op: 'test', path: '/refreshSecret', value: expectedSecret },
-    { op: 'add', path: '/refreshSecret', value: generateSecret(32) },
+    { op: 'replace', path: '/refreshSecret', value: generateSecret(32) },
+    { op: 'add', path: '/previousRefreshSecret', value: expectedSecret },
+    { op: 'add', path: '/refreshSecretRotatedAt', value: new Date().toISOString() },
   ];
   if (details?.remoteAddress !== undefined) {
     patch.push({ op: 'add', path: '/remoteAddress', value: details.remoteAddress });

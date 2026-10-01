@@ -116,6 +116,22 @@ describe('Refresh token grant', () => {
     return systemRepo.readResource<Login>('Login', claims.login_id);
   }
 
+  function refreshSecretOf(refreshToken: string): string {
+    return (decodeJwt(refreshToken) as { refresh_secret: string }).refresh_secret;
+  }
+
+  /**
+   * Moves the login's last rotation outside the grace period, as if the previous token were
+   * replayed well after it was rotated.
+   * @param refreshToken - Any refresh token for the login.
+   */
+  async function expireGracePeriod(refreshToken: string): Promise<void> {
+    const login = await readLoginFor(refreshToken);
+    await getGlobalSystemRepo().patchResource<Login>('Login', login.id as string, [
+      { op: 'add', path: '/refreshSecretRotatedAt', value: new Date(Date.now() - 60_000).toISOString() },
+    ]);
+  }
+
   test('Rejects a refresh token signed with "alg": "none"', async () => {
     const tokens = await getTokens();
     const [, payload] = tokens.refresh_token.split('.');
@@ -189,6 +205,7 @@ describe('Refresh token grant', () => {
     expect(rotated.body.refresh_token).toBeDefined();
     expect(rotated.body.refresh_token).not.toStrictEqual(tokens.refresh_token);
 
+    await expireGracePeriod(tokens.refresh_token);
     const replay = await refresh(tokens.refresh_token);
     expect(replay).toHaveStatus(400);
     expect(replay.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
@@ -211,6 +228,7 @@ describe('Refresh token grant', () => {
       .set('Authorization', `Bearer ${rotated.body.access_token}`);
     expect(beforeReuse).toHaveStatus(200);
 
+    await expireGracePeriod(tokens.refresh_token);
     await refresh(tokens.refresh_token);
 
     const afterReuse = await request(app)
@@ -254,18 +272,77 @@ describe('Refresh token grant', () => {
     expect(after.refreshSecret).toStrictEqual('secret-from-the-winning-caller');
   });
 
-  test('Only one of several concurrent refreshes with the same token succeeds', async () => {
+  test('Concurrent refreshes with the same token rotate once and all succeed', async () => {
     const tokens = await getTokens();
     const responses = await Promise.all([1, 2, 3, 4, 5].map(() => refresh(tokens.refresh_token)));
 
-    const succeeded = responses.filter((res) => res.status === 200);
-    expect(succeeded.length).toStrictEqual(1);
-
-    // Assert the exact body so a request that errored cannot pass as one that lost the race.
-    for (const loser of responses.filter((res) => res.status !== 200)) {
-      expect(loser).toHaveStatus(400);
-      expect(loser.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
+    for (const res of responses) {
+      expect(res).toHaveStatus(200);
     }
+
+    // One request rotated; the rest landed in the grace period and got tokens for the same secret.
+    const login = await readLoginFor(tokens.refresh_token);
+    expect(login.revoked).toBeUndefined();
+    expect(login.previousRefreshSecret).toStrictEqual(refreshSecretOf(tokens.refresh_token));
+    for (const res of responses) {
+      expect(refreshSecretOf(res.body.refresh_token)).toStrictEqual(login.refreshSecret);
+    }
+  });
+
+  test('Retry with the previous token within the grace period succeeds without rotating again', async () => {
+    const tokens = await getTokens();
+    const rotated = await refresh(tokens.refresh_token);
+    expect(rotated).toHaveStatus(200);
+    const afterRotation = await readLoginFor(tokens.refresh_token);
+
+    // As if the first response was lost and the client retried
+    const retry = await refresh(tokens.refresh_token);
+    expect(retry).toHaveStatus(200);
+    expect(refreshSecretOf(retry.body.refresh_token)).toStrictEqual(refreshSecretOf(rotated.body.refresh_token));
+
+    const afterRetry = await readLoginFor(tokens.refresh_token);
+    expect(afterRetry.revoked).toBeUndefined();
+    expect(afterRetry.meta?.versionId).toStrictEqual(afterRotation.meta?.versionId);
+
+    // The chain continues from the current secret
+    const next = await refresh(retry.body.refresh_token);
+    expect(next).toHaveStatus(200);
+  });
+
+  test('A token older than the previous one revokes the login even within the grace period', async () => {
+    const tokens = await getTokens();
+    const second = await refresh(tokens.refresh_token);
+    expect(second).toHaveStatus(200);
+    const third = await refresh(second.body.refresh_token);
+    expect(third).toHaveStatus(200);
+
+    const replay = await refresh(tokens.refresh_token);
+    expect(replay).toHaveStatus(400);
+    expect(replay.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
+
+    const login = await readLoginFor(tokens.refresh_token);
+    expect(login.revoked).toStrictEqual(true);
+  });
+
+  test('A stolen token replayed within the grace period is caught on a later replay', async () => {
+    const tokens = await getTokens();
+    const legitimate = await refresh(tokens.refresh_token);
+    expect(legitimate).toHaveStatus(200);
+
+    // The attacker replays the stolen token inside the window and gets tokens for the current secret
+    const attacker = await refresh(tokens.refresh_token);
+    expect(attacker).toHaveStatus(200);
+
+    // The legitimate client refreshes later, which rotates the secret the attacker also holds
+    await expireGracePeriod(tokens.refresh_token);
+    const legitimateNext = await refresh(legitimate.body.refresh_token);
+    expect(legitimateNext).toHaveStatus(200);
+
+    // The attacker's next refresh is a stale secret outside the window
+    await expireGracePeriod(tokens.refresh_token);
+    const attackerNext = await refresh(attacker.body.refresh_token);
+    expect(attackerNext).toHaveStatus(400);
+    expect(attackerNext.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
 
     const login = await readLoginFor(tokens.refresh_token);
     expect(login.revoked).toStrictEqual(true);

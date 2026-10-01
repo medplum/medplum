@@ -20,7 +20,7 @@ import { rotateLoginRefreshSecret } from '../oauth/token';
 import { withTestContext } from '../test.setup';
 import { verifyConnectedFactor } from './mfa';
 import { registerNew } from './register';
-import { getEnrolledMfaMethods } from './utils';
+import { clearMfaEmailCode, getEnrolledMfaMethods, sendMfaEmailCode } from './utils';
 
 const app = express();
 
@@ -680,6 +680,42 @@ describe('MFA', () => {
       .send({ method: 'email', token: code });
     expect(enrollRes).toHaveStatus(200);
     expect(enrollRes.body).toMatchObject(allOk);
+  });
+
+  // The reverse of the test above: the email-MFA writes must not write back a
+  // stale login either, which would restore a superseded refresh secret and
+  // make the client's next refresh look like token reuse.
+  test('Email MFA writes do not revert a concurrent refresh-secret rotation', async () => {
+    const { user, project, login } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Email',
+        lastName: 'Stale',
+        projectName: `Email Stale Project ${randomUUID()}`,
+        email: `email-stale${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const systemRepo = getGlobalSystemRepo();
+
+    // Sending a code from a snapshot that predates a rotation keeps the rotated secret
+    const rotated = await withTestContext(() => rotateLoginRefreshSecret(login, login.refreshSecret as string));
+    expect(rotated?.refreshSecret).toBeDefined();
+    await withTestContext(() => sendMfaEmailCode(login, user, project));
+
+    const afterSend = await systemRepo.readResource<Login>('Login', login.id);
+    expect(afterSend.emailMfa).toBeDefined();
+    expect(afterSend.refreshSecret).toStrictEqual(rotated?.refreshSecret);
+
+    // Clearing the code from a snapshot that predates a rotation keeps the rotated secret
+    const rotatedAgain = await withTestContext(() =>
+      rotateLoginRefreshSecret(afterSend, afterSend.refreshSecret as string)
+    );
+    await withTestContext(() => clearMfaEmailCode(afterSend));
+
+    const afterClear = await systemRepo.readResource<Login>('Login', login.id);
+    expect(afterClear.emailMfa).toBeUndefined();
+    expect(afterClear.refreshSecret).toStrictEqual(rotatedAgain?.refreshSecret);
+    expect(afterClear.previousRefreshSecret).toStrictEqual(rotated?.refreshSecret);
   });
 
   test('Verifying email code marks the user emailVerified', async () => {
