@@ -1,14 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
-import type { AsyncJob, Reference, ResourceType } from '@medplum/fhirtypes';
+import type { Reference, ResourceType } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
 import { setResourceAccounts } from '../fhir/operations/set-accounts';
-import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getShardSystemRepo } from '../fhir/repo';
-import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { AuthState } from '../oauth/middleware';
 import type { AsyncJobTracking } from './base';
 import { getTrackingAsyncJobExecutor } from './base';
@@ -27,21 +23,14 @@ import {
  * in a Patient compartment, decoupled from an individual HTTP request.
  */
 
-export type SetAccountsJobData = {
+export interface SetAccountsJobData {
+  readonly tracking: AsyncJobTracking;
   readonly resourceType: ResourceType;
   readonly id: string;
   readonly accounts: Reference[];
   readonly authState: Readonly<AuthState>;
   readonly requestId?: string;
   readonly traceId?: string;
-} & (NewSetAccountsJobData | LegacySetAccountsJobData);
-
-interface NewSetAccountsJobData {
-  readonly tracking: AsyncJobTracking;
-}
-// PENDING{v5.2+} remove LegacySetAccountsJobData and switch SetAccountsJobData back to interface
-interface LegacySetAccountsJobData {
-  readonly asyncJob: WithId<AsyncJob>;
 }
 
 const queueName = 'SetAccountsQueue';
@@ -62,9 +51,6 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
       getWorkerBullmqConfig(config, 'set-accounts', queueOptions)
     );
     addVerboseQueueLogging<SetAccountsJobData>(queue, worker, (job) => {
-      if ('asyncJob' in job.data) {
-        return { asyncJob: 'AsyncJob/' + job.data.asyncJob.id };
-      }
       return { asyncJob: 'AsyncJob/' + job.data.tracking.asyncJobId };
     });
 
@@ -73,14 +59,7 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
         return;
       }
 
-      // Mark AsyncJob as failed
-      let exec: AsyncJobExecutor;
-      if ('tracking' in job.data) {
-        exec = await getTrackingAsyncJobExecutor(job.data.tracking);
-      } else {
-        // PENDING{v5.2+} remove else branch
-        exec = new AsyncJobExecutor(getShardSystemRepo(TODO_SHARD_ID), job.data.asyncJob);
-      }
+      const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
       await exec.failJob();
     });
   }
@@ -113,14 +92,7 @@ export async function addSetAccountsJobData(job: SetAccountsJobData): Promise<Jo
 export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<void> {
   const { repo } = getAuthenticatedContext();
   const { resourceType, id, accounts } = job.data;
-
-  let exec: AsyncJobExecutor;
-  if ('tracking' in job.data) {
-    exec = await getTrackingAsyncJobExecutor(job.data.tracking);
-  } else {
-    // PENDING{v5.2+} remove else branch
-    exec = new AsyncJobExecutor(getShardSystemRepo(TODO_SHARD_ID), job.data.asyncJob);
-  }
+  const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
 
   if (!isJobActive(exec.getAsyncJob())) {
     return;

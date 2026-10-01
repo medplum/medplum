@@ -515,6 +515,12 @@ Disabling chained search is intended to be a one-way operation. To re-enable cha
 
 **Default:** None
 
+### rangeSearch
+
+When `true`, date search parameters compare the full period or range. When unset, a period is indexed as its start, or as its end when the start is missing. Projects can enable the same behavior with the [`range-search`](/docs/self-hosting/project-settings#project-feature-flags) feature. See [Searching by due date range](/docs/careplans/tasks#searching-by-due-date-range).
+
+**Default:** `false`
+
 ### defaultBotRuntimeVersion
 
 Optional default bot runtime version. See [Bot runtime version](/docs/api/fhir/medplum/bot) for more details.

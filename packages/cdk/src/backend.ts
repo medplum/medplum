@@ -360,7 +360,13 @@ export class BackEnd extends Construct {
         // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
+          actions: [
+            's3:GetObject',
+            's3:PutObject',
+            's3:DeleteObject',
+            // Binary $scan reads GuardDuty scan result tags and marks pending scans
+            ...(config.guardDutyMalwareProtectionEnabled ? ['s3:GetObjectTagging', 's3:PutObjectTagging'] : []),
+          ],
           resources: [`arn:aws:s3:::${config.storageBucketName}/*`],
         }),
 
@@ -446,6 +452,18 @@ export class BackEnd extends Construct {
         }),
       ],
     });
+
+    if (config.guardDutyMalwareProtectionEnabled) {
+      // Binary $scan: request on-demand scans
+      // https://docs.aws.amazon.com/guardduty/latest/ug/malware-protection-s3-on-demand.html
+      this.taskRolePolicies.addStatements(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['guardduty:SendObjectMalwareScan'],
+          resources: ['*'],
+        })
+      );
+    }
 
     // Task Role
     this.taskRole = new iam.Role(this, 'TaskExecutionRole', {

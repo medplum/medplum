@@ -89,15 +89,15 @@ describe('Lambda version cleanup worker', () => {
       return {};
     });
 
-    const { project, repo } = await createTestProject({ withRepo: true });
+    const { repo } = await createTestProject({ withRepo: true });
     const exec = new AsyncJobExecutor(repo);
     const asyncJob = await exec.init('/some-url');
+    const jobData: LambdaCleanerJobData = {
+      tracking: getAsyncJobTracking(asyncJob),
+      options: { nameRegex: '^medplum-bot-lambda-*', keepLatest: 1, deleteConcurrency: 2, dryRun: false },
+    };
     const job = {
-      data: {
-        target: { kind: 'project', projectId: project.id },
-        asyncJob,
-        options: { nameRegex: '^medplum-bot-lambda-*', keepLatest: 1, deleteConcurrency: 2, dryRun: false },
-      },
+      data: jobData,
     } as unknown as Job<LambdaCleanerJobData>;
     const updatedAsyncJob = await lambdaCleanerJobProcessor(job);
 
@@ -165,16 +165,13 @@ describe('Lambda version cleanup worker', () => {
     expect(mockLambdaClient.commandCalls(DeleteFunctionCommand)).toHaveLength(0);
   });
 
-  test.each([
-    ['legacy', true],
-    ['tracked', false],
-  ] as const)('Processes %s async job data', async (_format, legacy) => {
+  test('Processes async job data', async () => {
     mockLambdaClient.on(ListFunctionsCommand).resolves({ Functions: [] });
     const { repo } = await createTestProject({ withRepo: true });
     const exec = new AsyncJobExecutor(repo);
     const asyncJob = await exec.init('/some-url');
     const jobData: LambdaCleanerJobData = {
-      ...(legacy ? { asyncJob } : { tracking: getAsyncJobTracking(asyncJob) }),
+      tracking: getAsyncJobTracking(asyncJob),
       options: { nameRegex: '^medplum-bot-lambda-' },
     };
 
@@ -184,20 +181,15 @@ describe('Lambda version cleanup worker', () => {
     expect(updatedAsyncJob.output?.parameter).toContainEqual({ name: 'functionsScanned', valueInteger: 0 });
   });
 
-  test.each([
-    ['legacy', true],
-    ['tracked', false],
-  ] as const)('Logs %s async job data', (_format, legacy) => {
+  test('Logs async job data', () => {
     const loggingSpy = vi.spyOn(workerUtils, 'addVerboseQueueLogging');
     initLambdaCleanerWorker(config);
     const logFields = loggingSpy.mock.calls.at(-1)?.[2] as (job: Job<LambdaCleanerJobData>) => Record<string, unknown>;
     const options = { nameRegex: '^medplum-bot-lambda-', dryRun: true };
-    const jobData = legacy
-      ? { asyncJob: { id: 'legacy-job' }, options }
-      : { tracking: { owner: 'system' as const, asyncJobId: 'tracked-job' }, options };
+    const jobData = { tracking: { owner: 'system' as const, asyncJobId: 'tracked-job' }, options };
 
     expect(logFields({ data: jobData } as unknown as Job<LambdaCleanerJobData>)).toEqual({
-      asyncJob: `AsyncJob/${legacy ? 'legacy-job' : 'tracked-job'}`,
+      asyncJob: 'AsyncJob/tracked-job',
       nameRegex: options.nameRegex,
       dryRun: true,
     });

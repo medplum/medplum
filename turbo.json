@@ -1,5 +1,6 @@
 {
   "$schema": "https://turborepo.org/schema.json",
+  "globalDependencies": ["api-extractor.json", "tsdoc.json"],
   "globalEnv": ["NODE_VERSION", "MEDPLUM_GIT_SHORTHASH"],
   "tasks": {
     "clean": {

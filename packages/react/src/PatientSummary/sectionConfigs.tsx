@@ -51,57 +51,52 @@ import { Vitals } from './Vitals';
 export const DemographicsSection: PatientSummarySectionConfig = {
   key: 'demographics',
   title: 'Demographics',
-  component: ({ patient, onClickResource }: SectionRenderContext) => {
+  component: ({ patient, onClickResource, onEditPatient }: SectionRenderContext) => {
     const languageDisplay = getPreferredLanguage(patient);
+    const onClick = onEditPatient ?? (onClickResource ? () => onClickResource(patient) : undefined);
     return (
-      <Stack gap="xs" py={8}>
+      <Stack gap="xs" py="md">
         <PatientInfoItem
-          patient={patient}
           value={patient.birthDate ? `${patient.birthDate} (${calculateAgeString(patient.birthDate)})` : undefined}
           icon={<IconCake size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
           placeholder="Add Birthdate"
           label="Birthdate & Age"
-          onClickResource={onClickResource}
+          onClick={onClick}
         />
         <PatientInfoItem
-          patient={patient}
           value={patient.gender ? formatPatientGenderDisplay(patient) : undefined}
           icon={<IconEmpathize size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
           placeholder="Add Gender & Identity"
           label="Gender & Identity"
-          onClickResource={onClickResource}
+          onClick={onClick}
         />
         <PatientInfoItem
-          patient={patient}
           value={getRace(patient) || getEthnicity(patient) ? formatPatientRaceEthnicityDisplay(patient) : undefined}
           icon={<IconBinaryTree size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
           placeholder="Add Race & Ethnicity"
           label="Race & Ethnicity"
-          onClickResource={onClickResource}
+          onClick={onClick}
         />
         <PatientInfoItem
-          patient={patient}
           value={patient.address?.[0] ? formatAddress(patient.address[0]) : undefined}
           icon={<IconMapPin size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
           placeholder="Add Location"
           label="Location"
-          onClickResource={onClickResource}
+          onClick={onClick}
         />
         <PatientInfoItem
-          patient={patient}
           value={languageDisplay}
           icon={<IconLanguage size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
           placeholder="Add Language"
           label="Language"
-          onClickResource={onClickResource}
+          onClick={onClick}
         />
         <PatientInfoItem
-          patient={patient}
           value={getGeneralPractitioner(patient)}
           icon={<IconStethoscope size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
           placeholder="Add General Practitioner"
           label="General Practitioner"
-          onClickResource={onClickResource}
+          onClick={onClick}
         />
       </Stack>
     );
