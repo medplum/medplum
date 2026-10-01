@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
-import { ContentType, createReference, isGone, isNotFound, normalizeOperationOutcome, resolveId } from '@medplum/core';
+import {
+  ContentType,
+  createReference,
+  isGone,
+  isNotFound,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+  resolveId,
+} from '@medplum/core';
 import type { Bot, Cron, Project, ProjectMembership, Resource, ResourceType, Timing } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
@@ -423,9 +431,7 @@ export async function reloadCronBots(shardId: string): Promise<void> {
       async (bot) => {
         // If the bot has a cron, then add a scheduler for it
         if (bot.cronString || bot.cronTiming) {
-          // We pass `undefined` as previous version to make sure that the latest cron string is used
-          const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
-          await addCronJobs(bot, undefined, { project, interaction: 'update' });
+          await reloadCronJob(systemRepo, bot);
         }
       },
       { delayBetweenPagesMs: 1000 }
@@ -437,11 +443,21 @@ export async function reloadCronBots(shardId: string): Promise<void> {
       { resourceType: 'Cron', count: MAX_BOTS_PER_PAGE },
       async (cron) => {
         if (cron.active) {
-          const project = await systemRepo.readResource<Project>('Project', cron.meta?.project as string);
-          await addCronJobs(cron, undefined, { project, interaction: 'update' });
+          await reloadCronJob(systemRepo, cron);
         }
       },
       { delayBetweenPagesMs: 1000 }
     );
+  }
+}
+
+async function reloadCronJob(systemRepo: Repository, resource: WithId<Bot> | WithId<Cron>): Promise<void> {
+  try {
+    const project = await systemRepo.readResource<Project>('Project', resource.meta?.project as string);
+    // We pass `undefined` as previous version to make sure that the latest cron string is used
+    await addCronJobs(resource, undefined, { project, interaction: 'update' });
+  } catch (err) {
+    // The queue was already obliterated, so aborting here would leave every remaining schedule unregistered
+    globalLogger.warn('Failed to reload cron job', { ...getResourceIds(resource), error: normalizeErrorString(err) });
   }
 }
