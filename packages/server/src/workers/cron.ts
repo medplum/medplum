@@ -4,6 +4,7 @@ import type { BackgroundJobContext, WithId } from '@medplum/core';
 import {
   ContentType,
   createReference,
+  DEFAULT_MAX_SEARCH_COUNT,
   isGone,
   isNotFound,
   normalizeErrorString,
@@ -26,7 +27,9 @@ import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
-const MAX_BOTS_PER_PAGE = 500;
+
+// A lone ascending `_lastUpdated` sort opts the reload into cursor pagination, which has no `maxSearchOffset` cap
+const CURSOR_SORT_RULES = [{ code: '_lastUpdated' }];
 
 /*
  * The Cron worker inspects resources takes a bot,
@@ -429,7 +432,7 @@ export async function reloadCronBots(shardId: string): Promise<void> {
     const projects = new Map<string, WithId<Project>>();
 
     await systemRepo.processAllResources<Bot>(
-      { resourceType: 'Bot', count: MAX_BOTS_PER_PAGE },
+      { resourceType: 'Bot', count: DEFAULT_MAX_SEARCH_COUNT, sortRules: CURSOR_SORT_RULES },
       async (bot) => {
         // If the bot has a cron, then add a scheduler for it
         if (bot.cronString || bot.cronTiming) {
@@ -442,7 +445,7 @@ export async function reloadCronBots(shardId: string): Promise<void> {
     // `obliterate` above cleared Cron schedules too, so they have to be re-registered here or
     // every Cron resource silently stops running after a reload.
     await systemRepo.processAllResources<Cron>(
-      { resourceType: 'Cron', count: MAX_BOTS_PER_PAGE },
+      { resourceType: 'Cron', count: DEFAULT_MAX_SEARCH_COUNT, sortRules: CURSOR_SORT_RULES },
       async (cron) => {
         if (cron.active) {
           await reloadCronJob(systemRepo, projects, cron);
