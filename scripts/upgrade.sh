@@ -84,7 +84,8 @@ echo "Last completed step: $LAST_STEP"
 # ioredis - v5.9.x broke BullMQ, holding off on updating until late Jan 2026
 # pdfmake, @types/pdfmake - v0.3.x introduced breaking changes to the API
 # vitest-websocket-mock - Newer versions changed the way they extend vitest, causing typing issues
-EXCLUDE="ioredis pdfmake @types/pdfmake vitest-websocket-mock"
+# temporal-polyfill - v1.0.5 breaks our tests
+EXCLUDE="ioredis pdfmake @types/pdfmake vitest-websocket-mock temporal-polyfill"
 
 # Append any additional excludes from the command line
 if [ -n "$ADDITIONAL_EXCLUDES" ]; then
