@@ -7,7 +7,7 @@ import { MockClient } from '@medplum/mock';
 import { describe, expect, test } from 'vitest';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
 import { setHealthcareServiceSchedulingParameterValues } from '../../parameterValues';
-import { renderWithMedplum, screen } from '../../test-utils/render';
+import { renderWithMedplum, screen, userEvent } from '../../test-utils/render';
 import { ActorPage } from './ActorPage';
 
 const room3: WithId<Location> = {
@@ -81,6 +81,18 @@ describe('ActorPage', () => {
     await setup(room3);
 
     expect(screen.getByText('Room 3 offers no visit types yet.')).toBeInTheDocument();
+    expect(screen.queryByText('Schedule status')).not.toBeInTheDocument();
+  });
+
+  test('says when the Schedule is inactive, and explains what that means', async () => {
+    await setup(drSmith, [{ ...makeSchedule('Practitioner/dr-smith', [initialVisit]), active: false }]);
+
+    expect(screen.getByText('Provider status').closest('div')?.parentElement).toHaveTextContent('Active');
+    expect(screen.getByText('Schedule status').closest('div')?.parentElement).toHaveTextContent('Inactive');
+
+    await userEvent.hover(screen.getByRole('button', { name: 'About Schedule status' }));
+
+    expect(await screen.findByText(/Stops new bookings and rescheduling/)).toBeInTheDocument();
   });
 
   test('a room with no status reads as active', async () => {

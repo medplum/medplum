@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { ActionIcon, Badge, Group, SimpleGrid, Stack, Text, Title, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getDisplayString } from '@medplum/core';
-import type { HealthcareService } from '@medplum/fhirtypes';
+import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
+import { IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo } from 'react';
 import { getActorTypeLabel } from '../../actors';
@@ -52,7 +53,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       </Stack>
 
       <ConfigSection title="General">
-        <ActorGeneral resource={resource} />
+        <ActorGeneral resource={resource} schedule={schedule} />
       </ConfigSection>
 
       <ConfigSection title="Visit types offered">
@@ -79,8 +80,17 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   );
 }
 
-function ActorGeneral(props: { readonly resource: ConfigurableActorResource }): JSX.Element {
-  const { resource } = props;
+const STATUS_INFO: Record<ConfigurableActorResource['resourceType'], string> = {
+  Practitioner: 'Inactive once they leave the practice.',
+  Location: 'Inactive once the room is no longer in use.',
+  Device: 'Inactive once the device is retired.',
+};
+
+function ActorGeneral(props: {
+  readonly resource: ConfigurableActorResource;
+  readonly schedule: Schedule | undefined;
+}): JSX.Element {
+  const { resource, schedule } = props;
   let status: string;
   if (resource.resourceType === 'Practitioner') {
     status = resource.active === false ? 'Inactive' : 'Active';
@@ -90,17 +100,37 @@ function ActorGeneral(props: { readonly resource: ConfigurableActorResource }): 
   return (
     <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
       <ReadOnlyField label="Name" value={getDisplayString(resource)} />
-      <ReadOnlyField label="Status" value={status} />
+      <ReadOnlyField
+        label={`${getActorTypeLabel(resource.resourceType)} status`}
+        value={status}
+        info={`${STATUS_INFO[resource.resourceType]} This applies everywhere, not only in scheduling.`}
+      />
+      {schedule && (
+        <ReadOnlyField
+          label="Schedule status"
+          value={schedule.active === false ? 'Inactive' : 'Active'}
+          info="Inactive while booking is paused, such as during leave or maintenance. Stops new bookings and rescheduling. Existing appointments stay."
+        />
+      )}
     </SimpleGrid>
   );
 }
 
-function ReadOnlyField(props: { readonly label: string; readonly value: string }): JSX.Element {
+function ReadOnlyField(props: { readonly label: string; readonly value: string; readonly info?: string }): JSX.Element {
   return (
     <Stack gap={2}>
-      <Text size="sm" fw={500}>
-        {props.label}
-      </Text>
+      <Group gap={4}>
+        <Text size="sm" fw={500}>
+          {props.label}
+        </Text>
+        {props.info && (
+          <Tooltip label={props.info} multiline w={280} withArrow events={{ hover: true, focus: true, touch: true }}>
+            <ActionIcon variant="subtle" color="gray" size="xs" aria-label={`About ${props.label}`}>
+              <IconInfoCircle size={14} />
+            </ActionIcon>
+          </Tooltip>
+        )}
+      </Group>
       <Text size="sm">{props.value}</Text>
     </Stack>
   );
