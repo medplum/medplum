@@ -59,8 +59,9 @@ type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: str
 type FhircastProps = { 'hub.topic': string; 'hub.url': string };
 
 /**
- * How long after a rotation the previous refresh token is still accepted, so that a retry after a
- * lost response, or a concurrent refresh with the same token, does not revoke the login.
+ * How long after a rotation the previous refresh token is still accepted from the same IP address,
+ * so that a retry after a lost response, or a concurrent refresh with the same token, does not
+ * revoke the login.
  */
 const REFRESH_GRACE_PERIOD_MS = 30_000;
 
@@ -380,9 +381,9 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
 
   // Re-read, because `login` is stale if this request lost a race with a concurrent refresh.
   const currentLogin = await systemRepo.readResource<Login>('Login', login.id);
-  if (isWithinRefreshGracePeriod(currentLogin, claims.refresh_secret)) {
-    // The secret was rotated moments ago, so this is most likely a retry after a lost response or
-    // a concurrent refresh. Issue tokens for the current secret without rotating again.
+  if (isWithinRefreshGracePeriod(currentLogin, claims.refresh_secret, req.ip)) {
+    // The secret was rotated moments ago from the same IP, so this is most likely a retry after a
+    // lost response or a concurrent refresh. Issue tokens for the current secret without rotating.
     await sendTokenResponse(req, res, currentLogin, client);
     return;
   }
@@ -402,13 +403,18 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
 
 /**
  * Returns true if the presented secret is the one replaced by the most recent rotation, and that
- * rotation happened within the grace period.
+ * rotation happened within the grace period, from the same IP address as this request.
  * @param login - The current login, read after the rotation attempt failed.
  * @param presentedSecret - The refresh secret presented by the caller.
+ * @param remoteAddress - The IP address of this request.
  * @returns True if the refresh should succeed with the current secret.
  */
-function isWithinRefreshGracePeriod(login: Login, presentedSecret: string): boolean {
+function isWithinRefreshGracePeriod(login: Login, presentedSecret: string, remoteAddress: string | undefined): boolean {
   if (login.revoked || !login.refreshSecret || !login.previousRefreshSecret || !login.refreshSecretRotatedAt) {
+    return false;
+  }
+  // The rotation records the IP it came from, so a replay from anywhere else is treated as reuse
+  if (!remoteAddress || remoteAddress !== login.remoteAddress) {
     return false;
   }
   if (!timingSafeEqualStr(login.previousRefreshSecret, presentedSecret)) {

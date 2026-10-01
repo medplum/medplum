@@ -104,11 +104,12 @@ describe('Refresh token grant', () => {
     return tokenResponse.body;
   }
 
-  function refresh(refreshToken: string): request.Test {
-    return request(app).post('/oauth2/token').type('form').send({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-    });
+  function refresh(refreshToken: string, ip?: string): request.Test {
+    const req = request(app).post('/oauth2/token').type('form');
+    if (ip) {
+      req.set('X-Forwarded-For', ip);
+    }
+    return req.send({ grant_type: 'refresh_token', refresh_token: refreshToken });
   }
 
   function readLoginFor(refreshToken: string): Promise<Login> {
@@ -280,7 +281,7 @@ describe('Refresh token grant', () => {
     }
   });
 
-  test('Retry with the previous token within the grace period succeeds without rotating again', async () => {
+  test('The grace period accepts a retry of the previous token only from the same IP', async () => {
     const tokens = await getTokens();
     const rotated = await refresh(tokens.refresh_token);
     expect(rotated).toHaveStatus(200);
@@ -298,6 +299,14 @@ describe('Refresh token grant', () => {
     // The chain continues from the current secret
     const next = await refresh(retry.body.refresh_token);
     expect(next).toHaveStatus(200);
+
+    // The same retry from a different IP, still inside the window, is treated as reuse
+    const replay = await refresh(retry.body.refresh_token, '7.7.7.7');
+    expect(replay).toHaveStatus(400);
+    expect(replay.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
+
+    const login = await readLoginFor(tokens.refresh_token);
+    expect(login.revoked).toStrictEqual(true);
   });
 
   test('A rotation rejected for a reason other than the secret does not revoke the login', async () => {
