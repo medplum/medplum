@@ -108,7 +108,7 @@ export function expandRecurrence(proposed: WithPath<Appointment>): WithPath<Appo
   if (seriesIdentifierIdx >= 0) {
     throw new OperationOutcomeError(
       badRequest(
-        'A series identifier is assigned when a recurring series is booked, and must not be sent',
+        'A series identifier is assigned to each occurrence of a recurring series, and must not be sent',
         `${getPath(proposed)}.identifier[${seriesIdentifierIdx}]`
       )
     );
@@ -117,7 +117,7 @@ export function expandRecurrence(proposed: WithPath<Appointment>): WithPath<Appo
   if (recurrenceIdIdx >= 0) {
     throw new OperationOutcomeError(
       badRequest(
-        'recurrenceId is assigned when a recurring series is booked, and must not be sent',
+        'recurrenceId is assigned to each occurrence of a recurring series, and must not be sent',
         `${getPath(proposed)}.extension[${recurrenceIdIdx}]`
       )
     );
