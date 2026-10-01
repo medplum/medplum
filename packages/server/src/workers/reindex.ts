@@ -16,9 +16,8 @@ import { Queue, Worker } from 'bullmq';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool, getDefaultStatementTimeout } from '../database';
-import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
+import type { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { SystemRepository } from '../fhir/repo';
-import { getShardSystemRepo } from '../fhir/repo';
 import { repoAccess } from '../fhir/repository/access-tracker';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { TODO_SHARD_ID } from '../fhir/sharding';
@@ -42,8 +41,7 @@ import {
  * recomputing all search columns and lookup table entries.
  */
 
-// PENDING{v5.2+} switch back to interface
-export type ReindexJobData = PostDeployJobData & {
+export interface ReindexJobData extends PostDeployJobData {
   readonly type: 'reindex';
   readonly resourceTypes: ResourceType[];
   readonly minReindexWorkerVersion?: number;
@@ -62,7 +60,7 @@ export type ReindexJobData = PostDeployJobData & {
   readonly delayBetweenBatches?: number;
   readonly progressLogThreshold?: number;
   readonly maxIterationAttempts?: number;
-};
+}
 
 export type ReindexResult =
   | { count: number; cursor: string; nextTimestamp: string; err?: Error; errSearchRequest?: SearchRequest }
@@ -114,7 +112,7 @@ export const initReindexWorker: WorkerInitializer = (config, options?: WorkerIni
       getWorkerBullmqConfig(config, 'reindex', defaultOptions)
     );
     addVerboseQueueLogging<ReindexJobData>(queue, worker, (job) => ({
-      asyncJob: 'AsyncJob/' + ('tracking' in job.data ? job.data.tracking.asyncJobId : job.data.asyncJobId),
+      asyncJob: 'AsyncJob/' + job.data.tracking.asyncJobId,
       jobType: job.data.type,
     }));
   }
@@ -154,18 +152,11 @@ export class ReindexJob {
   }
 
   static async create(jobData: ReindexJobData): Promise<ReindexJob> {
-    if ('target' in jobData) {
-      const [systemRepo, asyncJobExecutor] = await Promise.all([
-        getJobSystemRepo(jobData.target),
-        getTrackingAsyncJobExecutor(jobData.tracking),
-      ]);
-      return new ReindexJob(systemRepo, asyncJobExecutor, jobData);
-    }
-
-    // PENDING{v5.2+} remove legacy payload support
-    const systemRepo = getShardSystemRepo(TODO_SHARD_ID);
-    const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
-    return new ReindexJob(systemRepo, new AsyncJobExecutor(systemRepo, asyncJob), jobData);
+    const [systemRepo, asyncJobExecutor] = await Promise.all([
+      getJobSystemRepo(jobData.target),
+      getTrackingAsyncJobExecutor(jobData.tracking),
+    ]);
+    return new ReindexJob(systemRepo, asyncJobExecutor, jobData);
   }
 
   private async maybeSkipJob(): Promise<boolean> {

@@ -6,12 +6,18 @@ import type { Construct } from 'constructs';
 
 const malwareScanStatusTagKey = 'GuardDutyMalwareScanStatus';
 const noThreatsFoundStatus = 'NO_THREATS_FOUND';
+const threatsFoundStatus = 'THREATS_FOUND';
 const servicePrincipal = 'malware-protection-plan.guardduty.amazonaws.com';
 const sessionName = 'GuardDutyMalwareProtection';
+
+// GuardDuty has no on-demand-only mode. Automatic scans only cover the plan's object prefixes, while
+// on-demand scans ignore them, so a prefix nothing is written to disables automatic scanning.
+export const onDemandOnlyObjectPrefix = 'guardduty-on-demand-only/';
 
 export interface GuardDutyMalwareProtectionProps {
   bucket: s3.IBucket;
   consumerPrincipals?: iam.IPrincipal[];
+  onDemandOnly?: boolean;
 }
 
 export interface GuardDutyMalwareProtection {
@@ -39,6 +45,7 @@ export function buildGuardDutyMalwareProtection(
     protectedResource: {
       s3Bucket: {
         bucketName: props.bucket.bucketName,
+        objectPrefixes: props.onDemandOnly ? [onDemandOnlyObjectPrefix] : undefined,
       },
     },
     role: scanRole.roleArn,
@@ -50,7 +57,7 @@ export function buildGuardDutyMalwareProtection(
   }
 
   if (props.consumerPrincipals && props.consumerPrincipals.length > 0) {
-    addGuardDutyMalwareProtectionReadGate(props.bucket, props.consumerPrincipals);
+    addGuardDutyMalwareProtectionReadGate(props.bucket, props.consumerPrincipals, props.onDemandOnly);
   }
   addGuardDutyTagGate(props.bucket, scanRole);
 
@@ -150,18 +157,22 @@ function addGuardDutyScanRolePolicy(role: iam.Role, bucket: s3.IBucket): void {
   }
 }
 
-export function addGuardDutyMalwareProtectionReadGate(bucket: s3.IBucket, consumerPrincipals: iam.IPrincipal[]): void {
+export function addGuardDutyMalwareProtectionReadGate(
+  bucket: s3.IBucket,
+  consumerPrincipals: iam.IPrincipal[],
+  onDemandOnly?: boolean
+): void {
+  const tagCondition = `s3:ExistingObjectTag/${malwareScanStatusTagKey}`;
   bucket.addToResourcePolicy(
     new iam.PolicyStatement({
       effect: iam.Effect.DENY,
       principals: consumerPrincipals,
       actions: ['s3:GetObject', 's3:GetObjectVersion'],
       resources: [bucket.arnForObjects('*')],
-      conditions: {
-        StringNotEquals: {
-          [`s3:ExistingObjectTag/${malwareScanStatusTagKey}`]: noThreatsFoundStatus,
-        },
-      },
+      // Without automatic scans most objects are never scanned, so only block known threats
+      conditions: onDemandOnly
+        ? { StringEquals: { [tagCondition]: threatsFoundStatus } }
+        : { StringNotEquals: { [tagCondition]: noThreatsFoundStatus } },
     })
   );
 }

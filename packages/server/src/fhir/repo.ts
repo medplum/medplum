@@ -1746,11 +1746,21 @@ export class Repository extends FhirRepository implements Disposable {
    * @param interaction - The FHIR interaction being performed.
    */
   addSecurityFilters(builder: SelectQuery, resourceType: string, interaction: AccessPolicyInteraction): void {
-    // No compartment restrictions for admins.
-    if (!this.isSuperAdmin()) {
-      this.addProjectFilters(builder, resourceType);
-    }
+    this.addProjectFilters(builder, resourceType);
     this.addAccessPolicyFilters(builder, resourceType, interaction);
+  }
+
+  /**
+   * Returns the project IDs that searches for the given resource type are restricted to.
+   * @param resourceType - The resource type being searched.
+   * @returns The project IDs, or undefined if searches are not restricted by project.
+   */
+  getSearchProjectIds(resourceType: string): string[] | undefined {
+    // No compartment restrictions for admins.
+    if (this.isSuperAdmin()) {
+      return undefined;
+    }
+    return this.getPermittedProjectIds(resourceType);
   }
 
   /**
@@ -1768,7 +1778,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param resourceType - The resource type being searched.
    */
   private addProjectFilters(builder: SelectQuery, resourceType: string): void {
-    const projectIds = this.getPermittedProjectIds(resourceType);
+    const projectIds = this.getSearchProjectIds(resourceType);
     if (projectIds) {
       builder.where('projectId', 'IN', projectIds);
     }
