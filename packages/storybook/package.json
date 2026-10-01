@@ -49,7 +49,6 @@
   },
   "devDependencies": {
     "@mantine/core": "8.3.18",
-    "@mantine/dates": "8.3.18",
     "@mantine/notifications": "8.3.18",
     "@mantine/spotlight": "8.3.18",
     "@medplum/core": "5.2.0",
