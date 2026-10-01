@@ -17,7 +17,7 @@ permissions:
 jobs:
   prepare-release:
     name: Prepare release
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

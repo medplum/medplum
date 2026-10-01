@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   renovate:
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
 
     steps:
       - name: Run Renovate only in the first week of the month

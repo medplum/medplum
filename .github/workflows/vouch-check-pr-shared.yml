@@ -7,7 +7,7 @@ on:
   workflow_call:
     inputs:
       pr-number:
-        description: "PR number to check"
+        description: 'PR number to check'
         required: true
         type: number
       # A matrix of workflow_call jobs can't return per-job outputs (they all
@@ -16,12 +16,12 @@ on:
       # them in a single summary job. Off for the event-triggered path, where
       # a one-row report would just be noise.
       report-artifact:
-        description: "Upload a one-PR JSON result artifact for a caller to aggregate"
+        description: 'Upload a one-PR JSON result artifact for a caller to aggregate'
         required: false
         default: false
         type: boolean
 
-name: "Vouch - Check PR (shared)"
+name: 'Vouch - Check PR (shared)'
 
 permissions:
   contents: read
@@ -32,7 +32,7 @@ env:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     permissions:
       issues: write
       pull-requests: write

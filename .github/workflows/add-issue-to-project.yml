@@ -14,7 +14,7 @@ permissions:
 jobs:
   add-to-project:
     name: Add issue to project
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     steps:
       - uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:

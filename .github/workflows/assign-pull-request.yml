@@ -10,7 +10,7 @@ permissions:
 jobs:
   assign-pull-request:
     name: Assign pull request
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     permissions:
       pull-requests: write
     steps:

@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   sync:
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     steps:
       # Every owner in our CODEOWNERS is a team (@medplum/core, @medplum/dev,
       # etc.), so this always needs to resolve team membership via the org

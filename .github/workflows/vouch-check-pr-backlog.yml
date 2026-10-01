@@ -6,18 +6,18 @@ on:
   workflow_dispatch:
     inputs:
       pr-numbers:
-        description: "Comma-separated PR numbers to check (empty = all open PRs)"
+        description: 'Comma-separated PR numbers to check (empty = all open PRs)'
         required: false
-        default: ""
+        default: ''
 
-name: "Vouch - Check PR Backlog"
+name: 'Vouch - Check PR Backlog'
 
 permissions:
   contents: read
 
 jobs:
   list-prs:
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     permissions:
       contents: read
       pull-requests: read
@@ -127,7 +127,7 @@ jobs:
   summary:
     needs: [list-prs, check]
     if: ${{ !cancelled() && needs.list-prs.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     permissions:
       actions: read
     steps:
