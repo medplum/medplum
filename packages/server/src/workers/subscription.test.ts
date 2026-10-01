@@ -35,7 +35,7 @@ import { createHmac, randomUUID } from 'node:crypto';
 import type { Mock, MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { getConfig, loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import type * as Constants from '../constants';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
@@ -3606,7 +3606,7 @@ describe('Subscription Worker', () => {
   });
 
   describe('Subscription auto-disable', () => {
-    let savedConfig: MedplumServerConfig['subscriptionAutoDisable'];
+    let savedConfig: ServerConfig['subscriptionAutoDisable'];
 
     beforeEach(() => {
       savedConfig = getConfig().subscriptionAutoDisable;
@@ -4113,7 +4113,7 @@ describe('Subscription Worker Event Handling', () => {
     const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     // Initialize the subscription worker with mock config
-    initSubscriptionWorker({} as MedplumServerConfig);
+    initSubscriptionWorker({} as ServerConfig);
 
     // Create test job objects with the structure expected by the handlers
     const createTestJob = (id: string, attemptsMade = 0): Job =>

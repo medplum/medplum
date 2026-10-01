@@ -97,6 +97,7 @@ type DefaultConfigKeys =
   | 'tokenUrl'
   | 'userInfoUrl'
   | 'introspectUrl'
+  | 'registerUrl'
   | 'storageBaseUrl'
   | 'maxJsonSize'
   | 'maxBatchSize'
@@ -122,6 +123,7 @@ type DefaultConfigKeys =
   | 'defaultAuthRateLimit'
   | 'defaultMfaRateLimit'
   | 'defaultFhirQuota'
+  | 'defaultMaxUserWebSocketSubscriptions'
   | 'aiRealtimeTranscriptionUrl'
   | 'asyncDelayScaling'
   | 'serverScopedSubscriptionsEnabled';

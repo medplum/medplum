@@ -6,7 +6,7 @@ import { DelayedError, Job, Queue } from 'bullmq';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { getShardSystemRepo } from '../fhir/repo';
 import { GLOBAL_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
@@ -37,7 +37,7 @@ import * as workerUtils from './utils';
 import { queueRegistry } from './utils';
 
 describe('Post-Deploy Migration Worker', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let mockRegisteredServers: ServerRegistryInfo[];
   const systemRepo = getShardSystemRepo(GLOBAL_SHARD_ID);
 
