@@ -4,7 +4,8 @@ import { sleep } from '@medplum/core';
 import type { PoolClient, PoolConfig } from 'pg';
 import { Pool } from 'pg';
 import * as semver from 'semver';
-import type { MedplumDatabaseConfig, MedplumDatabaseSslConfig, MedplumServerConfig } from './config/types';
+import type { MedplumDatabaseConfig, MedplumDatabaseSslConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
@@ -41,7 +42,7 @@ export const locks = {
   migration: 1,
 };
 
-export async function initDatabase(serverConfig: MedplumServerConfig): Promise<void> {
+export async function initDatabase(serverConfig: ServerConfig): Promise<void> {
   pool = await initPool(serverConfig.database, serverConfig.databaseProxyEndpoint);
 
   if (serverConfig.database.runMigrations !== false) {

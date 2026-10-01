@@ -3,7 +3,7 @@
 import { createReference } from '@medplum/core';
 import type { ClientApplication, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { bcryptHashPassword, createProfile, createProjectMembership } from './auth/utils';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import { r4ProjectId } from './constants';
 import type { SystemRepository } from './fhir/repo';
 import { getShardSystemRepo } from './fhir/repo';
@@ -13,7 +13,7 @@ import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
 
-export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
+export async function seedDatabase(config: ServerConfig): Promise<void> {
   // client will eventually know its shard ID
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID, undefined, {
     skipBackgroundJobs: true,
@@ -59,7 +59,7 @@ export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
   );
 }
 
-async function createSuperAdmin(systemRepo: SystemRepository, config: MedplumServerConfig): Promise<void> {
+async function createSuperAdmin(systemRepo: SystemRepository, config: ServerConfig): Promise<void> {
   const email = (config.defaultSuperAdminEmail ?? 'admin@example.com').toLowerCase();
   const password = config.defaultSuperAdminPassword ?? 'medplum_admin';
   const [firstName, lastName] = ['Medplum', 'Admin'];

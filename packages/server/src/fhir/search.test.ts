@@ -57,7 +57,7 @@ import assert from 'node:assert';
 import type { MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import type { SystemRepository } from './repo';
 import { Repository } from './repo';
@@ -74,7 +74,7 @@ import { loadStructureDefinitions } from './structure';
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
 describe.each<Project['features']>([undefined, ['range-search']])('project-scoped Repository w/ %j', (features) => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let repo: Repository;
   let systemRepo: SystemRepository;
 
