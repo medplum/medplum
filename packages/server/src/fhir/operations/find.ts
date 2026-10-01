@@ -75,6 +75,11 @@ const MAX_OCCURRENCE_COUNT = 6;
 
 const WEEK_MINUTES = 7 * 24 * 60;
 
+// When scheduling across a week with a DST transition, the week may be this much longer
+// or shorter than `WEEK_MINUTES` (Note that this undercounts some rare scenarios, such
+// as in the "Antarctica/Troll" timezone which has a two hour gap).
+const DST_FUDGE_HOURS = 1;
+
 // Indexed by `Temporal.ZonedDateTime.dayOfWeek - 1`, and named for R5's `weeklyTemplate` elements.
 const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 
@@ -116,7 +121,7 @@ function parseSearchRange(start: string, end: string, occurrenceCount: number | 
   if (range.start >= range.end) {
     throw new OperationOutcomeError(badRequest('Invalid search time range'));
   }
-  const [maxDays, slackDays] = occurrenceCount ? [7, 1 / 24] : [31, 0];
+  const [maxDays, slackDays] = occurrenceCount ? [7, DST_FUDGE_HOURS / 24] : [31, 0];
   const diffDays = (range.end.valueOf() - range.start.valueOf()) / (24 * 60 * 60 * 1000);
   if (diffDays > maxDays + slackDays) {
     throw new OperationOutcomeError(badRequest(`Search range cannot exceed ${maxDays} days`));
@@ -141,8 +146,8 @@ async function handler(params: {
   const requestedRanges = [searchRange];
   for (let weeks = 1; weeks < (occurrenceCount ?? 1); weeks++) {
     requestedRanges.push({
-      start: addMinutes(searchRange.start, weeks * WEEK_MINUTES - 60),
-      end: addMinutes(searchRange.end, weeks * WEEK_MINUTES + 60),
+      start: addMinutes(searchRange.start, weeks * WEEK_MINUTES - 60 * DST_FUDGE_HOURS),
+      end: addMinutes(searchRange.end, weeks * WEEK_MINUTES + 60 * DST_FUDGE_HOURS),
     });
   }
 
