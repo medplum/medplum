@@ -659,7 +659,7 @@ New projects are created with a set of **default access policies**, one per prof
 
 | Profile type    | Default policy grants                                                                                                                            |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Practitioner`  | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types. |
+| `Practitioner`  | Read access to all resource types, and write access to all resource types except knowledge, terminology, and conformance resources and `AccessPolicy`, `Bot`, `ClientApplication`, `Subscription`, and `UserConfiguration`. `ClientApplication.secret` and `retiringSecret` are hidden. A Practitioner can run `Bot/$execute` (it only requires read access) and cannot edit a Bot or call `Bot/$deploy`. |
 | `Admin`         | Full read/write access to all resource types (equivalent to having no access policy).                                                            |
 | `Patient`       | Access scoped to the patient's own compartment.                                                                                                  |
 | `RelatedPerson` | Access scoped to the associated patient's compartment, parameterized by `patient`.                                                               |
