@@ -142,7 +142,7 @@ describe('SearchFilterPopover', () => {
       fireEvent.click(operatorInput);
     });
     await act(async () => {
-      fireEvent.click(await screen.findByRole('option', { name: 'greater than', exact: true }));
+      fireEvent.click(await screen.findByRole('option', { name: 'greater than', exact: true, hidden: true }));
     });
     await act(async () => {
       fireEvent.change(screen.getByTestId('filter-0-value'), { target: { value: '0.5' } });
