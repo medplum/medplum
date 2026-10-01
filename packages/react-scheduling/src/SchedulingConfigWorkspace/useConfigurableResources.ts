@@ -22,7 +22,7 @@ export interface ResourceList<T> {
 export interface ConfigurableResources {
   readonly services: ResourceList<WithId<HealthcareService>>;
   readonly actors: Record<BookableActorType, ResourceList<ConfigurableActor>>;
-  /** Puts saved visit types into the list in place of what was loaded. Other resources are ignored. */
+  /** Puts resources the server now holds into the lists, in place of what they were loaded as. */
   readonly store: (resources: readonly WithId<Resource>[]) => void;
 }
 

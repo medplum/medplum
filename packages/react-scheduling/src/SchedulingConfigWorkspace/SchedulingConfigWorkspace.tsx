@@ -81,7 +81,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     setPending(undefined);
   }
 
-  const handleServiceStored = useCallback(
+  const handleStored = useCallback(
     (stored: WithId<HealthcareService>): void => {
       store([stored]);
       setSelection({ kind: 'service', id: stored.id });
@@ -100,7 +100,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     detail = (
       <VisitTypePage
         key={`new-${selection.key}`}
-        onStored={handleServiceStored}
+        onStored={handleStored}
         onDiscardNew={handleDiscardNew}
         onDirtyChange={setDirty}
       />
@@ -112,7 +112,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         // The version is in the key, so a save or reload remounts the page on what was stored.
         key={`${service.id}-${service.meta?.versionId}`}
         service={service}
-        onStored={handleServiceStored}
+        onStored={handleStored}
         onDirtyChange={setDirty}
       />
     ) : (
