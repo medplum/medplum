@@ -8,13 +8,13 @@ import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { getTestProjectSystemRepo } from '../fhir/repository/test-utils';
 import { createTestProject, withTestContext } from '../test.setup';
 import { getBinaryStorage } from './loader';
 
 const app = express();
-let config: MedplumServerConfig;
+let config: ServerConfig;
 let binary: Binary;
 
 describe('Storage Routes', () => {

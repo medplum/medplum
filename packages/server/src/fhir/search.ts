@@ -36,6 +36,7 @@ import { getExtraEntries } from '@medplum/fhir-router';
 import type { Bundle, BundleEntry, BundleLink, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
+import { isChainedSearchDisabled } from './lookups/reference';
 import { clamp } from './operations/utils/parameters';
 import { isPresenceOperator, shouldSearchParameterExist } from './presence';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
@@ -951,7 +952,14 @@ function buildSearchFilterExpression(
     case SearchStrategies.TOKEN_COLUMN:
       return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
     case SearchStrategies.LOOKUP_TABLE:
-      return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+      return impl.lookupTable.buildWhere(
+        selectQuery,
+        resourceType,
+        table,
+        param,
+        filter,
+        repo.getSearchProjectIds(resourceType)
+      );
     case SearchStrategies.RANGE_COLUMN:
       if (!repo.supportsRangeSearch()) {
         return buildNormalSearchFilterExpression(
@@ -1655,6 +1663,13 @@ function buildChainedSearch(
       { code, operator: param.filter.operator, value: `${targetType}/${targetId}` },
       trackedResourceTypes
     );
+  }
+
+  for (const link of param.chain) {
+    const referenceTableType = link.direction === Direction.FORWARD ? link.originType : link.targetType;
+    if (isChainedSearchDisabled(referenceTableType)) {
+      throw new OperationOutcomeError(badRequest(`Chained search is disabled for ${referenceTableType}`));
+    }
   }
 
   return buildChainedSearchUsingReferenceTable(repo, selectQuery, param, trackedResourceTypes);

@@ -41,6 +41,60 @@ describe('PatientSummary', () => {
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
+  test('Links the header when headerLink is provided', async () => {
+    await setup({ patient: HomerSimpson, headerLink: HomerSimpson });
+
+    expect(screen.getByRole('link', { name: /Homer Simpson/ })).toHaveAttribute('href', `/Patient/${HomerSimpson.id}`);
+  });
+
+  test('Renders a static header when headerLink is omitted', async () => {
+    await setup({ patient: HomerSimpson });
+
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Homer Simpson/ })).toBeNull();
+  });
+
+  test('Reflects patient updates made through the client', async () => {
+    const client = new MockClient();
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={client}>
+          <PatientSummary patient={HomerSimpson} />
+        </MedplumProvider>
+      );
+    });
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      await client.updateResource({ ...HomerSimpson, name: [{ given: ['Max'], family: 'Power' }] });
+    });
+
+    expect(screen.getByText('Max Power')).toBeInTheDocument();
+    expect(screen.queryByText('Homer Simpson')).toBeNull();
+  });
+
+  test('Ignores updates to other patients', async () => {
+    const client = new MockClient();
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={client}>
+          <PatientSummary patient={HomerSimpson} />
+        </MedplumProvider>
+      );
+    });
+
+    await act(async () => {
+      await client.updateResource({
+        ...HomerSimpson,
+        id: 'other-patient',
+        name: [{ given: ['Max'], family: 'Power' }],
+      });
+    });
+
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.queryByText('Max Power')).toBeNull();
+  });
+
   test('Shows skeleton while loading, then hides it', async () => {
     render(
       <MedplumProvider medplum={medplum}>
