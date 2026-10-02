@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { DayOfWeek } from '@medplum/core';
-import { DAYS_OF_WEEK, isDayOfWeek } from '@medplum/core';
-import type { HealthcareServiceAvailableTime } from '@medplum/fhirtypes';
+import type { DayOfWeek, WithId } from '@medplum/core';
+import { DAYS_OF_WEEK, getScheduleSchedulingParameters, isDayOfWeek } from '@medplum/core';
+import type { HealthcareService, HealthcareServiceAvailableTime, Schedule } from '@medplum/fhirtypes';
+import { getEffectiveAvailability } from '../availability';
 
 /** Minutes in a day. Also the exclusive end of the day, displayed as 12:00 AM. */
 export const MINUTES_PER_DAY = 1440;
@@ -474,4 +475,66 @@ export function nextRange(ranges: MinuteRange[]): MinuteRange {
     Math.min(ceilToTimeStep(lastEnd + 60), MINUTES_PER_DAY - TIME_STEP_MINUTES)
   );
   return { start, end: Math.min(start + 60, MINUTES_PER_DAY) };
+}
+
+/**
+ * `service` edits a visit type's own default hours. `override` edits one calendar's hours for it, which can be
+ * switched back to following the default.
+ */
+export type AvailabilityMode = 'service' | 'override';
+
+export interface AvailabilityFieldsValue {
+  readonly weekly: WeeklyAvailability;
+  /** Whether the calendar sets hours of its own. Always true in `service` mode, which has nothing to inherit. */
+  readonly overriding: boolean;
+}
+
+/**
+ * Seeds the fields from what is stored.
+ * @param service - The visit type whose hours are edited, or whose default a calendar overrides.
+ * @param schedule - The calendar holding the override. Omitted in `service` mode.
+ * @returns The hours in effect, and whether the calendar sets its own.
+ */
+export function initialAvailabilityFieldsValue(
+  service: WithId<HealthcareService>,
+  schedule?: Schedule
+): AvailabilityFieldsValue {
+  return {
+    overriding: schedule ? getScheduleSchedulingParameters(schedule, service, 'availability').length > 0 : true,
+    // Seeded from the hours in effect rather than a blank week:
+    // `getEffectiveAvailability` falls back to the service default on its own, and
+    // reads the service alone when there is no Schedule, so it covers both modes.
+    weekly: toWeeklyAvailability(getEffectiveAvailability(service, schedule)),
+  };
+}
+
+/**
+ * Says why the hours as entered cannot be saved, for the parent to block its save on.
+ * @param value - The hours as entered.
+ * @param service - The visit type the hours apply to, named in the reason.
+ * @param mode - Where the hours would be written.
+ * @returns The reason, or undefined when the hours can be saved.
+ */
+export function getAvailabilityFieldsError(
+  value: AvailabilityFieldsValue,
+  service: HealthcareService,
+  mode: AvailabilityMode
+): string | undefined {
+  // Neither mode can express a week with no hours in it, and each fails in its
+  // own direction. An override with zero available days has no valid extension
+  // form, so `setScheduleAvailability` refuses it rather than write something
+  // that fails FHIR constraint ext-1. A service with zero available days has no
+  // `availableTime` at all, which scheduling reads as unrestricted rather than
+  // unavailable, so that save would quietly do the opposite of what the emptied
+  // form shows. Both need at least one available day; a week that really is
+  // around the clock is entered as one, day by day.
+  if (!value.overriding || hasAnyAvailableDay(value.weekly)) {
+    return undefined;
+  }
+  const serviceName = service.name ?? 'this visit service type';
+  return mode === 'service'
+    ? `Default availability must include at least one available day. Clearing every day would leave ${serviceName} ` +
+        `bookable around the clock rather than never; to stop scheduling it, deactivate the visit service type.`
+    : `Custom availability must include at least one available day. ` +
+        `To stop scheduling ${serviceName} on this calendar, turn it off in schedule settings.`;
 }

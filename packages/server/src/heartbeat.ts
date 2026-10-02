@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { TypedEventTarget } from '@medplum/core';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 
 export type HeartbeatEventMap = {
   heartbeat: { type: 'heartbeat' };
@@ -17,7 +17,7 @@ export const DEFAULT_HEARTBEAT_MS = 10 * 1000;
  * Initializes heartbeat timers for WebSocket connections.
  * @param config - Medplum server config.
  */
-export function initHeartbeat(config: MedplumServerConfig): void {
+export function initHeartbeat(config: ServerConfig): void {
   if (config.heartbeatEnabled === false) {
     return;
   }

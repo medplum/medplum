@@ -35,10 +35,11 @@ import { createHmac, randomUUID } from 'node:crypto';
 import type { Mock, MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { getConfig, loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import type * as Constants from '../constants';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
+import * as projectMembershipUtils from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
 import { setResourceCacheEntry } from '../fhir/repository/resource-cache';
@@ -65,7 +66,6 @@ import {
   recordSubscriptionFailure,
 } from './subscription-failure-tracker';
 import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
-import * as workerUtils from './utils';
 
 const wsSubscriptionTestChannels = vi.hoisted(() => {
   const suffix = process.env.VITEST_WORKER_ID ?? process.env.VITEST_POOL_ID ?? `pid-${process.pid}`;
@@ -2160,7 +2160,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      const spy = vi.spyOn(workerUtils, 'findProjectMembership');
+      const spy = vi.spyOn(projectMembershipUtils, 'findProjectMembership');
 
       await addSubscriptionJobs(patient, undefined, { project, interaction: 'create' });
 
@@ -2474,6 +2474,7 @@ describe('Subscription Worker', () => {
 
         const ctx = tryGetRequestContext();
         const jobData: SubscriptionJobData = {
+          target: { kind: 'project', projectId: subscription.meta?.project as string },
           subscriptionId: subscription.id,
           resourceType: resource.resourceType,
           channelType: subscription.channel.type,
@@ -2759,7 +2760,10 @@ describe('Subscription Worker', () => {
 
         // Whichever membership the unordered lookup returns first gets the denying policy, so a
         // worker that fell back to `findProjectMembership` would deny the allowed subscription.
-        const firstFound = await workerUtils.findProjectMembership(wsProject.id, createReference(practitioner));
+        const firstFound = await projectMembershipUtils.findProjectMembership(
+          wsProject.id,
+          createReference(practitioner)
+        );
         expect([membershipA.id, membershipB.id]).toContain(firstFound?.id);
         const [noAccessMembership, hasAccessMembership] =
           firstFound?.id === membershipA.id ? [membershipA, membershipB] : [membershipB, membershipA];
@@ -3602,7 +3606,7 @@ describe('Subscription Worker', () => {
   });
 
   describe('Subscription auto-disable', () => {
-    let savedConfig: MedplumServerConfig['subscriptionAutoDisable'];
+    let savedConfig: ServerConfig['subscriptionAutoDisable'];
 
     beforeEach(() => {
       savedConfig = getConfig().subscriptionAutoDisable;
@@ -4109,7 +4113,7 @@ describe('Subscription Worker Event Handling', () => {
     const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     // Initialize the subscription worker with mock config
-    initSubscriptionWorker({} as MedplumServerConfig);
+    initSubscriptionWorker({} as ServerConfig);
 
     // Create test job objects with the structure expected by the handlers
     const createTestJob = (id: string, attemptsMade = 0): Job =>

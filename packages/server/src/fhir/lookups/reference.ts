@@ -8,10 +8,12 @@ import {
   getSearchParameters,
   isResource,
   isUUID,
+  projectAdminResourceTypes,
   resolveId,
   toTypedValue,
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { getConfig } from '../../config/loader';
 import { systemResourceProjectId } from '../../constants';
 import { getLogger } from '../../logger';
 import type { PgQueryable } from '../sql';
@@ -24,6 +26,18 @@ export interface ReferenceTableRow extends LookupTableRow {
   readonly targetId: string;
   readonly code: string;
   readonly projectId: string;
+}
+
+/**
+ * Returns true if chained search is disabled for the resource type by server config,
+ * in which case its references are not written to the `<ResourceType>_References` table.
+ * @param resourceType - The resource type.
+ * @returns True if chained search is disabled for the resource type.
+ */
+export function isChainedSearchDisabled(resourceType: string): boolean {
+  return Boolean(
+    getConfig().disableChainedSearch?.includes(resourceType) && !projectAdminResourceTypes.includes(resourceType)
+  );
 }
 
 /**
@@ -61,6 +75,9 @@ export class ReferenceTable extends LookupTable {
     }
 
     const resourceType = resources[0].resourceType;
+    if (isChainedSearchDisabled(resourceType)) {
+      return;
+    }
 
     // When `create` is true, existing rows are not read and inserts fall through to
     // ON CONFLICT DO NOTHING, which would leave a stale `projectId` in place. No caller reaches

@@ -20,6 +20,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import type { ServerConfig } from '../../config/utils';
 import { runInAuthenticatedContext } from '../../context';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
 import type { SetAccountsJobData } from '../../workers/set-accounts';
@@ -36,10 +37,11 @@ let diagnosticReport: DiagnosticReport;
 let patient: Patient;
 let organization1: Organization;
 let organization2: Organization;
+let config: ServerConfig;
 
 describe('Patient Set Accounts Operation', () => {
   beforeEach(async () => {
-    const config = await loadTestConfig();
+    config = await loadTestConfig();
     await initApp(app, config);
     ({ accessToken, login, membership, project } = await createTestProject({
       withAccessToken: true,
@@ -399,7 +401,6 @@ describe('Patient Set Accounts Operation', () => {
     const queue = getSetAccountsQueue() as any;
     queue.add.mockClear();
 
-    // Start the operation
     const initRes = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -420,15 +421,14 @@ describe('Patient Set Accounts Operation', () => {
       });
     expect(initRes).toHaveStatus(202);
     expect(initRes.headers['content-location']).toBeDefined();
-
-    // Manually push through BullMQ job
     expect(queue.add).toHaveBeenCalledWith(
       'SetAccountsJobData',
       expect.objectContaining<Partial<SetAccountsJobData>>({ resourceType: 'Patient', id: patient.id })
     );
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-    queue.add.mockClear();
+    const contentLocation = new URL(initRes.headers['content-location']);
+    const jobData = queue.add.mock.calls[0][1] as SetAccountsJobData;
+    const job = { id: 1, data: jobData } as unknown as Job<SetAccountsJobData>;
 
     await runInAuthenticatedContext(
       { login, membership, project, userConfig: {} as unknown as UserConfiguration },
@@ -438,16 +438,12 @@ describe('Patient Set Accounts Operation', () => {
       () => execSetAccountsJob(job)
     );
 
-    // Check the export status
-    const contentLocation = new URL(initRes.headers['content-location']);
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
-
     const statusRes = await request(app)
       .get(contentLocation.pathname)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(statusRes).toHaveStatus(200);
-    const resBody = statusRes.body as AsyncJob;
-    expect(resBody.output?.parameter).toStrictEqual(
+    expect((statusRes.body as AsyncJob).output?.parameter).toStrictEqual(
       expect.arrayContaining([{ name: 'resourcesUpdated', valueInteger: 3 }])
     );
   });

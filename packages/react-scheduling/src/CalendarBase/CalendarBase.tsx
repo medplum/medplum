@@ -9,7 +9,7 @@ import themePlugin from '@fullcalendar/react/themes/classic';
 import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
-import { Button, Group, Loader, SegmentedControl, Title, useComputedColorScheme } from '@mantine/core';
+import { Button, Group, Loader, SegmentedControl, Text, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { assertNever } from '@medplum/core';
@@ -18,6 +18,7 @@ import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import type { DateTimeRange } from '../types';
 import classes from './CalendarBase.module.css';
 import { availableTimeToBusinessHoursEntry, filterBookedSlots } from './CalendarBase.utils';
@@ -257,7 +258,16 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
             </Button>
           </Button.Group>
           <Group>
-            <Title order={4}>{controller.view?.title}</Title>
+            <MonthPickerButton
+              size="compact-md"
+              label={
+                <Text component="span" fz="h4" fw={700} lh="h4">
+                  {controller.view?.title}
+                </Text>
+              }
+              date={controller.getDate() ?? new Date()}
+              onChange={(month) => controller.gotoDate(month)}
+            />
             {loading && <Loader size="sm" />}
           </Group>
         </Group>

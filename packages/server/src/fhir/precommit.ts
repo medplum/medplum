@@ -19,7 +19,7 @@ import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
-import { findProjectMembership } from '../workers/utils';
+import { findProjectMembership } from './projectmembership';
 import type { Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
 import { SelectQuery } from './sql';

@@ -9,7 +9,7 @@ import {
   normalizeErrorString,
   SchedulingScheduleColorURI,
 } from '@medplum/core';
-import type { Appointment, Extension, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Extension, Location, Reference, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -20,12 +20,15 @@ import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBooking
 import { AppointmentBookingForm } from '../AppointmentFinder/AppointmentBookingForm';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
+import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
 import { resolveThemeColor } from '../colors';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
 import type { DateTimeRange } from '../types';
 import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
+import type { CalendarFilterValues } from './CalendarFilters';
+import { CalendarFilters } from './CalendarFilters';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
@@ -36,6 +39,10 @@ type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidat
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
 
 const NO_CANDIDATES: CandidatesByActorType = { Practitioner: [], Location: [], Device: [] };
+
+const EMPTY_COLOR_INDEXES: ReadonlyMap<string, number> = new Map();
+
+const NO_FILTERS: CalendarFilterValues = {};
 
 const NONE_DESELECTED: DeselectedIdsByActorType = {
   Practitioner: new Set(),
@@ -51,6 +58,7 @@ export interface SchedulingWorkspaceProps {
   readonly diagnosisBinding?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
+  readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
   /**
    * Overrides the value set the appointment detail view offers cancellation reasons
    * from, for a host coding them against its own terminology.
@@ -76,10 +84,16 @@ export interface SchedulingWorkspaceProps {
    * {@link AppointmentProposalFormProps.appointmentExtensions}.
    */
   readonly appointmentExtensions?: readonly Extension[];
+  /**
+   * The site the Location filter starts on, e.g. the facility the host launched
+   * scheduling from. The user can still change or clear it. Read once on mount; key
+   * the workspace to start it over on another site.
+   */
+  readonly defaultLocation?: Reference<Location> | WithId<Location>;
 }
 
 /**
- * A data-coordination component pairing {@link CalendarsPanel} with {@link MultiCalendar}.
+ * A data-coordination component pairing `CalendarsPanel` with {@link MultiCalendar}.
  *
  * - Picks a color for each Schedule so that it can render consistently across
  *   those components.
@@ -88,15 +102,15 @@ export interface SchedulingWorkspaceProps {
  *   The form writes the booking and announces what it wrote, which is what puts the
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
- * - Shows what is booked: clicking an appointment opens {@link AppointmentDetails} in the
- *   same pane the booking form uses, describing the visit and offering to cancel it.
- *   Cancelling is what takes the time back off the calendar, again without a host
- *   supplying anything. The pane holds one or the other, never both: opening either
- *   closes whatever was open beside the calendar.
+ * - Shows what is booked: clicking an appointment opens `AppointmentDetails` in the
+ *   same pane the booking form uses, describing the visit and offering to cancel or
+ *   reschedule it.
  * - Highlights the time last chosen, wherever it was chosen: the click that opened the
  *   pane, then whatever the form's time search settles on, and nothing while the form
  *   holds no time. The calendar is never moved to reach it — a highlight off the week
  *   on screen is kept, and is drawn again on paging back to it.
+ * - Can open on a site the host chooses: `defaultLocation` is where the Location filter,
+ *   and so the booking form, starts.
  *
  * @param props - Component props
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
@@ -109,6 +123,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     appointmentCancellationReasonValueSet,
     canBypassSchedulingRules,
     appointmentExtensions,
+    defaultLocation,
   } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
@@ -117,8 +132,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const [candidatesByActorType, setCandidatesByActorType] = useState<CandidatesByActorType>(NO_CANDIDATES);
   const [candidatesLoading, setCandidatesLoading] = useState(false);
+  const [colorIndexes, setColorIndexes] = useState<ReadonlyMap<string, number>>(EMPTY_COLOR_INDEXES);
 
   const [deselectedIds, setDeselectedIds] = useState<DeselectedIdsByActorType>(NONE_DESELECTED);
+
+  // Owned by `CalendarFilters`, which reports both whenever either changes. Held here
+  // because the candidate search below is keyed on them.
+  const initialFilters: CalendarFilterValues = defaultLocation ? { location: defaultLocation } : NO_FILTERS;
+  const [filters, setFilters] = useState<CalendarFilterValues>(initialFilters);
+  const { service: selectedService, location: selectedLocation } = filters;
 
   const [range, setRange] = useState<DateTimeRange>();
 
@@ -129,6 +151,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // What the calendar highlights
   const [highlight, setHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
+  const [rescheduleFinderOpen, setRescheduleFinderOpen] = useState(false);
 
   // Finds all bookable Schedules, with one search per bookable actor type.
   useEffect(() => {
@@ -137,11 +160,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setCandidatesLoading(true);
     Promise.all(
       BOOKABLE_ACTOR_TYPES.map(async (actorType) => {
-        const candidates = await searchScheduleCandidates(medplum, undefined, {
+        // We search for a large number of schedule candidates here because we
+        // do client-side filtering based on locations in the list. Follow up:
+        // https://github.com/medplum/medplum/issues/10618
+        const candidates = await searchScheduleCandidates(medplum, selectedService, {
           actorType,
           query: '',
+          location: selectedLocation,
           signal: controller.signal,
-          count: 100,
+          count: 250,
         });
         return [actorType, candidates] as const;
       })
@@ -149,6 +176,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       .then((results) => {
         if (!controller.signal.aborted) {
           setSchedulesLoadingError(undefined);
+          setColorIndexes((previous) => numberNewCandidates(previous, results));
           setCandidatesByActorType(Object.fromEntries(results) as CandidatesByActorType);
         }
       })
@@ -163,19 +191,24 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         }
       });
     return () => controller.abort();
-  }, [medplum]);
+  }, [medplum, selectedService, selectedLocation]);
 
-  // Every candidate across all the bookable types gets its own stable color, shared between
-  // its CalendarsPanel row and its MultiCalendar source so the two always match.
+  // Every candidate across all the bookable types gets its own color, shared between its
+  // CalendarsPanel row and its MultiCalendar source so the two always match. The fallback
+  // palette is picked by the number the calendar was given when it was first offered, so a
+  // filter narrowing the list leaves the colors of the calendars it keeps alone.
   const colorByScheduleId = useMemo(() => {
     const all = BOOKABLE_ACTOR_TYPES.flatMap((actorType) => candidatesByActorType[actorType]);
     const map = new Map<string, keyof typeof theme.colors>();
-    all.forEach((candidate, i) => {
+    for (const candidate of all) {
       const extensionColor = getExtensionValue(candidate.schedule, SchedulingScheduleColorURI) as string | undefined;
-      map.set(candidate.schedule.id, resolveThemeColor(theme, extensionColor, i));
-    });
+      map.set(
+        candidate.schedule.id,
+        resolveThemeColor(theme, extensionColor, colorIndexes.get(candidate.schedule.id) ?? 0)
+      );
+    }
     return map;
-  }, [candidatesByActorType, theme]);
+  }, [candidatesByActorType, colorIndexes, theme]);
 
   const activeCandidates = useMemo(() => {
     return BOOKABLE_ACTOR_TYPES.flatMap((actorType) =>
@@ -199,10 +232,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         schedule: candidate.schedule,
         color: colorByScheduleId.get(candidate.schedule.id),
         slots: (slots ?? []).filter((slot: Slot) => slot.schedule?.reference === scheduleReference),
-        appointments: (appointments ?? []).filter((appointment: Appointment) =>
-          (appointment.participant ?? []).some(
-            (participant) => participant.actor?.reference && actorReferences.has(participant.actor.reference)
-          )
+        appointments: (appointments ?? []).filter(
+          (appointment: Appointment) =>
+            appointment.status !== 'cancelled' &&
+            (appointment.participant ?? []).some(
+              (participant) => participant.actor?.reference && actorReferences.has(participant.actor.reference)
+            )
         ),
       };
     });
@@ -222,6 +257,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setTimeFinderOpen(false);
   }, []);
 
+  // Hides are kept across a service change rather than pruned: a calendar hidden under
+  // one service type stays hidden if another offers it again.
   const toggleCandidate = useCallback((actorType: BookableActorType, id: string): void => {
     setDeselectedIds((prev) => ({ ...prev, [actorType]: toggleId(prev[actorType], id) }));
   }, []);
@@ -237,14 +274,20 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const selectAppointment = useCallback(
     (appointment: Appointment): void => {
       if (appointment.id) {
+        if (appointment.id !== selectedAppointmentId) {
+          setRescheduleFinderOpen(false);
+        }
         closeBooking();
         setSelectedAppointmentId(appointment.id);
       }
     },
-    [closeBooking]
+    [closeBooking, selectedAppointmentId]
   );
 
-  const closeAppointment = useCallback((): void => setSelectedAppointmentId(undefined), []);
+  const closeAppointment = useCallback((): void => {
+    setSelectedAppointmentId(undefined);
+    setRescheduleFinderOpen(false);
+  }, []);
 
   const openAppointment = useMemo((): WithId<Appointment> | undefined => {
     if (selectedAppointmentId) {
@@ -282,7 +325,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
       <div className={classes.sidebar}>
-        <CalendarsPanel items={panelItems} candidatesLoading={candidatesLoading} onToggle={toggleCandidate} />
+        <CalendarsPanel
+          items={panelItems}
+          candidatesLoading={candidatesLoading}
+          onToggle={toggleCandidate}
+          filters={<CalendarFilters defaultValue={initialFilters} onChange={setFilters} />}
+        />
       </div>
       <div className={classes.calendar}>
         {displayError !== undefined && (
@@ -302,7 +350,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         <CalendarTimezoneNotice className={classes.timezoneNotice} timezones={timezones} anyUnknown={anyUnknown} />
       </div>
       {openAppointment && (
-        <section key={openAppointment.id} className={classes.pane} aria-label="Appointment details">
+        <section
+          key={openAppointment.id}
+          className={cx(classes.pane, { [classes.paneWide]: rescheduleFinderOpen })}
+          aria-label="Appointment details"
+        >
           <Group justify="space-between" wrap="nowrap" mb="sm">
             <Title order={4}>Appointment details</Title>
             <CloseButton aria-label="Close appointment details" onClick={closeAppointment} />
@@ -311,6 +363,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             appointment={openAppointment}
             cancellationReasonValueSet={appointmentCancellationReasonValueSet}
             onCancelled={props.onCancelled}
+            onRescheduled={props.onRescheduled}
+            onToggleTimeFinder={setRescheduleFinderOpen}
           />
         </section>
       )}
@@ -330,11 +384,41 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             onToggleTimeFinder={setTimeFinderOpen}
             onChangeTime={setHighlight}
             onBooked={finishBooking}
+            defaultLocation={selectedLocation}
+            defaultService={selectedService}
           />
         </section>
       )}
     </div>
   );
+}
+
+/**
+ * Gives every calendar not yet numbered the next number, keeping the number the rest hold.
+ *
+ * The number picks a calendar's fallback color, so it has to outlive the list a filter
+ * narrows: numbering by position in that list would repaint every calendar surviving the
+ * filter. Numbers run in the order calendars were first offered, which holds for as long
+ * as the workspace is open.
+ *
+ * @param previous - The numbers already given out.
+ * @param results - The candidates that just arrived, by actor type.
+ * @returns The numbers, extended for whatever is new, or `previous` when nothing is.
+ */
+function numberNewCandidates(
+  previous: ReadonlyMap<string, number>,
+  results: readonly (readonly [BookableActorType, ScheduleCandidate[]])[]
+): ReadonlyMap<string, number> {
+  let next: Map<string, number> | undefined;
+  for (const [, candidates] of results) {
+    for (const candidate of candidates) {
+      if (!previous.has(candidate.schedule.id)) {
+        next ??= new Map(previous);
+        next.set(candidate.schedule.id, next.size);
+      }
+    }
+  }
+  return next ?? previous;
 }
 
 function toggleId(ids: ReadonlySet<string>, id: string): Set<string> {

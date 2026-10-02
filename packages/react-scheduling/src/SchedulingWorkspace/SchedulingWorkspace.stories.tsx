@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
-import type { Appointment } from '@medplum/fhirtypes';
+import type { Appointment, Location, Reference } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
-import { IconCalendarCancel, IconCalendarCheck } from '@tabler/icons-react';
+import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import {
   withBookStub,
@@ -11,6 +11,7 @@ import {
   withFindStub,
   withFixtures,
   withMockedDate,
+  withRescheduleStub,
   withValueSetStub,
 } from '../stories/decorators';
 import {
@@ -45,7 +46,14 @@ const LOCAL_FIXTURES = inViewerTimezone(ELSEWHERE_FIXTURES);
 export default {
   title: 'Medplum/SchedulingWorkspace',
   component: SchedulingWorkspace,
-  decorators: [withBookStub(), withCancelStub(), withValueSetStub(), withFindStub(), withMockedDate],
+  decorators: [
+    withBookStub(),
+    withCancelStub(),
+    withRescheduleStub(),
+    withValueSetStub(),
+    withFindStub(),
+    withMockedDate,
+  ],
   parameters: {
     // Default seeding includes a lot of cluttering Slot resources for Dr. Alice Smith; skip it.
     skipDefaultSeeding: true,
@@ -85,6 +93,13 @@ export default {
  * cancelled appointment, showing the reason and with no button left on it, and the event
  * beside it is drawn as cancelled without a reload, because the cancellation announces
  * what it wrote the way booking does.
+ *
+ * The same drawer offers to move the visit. "Reschedule" swaps the details for the form
+ * that finds it another time, opened on the visit type and the actors it is held on —
+ * for Tuesday's imaging visit, Dr. Rivera, Ultrasound 1 and Exam Room A. Swap the room
+ * and find a time and its own hour is offered again, since the search is told to ignore
+ * the visit being moved. Move it and the drawer goes back to the details, with the event
+ * redrawn at its new time behind them.
  *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
@@ -154,13 +169,30 @@ FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
 export const BypassSchedulingRules = (): JSX.Element => <Workspace canBypassSchedulingRules />;
 BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
 
+/**
+ * The workspace as a host opens it on one site, such as the facility a user launched
+ * scheduling from.
+ *
+ * The host passes a reference to the Location, and the Location filter starts on **Uro Associates
+ * - Satellite**: only the calendars held there are listed, and the visit types on offer
+ * are the ones the satellite holds. Click open time and the booking form starts on the
+ * satellite too, which is the site the booked appointment records.
+ *
+ * It is only where the filter starts. Take the pill off and every calendar comes back.
+ *
+ * @returns The story.
+ */
+export const AtASite = (): JSX.Element => <Workspace defaultLocation={{ reference: 'Location/satellite-clinic' }} />;
+AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
+
 interface WorkspaceProps {
   readonly canBypassSchedulingRules?: boolean;
+  readonly defaultLocation?: Reference<Location>;
 }
 
 /**
  * Fills the viewport under the package banner, which is 72px.
- * @param props - Whether the story lets a time be typed.
+ * @param props - Whether the story lets a time be typed, and the site it starts on.
  * @returns The workspace as a host would mount it.
  */
 function Workspace(props: WorkspaceProps): JSX.Element {
@@ -171,6 +203,7 @@ function Workspace(props: WorkspaceProps): JSX.Element {
     <div style={{ height: 'calc(100vh - 72px)', padding: '1em', boxSizing: 'border-box' }}>
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
+        defaultLocation={props.defaultLocation}
         onBooked={({ appointment }) => {
           showNotification({
             color: 'green',
@@ -184,6 +217,14 @@ function Workspace(props: WorkspaceProps): JSX.Element {
             color: 'red',
             icon: <IconCalendarCancel size={18} />,
             title: 'Appointment cancelled',
+            message: describeBooking(appointment),
+          });
+        }}
+        onRescheduled={({ appointment }) => {
+          showNotification({
+            color: 'blue',
+            icon: <IconCalendarEvent size={18} />,
+            title: 'Appointment rescheduled',
             message: describeBooking(appointment),
           });
         }}

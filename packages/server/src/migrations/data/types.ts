@@ -4,11 +4,13 @@ import type { WithId } from '@medplum/core';
 import type { AsyncJob } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import type { SystemRepository } from '../../fhir/repo';
+import type { AsyncJobTracking, ShardJobTarget } from '../../workers/base';
 import type { PhasalMigration } from '../types';
 
 export interface PostDeployJobData {
+  readonly target: ShardJobTarget;
+  readonly tracking: AsyncJobTracking;
   readonly type: 'reindex' | 'custom' | 'dynamic';
-  readonly asyncJobId: string;
   readonly requestId?: string;
   readonly traceId?: string;
   readonly skipInFirstBootMode?: boolean;

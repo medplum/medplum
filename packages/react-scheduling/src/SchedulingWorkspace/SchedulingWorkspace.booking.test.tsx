@@ -18,6 +18,7 @@ import {
   ElderJordanPatient,
   PROCEDURE_VALUE_SET,
   ProcedureCodes,
+  SatelliteClinic,
 } from '../stories/scheduling';
 import { installAutocompleteTimers, settleAutocomplete } from '../test-utils/asyncAutocomplete';
 import {
@@ -28,6 +29,7 @@ import {
   chooseSecondOfferedTime,
   clickBook,
   enterAuthorizationDetails,
+  field,
   fillAuthorizedBooking,
   fillBooking,
   hasPill,
@@ -37,7 +39,7 @@ import {
   patientDetail,
   setupBookingClient,
 } from '../test-utils/bookingForm';
-import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen, within } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
 // A separate file from SchedulingWorkspace.test.tsx, whose own fixtures block installs
@@ -215,7 +217,16 @@ describe('SchedulingWorkspace booking', () => {
     await clickCalendar();
 
     expect(bookingPaneHeading()).toBeInTheDocument();
-    expect(screen.getByRole('searchbox', { name: /visit type/i })).toBeInTheDocument();
+    // Scoped to the pane, since the sidebar filter wears the same label.
+    expect(field(/visit type/i)).toBeInTheDocument();
+  });
+
+  test('Starts on the site the workspace was opened on', async () => {
+    renderWithMedplum(<SchedulingWorkspace defaultLocation={SatelliteClinic} />, medplum);
+    await clickCalendar();
+
+    const pane = screen.getByRole('region', { name: 'Book appointment' });
+    expect(within(pane).getByText('Uro Associates - Satellite')).toBeInTheDocument();
   });
 
   test('Opens the time search on the day clicked rather than today', async () => {

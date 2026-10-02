@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
-import type { MedplumServerConfig, WorkerName } from '../config/types';
+import type { WorkerName } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { getLogger, globalLogger } from '../logger';
 import { initBatchWorker } from './batch';
 import { initCronWorker } from './cron';
-import { initDataWarehouseSyncWorker } from './data-warehouse-sync';
 import { initDicomWorker } from './dicom';
 import { addDispatchJobs, initDispatchWorker } from './dispatch';
 import { initDownloadWorker } from './download';
@@ -28,7 +28,6 @@ const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
   { name: 'post-deploy-migration', init: initPostDeployMigrationWorker },
   { name: 'set-accounts', init: initSetAccountsWorker },
   { name: 'lambda-cleaner', init: initLambdaCleanerWorker },
-  { name: 'data-warehouse-sync', init: initDataWarehouseSyncWorker },
   { name: 'dicom', init: initDicomWorker },
 ];
 
@@ -36,7 +35,7 @@ const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
  * Initializes all background workers.
  * @param config - The config to initialize the workers with. Should contain `redis` and optionally `bullmq` fields.
  */
-export async function initWorkers(config: MedplumServerConfig): Promise<void> {
+export async function initWorkers(config: ServerConfig): Promise<void> {
   globalLogger.debug('Initializing workers...');
   const enabledWorkers = config.workers?.enabled;
   const enableAll = config.workers?.enabled?.includes('*');
