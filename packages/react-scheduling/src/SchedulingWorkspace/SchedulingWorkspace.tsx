@@ -77,11 +77,11 @@ export interface SchedulingWorkspaceProps {
    * Passing it draws the fields; it enforces nothing. Which users get it is the host
    * application's responsibility.
    *
-   * Manual rescheduling requires confirmed `transaction-bundles` support.
    * Such a booking is sent as a transaction, so the appointment and its Slots commit
    * together on projects with the `transaction-bundles` feature enabled. Without it they
    * are applied as a plain batch, where an appointment that failed to write would leave
-   * Slots holding no visit.
+   * Slots holding no visit. Manual rescheduling is not offered without that feature,
+   * since a partial write would leave the appointment pointing at deleted Slots.
    * @see https://www.medplum.com/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions
    */
   readonly canBypassSchedulingRules?: boolean;

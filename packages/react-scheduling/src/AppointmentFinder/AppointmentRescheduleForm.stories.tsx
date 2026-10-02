@@ -139,7 +139,7 @@ export const ManualOverride = (): JSX.Element => {
   const medplum = useMedplum();
   const [appointment, setAppointment] = useState<WithId<Appointment>>();
   const [written, setWritten] = useState<AppointmentReschedule>();
-  // Read the fixture back so the writer receives its persisted version, as it would in a host application.
+  // Read back for `meta.versionId`, which the manual write's `ifMatch` needs.
   useEffect(() => {
     medplum.readResource('Appointment', RiveraImagingAppointment.id).then(setAppointment).catch(console.error);
   }, [medplum]);

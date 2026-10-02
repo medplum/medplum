@@ -84,8 +84,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
       }
       const schedules = getProposedSchedules(proposal);
 
-      // Assert that the shape we received matches what we need for `$reschedule`;
-      // these fields are always present if we got the results from `$find`.
+      // Always present, whether the time came from `$find` or was typed.
       if (!proposal.start) {
         throw new Error('The chosen time does not say when it is');
       }
@@ -113,9 +112,8 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
             '$reschedule'
           );
 
-      // `$reschedule` is a custom operation, so the client cannot tell what it changed.
-      // It deletes the existing slots, creates new ones, and updates `appointment.slot`
-      // with the fresh references.
+      // Neither `$reschedule` nor a transaction tells the client what changed: the old
+      // slots were deleted, new ones created, and `appointment.slot` repointed.
       for (const moved of result.appointments) {
         medplum.notifyResourceModified({
           resourceType: 'Appointment',
