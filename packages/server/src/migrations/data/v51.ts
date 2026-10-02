@@ -17,6 +17,6 @@ export const migration: CustomPostDeployMigration = {
 };
 
 // prettier-ignore
-async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
+async function callback(_client: PoolClient, _results: MigrationActionResult[]): Promise<void> {
   // No data migration needed for AsyncJob schema changes (handled by schema migration v122)
 }
