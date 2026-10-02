@@ -19,7 +19,7 @@ export interface UnavailableNoteProps {
   readonly text: string;
   /** Defaults to `warning`. */
   readonly severity?: UnavailableNoteSeverity;
-  /** @deprecated Use `severity` instead. When set, overrides the color `severity` would pick. */
+  /** When set, overrides the color `severity` would pick. */
   readonly color?: string;
   readonly message: string;
 }
