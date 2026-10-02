@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Badge, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { formatCodeableConcept, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
+import {
+  formatCodeableConcept,
+  getExtension,
+  isDefined,
+  normalizeErrorString,
+  RecurrenceIdExtensionURI,
+  RecurrenceTemplateExtensionURI,
+  resolveId,
+} from '@medplum/core';
 import type { Appointment, AppointmentParticipant, CodeableConcept, Parameters, Reference } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ReferenceDisplay } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
@@ -253,6 +261,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       <Badge color={STATUS_COLORS[appointment.status]}>{appointment.status}</Badge>
       {patientLine}
       {whenLine}
+      <Detail label="Repeats" value={formatSeries(appointment)} />
       <Detail label="Service" value={formatService(appointment)} />
       <Detail
         label="With"
@@ -351,6 +360,21 @@ function formatWhen(appointment: Appointment): string | undefined {
     .filter(Boolean)
     .join(' – ');
   return `${formatDayHeading(start)} · ${times}`;
+}
+
+/**
+ * Says where the visit falls in a recurring series, for one `$book` wrote as part of one.
+ * @param appointment - The appointment being described.
+ * @returns Its place in the series, or undefined for a visit that does not repeat.
+ */
+function formatSeries(appointment: Appointment): string | undefined {
+  const position = getExtension(appointment, RecurrenceIdExtensionURI)?.valuePositiveInt;
+  if (position === undefined) {
+    return undefined;
+  }
+  // Only the first occurrence keeps the template, so only it says how many there are.
+  const count = getExtension(appointment, RecurrenceTemplateExtensionURI, 'occurrenceCount')?.valuePositiveInt;
+  return count ? `Weekly · visit ${position} of ${count}` : `Weekly · visit ${position}`;
 }
 
 /**
