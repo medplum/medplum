@@ -15,7 +15,7 @@ import {
   validateSchedulingParameters,
 } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
 import { ConfigSection, SaveBar } from '../ConfigPage/ConfigPage';
-import type { ConfigSaveFailure } from '../ConfigPage/configSave';
+import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { summarizeOffering } from '../offeringSummary';
 import { isActorInactive } from '../SchedulingConfigWorkspace.utils';
@@ -64,6 +64,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const servicesById = useMemo(() => new Map(services.map((service) => [service.id, service])), [services]);
   const [initial] = useState<ScheduleFields>(() => scheduleFieldsOf(schedule, servicesById));
   const [fields, setFields] = useState(initial);
+  const [actorDraft, setActorDraft] = useState<ConfigurableActorResource>(resource);
   const [open, setOpen] = useState<string | null>(() => {
     if (initialOpenServiceId !== undefined) {
       return initialOpenServiceId && initial.offered.includes(initialOpenServiceId) ? initialOpenServiceId : null;
@@ -77,12 +78,13 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
   const draft = schedule && buildScheduleDraft(schedule, fields, initial, servicesById);
   // Edits the draft can't store yet, like an emptied week, still count, so the save bar can say why it refuses.
-  const dirty = (schedule ? !deepEquals(draft, schedule) : draft !== undefined) || !deepEquals(fields, initial);
+  const actorDirty = !deepEquals(actorDraft, resource);
+  const dirty = actorDirty || (schedule ? !deepEquals(draft, schedule) : false) || !deepEquals(fields, initial);
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const offered = fields.offered.flatMap((id) => servicesById.get(id) ?? []);
-  const inactive = isActorInactive(resource);
-  const alert = getBookingAlert(resource, schedule && fields.active);
+  const inactive = isActorInactive(actorDraft);
+  const alert = getBookingAlert(actorDraft, schedule && fields.active);
 
   function errorsFor(service: WithId<HealthcareService>): ReturnType<typeof getBlockingErrors> {
     const current = fields.offerings[service.id];
@@ -117,6 +119,13 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       ? `Fix the highlighted fields for ${blocking.service.name ?? 'this visit type'} before saving.`
       : blocking?.availabilityError;
 
+  // An inactive actor can't keep an active Schedule, so switching the actor off switches its Schedule off too.
+  // Switching it back on puts the Schedule back as stored.
+  function handleActorActiveChange(active: boolean): void {
+    setActorDraft(active === !isActorInactive(resource) ? resource : withActorActive(resource, active));
+    setFields((current) => ({ ...current, active: active && initial.active }));
+  }
+
   function updateOffering(id: string, value: OfferingFields): void {
     setFields((current) => ({ ...current, offerings: { ...current.offerings, [id]: value } }));
   }
@@ -126,13 +135,14 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       setTriedToSave(true);
       return;
     }
-    if (!draft) {
-      return;
-    }
     setSaving(true);
     setFailure(undefined);
     try {
-      const result = await saveConfigChanges(medplum, [{ stored: schedule, draft }]);
+      const changes: ConfigChange[] = [{ stored: resource, draft: actorDraft }];
+      if (schedule && draft) {
+        changes.push({ stored: schedule, draft });
+      }
+      const result = await saveConfigChanges(medplum, changes);
       if (result.failures.length > 0) {
         setFailure(result.failures[0]);
       } else if (result.saved.length === 0) {
@@ -151,6 +161,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
   function handleDiscard(): void {
     setFields(initial);
+    setActorDraft(resource);
     setTriedToSave(false);
     setFailure(undefined);
   }
@@ -194,7 +205,10 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         </Alert>
       )}
       {failure?.conflict && (
-        <Alert color="orange" title={`The Schedule for ${actorName} changed since you opened it`}>
+        <Alert
+          color="orange"
+          title={`${actorDirty ? `${actorName} or its Schedule` : `The Schedule for ${actorName}`} changed since you opened it`}
+        >
           <Stack gap="sm" align="flex-start">
             <Text size="sm">
               A newer version was saved somewhere else, so nothing here was written over it. Reload to see the latest
@@ -214,7 +228,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
       <ConfigSection title="General">
         <ActorGeneral
-          resource={resource}
+          resource={actorDraft}
+          onActiveChange={handleActorActiveChange}
           scheduleActive={schedule && fields.active}
           onScheduleActiveChange={(active) => setFields((current) => ({ ...current, active }))}
         />
@@ -277,37 +292,82 @@ function getBookingAlert(resource: ConfigurableActorResource, scheduleActive: bo
 }
 
 function ActorGeneral(props: {
+  /** The provider, room, or device, as edited. */
   readonly resource: ConfigurableActorResource;
+  readonly onActiveChange: (active: boolean) => void;
   /** Whether the actor's Schedule is active, as edited, or undefined when it has none. */
   readonly scheduleActive: boolean | undefined;
   readonly onScheduleActiveChange: (active: boolean) => void;
 }): JSX.Element {
-  const { resource, scheduleActive, onScheduleActiveChange } = props;
-  let status: string;
-  if (resource.resourceType === 'Practitioner') {
-    status = resource.active === false ? 'Inactive' : 'Active';
-  } else {
-    status = resource.status ? resource.status.charAt(0).toUpperCase() + resource.status.slice(1) : 'Active';
-  }
+  const { resource, onActiveChange, scheduleActive, onScheduleActiveChange } = props;
+  const typeLabel = getActorTypeLabel(resource.resourceType);
+  const active = !isActorInactive(resource);
+  // Only turning off is allowed while the actor is inactive, so a Schedule stored on can still be switched off.
+  const scheduleLocked = !active && !scheduleActive;
   return (
     <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
       <ReadOnlyField label="Name" value={getDisplayString(resource)} />
-      <ReadOnlyField label={`${getActorTypeLabel(resource.resourceType)} status`} value={status} />
+      <StatusSwitch
+        label={`${typeLabel} status`}
+        value={statusLabel(resource)}
+        checked={active}
+        onChange={onActiveChange}
+        description="Applies everywhere, not only in scheduling. Switching it off switches the Schedule off too."
+      />
       {scheduleActive !== undefined && (
-        <Stack gap={2}>
-          <Text size="sm" fw={500}>
-            Schedule status
-          </Text>
-          <Switch
-            aria-label="Schedule status"
-            label={scheduleActive ? 'Active' : 'Inactive'}
-            checked={scheduleActive}
-            onChange={(event) => onScheduleActiveChange(event.currentTarget.checked)}
-          />
-        </Stack>
+        <StatusSwitch
+          label="Schedule status"
+          value={scheduleActive ? 'Active' : 'Inactive'}
+          checked={scheduleActive}
+          onChange={onScheduleActiveChange}
+          disabled={scheduleLocked}
+          description={
+            scheduleLocked ? `Can't be switched on while the ${typeLabel.toLowerCase()} is inactive.` : undefined
+          }
+        />
       )}
     </SimpleGrid>
   );
+}
+
+function StatusSwitch(props: {
+  readonly label: string;
+  readonly value: string;
+  readonly checked: boolean;
+  readonly onChange: (checked: boolean) => void;
+  readonly disabled?: boolean;
+  readonly description?: string;
+}): JSX.Element {
+  return (
+    <Stack gap={2}>
+      <Text size="sm" fw={500}>
+        {props.label}
+      </Text>
+      <Switch
+        aria-label={props.label}
+        label={props.value}
+        checked={props.checked}
+        disabled={props.disabled}
+        description={props.description}
+        onChange={(event) => props.onChange(event.currentTarget.checked)}
+      />
+    </Stack>
+  );
+}
+
+// A room's or device's other statuses, like suspended, read as on and are kept until switched.
+function statusLabel(resource: ConfigurableActorResource): string {
+  if (resource.resourceType === 'Practitioner') {
+    return resource.active === false ? 'Inactive' : 'Active';
+  }
+  return resource.status ? resource.status.charAt(0).toUpperCase() + resource.status.slice(1) : 'Active';
+}
+
+function withActorActive(resource: ConfigurableActorResource, active: boolean): ConfigurableActorResource {
+  if (resource.resourceType === 'Practitioner') {
+    return { ...resource, active };
+  }
+  return { ...resource, status: active ? 'active' : 'inactive' };
 }
 
 function ReadOnlyField(props: { readonly label: string; readonly value: string }): JSX.Element {
