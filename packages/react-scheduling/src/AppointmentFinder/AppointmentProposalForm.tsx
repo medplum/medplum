@@ -77,6 +77,7 @@ import {
   formatTimezoneLabel,
   getAppointmentActors,
   getDurationMinutes,
+  getLaterOccurrenceStarts,
   getNativeInputType,
   isViewerTimezone,
   parseZonedDateTimeInput,
@@ -104,6 +105,9 @@ const NO_MARKED_DATES: Date[] = [];
 // Long enough that typing a time does not search on every keystroke, short enough
 // that the warning is there before the user reaches the book button.
 const CONFLICT_DEBOUNCE_MS = 400;
+
+/** Joins names the way a sentence listing all of them would. */
+const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
 
 // `Appointment/$find` searches a weekly series of two to six occurrences.
 const OCCURRENCE_OPTIONS = [
@@ -831,7 +835,12 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
           value={formatZonedDateTime(new Date(appointment.start), timezone)}
           // Mantine puts the description above the input by default.
           inputWrapperOrder={['label', 'input', 'description']}
-          description={<ChosenTimeCommitment appointment={appointment} actors={actors} />}
+          description={
+            <>
+              <ChosenTimeCommitment appointment={appointment} actors={actors} />
+              <LaterOccurrences appointment={appointment} timezone={timezone} />
+            </>
+          }
         />
       )}
 
@@ -976,6 +985,33 @@ function ChosenTimeCommitment(props: ChosenTimeCommitmentProps): JSX.Element {
           </Fragment>
         );
       })}
+    </>
+  );
+}
+
+interface LaterOccurrencesProps {
+  /** The time chosen, which is the series' first occurrence when it repeats. */
+  readonly appointment: Appointment;
+  /** IANA timezone the visit is scheduled in. */
+  readonly timezone?: string;
+}
+
+/**
+ * Names the dates a series books after the one on show, which Book writes too.
+ * @param props - The React props.
+ * @returns The line, or null for a visit that does not repeat.
+ */
+function LaterOccurrences(props: LaterOccurrencesProps): JSX.Element | null {
+  const { appointment, timezone } = props;
+  const starts = getLaterOccurrenceStarts(appointment, timezone);
+  if (starts.length === 0) {
+    return null;
+  }
+  const formatDay = new Intl.DateTimeFormat(undefined, { timeZone: timezone, month: 'short', day: 'numeric' });
+  return (
+    <>
+      <br />
+      Also books {listAll.format(starts.map((start) => formatDay.format(start)))} at the same time.
     </>
   );
 }
