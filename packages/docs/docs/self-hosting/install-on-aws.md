@@ -105,6 +105,8 @@ It is **strongly** recommended to setup an SES email address with production acc
 
 Follow the [Creating and verifying identities in Amazon SES](https://docs.aws.amazon.com/ses/latest/dg/creating-identities.html) guide to register an email address for system generated emails.
 
+The Medplum CDK stack grants the server the IAM permissions it needs to send through SES. For the full list of related config settings, IAM details for non-CDK deployments, and troubleshooting, see [Send Emails with Amazon SES](/docs/self-hosting/amazon-ses).
+
 ### Choose an environment name
 
 Throughout this document, instructions will refer to an "environment name". This environment name is used in multiple places, for example an environment named `demo` will result in:
