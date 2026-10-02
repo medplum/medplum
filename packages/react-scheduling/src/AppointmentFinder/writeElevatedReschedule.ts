@@ -96,12 +96,18 @@ export async function writeElevatedReschedule(
   const schedules = await Promise.all(
     scheduleRefs.map((reference) => medplum.readReference<Schedule>({ reference }, { cache: 'no-cache' }))
   );
+  // The scheduling operations refuse multi-actor Schedules, so an appointment written onto one could not be moved again.
   if (
     schedules.some(
-      (schedule) => schedule.active === false || !serviceTypeIncludesService(schedule.serviceType, service)
+      (schedule) =>
+        schedule.active === false ||
+        schedule.actor.length !== 1 ||
+        !serviceTypeIncludesService(schedule.serviceType, service)
     )
   ) {
-    throw new Error('Every selected schedule must be active and eligible for this visit type.');
+    throw new Error(
+      'Every selected schedule must be active, have exactly one actor, and be eligible for this visit type.'
+    );
   }
   const slotReferences = (existing.slot ?? []).map(getReferenceString);
   if (slotReferences.some((ref) => !ref)) {

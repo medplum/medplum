@@ -156,15 +156,18 @@ describe('writeElevatedReschedule', () => {
     await expect(writeElevatedReschedule(medplum, { ...existing, end }, proposal())).rejects.toThrow('length');
   });
 
-  test.each([{ active: false }, { serviceType: [] }])(
-    'rejects structurally ineligible schedules (%s)',
-    async (override) => {
-      await medplum.updateResource({ ...ExamRoomBSchedule, ...override });
-      const execute = vi.spyOn(medplum, 'executeBatch');
-      await expect(writeElevatedReschedule(medplum, existing, proposal())).rejects.toThrow('active and eligible');
-      expect(execute).not.toHaveBeenCalled();
-    }
-  );
+  test.each([
+    { active: false },
+    { serviceType: [] },
+    { actor: [...ExamRoomBSchedule.actor, ...DrRiveraSchedule.actor] },
+  ])('rejects structurally ineligible schedules (%s)', async (override) => {
+    await medplum.updateResource({ ...ExamRoomBSchedule, ...override });
+    const execute = vi.spyOn(medplum, 'executeBatch');
+    await expect(writeElevatedReschedule(medplum, existing, proposal())).rejects.toThrow(
+      'Every selected schedule must'
+    );
+    expect(execute).not.toHaveBeenCalled();
+  });
 
   test('refuses failed response entries even when an appointment is present', async () => {
     const execute = medplum.executeBatch.bind(medplum);
