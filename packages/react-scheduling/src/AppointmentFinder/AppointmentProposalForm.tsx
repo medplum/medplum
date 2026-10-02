@@ -881,12 +881,12 @@ function ManualTime(props: ManualTimeProps): JSX.Element {
         <NumberInput
           label="Minutes"
           min={1}
-          allowDecimal={fixedDuration}
+          allowDecimal={false}
           readOnly={fixedDuration}
           disabled={fixedDuration}
           hideControls={fixedDuration}
           w={110}
-          value={durationMinutes ?? ''}
+          value={durationMinutes === undefined ? '' : Math.round(durationMinutes)}
           onChange={(value) => onChange(dateTime, typeof value === 'number' ? value : undefined)}
         />
       </Group>
