@@ -1818,6 +1818,28 @@ describe('AppointmentProposalForm', () => {
       expect(lastFindParams(get)?.has('occurrence-count')).toBe(false);
     });
 
+    test('Names the later dates a series books beside the time chosen', async () => {
+      setup(medplum, { allowRecurring: true });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Weekly, 3 times');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      // The search opens on Monday 17 August, so the series runs on into the next two Mondays.
+      expect(screen.getByText(/Also books Aug 24 and Aug 31 at the same time\./)).toBeInTheDocument();
+    });
+
+    test('Names no later dates for a visit that does not repeat', async () => {
+      setup(medplum, { allowRecurring: true });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      expect(screen.queryByText(/Also books/)).not.toBeInTheDocument();
+    });
+
     test('Drops a series chosen before the field was taken away', async () => {
       const { rerender } = renderWithMedplum(<AppointmentProposalForm onSubmit={onSubmit} allowRecurring />, medplum);
       await chooseImagingService();

@@ -1,5 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { RecurrenceTemplateExtensionURI } from '@medplum/core';
+import type { Appointment } from '@medplum/fhirtypes';
 import { buildProposedAppointment, DrRiveraPractitioner, ExamRoomA, indexByReference } from '../stories/scheduling';
 import {
   endOfMonth,
@@ -12,6 +14,7 @@ import {
   getAppointmentKey,
   getDurationMinutes,
   getFindWindowError,
+  getLaterOccurrenceStarts,
   getZonedDayRange,
   groupAppointmentsByDay,
   isViewerTimezone,
@@ -192,6 +195,61 @@ describe('keys and durations', () => {
     ).toBe(20);
     expect(getDurationMinutes(undefined)).toBe(0);
     expect(getDurationMinutes({ resourceType: 'Appointment', status: 'proposed', participant: [] })).toBe(0);
+  });
+});
+
+describe('getLaterOccurrenceStarts', () => {
+  /**
+   * A proposed first occurrence of a weekly series.
+   * @param start - When it starts.
+   * @param occurrenceCount - How many occurrences the series has.
+   * @param timezone - The zone the template names, if any.
+   * @returns The proposal.
+   */
+  function seriesOf(start: string, occurrenceCount: number, timezone?: string): Appointment {
+    return {
+      resourceType: 'Appointment',
+      status: 'proposed',
+      participant: [],
+      start,
+      extension: [
+        {
+          url: RecurrenceTemplateExtensionURI,
+          extension: [
+            ...(timezone ? [{ url: 'timezone', valueCodeableConcept: { coding: [{ code: timezone }] } }] : []),
+            { url: 'occurrenceCount', valuePositiveInt: occurrenceCount },
+          ],
+        },
+      ],
+    };
+  }
+
+  test('Counts a week on from the first for each occurrence after it', () => {
+    const starts = getLaterOccurrenceStarts(seriesOf('2026-08-10T14:00:00.000Z', 3), EASTERN);
+
+    expect(starts.map((start) => start.toISOString())).toStrictEqual([
+      '2026-08-17T14:00:00.000Z',
+      '2026-08-24T14:00:00.000Z',
+    ]);
+  });
+
+  test('Keeps the time on the clock of the zone the template names across a change of clocks', () => {
+    // 10am Eastern on 26 October 2026 is 14:00Z; clocks fall back on 1 November, so the
+    // next week's 10am is 15:00Z. The zone handed in is not the one the series keeps.
+    const starts = getLaterOccurrenceStarts(seriesOf('2026-10-26T14:00:00.000Z', 2, EASTERN), 'Etc/UTC');
+
+    expect(starts.map((start) => start.toISOString())).toStrictEqual(['2026-11-02T15:00:00.000Z']);
+  });
+
+  test('Finds nothing more for a visit that does not repeat', () => {
+    expect(
+      getLaterOccurrenceStarts({
+        resourceType: 'Appointment',
+        status: 'proposed',
+        participant: [],
+        start: '2026-08-10T14:00:00.000Z',
+      })
+    ).toStrictEqual([]);
   });
 });
 
