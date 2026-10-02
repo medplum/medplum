@@ -683,6 +683,9 @@ describe('getAppointmentSite', () => {
 
 describe('setPrimaryProvider', () => {
   const primaryType = { coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE }] };
+  const markedType = {
+    coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE, display: 'primary performer' }],
+  };
   const otherType = { coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: 'ATND' }] };
   const rivera = { reference: 'Practitioner/rivera' };
   const okafor = { reference: 'Practitioner/okafor' };
@@ -697,7 +700,7 @@ describe('setPrimaryProvider', () => {
     );
     expect(participants).toEqual([
       { actor: rivera, status: 'accepted' },
-      { actor: okafor, status: 'accepted', type: [otherType, primaryType] },
+      { actor: okafor, status: 'accepted', type: [otherType, markedType] },
     ]);
     expect(getPrimaryProvider({ resourceType: 'Appointment', status: 'booked', participant: participants })).toEqual(
       okafor

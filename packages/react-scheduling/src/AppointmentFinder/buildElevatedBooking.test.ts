@@ -79,7 +79,11 @@ describe('buildElevatedBooking', () => {
         actor: DrRiveraSchedule.actor[0],
         required: 'required',
         status: 'needs-action',
-        type: [{ coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE }] }],
+        type: [
+          {
+            coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE, display: 'primary performer' }],
+          },
+        ],
       },
       { actor: Ultrasound1Schedule.actor[0], required: 'required', status: 'needs-action' },
     ]);

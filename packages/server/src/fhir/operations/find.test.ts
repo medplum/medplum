@@ -333,7 +333,13 @@ describe('Appointment/$find', () => {
               actor: { reference: `Practitioner/${practitioner.id}` },
               required: 'required',
               status: 'needs-action',
-              type: [{ coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE }] }],
+              type: [
+                {
+                  coding: [
+                    { system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE, display: 'primary performer' },
+                  ],
+                },
+              ],
             },
             {
               actor: { reference: `Location/${location.id}` },

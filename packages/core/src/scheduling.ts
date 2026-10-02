@@ -633,7 +633,9 @@ export function setPrimaryProvider(
     const { type, ...rest } = participant;
     const others = type?.filter((concept) => !isPrimaryPerformerType(concept)) ?? [];
     if (primary?.reference && participant.actor?.reference === primary.reference) {
-      others.push({ coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE }] });
+      others.push({
+        coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE, display: 'primary performer' }],
+      });
     }
     return others.length > 0 ? { ...rest, type: others } : rest;
   });
