@@ -7,12 +7,12 @@ import type { AddressInfo } from 'ws';
 import { WebSocketServer } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { initTestAuth } from '../test.setup';
 
 describe('AI realtime websocket', () => {
   let app: express.Express;
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let server: Server;
 
   beforeAll(async () => {

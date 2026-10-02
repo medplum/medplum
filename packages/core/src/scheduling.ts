@@ -120,6 +120,16 @@ export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/S
 export const ServiceTypeReferenceURI = 'https://medplum.com/fhir/service-type-reference';
 export const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/timezone';
 
+/**
+ * R5's `Appointment.recurrenceTemplate`, as the R4 cross-version extension. `Appointment/$find`
+ * with `occurrence-count` adds it to each proposed first occurrence of a weekly series.
+ * Sub-extensions are named for R5's child elements: `timezone` (valueCodeableConcept, IANA),
+ * `recurrenceType` (valueCodeableConcept, UCUM `wk`), `occurrenceCount` (valuePositiveInt), and
+ * `weeklyTemplate` (the weekday, e.g. `monday`: valueBoolean true, and `weekInterval`: valuePositiveInt).
+ */
+export const RecurrenceTemplateExtensionURI =
+  'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceTemplate';
+
 export const DAYS_OF_WEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
 export type DayOfWeek = (typeof DAYS_OF_WEEK)[number];
@@ -523,9 +533,11 @@ export function serviceTypeIncludesService(
 }
 
 /**
- * Extracts HealthcareService references from serviceType concepts.
+ * Extracts the distinct HealthcareService references from serviceType concepts.
+ * A service with several `type` codes is represented by one concept per code,
+ * each carrying the same reference; that reference is returned only once.
  * @param serviceType - CodeableConcept values to inspect
- * @returns HealthcareService references embedded in the concepts
+ * @returns HealthcareService references embedded in the concepts, in first-seen order
  */
 export function extractServiceTypeReferences(
   serviceType: CodeableConcept[] | undefined
@@ -533,12 +545,17 @@ export function extractServiceTypeReferences(
   if (!serviceType?.length) {
     return [];
   }
+  const seen = new Set<string>();
   return flatMapFilter(serviceType, (concept) => {
     const value = getExtensionValue(concept, ServiceTypeReferenceURI);
     // We expect that `value` is always a Reference<HealthcareService>, but the
     // extension shape may not be validated by a FHIR Profile, so we perform a
     // safety check here. This also makes Typescript safe without a cast.
-    return isReference<HealthcareService>(value, 'HealthcareService') ? value : undefined;
+    if (!isReference<HealthcareService>(value, 'HealthcareService') || seen.has(value.reference)) {
+      return undefined;
+    }
+    seen.add(value.reference);
+    return value;
   });
 }
 
