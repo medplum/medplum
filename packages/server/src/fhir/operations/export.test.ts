@@ -141,7 +141,7 @@ describe('Export', () => {
             { resourceType: 'Binary', readonly: true },
           ],
         },
-        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID }
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
       });
       await expect(restrictedRepo.readResource('Patient', patient.id)).rejects.toThrow();
       await expect(restrictedRepo.readResource('AsyncJob', job.id)).rejects.toThrow();
