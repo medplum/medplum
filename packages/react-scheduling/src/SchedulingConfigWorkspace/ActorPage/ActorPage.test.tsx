@@ -1,15 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { toServiceTypeCodeableConcepts } from '@medplum/core';
-import type { HealthcareService, Location, Practitioner, Schedule } from '@medplum/fhirtypes';
+import { getScheduleSchedulingParameters, TimezoneExtensionURI, toServiceTypeCodeableConcepts } from '@medplum/core';
+import type { Bundle, HealthcareService, Location, Practitioner, Resource, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
+import { setScheduleAvailability } from '../../availability';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
-import { setHealthcareServiceSchedulingParameterValues } from '../../parameterValues';
-import { renderWithMedplum, screen } from '../../test-utils/render';
+import {
+  getScheduleSchedulingParameterValues,
+  setHealthcareServiceSchedulingParameterValues,
+  setScheduleSchedulingParameterValues,
+} from '../../parameterValues';
+import { renderWithMedplum, screen, userEvent, waitFor, within } from '../../test-utils/render';
 import { ActorPage } from './ActorPage';
 
+const downtown: WithId<Location> = { resourceType: 'Location', id: 'downtown', name: 'Downtown Clinic' };
 const room3: WithId<Location> = {
   resourceType: 'Location',
   id: 'room-3',
@@ -32,7 +38,7 @@ const followUp = setHealthcareServiceSchedulingParameterValues(
   { resourceType: 'HealthcareService', id: 'follow-up', name: 'Follow-up' } satisfies WithId<HealthcareService>,
   { duration: 30, timezone: 'America/New_York' }
 );
-const services = [initialVisit, followUp];
+const services: WithId<HealthcareService>[] = [initialVisit, followUp];
 
 const drSmith: WithId<Practitioner> = {
   resourceType: 'Practitioner',
@@ -40,41 +46,124 @@ const drSmith: WithId<Practitioner> = {
   name: [{ prefix: ['Dr.'], given: ['Jane'], family: 'Smith' }],
 };
 
-function makeSchedule(actor: string, offered: WithId<HealthcareService>[]): Schedule {
+function makeSchedule(
+  actor: string,
+  offered: WithId<HealthcareService>[],
+  id = `schedule-${actor.split('/')[1]}`
+): Schedule {
   return {
     resourceType: 'Schedule',
-    id: `schedule-${actor.split('/')[1]}`,
+    id,
     active: true,
     actor: [{ reference: actor }],
     serviceType: offered.flatMap((service) => toServiceTypeCodeableConcepts(service)),
   };
 }
 
-async function setup(actor: ConfigurableActorResource, schedules: Schedule[] = []): Promise<void> {
+interface Setup {
+  readonly medplum: MockClient;
+  readonly onStored: ReturnType<typeof vi.fn>;
+  readonly schedules: WithId<Schedule>[];
+}
+
+async function setup(
+  actor: ConfigurableActorResource,
+  schedules: Schedule[] = [],
+  extra: Resource[] = [],
+  initialOpenServiceId?: string
+): Promise<Setup> {
   const medplum = new MockClient({ seedDefaultData: false });
-  for (const resource of [...services, actor]) {
+  for (const resource of [downtown, ...services, actor, ...extra]) {
     await medplum.createResource(resource);
   }
   const stored: WithId<Schedule>[] = [];
   for (const schedule of schedules) {
     stored.push(await medplum.createResource(schedule));
   }
+  const onStored = vi.fn();
+  vi.spyOn(medplum, 'executeBatch');
   const configurable: ConfigurableActor = { resource: actor, schedules: stored };
-  renderWithMedplum(<ActorPage actor={configurable} services={services} />, medplum);
+  renderWithMedplum(
+    <ActorPage
+      actor={configurable}
+      services={services}
+      onStored={onStored}
+      initialOpenServiceId={initialOpenServiceId}
+    />,
+    medplum
+  );
+  return { medplum, onStored, schedules: stored };
+}
+
+function entry(name: string): HTMLElement {
+  return screen.getByRole('button', { name: new RegExp(`^${name}`) });
+}
+
+function panel(name: string): HTMLElement {
+  return entry(name).closest('.mantine-Accordion-item') as HTMLElement;
+}
+
+function saveBar(): HTMLElement | null {
+  return screen.queryByRole('region', { name: 'Unsaved changes' });
+}
+
+async function save(): Promise<void> {
+  await userEvent.click(within(saveBar() as HTMLElement).getByRole('button', { name: 'Save' }));
+}
+
+function sentBundle(medplum: MockClient): Bundle {
+  return vi.mocked(medplum.executeBatch).mock.calls[0][0];
+}
+
+function storedSchedule(onStored: Setup['onStored']): WithId<Schedule> {
+  return onStored.mock.calls.at(-1)?.[0].find((resource: Resource) => resource.resourceType === 'Schedule');
 }
 
 describe('ActorPage', () => {
-  test("a provider's page shows General and Visit types, with every visit type's summary", async () => {
+  test("a provider's page shows General and Visit types, with every visit type closed to its summary", async () => {
     await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit, followUp])]);
 
     expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual([
       'General',
       'Visit types offered',
     ]);
-    expect(screen.getByText('Initial Visit')).toBeInTheDocument();
-    expect(screen.getByText("60 min · Visit type's default hours")).toBeInTheDocument();
-    expect(screen.getByText('Follow-up')).toBeInTheDocument();
-    expect(screen.getByText('30 min · No hours set')).toBeInTheDocument();
+    expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'false');
+    expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'false');
+    expect(entry('Initial Visit')).toHaveTextContent("60 min · Visit type's default hours");
+    expect(entry('Follow-up')).toHaveTextContent('30 min · No hours set');
+  });
+
+  test('marks a visit type the Schedule customizes, naming what it overrides, and follows edits', async () => {
+    const overriding = setScheduleAvailability(
+      setScheduleSchedulingParameterValues(
+        makeSchedule('Practitioner/dr-smith', [initialVisit, followUp]),
+        initialVisit,
+        {
+          bufferAfter: 10,
+        }
+      ),
+      initialVisit,
+      [{ daysOfWeek: ['tue'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
+    );
+    await setup(drSmith, [overriding]);
+
+    expect(within(entry('Initial Visit')).getByText('Customized')).toHaveTextContent(
+      'Overrides buffer after and custom hours. Everything else follows Initial Visit.'
+    );
+    expect(within(entry('Follow-up')).queryByText('Customized')).not.toBeInTheDocument();
+
+    await userEvent.click(entry('Follow-up'));
+    await userEvent.type(within(panel('Follow-up')).getByTestId('scheduling-parameters-bufferAfter'), '15');
+
+    expect(within(entry('Follow-up')).getByText('Customized')).toHaveTextContent('Overrides buffer after.');
+  });
+
+  test('a Schedule offering one visit type opens its entry', async () => {
+    await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+
+    expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'true');
+    expect(within(panel('Initial Visit')).getByRole('heading', { name: 'Scheduling parameters' })).toBeVisible();
+    expect(within(panel('Initial Visit')).getByRole('heading', { name: 'Availability' })).toBeVisible();
   });
 
   test('a room with no Schedule offers nothing yet', async () => {
@@ -126,11 +215,204 @@ describe('ActorPage', () => {
     expect(screen.getByText('Active')).toBeInTheDocument();
   });
 
-  test("a provider's name and status are read-only", async () => {
-    await setup({ ...drSmith, active: false }, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+  test('switching a provider off switches its Schedule off and locks it, and both save in one bundle', async () => {
+    const { medplum, onStored, schedules } = await setup(drSmith, [
+      makeSchedule('Practitioner/dr-smith', [initialVisit]),
+    ]);
+    const scheduleSwitch = screen.getByRole('switch', { name: 'Schedule status' });
 
-    expect(screen.getAllByText('Inactive')).toHaveLength(2);
     expect(screen.queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('switch', { name: /Active/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('switch', { name: 'Provider status' }));
+
+    expect(scheduleSwitch).not.toBeChecked();
+    expect(scheduleSwitch).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent("This provider is inactive and can't be booked.");
+    await save();
+
+    await waitFor(() => expect(onStored).toHaveBeenCalled());
+    expect(sentBundle(medplum).entry?.map((item) => item.request?.url)).toEqual([
+      'Practitioner/dr-smith',
+      `Schedule/${schedules[0].id}`,
+    ]);
+    expect(onStored.mock.calls[0][0].find((r: Resource) => r.resourceType === 'Practitioner').active).toBe(false);
+    expect(storedSchedule(onStored).active).toBe(false);
+  });
+
+  test('switching a provider back on puts the Schedule back as stored, leaving nothing to save', async () => {
+    await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+    const providerSwitch = screen.getByRole('switch', { name: 'Provider status' });
+
+    await userEvent.click(providerSwitch);
+    await userEvent.click(providerSwitch);
+
+    expect(screen.getByRole('switch', { name: 'Schedule status' })).toBeChecked();
+    expect(saveBar()).not.toBeInTheDocument();
+  });
+
+  test("an inactive provider's Schedule stored on can still be switched off, but not back on", async () => {
+    await setup({ ...drSmith, active: false }, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+    const scheduleSwitch = screen.getByRole('switch', { name: 'Schedule status' });
+
+    expect(scheduleSwitch).toBeEnabled();
+    await userEvent.click(scheduleSwitch);
+
+    expect(scheduleSwitch).toBeDisabled();
+  });
+
+  test("a room with no Schedule saves only its own status, and a suspended room's status is kept until switched", async () => {
+    const { medplum, onStored } = await setup({ ...room3, status: 'suspended' });
+    const roomSwitch = screen.getByRole('switch', { name: 'Room status' });
+
+    expect(roomSwitch).toBeChecked();
+    expect(screen.getByText('Suspended')).toBeInTheDocument();
+    await userEvent.click(roomSwitch);
+    await save();
+
+    await waitFor(() => expect(onStored).toHaveBeenCalled());
+    expect(sentBundle(medplum).entry?.map((item) => item.request?.url)).toEqual(['Location/room-3']);
+    expect(onStored.mock.calls[0][0][0].status).toBe('inactive');
+  });
+
+  test('turning off bookings saves Schedule.active false, and every field stays editable', async () => {
+    const { onStored } = await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+
+    await userEvent.click(screen.getByRole('switch', { name: 'Schedule status' }));
+
+    expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter')).toBeEnabled();
+    await save();
+
+    await waitFor(() => expect(onStored).toHaveBeenCalled());
+    expect(storedSchedule(onStored).active).toBe(false);
+  });
+
+  test('saving the Schedule sends only the Schedule, conditional on the version loaded', async () => {
+    const { medplum, onStored, schedules } = await setup(drSmith, [
+      makeSchedule('Practitioner/dr-smith', [initialVisit]),
+    ]);
+
+    await userEvent.type(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter'), '15');
+    await save();
+
+    await waitFor(() => expect(onStored).toHaveBeenCalled());
+    const bundle = sentBundle(medplum);
+    expect(bundle.entry?.map((item) => item.request)).toEqual([
+      { method: 'PUT', url: `Schedule/${schedules[0].id}`, ifMatch: `W/"${schedules[0].meta?.versionId}"` },
+    ]);
+    expect(getScheduleSchedulingParameterValues(storedSchedule(onStored), initialVisit).bufferAfter).toBe(15);
+  });
+
+  test('one entry opens at a time, closing leaves none open, and edits survive either', async () => {
+    await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit, followUp])]);
+
+    await userEvent.click(entry('Initial Visit'));
+    await userEvent.type(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter'), '15');
+    await userEvent.click(entry('Follow-up'));
+
+    expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'true');
+    expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'false');
+    expect(entry('Initial Visit')).toHaveTextContent('Unsaved changes');
+    expect(entry('Follow-up')).not.toHaveTextContent('Unsaved changes');
+
+    await userEvent.click(entry('Initial Visit'));
+    expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter')).toHaveValue('15 min');
+
+    await userEvent.click(entry('Initial Visit'));
+    expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'false');
+    expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test("custom hours start from the visit type's, and save as this Schedule's hours for it", async () => {
+    const { onStored } = await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+    const initial = panel('Initial Visit');
+
+    await userEvent.click(within(initial).getByTestId('schedule-availability-enable'));
+
+    expect(within(initial).getByTestId('schedule-availability-switch-mon')).toBeChecked();
+    expect(within(initial).getByTestId('schedule-availability-switch-tue')).not.toBeChecked();
+    await userEvent.click(within(initial).getByTestId('schedule-availability-switch-tue'));
+    await save();
+
+    await waitFor(() => expect(onStored).toHaveBeenCalled());
+    expect(getScheduleSchedulingParameters(storedSchedule(onStored), initialVisit, 'availability')).toHaveLength(1);
+  });
+
+  test('an emptied custom week blocks the save, with the reason', async () => {
+    const overriding = setScheduleAvailability(makeSchedule('Practitioner/dr-smith', [initialVisit]), initialVisit, [
+      { daysOfWeek: ['tue'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' },
+    ]);
+    const { medplum } = await setup(drSmith, [overriding]);
+
+    await userEvent.click(within(panel('Initial Visit')).getByTestId('schedule-availability-switch-tue'));
+    await save();
+
+    const button = within(saveBar() as HTMLElement).getByRole('button', { name: 'Save' });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(
+      within(panel('Initial Visit')).getByText(/Custom availability must include at least one available day/)
+    ).toBeVisible();
+    expect(medplum.executeBatch).not.toHaveBeenCalled();
+  });
+
+  test('a stored alignment interval is shown, so it can be cleared', async () => {
+    const aligned = setScheduleSchedulingParameterValues(
+      makeSchedule('Practitioner/dr-smith', [initialVisit]),
+      initialVisit,
+      {
+        alignmentInterval: 30,
+      }
+    );
+    await setup(drSmith, [aligned]);
+
+    expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-alignmentInterval')).toHaveValue('30 min');
+  });
+
+  test('names where the time zone comes from', async () => {
+    const walkIn: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'walk-in', name: 'Walk-in' };
+    services.push(walkIn);
+    try {
+      await setup({ ...drSmith, extension: [{ url: TimezoneExtensionURI, valueCode: 'America/Chicago' }] }, [
+        makeSchedule('Practitioner/dr-smith', [initialVisit, walkIn]),
+      ]);
+      await userEvent.click(entry('Initial Visit'));
+
+      await waitFor(() =>
+        expect(within(panel('Initial Visit')).getByText('The time zone comes from Initial Visit.')).toBeVisible()
+      );
+
+      await userEvent.click(entry('Walk-in'));
+      await waitFor(() =>
+        expect(within(panel('Walk-in')).getByText('The time zone comes from Dr. Jane Smith.')).toBeVisible()
+      );
+    } finally {
+      services.pop();
+    }
+  });
+
+  test('edits the first of two Schedules and says nothing about the other', async () => {
+    await setup(drSmith, [
+      makeSchedule('Practitioner/dr-smith', [initialVisit], 'first'),
+      makeSchedule('Practitioner/dr-smith', [followUp], 'second'),
+    ]);
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(entry('Initial Visit')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Follow-up/ })).not.toBeInTheDocument();
+  });
+
+  test('a Schedule another system changed since it was loaded is not written over, and reload hands back the newer one', async () => {
+    const { medplum, onStored, schedules } = await setup(drSmith, [
+      makeSchedule('Practitioner/dr-smith', [initialVisit]),
+    ]);
+    await medplum.updateResource({ ...schedules[0], comment: 'Changed elsewhere' });
+
+    await userEvent.type(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter'), '15');
+    await save();
+
+    expect(await screen.findByText('The Schedule for Dr. Jane Smith changed since you opened it')).toBeInTheDocument();
+    expect(onStored).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Reload' }));
+
+    await waitFor(() => expect(onStored).toHaveBeenCalled());
+    expect(storedSchedule(onStored).comment).toBe('Changed elsewhere');
   });
 });

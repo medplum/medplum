@@ -39,6 +39,10 @@ async function showInactive(): Promise<void> {
   await userEvent.click(screen.getByLabelText('Show inactive'));
 }
 
+function entry(name: string): HTMLElement {
+  return within(details()).getByRole('button', { name: new RegExp(`^${name}`) });
+}
+
 function details(): HTMLElement {
   return screen.getByRole('region', { name: 'Configuration details' });
 }
@@ -233,6 +237,24 @@ describe('SchedulingConfigWorkspace', () => {
 
     expect(row('Ultrasound 3 (Retired)')).toHaveTextContent('Inactive');
     expect(row('Dr. Hana Lee')).toHaveTextContent('Inactive');
+  });
+
+  test('a saved Schedule replaces the one listed, so its row and page follow at once', async () => {
+    const medplum = await setup();
+    const search = vi.spyOn(medplum, 'searchResourcePages');
+    await userEvent.click(row('Dr. Maya Rivera'));
+    // Its only visit type opens on its own, so closing it shows the save keeps what the viewer had open.
+    await userEvent.click(entry('Ultrasound Imaging'));
+
+    await userEvent.click(within(details()).getByRole('switch', { name: 'Schedule status' }));
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Dr. Maya Rivera')).toHaveTextContent('Schedule inactive'));
+    expect(row('Dr. Maya Rivera')).toHaveAttribute('aria-current', 'true');
+    expect(within(details()).getByRole('switch', { name: 'Schedule status' })).not.toBeChecked();
+    expect(entry('Ultrasound Imaging')).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('region', { name: 'Unsaved changes' })).not.toBeInTheDocument();
+    expect(search).not.toHaveBeenCalled();
   });
 
   test('an empty project says each section has nothing yet, and still offers to create a visit type', async () => {
