@@ -456,3 +456,44 @@ medplum bulk import [options] <filename>
 - `-d, --target-directory <targetDirectory>`
 
   - Target directory of file to be imported.
+
+### Generate Types
+
+`generate-types` generates TypeScript definitions from FHIR StructureDefinitions, such as your own profiles. Generated interfaces enforce profile constraints that can be expressed at the type level, such as required and prohibited elements and restricted choice types, and import base FHIR types from `@medplum/fhirtypes`. Generated profile types are assignable to their base types, so they can be passed directly to `MedplumClient` methods such as `createResource`.
+
+StructureDefinitions can be read from local files, or fetched from your Medplum server with `--profile-url`. Input files can contain a single StructureDefinition, an array of StructureDefinitions, or a Bundle. StructureDefinitions must include a `snapshot`.
+
+```bash
+medplum generate-types [options] [files...]
+```
+
+For example:
+
+```bash
+medplum generate-types us-core-profiles.json --output-dir src/types/us-core
+```
+
+```bash
+medplum generate-types --profile-url https://example.com/profiles/my-patient/1.0.0 --output-dir src/types/profiles
+```
+
+##### optional flags for `generate-types`
+
+- `--profile-url <url>`
+
+  - Canonical URL of a StructureDefinition to fetch from your Medplum server. Can be repeated to fetch multiple profiles. Uses the same authentication options as other commands.
+
+- `-o, --output-dir <outputDir>`
+
+  - Output directory for the generated `.d.ts` files. Defaults to the current directory.
+
+See [TypeScript Types for Profiles](/docs/fhir-datastore/profiles#typescript-types-for-profiles) for recommendations on keeping generated types in sync with your profiles.
+
+The same generator is available in `@medplum/core` as `generateTypeScriptDefinitions`, which returns a map of file names to file contents:
+
+```ts
+import { generateTypeScriptDefinitions } from '@medplum/core';
+
+const files = generateTypeScriptDefinitions(structureDefinitions);
+// { 'USCorePatientProfile.d.ts': '...', 'index.d.ts': '...' }
+```
