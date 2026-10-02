@@ -114,7 +114,7 @@ function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
               service={service}
               location={location}
               disabled={disabled}
-              label={several ? <RowLabel index={index} label={label} /> : label}
+              label={several ? <RowLabel actorType={actorType} index={index} label={label} /> : label}
               placeholder={row.candidates.length > 0 ? 'or…' : `Search ${lowercaseLabel}s`}
               required={required}
               // With several rows the asterisk belongs to the heading above them,
@@ -166,18 +166,26 @@ function ActorTypeRows(props: ActorTypeRowsProps): JSX.Element {
 }
 
 interface RowLabelProps {
+  readonly actorType: BookableActorType;
   readonly index: number;
   readonly label: string;
 }
 
 /**
  * Names one row of several, saying how it reads against the row above it
- * (e.g. Provider 1, And Provider 2).
+ * (e.g. Room 1, And Room 2).
+ *
+ * Provider rows read Primary, And Additional instead: the first provider is the one
+ * marked primary on the booking, and nothing tells the rest apart.
  * @param props - Where the row sits, and what its actor type is called.
  * @returns The label.
  */
 function RowLabel(props: RowLabelProps): JSX.Element {
-  const { index, label } = props;
+  const { actorType, index, label } = props;
+  let name = `${label} ${index + 1}`;
+  if (actorType === 'Practitioner') {
+    name = index === 0 ? 'Primary' : 'Additional';
+  }
   return (
     <>
       {index > 0 && (
@@ -188,7 +196,7 @@ function RowLabel(props: RowLabelProps): JSX.Element {
         </>
       )}
       <Text span c="dimmed" fw={400} inherit>
-        {label} {index + 1}
+        {name}
       </Text>
     </>
   );

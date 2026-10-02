@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { toServiceTypeCodeableConcepts } from '@medplum/core';
+import { createReference, getPrimaryProvider, setPrimaryProvider, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
@@ -9,6 +9,8 @@ import type { MockInstance } from 'vitest';
 import { installFindStub } from '../stories/mockFind';
 import { installRescheduleStub } from '../stories/mockReschedule';
 import {
+  DrOkaforPractitioner,
+  DrOkaforSchedule,
   DrRiveraSchedule,
   ExamRoomASchedule,
   RiveraImagingAppointment,
@@ -283,6 +285,34 @@ describe('AppointmentRescheduleForm', () => {
   });
 
   describe('Moving the visit', () => {
+    test('Keeps the primary provider in the first row, and primary after the move', async () => {
+      // Held on Dr. Rivera's schedule first, but Dr. Okafor is the provider marked primary.
+      const okaforSlot: WithId<Slot> = {
+        ...HELD_SLOTS[0],
+        id: 'slot-okafor-imaging-tue',
+        schedule: createReference(DrOkaforSchedule),
+      };
+      await medplum.createResource(okaforSlot);
+      const appointment: WithId<Appointment> = {
+        ...APPOINTMENT,
+        slot: [...(APPOINTMENT.slot ?? []), createReference(okaforSlot)],
+        participant: setPrimaryProvider(
+          [...APPOINTMENT.participant, { status: 'accepted', actor: createReference(DrOkaforPractitioner) }],
+          createReference(DrOkaforPractitioner)
+        ),
+      };
+      await medplum.updateResource(appointment);
+      const post = vi.spyOn(medplum, 'post');
+      await setup(medplum, { appointment });
+
+      expect(hasPill(/Okafor/)).toBe(true);
+      await moveToAnotherTime();
+
+      expect(parameterValues(lastRescheduleParameters(post), 'schedule')[0]).toBe('Schedule/schedule-dr-okafor');
+      const [moved] = onRescheduled.mock.calls[0] as [{ appointment: Appointment }];
+      expect(getPrimaryProvider(moved.appointment)?.reference).toBe('Practitioner/dr-okafor');
+    });
+
     test('Moves it to the time chosen, on the schedules searched', async () => {
       const post = vi.spyOn(medplum, 'post');
       await setup(medplum);

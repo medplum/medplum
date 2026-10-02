@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {
   Appointment,
+  AppointmentParticipant,
   CodeableConcept,
   Duration,
   Extension,
@@ -11,6 +12,7 @@ import type {
   Resource,
   Schedule,
 } from '@medplum/fhirtypes';
+import { HTTP_TERMINOLOGY_HL7_ORG } from './constants';
 import { isReference } from './types';
 import type { WithId } from './utils';
 import {
@@ -92,6 +94,12 @@ export const SchedulingBookedByOperationURI =
 
 /** Extension URI marking which `Appointment.supportingInformation` entry is the site. */
 export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSite';
+
+/** Code system for `Appointment.participant.type`. */
+export const PARTICIPATION_TYPE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v3-ParticipationType`;
+
+/** The participation type marking an appointment's primary provider. */
+export const PRIMARY_PERFORMER_CODE = 'PPRF';
 
 /**
  * Extension URI holding a `Reference<HealthcareService>` on a `serviceType` CodeableConcept.
@@ -598,6 +606,48 @@ export function getAppointmentSite(appointment: Appointment): Reference<Location
     (reference): reference is Reference<Location> =>
       reference.reference?.startsWith('Location/') === true && getExtensionValue(reference, SchedulingSiteURI) === true
   );
+}
+
+function isPrimaryPerformerType(type: CodeableConcept): boolean {
+  return (
+    type.coding?.some(
+      (coding) => coding.system === PARTICIPATION_TYPE_SYSTEM && coding.code === PRIMARY_PERFORMER_CODE
+    ) === true
+  );
+}
+
+/**
+ * Marks one participant as the appointment's primary provider, and no other.
+ *
+ * An appointment may hold time for several providers, while a downstream system may
+ * accept only one; the primary is the one to send it.
+ *
+ * @param participants - The appointment's participants.
+ * @param primary - The actor to mark, or undefined to mark nobody.
+ * @returns The participants, with the mark moved onto `primary` and any other `type` kept.
+ */
+export function setPrimaryProvider(
+  participants: readonly AppointmentParticipant[],
+  primary: Reference | undefined
+): AppointmentParticipant[] {
+  return participants.map((participant) => {
+    const { type, ...rest } = participant;
+    const others = type?.filter((concept) => !isPrimaryPerformerType(concept)) ?? [];
+    if (primary?.reference && participant.actor?.reference === primary.reference) {
+      others.push({ coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE }] });
+    }
+    return others.length > 0 ? { ...rest, type: others } : rest;
+  });
+}
+
+/**
+ * Reads the appointment's primary provider, as {@link setPrimaryProvider} marked it.
+ *
+ * @param appointment - The appointment to read.
+ * @returns The primary provider, or undefined for an appointment marking none.
+ */
+export function getPrimaryProvider(appointment: Appointment): Reference | undefined {
+  return appointment.participant.find((participant) => participant.type?.some(isPrimaryPerformerType))?.actor;
 }
 
 /**

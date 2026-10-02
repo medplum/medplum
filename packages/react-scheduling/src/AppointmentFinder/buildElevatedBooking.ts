@@ -6,6 +6,7 @@ import {
   generateId,
   SchedulingSlotCapacityURI,
   SchedulingUnvalidatedBookingURI,
+  setPrimaryProvider,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type { Appointment, Bundle, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
@@ -83,14 +84,18 @@ export function buildElevatedBooking(options: ElevatedBookingOptions): Appointme
     return slots;
   });
 
+  const actors = schedules.flatMap((schedule) => schedule.actor);
+
   return {
     resourceType: 'Appointment',
     start,
     end,
     status: 'proposed',
     serviceType: toServiceTypeCodeableConcepts(service),
-    participant: schedules.flatMap((schedule) =>
-      schedule.actor.map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const)
+    // Marked as `$find` marks its proposals: the first provider asked for is the primary.
+    participant: setPrimaryProvider(
+      actors.map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
+      actors.find((actor) => actor.reference?.startsWith('Practitioner/'))
     ),
     contained,
   };

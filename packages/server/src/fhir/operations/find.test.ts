@@ -4,6 +4,8 @@ import type { WithId } from '@medplum/core';
 import {
   ContentType,
   createReference,
+  PARTICIPATION_TYPE_SYSTEM,
+  PRIMARY_PERFORMER_CODE,
   SchedulingSlotCapacityURI,
   ServiceTypeReferenceURI,
   toServiceTypeCodeableConcepts,
@@ -331,6 +333,7 @@ describe('Appointment/$find', () => {
               actor: { reference: `Practitioner/${practitioner.id}` },
               required: 'required',
               status: 'needs-action',
+              type: [{ coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE }] }],
             },
             {
               actor: { reference: `Location/${location.id}` },
@@ -340,6 +343,7 @@ describe('Appointment/$find', () => {
           ],
         },
       });
+      expect(entry.resource?.participant[1]).not.toHaveProperty('type');
     });
 
     // Overlap is Tue, 1p-5p EDT

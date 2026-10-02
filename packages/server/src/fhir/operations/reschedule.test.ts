@@ -3,10 +3,12 @@
 import type { WithId } from '@medplum/core';
 import {
   createReference,
+  getPrimaryProvider,
   getReferenceString,
   isDefined,
   isResource,
   ServiceTypeReferenceURI,
+  setPrimaryProvider,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
@@ -604,6 +606,35 @@ describe('Appointment/:id/$reschedule', () => {
       getReferenceString(patient),
       getReferenceString(practitioner),
     ]);
+  });
+
+  test('moves the primary provider mark to the first provider among the new schedules', async () => {
+    const assistant = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.project.id },
+      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
+    });
+    const practitionerSchedule = await makeSchedule(practitioner);
+    const assistantSchedule = await makeSchedule(assistant);
+    const start = '2026-03-05T16:00:00.000Z'; // Thu 11am EST
+    const end = '2026-03-05T17:00:00.000Z';
+
+    const proposal = makeProposal({ start, end, schedules: [practitionerSchedule, assistantSchedule] });
+    proposal.participant = setPrimaryProvider(proposal.participant, createReference(practitioner));
+    const booked = await book(proposal);
+    expect(getPrimaryProvider(booked)?.reference).toBe(getReferenceString(practitioner));
+
+    const response = await reschedule(booked.id as string, {
+      start,
+      schedules: [assistantSchedule, practitionerSchedule],
+    });
+
+    expect(response).toHaveStatus(200);
+    const appointment = bundleResources(response.body).find((r) =>
+      isResource<Appointment>(r, 'Appointment')
+    ) as Appointment;
+    expect(getPrimaryProvider(appointment)?.reference).toBe(getReferenceString(assistant));
+    expect(appointment.participant.filter((p) => p.type)).toHaveLength(1);
   });
 
   test('rejects an invalid start time', async () => {

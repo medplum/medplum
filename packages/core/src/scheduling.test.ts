@@ -18,12 +18,15 @@ import {
   extractServiceTypeReferences,
   getAppointmentSite,
   getHealthcareServiceSchedulingParameters,
+  getPrimaryProvider,
   getScheduleParameters,
   getScheduleSchedulingParameters,
   getSchedulingRequirements,
   getSchedulingTimezone,
   hasSchedulingParameters,
   minutesToSchedulingDuration,
+  PARTICIPATION_TYPE_SYSTEM,
+  PRIMARY_PERFORMER_CODE,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
@@ -33,6 +36,7 @@ import {
   SchedulingSiteURI,
   serviceTypeIncludesService,
   setHealthcareServiceSchedulingParameter,
+  setPrimaryProvider,
   setScheduleParameter,
   setScheduleSchedulingParameter,
   TimezoneExtensionURI,
@@ -674,6 +678,38 @@ describe('getAppointmentSite', () => {
     const appointment = withSupportingInformation({ display: 'Somewhere nobody recorded' });
     expect(() => getAppointmentSite(appointment)).not.toThrow();
     expect(getAppointmentSite(appointment)).toBeUndefined();
+  });
+});
+
+describe('setPrimaryProvider', () => {
+  const primaryType = { coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE }] };
+  const otherType = { coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: 'ATND' }] };
+  const rivera = { reference: 'Practitioner/rivera' };
+  const okafor = { reference: 'Practitioner/okafor' };
+
+  test('moves the mark onto the primary and keeps other types', () => {
+    const participants = setPrimaryProvider(
+      [
+        { actor: rivera, status: 'accepted', type: [primaryType] },
+        { actor: okafor, status: 'accepted', type: [otherType] },
+      ],
+      okafor
+    );
+    expect(participants).toEqual([
+      { actor: rivera, status: 'accepted' },
+      { actor: okafor, status: 'accepted', type: [otherType, primaryType] },
+    ]);
+    expect(getPrimaryProvider({ resourceType: 'Appointment', status: 'booked', participant: participants })).toEqual(
+      okafor
+    );
+  });
+
+  test('marks nobody without a primary', () => {
+    const participants = setPrimaryProvider([{ actor: rivera, status: 'accepted', type: [primaryType] }], undefined);
+    expect(participants).toEqual([{ actor: rivera, status: 'accepted' }]);
+    expect(
+      getPrimaryProvider({ resourceType: 'Appointment', status: 'booked', participant: participants })
+    ).toBeUndefined();
   });
 });
 

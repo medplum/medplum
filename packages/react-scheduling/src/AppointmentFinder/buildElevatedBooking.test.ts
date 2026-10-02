@@ -3,6 +3,8 @@
 import type { SchedulingParameterUrl, WithId } from '@medplum/core';
 import {
   getReferenceString,
+  PARTICIPATION_TYPE_SYSTEM,
+  PRIMARY_PERFORMER_CODE,
   SchedulingSlotCapacityURI,
   SchedulingUnvalidatedBookingURI,
   setScheduleSchedulingParameter,
@@ -61,7 +63,7 @@ describe('buildElevatedBooking', () => {
     expect(busy.schedule).toEqual({ reference: getReferenceString(DrRiveraSchedule), display: undefined });
   });
 
-  test('names the service and everyone attending', () => {
+  test('names the service and everyone attending, with the provider as primary', () => {
     const proposal = buildElevatedBooking({
       service,
       schedules: [DrRiveraSchedule, Ultrasound1Schedule],
@@ -73,7 +75,12 @@ describe('buildElevatedBooking', () => {
       getReferenceString(UltrasoundImagingService)
     );
     expect(proposal.participant).toEqual([
-      { actor: DrRiveraSchedule.actor[0], required: 'required', status: 'needs-action' },
+      {
+        actor: DrRiveraSchedule.actor[0],
+        required: 'required',
+        status: 'needs-action',
+        type: [{ coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE }] }],
+      },
       { actor: Ultrasound1Schedule.actor[0], required: 'required', status: 'needs-action' },
     ]);
   });
