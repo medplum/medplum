@@ -370,6 +370,20 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             )}
           </Group>
           <Group gap="xs">
+            <Tooltip label="Refresh" position="bottom" openDelay={500}>
+              <ActionIcon
+                className={classes.actionIcon}
+                variant="transparent"
+                color="gray"
+                size={32}
+                radius="xl"
+                aria-label="Refresh"
+                title="Refresh"
+                onClick={refreshResults}
+              >
+                <IconReload size={16} />
+              </ActionIcon>
+            </Tooltip>
             <Menu shadow="md" width={200} radius="md" position="bottom-end">
               <Menu.Target>
                 <ActionIcon
@@ -384,9 +398,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown className={classes.menuDropdown}>
-                <Menu.Item leftSection={<IconReload size={16} />} onClick={refreshResults}>
-                  Refresh
-                </Menu.Item>
                 {showExport && (
                   <Menu.Item
                     leftSection={<IconTableExport size={16} />}

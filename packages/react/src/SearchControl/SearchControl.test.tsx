@@ -947,12 +947,11 @@ describe('SearchControl', () => {
     expect(onLoad).toHaveBeenCalled();
     onLoad.mockReset();
 
-    await act(async () => {
-      fireEvent.click(await screen.findByLabelText('Actions'));
-    });
+    const refreshButton = screen.getByTitle('Refresh');
+    expect(refreshButton).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(await screen.findByText('Refresh'));
+      fireEvent.click(refreshButton);
     });
 
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
