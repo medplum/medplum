@@ -1,0 +1,186 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ActionIcon, Group, NativeSelect } from '@mantine/core';
+import type { Filter, SearchRequest } from '@medplum/core';
+import { Operator, deepClone, getSearchParameters } from '@medplum/core';
+import type { SearchParameter } from '@medplum/fhirtypes';
+import { IconX } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ArrayAddButton } from '../buttons/ArrayAddButton';
+import { SubmitButton } from '../Form/SubmitButton';
+import { Modal } from '../Modal/Modal';
+import {
+  addFilter,
+  buildSearchParamFieldLabel,
+  deleteFilter,
+  getOpString,
+  getSearchOperators,
+  isMetaSearchParam,
+  setFilters,
+} from '../SearchControl/SearchUtils';
+import { SearchFilterValueInput } from '../SearchFilterValueInput/SearchFilterValueInput';
+
+export interface SearchFilterEditorProps {
+  readonly visible: boolean;
+  readonly search: SearchRequest;
+  readonly onOk: (search: SearchRequest) => void;
+  readonly onCancel: () => void;
+}
+
+export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element | null {
+  const [search, setSearch] = useState(deepClone(props.search));
+
+  const searchRef = useRef(search);
+  useLayoutEffect(() => {
+    searchRef.current = search;
+  });
+
+  useEffect(() => {
+    setSearch(deepClone(props.search));
+  }, [props.search]);
+
+  function onAddFilter(filter: Filter): void {
+    setSearch(addFilter(searchRef.current, filter.code, filter.operator, filter.value));
+  }
+
+  const resourceType = props.search.resourceType;
+  const searchParams = getSearchParameters(resourceType) ?? {};
+  const filters = search.filters || [];
+
+  return (
+    <Modal
+      title="Filters"
+      size={900}
+      opened={props.visible}
+      onClose={props.onCancel}
+      onSubmit={() => props.onOk(searchRef.current)}
+      actions={
+        <Group justify="flex-end">
+          <SubmitButton>OK</SubmitButton>
+        </Group>
+      }
+    >
+      <table>
+        <colgroup>
+          <col style={{ width: 200 }} />
+          <col style={{ width: 200 }} />
+          <col style={{ width: 380 }} />
+          <col style={{ width: 40 }} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Operation</th>
+            <th>Value</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {filters.map((filter: Filter, index: number) => (
+            <FilterRowInput
+              id={`filter-${index}-row`}
+              key={`filter-${index}-row`}
+              resourceType={resourceType}
+              searchParams={searchParams}
+              value={filter}
+              onChange={(newFilter: Filter) => {
+                const newFilters = [...filters];
+                newFilters[index] = newFilter;
+                setSearch(setFilters(searchRef.current, newFilters));
+              }}
+              onDelete={() => setSearch(deleteFilter(searchRef.current, index))}
+            />
+          ))}
+        </tbody>
+      </table>
+      <ArrayAddButton propertyDisplayName="Filter" onClick={() => onAddFilter({} as Filter)} />
+    </Modal>
+  );
+}
+
+interface FilterRowInputProps {
+  readonly id: string;
+  readonly resourceType: string;
+  readonly searchParams: Record<string, SearchParameter>;
+  readonly value: Filter;
+  readonly onChange: (value: Filter) => void;
+  readonly onDelete?: () => void;
+}
+
+function FilterRowInput(props: FilterRowInputProps): JSX.Element {
+  const value: Filter = props.value;
+
+  function setFilterCode(newCode: string): void {
+    props.onChange({ code: newCode, operator: Operator.EQUALS, value: '' });
+  }
+
+  function setFilterOperator(newOperator: Operator): void {
+    props.onChange({ code: value.code, operator: newOperator, value: '' });
+  }
+
+  function setFilterValue(newFilterValue: string): void {
+    props.onChange({ code: value.code, operator: value.operator, value: newFilterValue });
+  }
+
+  const searchParam = props.searchParams[value.code];
+  const operators = searchParam && getSearchOperators(searchParam);
+
+  const fieldOptions = [];
+  const metaOptions = [];
+  for (const param of Object.keys(props.searchParams)) {
+    const option = { value: param, label: buildSearchParamFieldLabel(param) };
+    if (isMetaSearchParam(param)) {
+      metaOptions.push(option);
+    } else {
+      fieldOptions.push(option);
+    }
+  }
+
+  return (
+    <tr>
+      <td>
+        <NativeSelect
+          data-testid={`${props.id}-filter-field`}
+          defaultValue={props.value.code}
+          onChange={(e) => setFilterCode(e.currentTarget.value)}
+          data={[
+            '',
+            ...(fieldOptions.length > 0 ? [{ group: 'Fields', items: fieldOptions }] : []),
+            ...(metaOptions.length > 0 ? [{ group: 'Metadata', items: metaOptions }] : []),
+          ]}
+        />
+      </td>
+      <td>
+        {operators && (
+          <NativeSelect
+            key={`${props.id}-filter-value-${props.value.code}`}
+            data-testid={`${props.id}-filter-operation`}
+            defaultValue={value.operator}
+            onChange={(e) => setFilterOperator(e.currentTarget.value as Operator)}
+            data={['', ...operators.map((op) => ({ value: op, label: getOpString(op) }))]}
+          />
+        )}
+      </td>
+      <td>
+        {searchParam && value.operator && (
+          <SearchFilterValueInput
+            key={`${props.id}-filter-value-${props.value.code}-${props.value.operator}`}
+            name={`${props.id}-filter-value`}
+            resourceType={props.resourceType}
+            searchParam={searchParam}
+            defaultValue={value.value}
+            onChange={setFilterValue}
+          />
+        )}
+      </td>
+      <td>
+        {props.onDelete && (
+          <ActionIcon variant="outline" color="red" radius="xl" aria-label="Delete filter" onClick={props.onDelete}>
+            <IconX style={{ width: '70%', height: '70%' }} stroke={1.5} />
+          </ActionIcon>
+        )}
+      </td>
+    </tr>
+  );
+}

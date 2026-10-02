@@ -14,7 +14,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
-import type { SearchRequest } from '@medplum/core';
+import type { Filter, SearchRequest } from '@medplum/core';
 import {
   deepEquals,
   DEFAULT_SEARCH_COUNT,
@@ -22,12 +22,14 @@ import {
   isDataTypeLoaded,
   normalizeOperationOutcome,
 } from '@medplum/core';
-import type { Bundle, OperationOutcome, Resource } from '@medplum/fhirtypes';
+import type { Bundle, OperationOutcome, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import {
   IconArrowDown,
   IconArrowUp,
+  IconColumns,
   IconDots,
+  IconFilter,
   IconLibraryPlus,
   IconPlus,
   IconReload,
@@ -39,16 +41,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { Container } from '../Container/Container';
 import { Modal } from '../Modal/Modal';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
-import { SearchColumnEditor } from '../SearchColumnEditor/SearchColumnEditor';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
-import { SearchFilterPopover } from '../SearchFilterEditor/SearchFilterPopover';
+import { SearchFieldEditor } from '../SearchFieldEditor/SearchFieldEditor';
+import { SearchFilterEditor } from '../SearchFilterEditor/SearchFilterEditor';
+import { SearchFilterValueDialog } from '../SearchFilterValueDialog/SearchFilterValueDialog';
+import { SearchFilterValueDisplay } from '../SearchFilterValueDisplay/SearchFilterValueDisplay';
 import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
 import { SearchSortEditor } from '../SearchSortEditor/SearchSortEditor';
 import { isAuxClick, isCheckboxCell, killEvent } from '../utils/dom';
 import { getPaginationControlProps } from '../utils/pagination';
 import classes from './SearchControl.module.css';
 import { getFieldDefinitions } from './SearchControlField';
-import { buildFieldNameString, DEFAULT_SORT_RULES, renderValue, setPage } from './SearchUtils';
+import { addFilter, buildFieldNameString, DEFAULT_SORT_RULES, getOpString, renderValue, setPage } from './SearchUtils';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -96,7 +100,7 @@ export interface SearchControlProps {
   /** Additional computed columns rendered after the search-result columns. */
   readonly additionalColumns?: readonly SearchControlAdditionalColumn[];
   readonly hideToolbar?: boolean;
-  /** @deprecated No longer has any effect; filters are edited from the toolbar's Filters popover. */
+  /** Hides the per-column filter description row under the column headers. */
   readonly hideFilters?: boolean;
   readonly onLoad?: (e: SearchLoadEvent) => void;
   readonly onChange?: (e: SearchChangeEvent) => void;
@@ -121,8 +125,11 @@ interface SearchControlState {
   readonly deleteConfirmVisible?: boolean;
   readonly deleting?: boolean;
   readonly dialogOpenTime?: number;
-  /** External request to open the Filters popover with a column's field preselected. */
-  readonly requestFilterField?: { readonly code: string; readonly nonce: number };
+  readonly fieldEditorVisible: boolean;
+  readonly filterEditorVisible: boolean;
+  readonly filterDialogVisible: boolean;
+  readonly filterDialogFilter?: Filter;
+  readonly filterDialogSearchParam?: SearchParameter;
 }
 
 /**
@@ -147,6 +154,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const [state, setState] = useState<SearchControlState>({
     selected: {},
     exportDialogVisible: false,
+    fieldEditorVisible: false,
+    filterEditorVisible: false,
+    filterDialogVisible: false,
   });
   const [activeRowId, setActiveRowId] = useState<string>();
 
@@ -329,12 +339,26 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       {!props.hideToolbar && (
         <Group justify="space-between" pb="md" className={classes.toolbar}>
           <Group gap="xs">
-            <SearchColumnEditor search={memoizedSearch} onChange={emitSearchChange} />
-            <SearchFilterPopover
-              search={memoizedSearch}
-              onChange={emitSearchChange}
-              requestFilterField={state.requestFilterField}
-            />
+            <Button
+              className={classes.toolbarButton}
+              size="compact-md"
+              variant="subtle"
+              color="gray"
+              leftSection={<IconColumns size={16} />}
+              onClick={() => setState((s) => ({ ...s, fieldEditorVisible: true, dialogOpenTime: Date.now() }))}
+            >
+              Fields
+            </Button>
+            <Button
+              className={classes.toolbarButton}
+              size="compact-md"
+              variant="subtle"
+              color="gray"
+              leftSection={<IconFilter size={16} />}
+              onClick={() => setState((s) => ({ ...s, filterEditorVisible: true, dialogOpenTime: Date.now() }))}
+            >
+              Filters
+            </Button>
             <SearchSortEditor search={memoizedSearch} onChange={emitSearchChange} />
             {lastResult && (
               <Text size="xs" fw={500} c="dimmed" ml={4} data-testid="count-display">
@@ -454,14 +478,14 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                           search={memoizedSearch}
                           searchParams={field.searchParams}
                           onChange={emitSearchChange}
-                          onFilterByColumn={
-                            props.hideToolbar
-                              ? undefined
-                              : (searchParam) =>
-                                  setState((s) => ({
-                                    ...s,
-                                    requestFilterField: { code: searchParam.code, nonce: Date.now() },
-                                  }))
+                          onPrompt={(searchParam, filter) =>
+                            setState((s) => ({
+                              ...s,
+                              filterDialogVisible: true,
+                              filterDialogSearchParam: searchParam,
+                              filterDialogFilter: filter,
+                              dialogOpenTime: Date.now(),
+                            }))
                           }
                         />
                       </Menu>
@@ -479,6 +503,25 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 </Table.Th>
               ))}
             </Table.Tr>
+            {!props.hideFilters && (
+              <Table.Tr>
+                {checkboxColumn && <Table.Th />}
+                {fields.map((field) => (
+                  <Table.Th key={field.name}>
+                    {field.searchParams && (
+                      <FilterDescription
+                        resourceType={resourceType}
+                        searchParams={field.searchParams}
+                        filters={memoizedSearch.filters}
+                      />
+                    )}
+                  </Table.Th>
+                ))}
+                {props.additionalColumns?.map((col) => (
+                  <Table.Th key={col.name} />
+                ))}
+              </Table.Tr>
+            )}
           </Table.Thead>
           <Table.Tbody>
             {resources?.map(
@@ -510,7 +553,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                           <Checkbox
                             size="xs"
                             data-testid="row-checkbox"
-                            aria-label={`Select row ${resource.id}`}
+                            aria-label={`Checkbox for ${resource.id}`}
                             checked={!!state.selected[resource.id as string]}
                             onChange={(e) => setRowSelected(resource.id as string, e.currentTarget.checked)}
                           />
@@ -548,6 +591,26 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           />
         </Center>
       )}
+      <SearchFieldEditor
+        key={`search-field-editor-${state.dialogOpenTime}`}
+        search={memoizedSearch}
+        visible={state.fieldEditorVisible}
+        onOk={(result) => {
+          emitSearchChange(result);
+          setState((s) => ({ ...s, fieldEditorVisible: false }));
+        }}
+        onCancel={() => setState((s) => ({ ...s, fieldEditorVisible: false }))}
+      />
+      <SearchFilterEditor
+        key={`search-filter-editor-${state.dialogOpenTime}`}
+        search={memoizedSearch}
+        visible={state.filterEditorVisible}
+        onOk={(result) => {
+          emitSearchChange(result);
+          setState((s) => ({ ...s, filterEditorVisible: false }));
+        }}
+        onCancel={() => setState((s) => ({ ...s, filterEditorVisible: false }))}
+      />
       <SearchExportDialog
         key={`search-export-dialog-${state.dialogOpenTime}`}
         visible={state.exportDialogVisible}
@@ -556,6 +619,20 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         onCancel={() => {
           setState((s) => ({ ...s, exportDialogVisible: false }));
         }}
+      />
+      <SearchFilterValueDialog
+        key={`search-filter-dialog-${state.dialogOpenTime}`}
+        visible={state.filterDialogVisible}
+        title={state.filterDialogSearchParam?.code ? buildFieldNameString(state.filterDialogSearchParam.code) : ''}
+        resourceType={resourceType}
+        searchParam={state.filterDialogSearchParam}
+        filter={state.filterDialogFilter}
+        defaultValue=""
+        onOk={(filter) => {
+          emitSearchChange(addFilter(memoizedSearch, filter.code, filter.operator, filter.value));
+          setState((s) => ({ ...s, filterDialogVisible: false }));
+        }}
+        onCancel={() => setState((s) => ({ ...s, filterDialogVisible: false }))}
       />
       <Modal
         opened={!!state.deleteConfirmVisible}
@@ -583,6 +660,35 @@ function ColumnTitle(props: { readonly children: ReactNode; readonly className?:
     <Text className={`${classes.mutedText} ${props.className ?? ''}`} size="xs" fw={500} lh="sm">
       {props.children}
     </Text>
+  );
+}
+
+interface FilterDescriptionProps {
+  readonly resourceType: string;
+  readonly searchParams: SearchParameter[];
+  readonly filters?: Filter[];
+}
+
+function FilterDescription(props: FilterDescriptionProps): JSX.Element {
+  const filters = (props.filters ?? []).filter((f) => props.searchParams.find((p) => p.code === f.code));
+  if (filters.length === 0) {
+    return (
+      <Text className={classes.mutedText} size="xs" lh="sm">
+        no filters
+      </Text>
+    );
+  }
+
+  return (
+    <>
+      {filters.map((filter: Filter) => (
+        <Text key={`filter-${filter.code}-${filter.operator}-${filter.value}`} size="xs" lh="sm">
+          {getOpString(filter.operator)}
+          &nbsp;
+          <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />
+        </Text>
+      ))}
+    </>
   );
 }
 

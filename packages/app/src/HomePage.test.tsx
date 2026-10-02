@@ -106,15 +106,19 @@ describe('HomePage', () => {
 
   test('Delete button, cancel', async () => {
     await setup();
+
     await act(async () => {
-      fireEvent.click(await screen.findByLabelText('Select all rows'));
+      fireEvent.click(await screen.findByTestId('all-checkbox'));
     });
+
     await act(async () => {
       fireEvent.click(await screen.findByLabelText('Actions'));
     });
+
     await act(async () => {
       fireEvent.click(await screen.findByText('Delete'));
     });
+
     await act(async () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
     });
@@ -136,12 +140,13 @@ describe('HomePage', () => {
     expect(await screen.findByText(family)).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText(`Select row ${patient.id}`));
+      fireEvent.click(screen.getByLabelText(`Checkbox for ${patient.id}`));
     });
 
     await act(async () => {
       fireEvent.click(await screen.findByLabelText('Actions'));
     });
+
     await act(async () => {
       fireEvent.click(await screen.findByText('Delete'));
     });
@@ -166,6 +171,7 @@ describe('HomePage', () => {
     await act(async () => {
       fireEvent.click(await screen.findByLabelText('Actions'));
     });
+
     await act(async () => {
       fireEvent.click(await screen.findByText('Export'));
     });
@@ -188,6 +194,7 @@ describe('HomePage', () => {
     await act(async () => {
       fireEvent.click(await screen.findByLabelText('Actions'));
     });
+
     await act(async () => {
       fireEvent.click(await screen.findByText('Export'));
     });

@@ -38,7 +38,7 @@ describe('SearchSortEditor', () => {
   test('Opens showing the default sort row', async () => {
     await setup({ resourceType: 'Patient' });
     await openPopover();
-    expect(screen.getByLabelText('Sort 1 field', { selector: 'input' })).toHaveValue('Last Updated (meta)');
+    expect(screen.getByLabelText('Sort 1 field', { selector: 'input' })).toHaveValue('_lastUpdated');
     expect(screen.getByLabelText('Sort 1 direction', { selector: 'input' })).toHaveValue('Newest to Oldest');
   });
 

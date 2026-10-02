@@ -550,15 +550,14 @@ export function isMetaSearchParam(code: string): boolean {
 }
 
 /**
- * Returns a human-readable display label for a search parameter code. Metadata codes get a
- * " (meta)" suffix so they never share a label with a same-named element - e.g. `project` reads
- * "Project" and `_project` reads "Project (meta)" when the Column and Filter popovers list both.
+ * Returns a display label for a search parameter code. Metadata codes keep their
+ * underscore-prefixed code so they never share a label with a same-named element
+ * (e.g. `ProjectMembership.project` vs `_project`).
  * @param code - The search parameter code.
  * @returns The display label for the search parameter.
  */
 export function buildSearchParamFieldLabel(code: string): string {
-  const label = buildFieldNameString(code);
-  return isMetaSearchParam(code) ? `${label} (meta)` : label;
+  return isMetaSearchParam(code) ? code : buildFieldNameString(code);
 }
 
 /**

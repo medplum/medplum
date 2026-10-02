@@ -89,7 +89,7 @@ export function HomePage(): JSX.Element {
                 },
               })),
             })
-            .then(() => setSearch({ ...search }))
+            .then(() => undefined)
             .catch((err) => {
               showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
               throw err;
