@@ -7,10 +7,13 @@ import {
   badRequest,
   createReference,
   extractServiceTypeReferences,
+  getExtension,
   isDefined,
   isReference,
   MEDPLUM_VERSION,
+  OccurrenceChangedExtensionURI,
   OperationOutcomeError,
+  RecurrenceIdExtensionURI,
   serviceTypeOffersService,
   setPrimaryProvider,
 } from '@medplum/core';
@@ -75,10 +78,8 @@ type RescheduleParameters = {
  * Pass the same `schedule` values used to search with Appointment/$find, plus the `start` chosen
  * from the results. The Slot resources are derived from the scheduling parameters rather than
  * submitted, and every attribute of the stored Appointment other than `start`, `end`,
- * `participant` and `slot` is left untouched — including `status`, since the appointment
- * lifecycle belongs to $hold, $confirm, and $cancel. The one exception is the reschedule
- * marker: the move is stamped with `SchedulingRescheduledByOperation`, replacing any
- * marker an earlier move left.
+ * `participant`, `slot` and `extension` is left untouched — including `status`, since the
+ * appointment lifecycle belongs to $hold, $confirm, and $cancel.
  *
  * The service the move is measured against — the duration it runs for, the grid it aligns to,
  * the buffers around it — is read off the Appointment's own `serviceType`, which must name
@@ -87,6 +88,11 @@ type RescheduleParameters = {
  * left keyed to a type it no longer has. An Appointment recording no service has no scheduling
  * parameters to be measured against at all, and is rejected rather than measured against a
  * service supplied by the caller.
+ *
+ * The move is stamped with `SchedulingRescheduledByOperation`, replacing any marker an earlier
+ * move left. An occurrence of a recurring series moved to a new time is also marked with R5's
+ * `occurrenceChanged`, since it no longer follows the series' pattern; reassigning it to new
+ * Schedules at the same time doesn't mark it.
  *
  * Endpoints:
  *   [fhir base]/Appointment/:id/$reschedule
@@ -207,14 +213,28 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
       for (const [i, slot] of slots.entries()) {
         createdSlots[i] = await txRepo.createResource<Slot>(slot);
       }
+
+      // Replace any earlier reschedule marker, whether from $reschedule or a manual move
+      let extension = [
+        ...(existingAppointment.extension ?? []).filter(
+          (ext) => ext.url !== SchedulingRescheduledByOperationURI && ext.url !== SchedulingUnvalidatedRescheduleURI
+        ),
+        { url: SchedulingRescheduledByOperationURI, valueString: MEDPLUM_VERSION },
+      ];
+
+      // An occurrence of a recurring series moved to a new start no longer follows the series' pattern
+      const isRecurring = Boolean(getExtension(existingAppointment, RecurrenceIdExtensionURI));
+      const startChanged = interval.start.valueOf() !== Date.parse(existingAppointment.start as string);
+      if (isRecurring && startChanged) {
+        extension = [
+          ...extension.filter((ext) => ext.url !== OccurrenceChangedExtensionURI),
+          { url: OccurrenceChangedExtensionURI, valueBoolean: true },
+        ];
+      }
+
       const updatedAppointment = await txRepo.updateResource<Appointment>({
         ...existingAppointment,
-        extension: [
-          ...(existingAppointment.extension ?? []).filter(
-            (ext) => ext.url !== SchedulingRescheduledByOperationURI && ext.url !== SchedulingUnvalidatedRescheduleURI
-          ),
-          { url: SchedulingRescheduledByOperationURI, valueString: MEDPLUM_VERSION },
-        ],
+        extension,
         start: interval.start.toISOString(),
         end: interval.end.toISOString(),
         participant,
