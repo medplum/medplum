@@ -1593,13 +1593,11 @@ describe('QuestionnaireForm', () => {
     });
 
     test('Empty value set shows no answers rather than unavailable', async () => {
-      const valueSetExpandSpy = vi
-        .spyOn(medplum, 'valueSetExpand')
-        .mockResolvedValue({
-          resourceType: 'ValueSet',
-          status: 'active',
-          expansion: { timestamp: '2026-01-01T00:00:00Z', contains: [] },
-        });
+      const valueSetExpandSpy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+        resourceType: 'ValueSet',
+        status: 'active',
+        expansion: { timestamp: '2026-01-01T00:00:00Z', contains: [] },
+      });
 
       try {
         await setupRadioAndCheckbox();
