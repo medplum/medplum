@@ -89,13 +89,22 @@ export async function writeElevatedReschedule(
   if (scheduleRefs.length === 0 || scheduleRefs.some((ref) => !/^Schedule\/[^/]+$/.test(ref))) {
     throw new Error('The chosen time must name valid schedules.');
   }
-  const service = await medplum.readReference(serviceRefs[0], { cache: 'no-cache' });
+  const slotReferences = (existing.slot ?? []).map(getReferenceString);
+  if (slotReferences.some((ref) => !ref)) {
+    throw new Error('The appointment must reference stored slots before it can be manually rescheduled.');
+  }
+  const oldSlotRefs = [...new Set(slotReferences.filter(isDefined))];
+  if (oldSlotRefs.some((ref) => !/^Slot\/[^/]+$/.test(ref))) {
+    throw new Error('The appointment must reference stored slots before it can be manually rescheduled.');
+  }
+  const [service, schedules, oldSlots] = await Promise.all([
+    medplum.readReference(serviceRefs[0], { cache: 'no-cache' }),
+    Promise.all(scheduleRefs.map((reference) => medplum.readReference<Schedule>({ reference }, { cache: 'no-cache' }))),
+    Promise.all(oldSlotRefs.map((reference) => medplum.readReference<Slot>({ reference }, { cache: 'no-cache' }))),
+  ]);
   if (service.active === false) {
     throw new Error('The visit type is inactive.');
   }
-  const schedules = await Promise.all(
-    scheduleRefs.map((reference) => medplum.readReference<Schedule>({ reference }, { cache: 'no-cache' }))
-  );
   // The scheduling operations refuse multi-actor Schedules, so an appointment written onto one could not be moved again.
   if (
     schedules.some(
@@ -109,17 +118,6 @@ export async function writeElevatedReschedule(
       'Every selected schedule must be active, have exactly one actor, and be eligible for this visit type.'
     );
   }
-  const slotReferences = (existing.slot ?? []).map(getReferenceString);
-  if (slotReferences.some((ref) => !ref)) {
-    throw new Error('The appointment must reference stored slots before it can be manually rescheduled.');
-  }
-  const oldSlotRefs = [...new Set(slotReferences.filter(isDefined))];
-  if (oldSlotRefs.some((ref) => !/^Slot\/[^/]+$/.test(ref))) {
-    throw new Error('The appointment must reference stored slots before it can be manually rescheduled.');
-  }
-  const oldSlots = await Promise.all(
-    oldSlotRefs.map((reference) => medplum.readReference<Slot>({ reference }, { cache: 'no-cache' }))
-  );
   const oldScheduleRefs = [...new Set(oldSlots.map((slot) => getReferenceString(slot.schedule)))];
   const oldSchedules = await Promise.all(
     oldScheduleRefs.map((reference) => medplum.readReference<Schedule>({ reference }, { cache: 'no-cache' }))
