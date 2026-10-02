@@ -11,6 +11,6 @@ import * as fns from '../migrate-functions';
 // prettier-ignore
 export async function run(client: PoolClient): Promise<void> {
   const results: { name: string; durationMs: number }[] = []
-  await fns.query(client, results, `ALTER TABLE IF EXISTS "Login" ADD COLUMN IF NOT EXISTS "project" TEXT`);
-  await fns.query(client, results, `ALTER TABLE IF EXISTS "Login" ADD COLUMN IF NOT EXISTS "__projectIdentifierSort" TEXT`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "AsyncJob" ADD COLUMN IF NOT EXISTS "requester" TEXT`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "AsyncJob" ADD COLUMN IF NOT EXISTS "__requesterIdentifierSort" TEXT`);
 }

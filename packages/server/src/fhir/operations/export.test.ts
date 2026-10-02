@@ -20,6 +20,7 @@ import {
 import { Repository } from '../repo';
 import { getTestProjectSystemRepo } from '../repository/test-utils';
 import { rewriteAttachments, RewriteMode } from '../rewrite';
+import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { exportResources, exportResourceType } from './export';
 import { BulkExporter } from './utils/bulkexporter';
 
@@ -140,6 +141,7 @@ describe('Export', () => {
             { resourceType: 'Binary', readonly: true },
           ],
         },
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID }
       });
       await expect(restrictedRepo.readResource('Patient', patient.id)).rejects.toThrow();
       await expect(restrictedRepo.readResource('AsyncJob', job.id)).rejects.toThrow();

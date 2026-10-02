@@ -2642,7 +2642,12 @@ describe('AccessPolicy', () => {
       expect(accessPolicy.resource).toContainEqual({ resourceType: 'AsyncJob', readonlyFields: ['requester'] });
 
       // A user cannot claim a job on create, and the server assigns the requester instead
-      const repo = new Repository({ author: profile, projects: [testProject], accessPolicy });
+      const repo = new Repository({ 
+        author: profile, 
+        projects: [testProject], 
+        accessPolicy,
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID }
+      });
       const job = await repo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
