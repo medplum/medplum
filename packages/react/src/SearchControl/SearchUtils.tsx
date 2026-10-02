@@ -24,7 +24,7 @@ import { StatusBadge } from '../StatusBadge/StatusBadge';
 import classes from './SearchControl.module.css';
 import type { SearchControlField } from './SearchControlField';
 
-const searchParamToOperators: Record<string, Operator[]> = {
+const searchParamToOperators: Record<SearchParameter['type'], Operator[]> = {
   string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
   fulltext: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
   token: [Operator.EQUALS, Operator.NOT, Operator.TEXT],
