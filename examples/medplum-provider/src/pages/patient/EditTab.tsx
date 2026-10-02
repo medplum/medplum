@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor } from '@mantine/core';
+import { Alert, Anchor } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
+import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -12,12 +13,12 @@ import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWi
 import { RESOURCE_PROFILE_URLS } from '../resource/utils';
 
 const missingProfileMessage = RESOURCE_PROFILE_URLS.Patient ? (
-  <>
+  <Alert icon={<IconAlertCircle size={16} />} title="Not found" color="red">
     Could not find the{' '}
     <Anchor href={RESOURCE_PROFILE_URLS.Patient} target="_blank">
       US Core Patient Profile
     </Anchor>
-  </>
+  </Alert>
 ) : undefined;
 
 export function EditTab(): JSX.Element | null {
