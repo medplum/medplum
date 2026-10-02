@@ -95,7 +95,7 @@ export const Basic = (): JSX.Element => {
       <AppointmentDetails
         appointment={appointment}
         onCancelled={setAppointment}
-        onRescheduled={(reschedule) => setAppointment(reschedule.appointment)}
+        onRescheduled={(reschedule) => setAppointment(reschedule.appointments[0])}
         onToggleTimeFinder={setSearching}
       />
     </Paper>

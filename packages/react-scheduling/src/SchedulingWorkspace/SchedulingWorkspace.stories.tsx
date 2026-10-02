@@ -204,7 +204,7 @@ function Workspace(props: WorkspaceProps): JSX.Element {
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
         defaultLocation={props.defaultLocation}
-        onBooked={({ appointment }) => {
+        onBooked={({ appointments: [appointment] }) => {
           showNotification({
             color: 'green',
             icon: <IconCalendarCheck size={18} />,
@@ -220,7 +220,7 @@ function Workspace(props: WorkspaceProps): JSX.Element {
             message: describeBooking(appointment),
           });
         }}
-        onRescheduled={({ appointment }) => {
+        onRescheduled={({ appointments: [appointment] }) => {
           showNotification({
             color: 'blue',
             icon: <IconCalendarEvent size={18} />,

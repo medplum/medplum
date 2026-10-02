@@ -306,7 +306,7 @@ describe('SchedulingWorkspace booking', () => {
     // it however it announces things.
     expect(onBooked).toHaveBeenCalledTimes(1);
     const booking = onBooked.mock.calls[0][0] as AppointmentBooking;
-    expect(booking.appointment.participant).toContainEqual(
+    expect(booking.appointments[0].participant).toContainEqual(
       expect.objectContaining({ actor: expect.objectContaining({ display: 'Jordan Reyes' }) })
     );
   });
@@ -438,8 +438,8 @@ describe('SchedulingWorkspace booking', () => {
       // The host reads the codes off the appointment it is handed, so nothing extra is threaded
       // through the components between here and the form to carry them.
       const [booking] = onBooked.mock.calls[0] as [AppointmentBooking];
-      expect(booking.appointment.reasonCode?.[0]?.coding?.[0]?.code).toBe(DiagnosisCodes[0].code);
-      expect(booking.appointment.serviceType?.at(-1)?.coding?.[0]?.code).toBe(ProcedureCodes[0].code);
+      expect(booking.appointments[0].reasonCode?.[0]?.coding?.[0]?.code).toBe(DiagnosisCodes[0].code);
+      expect(booking.appointments[0].serviceType?.at(-1)?.coding?.[0]?.code).toBe(ProcedureCodes[0].code);
     });
   });
 
