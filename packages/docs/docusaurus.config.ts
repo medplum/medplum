@@ -105,6 +105,34 @@ const config: Config = {
             from: '/docs/integration/stedi/professional-claims',
             to: '/docs/integration/stedi/claim-submission/professional-claims',
           },
+          {
+            from: '/docs/integration/scriptsure/iframe',
+            to: '/docs/integration/scriptsure',
+          },
+          {
+            from: '/docs/integration/scriptsure/order-medication',
+            to: '/docs/integration/scriptsure',
+          },
+          {
+            from: '/docs/integration/scriptsure/drug-interaction',
+            to: '/docs/integration/scriptsure',
+          },
+          {
+            from: '/docs/integration/scriptsure/pharmacy-search',
+            to: '/docs/integration/scriptsure',
+          },
+          {
+            from: '/docs/integration/scriptsure/order-sets',
+            to: '/docs/integration/scriptsure',
+          },
+          {
+            from: '/docs/integration/scriptsure/medication-cart',
+            to: '/docs/integration/scriptsure',
+          },
+          {
+            from: '/docs/integration/dosespot/clinic-favorite-medications',
+            to: '/docs/integration/dosespot',
+          },
         ],
       },
     ],
