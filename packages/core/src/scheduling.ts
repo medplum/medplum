@@ -137,6 +137,13 @@ export const RecurrenceTemplateExtensionURI =
 export const RecurrenceIdExtensionURI =
   'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceId';
 
+/**
+ * R5's `Appointment.occurrenceChanged`, as the R4 cross-version extension: set (valueBoolean) on an
+ * occurrence of a recurring series that `Appointment/$reschedule` has moved off the series' pattern.
+ */
+export const OccurrenceChangedExtensionURI =
+  'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.occurrenceChanged';
+
 /** Identifier system for the `Appointment.identifier` shared by every occurrence of one booked recurring series. */
 export const RecurringAppointmentSeriesIdentifierSystem = 'https://medplum.com/fhir/recurring-appointment-series';
 
