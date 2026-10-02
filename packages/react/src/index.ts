@@ -147,8 +147,6 @@ export * from './ScrollToTop/ScrollToTop';
 export * from './SearchControl/SearchControl';
 export * from './SearchControl/SearchControlField';
 export * from './SearchControl/SearchUtils';
-export * from './SearchFieldEditor/SearchFieldEditor';
-export * from './SearchFilterEditor/SearchFilterEditor';
 export * from './ServiceRequestTimeline/ServiceRequestTimeline';
 export * from './SignatureInput/SignatureInput';
 export * from './SmartAppLaunchLink/SmartAppLaunchLink';

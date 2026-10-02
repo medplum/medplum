@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ComboboxData, ComboboxItem } from '@mantine/core';
 import { Group, Text } from '@mantine/core';
 import type { Filter, InternalSchemaElement, SearchRequest, SortRule } from '@medplum/core';
 import {
@@ -7,11 +8,12 @@ import {
   DEFAULT_SEARCH_COUNT,
   evalFhirPathTyped,
   formatDateTime,
-  formatHumanName,
+  getDisplayString,
+  isProfileResource,
   Operator,
   PropertyType,
 } from '@medplum/core';
-import type { HumanName, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
+import type { Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
@@ -19,13 +21,8 @@ import { ResourceName } from '../ResourceName/ResourceName';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
-import { useReferenceContextMenu } from './ResourceContextMenu';
 import classes from './SearchControl.module.css';
 import type { SearchControlField } from './SearchControlField';
-import { getReferenceHref, getResourceHref, useSearchControlLinks } from './SearchControlLinks';
-
-/** Resource types whose `name` is a HumanName[] and that render an avatar in the name column. */
-const AVATAR_NAME_RESOURCE_TYPES = new Set(['Patient', 'Practitioner', 'RelatedPerson', 'Person']);
 
 const searchParamToOperators: Record<string, Operator[]> = {
   string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
@@ -565,6 +562,52 @@ export function buildSearchParamFieldLabel(code: string): string {
 }
 
 /**
+ * Splits search parameter codes into resource fields and `_`-prefixed metadata, each sorted by label.
+ * @param codes - The search parameter codes.
+ * @returns The field and metadata codes.
+ */
+export function partitionSearchParams(codes: string[]): { fields: string[]; metadata: string[] } {
+  const byLabel = (a: string, b: string): number =>
+    buildSearchParamFieldLabel(a).localeCompare(buildSearchParamFieldLabel(b));
+  return {
+    fields: codes.filter((code) => !isMetaSearchParam(code)).sort(byLabel),
+    metadata: codes.filter((code) => isMetaSearchParam(code)).sort(byLabel),
+  };
+}
+
+/**
+ * Builds grouped Select options (Fields, then Metadata) for choosing a search parameter.
+ * @param searchParams - The resource type's search parameters, keyed by code.
+ * @returns The grouped Select data.
+ */
+export function getSearchParamSelectData(searchParams: Record<string, SearchParameter>): ComboboxData {
+  const { fields, metadata } = partitionSearchParams(Object.keys(searchParams));
+  const toItems = (codes: string[]): ComboboxItem[] =>
+    codes.map((code) => ({ value: code, label: buildSearchParamFieldLabel(code) }));
+  return [
+    ...(fields.length > 0 ? [{ group: 'Fields', items: toItems(fields) }] : []),
+    ...(metadata.length > 0 ? [{ group: 'Metadata', items: toItems(metadata) }] : []),
+  ];
+}
+
+/**
+ * Sort direction labels by search parameter type: dates oldest/newest, numbers smallest/largest, else A/Z.
+ * @param type - The search parameter type.
+ * @returns The ascending and descending labels.
+ */
+export function getSortDirectionLabels(type: string | undefined): { asc: string; desc: string } {
+  switch (type) {
+    case 'date':
+      return { asc: 'Oldest to Newest', desc: 'Newest to Oldest' };
+    case 'number':
+    case 'quantity':
+      return { asc: 'Smallest to Largest', desc: 'Largest to Smallest' };
+    default:
+      return { asc: 'A to Z', desc: 'Z to A' };
+  }
+}
+
+/**
  * Returns a fragment to be displayed in the search table for the value.
  * @param resource - The parent resource.
  * @param field - The search code or FHIRPath expression.
@@ -573,7 +616,7 @@ export function buildSearchParamFieldLabel(code: string): string {
 export function renderValue(resource: Resource, field: SearchControlField): string | JSX.Element | null | undefined {
   const key = field.name;
   if (key === 'id') {
-    return <ResourceIdLink resource={resource} />;
+    return <MedplumLink to={`/${resource.resourceType}/${resource.id}`}>{resource.id}</MedplumLink>;
   }
 
   if (key === 'meta.versionId') {
@@ -584,7 +627,7 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
     return formatDateTime(resource.meta?.lastUpdated);
   }
 
-  if (key === 'name' && AVATAR_NAME_RESOURCE_TYPES.has(resource.resourceType)) {
+  if (key === 'name' && isProfileResource(resource)) {
     return renderNameWithAvatar(resource);
   }
 
@@ -603,47 +646,23 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
 }
 
 /**
- * Chooses the single name to display for a patient, by `use`: unspecified first, then `official`,
- * then `usual`, then any remaining name.
- * @param names - The patient's names.
- * @returns The preferred name, or undefined when the patient has none.
- */
-function selectPreferredName(names: HumanName[] | undefined): HumanName | undefined {
-  if (!names || names.length === 0) {
-    return undefined;
-  }
-  for (const use of [undefined, 'official', 'usual']) {
-    const match = names.find((name) => name.use === use);
-    if (match) {
-      return match;
-    }
-  }
-  return names[0];
-}
-
-/**
- * Renders a person-like resource's name column as its avatar next to a single preferred name,
- * styled to match the reference columns (weight, and underline only on hover). The whole row already
- * navigates on click, so the name is plain styled text rather than its own anchor.
- * @param resource - The person-like resource (Patient, Practitioner, RelatedPerson, Person).
+ * Renders a person-like resource's name column as its avatar next to its display name.
+ * @param resource - The Patient, Practitioner or RelatedPerson.
  * @returns The avatar + name element.
  */
 function renderNameWithAvatar(resource: Resource): JSX.Element {
-  const name = selectPreferredName((resource as { name?: HumanName[] }).name);
-  const text = name ? formatHumanName(name) : '';
   return (
     <Group gap="xs" wrap="nowrap">
       <ResourceAvatar value={resource} radius="xl" size={28} />
-      <Text size="sm" truncate className={classes.nameLink}>
-        {text}
+      <Text size="sm" truncate>
+        {getDisplayString(resource)}
       </Text>
     </Group>
   );
 }
 
 /**
- * Renders references as an avatar/name badge and `status` fields as a colored badge, so search
- * columns get the richer treatment used elsewhere in the app.
+ * Renders references as an avatar/name link and `status` fields as a colored badge.
  * @param propertyType - The FHIR property type of the value.
  * @param value - The value to render.
  * @param code - The field's element name or search parameter code (used to detect status fields).
@@ -665,49 +684,19 @@ function renderRichValue(propertyType: string, value: unknown, code: string): JS
   return undefined;
 }
 
-/**
- * Renders a reference as an avatar next to its name, matching the person-name column style but kept
- * as a link (plain text that underlines on hover) to the referenced resource. Right-clicking opens
- * the shared context menu with link actions scoped to the referenced resource (e.g. "Open
- * Practitioner in a New Tab") rather than the row's resource.
- * @param props - The component props.
- * @param props.value - The reference to render.
- * @returns The avatar + link element.
- */
 function ReferenceAvatarLink({ value }: { readonly value: Reference }): JSX.Element {
-  const openContextMenu = useReferenceContextMenu();
-  const href = getReferenceHref(useSearchControlLinks(), value);
   const name = value.display || <ResourceName value={value} />;
   return (
-    <Group gap="xs" wrap="nowrap" onContextMenu={(e) => openContextMenu(e, value)}>
+    <Group gap="xs" wrap="nowrap">
       <ResourceAvatar value={value} radius="xl" size={28} />
-      {href ? (
-        <MedplumLink to={href} size="sm" className={classes.nameLink}>
+      {value.reference ? (
+        <MedplumLink to={value} size="sm" className={classes.nameLink}>
           {name}
         </MedplumLink>
       ) : (
         <Text size="sm">{name}</Text>
       )}
     </Group>
-  );
-}
-
-/**
- * Renders a row's ID as a link to the resource, using the SearchControl's `getResourceHref` when
- * set. Renders plain text when that returns no link.
- * @param props - The component props.
- * @param props.resource - The row's resource.
- * @returns The ID link or text.
- */
-function ResourceIdLink({ resource }: { readonly resource: Resource }): JSX.Element {
-  const href = getResourceHref(useSearchControlLinks(), resource);
-  if (!href) {
-    return <>{resource.id}</>;
-  }
-  return (
-    <MedplumLink to={href} className={classes.nameLink}>
-      {resource.id}
-    </MedplumLink>
   );
 }
 

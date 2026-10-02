@@ -38,11 +38,14 @@
 
 .actionIcon:hover,
 .actionIcon[data-opened],
-.actionIcon[data-expanded] {
+.actionIcon[data-expanded],
+.toolbarButton:hover,
+.toolbarButton[data-opened] {
   border-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
 }
 
-.toolbar :global(.mantine-ActionIcon-root):active {
+.toolbar :global(.mantine-ActionIcon-root):active,
+.toolbarButton:active {
   transform: none !important;
 }
 
@@ -59,11 +62,9 @@
   background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
 }
 
-.menuActionIcon {
-  display: flex;
-}
-
-.actionIcon svg {
+.menuDropdown :global(.mantine-Menu-itemSection[data-position='left']) svg,
+.actionIcon svg,
+.toolbarButton svg {
   color: var(--mantine-color-dimmed);
 }
 
@@ -76,10 +77,6 @@
 .tr:focus-visible {
   outline: 2px solid var(--mantine-primary-color-filled);
   outline-offset: -2px;
-}
-
-.trActive {
-  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
 }
 
 .nameLink {
@@ -115,14 +112,14 @@
   margin-left: -7px;
 }
 
-.mutedText {
+.mutedText,
+.control {
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 }
 
 .control {
   width: fit-content;
   border-radius: var(--mantine-radius-sm);
-  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 
   &:hover,
   &[data-expanded] {
@@ -150,18 +147,6 @@
   color: light-dark(var(--mantine-color-gray-8), var(--mantine-color-dark-0)) !important;
 }
 
-.toolbarButton:hover,
-.toolbarButton[data-opened] {
-  border-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
-}
-
-.toolbarButton:active {
-  transform: none !important;
-}
-
-.toolbarButton svg {
-  color: var(--mantine-color-dimmed);
-}
 .toolbarButton :global(.mantine-Button-section[data-position='left']) {
   margin-inline-end: 6px;
 }

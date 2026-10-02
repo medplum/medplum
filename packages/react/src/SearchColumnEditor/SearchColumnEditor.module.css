@@ -1,12 +1,6 @@
 /* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-.dropdown {
-  width: 300px;
-  max-width: calc(100vw - 32px);
-  padding: 0;
-}
-
 .header {
   padding-block: var(--mantine-spacing-md) 4px;
   padding-inline: var(--mantine-spacing-md);
@@ -90,26 +84,6 @@
   color: var(--mantine-color-blue-6);
 }
 
-.footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--mantine-spacing-sm);
-  padding-right: var(--mantine-spacing-md);
-  border-top: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
-}
-
 .shownCount {
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
-}
-
-.staticButton,
-.staticButton:active,
-.staticButton:focus,
-.staticButton[data-active] {
-  transform: none !important;
-}
-
-.addButton :global(.mantine-Button-section[data-position='left']) {
-  margin-inline-end: calc(var(--mantine-spacing-xs) * 0.5);
 }

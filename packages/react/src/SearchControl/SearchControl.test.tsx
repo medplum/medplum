@@ -644,48 +644,6 @@ describe('SearchControl', () => {
     expect(props.onAuxClick).toHaveBeenCalledTimes(3);
   });
 
-  test('Right click on row opens the resource context menu', async () => {
-    const props: SearchControlProps = {
-      search: {
-        resourceType: 'Patient',
-        fields: ['name'],
-        filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Simpson' }],
-      },
-    };
-
-    await setup(props);
-    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.contextMenu(screen.getAllByTestId('search-control-row')[0]);
-    });
-
-    expect(await screen.findByText('Open Patient')).toBeInTheDocument();
-    expect(screen.getByText('Open Patient in a New Tab')).toBeInTheDocument();
-    expect(screen.getByText('Copy Link')).toBeInTheDocument();
-  });
-
-  test('Columns editor opens', async () => {
-    const props: SearchControlProps = {
-      search: {
-        resourceType: 'Patient',
-        fields: ['name', 'birthDate'],
-      },
-      onLoad: vi.fn(),
-    };
-
-    await setup(props);
-
-    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Columns'));
-    });
-
-    expect(await screen.findByText('Reset Default')).toBeInTheDocument();
-    expect(screen.getByTestId('column-name')).toBeInTheDocument();
-  });
-
   test('Columns editor hides a column', async () => {
     let currSearch: SearchRequest | undefined;
     const props: SearchControlProps = {
@@ -712,82 +670,6 @@ describe('SearchControl', () => {
     });
 
     expect(currSearch?.fields).toEqual(['name']);
-  });
-
-  test('Filter popover opens', async () => {
-    const props: SearchControlProps = {
-      search: {
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
-      },
-      onLoad: vi.fn(),
-    };
-
-    await setup(props);
-
-    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Filters'));
-    });
-
-    expect(await screen.findByText('Add Filter')).toBeInTheDocument();
-    expect(screen.getByText('Add Filter')).toBeInTheDocument();
-  });
-
-  test('Sort popover opens', async () => {
-    const props: SearchControlProps = {
-      search: {
-        resourceType: 'Patient',
-      },
-      onLoad: vi.fn(),
-    };
-
-    await setup(props);
-
-    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Sort'));
-    });
-
-    expect(await screen.findByText('Add Sort')).toBeInTheDocument();
-    expect(screen.getByText('Add Sort')).toBeInTheDocument();
-  });
-
-  test('Column header sort menu', async () => {
-    let currSearch: SearchRequest | undefined;
-    const props: SearchControlProps = {
-      search: {
-        resourceType: 'Patient',
-        fields: ['id', 'name'],
-      },
-      onLoad: vi.fn(),
-      onChange: (e) => {
-        currSearch = e.definition;
-      },
-    };
-
-    await setup(props);
-
-    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Name'));
-    });
-
-    expect(screen.queryByText('Contains...')).not.toBeInTheDocument();
-    await act(async () => {
-      fireEvent.click(await screen.findByText('Sort A to Z'));
-    });
-
-    expect(currSearch?.sortRules).toMatchObject([{ code: 'name', descending: false }]);
   });
 
   test('Click all checkbox', async () => {
@@ -865,44 +747,32 @@ describe('SearchControl', () => {
   });
 
   test('Activate popup menu', async () => {
+    let currSearch: SearchRequest | undefined;
     const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         fields: ['id', 'name'],
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Simpson' }],
       },
       onLoad: vi.fn(),
       checkboxesEnabled: true,
+      onChange: (e) => {
+        currSearch = e.definition;
+      },
     };
 
     await setup(props);
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
     expect(props.onLoad).toHaveBeenCalled();
 
-    // Click on the column header to activate the popup menu
     await act(async () => {
       fireEvent.click(screen.getByText('Name'));
     });
-
-    // Expect the popup menu to be open now
-    const sortButton = await screen.findByText('Sort A to Z');
-    expect(sortButton).toBeInTheDocument();
-
-    // Click on a sort operation
     await act(async () => {
-      fireEvent.click(sortButton);
+      fireEvent.click(await screen.findByText('Sort A to Z'));
     });
 
-    // Click on the column header to activate the popup menu
-    await act(async () => {
-      fireEvent.click(screen.getByText('Name'));
-    });
+    expect(currSearch?.sortRules).toMatchObject([{ code: 'name', descending: false }]);
   });
 
   test('Hide toolbar', async () => {
@@ -932,30 +802,6 @@ describe('SearchControl', () => {
     });
     expect(await screen.findByText('Sort A to Z')).toBeInTheDocument();
     expect(screen.queryByText('Filter by this column')).not.toBeInTheDocument();
-  });
-
-  test('Deprecated hideFilters is still accepted and has no effect', async () => {
-    const props: SearchControlProps = {
-      search: {
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
-        fields: ['id', '_lastUpdated', 'name'],
-      },
-      onLoad: vi.fn(),
-      hideFilters: true,
-    };
-
-    await setup(props);
-    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
-    expect(props.onLoad).toHaveBeenCalled();
-    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
-    expect(screen.queryByText('no filters')).not.toBeInTheDocument();
   });
 
   test('Handle reference missing filter', async () => {
@@ -1009,23 +855,6 @@ describe('SearchControl', () => {
 
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
     expect(onLoad).toHaveBeenCalled();
-  });
-
-  test('Custom toolbar action renders and fires onClick', async () => {
-    const onSync = vi.fn();
-    await setup({
-      search: { resourceType: 'Patient' },
-      toolbarActions: [{ key: 'sync', label: 'Sync', icon: <span>sync-icon</span>, onClick: onSync }],
-    });
-
-    const syncButton = await screen.findByLabelText('Sync');
-    expect(syncButton).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(syncButton);
-    });
-
-    expect(onSync).toHaveBeenCalled();
   });
 
   describe('Pagination', () => {

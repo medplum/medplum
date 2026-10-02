@@ -25,6 +25,7 @@ import {
   addYearToDateFilter,
   addYesterdayFilter,
   clearFiltersOnField,
+  getSortDirectionLabels,
   setSort,
 } from '../SearchControl/SearchUtils';
 
@@ -98,22 +99,9 @@ function getRelativeDateGroups(code: string): RelativeDateOption[][] {
   return RELATIVE_DATE_GROUPS.map((group) => group.filter((option) => !option.future));
 }
 
-/**
- * Direction labels vary by the search parameter type so they read naturally, matching the global
- * Sort editor (dates sort oldest/newest, numbers smallest/largest, everything else A→Z).
- * @param type - The search parameter type.
- * @returns The ascending and descending sort labels.
- */
 function getSortLabels(type: string | undefined): { asc: string; desc: string } {
-  switch (type) {
-    case 'date':
-      return { asc: 'Sort Oldest to Newest', desc: 'Sort Newest to Oldest' };
-    case 'number':
-    case 'quantity':
-      return { asc: 'Sort Smallest to Largest', desc: 'Sort Largest to Smallest' };
-    default:
-      return { asc: 'Sort A to Z', desc: 'Sort Z to A' };
-  }
+  const labels = getSortDirectionLabels(type);
+  return { asc: `Sort ${labels.asc}`, desc: `Sort ${labels.desc}` };
 }
 
 /**

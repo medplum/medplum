@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Popover, Text, TextInput, UnstyledButton, VisuallyHidden } from '@mantine/core';
+import { Button, Text, TextInput, UnstyledButton, VisuallyHidden } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import { getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import { IconCheck, IconColumns3, IconGripVertical, IconRotate2, IconSearch } from '@tabler/icons-react';
 import type { JSX, KeyboardEvent, PointerEvent } from 'react';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { buildSearchParamFieldLabel, isMetaSearchParam } from '../SearchControl/SearchUtils';
+import { SearchToolbarPopover } from '../SearchControl/SearchToolbarPopover';
+import shell from '../SearchControl/SearchToolbarPopover.module.css';
+import { buildSearchParamFieldLabel, partitionSearchParams } from '../SearchControl/SearchUtils';
 import classes from './SearchColumnEditor.module.css';
 
 /** Columns shown when a search has no explicit `fields`, mirroring {@link getFieldDefinitions}. */
@@ -16,10 +18,6 @@ const DEFAULT_FIELDS = ['id', '_lastUpdated'];
 export interface SearchColumnEditorProps {
   readonly search: SearchRequest;
   readonly onChange: (search: SearchRequest) => void;
-  readonly buttonVariant?: string;
-  readonly buttonColor?: string;
-  readonly buttonClassName?: string;
-  readonly iconSize?: number;
 }
 
 function arrayMove<T>(array: T[], from: number, to: number): T[] {
@@ -38,24 +36,8 @@ function arrayMove<T>(array: T[], from: number, to: number): T[] {
  * @returns The ordered list of all known column names.
  */
 function buildColumnOrder(visibleFields: string[], searchParams: Record<string, SearchParameter>): string[] {
-  const seen = new Set(visibleFields);
-  const fields: string[] = [];
-  const metadata: string[] = [];
-  for (const code of Object.keys(searchParams)) {
-    if (seen.has(code)) {
-      continue;
-    }
-    seen.add(code);
-    if (isMetaSearchParam(code)) {
-      metadata.push(code);
-    } else {
-      fields.push(code);
-    }
-  }
-  const byLabel = (a: string, b: string): number =>
-    buildSearchParamFieldLabel(a).localeCompare(buildSearchParamFieldLabel(b));
-  fields.sort(byLabel);
-  metadata.sort(byLabel);
+  const rest = Object.keys(searchParams).filter((code) => !visibleFields.includes(code));
+  const { fields, metadata } = partitionSearchParams(rest);
   return [...visibleFields, ...fields, ...metadata];
 }
 
@@ -70,9 +52,6 @@ function buildColumnOrder(visibleFields: string[], searchParams: Record<string, 
  */
 export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element {
   const { search, onChange } = props;
-  const buttonVariant = props.buttonVariant ?? 'subtle';
-  const buttonColor = props.buttonColor ?? 'gray';
-  const iconSize = props.iconSize ?? 16;
 
   const visibleFields = useMemo(
     () => (search.fields && search.fields.length > 0 ? search.fields : DEFAULT_FIELDS),
@@ -225,103 +204,17 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
   }
 
   return (
-    <Popover
-      opened={opened}
-      onChange={setOpened}
-      position="bottom-start"
-      shadow="md"
-      radius="md"
+    <SearchToolbarPopover
+      label="Columns"
+      icon={<IconColumns3 size={16} />}
       width={300}
-      trapFocus
-      closeOnClickOutside
-    >
-      <Popover.Target>
-        <Button
-          className={props.buttonClassName}
-          data-opened={opened || undefined}
-          size="compact-md"
-          variant={buttonVariant}
-          color={buttonColor}
-          leftSection={<IconColumns3 size={iconSize} />}
-          onClick={toggleOpen}
-        >
-          Columns
-        </Button>
-      </Popover.Target>
-      <Popover.Dropdown className={classes.dropdown}>
-        <div className={classes.header}>
-          <TextInput
-            ref={searchInputRef}
-            data-autofocus
-            placeholder="Search columns"
-            aria-label="Search columns"
-            leftSection={<IconSearch size={16} />}
-            value={query}
-            onChange={(e) => setQuery(e.currentTarget.value)}
-          />
-        </div>
-        <VisuallyHidden id={reorderHintId}>Press Alt+Up or Alt+Down to reorder</VisuallyHidden>
-        <VisuallyHidden aria-live="polite">{announcement}</VisuallyHidden>
-        <div className={dragIndex !== null ? `${classes.body} ${classes.dragActive}` : classes.body}>
-          {order.map((name, index) => {
-            const label = buildSearchParamFieldLabel(name);
-            if (!listed.includes(name)) {
-              return null;
-            }
-            const visible = visibleSet.has(name);
-            const rowClass = [
-              classes.item,
-              dragIndex === index ? classes.dragging : '',
-              overIndex === index && dragIndex !== null && dragIndex !== index ? classes.dragOver : '',
-              overIndex === index && dragIndex !== null && dragIndex < index ? classes.dragOverBelow : '',
-            ]
-              .filter(Boolean)
-              .join(' ');
-            return (
-              <UnstyledButton
-                key={name}
-                ref={(el: HTMLButtonElement | null) => {
-                  if (el) {
-                    itemRefs.current.set(name, el);
-                  } else {
-                    itemRefs.current.delete(name);
-                  }
-                }}
-                className={rowClass}
-                aria-pressed={visible}
-                aria-describedby={reorderHintId}
-                data-testid={`column-${name}`}
-                onClick={() => toggleColumn(name)}
-                onKeyDown={(e) => handleItemKeyDown(e, name, listed)}
-                onPointerMove={() => {
-                  if (dragIndexRef.current !== null && overIndexRef.current !== index) {
-                    overIndexRef.current = index;
-                    setOverIndex(index);
-                  }
-                }}
-              >
-                <span
-                  className={classes.grip}
-                  aria-hidden="true"
-                  data-testid={`column-grip-${name}`}
-                  onPointerDown={(e) => startDrag(e, index)}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <IconGripVertical size={16} stroke={1.5} />
-                </span>
-                <span className={classes.label}>{label}</span>
-                {visible && (
-                  <span className={classes.check} aria-hidden="true" data-testid={`visible-${name}`}>
-                    <IconCheck size={16} stroke={2} />
-                  </span>
-                )}
-              </UnstyledButton>
-            );
-          })}
-        </div>
-        <div className={classes.footer}>
+      opened={opened}
+      onToggle={toggleOpen}
+      onChange={setOpened}
+      footer={
+        <>
           <Button
-            className={`${classes.staticButton} ${classes.addButton}`}
+            className={shell.addButton}
             size="compact-sm"
             variant="subtle"
             color="gray"
@@ -334,8 +227,79 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
           <Text className={classes.shownCount} size="sm">
             {visibleCount} shown
           </Text>
-        </div>
-      </Popover.Dropdown>
-    </Popover>
+        </>
+      }
+    >
+      <div className={classes.header}>
+        <TextInput
+          ref={searchInputRef}
+          data-autofocus
+          placeholder="Search columns"
+          aria-label="Search columns"
+          leftSection={<IconSearch size={16} />}
+          value={query}
+          onChange={(e) => setQuery(e.currentTarget.value)}
+        />
+      </div>
+      <VisuallyHidden id={reorderHintId}>Press Alt+Up or Alt+Down to reorder</VisuallyHidden>
+      <VisuallyHidden aria-live="polite">{announcement}</VisuallyHidden>
+      <div className={dragIndex !== null ? `${classes.body} ${classes.dragActive}` : classes.body}>
+        {order.map((name, index) => {
+          const label = buildSearchParamFieldLabel(name);
+          if (!listed.includes(name)) {
+            return null;
+          }
+          const visible = visibleSet.has(name);
+          const rowClass = [
+            classes.item,
+            dragIndex === index ? classes.dragging : '',
+            overIndex === index && dragIndex !== null && dragIndex !== index ? classes.dragOver : '',
+            overIndex === index && dragIndex !== null && dragIndex < index ? classes.dragOverBelow : '',
+          ]
+            .filter(Boolean)
+            .join(' ');
+          return (
+            <UnstyledButton
+              key={name}
+              ref={(el: HTMLButtonElement | null) => {
+                if (el) {
+                  itemRefs.current.set(name, el);
+                } else {
+                  itemRefs.current.delete(name);
+                }
+              }}
+              className={rowClass}
+              aria-pressed={visible}
+              aria-describedby={reorderHintId}
+              data-testid={`column-${name}`}
+              onClick={() => toggleColumn(name)}
+              onKeyDown={(e) => handleItemKeyDown(e, name, listed)}
+              onPointerMove={() => {
+                if (dragIndexRef.current !== null && overIndexRef.current !== index) {
+                  overIndexRef.current = index;
+                  setOverIndex(index);
+                }
+              }}
+            >
+              <span
+                className={classes.grip}
+                aria-hidden="true"
+                data-testid={`column-grip-${name}`}
+                onPointerDown={(e) => startDrag(e, index)}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <IconGripVertical size={16} stroke={1.5} />
+              </span>
+              <span className={classes.label}>{label}</span>
+              {visible && (
+                <span className={classes.check} aria-hidden="true" data-testid={`visible-${name}`}>
+                  <IconCheck size={16} stroke={2} />
+                </span>
+              )}
+            </UnstyledButton>
+          );
+        })}
+      </div>
+    </SearchToolbarPopover>
   );
 }
