@@ -215,13 +215,62 @@ describe('ActorPage', () => {
     expect(screen.getByText('Active')).toBeInTheDocument();
   });
 
-  test("a provider's name and status are read-only, and an inactive provider's Schedule stays editable", async () => {
-    await setup({ ...drSmith, active: false }, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+  test('switching a provider off switches its Schedule off and locks it, and both save in one bundle', async () => {
+    const { medplum, onStored, schedules } = await setup(drSmith, [
+      makeSchedule('Practitioner/dr-smith', [initialVisit]),
+    ]);
+    const scheduleSwitch = screen.getByRole('switch', { name: 'Schedule status' });
 
-    expect(screen.getAllByText('Inactive')).toHaveLength(2);
     expect(screen.queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('switch', { name: /Active/ })).not.toBeInTheDocument();
-    expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter')).toBeEnabled();
+    await userEvent.click(screen.getByRole('switch', { name: 'Provider status' }));
+
+    expect(scheduleSwitch).not.toBeChecked();
+    expect(scheduleSwitch).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent("This provider is inactive and can't be booked.");
+    await save();
+
+    await waitFor(() => expect(onStored).toHaveBeenCalled());
+    expect(sentBundle(medplum).entry?.map((item) => item.request?.url)).toEqual([
+      'Practitioner/dr-smith',
+      `Schedule/${schedules[0].id}`,
+    ]);
+    expect(onStored.mock.calls[0][0].find((r: Resource) => r.resourceType === 'Practitioner').active).toBe(false);
+    expect(storedSchedule(onStored).active).toBe(false);
+  });
+
+  test('switching a provider back on puts the Schedule back as stored, leaving nothing to save', async () => {
+    await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+    const providerSwitch = screen.getByRole('switch', { name: 'Provider status' });
+
+    await userEvent.click(providerSwitch);
+    await userEvent.click(providerSwitch);
+
+    expect(screen.getByRole('switch', { name: 'Schedule status' })).toBeChecked();
+    expect(saveBar()).not.toBeInTheDocument();
+  });
+
+  test("an inactive provider's Schedule stored on can still be switched off, but not back on", async () => {
+    await setup({ ...drSmith, active: false }, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+    const scheduleSwitch = screen.getByRole('switch', { name: 'Schedule status' });
+
+    expect(scheduleSwitch).toBeEnabled();
+    await userEvent.click(scheduleSwitch);
+
+    expect(scheduleSwitch).toBeDisabled();
+  });
+
+  test("a room with no Schedule saves only its own status, and a suspended room's status is kept until switched", async () => {
+    const { medplum, onStored } = await setup({ ...room3, status: 'suspended' });
+    const roomSwitch = screen.getByRole('switch', { name: 'Room status' });
+
+    expect(roomSwitch).toBeChecked();
+    expect(screen.getByText('Suspended')).toBeInTheDocument();
+    await userEvent.click(roomSwitch);
+    await save();
+
+    await waitFor(() => expect(onStored).toHaveBeenCalled());
+    expect(sentBundle(medplum).entry?.map((item) => item.request?.url)).toEqual(['Location/room-3']);
+    expect(onStored.mock.calls[0][0][0].status).toBe('inactive');
   });
 
   test('turning off bookings saves Schedule.active false, and every field stays editable', async () => {
