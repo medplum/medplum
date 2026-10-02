@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString, isDefined } from '@medplum/core';
+import { getExtension, getReferenceString, isDefined, RecurrenceTemplateExtensionURI } from '@medplum/core';
 import type { Appointment, Reference } from '@medplum/fhirtypes';
 import type { SchedulingActorResource, SchedulingActorValue } from '../actors';
 
@@ -9,6 +9,9 @@ import type { SchedulingActorResource, SchedulingActorValue } from '../actors';
  * rejected outright, so callers have to keep their own date range inside it.
  */
 export const MAX_FIND_WINDOW_DAYS = 31;
+
+/** The longest window `Appointment/$find` accepts when searching for a recurring series. */
+export const MAX_RECURRING_FIND_WINDOW_DAYS = 7;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -207,6 +210,31 @@ export function parseZonedTime(day: Date, time: string, timezone?: string): Date
   const guess = getTimezoneOffsetMs(new Date(wallClock), timezone);
   const offset = getTimezoneOffsetMs(new Date(wallClock - guess), timezone);
   return new Date(wallClock - offset);
+}
+
+/**
+ * When the occurrences after the first of a weekly series start, as `Appointment/$book` will write them.
+ *
+ * Each keeps the first one's time on the clock of the series' timezone, so a week across a
+ * change of clocks moves the instant rather than the time.
+ *
+ * @param appointment - A proposal, which is the series' first occurrence when it carries a `recurrenceTemplate`.
+ * @param timezone - The zone to keep the time in when the template names none. Defaults to the browser's.
+ * @returns The later starts, in order. Empty for a visit that does not repeat.
+ */
+export function getLaterOccurrenceStarts(appointment: Appointment, timezone?: string): Date[] {
+  const count = getExtension(appointment, RecurrenceTemplateExtensionURI, 'occurrenceCount')?.valuePositiveInt ?? 1;
+  if (!appointment.start || count <= 1) {
+    return [];
+  }
+  const zone =
+    getExtension(appointment, RecurrenceTemplateExtensionURI, 'timezone')?.valueCodeableConcept?.coding?.[0]?.code ??
+    timezone;
+  const { year, month, day, hour, minute } = getZonedParts(new Date(appointment.start), zone);
+  const time = `${hour}:${String(minute).padStart(2, '0')}`;
+  return Array.from({ length: count - 1 }, (_, index) =>
+    parseZonedTime(new Date(year, month - 1, day + 7 * (index + 1)), time, zone)
+  ).filter(isDefined);
 }
 
 /**
@@ -536,16 +564,16 @@ export function enumerateDateRange(range: DateRange, limit = MAX_FIND_WINDOW_DAY
  * Reports a window `$find` will not answer, before a request is made for it.
  *
  * @param range - The days asked for.
+ * @param occurrenceCount - How many weekly occurrences the search is for. Above 1, the window is narrower.
  * @returns The message to show, or undefined when the range can be searched.
  */
-export function getFindWindowError(range: DateRange): string | undefined {
+export function getFindWindowError(range: DateRange, occurrenceCount = 1): string | undefined {
   const { start, end } = range;
   if (!start || !end) {
     return undefined;
   }
-  return getDayCount(start, end) > MAX_FIND_WINDOW_DAYS
-    ? `Choose at most ${MAX_FIND_WINDOW_DAYS} days at a time.`
-    : undefined;
+  const maxDays = occurrenceCount > 1 ? MAX_RECURRING_FIND_WINDOW_DAYS : MAX_FIND_WINDOW_DAYS;
+  return getDayCount(start, end) > maxDays ? `Choose at most ${maxDays} days at a time.` : undefined;
 }
 
 /**

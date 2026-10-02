@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
 import { SchedulingUnvalidatedBookingURI } from '@medplum/core';
-import type { Appointment, Extension, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, Extension } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
 import type { MockInstance } from 'vitest';
@@ -13,8 +13,10 @@ import { installAutocompleteTimers } from '../test-utils/asyncAutocomplete';
 import {
   bookButton,
   chooseActor,
+  chooseFirstOfferedTime,
   chooseImagingService,
   choosePatient,
+  chooseRepeat,
   chosenTimeField,
   clickBook,
   field,
@@ -25,7 +27,7 @@ import {
   setupBookingClient,
 } from '../test-utils/bookingForm';
 import { fireEvent, renderWithMedplum, screen } from '../test-utils/render';
-import type { AppointmentBookingFormProps } from './AppointmentBookingForm';
+import type { AppointmentBooking, AppointmentBookingFormProps } from './AppointmentBookingForm';
 import { AppointmentBookingForm } from './AppointmentBookingForm';
 
 installAutocompleteTimers();
@@ -42,8 +44,8 @@ function setup(medplum: MockClient, props?: Partial<AppointmentBookingFormProps>
  * What the booking reported writing.
  * @returns The booking `onBooked` was handed.
  */
-function reportedBooking(): { appointment: Appointment; slots: Slot[] } {
-  const [booking] = onBooked.mock.calls[0] as [{ appointment: Appointment; slots: Slot[] }];
+function reportedBooking(): AppointmentBooking {
+  const [booking] = onBooked.mock.calls[0] as [AppointmentBooking];
   return booking;
 }
 
@@ -58,6 +60,22 @@ function reportedBooking(): { appointment: Appointment; slots: Slot[] } {
  */
 function bookCount(post: MockInstance<MedplumClient['post']>): number {
   return post.mock.calls.filter(([url]) => String(url).includes('$book')).length;
+}
+
+/** Two weeks of a series, as `$book` would write them. */
+const TWO_WEEKS = ['week-1', 'week-2'].map((id): Appointment => ({
+  resourceType: 'Appointment',
+  id,
+  status: 'booked',
+  participant: [],
+}));
+
+function bookedBundle(appointments: Appointment[]): Bundle {
+  return {
+    resourceType: 'Bundle',
+    type: 'transaction-response',
+    entry: appointments.map((resource) => ({ resource })),
+  };
 }
 
 describe('AppointmentBookingForm', () => {
@@ -91,8 +109,10 @@ describe('AppointmentBookingForm', () => {
 
       expect(onBooked).toHaveBeenCalledTimes(1);
       const booking = reportedBooking();
-      expect(booking.appointment.id).toBeDefined();
-      expect(booking.appointment.status).toBe('booked');
+      expect(booking.appointments[0].id).toBeDefined();
+      expect(booking.appointments[0].status).toBe('booked');
+      // Still reported for hosts written before series, until they have moved off it.
+      expect(booking.appointment).toBe(booking.appointments[0]);
       expect(booking.slots.length).toBeGreaterThan(0);
     });
   });
@@ -106,7 +126,7 @@ describe('AppointmentBookingForm', () => {
 
       expect(String(post.mock.calls[0][0])).toContain('Appointment/$book');
       const booking = reportedBooking();
-      expect(booking.appointment.resourceType).toBe('Appointment');
+      expect(booking.appointments[0].resourceType).toBe('Appointment');
       expect(booking.slots.every((slot) => slot.resourceType === 'Slot')).toBe(true);
     });
 
@@ -121,6 +141,39 @@ describe('AppointmentBookingForm', () => {
       const announced = notify.mock.calls.map(([event]) => event.resourceType);
       expect(announced).toContain('Appointment');
       expect(announced).toContain('Slot');
+    });
+
+    test('Reports and announces every appointment of a booked series', async () => {
+      // `$book` answers a recurring series with one appointment per occurrence.
+      vi.spyOn(medplum, 'post').mockResolvedValue(bookedBundle(TWO_WEEKS));
+      const notify = vi.spyOn(medplum, 'notifyResourceModified');
+      setup(medplum, { allowRecurring: true });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Weekly, 2 times');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await clickBook();
+
+      expect(onBooked).toHaveBeenCalledWith(expect.objectContaining({ appointments: TWO_WEEKS }));
+      expect(notify.mock.calls.map(([event]) => event.id)).toStrictEqual(['week-1', 'week-2']);
+      expect(screen.queryByText(/\$book returned/)).not.toBeInTheDocument();
+    });
+
+    test('Books a series a week apart through the story stub', async () => {
+      // The stories book through this stub, so a series has to come back whole from it.
+      setup(medplum, { allowRecurring: true });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Weekly, 2 times');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await clickBook();
+
+      const [first, second] = reportedBooking().appointments;
+      expect(Date.parse(second.start as string) - Date.parse(first.start as string)).toBe(7 * 24 * 60 * 60 * 1000);
     });
 
     test('Reports a booking the host callback threw over as written', async () => {

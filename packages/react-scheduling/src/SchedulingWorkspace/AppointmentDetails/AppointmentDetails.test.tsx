@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ServiceTypeReferenceURI } from '@medplum/core';
+import { RecurrenceIdExtensionURI, RecurrenceTemplateExtensionURI, ServiceTypeReferenceURI } from '@medplum/core';
 import type { Appointment, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { RenderResult } from '@testing-library/react';
@@ -149,6 +149,7 @@ describe('AppointmentDetails', () => {
     expect(screen.queryByText('Service')).not.toBeInTheDocument();
     expect(screen.queryByText('Patient')).not.toBeInTheDocument();
     expect(screen.queryByText('Notes')).not.toBeInTheDocument();
+    expect(screen.queryByText('Repeats')).not.toBeInTheDocument();
     // A participant with no display name is still named, by what it points at.
     expect(screen.getByText('Practitioner/dr-rivera')).toBeInTheDocument();
   });
@@ -280,6 +281,29 @@ describe('AppointmentDetails', () => {
     // And it is on the appointment the operation wrote.
     const stored = await medplum.readResource('Appointment', BOOKED_APPOINTMENT.id);
     expect(stored.cancelationReason?.coding?.[0].code).toBe('prov-hosp');
+  });
+
+  test('says where a visit falls in the series it was booked in', () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      extension: [
+        {
+          url: RecurrenceTemplateExtensionURI,
+          extension: [{ url: 'occurrenceCount', valuePositiveInt: 4 }],
+        },
+        { url: RecurrenceIdExtensionURI, valuePositiveInt: 1 },
+      ],
+    });
+
+    expect(screen.getByText('Repeats')).toBeInTheDocument();
+    expect(screen.getByText('Weekly · visit 1 of 4')).toBeInTheDocument();
+  });
+
+  test('says where a later visit falls, without the count only the first keeps', () => {
+    // `$book` leaves the series' template on its first occurrence alone.
+    renderDetails({ ...BOOKED_APPOINTMENT, extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: 3 }] });
+
+    expect(screen.getByText('Weekly · visit 3')).toBeInTheDocument();
   });
 
   test('shows the reason a cancelled appointment carries', () => {

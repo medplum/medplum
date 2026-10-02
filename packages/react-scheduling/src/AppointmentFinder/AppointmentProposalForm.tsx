@@ -1,6 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Checkbox, Group, Loader, NumberInput, Pill, Stack, Text, TextInput } from '@mantine/core';
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Group,
+  Loader,
+  NumberInput,
+  Pill,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
@@ -65,6 +77,7 @@ import {
   formatTimezoneLabel,
   getAppointmentActors,
   getDurationMinutes,
+  getLaterOccurrenceStarts,
   getNativeInputType,
   isViewerTimezone,
   parseZonedDateTimeInput,
@@ -92,6 +105,15 @@ const NO_MARKED_DATES: Date[] = [];
 // Long enough that typing a time does not search on every keystroke, short enough
 // that the warning is there before the user reaches the book button.
 const CONFLICT_DEBOUNCE_MS = 400;
+
+/** Joins names the way a sentence listing all of them would. */
+const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
+
+// `Appointment/$find` searches a weekly series of two to six occurrences.
+const OCCURRENCE_OPTIONS = [
+  { value: '1', label: 'Does not repeat' },
+  ...[2, 3, 4, 5, 6].map((count) => ({ value: count.toString(), label: `Weekly, ${count} times` })),
+];
 
 /**
  * What the proposal the form assembles is for, which decides what it asks for.
@@ -182,6 +204,11 @@ export interface AppointmentProposalFormProps {
    * `$book` endpoint.
    */
   readonly canBypassSchedulingRules?: boolean;
+  /**
+   * Asks how many weeks in a row to book the visit, searching for a weekly series of up
+   * to six. Only offered when booking: `$reschedule` moves a single visit.
+   */
+  readonly allowRecurring?: boolean;
 }
 
 /** What `onBook` is told about the proposal it was handed. */
@@ -222,6 +249,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     onSubmit,
     canBypassSchedulingRules,
     appointmentExtensions,
+    allowRecurring,
   } = props;
 
   const [location, setLocation] = useState<Reference<Location> | WithId<Location> | undefined>(defaultLocation);
@@ -243,6 +271,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [manualDateTime, setManualDateTime] = useState('');
   const [manualDurationMinutes, setManualDurationMinutes] = useState<number | undefined>(undefined);
   const [conflicts, setConflicts] = useState<readonly BookingConflict[]>([]);
+  const [occurrenceCount, setOccurrenceCount] = useState(1);
 
   const manual = chosen !== undefined && chosen === manualChoice;
 
@@ -254,6 +283,11 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // Only a booking writes the patient and the visit type's codes, so only a booking
   // asks for them: `$reschedule` takes a time and the schedules to hold it on.
   const takesDetails = mode === 'book';
+
+  // `$find` refuses a series search that ignores an appointment. Derived, so a count picked
+  // before the field went away stops applying with it.
+  const offersRecurring = allowRecurring && takesDetails && !ignoreAppointment;
+  const effectiveOccurrenceCount = offersRecurring ? occurrenceCount : 1;
 
   // A move is measured against the visit type but never writes it: changing it would leave
   // the visit's required codes, its authorization, and whatever was applied when it was
@@ -315,9 +349,21 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     defaultStart,
     actorResources,
     ignoreAppointment,
+    occurrenceCount: effectiveOccurrenceCount,
     onResultsReplaced: clearChosen,
   });
   const { reset: resetDaySearch } = daySearch;
+
+  // Whatever moves the count moves what was found under it, the field going away included:
+  // a proposal carries the series it was found for, and a typed time books a single visit.
+  // Adjusted during render, so no time found under the old count is ever offered under the new.
+  const [searchedOccurrenceCount, setSearchedOccurrenceCount] = useState(effectiveOccurrenceCount);
+  if (searchedOccurrenceCount !== effectiveOccurrenceCount) {
+    setSearchedOccurrenceCount(effectiveOccurrenceCount);
+    setChosen(undefined);
+    clearManualTime();
+    resetDaySearch();
+  }
 
   // The first window is back and nothing is holding the search up, so what it found —
   // even if that is nothing — is what is on screen.
@@ -587,6 +633,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           onChange={chooseResources}
         />
 
+        {offersRecurring && (
+          <Select
+            label="Repeat"
+            data={OCCURRENCE_OPTIONS}
+            allowDeselect={false}
+            value={occurrenceCount.toString()}
+            onChange={(value) => setOccurrenceCount(Number(value ?? 1))}
+          />
+        )}
+
         <ChosenTime
           appointment={chosen}
           timezone={timezone}
@@ -686,13 +742,13 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
         {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
         <Button fullWidth disabled={!chosen || written || detailsOutstanding} loading={writing} onClick={handleSubmit}>
-          {mode === 'reschedule' ? 'Reschedule appointment' : 'Book appointment'}
+          {getSubmitLabel(mode, effectiveOccurrenceCount)}
         </Button>
       </Stack>
 
       {searching && (
         <Stack className={classes.results} gap="lg">
-          {canBypassSchedulingRules && (
+          {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
             <ManualTime
               dateTime={manualDateTime}
               durationMinutes={effectiveDurationMinutes}
@@ -779,7 +835,12 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
           value={formatZonedDateTime(new Date(appointment.start), timezone)}
           // Mantine puts the description above the input by default.
           inputWrapperOrder={['label', 'input', 'description']}
-          description={<ChosenTimeCommitment appointment={appointment} actors={actors} />}
+          description={
+            <>
+              <ChosenTimeCommitment appointment={appointment} actors={actors} />
+              <LaterOccurrences appointment={appointment} timezone={timezone} />
+            </>
+          }
         />
       )}
 
@@ -926,6 +987,46 @@ function ChosenTimeCommitment(props: ChosenTimeCommitmentProps): JSX.Element {
       })}
     </>
   );
+}
+
+interface LaterOccurrencesProps {
+  /** The time chosen, which is the series' first occurrence when it repeats. */
+  readonly appointment: Appointment;
+  /** IANA timezone the visit is scheduled in. */
+  readonly timezone?: string;
+}
+
+/**
+ * Names the dates a series books after the one on show, which Book writes too.
+ * @param props - The React props.
+ * @returns The line, or null for a visit that does not repeat.
+ */
+function LaterOccurrences(props: LaterOccurrencesProps): JSX.Element | null {
+  const { appointment, timezone } = props;
+  const starts = getLaterOccurrenceStarts(appointment, timezone);
+  if (starts.length === 0) {
+    return null;
+  }
+  const formatDay = new Intl.DateTimeFormat(undefined, { timeZone: timezone, month: 'short', day: 'numeric' });
+  return (
+    <>
+      <br />
+      Also books {listAll.format(starts.map((start) => formatDay.format(start)))} at the same time.
+    </>
+  );
+}
+
+/**
+ * Names what the submit button writes.
+ * @param mode - What the proposal is for.
+ * @param occurrenceCount - How many appointments a booking writes: one per occurrence of a series.
+ * @returns The button's label.
+ */
+function getSubmitLabel(mode: AppointmentProposalMode, occurrenceCount: number): string {
+  if (mode === 'reschedule') {
+    return 'Reschedule appointment';
+  }
+  return occurrenceCount > 1 ? `Book ${occurrenceCount} appointments` : 'Book appointment';
 }
 
 /**
