@@ -182,5 +182,8 @@
   "v50": {
     "serverVersion": "5.1.44",
     "requiredBefore": "5.2.0"
+  },
+  "v51": {
+    "serverVersion": "5.2.1"
   }
 }
