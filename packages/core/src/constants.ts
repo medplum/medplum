@@ -10,6 +10,12 @@ export const CPT = 'http://www.ama-assn.org/go/cpt';
 export const ICD10 = 'http://hl7.org/fhir/sid/icd-10';
 export const NDC = 'http://hl7.org/fhir/sid/ndc';
 
+// HL7 v3 ObservationInterpretation code system, used for Observation.interpretation
+// (e.g. "H" = high, "L" = low, "HH" = critically high). See
+// https://terminology.hl7.org/CodeSystem-v3-ObservationInterpretation.html
+export const OBSERVATION_INTERPRETATION =
+  'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation';
+
 // common http-based origins useful for avoiding false-positives about preferring https over http,
 // e.g. https://rules.sonarsource.com/javascript/type/Security%20Hotspot/RSPEC-5332/
 export const HTTP_HL7_ORG = 'http://hl7.org';
