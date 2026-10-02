@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
-import type { Appointment } from '@medplum/fhirtypes';
+import type { Appointment, Location, Reference } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -169,13 +169,30 @@ FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
 export const BypassSchedulingRules = (): JSX.Element => <Workspace canBypassSchedulingRules />;
 BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
 
+/**
+ * The workspace as a host opens it on one site, such as the facility a user launched
+ * scheduling from.
+ *
+ * The host passes a reference to the Location, and the Location filter starts on **Uro Associates
+ * - Satellite**: only the calendars held there are listed, and the visit types on offer
+ * are the ones the satellite holds. Click open time and the booking form starts on the
+ * satellite too, which is the site the booked appointment records.
+ *
+ * It is only where the filter starts. Take the pill off and every calendar comes back.
+ *
+ * @returns The story.
+ */
+export const AtASite = (): JSX.Element => <Workspace defaultLocation={{ reference: 'Location/satellite-clinic' }} />;
+AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
+
 interface WorkspaceProps {
   readonly canBypassSchedulingRules?: boolean;
+  readonly defaultLocation?: Reference<Location>;
 }
 
 /**
  * Fills the viewport under the package banner, which is 72px.
- * @param props - Whether the story lets a time be typed.
+ * @param props - Whether the story lets a time be typed, and the site it starts on.
  * @returns The workspace as a host would mount it.
  */
 function Workspace(props: WorkspaceProps): JSX.Element {
@@ -186,6 +203,7 @@ function Workspace(props: WorkspaceProps): JSX.Element {
     <div style={{ height: 'calc(100vh - 72px)', padding: '1em', boxSizing: 'border-box' }}>
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
+        defaultLocation={props.defaultLocation}
         onBooked={({ appointment }) => {
           showNotification({
             color: 'green',

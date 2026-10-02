@@ -6,7 +6,7 @@ import { DelayedError, Job, Queue } from 'bullmq';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { getShardSystemRepo } from '../fhir/repo';
 import { GLOBAL_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
@@ -37,7 +37,7 @@ import * as workerUtils from './utils';
 import { queueRegistry } from './utils';
 
 describe('Post-Deploy Migration Worker', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let mockRegisteredServers: ServerRegistryInfo[];
   const systemRepo = getShardSystemRepo(GLOBAL_SHARD_ID);
 
@@ -329,10 +329,7 @@ describe('Post-Deploy Migration Worker', () => {
     executeMigrationActionsSpy.mockRestore();
   });
 
-  test.each([
-    ['tracked', false],
-    ['legacy', true],
-  ] as const)('Job processor runs migration with %s async job data', async (_format, legacy) => {
+  test('Job processor runs migration', async () => {
     const mockCustomMigration: CustomPostDeployMigration = {
       type: 'custom',
       prepareJobData: vi.fn(),
@@ -356,9 +353,7 @@ describe('Post-Deploy Migration Worker', () => {
       request: '/admin/super/migrate',
     });
 
-    const jobData: PostDeployJobData = legacy
-      ? { type: 'custom', asyncJobId: mockAsyncJob.id }
-      : await withTestContext(async () => prepareCustomMigrationJobData(mockAsyncJob));
+    const jobData: PostDeployJobData = await withTestContext(async () => prepareCustomMigrationJobData(mockAsyncJob));
     const job = {
       id: '1',
       data: jobData,
@@ -378,23 +373,18 @@ describe('Post-Deploy Migration Worker', () => {
     ]);
   });
 
-  test.each([
-    ['legacy', true],
-    ['tracked', false],
-  ] as const)('Worker logs %s async job data', (_format, legacy) => {
+  test('Worker logs async job data', () => {
     const loggingSpy = vi.spyOn(workerUtils, 'addVerboseQueueLogging');
     initPostDeployMigrationWorker(config);
     const logFields = loggingSpy.mock.calls.at(-1)?.[2] as (job: Job<PostDeployJobData>) => Record<string, unknown>;
-    const jobData: PostDeployJobData = legacy
-      ? { type: 'custom', asyncJobId: 'legacy-job' }
-      : {
-          type: 'custom',
-          target: { kind: 'shard', shardId: TODO_SHARD_ID },
-          tracking: { owner: 'system', asyncJobId: 'tracked-job' },
-        };
+    const jobData: PostDeployJobData = {
+      type: 'custom',
+      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      tracking: { owner: 'system', asyncJobId: 'tracked-job' },
+    };
 
     expect(logFields({ data: jobData } as Job<PostDeployJobData>)).toEqual({
-      asyncJob: `AsyncJob/${legacy ? 'legacy-job' : 'tracked-job'}`,
+      asyncJob: 'AsyncJob/tracked-job',
       jobType: 'custom',
     });
   });
@@ -608,7 +598,8 @@ describe('Post-Deploy Migration Worker', () => {
 
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
-      asyncJobId: asyncJob.id,
+      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      tracking: getAsyncJobTracking(asyncJob),
       requestId: '123',
       traceId: '456',
     };
@@ -647,7 +638,8 @@ describe('Post-Deploy Migration Worker', () => {
 
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
-      asyncJobId: asyncJob.id,
+      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      tracking: getAsyncJobTracking(asyncJob),
       requestId: '123',
       traceId: '456',
     };
@@ -690,7 +682,8 @@ describe('Post-Deploy Migration Worker', () => {
 
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
-      asyncJobId: asyncJob.id,
+      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      tracking: getAsyncJobTracking(asyncJob),
       requestId: '123',
       traceId: '456',
     };

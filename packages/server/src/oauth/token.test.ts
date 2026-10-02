@@ -21,7 +21,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo, Repository } from '../fhir/repo';
 import {
@@ -122,7 +122,7 @@ describe('OAuth2 Token', () => {
     userInfoMode: 'gcip' as const,
     userInfoApiKey: 'test-api-key',
   };
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
   let adminMembership: WithId<ProjectMembership>;
