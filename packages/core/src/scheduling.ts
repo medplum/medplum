@@ -132,12 +132,12 @@ export const RecurrenceTemplateExtensionURI =
 
 /**
  * R5's `Appointment.recurrenceId`, as the R4 cross-version extension: an occurrence's 1-based
- * position (valuePositiveInt) in a series booked via `Appointment/$book`.
+ * position (valuePositiveInt) in a series created via `Appointment/$book` or `Appointment/$hold`.
  */
 export const RecurrenceIdExtensionURI =
   'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceId';
 
-/** Identifier system for the `Appointment.identifier` shared by every occurrence of one booked recurring series. */
+/** Identifier system for the `Appointment.identifier` shared by every occurrence of one recurring series. */
 export const RecurringAppointmentSeriesIdentifierSystem = 'https://medplum.com/fhir/recurring-appointment-series';
 
 export const DAYS_OF_WEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;

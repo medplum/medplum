@@ -56,7 +56,13 @@ function recurrenceTemplate(occurrenceCount: number, overrides: Extension[] = []
   };
 }
 
-describe('Appointment/$book with a recurrenceTemplate', () => {
+// The operations that take a series, and the statuses each gives the occurrences it creates.
+const operations = [
+  { operation: '$book', appointmentStatus: 'booked', slotStatus: 'busy' },
+  { operation: '$hold', appointmentStatus: 'pending', slotStatus: 'busy-tentative' },
+] as const;
+
+describe('Appointment/$book and $hold with a recurrenceTemplate', () => {
   let project: TestProjectResult<{ withAccessToken: true; withRepo: true }>;
   let officeVisitService: WithId<HealthcareService>;
   let systemRepo: SystemRepository;
@@ -148,20 +154,24 @@ describe('Appointment/$book with a recurrenceTemplate', () => {
     };
   }
 
-  function book(appointment: Appointment): ReturnType<typeof request.post> {
+  function book(appointment: Appointment, operation: '$book' | '$hold' = '$book'): ReturnType<typeof request.post> {
     return request
-      .post('/fhir/R4/Appointment/$book')
+      .post(`/fhir/R4/Appointment/${operation}`)
       .set('Authorization', `Bearer ${project.accessToken}`)
       .send({ resourceType: 'Parameters', parameter: [{ name: 'appointment', resource: appointment }] });
   }
 
-  test('books every occurrence of the series, keeping its local time across DST', async () => {
+  test.each(operations)('$operation creates every occurrence, keeping its local time across DST', async (params) => {
+    const { operation, appointmentStatus, slotStatus } = params;
     const schedule = await makeSchedule();
 
-    const response = await book({
-      ...firstOccurrence(schedule, recurrenceTemplate(3)),
-      requestedPeriod: [{ start: '2026-03-02T13:00:00.000Z', end: '2026-03-02T17:00:00.000Z' }],
-    });
+    const response = await book(
+      {
+        ...firstOccurrence(schedule, recurrenceTemplate(3)),
+        requestedPeriod: [{ start: '2026-03-02T13:00:00.000Z', end: '2026-03-02T17:00:00.000Z' }],
+      },
+      operation
+    );
     expect(response).toHaveStatus(201);
 
     const resources = ((response.body as Bundle).entry ?? []).map((e) => e.resource).filter(isDefined);
@@ -170,19 +180,19 @@ describe('Appointment/$book with a recurrenceTemplate', () => {
 
     // 9am EST, then 9am EDT after DST starts on March 8th.
     expect(appointments.map((a) => [a.status, a.start, a.end])).toEqual([
-      ['booked', '2026-03-02T14:00:00.000Z', '2026-03-02T15:00:00.000Z'],
-      ['booked', '2026-03-09T13:00:00.000Z', '2026-03-09T14:00:00.000Z'],
-      ['booked', '2026-03-16T13:00:00.000Z', '2026-03-16T14:00:00.000Z'],
+      [appointmentStatus, '2026-03-02T14:00:00.000Z', '2026-03-02T15:00:00.000Z'],
+      [appointmentStatus, '2026-03-09T13:00:00.000Z', '2026-03-09T14:00:00.000Z'],
+      [appointmentStatus, '2026-03-16T13:00:00.000Z', '2026-03-16T14:00:00.000Z'],
     ]);
     // Every occurrence holds its own Slots, buffer included, shifted along with it.
     expect(slots.map((s) => [s.status, s.start, s.end]).sort()).toEqual(
       [
         ['busy-unavailable', '2026-03-02T13:30:00.000Z', '2026-03-02T14:00:00.000Z'],
-        ['busy', '2026-03-02T14:00:00.000Z', '2026-03-02T15:00:00.000Z'],
+        [slotStatus, '2026-03-02T14:00:00.000Z', '2026-03-02T15:00:00.000Z'],
         ['busy-unavailable', '2026-03-09T12:30:00.000Z', '2026-03-09T13:00:00.000Z'],
-        ['busy', '2026-03-09T13:00:00.000Z', '2026-03-09T14:00:00.000Z'],
+        [slotStatus, '2026-03-09T13:00:00.000Z', '2026-03-09T14:00:00.000Z'],
         ['busy-unavailable', '2026-03-16T12:30:00.000Z', '2026-03-16T13:00:00.000Z'],
-        ['busy', '2026-03-16T13:00:00.000Z', '2026-03-16T14:00:00.000Z'],
+        [slotStatus, '2026-03-16T13:00:00.000Z', '2026-03-16T14:00:00.000Z'],
       ].sort()
     );
 
@@ -206,7 +216,7 @@ describe('Appointment/$book with a recurrenceTemplate', () => {
     expect(found.map((a) => a.id).sort()).toEqual(appointments.map((a) => a.id).sort());
   });
 
-  test('books a series as $find proposes it', async () => {
+  test.each(operations)('$operation creates a series as $find proposes it', async ({ operation }) => {
     const schedule = await makeSchedule();
     const found = await request
       .get('/fhir/R4/Appointment/$find')
@@ -222,7 +232,7 @@ describe('Appointment/$book with a recurrenceTemplate', () => {
     const proposed = (found.body as Bundle<Appointment>).entry?.[0]?.resource;
     expect(proposed).toBeDefined();
 
-    const response = await book(proposed as Appointment);
+    const response = await book(proposed as Appointment, operation);
     expect(response).toHaveStatus(201);
     const appointments = ((response.body as Bundle).entry ?? [])
       .map((e) => e.resource)
@@ -307,7 +317,7 @@ describe('Appointment/$book with a recurrenceTemplate', () => {
     );
   });
 
-  test('books none of the series when a later occurrence is unavailable', async () => {
+  test.each(operations)('$operation creates none of the series when one is unavailable', async ({ operation }) => {
     const schedule = await makeSchedule();
     // Another booking already holds the last occurrence's time.
     await systemRepo.createResource<Slot>({
@@ -319,7 +329,7 @@ describe('Appointment/$book with a recurrenceTemplate', () => {
       end: '2026-03-16T14:00:00.000Z',
     });
 
-    const response = await book(firstOccurrence(schedule, recurrenceTemplate(3)));
+    const response = await book(firstOccurrence(schedule, recurrenceTemplate(3)), operation);
     expect(response).toHaveStatus(400);
 
     const appointments = await systemRepo.searchResources<Appointment>(
@@ -328,6 +338,25 @@ describe('Appointment/$book with a recurrenceTemplate', () => {
     expect(appointments).toHaveLength(0);
     const slots = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
     expect(slots.map((s) => s.start)).toEqual(['2026-03-16T13:00:00.000Z']);
+  });
+
+  test('$confirm books one held occurrence, leaving the rest of the series held', async () => {
+    const schedule = await makeSchedule();
+    const held = await book(firstOccurrence(schedule, recurrenceTemplate(3)), '$hold');
+    expect(held).toHaveStatus(201);
+    const appointments = ((held.body as Bundle).entry ?? [])
+      .map((e) => e.resource)
+      .filter((r): r is WithId<Appointment> => r?.resourceType === 'Appointment');
+
+    const confirmed = await request
+      .post(`/fhir/R4/Appointment/${appointments[1].id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
+    expect(confirmed).toHaveStatus(200);
+
+    const statuses = await Promise.all(
+      appointments.map(async (a) => (await systemRepo.readResource<Appointment>('Appointment', a.id)).status)
+    );
+    expect(statuses).toEqual(['pending', 'booked', 'pending']);
   });
 
   test.each<{
@@ -427,13 +456,13 @@ describe('Appointment/$book with a recurrenceTemplate', () => {
       refuses: 'a series identifier sent by the client',
       sent: { identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'client-chosen' }] },
       expression: 'Parameters.appointment.identifier[0]',
-      message: 'A series identifier is assigned when a recurring series is booked, and must not be sent',
+      message: 'A series identifier is assigned to each occurrence of a recurring series, and must not be sent',
     },
     {
       refuses: 'a recurrenceId sent by the client',
       sent: { extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: 2 }] },
       expression: 'Parameters.appointment.extension[1]',
-      message: 'recurrenceId is assigned when a recurring series is booked, and must not be sent',
+      message: 'recurrenceId is assigned to each occurrence of a recurring series, and must not be sent',
     },
   ])('refuses a series with $refuses', async ({ template, sent, expression, message }) => {
     const schedule = await makeSchedule();
