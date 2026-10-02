@@ -533,9 +533,11 @@ export function serviceTypeIncludesService(
 }
 
 /**
- * Extracts HealthcareService references from serviceType concepts.
+ * Extracts the distinct HealthcareService references from serviceType concepts.
+ * A service with several `type` codes is represented by one concept per code,
+ * each carrying the same reference; that reference is returned only once.
  * @param serviceType - CodeableConcept values to inspect
- * @returns HealthcareService references embedded in the concepts
+ * @returns HealthcareService references embedded in the concepts, in first-seen order
  */
 export function extractServiceTypeReferences(
   serviceType: CodeableConcept[] | undefined
@@ -543,12 +545,17 @@ export function extractServiceTypeReferences(
   if (!serviceType?.length) {
     return [];
   }
+  const seen = new Set<string>();
   return flatMapFilter(serviceType, (concept) => {
     const value = getExtensionValue(concept, ServiceTypeReferenceURI);
     // We expect that `value` is always a Reference<HealthcareService>, but the
     // extension shape may not be validated by a FHIR Profile, so we perform a
     // safety check here. This also makes Typescript safe without a cast.
-    return isReference<HealthcareService>(value, 'HealthcareService') ? value : undefined;
+    if (!isReference<HealthcareService>(value, 'HealthcareService') || seen.has(value.reference)) {
+      return undefined;
+    }
+    seen.add(value.reference);
+    return value;
   });
 }
 
