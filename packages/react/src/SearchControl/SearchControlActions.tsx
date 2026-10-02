@@ -6,7 +6,8 @@ import type { JSX, MouseEvent, ReactNode } from 'react';
 import { isAuxClick } from '../utils/dom';
 import classes from './SearchControl.module.css';
 
-interface SearchControlActionBase {
+/** Fields shared by every custom {@link SearchControl} action. */
+export interface SearchControlActionBase {
   /** Stable React key. */
   readonly key: string;
   /** Menu text, or tooltip + aria-label for toolbar icons. */

@@ -58,7 +58,12 @@ import type { SearchControlLinks } from './SearchControlLinks';
 import { SearchControlLinksContext } from './SearchControlLinks';
 
 export type { SearchControlContextMenuOptions } from './ResourceContextMenu';
-export type { SearchControlAction, SearchControlMenuAction, SearchControlToolbarAction } from './SearchControlActions';
+export type {
+  SearchControlAction,
+  SearchControlActionBase,
+  SearchControlMenuAction,
+  SearchControlToolbarAction,
+} from './SearchControlActions';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
