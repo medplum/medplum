@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Paper } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { createReference, SchedulingMedicalNecessityURI, toServiceTypeCodeableConcepts } from '@medplum/core';
+import { createReference, RecurrenceIdExtensionURI, SchedulingMedicalNecessityURI, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
@@ -64,6 +64,13 @@ const AuthorizedAppointment: WithId<Appointment> = {
     { status: 'accepted', actor: createReference(ElderJordanPatient) },
     { status: 'accepted', actor: createReference(DrChenPractitioner) },
   ],
+};
+
+// A later visit of a weekly series, which carries its place in it but not the count.
+const RecurringAppointment: WithId<Appointment> = {
+  ...RiveraImagingAppointment,
+  id: 'appt-rivera-imaging-tue-recurring',
+  extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: 2 }],
 };
 
 // The schedules, the visit type and the actors as well as the visits themselves: moving
@@ -171,3 +178,14 @@ export const AuthorizationDetails = (): JSX.Element => {
   );
 };
 AuthorizationDetails.decorators = [withValueSets(AuthorizationValueSets)];
+
+/**
+ * One visit of a weekly series booked through `$book`, which says where it falls in it.
+ *
+ * @returns The story.
+ */
+export const Recurring = (): JSX.Element => (
+  <Paper withBorder p="md" maw={320}>
+    <AppointmentDetails appointment={RecurringAppointment} />
+  </Paper>
+);

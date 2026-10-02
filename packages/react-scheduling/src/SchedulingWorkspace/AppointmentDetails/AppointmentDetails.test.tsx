@@ -5,6 +5,8 @@ import {
   CPT,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_PROCEDURE_CODE,
+  RecurrenceIdExtensionURI,
+  RecurrenceTemplateExtensionURI,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
   SchedulingMedicalNecessityURI,
@@ -296,6 +298,7 @@ describe('AppointmentDetails', () => {
     expect(screen.queryByText('When')).not.toBeInTheDocument();
     expect(screen.queryByText('Service')).not.toBeInTheDocument();
     expect(screen.queryByText('Notes')).not.toBeInTheDocument();
+    expect(screen.queryByText('Repeats')).not.toBeInTheDocument();
     // A participant whose resource can't be read says so.
     expect(await screen.findByText('[Not found]')).toBeInTheDocument();
   });
@@ -445,6 +448,29 @@ describe('AppointmentDetails', () => {
     // And it is on the appointment the operation wrote.
     const stored = await medplum.readResource('Appointment', BOOKED_APPOINTMENT.id);
     expect(stored.cancelationReason?.coding?.[0].code).toBe('prov-hosp');
+  });
+
+  test('says where a visit falls in the series it was booked in', () => {
+    renderDetails({
+      ...BOOKED_APPOINTMENT,
+      extension: [
+        {
+          url: RecurrenceTemplateExtensionURI,
+          extension: [{ url: 'occurrenceCount', valuePositiveInt: 4 }],
+        },
+        { url: RecurrenceIdExtensionURI, valuePositiveInt: 1 },
+      ],
+    });
+
+    expect(screen.getByText('Repeats')).toBeInTheDocument();
+    expect(screen.getByText('Weekly · visit 1 of 4')).toBeInTheDocument();
+  });
+
+  test('says where a later visit falls, without the count only the first keeps', () => {
+    // `$book` leaves the series' template on its first occurrence alone.
+    renderDetails({ ...BOOKED_APPOINTMENT, extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: 3 }] });
+
+    expect(screen.getByText('Weekly · visit 3')).toBeInTheDocument();
   });
 
   test('shows the reason a cancelled appointment carries', () => {
