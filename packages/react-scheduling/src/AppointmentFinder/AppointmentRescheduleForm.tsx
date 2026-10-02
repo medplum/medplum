@@ -34,6 +34,7 @@ export interface AppointmentRescheduleFormProps extends Omit<
   | 'diagnosisBinding'
   | 'canBypassSchedulingRules'
   | 'appointmentExtensions'
+  | 'allowRecurring'
 > {
   /** The appointment being moved. */
   readonly appointment: WithId<Appointment>;

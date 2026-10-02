@@ -288,6 +288,19 @@ export async function showNextMonth(): Promise<void> {
   await settleAutocomplete();
 }
 
+/**
+ * Chooses how many weeks in a row to book.
+ * @param label - The option to choose, as the field lists it.
+ */
+export async function chooseRepeat(label: string): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('textbox', { name: 'Repeat' }));
+  });
+  await act(async () => {
+    fireEvent.click(screen.getByRole('option', { name: label }));
+  });
+}
+
 /** Asks for the next couple of days under the ones already on screen. */
 export async function showMoreDays(): Promise<void> {
   await act(async () => {
