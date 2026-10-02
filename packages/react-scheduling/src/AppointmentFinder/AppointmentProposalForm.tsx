@@ -433,8 +433,18 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // State holds the edit rather than the value, so a different visit type falls back to
   // its own default instead of keeping the last length typed.
   const storedDurationMinutes = ignoredResource ? getRescheduleDurationMinutes(ignoredResource) : undefined;
+  const durationLoading = ignoreAppointment !== undefined && ignoredResource === undefined;
   const effectiveDurationMinutes =
     mode === 'reschedule' ? storedDurationMinutes : (manualDurationMinutes ?? configuredDurationMinutes);
+
+  // A time typed before a referenced appointment loaded is proposed again once its length is known.
+  const [proposedDurationMinutes, setProposedDurationMinutes] = useState(storedDurationMinutes);
+  if (storedDurationMinutes !== proposedDurationMinutes) {
+    setProposedDurationMinutes(storedDurationMinutes);
+    if (mode === 'reschedule' && manualDateTime) {
+      enterManualTime(manualDateTime, undefined);
+    }
+  }
 
   // Reconcile permission changes before rendering, so a revoked choice cannot be submitted.
   if (!canBypassSchedulingRules && manualChoice) {
@@ -691,6 +701,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               dateTime={manualDateTime}
               durationMinutes={effectiveDurationMinutes}
               fixedDuration={mode === 'reschedule'}
+              invalidDuration={mode === 'reschedule' && !durationLoading && storedDurationMinutes === undefined}
               timezone={timezone}
               conflicts={conflicts}
               onChange={enterManualTime}
@@ -838,6 +849,7 @@ interface ManualTimeProps {
   readonly dateTime: string;
   readonly durationMinutes: number | undefined;
   readonly fixedDuration: boolean;
+  readonly invalidDuration: boolean;
   /** IANA timezone the visit is held in. */
   readonly timezone: string | undefined;
   readonly conflicts: readonly BookingConflict[];
@@ -851,7 +863,7 @@ interface ManualTimeProps {
  * @returns The fields, and what the time entered clashes with.
  */
 function ManualTime(props: ManualTimeProps): JSX.Element {
-  const { dateTime, durationMinutes, timezone, conflicts, onChange, fixedDuration } = props;
+  const { dateTime, durationMinutes, timezone, conflicts, onChange, fixedDuration, invalidDuration } = props;
 
   return (
     <Stack gap={4}>
@@ -879,7 +891,7 @@ function ManualTime(props: ManualTimeProps): JSX.Element {
         />
       </Group>
 
-      {fixedDuration && durationMinutes === undefined && (
+      {invalidDuration && (
         <Text size="xs" c="red">
           This appointment has no valid length. Choose a time from the search.
         </Text>

@@ -207,7 +207,7 @@ describe('AppointmentRescheduleForm', () => {
       expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
     });
 
-    test('reads a referenced appointment for its length and its own slots', async () => {
+    test('reads a referenced appointment for its length and its own slots, keeping a time typed while it loads', async () => {
       function ProposalByReference(): JSX.Element | null {
         const defaults = useRescheduleDefaults(APPOINTMENT);
         if (defaults.loading) {
@@ -227,13 +227,26 @@ describe('AppointmentRescheduleForm', () => {
       }
 
       medplum.invalidateAll();
+      let release: () => void = () => undefined;
+      const loaded = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const readReference = medplum.readReference.bind(medplum);
+      vi.spyOn(medplum, 'readReference').mockImplementation(((reference, options) =>
+        reference.reference === `Appointment/${APPOINTMENT.id}`
+          ? loaded.then(() => readReference(reference, options))
+          : readReference(reference, options)) as MockClient['readReference']);
       renderWithMedplum(<ProposalByReference />, medplum);
       await settleAutocomplete();
       await openTimeFinder();
       // 11:00 in New York is 15:00Z, the time the appointment's own slots hold.
       fireEvent.change(screen.getByLabelText('Date & time'), { target: { value: '2026-08-18T11:00' } });
       await settleAutocomplete();
+      expect(screen.queryByText(/has no valid length/)).not.toBeInTheDocument();
+      await act(async () => release());
+      await settleAutocomplete();
       expect(screen.getByLabelText('Minutes')).toHaveValue('30');
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeEnabled();
       expect(screen.queryByText(/has no valid length/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Overlaps/)).not.toBeInTheDocument();
     });
