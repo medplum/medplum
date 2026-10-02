@@ -317,6 +317,11 @@ class ResourceValidator implements CrawlerVisitor {
       if (key === 'resourceType') {
         continue; // Skip special resource type discriminator property in JSON
       }
+      if (object[key] === undefined) {
+        // `undefined` is absent in FHIR JSON, and must be skipped rather than counted as a value:
+        // isChoiceOfType resolves the element from whichever sibling value[x] is set, not from this key.
+        continue;
+      }
       const choiceOfTypeElementName = isChoiceOfType(parent, key, properties);
       if (choiceOfTypeElementName) {
         // check that the type of the primitive extension matches the type of the property
@@ -345,22 +350,17 @@ class ResourceValidator implements CrawlerVisitor {
         }
 
         if (choiceOfTypeElements[choiceOfTypeElementName]) {
-          // Found a duplicate choice of type property
-          // TODO: This should be an error, but it's currently a warning to avoid breaking existing code
-          // Warnings are logged, but do not cause validation to fail
           this.issues.push(
-            createOperationOutcomeIssue(
-              'warning',
-              'structure',
-              `Conflicting choice of type properties: "${key}", "${choiceOfTypeElements[choiceOfTypeElementName]}"`,
-              key
+            createStructureIssue(
+              `${path}.${key}`,
+              `Conflicting choice of type properties: "${key}", "${choiceOfTypeElements[choiceOfTypeElementName]}"`
             )
           );
         }
         choiceOfTypeElements[choiceOfTypeElementName] = key;
         continue;
       }
-      if (!(key in properties) && !(key.startsWith('_') && key.slice(1) in properties) && object[key] !== undefined) {
+      if (!(key in properties) && !(key.startsWith('_') && key.slice(1) in properties)) {
         this.issues.push(createStructureIssue(`${path}.${key}`, `Invalid additional property "${key}"`));
       }
     }
