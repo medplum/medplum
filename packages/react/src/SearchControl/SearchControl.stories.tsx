@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchRequest } from '@medplum/core';
-import { Operator } from '@medplum/core';
+import { calculateAge, Operator } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -62,6 +63,7 @@ export const AllButtons = (): JSX.Element => {
   return (
     <SearchControl
       search={search}
+      checkboxesEnabled={true}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
       onAuxClick={(e) => console.log('auxClick', e)}
@@ -93,6 +95,50 @@ export const ExtraFields = (): JSX.Element => {
         console.log('onChange', e);
         setSearch(e.definition);
       }}
+    />
+  );
+};
+
+export const DeleteAsync = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      onDelete={async (ids) => {
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 1000);
+        });
+        console.log('onDelete', ids);
+      }}
+      onChange={(e) => setSearch(e.definition)}
+    />
+  );
+};
+
+export const AdditionalColumns = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['name', 'birthDate'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      additionalColumns={[
+        {
+          name: 'Age',
+          renderCell: (resource) => {
+            const birthDate = (resource as Patient).birthDate;
+            return birthDate ? calculateAge(birthDate).years : undefined;
+          },
+        },
+      ]}
+      onChange={(e) => setSearch(e.definition)}
     />
   );
 };
@@ -150,51 +196,6 @@ export const HideToolbar = (): JSX.Element => {
       search={search}
       checkboxesEnabled={true}
       hideToolbar={true}
-      onLoad={(e) => console.log('onLoad', e)}
-      onClick={(e) => console.log('onClick', e)}
-      onAuxClick={(e) => console.log('auxClick', e)}
-      onChange={(e) => {
-        console.log('onChange', e);
-        setSearch(e.definition);
-      }}
-    />
-  );
-};
-
-export const HideFilters = (): JSX.Element => {
-  const [search, setSearch] = useState<SearchRequest>({
-    resourceType: 'Patient',
-    fields: ['id', '_lastUpdated', 'name'],
-  });
-
-  return (
-    <SearchControl
-      search={search}
-      checkboxesEnabled={true}
-      hideFilters={true}
-      onLoad={(e) => console.log('onLoad', e)}
-      onClick={(e) => console.log('onClick', e)}
-      onAuxClick={(e) => console.log('auxClick', e)}
-      onChange={(e) => {
-        console.log('onChange', e);
-        setSearch(e.definition);
-      }}
-    />
-  );
-};
-
-export const HideToolbarAndFilters = (): JSX.Element => {
-  const [search, setSearch] = useState<SearchRequest>({
-    resourceType: 'Patient',
-    fields: ['id', '_lastUpdated', 'name'],
-  });
-
-  return (
-    <SearchControl
-      search={search}
-      checkboxesEnabled={true}
-      hideToolbar={true}
-      hideFilters={true}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
       onAuxClick={(e) => console.log('auxClick', e)}

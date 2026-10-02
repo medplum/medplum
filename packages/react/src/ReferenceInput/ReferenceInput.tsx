@@ -20,6 +20,8 @@ export interface ReferenceInputProps<T extends Resource = Resource> {
   readonly required?: boolean;
   readonly onChange?: (value: Reference<T> | undefined) => void;
   readonly disabled?: boolean;
+  /** Render the dropdowns inside the DOM tree (not a portal); defaults to portalled. */
+  readonly withinPortal?: boolean;
 }
 
 interface BaseTargetType {
@@ -183,6 +185,7 @@ export function ReferenceInput<T extends Resource = Resource>(props: ReferenceIn
             }}
             name={props.name + '-resourceType'}
             placeholder="Resource Type"
+            withinPortal={props.withinPortal}
           />
         )}
         <ResourceInput
@@ -194,6 +197,7 @@ export function ReferenceInput<T extends Resource = Resource>(props: ReferenceIn
           searchCriteria={searchCriteria}
           onChange={setValueHelper}
           disabled={props.disabled}
+          withinPortal={props.withinPortal}
         />
       </Group>
     </>

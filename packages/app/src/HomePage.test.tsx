@@ -71,10 +71,10 @@ describe('HomePage', () => {
 
   test('New button', async () => {
     await setup();
-    expect(await screen.findByText('New...')).toBeInTheDocument();
+    expect(await screen.findByLabelText('New Patient')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('New...'));
+      fireEvent.click(screen.getByLabelText('New Patient'));
     });
   });
 
@@ -95,23 +95,32 @@ describe('HomePage', () => {
     expect(typeof RESOURCE_TYPE_CREATION_PATHS['Bot']).toBe('string');
 
     await setup(`/Bot`, medplum);
-    expect(await screen.findByText('New...')).toBeInTheDocument();
+    expect(await screen.findByLabelText('New Bot')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('New...'));
+      fireEvent.click(screen.getByLabelText('New Bot'));
     });
 
     expect(screen.getByText('Create new Bot')).toBeInTheDocument();
   });
 
   test('Delete button, cancel', async () => {
-    window.confirm = vi.fn(() => false);
-
     await setup();
-    expect(await screen.findByText('Delete...')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete...'));
+      fireEvent.click(await screen.findByTestId('all-checkbox'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Delete'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
     });
   });
 
@@ -125,21 +134,25 @@ describe('HomePage', () => {
       name: [{ family }],
     });
 
-    window.confirm = vi.fn(() => true);
-
     await setup('/Patient', medplum);
 
     // Make sure the patient is on the screen
     expect(await screen.findByText(family)).toBeInTheDocument();
-
-    expect(await screen.findByText('Delete...')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText(`Checkbox for ${patient.id}`));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete...'));
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Delete'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
     });
 
     // Make sure the patient is *not* on the screen
@@ -155,10 +168,12 @@ describe('HomePage', () => {
     medplum.router.router.add('GET', ':resourceType/$csv', async () => [allOk]);
 
     await setup('/Patient', medplum);
-    expect(await screen.findByText('Export...')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Export...'));
+      fireEvent.click(await screen.findByText('Export'));
     });
 
     const exportButton = await screen.findByText('Export as CSV');
@@ -176,10 +191,12 @@ describe('HomePage', () => {
     HTMLAnchorElement.prototype.click = vi.fn();
 
     await setup('/Patient', medplum);
-    expect(await screen.findByText('Export...')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Export...'));
+      fireEvent.click(await screen.findByText('Export'));
     });
 
     const exportButton = await screen.findByText('Export as Transaction Bundle');

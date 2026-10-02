@@ -417,10 +417,10 @@ describe('SearchControl', () => {
       onNew,
     });
 
-    expect(await screen.findByText('New...')).toBeInTheDocument();
+    expect(await screen.findByLabelText('New Patient')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('New...'));
+      fireEvent.click(screen.getByLabelText('New Patient'));
     });
 
     expect(onNew).toHaveBeenCalled();
@@ -436,10 +436,12 @@ describe('SearchControl', () => {
       onExportCsv,
     });
 
-    expect(await screen.findByText('Export...')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Export...'));
+      fireEvent.click(await screen.findByText('Export'));
     });
 
     expect(await screen.findByText('Export as CSV')).toBeInTheDocument();
@@ -456,13 +458,24 @@ describe('SearchControl', () => {
       search: {
         resourceType: 'Patient',
       },
+      checkboxesEnabled: true,
       onDelete,
     });
 
-    expect(await screen.findByText('Delete...')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(await screen.findByTestId('all-checkbox'));
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete...'));
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Delete'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
     });
 
     expect(onDelete).toHaveBeenCalled();
@@ -478,10 +491,12 @@ describe('SearchControl', () => {
       onBulk,
     });
 
-    expect(await screen.findByText('Bulk...')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Bulk...'));
+      fireEvent.click(await screen.findByText('Bulk Apply'));
     });
 
     expect(onBulk).toHaveBeenCalled();
