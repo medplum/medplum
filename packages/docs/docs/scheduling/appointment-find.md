@@ -259,11 +259,11 @@ as the R4 cross-version extension, to describe how the series recurs:
 }
 ```
 
-:::caution
+:::tip
 
-[`$book`](/docs/scheduling/appointment-book) does not read the `recurrenceTemplate` yet. Passing a
-series entry to `$book` books **only the first occurrence**, which keeps the template as submitted.
-Booking a whole series is coming in a future release.
+Pass a series entry to [`$book`](/docs/scheduling/appointment-book#booking-a-recurring-series)
+unchanged to book every occurrence, all or none. [`$hold`](/docs/scheduling/appointment-hold)
+does not read the `recurrenceTemplate` yet, and holds only the first occurrence.
 
 :::
 

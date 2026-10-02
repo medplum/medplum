@@ -10,16 +10,13 @@ import {
   isNotFound,
   isReference,
   OperationOutcomeError,
-  RecurrenceTemplateExtensionURI,
   resolveId,
   serviceTypeIncludesService,
   toServiceTypeCodeableConcepts,
-  UCUM,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Appointment, Bundle, Extension, HealthcareService, Reference, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, HealthcareService, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import assert from 'node:assert';
-import { Temporal } from 'temporal-polyfill';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
 import type { Interval } from '../../util/date';
@@ -29,6 +26,12 @@ import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
 import { bufferTimeConflicts, findAlignedSlotTimes, overlappingIntervals } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import {
+  MAX_OCCURRENCE_COUNT,
+  MIN_OCCURRENCE_COUNT,
+  projectWeeksForward,
+  weeklyRecurrenceTemplate,
+} from './utils/recurrence';
 import {
   applyExistingSlots,
   assertAllLoaded,
@@ -70,49 +73,12 @@ type AppointmentFindParameters = {
   _count?: number;
 };
 
-// The most occurrences a weekly series searched for with `occurrence-count` may have.
-const MAX_OCCURRENCE_COUNT = 6;
-
 const WEEK_MINUTES = 7 * 24 * 60;
 
 // When scheduling across a week with a DST transition, the week may be this much longer
 // or shorter than `WEEK_MINUTES` (Note that this undercounts some rare scenarios, such
 // as in the "Antarctica/Troll" timezone which has a two hour gap).
 const DST_FUDGE_HOURS = 1;
-
-// Indexed by `Temporal.ZonedDateTime.dayOfWeek - 1`, and named for R5's `weeklyTemplate` elements.
-const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
-
-// Projects an instant forward by whole weeks, keeping its wall-clock time in `timezone` across
-// DST transitions. Undefined if that wall-clock time doesn't exist that week, as in a DST gap.
-function projectWeeksForward(start: Date, weeks: number, timezone: string): Date | undefined {
-  const local = Temporal.Instant.fromEpochMilliseconds(start.valueOf()).toZonedDateTimeISO(timezone);
-  const projected = local.add({ weeks });
-  return projected.toPlainTime().equals(local.toPlainTime()) ? new Date(projected.epochMilliseconds) : undefined;
-}
-
-// R5's `recurrenceTemplate` for a weekly series starting at `start`, as the R4 cross-version extension.
-function weeklyRecurrenceTemplate(start: Date, occurrenceCount: number, timezone: string): Extension {
-  const local = Temporal.Instant.fromEpochMilliseconds(start.valueOf()).toZonedDateTimeISO(timezone);
-  return {
-    url: RecurrenceTemplateExtensionURI,
-    extension: [
-      {
-        url: 'timezone',
-        valueCodeableConcept: { coding: [{ system: 'https://www.iana.org/time-zones', code: timezone }] },
-      },
-      { url: 'recurrenceType', valueCodeableConcept: { coding: [{ system: UCUM, code: 'wk', display: 'week' }] } },
-      { url: 'occurrenceCount', valuePositiveInt: occurrenceCount },
-      {
-        url: 'weeklyTemplate',
-        extension: [
-          { url: WEEKDAYS[local.dayOfWeek - 1], valueBoolean: true },
-          { url: 'weekInterval', valuePositiveInt: 1 },
-        ],
-      },
-    ],
-  };
-}
 
 // The requested range. A series is searched for one local week at a time, which runs an hour
 // longer across a DST transition.
@@ -429,10 +395,13 @@ export async function appointmentFindHandler(req: FhirRequest): Promise<FhirResp
     throw new OperationOutcomeError(badRequest(`Invalid _count, maximum allowed is ${DEFAULT_MAX_SEARCH_COUNT}`));
   }
 
-  if (occurrenceCount !== undefined && (occurrenceCount < 2 || occurrenceCount > MAX_OCCURRENCE_COUNT)) {
+  if (
+    occurrenceCount !== undefined &&
+    (occurrenceCount < MIN_OCCURRENCE_COUNT || occurrenceCount > MAX_OCCURRENCE_COUNT)
+  ) {
     throw new OperationOutcomeError(
       badRequest(
-        `Invalid occurrence-count, must be between 2 and ${MAX_OCCURRENCE_COUNT}`,
+        `Invalid occurrence-count, must be between ${MIN_OCCURRENCE_COUNT} and ${MAX_OCCURRENCE_COUNT}`,
         'Parameters.occurrence-count'
       )
     );
