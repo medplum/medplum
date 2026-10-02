@@ -1,0 +1,36 @@
+{
+  "name": "medplum-practice-fusion-importer",
+  "version": "5.1.39",
+  "description": "Medplum Practice Fusion CCDA Importer",
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "convert": "tsx src/convert-ccdas.ts",
+    "validate": "tsx src/validate-output.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "prettier": "prettier --write ."
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "devDependencies": {
+    "@medplum/ccda": "5.1.39",
+    "@medplum/core": "5.1.39",
+    "@medplum/definitions": "5.1.39",
+    "@medplum/eslint-config": "5.1.39",
+    "@medplum/fhirtypes": "5.1.39",
+    "@types/node": "22.20.3",
+    "dotenv": "18.0.0",
+    "tsx": "4.23.13",
+    "typescript": "6.0.3"
+  },
+  "packageManager": "npm@10.9.9",
+  "engines": {
+    "node": "^22.18.0 || >=24.2.0"
+  }
+}
