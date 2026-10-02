@@ -221,7 +221,10 @@ describe('SchedulingConfigWorkspace', () => {
   });
 
   test('hides inactive providers and devices until asked, then marks them', async () => {
-    await setup();
+    await setup([
+      ...ConfigFixtures,
+      { resourceType: 'Practitioner', name: [{ given: ['Hana'], family: 'Lee', prefix: ['Dr.'] }], active: false },
+    ]);
 
     expect(within(sidebar()).queryByText('Ultrasound 3 (Retired)')).not.toBeInTheDocument();
     expect(within(sidebar()).queryByText('Dr. Hana Lee')).not.toBeInTheDocument();

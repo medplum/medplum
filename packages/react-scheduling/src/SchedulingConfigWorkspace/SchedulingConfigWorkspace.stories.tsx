@@ -31,8 +31,8 @@ function Workspace(): JSX.Element {
  * Initial Consultation is offered at both clinics, with prep and turnover time and a lunch break in its hours.
  * Group Education Class books eight patients into one weekly session. Telehealth Consult names no service facility,
  * so it is offered at every one. Unconfigured Visit and Walk-in Clinic have no duration, so booking never offers
- * them, but they are listed here to be finished. Discontinued Consult, Dr. Hana Lee, and Ultrasound 3 are turned
- * off, so they are hidden until **Show inactive** is ticked under the filters button. Dr. Sofia Reyes is on leave:
+ * them, but they are listed here to be finished. Discontinued Consult and Ultrasound 3 are turned off, so they
+ * are hidden until **Show inactive** is ticked under the filters button. Dr. Sofia Reyes is on leave:
  * still active, so listed, with the Schedule switched off. Exam Room C is listed though it has no Schedule.
  *
  * Pick one to edit it in place. Switching to another with unsaved changes asks first. The **+** beside Visit
