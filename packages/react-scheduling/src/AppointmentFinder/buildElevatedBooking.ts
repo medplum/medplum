@@ -92,7 +92,7 @@ export function buildElevatedBooking(options: ElevatedBookingOptions): Appointme
     end,
     status: 'proposed',
     serviceType: toServiceTypeCodeableConcepts(service),
-    // Marked as `$find` marks its proposals: the first provider asked for is the primary.
+    // Must match `$find`: the first provider is the primary.
     participant: setPrimaryProvider(
       actors.map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
       actors.find((actor) => actor.reference?.startsWith('Practitioner/'))

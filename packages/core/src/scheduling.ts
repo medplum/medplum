@@ -619,8 +619,7 @@ function isPrimaryPerformerType(type: CodeableConcept): boolean {
 /**
  * Marks one participant as the appointment's primary provider, and no other.
  *
- * An appointment may hold time for several providers, while a downstream system may
- * accept only one; the primary is the one to send it.
+ * A downstream system that accepts one provider per appointment should be sent the primary.
  *
  * @param participants - The appointment's participants.
  * @param primary - The actor to mark, or undefined to mark nobody.

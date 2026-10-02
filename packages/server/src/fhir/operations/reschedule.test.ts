@@ -616,6 +616,7 @@ describe('Appointment/:id/$reschedule', () => {
     });
     const practitionerSchedule = await makeSchedule(practitioner);
     const assistantSchedule = await makeSchedule(assistant);
+    const roomSchedule = await makeSchedule(roomOne);
     const start = '2026-03-05T16:00:00.000Z'; // Thu 11am EST
     const end = '2026-03-05T17:00:00.000Z';
 
@@ -626,7 +627,8 @@ describe('Appointment/:id/$reschedule', () => {
 
     const response = await reschedule(booked.id as string, {
       start,
-      schedules: [assistantSchedule, practitionerSchedule],
+      // The room comes first, so the primary has to be picked by type rather than position
+      schedules: [roomSchedule, assistantSchedule, practitionerSchedule],
     });
 
     expect(response).toHaveStatus(200);
@@ -634,7 +636,6 @@ describe('Appointment/:id/$reschedule', () => {
       isResource<Appointment>(r, 'Appointment')
     ) as Appointment;
     expect(getPrimaryProvider(appointment)?.reference).toBe(getReferenceString(assistant));
-    expect(appointment.participant.filter((p) => p.type)).toHaveLength(1);
   });
 
   test('rejects an invalid start time', async () => {

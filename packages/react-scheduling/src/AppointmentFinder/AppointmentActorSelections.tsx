@@ -175,8 +175,8 @@ interface RowLabelProps {
  * Names one row of several, saying how it reads against the row above it
  * (e.g. Room 1, And Room 2).
  *
- * Provider rows read Primary, And Additional instead: the first provider is the one
- * marked primary on the booking, and nothing tells the rest apart.
+ * Provider rows read Primary, And Additional instead: the first is marked primary on the
+ * booking, and the rest are interchangeable.
  * @param props - Where the row sits, and what its actor type is called.
  * @returns The label.
  */

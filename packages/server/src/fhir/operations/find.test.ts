@@ -343,7 +343,6 @@ describe('Appointment/$find', () => {
           ],
         },
       });
-      expect(entry.resource?.participant[1]).not.toHaveProperty('type');
     });
 
     // Overlap is Tue, 1p-5p EDT

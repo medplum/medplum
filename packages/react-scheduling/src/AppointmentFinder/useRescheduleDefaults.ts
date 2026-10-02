@@ -155,7 +155,7 @@ async function loadDefaults(
 
   const actors = await loadActors(medplum, schedules, signal);
   const candidates = schedules.map((schedule) => toScheduleCandidate(schedule, service, actors)).filter(isDefined);
-  // The first provider row is the one a move marks primary, so the current primary opens there.
+  // A move marks the first provider row primary, so the current primary opens there.
   const isPrimary = (candidate: ScheduleCandidate): boolean =>
     !!primaryReference && getCandidateActor(candidate).reference === primaryReference;
   candidates.sort((a, b) => Number(isPrimary(b)) - Number(isPrimary(a)));

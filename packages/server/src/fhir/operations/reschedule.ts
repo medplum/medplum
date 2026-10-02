@@ -218,8 +218,7 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
  * both the old and new Schedules keeps its existing participant entry, and with it any
  * `status` the actor had already responded with.
  *
- * As in `$find`, the first provider among the new Schedules is marked the primary, so a
- * move that changes who leads the visit moves the mark with it.
+ * As in `$find`, the first provider among the new Schedules is marked primary.
  *
  * @param repo - Repository to read the outgoing Schedules with.
  * @param existingAppointment - The stored Appointment being rescheduled.

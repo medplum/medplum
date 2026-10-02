@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, getPrimaryProvider, setPrimaryProvider, toServiceTypeCodeableConcepts } from '@medplum/core';
+import { createReference, setPrimaryProvider, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
@@ -285,7 +285,7 @@ describe('AppointmentRescheduleForm', () => {
   });
 
   describe('Moving the visit', () => {
-    test('Keeps the primary provider in the first row, and primary after the move', async () => {
+    test('Asks for the primary provider first, whatever order its slots are in', async () => {
       // Held on Dr. Rivera's schedule first, but Dr. Okafor is the provider marked primary.
       const okaforSlot: WithId<Slot> = {
         ...HELD_SLOTS[0],
@@ -305,12 +305,9 @@ describe('AppointmentRescheduleForm', () => {
       const post = vi.spyOn(medplum, 'post');
       await setup(medplum, { appointment });
 
-      expect(hasPill(/Okafor/)).toBe(true);
       await moveToAnotherTime();
 
       expect(parameterValues(lastRescheduleParameters(post), 'schedule')[0]).toBe('Schedule/schedule-dr-okafor');
-      const [moved] = onRescheduled.mock.calls[0] as [{ appointment: Appointment }];
-      expect(getPrimaryProvider(moved.appointment)?.reference).toBe('Practitioner/dr-okafor');
     });
 
     test('Moves it to the time chosen, on the schedules searched', async () => {

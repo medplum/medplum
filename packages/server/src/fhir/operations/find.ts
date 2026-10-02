@@ -331,7 +331,7 @@ async function handler(params: {
     const actors = schedules.flatMap((schedule) => schedule.actor);
     const participant = setPrimaryProvider(
       actors.map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
-      // Schedules arrive in the order the caller asked for them, so the first provider is the primary
+      // Schedules keep the request's order, so the first provider requested is the primary
       actors.find((actor) => actor.reference?.startsWith('Practitioner/'))
     );
 
