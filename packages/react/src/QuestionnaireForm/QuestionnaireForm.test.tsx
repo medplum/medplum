@@ -366,6 +366,83 @@ describe('QuestionnaireForm', () => {
     expect(answersManual['question5']).toMatchObject({ valueBoolean: false });
   });
 
+  test('Repeatable group with multiple QuestionnaireResponse answers', async () => {
+    const onSubmit = vi.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'g1',
+            text: 'Group',
+            type: QuestionnaireItemType.group,
+            repeats: true,
+            item: [
+              {
+                linkId: 'q1',
+                text: "What's your name?",
+                type: QuestionnaireItemType.string,
+              },
+              {
+                linkId: 'q2',
+                text: 'How old are you?',
+                type: QuestionnaireItemType.string,
+              },
+            ],
+          },
+        ],
+      },
+      questionnaireResponse: {
+        resourceType: 'QuestionnaireResponse',
+        status: 'in-progress',
+        item: [
+          {
+            id: 'id-1',
+            linkId: 'g1',
+            text: 'Group',
+            item: [
+              { id: 'id-2', linkId: 'q1', answer: [{ valueString: 'iliana' }] },
+              { id: 'id-3', linkId: 'q2', answer: [{ valueString: '32' }] },
+            ],
+          },
+          {
+            id: 'id-4',
+            linkId: 'g1',
+            text: 'Group',
+            item: [
+              { id: 'id-5', linkId: 'q1', answer: [{ valueString: 'panos' }] },
+              { id: 'id-6', linkId: 'q2', answer: [{ valueString: '20' }] },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Queried by role, not by label: every repetition reuses the linkId as its
+    // input id, so all of them resolve to a single label target.
+    expect(screen.getAllByText('Group')).toHaveLength(2);
+    const inputs = screen.getAllByRole<HTMLInputElement>('textbox');
+    expect(inputs.map((input) => input.value)).toStrictEqual(['iliana', '32', 'panos', '20']);
+
+    // Editing one repetition leaves the others untouched.
+    await act(async () => {
+      fireEvent.change(inputs[2], { target: { value: 'kostas' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    const response = onSubmit.mock.calls[0][0] as QuestionnaireResponse;
+    const groups = response.item?.filter((item) => item.linkId === 'g1');
+    expect(groups).toHaveLength(2);
+    expect(groups?.[0].item?.[0].answer?.[0].valueString).toBe('iliana');
+    expect(groups?.[1].item?.[0].answer?.[0].valueString).toBe('kostas');
+  });
+
   test('Handles submit', async () => {
     const onSubmit = vi.fn();
 
