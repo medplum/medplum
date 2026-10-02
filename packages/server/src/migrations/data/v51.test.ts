@@ -8,18 +8,19 @@ import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config/loader';
+import { getConfig, loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { TODO_SHARD_ID } from '../../fhir/sharding';
 import { createTestProject, withQueryInterceptor, withTestContext } from '../../test.setup';
 import { queueRegistry } from '../../workers/utils';
 import type { MigrationActionResult } from '../types';
 import type { CustomPostDeployMigrationJobData } from './types';
-import type { BackfillOverrides, ProjectIdBackfillJobData } from './v47';
-import { AdaptiveConcurrency, computeRanges, callback as migrationFn, uuidPartition } from './v47';
+import type { BackfillOverrides, ProjectIdBackfillJobData } from './v51';
+import { AdaptiveConcurrency, computeRanges, callback as migrationFn, uuidPartition } from './v51';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-describe('v47 key ranges', () => {
+describe('v51 key ranges', () => {
   // Ranges are what let workers run without coordinating: an overlap hands two of them the same
   // rows in opposite orders, and a gap silently leaves rows NULL. Neither shows up as a failure
   // anywhere else, so the tiling is checked directly.
@@ -56,7 +57,7 @@ describe('v47 key ranges', () => {
   });
 });
 
-describe('v47 adaptive concurrency', () => {
+describe('v51 adaptive concurrency', () => {
   const TARGET_MS = 100;
   const BACKOFF_MS = 300;
 
@@ -172,7 +173,7 @@ describe('v47 adaptive concurrency', () => {
   });
 });
 
-describe('v47', () => {
+describe('v51', () => {
   let client: PoolClient;
 
   beforeAll(async () => {
@@ -186,7 +187,11 @@ describe('v47', () => {
     await shutdownApp();
   });
 
-  const jobData = { type: 'custom', asyncJobId: randomUUID() } as const;
+  const jobData: CustomPostDeployMigrationJobData = {
+    type: 'custom',
+    target: { kind: 'shard', shardId: TODO_SHARD_ID },
+    tracking: { owner: 'system', asyncJobId: randomUUID() },
+  };
 
   /**
    * Runs the migration against the single client these tests spy on, so every statement the
@@ -859,6 +864,53 @@ describe('v47', () => {
 
       expect(statements.some((sql) => sql.includes('UPDATE "Observation_References"'))).toBe(false);
       expect(statements.some((sql) => sql.includes('DELETE FROM "Observation_References"'))).toBe(false);
+    }));
+
+  test('skips the backfill but still builds the index on tables with chained search disabled', () =>
+    withTestContext(async () => {
+      const obs = await createNulledObservation();
+      const { repo, project } = await createTestProject({ withRepo: true });
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+      await client.query(`UPDATE "Patient_References" SET "projectId" = NULL WHERE "resourceId" = $1`, [patient.id]);
+
+      // Rebuilt by the run below, so this proves the index phase still covers the table
+      await client.query(`DROP INDEX IF EXISTS "Observation_Refs_projectId_code_targetId_idx"`);
+
+      getConfig().disableChainedSearch = ['Observation'];
+      const { statements, restore } = captureSql();
+      let results: MigrationActionResult[];
+      try {
+        results = await run(undefined, SINGLE_RANGE);
+      } finally {
+        restore();
+        getConfig().disableChainedSearch = undefined;
+      }
+
+      expect(results).toContainEqual(
+        expect.objectContaining({
+          name: 'Skip backfill of reference tables with chained search disabled',
+          skipped: 'Observation',
+        })
+      );
+      expect(observationResult(results)).toBeUndefined();
+      expect(statements.filter((sql) => sql.includes('"Observation_References"'))).toEqual([
+        `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Observation_Refs_projectId_code_targetId_idx" ON "Observation_References" ("projectId", "code", "targetId") INCLUDE ("resourceId")`,
+      ]);
+      const skipped = await client.query(
+        `SELECT 1 FROM "Observation_References" WHERE "resourceId" = $1 AND "projectId" IS NULL`,
+        [obs.id]
+      );
+      expect(skipped.rowCount).toBeGreaterThan(0);
+
+      const backfilled = await client.query<{ projectId: string | null }>(
+        `SELECT "projectId" FROM "Patient_References" WHERE "resourceId" = $1`,
+        [patient.id]
+      );
+      expect(backfilled.rows.length).toBeGreaterThan(0);
+      expect(backfilled.rows.every((r) => r.projectId === project.id)).toBe(true);
     }));
 
   test('returns every worker connection it checked out', () =>

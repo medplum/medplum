@@ -4,6 +4,7 @@ import type { Job } from 'bullmq';
 import type { PoolClient } from 'pg';
 import { getConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { isChainedSearchDisabled } from '../../fhir/lookups/reference';
 import { globalLogger } from '../../logger';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import { moveToDelayedAndThrow, queueRegistry } from '../../workers/utils';
@@ -293,16 +294,26 @@ export async function callback(
 
   try {
     const tables = await sortBySize(client, REFERENCE_TABLES);
+    // References for these types are not written, so their rows are not backfilled; the index is still built
+    const disabled = tables.filter((t) => isChainedSearchDisabled(t.resourceType));
+    const backfillable = tables.filter((t) => !disabled.includes(t));
+    if (disabled.length > 0) {
+      results.push({
+        name: 'Skip backfill of reference tables with chained search disabled',
+        durationMs: 0,
+        skipped: disabled.map((t) => t.resourceType).join(', '),
+      });
+    }
 
     await withWorkers(overrides, async (workers) => {
       // Phase A: Build stats for the new column so backfill queries use the best plans
-      await analyzeMissingProjectIdStats(client, workers, results, tables, control);
+      await analyzeMissingProjectIdStats(client, workers, results, backfillable, control);
 
       // Phase B: Backfill each table in sequence, with key ranges within a table in parallel.
       const backfill =
         data.resumePhase === 'index'
           ? { touched: new Set<string>(), completed: data.completedResourceTypes ?? [], unfinished: [] as string[] }
-          : await backfillTables(client, workers, results, tables, control, data, overrides);
+          : await backfillTables(client, workers, results, backfillable, control, data, overrides);
 
       // Phase C: Build indexes for all tables
       const indexCheckpoint: Partial<ProjectIdBackfillJobData> = {
