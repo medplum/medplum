@@ -12,7 +12,7 @@ import { readAppointmentWrite } from './AppointmentFinder.writes';
 import type { AppointmentProposalFormProps, BookOptions } from './AppointmentProposalForm';
 import { AppointmentProposalForm } from './AppointmentProposalForm';
 import { useRescheduleDefaults } from './useRescheduleDefaults';
-import { writeElevatedReschedule } from './writeElevatedReschedule';
+import { getProposedSchedules, supportsTransactionBundles, writeElevatedReschedule } from './writeElevatedReschedule';
 
 /** Joins names the way a sentence listing all of them would. */
 const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
@@ -75,7 +75,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
   const { appointment, onRescheduled, defaultStart, canBypassSchedulingRules, ...formProps } = props;
   const medplum = useMedplum();
   const defaults = useRescheduleDefaults(appointment);
-  const supportsTransactions = medplum.getProject()?.features?.includes('transaction-bundles') === true;
+  const supportsTransactions = supportsTransactionBundles(medplum);
 
   const reschedule = useCallback(
     async (proposal: Appointment, options: BookOptions): Promise<void> => {
@@ -207,19 +207,4 @@ function getOpeningDay(appointment: Appointment): Date {
   const now = new Date();
   const start = appointment.start ? new Date(appointment.start) : undefined;
   return start && start > now ? start : now;
-}
-
-/**
- * The Schedules a proposed time would be held on.
- *
- * Read off the proposal's contained Slots rather than off the answers that found it:
- * the proposal is what is being written, and its Slots are what `$find` laid out.
- *
- * @param proposal - A time as `$find` offered it.
- * @returns The schedule references, deduped — a schedule holds a buffer Slot either
- * side of the visit as well as the visit's own.
- */
-function getProposedSchedules(proposal: Appointment): string[] {
-  const slots = (proposal.contained ?? []).filter((resource) => resource.resourceType === 'Slot');
-  return [...new Set(slots.map((slot) => slot.schedule.reference).filter(isDefined))];
 }

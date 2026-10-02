@@ -25,6 +25,30 @@ export function getRescheduleDurationMinutes(appointment: Appointment): number |
 }
 
 /**
+ * Whether the client can confirm the project applies transaction bundles atomically.
+ * @param medplum - The client to check.
+ * @returns True when the project's `transaction-bundles` feature is visible and enabled.
+ */
+export function supportsTransactionBundles(medplum: MedplumClient): boolean {
+  return medplum.getProject()?.features?.includes('transaction-bundles') === true;
+}
+
+/**
+ * The Schedules a proposed time would be held on.
+ *
+ * Read off the proposal's contained Slots rather than off the answers that found it:
+ * the proposal is what is being written, and its Slots are what `$find` laid out.
+ *
+ * @param proposal - A time as `$find` offered it, or as typed.
+ * @returns The schedule references, deduped — a schedule holds a buffer Slot either
+ * side of the visit as well as the visit's own.
+ */
+export function getProposedSchedules(proposal: Appointment): string[] {
+  const slots = (proposal.contained ?? []).filter((resource): resource is Slot => resource.resourceType === 'Slot');
+  return [...new Set(slots.map((slot) => slot.schedule.reference).filter(isDefined))];
+}
+
+/**
  * Moves an existing appointment without checking availability or start alignment.
  * Rebuilds geometry from current schedules and preserves the stored appointment's length and metadata.
  * Requires transaction support so a refused update cannot release the original slots.
@@ -38,7 +62,7 @@ export async function writeElevatedReschedule(
   existing: WithId<Appointment>,
   proposal: Appointment
 ): Promise<AppointmentWrite> {
-  if (!medplum.getProject()?.features?.includes('transaction-bundles')) {
+  if (!supportsTransactionBundles(medplum)) {
     throw new Error(
       'Override rescheduling requires the transaction-bundles project feature to be enabled and available to the client.'
     );
@@ -58,14 +82,7 @@ export async function writeElevatedReschedule(
   if (serviceRefs.length !== 1) {
     throw new Error('Manual rescheduling requires exactly one visit type.');
   }
-  const scheduleRefs = [
-    ...new Set(
-      (proposal.contained ?? [])
-        .filter((resource): resource is Slot => resource.resourceType === 'Slot')
-        .map((slot) => slot.schedule.reference)
-        .filter(isDefined)
-    ),
-  ];
+  const scheduleRefs = getProposedSchedules(proposal);
   if (scheduleRefs.length === 0 || scheduleRefs.some((ref) => !/^Schedule\/[^/]+$/.test(ref))) {
     throw new Error('The chosen time must name valid schedules.');
   }
