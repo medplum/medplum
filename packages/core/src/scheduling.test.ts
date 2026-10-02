@@ -310,6 +310,36 @@ describe('serviceType CodeableConcepts', () => {
     expect(serviceTypeIncludesService(serviceType, serviceWithType)).toBe(true);
   });
 
+  test('extracts one reference for a service with multiple type codes', () => {
+    const serviceWithTypes = {
+      ...service,
+      type: [
+        { coding: [{ system: 'http://example.com/service', code: 'office' }] },
+        { coding: [{ system: 'http://example.com/modality', code: 'telehealth' }] },
+      ],
+    };
+    const serviceType = toServiceTypeCodeableConcepts(serviceWithTypes);
+
+    expect(serviceType).toHaveLength(2);
+    expect(extractServiceTypeReferences(serviceType)).toEqual([
+      expect.objectContaining({ reference: 'HealthcareService/service-1' }),
+    ]);
+  });
+
+  test('extracts each distinct service reference in order', () => {
+    const otherService = { ...service, id: 'service-2' };
+    const serviceType = [
+      ...toServiceTypeCodeableConcepts(service),
+      ...toServiceTypeCodeableConcepts(otherService),
+      ...toServiceTypeCodeableConcepts(service),
+    ];
+
+    expect(extractServiceTypeReferences(serviceType).map((ref) => ref.reference)).toEqual([
+      'HealthcareService/service-1',
+      'HealthcareService/service-2',
+    ]);
+  });
+
   test('matches a HealthcareService reference', () => {
     const serviceType = toServiceTypeCodeableConcepts(service);
 
