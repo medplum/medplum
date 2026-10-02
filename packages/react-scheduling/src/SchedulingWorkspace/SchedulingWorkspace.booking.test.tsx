@@ -29,15 +29,18 @@ import {
   chooseDay,
   chooseImagingService,
   choosePatient,
+  chooseRepeat,
   chooseSecondOfferedTime,
   clickBook,
   codePill,
+  dragDays,
   enterAuthorizationDetails,
   enterCode,
   field,
   fillAuthorizedBooking,
   fillBooking,
   hasPill,
+  lastFindParams,
   lastFindStart,
   MONDAY_MORNING,
   openTimeFinder,
@@ -262,6 +265,35 @@ describe('SchedulingWorkspace booking', () => {
     const start = lastFindStart(get);
     expect(start).toBeDefined();
     expect(new Date(start as string).getDate()).toBe(TUESDAY_MORNING.getDate());
+  });
+
+  test('Searches for a weekly series of the length asked for', async () => {
+    const get = vi.spyOn(medplum, 'get');
+    setup();
+    await clickCalendar();
+
+    await chooseImagingService();
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
+    expect(lastFindParams(get)?.has('occurrence-count')).toBe(false);
+
+    await chooseRepeat('Weekly, 3 times');
+    expect(lastFindParams(get)?.get('occurrence-count')).toBe('3');
+  });
+
+  test('Searches at most a week of days for a weekly series', async () => {
+    const get = vi.spyOn(medplum, 'get');
+    setup();
+    await clickCalendar();
+
+    await chooseImagingService();
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
+    await dragDays('18', '27');
+    await chooseRepeat('Weekly, 3 times');
+
+    expect(screen.getByText('Choose at most 7 days at a time.')).toBeInTheDocument();
+    expect(lastFindParams(get)?.has('occurrence-count')).toBe(false);
   });
 
   test('Books the appointment and closes the form', async () => {
