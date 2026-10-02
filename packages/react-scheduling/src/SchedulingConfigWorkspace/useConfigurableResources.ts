@@ -19,14 +19,18 @@ export interface ResourceList<T> {
   readonly error?: unknown;
 }
 
+/** The providers, rooms, and devices, one list per actor type. */
+export type ActorLists = Record<BookableActorType, ResourceList<ConfigurableActor>>;
+
 export interface ConfigurableResources {
   readonly services: ResourceList<WithId<HealthcareService>>;
-  readonly actors: Record<BookableActorType, ResourceList<ConfigurableActor>>;
+  readonly actors: ActorLists;
   /** Puts resources the server now holds into the lists, in place of what they were loaded as. */
   readonly store: (resources: readonly WithId<Resource>[]) => void;
 }
 
 const LOADING: ResourceList<never> = { items: [], loading: true, complete: true };
+const ACTORS_LOADING: ActorLists = { Practitioner: LOADING, Location: LOADING, Device: LOADING };
 
 /**
  * Reads the visit types, providers, rooms, and devices the configuration workspace lists, one search per
@@ -36,11 +40,7 @@ const LOADING: ResourceList<never> = { items: [], loading: true, complete: true 
 export function useConfigurableResources(): ConfigurableResources {
   const medplum = useMedplum();
   const [services, setServices] = useState<ResourceList<WithId<HealthcareService>>>(LOADING);
-  const [actors, setActors] = useState<Record<BookableActorType, ResourceList<ConfigurableActor>>>({
-    Practitioner: LOADING,
-    Location: LOADING,
-    Device: LOADING,
-  });
+  const [actors, setActors] = useState<ActorLists>(ACTORS_LOADING);
   // Laid over each read, so a save made while a read was in flight isn't lost when the older result lands.
   const [saved, setSaved] = useState<readonly WithId<Resource>[]>([]);
 
