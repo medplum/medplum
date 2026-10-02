@@ -38,7 +38,13 @@ const config: Config = {
     faster: true,
   },
 
-  clientModules: ['./src/clientModules/gtagDevShim.ts'],
+  clientModules: [
+    './src/clientModules/gtagDevShim.ts',
+    // Local dev always tints; deployed builds only when Medplum sets the flag (forks stay untouched).
+    ...(process.env.MEDPLUM_ENVIRONMENT_FAVICON === 'true' || process.env.NODE_ENV !== 'production'
+      ? ['./src/clientModules/environmentFavicon.ts']
+      : []),
+  ],
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
