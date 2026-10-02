@@ -7,7 +7,7 @@ import { MockClient } from '@medplum/mock';
 import { describe, expect, test } from 'vitest';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
 import { setHealthcareServiceSchedulingParameterValues } from '../../parameterValues';
-import { renderWithMedplum, screen, userEvent } from '../../test-utils/render';
+import { renderWithMedplum, screen } from '../../test-utils/render';
 import { ActorPage } from './ActorPage';
 
 const room3: WithId<Location> = {
@@ -84,15 +84,40 @@ describe('ActorPage', () => {
     expect(screen.queryByText('Schedule status')).not.toBeInTheDocument();
   });
 
-  test('says when the Schedule is inactive, and explains what that means', async () => {
+  const SCHEDULE_OFF =
+    "This provider's Schedule is switched off, so they can't be booked until it's switched back on. Appointments already booked stay booked.";
+  const INACTIVE = "This provider is inactive and can't be booked.";
+
+  test.each([
+    [true, true, undefined],
+    [true, false, SCHEDULE_OFF],
+    [false, true, INACTIVE],
+    [false, false, INACTIVE],
+  ])('provider active: %s, Schedule active: %s, alert: %s', async (providerActive, scheduleActive, expected) => {
+    await setup({ ...drSmith, active: providerActive }, [
+      { ...makeSchedule('Practitioner/dr-smith', [initialVisit]), active: scheduleActive },
+    ]);
+
+    if (expected) {
+      expect(screen.getByRole('alert')).toHaveTextContent(expected);
+    } else {
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    }
+  });
+
+  test("a room whose Schedule is off is called 'it'", async () => {
+    await setup(room3, [{ ...makeSchedule('Location/room-3', [initialVisit]), active: false }]);
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "This room's Schedule is switched off, so it can't be booked until it's switched back on."
+    );
+  });
+
+  test("shows the provider's status and the Schedule's status side by side", async () => {
     await setup(drSmith, [{ ...makeSchedule('Practitioner/dr-smith', [initialVisit]), active: false }]);
 
-    expect(screen.getByText('Provider status').closest('div')?.parentElement).toHaveTextContent('Active');
-    expect(screen.getByText('Schedule status').closest('div')?.parentElement).toHaveTextContent('Inactive');
-
-    await userEvent.hover(screen.getByRole('button', { name: 'About Schedule status' }));
-
-    expect(await screen.findByText(/Stops new bookings and rescheduling/)).toBeInTheDocument();
+    expect(screen.getByText('Provider status').parentElement).toHaveTextContent('Active');
+    expect(screen.getByText('Schedule status').parentElement).toHaveTextContent('Inactive');
   });
 
   test('a room with no status reads as active', async () => {

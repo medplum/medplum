@@ -1,10 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Badge, Group, SimpleGrid, Stack, Text, Title, Tooltip } from '@mantine/core';
+import { Alert, Badge, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getDisplayString } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
-import { IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo } from 'react';
 import { getActorTypeLabel } from '../../actors';
@@ -35,6 +34,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
   const servicesById = useMemo(() => new Map(services.map((service) => [service.id, service])), [services]);
   const offered = getOfferedServices(schedule, servicesById);
+  const inactive = isActorInactive(resource);
+  const alert = getBookingAlert(resource, schedule);
 
   return (
     <Stack gap="lg">
@@ -44,13 +45,19 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         </Text>
         <Group gap="sm">
           <Title order={2}>{actorName}</Title>
-          {isActorInactive(resource) && (
+          {inactive && (
             <Badge variant="light" color="gray">
               Inactive
             </Badge>
           )}
         </Group>
       </Stack>
+
+      {alert && (
+        <Alert color="blue" variant="light">
+          {alert}
+        </Alert>
+      )}
 
       <ConfigSection title="General">
         <ActorGeneral resource={resource} schedule={schedule} />
@@ -80,11 +87,18 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   );
 }
 
-const STATUS_INFO: Record<ConfigurableActorResource['resourceType'], string> = {
-  Practitioner: 'Inactive once they leave the practice.',
-  Location: 'Inactive once the room is no longer in use.',
-  Device: 'Inactive once the device is retired.',
-};
+function getBookingAlert(resource: ConfigurableActorResource, schedule: Schedule | undefined): string | undefined {
+  const noun = getActorTypeLabel(resource.resourceType).toLowerCase();
+  // Checked first: switching the Schedule back on wouldn't make an inactive actor bookable.
+  if (isActorInactive(resource)) {
+    return `This ${noun} is inactive and can't be booked.`;
+  }
+  if (schedule?.active === false) {
+    const pronoun = resource.resourceType === 'Practitioner' ? 'they' : 'it';
+    return `This ${noun}'s Schedule is switched off, so ${pronoun} can't be booked until it's switched back on. Appointments already booked stay booked.`;
+  }
+  return undefined;
+}
 
 function ActorGeneral(props: {
   readonly resource: ConfigurableActorResource;
@@ -100,37 +114,18 @@ function ActorGeneral(props: {
   return (
     <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
       <ReadOnlyField label="Name" value={getDisplayString(resource)} />
-      <ReadOnlyField
-        label={`${getActorTypeLabel(resource.resourceType)} status`}
-        value={status}
-        info={`${STATUS_INFO[resource.resourceType]} This applies everywhere, not only in scheduling.`}
-      />
-      {schedule && (
-        <ReadOnlyField
-          label="Schedule status"
-          value={schedule.active === false ? 'Inactive' : 'Active'}
-          info="Inactive while booking is paused, such as during leave or maintenance. Stops new bookings and rescheduling. Existing appointments stay."
-        />
-      )}
+      <ReadOnlyField label={`${getActorTypeLabel(resource.resourceType)} status`} value={status} />
+      {schedule && <ReadOnlyField label="Schedule status" value={schedule.active === false ? 'Inactive' : 'Active'} />}
     </SimpleGrid>
   );
 }
 
-function ReadOnlyField(props: { readonly label: string; readonly value: string; readonly info?: string }): JSX.Element {
+function ReadOnlyField(props: { readonly label: string; readonly value: string }): JSX.Element {
   return (
     <Stack gap={2}>
-      <Group gap={4}>
-        <Text size="sm" fw={500}>
-          {props.label}
-        </Text>
-        {props.info && (
-          <Tooltip label={props.info} multiline w={280} withArrow events={{ hover: true, focus: true, touch: true }}>
-            <ActionIcon variant="subtle" color="gray" size="xs" aria-label={`About ${props.label}`}>
-              <IconInfoCircle size={14} />
-            </ActionIcon>
-          </Tooltip>
-        )}
-      </Group>
+      <Text size="sm" fw={500}>
+        {props.label}
+      </Text>
       <Text size="sm">{props.value}</Text>
     </Stack>
   );

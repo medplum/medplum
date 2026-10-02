@@ -11,7 +11,7 @@ import type { BookableActorType } from '../../actors';
 import type { ConfigurableActor } from '../../configSearch';
 import { searchConfigurableActors, searchConfigurableServices } from '../../configSearch';
 import { withFixtures } from '../../stories/decorators';
-import { ConfigFixtures, DrNguyenPractitioner, ExamRoomC } from '../../stories/scheduling';
+import { ConfigFixtures, DrNguyenPractitioner, DrReyesPractitioner, ExamRoomC } from '../../stories/scheduling';
 import { ActorPage } from './ActorPage';
 
 export default {
@@ -66,6 +66,14 @@ function StoredActor(props: { readonly resourceType: BookableActorType; readonly
  */
 export const ProviderWithOverrides = (): JSX.Element => (
   <StoredActor resourceType="Practitioner" id={DrNguyenPractitioner.id} />
+);
+
+/**
+ * Dr. Sofia Reyes is on leave: still active, with the Schedule switched off, so booking won't offer her.
+ * @returns The story.
+ */
+export const ProviderOnLeave = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrReyesPractitioner.id} />
 );
 
 /**
