@@ -166,6 +166,12 @@
       "type": "token",
       "description": "The deployment environment of a project in the enterprise",
       "expression": "Enterprise.project.code"
+    },
+    {
+      "name": "production-project",
+      "type": "reference",
+      "description": "A production project belonging to the enterprise",
+      "expression": "Enterprise.project.where((code = 'production')).project"
     }
   ]
 }

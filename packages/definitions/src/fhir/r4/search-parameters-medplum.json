@@ -125,6 +125,24 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Enterprise-production-project",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Enterprise-production-project",
+        "url": "https://medplum.com/fhir/SearchParameter/Enterprise-production-project",
+        "version": "4.0.1",
+        "name": "production-project",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "A production project belonging to the enterprise",
+        "code": "production-project",
+        "base": ["Enterprise"],
+        "type": "reference",
+        "expression": "Enterprise.project.where(code = 'production').project",
+        "target": ["Project"]
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-identifier",
       "resource": {
         "resourceType": "SearchParameter",
