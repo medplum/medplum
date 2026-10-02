@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import type { BulkDataExport } from '@medplum/fhirtypes';
+import type { AsyncJob, BulkDataExport } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
@@ -13,7 +13,7 @@ const app = express();
 let accessToken: string;
 let repo: Repository;
 
-describe('Binary', () => {
+describe('Bulk data status', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -50,6 +50,22 @@ describe('Binary', () => {
       error: exportResource.error,
       deleted: exportResource.deleted,
     });
+  });
+
+  test('Failed exports return a terminal error without exposing internal details', async () => {
+    const job = await repo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      status: 'error',
+      request: 'https://example.com/fhir/R4/$export',
+      requestTime: new Date().toISOString(),
+      output: { resourceType: 'Parameters', parameter: [{ name: 'error', valueString: 'Internal storage details' }] },
+    });
+    const res = await request(app)
+      .get('/fhir/R4/bulkdata/export/' + job.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(500);
+    expect(res.body.resourceType).toBe('OperationOutcome');
+    expect(JSON.stringify(res.body)).not.toContain('Internal storage details');
   });
 
   test('Cancellation', async () => {

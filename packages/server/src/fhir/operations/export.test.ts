@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
-import type { Binary, BulkDataExportOutput, Observation, Patient } from '@medplum/fhirtypes';
+import { assert, ContentType } from '@medplum/core';
+import type { AsyncJob, Binary, BulkDataExportOutput, Observation, Patient } from '@medplum/fhirtypes';
+import type { Job } from 'bullmq';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -17,9 +18,10 @@ import {
   waitForAsyncJob,
   withTestContext,
 } from '../../test.setup';
+import { execBulkExportJob } from '../../workers/bulk-export';
+import { queueRegistry } from '../../workers/utils';
 import { getTestProjectSystemRepo } from '../repository/test-utils';
-import { exportResourceType, exportResources } from './export';
-import { BulkExporter } from './utils/bulkexporter';
+import { BulkExporter, exportResources, exportResourceType } from './utils/bulkexporter';
 
 describe('Export', () => {
   const app = express();
@@ -28,10 +30,42 @@ describe('Export', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    const queue = queueRegistry.get('BulkExportQueue');
+    assert(queue);
+    vi.mocked(queue.add).mockImplementation(async (name, data) => {
+      const job = { name, data, queueName: 'BulkExportQueue' } as Job;
+      await execBulkExportJob(job);
+      return job;
+    });
   });
 
   afterAll(async () => {
     await shutdownApp();
+  });
+
+  test('Kickoff returns before the queued export runs', async () => {
+    const { accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
+    const queue = queueRegistry.get('BulkExportQueue');
+    assert(queue);
+    vi.mocked(queue.add).mockImplementationOnce(async (name, data) => ({ name, data }) as Job);
+    const res = await request(app)
+      .get('/fhir/R4/$export?_type=Patient')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(202);
+    const id = new URL(res.headers['content-location']).pathname.split('/').at(-1);
+    assert(id);
+    const job = await repo.readResource<AsyncJob>('AsyncJob', id);
+    expect(job.status).toBe('active');
+    expect(job.output).toBeUndefined();
+    expect(queue.add).toHaveBeenLastCalledWith(
+      'BulkExport',
+      expect.objectContaining({
+        exportLevel: 'System',
+        types: ['Patient'],
+        tracking: expect.objectContaining({ asyncJobId: id }),
+      }),
+      { jobId: id }
+    );
   });
 
   test('Success', async () => {
@@ -357,8 +391,8 @@ describe('Export', () => {
       await exporter.start('http://example.com');
       await exporter.writeResource(patient, { skipDedupe: true });
       const stream = exporter.writers.Patient['stream'];
-      // Wait for the storage pipeline to attach its own listeners before sampling
-      await vi.waitFor(() => expect(stream.listenerCount('error')).toBeGreaterThan(0));
+      // The exporter installs one error listener; wait for the storage pipeline's listeners too.
+      await vi.waitFor(() => expect(stream.listenerCount('error')).toBeGreaterThan(1));
       const baseline = stream.listenerCount('error');
 
       // Simulate a full buffer on every write so each one waits for 'drain'
