@@ -302,4 +302,4 @@ Read only when replacing an existing EHR or e-Rx vendor (1.3).
 The e-prescribing vendors Medplum integrates with first-party:
 
 - **[ScriptSure](/docs/integration/scriptsure)** — full API surface with custom FHIR operations and bots, plus an authenticated iframe. The option behind the **integrated (API-driven)** model in 3.1.
-- **[DoseSpot](/docs/integration/dosespot)** — embedded iFrame prescribing, including [clinic favorites](/docs/integration/dosespot/clinic-favorite-medications) (3.7) and [prescriber enrollment](/docs/integration/dosespot/enroll-user) (3.2).
+- **[DoseSpot](/docs/integration/dosespot)** — embedded iFrame prescribing, including clinic favorites (3.7) and [prescriber enrollment](/docs/integration/dosespot/enroll-user) (3.2).

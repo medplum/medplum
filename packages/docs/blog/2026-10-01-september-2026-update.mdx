@@ -124,7 +124,7 @@ The Provider App work above rides on a set of [revenue cycle](/blog/2026-roadmap
 - **Cart contents** — A `$get-cart` operation returns the current contents of a patient's medication cart from the prescribing system, so the cart badge reflects what the prescriber will actually see at signing
 - **Deletions** — A prescription deleted in the prescribing system previously reached Medplum only when someone re-ran patient sync. Deletion events are now handled when they arrive, across every envelope shape the vendor might post
 - **Concurrency** — Two patient-sync runs racing (a second tab, a strict-mode double mount) could each create a remote patient, with the later write orphaning the first. A version-checked claim on the `Patient` ensures exactly one run creates the remote record; an existing remote ID is never replaced
-- **Pharmacies** — Backend callers can search pharmacies with the same admin fallback drug search uses, shared pharmacy records are created conditionally instead of duplicated, and a patient's preferred pharmacy can be removed or replaced in both systems. The [pharmacy workflow docs](/docs/integration/scriptsure/pharmacy-search) were expanded to match
+- **Pharmacies** — Backend callers can search pharmacies with the same admin fallback drug search uses, shared pharmacy records are created conditionally instead of duplicated, and a patient's preferred pharmacy can be removed or replaced in both systems. The pharmacy workflow docs were expanded to match
 - **Smaller changes** — A per-project iframe template via a project secret, drug search returns marketed formulations even after one format is saved, drug interaction checks exit cleanly when there are no current medications, drug description length is capped below the NCPDP limit, and a supervising prescriber operation with its own guide for the other supported prescribing vendor
 
 ### Labs, Terminology, and Integrations
@@ -189,7 +189,7 @@ The Provider App work above rides on a set of [revenue cycle](/blog/2026-roadmap
 
 - **[Lab ordering iframe](/docs/integration/health-gorilla/iframe)** — The hosted ordering interface guide described above, linked from the lab integration overview, ordering, and results pages
 - **[Payer directory lookup](/docs/integration/candid/payer-directory)** — Searching the payer directory and using the result in claims and eligibility checks ([David Yanez](https://github.com/techdavidy))
-- **E-prescribe** — [Pharmacy workflows](/docs/integration/scriptsure/pharmacy-search) and the [medication cart](/docs/integration/scriptsure/medication-cart) contents operation, plus a supervising prescriber guide and an updated sandbox eligibility example for the clearinghouse
+- **E-prescribe** — Pharmacy workflows and the medication cart contents operation, plus a supervising prescriber guide and an updated sandbox eligibility example for the clearinghouse
 
 ## Bug Fixes
 
