@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   autofix:
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     # autofix.ci pushes changes via its own GitHub App, not GITHUB_TOKEN
     permissions:
       contents: read

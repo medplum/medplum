@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     steps:
       # require-vouch is false: only explicitly denounced (blocked) users get
       # closed here. Everyone else may file issues freely, per medplum's

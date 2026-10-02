@@ -7,7 +7,7 @@ permissions:
 
 jobs:
   chromatic:
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     timeout-minutes: 45
     # Chromatic authenticates with projectToken, not GITHUB_TOKEN
     permissions:

@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     name: Staging
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     timeout-minutes: 30
     permissions:
       id-token: write

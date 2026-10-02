@@ -38,7 +38,7 @@ fi
 # Test
 # Even though docs do not have a "test" action, we still will build the docs via the
 # global "build" job unless we filter it out
-npx turbo run test --concurrency=1 --filter='!@medplum/docs' --filter='!./examples/*' -- $COVERAGE_FLAGS
+npx turbo run test --concurrency=2 --force --filter='!@medplum/docs' --filter='!./examples/*' -- $COVERAGE_FLAGS
 
 if [ -z "$NO_COVERAGE" ]; then
   # A package missing its blob drops out of the merged report entirely, which reads as a
