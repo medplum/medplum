@@ -73,7 +73,7 @@ flowchart TD
 
 :::tip[Created vs. Updated]
 
-In many real-world flows, the [`Patient`](/docs/api/fhir/resources/patient) resource already exists by the time the intake form is submitted — because the patient was registered or scheduled first. The intake bot in the [Patient Intake Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-patient-intake-demo) creates a new Patient, but your implementation may instead search for and update an existing one. Most clinical history resources (allergies, medications, conditions) use [`upsertResource`](/docs/fhir-datastore/working-with-fhir#upsert) to avoid duplicates on resubmission.
+In many real-world flows, the [`Patient`](/docs/api/fhir/resources/patient) resource already exists by the time the intake form is submitted — because the patient was registered or scheduled first. The [Patient Intake Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-patient-intake-demo) uses SDC extraction to create a new Patient, but your implementation may instead search for and update an existing one. Most clinical history resources (allergies, medications, conditions) use [`upsertResource`](/docs/fhir-datastore/working-with-fhir#upsert) to avoid duplicates on resubmission.
 
 :::
 
