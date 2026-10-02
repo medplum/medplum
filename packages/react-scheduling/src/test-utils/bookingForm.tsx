@@ -434,8 +434,11 @@ export function finderButton(): HTMLElement {
  * The action that writes the booking.
  * @returns The button.
  */
+/** The Book button's label: "Book appointment", or "Book 3 appointments" for a series. */
+const BOOK_BUTTON_NAME = /^book (\d+ )?appointments?$/i;
+
 export function bookButton(): HTMLElement {
-  return screen.getByRole('button', { name: /book appointment/i });
+  return screen.getByRole('button', { name: BOOK_BUTTON_NAME });
 }
 
 /**
@@ -499,7 +502,7 @@ export async function fillAuthorizedBooking(): Promise<void> {
 /** Confirms the booking. */
 export async function clickBook(): Promise<void> {
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: /book appointment/i }));
+    fireEvent.click(screen.getByRole('button', { name: BOOK_BUTTON_NAME }));
   });
   await settleAutocomplete();
 }
