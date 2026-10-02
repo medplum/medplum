@@ -8,8 +8,7 @@ import {
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
 } from '@medplum/core';
-import type { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { valueSetElementToCoding } from '@medplum/react';
+import type { CodeableConcept } from '@medplum/fhirtypes';
 
 // Built from the core system constants rather than written out, so the `http` a terminology uri
 // carries is not read as a plaintext-protocol vulnerability. Those constants exist for this.
@@ -67,42 +66,11 @@ export function hasRequiredValues(
 }
 
 /**
- * The option a code field shows a concept as: its first coding, or its text when it has none.
- * @param concept - The concept to show.
- * @returns The option standing for it.
+ * A concept as a code field records it: the codings that carry a code, or nothing when none do.
+ * @param concept - The concept the field is holding.
+ * @returns The concept to record, or undefined when it never became a code.
  */
-export function toExpansionContains(concept: CodeableConcept): ValueSetExpansionContains {
-  const coding = concept.coding?.[0];
-  return { system: coding?.system, code: coding?.code, display: coding?.display ?? concept.text };
-}
-
-/**
- * Reads the options a code field is holding back into concepts.
- *
- * An option standing for a concept the field already held keeps that concept whole, so codings
- * and text the field doesn't show survive the edit.
- *
- * @param elements - What the field is holding.
- * @param held - The concepts the field held before this change.
- * @returns The concepts to record, dropping anything that never became a code.
- */
-export function toConcepts(
-  elements: readonly ValueSetExpansionContains[],
-  held: readonly CodeableConcept[]
-): CodeableConcept[] {
-  return elements.flatMap((element) => {
-    const concept = held.find((candidate) => sameOption(toExpansionContains(candidate), element));
-    if (concept) {
-      return [concept];
-    }
-    const coding = valueSetElementToCoding(element);
-    return coding.code ? [{ coding: [coding] }] : [];
-  });
-}
-
-function sameOption(a: ValueSetExpansionContains, b: ValueSetExpansionContains): boolean {
-  if (a.code === undefined || b.code === undefined) {
-    return a.code === b.code && a.display === b.display;
-  }
-  return a.system === b.system && a.code === b.code;
+export function toCodedConcept(concept: CodeableConcept | undefined): CodeableConcept | undefined {
+  const coding = concept?.coding?.filter((candidate) => !!candidate.code);
+  return coding?.length ? { ...concept, coding } : undefined;
 }

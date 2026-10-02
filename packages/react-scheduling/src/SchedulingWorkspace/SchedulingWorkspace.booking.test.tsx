@@ -24,6 +24,7 @@ import {
 } from '../stories/scheduling';
 import { installAutocompleteTimers, removePill, settleAutocomplete } from '../test-utils/asyncAutocomplete';
 import {
+  addRow,
   chooseActor,
   chooseDay,
   chooseImagingService,
@@ -493,7 +494,8 @@ describe('SchedulingWorkspace booking', () => {
       await clickEdit();
 
       // The stub serves only the workspace's value sets, so finding a code proves the bindings reached the pane.
-      await enterCode(/diagnosis code/i, DiagnosisCodes[1]);
+      await addRow('diagnosis');
+      await enterCode(/diagnosis 2/i, DiagnosisCodes[1]);
       await act(async () => {
         fireEvent.click(saveButton());
       });
