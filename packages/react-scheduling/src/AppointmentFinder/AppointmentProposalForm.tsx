@@ -40,6 +40,7 @@ import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
 import { LOCATION_SEARCH_CRITERIA } from '../constants';
+import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
@@ -606,6 +607,14 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               onChangeMonth={setMonth}
               onClick={daySearch.chooseDayRange}
               onSelectRange={daySearch.chooseDayRange}
+              monthLabel={
+                <MonthPickerButton
+                  label={formatMonth(month ?? new Date())}
+                  date={month ?? new Date()}
+                  minDate={new Date()}
+                  onChange={setMonth}
+                />
+              }
             />
             {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
           </Stack>
@@ -1095,6 +1104,10 @@ function toRange(appointment: Appointment | undefined): DateTimeRange | undefine
  */
 function getSearchedOptionsHint(searched: number, total: number): string {
   return `Showing times for ${searched} of ${total} ways of holding this visit.`;
+}
+
+function formatMonth(month: Date): string {
+  return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(month);
 }
 
 /**
