@@ -12,8 +12,12 @@ const config: StorybookConfig = {
     '../src/**/*.mdx',
     '../src/**/*.stories.@(ts|tsx)',
     '../../react/src/**/*.stories.@(ts|tsx)',
-    '../../react-scheduling/src/**/*.mdx',
-    '../../react-scheduling/src/**/*.stories.@(ts|tsx)',
+    // Without a storySort, the sidebar follows first appearance here. SchedulingConfigWorkspace is listed last so
+    // it sits after SchedulingWorkspace, which its path would otherwise sort ahead of.
+    '../../react-scheduling/src/!(SchedulingConfigWorkspace)/**/*.mdx',
+    '../../react-scheduling/src/!(SchedulingConfigWorkspace)/**/*.stories.@(ts|tsx)',
+    '../../react-scheduling/src/SchedulingConfigWorkspace/**/*.mdx',
+    '../../react-scheduling/src/SchedulingConfigWorkspace/**/*.stories.@(ts|tsx)',
   ],
   addons: ['@storybook/addon-links', '@storybook/addon-docs', '@vueless/storybook-dark-mode'],
   staticDirs: ['../public'],
