@@ -35,12 +35,16 @@ const medplumWrapper = ({ children }: { children: ReactNode }): JSX.Element => (
   <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
 );
 
-function Harness(props: { readonly combinations: readonly ActorCombination[] }): JSX.Element {
+function Harness(props: {
+  readonly combinations: readonly ActorCombination[];
+  readonly occurrenceCount?: number;
+}): JSX.Element {
   const search = useDaySearch({
     service: UltrasoundImagingService,
     combinations: props.combinations,
     timezone: 'UTC',
     defaultStart: DAY,
+    occurrenceCount: props.occurrenceCount,
   });
   return (
     <div>
@@ -48,6 +52,7 @@ function Harness(props: { readonly combinations: readonly ActorCombination[] }):
       <div data-testid="searched">{search.searchedCombinationCount}</div>
       <div data-testid="total">{search.totalCombinationCount}</div>
       <div data-testid="more">{search.hasMoreCombinations ? 'yes' : 'no'}</div>
+      <div data-testid="window-error">{search.windowError}</div>
       <button type="button" onClick={search.searchMoreCombinations}>
         Search more options
       </button>
@@ -189,6 +194,28 @@ describe('useDaySearch combination rounds', () => {
     const wholeStretch = `${opened.split('/')[0]}/${extension.split('/')[1]}`;
     expect(asked).toHaveLength(9);
     expect(new Set(asked)).toStrictEqual(new Set([wholeStretch]));
+  });
+
+  test('Taking in another round asks about the days first picked when every day is too many for a series', async () => {
+    const get = respond();
+    const combinations = Array.from({ length: 9 }, (_, index) => combinationOf(index));
+
+    render(<Harness combinations={combinations} occurrenceCount={3} />, medplumWrapper);
+    await settle();
+    const [opened] = daysAsked(get);
+
+    // A day and four more stretches of two: nine days, past the week a series is searched over.
+    for (let press = 0; press < 4; press++) {
+      await click('Show more days');
+    }
+    get.mockClear();
+
+    await click('Search more options');
+
+    // Asked as one window they would be refused, and the search left with nothing to offer.
+    expect(screen.getByTestId('window-error')).toBeEmptyDOMElement();
+    expect(new Set(daysAsked(get))).toStrictEqual(new Set([opened]));
+    expect(screen.getByTestId('searched')).toHaveTextContent('9');
   });
 
   test('Reaching further into the days keeps the round it is searching', async () => {

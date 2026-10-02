@@ -292,6 +292,15 @@ describe('getFindWindowError', () => {
     expect(getFindWindowError({ start: new Date(2026, 6, 27), end: tooFar })).toBe('Choose at most 31 days at a time.');
   });
 
+  test('A series is searched a week at a time', () => {
+    const start = new Date('2026-08-10T04:00:00Z');
+    const weekEnd = new Date('2026-08-17T03:59:59.999Z');
+    expect(getFindWindowError({ start, end: weekEnd }, 2)).toBeUndefined();
+    expect(getFindWindowError({ start, end: new Date('2026-08-18T03:59:59.999Z') }, 2)).toBe(
+      'Choose at most 7 days at a time.'
+    );
+  });
+
   test('An open range says nothing, because there is no width to judge', () => {
     expect(getFindWindowError({})).toBeUndefined();
     expect(getFindWindowError({ start: new Date(2026, 6, 27) })).toBeUndefined();
