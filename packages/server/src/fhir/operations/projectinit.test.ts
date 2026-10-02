@@ -109,19 +109,30 @@ describe('Project $init', () => {
     );
     expect(adminPolicy.resource).toStrictEqual([{ resourceType: '*' }]);
 
-    // Verify the Practitioner default policy is read-all + write-all-except-knowledge-resources
+    // Verify the Practitioner default policy is read-all + write-all-except-restricted resources
     const practitionerPolicy = await withTestContext(() =>
       getGlobalSystemRepo().readReference<AccessPolicy>(practitionerEntry?.accessPolicy as Reference<AccessPolicy>)
     );
+    const practitionerResources = practitionerPolicy.resource ?? [];
     // Read access to everything via a readonly wildcard
-    expect(practitionerPolicy.resource).toContainEqual({ resourceType: '*', readonly: true });
+    expect(practitionerResources).toContainEqual({ resourceType: '*', readonly: true });
     // Writable clinical resource types are granted explicitly
-    expect(practitionerPolicy.resource).toContainEqual({ resourceType: 'Patient' });
-    expect(practitionerPolicy.resource).toContainEqual({ resourceType: 'Observation' });
+    expect(practitionerResources).toContainEqual({ resourceType: 'Patient' });
+    expect(practitionerResources).toContainEqual({ resourceType: 'Observation' });
     // Read-only resource types are NOT writable (only the readonly wildcard covers them)
     for (const readonlyType of PRACTITIONER_READONLY_RESOURCE_TYPES) {
-      expect(practitionerPolicy.resource).not.toContainEqual({ resourceType: readonlyType });
+      expect(practitionerResources).not.toContainEqual({ resourceType: readonlyType });
     }
+    // Client secrets are hidden, and that entry is first so it wins over the `*` read
+    const clientApplicationPolicy = {
+      resourceType: 'ClientApplication',
+      readonly: true,
+      hiddenFields: ['secret', 'retiringSecret'],
+    };
+    expect(practitionerResources).toContainEqual(clientApplicationPolicy);
+    expect(practitionerResources.findIndex((r) => r.resourceType === 'ClientApplication')).toBeLessThan(
+      practitionerResources.findIndex((r) => r.resourceType === '*')
+    );
   });
 
   test('Requires project name', async () => {

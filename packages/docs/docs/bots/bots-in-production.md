@@ -163,7 +163,7 @@ npx medplum bot create <bot-name> <project-id> <source-file> <dist-file>
 Running this command does the following:
 
 1. Creates the Bot resource
-2. Creates a ProjectMembership resource that connects it to a project
+2. Creates a ProjectMembership resource that connects it to a project, with an AccessPolicy named `<bot name> Bot Access Policy` that grants read and write access to all resource types if an access policy is not otherwise provided.
 3. Saves the bot to the associated project in the Medplum database
 4. Adds a bot entry to the `medplum.config.json` file in the `bots` array
 
@@ -302,9 +302,9 @@ You can choose to only log certain events using the `Bot.auditEventTrigger` fiel
 
 Bot execution `AuditEvent` entries are **always** emitted to your server logs (e.g., [AWS CloudWatch](/docs/self-hosting/aws-athena-guide), [Datadog](/docs/self-hosting/datadog)). This cannot be disabled. The `Bot.auditEventDestination` field controls only whether the `AuditEvent` is **also written to the database**.
 
-| `auditEventDestination` | Logs | Database |
-| ----------------------- | ---- | -------- |
-| `resource` (default)    | ✓ always | ✓ written |
+| `auditEventDestination` | Logs     | Database      |
+| ----------------------- | -------- | ------------- |
+| `resource` (default)    | ✓ always | ✓ written     |
 | `log`                   | ✓ always | ✗ not written |
 
 By default, `auditEventDestination` is `resource`, which writes the `AuditEvent` to the database in addition to logging it. This makes the event visible in the Medplum UI and queryable via the API — recommended for development and debugging.
