@@ -218,7 +218,7 @@ function Workspace(props: WorkspaceProps): JSX.Element {
         defaultLocation={props.defaultLocation}
         procedureBinding={PROCEDURE_VALUE_SET}
         diagnosisBinding={DIAGNOSIS_VALUE_SET}
-        onBooked={({ appointment }) => {
+        onBooked={({ appointments: [appointment] }) => {
           showNotification({
             color: 'green',
             icon: <IconCalendarCheck size={18} />,
@@ -234,7 +234,7 @@ function Workspace(props: WorkspaceProps): JSX.Element {
             message: describeBooking(appointment),
           });
         }}
-        onRescheduled={({ appointment }) => {
+        onRescheduled={({ appointments: [appointment] }) => {
           showNotification({
             color: 'blue',
             icon: <IconCalendarEvent size={18} />,
