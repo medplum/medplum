@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ComboboxItem } from '@mantine/core';
-import { Checkbox, Group, MultiSelect, NativeSelect, Radio, Text, Textarea, TextInput } from '@mantine/core';
+import { Box, Checkbox, Group, MultiSelect, NativeSelect, Radio, Text, Textarea, TextInput } from '@mantine/core';
 import type { TypedValue } from '@medplum/core';
 import {
   capitalize,
@@ -469,11 +469,13 @@ function useValueSetOptions(valueSetUrl: string | undefined): ValueSetOptionsSta
 // value set leaves nothing to pick and the question cannot be answered at all.
 function ValueSetUnavailableDisplay({ valueSetUrl }: { readonly valueSetUrl: string | undefined }): JSX.Element {
   return (
-    <UnavailableNote
-      text="This question is unavailable."
-      severity="error"
-      message={`Value set ${valueSetUrl} is unavailable`}
-    />
+    <Box>
+      <UnavailableNote
+        text="This question is unavailable."
+        severity="error"
+        message={`Value set ${valueSetUrl} is unavailable`}
+      />
+    </Box>
   );
 }
 

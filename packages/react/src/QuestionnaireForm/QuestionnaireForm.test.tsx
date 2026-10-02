@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, getAllQuestionnaireAnswers, getQuestionnaireAnswers, OperationOutcomeError } from '@medplum/core';
+import {
+  badRequest,
+  getAllQuestionnaireAnswers,
+  getQuestionnaireAnswers,
+  OperationOutcomeError,
+  serverError,
+} from '@medplum/core';
 import type { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QuestionnaireItemType } from '@medplum/react-hooks';
@@ -1510,18 +1516,17 @@ describe('QuestionnaireForm', () => {
     });
   });
 
-  test('Radio and checkbox questions with a missing value set are unavailable', async () => {
+  describe('Radio and checkbox value sets', () => {
+    const valueSetUrl = 'http://example.com/radio-checkbox-valueset';
+
     const itemControl = (code: string): Extension[] => [
       {
         url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
         valueCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/questionnaire-item-control', code }] },
       },
     ];
-    const valueSetExpandSpy = vi
-      .spyOn(medplum, 'valueSetExpand')
-      .mockRejectedValue(new OperationOutcomeError(badRequest('ValueSet not found')));
 
-    try {
+    async function setupRadioAndCheckbox(): Promise<void> {
       await setup({
         questionnaire: {
           resourceType: 'Questionnaire',
@@ -1531,14 +1536,14 @@ describe('QuestionnaireForm', () => {
               linkId: 'radio',
               text: 'Radio',
               type: 'choice',
-              answerValueSet: 'http://example.com/missing-valueset',
+              answerValueSet: valueSetUrl,
               extension: itemControl('radio-button'),
             },
             {
               linkId: 'checkbox',
               text: 'Checkbox',
               type: 'choice',
-              answerValueSet: 'http://example.com/missing-valueset',
+              answerValueSet: valueSetUrl,
               extension: itemControl('check-box'),
             },
           ],
@@ -1549,12 +1554,62 @@ describe('QuestionnaireForm', () => {
       await act(async () => {
         await vi.advanceTimersByTimeAsync(1000);
       });
-
-      expect(screen.getAllByText('This question is unavailable.')).toHaveLength(2);
-      expect(screen.queryByText('Suggestions unavailable')).not.toBeInTheDocument();
-    } finally {
-      valueSetExpandSpy.mockRestore();
     }
+
+    test('Missing value set makes the questions unavailable', async () => {
+      const valueSetExpandSpy = vi
+        .spyOn(medplum, 'valueSetExpand')
+        .mockRejectedValue(new OperationOutcomeError(badRequest('ValueSet not found')));
+
+      try {
+        await setupRadioAndCheckbox();
+
+        expect(screen.getAllByText('This question is unavailable.')).toHaveLength(2);
+        expect(
+          screen.getAllByLabelText(`Why is this unavailable? Value set ${valueSetUrl} is unavailable`)
+        ).toHaveLength(2);
+        expect(screen.queryByText('Suggestions unavailable')).not.toBeInTheDocument();
+      } finally {
+        valueSetExpandSpy.mockRestore();
+      }
+    });
+
+    test('Transient expand failure does not make the questions unavailable', async () => {
+      const valueSetExpandSpy = vi
+        .spyOn(medplum, 'valueSetExpand')
+        .mockRejectedValue(new OperationOutcomeError(serverError(new Error('Upstream timeout'))));
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      try {
+        await setupRadioAndCheckbox();
+
+        expect(screen.queryByText('This question is unavailable.')).not.toBeInTheDocument();
+        expect(screen.getAllByPlaceholderText('No Answers Defined')).toHaveLength(2);
+        expect(consoleErrorSpy).toHaveBeenCalledWith('Error loading value set:', expect.any(OperationOutcomeError));
+      } finally {
+        valueSetExpandSpy.mockRestore();
+        consoleErrorSpy.mockRestore();
+      }
+    });
+
+    test('Empty value set shows no answers rather than unavailable', async () => {
+      const valueSetExpandSpy = vi
+        .spyOn(medplum, 'valueSetExpand')
+        .mockResolvedValue({
+          resourceType: 'ValueSet',
+          status: 'active',
+          expansion: { timestamp: '2026-01-01T00:00:00Z', contains: [] },
+        });
+
+      try {
+        await setupRadioAndCheckbox();
+
+        expect(screen.queryByText('This question is unavailable.')).not.toBeInTheDocument();
+        expect(screen.getAllByPlaceholderText('No Answers Defined')).toHaveLength(2);
+      } finally {
+        valueSetExpandSpy.mockRestore();
+      }
+    });
   });
 
   test('Non-Value Set Checkbox', async () => {
