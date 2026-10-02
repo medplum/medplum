@@ -284,6 +284,15 @@ describe('Operation Input/Output Parameters', () => {
       });
     });
 
+    test('Reads a missing body as no parameters', () => {
+      const optionalOnly: OperationDefinition = {
+        ...opDef,
+        parameter: [{ name: 'optionalIn', use: 'in', min: 0, max: '1', type: 'string' }],
+      };
+      const req: Request = { method: 'POST' } as unknown as Request;
+      expect(parseInputParameters(optionalOnly, req)).toEqual({});
+    });
+
     test('Reads raw Resource body for single Resource input parameter', () => {
       const patient: Patient = { resourceType: 'Patient', id: 'test-patient' };
       const req: Request = { body: patient } as unknown as Request;
