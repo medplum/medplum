@@ -1,0 +1,106 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.dropdown {
+  max-width: calc(100vw - 32px);
+  padding: 0;
+}
+
+.body {
+  padding: var(--mantine-spacing-md);
+  padding-right: var(--mantine-spacing-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rowMulti {
+  flex-wrap: wrap;
+}
+
+.rowMulti .field,
+.rowMulti .operator {
+  flex: 1 1 0;
+}
+
+.secondLine :global(.mantine-Group-root) {
+  gap: 8px;
+}
+
+.secondLine :global(.mantine-Group-root > .mantine-InputWrapper-root) {
+  max-width: calc(50% - 4px) !important;
+}
+
+.secondLine {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: calc(64px + 8px);
+}
+
+.conjunction {
+  flex: 0 0 64px;
+  font-size: var(--mantine-font-size-sm);
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+}
+
+.field {
+  flex: 0 0 200px;
+}
+
+.operator {
+  flex: 0 0 170px;
+}
+
+.value {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 48em) {
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .field,
+  .operator {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .row:not(.rowMulti) > .value {
+    order: 1;
+    flex: 1 1 100%;
+    padding-left: calc(64px + 8px);
+  }
+}
+
+.footer {
+  padding: var(--mantine-spacing-sm);
+  border-top: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}
+
+.deleteIcon {
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+}
+
+.empty {
+  padding-block: 7px;
+  font-size: var(--mantine-font-size-sm);
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+}
+
+.indicator {
+  --indicator-right: calc(0.25rem * var(--mantine-scale)) !important;
+}
+
+.addButton :global(.mantine-Button-section[data-position='left']) {
+  margin-inline-end: calc(var(--mantine-spacing-xs) * 0.5);
+}
