@@ -180,6 +180,17 @@ export function getEnrolledMfaMethods(user: User): MfaMethod[] {
 }
 
 /**
+ * Clears the emailed MFA code from a login so it cannot be reused.
+ * Patched rather than written from `login`, which may predate a refresh-token rotation.
+ * @param login - The login holding the code.
+ */
+export async function clearMfaEmailCode(login: WithId<Login>): Promise<void> {
+  if (login.emailMfa) {
+    await getGlobalSystemRepo().patchResource<Login>('Login', login.id, [{ op: 'remove', path: '/emailMfa' }]);
+  }
+}
+
+/**
  * Generates a single-use 6-digit code for email-based MFA, stores a hash of it
  * (along with its expiration time) on the login, and emails the code to the user.
  * The code is cleared once it is verified (see verifyMfaToken).
@@ -197,7 +208,10 @@ export async function sendMfaEmailCode(
   const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
   const codeHash = await bcryptHashPassword(code);
   const expiresAt = new Date(Date.now() + EMAIL_MFA_CODE_EXPIRATION_MS).toISOString();
-  await systemRepo.updateResource<Login>({ ...login, emailMfa: { codeHash, expiresAt } });
+  // Patched rather than written from `login`, which may predate a refresh-token rotation
+  await systemRepo.patchResource<Login>('Login', login.id, [
+    { op: 'add', path: '/emailMfa', value: { codeHash, expiresAt } },
+  ]);
   const expirationMinutes = Math.floor(EMAIL_MFA_CODE_EXPIRATION_MS / 60_000);
   const appName = getProjectAppName(project) ?? DEFAULT_APP_NAME;
   await sendEmail(
