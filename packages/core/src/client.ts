@@ -2988,8 +2988,42 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The FHIR batch/transaction response bundle.
    */
-  executeBatch(bundle: Bundle, options?: MedplumRequestOptions): Promise<Bundle> {
-    return this.post(this.fhirBaseUrl, bundle, undefined, options);
+  async executeBatch(bundle: Bundle, options?: MedplumRequestOptions): Promise<Bundle> {
+    const result = await this.post(this.fhirBaseUrl, bundle, undefined, options);
+    this.invalidateBatchEntries(bundle);
+    return result;
+  }
+
+  /**
+   * Invalidates cached reads and searches for the resources a batch or transaction may have modified.
+   * Read-only entries (GET, HEAD) leave the cache alone.
+   * @param bundle - The FHIR batch/transaction bundle that was executed.
+   */
+  private invalidateBatchEntries(bundle: Bundle): void {
+    const resourceTypes = new Set<ResourceType>();
+    for (const entry of bundle.entry ?? EMPTY) {
+      const method = entry.request?.method;
+      let url = entry.request?.url;
+      if (!url || !method || method === 'GET' || method === 'HEAD') {
+        continue;
+      }
+      if (url.startsWith(this.fhirBaseUrl)) {
+        url = url.slice(this.fhirBaseUrl.length);
+      }
+      // Request URLs are relative to the FHIR base, e.g. "Patient", "Patient/123", or "Patient?identifier=x"
+      const [resourceType, id] = url.split('?')[0].split('/').filter(Boolean);
+      if (!resourceType || resourceType.startsWith('$')) {
+        continue;
+      }
+      resourceTypes.add(resourceType as ResourceType);
+      if (id && !id.startsWith('$')) {
+        this.deleteCacheEntry(this.fhirUrl(resourceType, id).toString());
+        this.invalidateUrl(this.fhirUrl(resourceType, id, '_history'));
+      }
+    }
+    for (const resourceType of resourceTypes) {
+      this.invalidateSearches(resourceType);
+    }
   }
 
   /**
