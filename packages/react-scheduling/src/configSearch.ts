@@ -47,7 +47,7 @@ type ActorOf<K extends BookableActorType> = Extract<ConfigurableActorResource, {
 
 // Sorted on the server so that a project with more than one page lists its first actors by name rather than
 // an arbitrary thousand.
-const ACTOR_CRITERIA: Record<BookableActorType, Record<string, string>> = {
+const ACTOR_SORT: Record<BookableActorType, Record<string, string>> = {
   Practitioner: { _sort: 'name' },
   Location: { _sort: 'name' },
   Device: { _sort: 'device-name' },
@@ -90,7 +90,7 @@ export async function searchConfigurableActors<K extends BookableActorType>(
 ): Promise<ConfigurableActorsResult<ActorOf<K>>> {
   const page = await medplum.searchResources(
     resourceType,
-    { ...ACTOR_CRITERIA[resourceType], _count: PAGE_SIZE, _revinclude: 'Schedule:actor' },
+    { ...ACTOR_SORT[resourceType], _count: PAGE_SIZE, _revinclude: 'Schedule:actor' },
     { signal: options.signal }
   );
   options.signal?.throwIfAborted();
