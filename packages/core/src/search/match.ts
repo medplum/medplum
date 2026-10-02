@@ -48,7 +48,7 @@ const searchExprCache = new LRUCache<FhirPathAtom>(1000);
 function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
   const searchParam = globalSchema.types[searchRequest.resourceType]?.searchParams?.[filter.code];
   if (!searchParam) {
-    return false;
+    throw new Error(`Unknown search parameter: ${searchRequest.resourceType}.${filter.code}`);
   }
   const typedValues = evalFhirPathTyped(
     searchParam.expression as string,
