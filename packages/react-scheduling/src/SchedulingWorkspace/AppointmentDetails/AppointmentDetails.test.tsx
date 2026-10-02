@@ -31,6 +31,7 @@ import {
 } from '../../stories/scheduling';
 import { installAutocompleteTimers, removePill, settleAutocomplete } from '../../test-utils/asyncAutocomplete';
 import {
+  addRow,
   choosePatient,
   codePill,
   confirmMedicalNecessity,
@@ -623,7 +624,8 @@ describe('AppointmentDetails editing', () => {
     renderEditable(AUTHORIZED_APPOINTMENT, onUpdated);
     await screen.findByRole('searchbox', { name: /procedure code/i });
 
-    await enterCode(/procedure code/i, ProcedureCodes[1]);
+    await addRow('procedure');
+    await enterCode(/procedure 2/i, ProcedureCodes[1]);
     await removePill(codePill(DiagnosisCodes[0]));
     await enterCode(/diagnosis code/i, DiagnosisCodes[1]);
     await clickSave();
@@ -656,13 +658,38 @@ describe('AppointmentDetails editing', () => {
     renderEditable(appointment);
     await screen.findByRole('searchbox', { name: /procedure code/i });
 
+    expect(hasPill('INF-1')).toBe(true);
     expect(saveButton()).toBeDisabled();
-    await enterCode(/diagnosis code/i, DiagnosisCodes[1]);
+    await addRow('diagnosis');
+    await enterCode(/diagnosis 2/i, DiagnosisCodes[1]);
     await clickSave();
 
     const stored = await medplum.readResource('Appointment', appointment.id);
     expect(stored.serviceType?.[1]).toEqual(procedure);
     expect(stored.reasonCode).toEqual([diagnosis, { coding: [DiagnosisCodes[1]] }]);
+  });
+
+  test('edits one coding of a procedure without touching the other procedures', async () => {
+    const appointment: WithId<Appointment> = {
+      ...AUTHORIZED_APPOINTMENT,
+      serviceType: [
+        AUTHORIZED_APPOINTMENT.serviceType?.[0] as CodeableConcept,
+        { coding: [ProcedureCodes[0], { system: 'http://example.com/local', code: 'INF-1' }] },
+        { coding: [ProcedureCodes[1]] },
+      ],
+    };
+    await medplum.createResource(appointment);
+    renderEditable(appointment);
+    await screen.findByRole('searchbox', { name: /procedure 1/i });
+
+    await removePill('INF-1');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Remove procedure 2' }));
+    });
+    await clickSave();
+
+    const stored = await medplum.readResource('Appointment', appointment.id);
+    expect(stored.serviceType?.slice(1)).toEqual([{ coding: [ProcedureCodes[0]] }]);
   });
 
   test('saves a different patient in place of the one on file', async () => {

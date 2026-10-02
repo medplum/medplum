@@ -14,8 +14,7 @@ import {
   EMPTY_REQUIREMENT_VALUES,
   hasRequiredValues,
   isRequirementAnswered,
-  toConcepts,
-  toExpansionContains,
+  toCodedConcept,
 } from './AppointmentFinder.requirements';
 
 describe('isRequirementAnswered', () => {
@@ -101,68 +100,25 @@ describe('hasRequiredValues', () => {
   });
 });
 
-describe('toConcepts', () => {
-  test('Records a code exactly as the ValueSet expanded it', () => {
-    expect(
-      toConcepts([{ system: CPT, code: '96365', display: 'Intravenous infusion; initial, up to 1 hour' }], [])
-    ).toEqual([{ coding: [{ system: CPT, code: '96365', display: 'Intravenous infusion; initial, up to 1 hour' }] }]);
-  });
-
-  test('Keeps every code the field is holding, in the order it holds them', () => {
-    expect(
-      toConcepts(
-        [
-          { system: CPT, code: '96365' },
-          { system: CPT, code: '96366' },
-        ],
-        []
-      ).map((concept) => concept.coding?.[0].code)
-    ).toEqual(['96365', '96366']);
-  });
-
-  test('Names no system of its own, since the ValueSet already said which one', () => {
-    // Guessing here would be asserting a provenance the field cannot know: a project's diagnosis
-    // ValueSet may be drawn from ICD-10-CM rather than ICD-10, and the expansion is what knows.
-    expect(toConcepts([{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'D63.1' }], [])[0].coding?.[0].system).toBe(
-      'http://hl7.org/fhir/sid/icd-10-cm'
-    );
-  });
-
-  test('An empty field holds no codes', () => {
-    expect(toConcepts([], [])).toEqual([]);
+describe('toCodedConcept', () => {
+  test('Records a concept exactly as the field holds it', () => {
+    const concept = {
+      text: 'Infusion',
+      coding: [
+        { system: CPT, code: '96365', display: 'Intravenous infusion; initial, up to 1 hour' },
+        { system: 'http://example.com/local', code: 'INF-1' },
+      ],
+    };
+    expect(toCodedConcept(concept)).toEqual(concept);
   });
 
   test('Drops anything that never became a code', () => {
     // A grouping entry in an expansion carries a display and no code, and is not something
     // anything downstream can bill from.
-    expect(toConcepts([{ display: 'Bariatric procedures' }], [])).toEqual([]);
-  });
-
-  test('Keeps a concept the field already held whole, with the codings and text it does not show', () => {
-    const held = [
-      {
-        text: 'Infusion',
-        coding: [
-          { system: CPT, code: '96365' },
-          { system: 'http://example.com/local', code: 'INF-1' },
-        ],
-      },
-      { text: 'Hydration, as written' },
-    ];
-    const kept = toConcepts(held.map(toExpansionContains), held);
-    expect(kept).toEqual(held);
-    expect(kept[0]).toBe(held[0]);
-  });
-
-  test('A concept taken out of the field is gone, and one added beside the rest is new', () => {
-    const held = [
-      {
-        coding: [
-          { system: CPT, code: '96365' },
-          { system: 'http://example.com/local', code: 'INF-1' },
-        ],
-      },
-    ];
-    expect(toConcepts([{ system: CPT, code: '96366' }], held)).toEqual([{ coding: [{ system: CPT, code: '96366' }] }]);
+    expect(toCodedConcept({ coding: [{ display: 'Bariatric procedures' }, { system: CPT, code: '43644' }] })).toEqual({
+      coding: [{ system: CPT, code: '43644' }],
+    });
+    expect(toCodedConcept({ coding: [{ display: 'Bariatric procedures' }] })).toBeUndefined();
+    expect(toCodedConcept(undefined)).toBeUndefined();
   });
 });

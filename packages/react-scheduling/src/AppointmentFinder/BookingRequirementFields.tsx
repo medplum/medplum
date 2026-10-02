@@ -1,16 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Checkbox, Group, Pill, Text } from '@mantine/core';
+import { ActionIcon, Box, Button, Checkbox, Group, Input, Pill, Stack, Text } from '@mantine/core';
 import type { SchedulingRequirement } from '@medplum/core';
 import { REQUIRES_DIAGNOSIS_CODE, REQUIRES_MEDICAL_NECESSITY_CODE, REQUIRES_PROCEDURE_CODE } from '@medplum/core';
-import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
+import type { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
-import { ValueSetAutocomplete } from '@medplum/react';
-import { IconCheck } from '@tabler/icons-react';
+import { CodeableConceptInput } from '@medplum/react';
+import { IconCheck, IconPlus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
+import { useState } from 'react';
 import classes from './AppointmentFinder.module.css';
 import type { BookingRequirementValues } from './AppointmentFinder.requirements';
-import { toConcepts, toExpansionContains } from './AppointmentFinder.requirements';
+import { toCodedConcept } from './AppointmentFinder.requirements';
 
 export interface BookingRequirementFieldsProps {
   /** From the visit type's eligibility codes. A field is shown only for a requirement listed here. */
@@ -36,29 +37,27 @@ export function BookingRequirementFields(props: BookingRequirementFieldsProps): 
   return (
     <>
       {requirements.has(REQUIRES_PROCEDURE_CODE) && (
-        <ValueSetAutocomplete
+        <ConceptRows
           name="procedure-code"
-          error={showValidation && values.procedure.length === 0 ? 'Add at least one procedure code.' : undefined}
+          path="Appointment.serviceType"
           label="Procedure codes"
-          required
-          itemComponent={RequirementCodeItem}
-          pillComponent={RequirementCodePill}
+          rowLabel="Procedure"
+          error={showValidation && values.procedure.length === 0 ? 'Add at least one procedure code.' : undefined}
           binding={procedureBinding}
-          defaultValue={values.procedure.map(toExpansionContains)}
-          onChange={(elements) => onChange({ ...values, procedure: toConcepts(elements, values.procedure) })}
+          defaultValue={values.procedure}
+          onChange={(procedure) => onChange({ ...values, procedure })}
         />
       )}
       {requirements.has(REQUIRES_DIAGNOSIS_CODE) && (
-        <ValueSetAutocomplete
+        <ConceptRows
           name="diagnosis-code"
-          error={showValidation && values.diagnosis.length === 0 ? 'Add at least one diagnosis code.' : undefined}
+          path="Appointment.reasonCode"
           label="Diagnosis codes"
-          required
-          itemComponent={RequirementCodeItem}
-          pillComponent={RequirementCodePill}
+          rowLabel="Diagnosis"
+          error={showValidation && values.diagnosis.length === 0 ? 'Add at least one diagnosis code.' : undefined}
           binding={diagnosisBinding}
-          defaultValue={values.diagnosis.map(toExpansionContains)}
-          onChange={(elements) => onChange({ ...values, diagnosis: toConcepts(elements, values.diagnosis) })}
+          defaultValue={values.diagnosis}
+          onChange={(diagnosis) => onChange({ ...values, diagnosis })}
         />
       )}
       {requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE) && (
@@ -72,6 +71,129 @@ export function BookingRequirementFields(props: BookingRequirementFieldsProps): 
         />
       )}
     </>
+  );
+}
+
+interface ConceptRow {
+  readonly id: number;
+  readonly concept?: CodeableConcept;
+}
+
+let nextConceptRowId = 0;
+
+function createConceptRow(concept?: CodeableConcept): ConceptRow {
+  nextConceptRowId++;
+  return { id: nextConceptRowId, concept };
+}
+
+interface ConceptRowsProps {
+  readonly name: string;
+  readonly path: string;
+  readonly label: string;
+  /** What one row holds, e.g. `Procedure`. */
+  readonly rowLabel: string;
+  readonly error?: string;
+  readonly binding: string;
+  /** Read once, at mount. */
+  readonly defaultValue: readonly CodeableConcept[];
+  readonly onChange: (concepts: CodeableConcept[]) => void;
+}
+
+/**
+ * A list of concepts, one row each, the way `ResourceForm` edits a `CodeableConcept[]`.
+ *
+ * The pills in a row are that one concept's codings, so a concept recorded with several codes
+ * shows and edits all of them. A row left untouched records its concept exactly as it was held.
+ *
+ * @param props - The React props.
+ * @returns The rows, and the controls that add and remove them.
+ */
+function ConceptRows(props: ConceptRowsProps): JSX.Element {
+  const { name, path, label, rowLabel, error, binding, onChange } = props;
+  const [rows, setRows] = useState<ConceptRow[]>(() =>
+    props.defaultValue.length > 0 ? props.defaultValue.map(createConceptRow) : [createConceptRow()]
+  );
+  const several = rows.length > 1;
+  const lowercaseRowLabel = rowLabel.toLowerCase();
+
+  function change(next: ConceptRow[]): void {
+    setRows(next);
+    onChange(next.flatMap((row) => (row.concept ? [row.concept] : [])));
+  }
+
+  return (
+    <Stack gap={4} role="group" aria-label={label}>
+      {several && (
+        <Input.Label labelElement="div" required>
+          {label}
+        </Input.Label>
+      )}
+
+      {rows.map((row, index) => (
+        <Group key={row.id} align="flex-end" wrap="nowrap" gap="xs">
+          <Box flex={1} miw={0}>
+            <CodeableConceptInput
+              name={`${name}.${index}`}
+              path={path}
+              label={
+                several ? (
+                  <Text span c="dimmed" fw={400} inherit>
+                    {rowLabel} {index + 1}
+                  </Text>
+                ) : (
+                  label
+                )
+              }
+              required
+              withAsterisk={!several}
+              placeholder={
+                row.concept?.coding?.length
+                  ? `Another code for this ${lowercaseRowLabel}`
+                  : (row.concept?.text ?? `Search ${lowercaseRowLabel} codes`)
+              }
+              itemComponent={RequirementCodeItem}
+              pillComponent={RequirementCodePill}
+              binding={binding}
+              defaultValue={row.concept}
+              onChange={(concept) =>
+                change(rows.map((held) => (held.id === row.id ? { ...held, concept: toCodedConcept(concept) } : held)))
+              }
+            />
+          </Box>
+
+          {several && (
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              radius="xl"
+              size="lg"
+              aria-label={`Remove ${lowercaseRowLabel} ${index + 1}`}
+              onClick={() => change(rows.filter((held) => held.id !== row.id))}
+            >
+              <IconX size={16} stroke={1.8} />
+            </ActionIcon>
+          )}
+        </Group>
+      ))}
+
+      {!!rows.at(-1)?.concept && (
+        <Button
+          variant="subtle"
+          size="compact-sm"
+          leftSection={<IconPlus size={14} stroke={1.8} />}
+          style={{ alignSelf: 'flex-start' }}
+          onClick={() => change([...rows, createConceptRow()])}
+        >
+          Add another {lowercaseRowLabel}
+        </Button>
+      )}
+
+      {error && (
+        <Text size="xs" c="red" role="alert">
+          {error}
+        </Text>
+      )}
+    </Stack>
   );
 }
 
