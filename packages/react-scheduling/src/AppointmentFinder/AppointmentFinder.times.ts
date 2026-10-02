@@ -10,6 +10,9 @@ import type { SchedulingActorResource, SchedulingActorValue } from '../actors';
  */
 export const MAX_FIND_WINDOW_DAYS = 31;
 
+/** The longest window `Appointment/$find` accepts when searching for a recurring series. */
+export const MAX_RECURRING_FIND_WINDOW_DAYS = 7;
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
@@ -536,16 +539,16 @@ export function enumerateDateRange(range: DateRange, limit = MAX_FIND_WINDOW_DAY
  * Reports a window `$find` will not answer, before a request is made for it.
  *
  * @param range - The days asked for.
+ * @param occurrenceCount - How many weekly occurrences the search is for. Above 1, the window is narrower.
  * @returns The message to show, or undefined when the range can be searched.
  */
-export function getFindWindowError(range: DateRange): string | undefined {
+export function getFindWindowError(range: DateRange, occurrenceCount = 1): string | undefined {
   const { start, end } = range;
   if (!start || !end) {
     return undefined;
   }
-  return getDayCount(start, end) > MAX_FIND_WINDOW_DAYS
-    ? `Choose at most ${MAX_FIND_WINDOW_DAYS} days at a time.`
-    : undefined;
+  const maxDays = occurrenceCount > 1 ? MAX_RECURRING_FIND_WINDOW_DAYS : MAX_FIND_WINDOW_DAYS;
+  return getDayCount(start, end) > maxDays ? `Choose at most ${maxDays} days at a time.` : undefined;
 }
 
 /**
