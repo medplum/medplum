@@ -13,6 +13,7 @@ import {
   SCHEDULING_REQUIREMENT_CODES,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
+  setPrimaryProvider,
   setScheduleSchedulingParameter,
   SNOMED,
   TimezoneExtensionURI,
@@ -891,6 +892,7 @@ export function buildProposedAppointment(options: ProposedAppointmentOptions): A
   } = options;
 
   const end = new Date(new Date(start).getTime() + durationMinutes * 60 * 1000).toISOString();
+  const actors = actorReferences.map((actor) => (typeof actor === 'string' ? { reference: actor } : actor));
 
   return {
     resourceType: 'Appointment',
@@ -903,11 +905,10 @@ export function buildProposedAppointment(options: ProposedAppointmentOptions): A
         extension: [{ url: ServiceTypeReferenceURI, valueReference: { reference: `HealthcareService/${serviceId}` } }],
       },
     ],
-    participant: actorReferences.map((actor) => ({
-      actor: typeof actor === 'string' ? { reference: actor } : actor,
-      required: 'required',
-      status: 'needs-action',
-    })),
+    participant: setPrimaryProvider(
+      actors.map((actor) => ({ actor, required: 'required', status: 'needs-action' })),
+      actors.find((actor) => actor.reference?.startsWith('Practitioner/'))
+    ),
     contained: scheduleReferences.map((reference) => ({
       resourceType: 'Slot',
       status: 'busy',

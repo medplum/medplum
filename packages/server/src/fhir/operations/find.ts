@@ -12,6 +12,7 @@ import {
   OperationOutcomeError,
   resolveId,
   serviceTypeIncludesService,
+  setPrimaryProvider,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
@@ -327,15 +328,11 @@ async function handler(params: {
       return buildAppointmentSlots({ schedule, parameters, interval });
     });
 
-    const participant = schedules.flatMap((schedule) =>
-      schedule.actor.map(
-        (actor) =>
-          ({
-            actor,
-            required: 'required',
-            status: 'needs-action',
-          }) as const
-      )
+    const actors = schedules.flatMap((schedule) => schedule.actor);
+    const participant = setPrimaryProvider(
+      actors.map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
+      // Schedules keep the request's order, so the first provider requested is the primary
+      actors.find((actor) => actor.reference?.startsWith('Practitioner/'))
     );
 
     const appointment = {
