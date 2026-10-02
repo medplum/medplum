@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getReferenceString, SchedulingSlotCapacityURI, setScheduleSchedulingParameter } from '@medplum/core';
+import {
+  getReferenceString,
+  SchedulingBookedByOperationURI,
+  SchedulingSlotCapacityURI,
+  SchedulingUnvalidatedBookingURI,
+  setScheduleSchedulingParameter,
+} from '@medplum/core';
 import type { Appointment, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
@@ -38,7 +44,10 @@ describe('writeElevatedReschedule', () => {
       end: new Date(Date.parse('2026-08-18T15:00:00Z') + 2220123).toISOString(),
       created: '2026-01-01T00:00:00Z',
       comment: 'Keep this clinical detail',
-      extension: [{ url: 'https://example.org/metadata', valueString: 'keep' }],
+      extension: [
+        { url: 'https://example.org/metadata', valueString: 'keep' },
+        { url: SchedulingBookedByOperationURI, valueString: '5.1.0' },
+      ],
       participant: [
         ...RiveraImagingAppointment.participant.map((p) => ({ ...p, status: 'accepted' as const })),
         { actor: { reference: 'RelatedPerson/support-person' }, status: 'tentative' },
@@ -62,10 +71,23 @@ describe('writeElevatedReschedule', () => {
     ).toEqual(existing.slot?.map(getReferenceString));
     expect(result.appointment.id).toBe(existing.id);
     expect(Date.parse(result.appointment.end as string) - Date.parse(result.appointment.start as string)).toBe(2220123);
-    const { start: _start, end: _end, slot: _slot, participant, meta: _meta, ...unchanged } = result.appointment;
+    const {
+      start: _start,
+      end: _end,
+      slot: _slot,
+      participant,
+      meta: _meta,
+      extension,
+      ...unchanged
+    } = result.appointment;
     expect(unchanged).toEqual(
-      (({ start: _start, end: _end, slot: _slot, participant: _participant, meta: _meta, ...rest }) => rest)(existing)
+      (({ start: _start, end: _end, slot: _slot, participant: _participant, meta: _meta, extension: _ext, ...rest }) =>
+        rest)(existing)
     );
+    expect(extension).toEqual([
+      { url: 'https://example.org/metadata', valueString: 'keep' },
+      { url: SchedulingUnvalidatedBookingURI, valueBoolean: true },
+    ]);
     expect(participant).toContainEqual(
       existing.participant.find((p) => p.actor?.reference === DrRiveraSchedule.actor[0].reference)
     );

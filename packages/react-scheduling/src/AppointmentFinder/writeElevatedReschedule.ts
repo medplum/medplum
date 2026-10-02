@@ -7,6 +7,8 @@ import {
   getReferenceString,
   isDefined,
   isValidDate,
+  SchedulingBookedByOperationURI,
+  SchedulingUnvalidatedBookingURI,
   serviceTypeIncludesService,
 } from '@medplum/core';
 import type { Appointment, Bundle, Schedule, Slot } from '@medplum/fhirtypes';
@@ -50,7 +52,8 @@ export function getProposedSchedules(proposal: Appointment): string[] {
 
 /**
  * Moves an existing appointment without checking availability or start alignment.
- * Rebuilds geometry from current schedules and preserves the stored appointment's length and metadata.
+ * Rebuilds geometry from current schedules and preserves the stored appointment's length and metadata,
+ * marking it with `SchedulingUnvalidatedBooking`.
  * Requires transaction support so a refused update cannot release the original slots.
  * @param medplum - The client to write through.
  * @param existing - The stored appointment, including its version.
@@ -134,8 +137,14 @@ export async function writeElevatedReschedule(
       existing.status === 'pending' && slot.status === 'busy' ? { ...slot, status: 'busy-tentative' as const } : slot
     );
   const slotUrls = slots.map(() => `urn:uuid:${generateId()}`);
-  const appointment: WithId<Appointment> = {
+  const updated: WithId<Appointment> = {
     ...existing,
+    extension: [
+      ...(existing.extension ?? []).filter(
+        (ext) => ext.url !== SchedulingBookedByOperationURI && ext.url !== SchedulingUnvalidatedBookingURI
+      ),
+      { url: SchedulingUnvalidatedBookingURI, valueBoolean: true },
+    ],
     start: geometry.start,
     end: geometry.end,
     slot: slotUrls.map((reference) => ({ reference })),
@@ -157,7 +166,7 @@ export async function writeElevatedReschedule(
         request: { method: 'POST', url: 'Slot' } as const,
       })),
       {
-        resource: appointment,
+        resource: updated,
         request: { method: 'PUT', url: `Appointment/${existing.id}`, ifMatch: `W/"${existing.meta.versionId}"` },
       },
     ],
