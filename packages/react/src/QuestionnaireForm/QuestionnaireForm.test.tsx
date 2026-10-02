@@ -3363,4 +3363,60 @@ describe('QuestionnaireForm', () => {
       expect(onSubmit).not.toHaveBeenCalled();
     });
   });
+
+  describe('regex and entryFormat extensions', () => {
+    const phoneQuestionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'active',
+      item: [
+        {
+          linkId: 'phone',
+          text: 'Phone',
+          type: QuestionnaireItemType.string,
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/regex',
+              valueString: '^\\+?[0-9\\(\\)\\-.\\s]{7,20}$',
+            },
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/entryFormat',
+              valueString: '(xxx) xxx-xxxx',
+            },
+          ],
+        },
+      ],
+    };
+
+    test('Applies regex as a pattern attribute and entryFormat as a placeholder', async () => {
+      await setup({ questionnaire: phoneQuestionnaire, onSubmit: vi.fn() });
+
+      const input = screen.getByLabelText<HTMLInputElement>('Phone');
+      expect(input.pattern).toBe('^\\+?[0-9\\(\\)\\-.\\s]{7,20}$');
+      expect(input.placeholder).toBe('(xxx) xxx-xxxx');
+    });
+
+    test('Rejects a phone number containing letters', async () => {
+      await setup({ questionnaire: phoneQuestionnaire, onSubmit: vi.fn() });
+
+      const input = screen.getByLabelText<HTMLInputElement>('Phone');
+      await act(async () => {
+        fireEvent.change(input, { target: { value: '123-A45-019D' } });
+      });
+
+      expect(input.validity.patternMismatch).toBe(true);
+      expect(input.checkValidity()).toBe(false);
+    });
+
+    test('Accepts a well-formed phone number', async () => {
+      await setup({ questionnaire: phoneQuestionnaire, onSubmit: vi.fn() });
+
+      const input = screen.getByLabelText<HTMLInputElement>('Phone');
+      await act(async () => {
+        fireEvent.change(input, { target: { value: '(123) 445-0199' } });
+      });
+
+      expect(input.validity.patternMismatch).toBe(false);
+      expect(input.checkValidity()).toBe(true);
+    });
+  });
 });
