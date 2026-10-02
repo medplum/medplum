@@ -199,11 +199,6 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         </Group>
       </Stack>
 
-      {alert && (
-        <Alert color="blue" variant="light">
-          {alert}
-        </Alert>
-      )}
       {failure?.conflict && (
         <Alert
           color="orange"
@@ -233,6 +228,11 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           scheduleActive={schedule && fields.active}
           onScheduleActiveChange={(active) => setFields((current) => ({ ...current, active }))}
         />
+        {alert && (
+          <Alert color="blue" variant="light">
+            {alert}
+          </Alert>
+        )}
       </ConfigSection>
 
       <ConfigSection title="Visit types offered">
