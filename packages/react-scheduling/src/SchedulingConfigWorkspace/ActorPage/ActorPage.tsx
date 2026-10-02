@@ -29,8 +29,7 @@ export interface ActorPageProps {
   /** Every visit type loaded. */
   readonly services: readonly WithId<HealthcareService>[];
   /**
-   * The visit type whose entry opens, when the actor offers it, or null for every entry closed. Left out, only a
-   * Schedule's sole visit type opens.
+   * The visit type whose entry opens, when the actor offers it. Left out or null, every entry starts closed.
    */
   readonly initialOpenServiceId?: string | null;
   /**
@@ -65,12 +64,9 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [initial] = useState<ScheduleFields>(() => scheduleFieldsOf(schedule, servicesById));
   const [fields, setFields] = useState(initial);
   const [actorDraft, setActorDraft] = useState<ConfigurableActorResource>(resource);
-  const [open, setOpen] = useState<string | null>(() => {
-    if (initialOpenServiceId !== undefined) {
-      return initialOpenServiceId && initial.offered.includes(initialOpenServiceId) ? initialOpenServiceId : null;
-    }
-    return initial.offered.length === 1 ? initial.offered[0] : null;
-  });
+  const [open, setOpen] = useState<string | null>(() =>
+    initialOpenServiceId && initial.offered.includes(initialOpenServiceId) ? initialOpenServiceId : null
+  );
   const [saving, setSaving] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
   const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'>>();

@@ -158,11 +158,13 @@ describe('ActorPage', () => {
     expect(within(entry('Follow-up')).getByText('Customized')).toHaveTextContent('Overrides buffer after.');
   });
 
-  test('a Schedule offering one visit type opens its entry', async () => {
+  test("a Schedule's only visit type starts closed, and opens to its parameters and hours", async () => {
     await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
 
-    expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'true');
-    expect(within(panel('Initial Visit')).getByRole('heading', { name: 'Scheduling parameters' })).toBeVisible();
+    expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(entry('Initial Visit'));
+
+    expect(await within(panel('Initial Visit')).findByRole('heading', { name: 'Scheduling parameters' })).toBeVisible();
     expect(within(panel('Initial Visit')).getByRole('heading', { name: 'Availability' })).toBeVisible();
   });
 
@@ -340,7 +342,7 @@ describe('ActorPage', () => {
     const overriding = setScheduleAvailability(makeSchedule('Practitioner/dr-smith', [initialVisit]), initialVisit, [
       { daysOfWeek: ['tue'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' },
     ]);
-    const { medplum } = await setup(drSmith, [overriding]);
+    const { medplum } = await setup(drSmith, [overriding], [], initialVisit.id);
 
     await userEvent.click(within(panel('Initial Visit')).getByTestId('schedule-availability-switch-tue'));
     await save();

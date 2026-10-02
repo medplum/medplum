@@ -243,7 +243,7 @@ describe('SchedulingConfigWorkspace', () => {
     const medplum = await setup();
     const search = vi.spyOn(medplum, 'searchResourcePages');
     await userEvent.click(row('Dr. Maya Rivera'));
-    // Its only visit type opens on its own, so closing it shows the save keeps what the viewer had open.
+    // Every entry starts closed, so opening one shows the save keeps what the viewer had open.
     await userEvent.click(entry('Ultrasound Imaging'));
 
     await userEvent.click(within(details()).getByRole('switch', { name: 'Schedule status' }));
@@ -252,7 +252,7 @@ describe('SchedulingConfigWorkspace', () => {
     await waitFor(() => expect(row('Dr. Maya Rivera')).toHaveTextContent('Schedule inactive'));
     expect(row('Dr. Maya Rivera')).toHaveAttribute('aria-current', 'true');
     expect(within(details()).getByRole('switch', { name: 'Schedule status' })).not.toBeChecked();
-    expect(entry('Ultrasound Imaging')).toHaveAttribute('aria-expanded', 'false');
+    expect(entry('Ultrasound Imaging')).toHaveAttribute('aria-expanded', 'true');
     expect(screen.queryByRole('region', { name: 'Unsaved changes' })).not.toBeInTheDocument();
     expect(search).not.toHaveBeenCalled();
   });
