@@ -174,10 +174,10 @@ export async function searchField(label: RegExp, query: string): Promise<HTMLEle
 }
 
 /**
- * Adds another row to one actor type, for a second one the visit needs.
- * @param lowercaseLabel - The actor type as the form writes it, e.g. `provider`.
+ * Adds another row to a field that takes one value per row: a second provider, or a second procedure.
+ * @param lowercaseLabel - What one row holds, as the form writes it, e.g. `provider` or `procedure`.
  */
-export async function addActorRow(lowercaseLabel: string): Promise<void> {
+export async function addRow(lowercaseLabel: string): Promise<void> {
   const button = screen.getByRole('button', { name: `Add another ${lowercaseLabel}` });
   await act(async () => {
     fireEvent.click(button);

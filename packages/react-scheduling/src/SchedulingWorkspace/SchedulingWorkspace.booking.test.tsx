@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getExtensionValue, SchedulingMedicalNecessityURI } from '@medplum/core';
+import { getExtensionValue, SchedulingMedicalNecessityURI, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
@@ -16,19 +16,24 @@ import {
   DIAGNOSIS_VALUE_SET,
   DiagnosisCodes,
   ElderJordanPatient,
+  InfusionService,
+  MilesCooperPatient,
   PROCEDURE_VALUE_SET,
   ProcedureCodes,
   SatelliteClinic,
 } from '../stories/scheduling';
-import { installAutocompleteTimers, settleAutocomplete } from '../test-utils/asyncAutocomplete';
+import { installAutocompleteTimers, removePill, settleAutocomplete } from '../test-utils/asyncAutocomplete';
 import {
+  addRow,
   chooseActor,
   chooseDay,
   chooseImagingService,
   choosePatient,
   chooseSecondOfferedTime,
   clickBook,
+  codePill,
   enterAuthorizationDetails,
+  enterCode,
   field,
   fillAuthorizedBooking,
   fillBooking,
@@ -69,6 +74,15 @@ const BOOKED_VISIT: WithId<Appointment> = {
     { status: 'accepted', actor: { reference: 'Patient/pt-cooper', display: 'Miles Cooper' } },
     { status: 'accepted', actor: { reference: 'Practitioner/dr-rivera', display: 'Dr. Maya Rivera' } },
   ],
+};
+
+/** {@link BOOKED_VISIT}, booked for a visit type asking for codes, with them given. */
+const AUTHORIZED_VISIT: WithId<Appointment> = {
+  ...BOOKED_VISIT,
+  id: 'appt-rivera-infusion-tue',
+  serviceType: [...toServiceTypeCodeableConcepts(InfusionService), { coding: [ProcedureCodes[0]] }],
+  reasonCode: [{ coding: [DiagnosisCodes[0]] }],
+  extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
 };
 
 const CLICK_TARGETS = {
@@ -195,12 +209,16 @@ describe('SchedulingWorkspace booking', () => {
     restoreFind();
   });
 
-  function setup(onBooked?: (booking: AppointmentBooking) => void): void {
+  function setup(
+    onBooked?: (booking: AppointmentBooking) => void,
+    onUpdated?: (appointment: WithId<Appointment>) => void
+  ): void {
     renderWithMedplum(
       <SchedulingWorkspace
         procedureBinding={PROCEDURE_VALUE_SET}
         diagnosisBinding={DIAGNOSIS_VALUE_SET}
         onBooked={onBooked}
+        onUpdated={onUpdated}
       />,
       medplum
     );
@@ -445,6 +463,53 @@ describe('SchedulingWorkspace booking', () => {
 
       expect(bookingPaneHeading()).toBeInTheDocument();
       expect(detailsPane()).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Editing a visit from its details', () => {
+    beforeEach(async () => {
+      await medplum.createResource(MilesCooperPatient);
+      await medplum.createResource(AUTHORIZED_VISIT);
+    });
+
+    function saveButton(): HTMLElement {
+      return within(detailsPane() as HTMLElement).getByRole('button', { name: 'Save Changes' });
+    }
+
+    async function clickEdit(): Promise<void> {
+      await act(async () => {
+        fireEvent.click(within(detailsPane() as HTMLElement).getByRole('button', { name: 'Edit' }));
+      });
+      await settleAutocomplete();
+    }
+
+    test("Saves the codes against the workspace's value sets, and reports the appointment written", async () => {
+      const onUpdated = vi.fn();
+      setup(undefined, onUpdated);
+      await settleAutocomplete();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: `click appointment ${AUTHORIZED_VISIT.id}` }));
+      });
+      await settleAutocomplete();
+      await clickEdit();
+
+      // The stub serves only the workspace's value sets, so finding a code proves the bindings reached the pane.
+      await addRow('diagnosis');
+      await enterCode(/diagnosis 2/i, DiagnosisCodes[1]);
+      await act(async () => {
+        fireEvent.click(saveButton());
+      });
+      await settleAutocomplete();
+
+      expect(onUpdated).toHaveBeenCalledTimes(1);
+      const [updated] = onUpdated.mock.calls[0] as [WithId<Appointment>];
+      expect(updated.reasonCode).toEqual([{ coding: [DiagnosisCodes[0]] }, { coding: [DiagnosisCodes[1]] }]);
+      expect(within(detailsPane() as HTMLElement).queryByRole('button', { name: 'Save Changes' })).toBeNull();
+
+      // An edit only against the written appointment: against the one first opened, removing this code changes nothing.
+      await clickEdit();
+      await removePill(codePill(DiagnosisCodes[1]));
+      expect(saveButton()).toBeEnabled();
     });
   });
 });
