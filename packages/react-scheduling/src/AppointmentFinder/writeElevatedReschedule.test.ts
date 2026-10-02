@@ -120,7 +120,8 @@ describe('writeElevatedReschedule', () => {
       { url: 'slotCapacity', valuePositiveInt: 3 }
     );
     await medplum.updateResource(buffered);
-    const result = await writeElevatedReschedule(medplum, { ...existing, status: 'pending' }, proposal());
+    const pending = await medplum.updateResource({ ...existing, status: 'pending' });
+    const result = await writeElevatedReschedule(medplum, pending, proposal());
     expect(result.appointment.status).toBe('pending');
     expect(result.slots).toHaveLength(3);
     expect(
@@ -146,14 +147,15 @@ describe('writeElevatedReschedule', () => {
     }
   );
 
-  test('requires a stored version before any write', async () => {
-    const execute = vi.spyOn(medplum, 'executeBatch');
-    await expect(writeElevatedReschedule(medplum, { ...existing, meta: {} }, proposal())).rejects.toThrow('Reload');
-    expect(execute).not.toHaveBeenCalled();
+  test('moves the stored appointment rather than a stale copy', async () => {
+    await medplum.updateResource({ ...existing, comment: 'Edited elsewhere' });
+    const result = await writeElevatedReschedule(medplum, existing, proposal());
+    expect(result.appointment.comment).toBe('Edited elsewhere');
   });
 
   test.each([undefined, '2026-01-01T00:00:00Z'])('refuses an invalid original interval (%s)', async (end) => {
-    await expect(writeElevatedReschedule(medplum, { ...existing, end }, proposal())).rejects.toThrow('length');
+    const stored = await medplum.updateResource({ ...existing, end });
+    await expect(writeElevatedReschedule(medplum, stored, proposal())).rejects.toThrow('length');
   });
 
   test.each([

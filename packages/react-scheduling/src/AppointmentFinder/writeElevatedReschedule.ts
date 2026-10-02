@@ -56,13 +56,13 @@ export function getProposedSchedules(proposal: Appointment): string[] {
  * marking it with `SchedulingUnvalidatedBooking`.
  * Requires transaction support so a refused update cannot release the original slots.
  * @param medplum - The client to write through.
- * @param existing - The stored appointment, including its version.
+ * @param moving - The appointment being moved. Re-read before writing, so a stale copy is not written back.
  * @param proposal - The manually chosen start and schedules.
  * @returns The updated appointment and replacement slots, after verifying every response entry.
  */
 export async function writeElevatedReschedule(
   medplum: MedplumClient,
-  existing: WithId<Appointment>,
+  moving: WithId<Appointment>,
   proposal: Appointment
 ): Promise<AppointmentWrite> {
   if (!supportsTransactionBundles(medplum)) {
@@ -70,6 +70,14 @@ export async function writeElevatedReschedule(
       'Override rescheduling requires the transaction-bundles project feature to be enabled and available to the client.'
     );
   }
+  const scheduleRefs = getProposedSchedules(proposal);
+  if (scheduleRefs.length === 0 || scheduleRefs.some((ref) => !/^Schedule\/[^/]+$/.test(ref))) {
+    throw new Error('The chosen time must name valid schedules.');
+  }
+  const [existing, schedules] = await Promise.all([
+    medplum.readResource('Appointment', moving.id, { cache: 'no-cache' }),
+    Promise.all(scheduleRefs.map((reference) => medplum.readReference<Schedule>({ reference }, { cache: 'no-cache' }))),
+  ]);
   if (!existing.meta?.versionId) {
     throw new Error('Reload this appointment before manually rescheduling it; its version is missing.');
   }
@@ -85,10 +93,6 @@ export async function writeElevatedReschedule(
   if (serviceRefs.length !== 1) {
     throw new Error('Manual rescheduling requires exactly one visit type.');
   }
-  const scheduleRefs = getProposedSchedules(proposal);
-  if (scheduleRefs.length === 0 || scheduleRefs.some((ref) => !/^Schedule\/[^/]+$/.test(ref))) {
-    throw new Error('The chosen time must name valid schedules.');
-  }
   const slotReferences = (existing.slot ?? []).map(getReferenceString);
   if (slotReferences.some((ref) => !ref)) {
     throw new Error('The appointment must reference stored slots before it can be manually rescheduled.');
@@ -97,9 +101,8 @@ export async function writeElevatedReschedule(
   if (oldSlotRefs.some((ref) => !/^Slot\/[^/]+$/.test(ref))) {
     throw new Error('The appointment must reference stored slots before it can be manually rescheduled.');
   }
-  const [service, schedules, oldSlots] = await Promise.all([
+  const [service, oldSlots] = await Promise.all([
     medplum.readReference(serviceRefs[0], { cache: 'no-cache' }),
-    Promise.all(scheduleRefs.map((reference) => medplum.readReference<Schedule>({ reference }, { cache: 'no-cache' }))),
     Promise.all(oldSlotRefs.map((reference) => medplum.readReference<Slot>({ reference }, { cache: 'no-cache' }))),
   ]);
   if (service.active === false) {
