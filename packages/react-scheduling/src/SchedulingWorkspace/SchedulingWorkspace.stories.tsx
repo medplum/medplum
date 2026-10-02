@@ -204,12 +204,15 @@ function Workspace(props: WorkspaceProps): JSX.Element {
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
         defaultLocation={props.defaultLocation}
-        onBooked={({ appointments: [appointment] }) => {
+        onBooked={({ appointments }) => {
+          // A series reports every occurrence, in the order they fall.
+          const [first] = appointments;
+          const series = appointments.length > 1;
           showNotification({
             color: 'green',
             icon: <IconCalendarCheck size={18} />,
-            title: 'Appointment booked',
-            message: describeBooking(appointment),
+            title: series ? `${appointments.length} appointments booked` : 'Appointment booked',
+            message: series ? `${describeBooking(first)} · weekly` : describeBooking(first),
           });
         }}
         onCancelled={(appointment) => {
