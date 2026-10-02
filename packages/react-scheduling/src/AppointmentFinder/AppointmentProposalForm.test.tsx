@@ -1830,6 +1830,17 @@ describe('AppointmentProposalForm', () => {
       expect(screen.getByText(/Also books Aug 24 and Aug 31 at the same time\./)).toBeInTheDocument();
     });
 
+    test('Says how many appointments Book writes for a series', async () => {
+      setup(medplum, { allowRecurring: true });
+      expect(bookButton()).toHaveTextContent('Book appointment');
+
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Weekly, 3 times');
+
+      expect(bookButton()).toHaveTextContent('Book 3 appointments');
+    });
+
     test('Names no later dates for a visit that does not repeat', async () => {
       setup(medplum, { allowRecurring: true });
       await chooseImagingService();

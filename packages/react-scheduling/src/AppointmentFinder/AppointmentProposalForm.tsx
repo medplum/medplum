@@ -672,7 +672,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
         {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
         <Button fullWidth disabled={!chosen || written || detailsOutstanding} loading={writing} onClick={handleSubmit}>
-          {mode === 'reschedule' ? 'Reschedule appointment' : 'Book appointment'}
+          {getSubmitLabel(mode, effectiveOccurrenceCount)}
         </Button>
       </Stack>
 
@@ -944,6 +944,19 @@ function LaterOccurrences(props: LaterOccurrencesProps): JSX.Element | null {
       Also books {listAll.format(starts.map((start) => formatDay.format(start)))} at the same time.
     </>
   );
+}
+
+/**
+ * Names what the submit button writes.
+ * @param mode - What the proposal is for.
+ * @param occurrenceCount - How many appointments a booking writes: one per occurrence of a series.
+ * @returns The button's label.
+ */
+function getSubmitLabel(mode: AppointmentProposalMode, occurrenceCount: number): string {
+  if (mode === 'reschedule') {
+    return 'Reschedule appointment';
+  }
+  return occurrenceCount > 1 ? `Book ${occurrenceCount} appointments` : 'Book appointment';
 }
 
 /**
