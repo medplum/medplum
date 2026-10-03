@@ -161,7 +161,7 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
   const redisSubscriber = getPubSubRedisSubscriber();
 
-  const { projectId, topic, events, version } = subscription;
+  const { projectId, topic, events, version, subscriberName } = subscription;
   const projectAndTopic = `${projectId}:${topic}`;
 
   // Bind all listeners (and topic bookkeeping) before awaiting the subscribe, so that
@@ -240,12 +240,12 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
   };
   if (version !== FhircastVersion.STU3) {
     // STU3 dropped these, but STU2 clients still expect them
-    // TODO: Fill in these properties
+    // TODO: Fill in the remaining properties
     Object.assign(confirmation, {
       'hub.callback': '',
       'hub.channel': '',
       'hub.secret': '',
-      'hub.subscriber': '',
+      'hub.subscriber': subscriberName ?? '',
     });
   }
   socket.send(JSON.stringify(confirmation), { binary: false });
