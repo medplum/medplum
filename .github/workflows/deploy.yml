@@ -15,7 +15,7 @@ permissions:
 jobs:
   build:
     name: Deploy
-    runs-on: ubuntu-latest
+    runs-on: medplum-build-16core
     timeout-minutes: 45
     if: github.repository == 'medplum/medplum'
     permissions:
