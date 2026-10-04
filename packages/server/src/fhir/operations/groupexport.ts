@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { accepted, concatUrls, parseReference, singularize } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
+import { accepted, concatUrls, parseReference, parseSearchRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Group, Patient, Project, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
@@ -10,6 +11,7 @@ import type { Repository } from '../repo';
 import type { PatientEverythingParameters } from './patienteverything';
 import { getPatientEverything } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';
+import { filterExportResources, parseExportParameters, parseExportTypeFilters } from './utils/export';
 
 /**
  * Handles a Group export request.
@@ -26,8 +28,8 @@ export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const { id } = req.params;
-  const since = singularize(req.query._since);
-  const types = singularize(req.query._type)?.split(',');
+  const { types, since, typeFilters } = parseExportParameters(req);
+  const searches = parseExportTypeFilters(ctx.repo, typeFilters);
 
   // First read the group as the user to verify access
   const group = await ctx.repo.readResource<Group>('Group', id);
@@ -36,10 +38,17 @@ export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse
   const exporter = new BulkExporter(ctx.repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4/' + req.pathname));
 
-  groupExportResources(ctx.repo, exporter, ctx.project, group, {
-    _type: types as ResourceType[] | undefined,
-    _since: since,
-  })
+  groupExportResources(
+    ctx.repo,
+    exporter,
+    ctx.project,
+    group,
+    {
+      _type: types as ResourceType[] | undefined,
+      _since: since,
+    },
+    searches
+  )
     .then(() => ctx.logger.info('Group export completed', { id: ctx.project.id }))
     .catch((err) => ctx.logger.error('Group export failed', { id: ctx.project.id, error: err }));
 
@@ -51,8 +60,10 @@ export async function groupExportResources(
   exporter: BulkExporter,
   project: Project,
   group: Group,
-  params?: PatientEverythingParameters
+  params?: PatientEverythingParameters,
+  typeFilters: SearchRequest[] = []
 ): Promise<void> {
+  const types = typeof params?._type === 'string' ? params._type.split(',') : params?._type;
   // Read all patients in the group
   if (group.member) {
     for (const member of group.member) {
@@ -63,11 +74,31 @@ export async function groupExportResources(
       try {
         if (resourceType === 'Patient') {
           const patient = await repo.readResource<Patient>('Patient', memberId);
-          const bundle = await getPatientEverything(repo, patient, params);
-          await exporter.writeBundle(bundle);
-        } else {
+          let pageParams = params;
+          while (true) {
+            const bundle = await getPatientEverything(repo, patient, pageParams);
+            // $everything includes the Patient and contextual references regardless of _type.
+            // Apply export filters without changing $everything or restricting the patient cohort.
+            const resources =
+              bundle.entry?.flatMap((entry) =>
+                entry.resource && (!types || types.includes(entry.resource.resourceType)) ? [entry.resource] : []
+              ) ?? [];
+            for (const resource of await filterExportResources(repo, resources, typeFilters)) {
+              await exporter.writeResource(resource);
+            }
+            // A page with no filter matches can still be followed by matching resources.
+            const next = bundle.link?.find((link) => link.relation === 'next');
+            if (!next) {
+              break;
+            }
+            const search = parseSearchRequest(next.url);
+            pageParams = { ...params, _count: search.count, _offset: search.offset, _cursor: search.cursor };
+          }
+        } else if (!types || types.includes(resourceType)) {
           const resource = await repo.readResource(resourceType, memberId);
-          await exporter.writeResource(resource);
+          for (const match of await filterExportResources(repo, [resource], typeFilters)) {
+            await exporter.writeResource(match);
+          }
         }
       } catch {
         getLogger().warn('Unable to read patient for group export', {

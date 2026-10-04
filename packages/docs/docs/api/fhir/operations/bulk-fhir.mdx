@@ -67,6 +67,48 @@ An export can also be performed for all resources in a Project by making a `GET`
   {ExampleCode}
 </MedplumCodeBlock>
 
+## Selecting resource types and filtering resources
+
+System, Patient, and Group exports accept POST requests with a FHIR `Parameters` body.
+Use repeated `_type` entries to select resource types, and repeated `_typeFilter` entries
+to apply FHIR search criteria independently to each type:
+
+```json
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    { "name": "_type", "valueString": "Patient" },
+    { "name": "_type", "valueString": "Observation" },
+    { "name": "_typeFilter", "valueString": "Observation?status=final" },
+    { "name": "_typeFilter", "valueString": "Observation?status=preliminary&category=laboratory" }
+  ]
+}
+```
+
+This exports Patients and Observations that are either final or both preliminary and
+in the laboratory category. Multiple `_typeFilter` entries for the same type are
+combined with OR; search criteria within an entry use normal FHIR search semantics.
+Overlapping matches are exported once.
+
+When `_type` is omitted, the default export resource types remain eligible. Types
+without a filter are unchanged. A filter for a type not selected by `_type` does not
+add that type to the export. Filtering Patients does not restrict related Observations
+or Encounters. Group exports continue to restrict results to the Group's export scope.
+
+Each `_typeFilter` must be a relative, single-resource-type search such as
+`Observation?category=laboratory`. Supported chained search criteria use Medplum's
+normal FHIR search behavior. Search result controls such as `_include`, `_revinclude`,
+`_sort`, `_count`, `_summary`, and `_elements` are not allowed. Invalid or unsupported
+filters return an error with an `OperationOutcome` before an export job is started.
+
+POST `_type` values must each name one resource type; repeat the parameter instead
+of comma-delimiting values, following the
+[Bulk Data IG's POST parameter format](https://build.fhir.org/ig/HL7/bulk-data/en/export.html).
+Existing GET and POST query-string requests remain supported, including repeated
+parameters and legacy comma-delimited `_type` query values. `_typeFilter` values are
+never split on commas, since commas can be part of a FHIR search expression.
+When a parameter is supplied in both the body and query string, the body takes precedence.
+
 ## Related Reading
 
 - [Reporting and Analytics](/docs/analytics) overview

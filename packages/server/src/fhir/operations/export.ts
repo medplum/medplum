@@ -8,7 +8,6 @@ import {
   getResourceTypes,
   Operator,
   protectedResourceTypes,
-  singularize,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
@@ -16,6 +15,7 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientResourceTypes } from '../patient';
 import { BulkExporter } from './utils/bulkexporter';
+import { parseExportParameters, parseExportTypeFilters } from './utils/export';
 
 /**
  * Handles a bulk export request.
@@ -50,13 +50,13 @@ export async function patientExportHandler(req: FhirRequest): Promise<FhirRespon
 async function startExport(req: FhirRequest, exportType: string): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
-  const since = singularize(req.query._since);
-  const types = singularize(req.query._type)?.split(',');
+  const { types, since, typeFilters } = parseExportParameters(req);
+  const searches = parseExportTypeFilters(ctx.repo, typeFilters);
 
   const exporter = new BulkExporter(ctx.repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
 
-  exportResources(exporter, ctx.project, types, exportType, since)
+  exportResources(exporter, ctx.project, types, exportType, since, searches)
     .then(() => ctx.logger.info('Export completed', { exportType, id: ctx.project.id }))
     .catch((err) => ctx.logger.error('Export failure', { exportType, id: ctx.project.id, error: err }));
 
@@ -68,7 +68,8 @@ export async function exportResources(
   project: Project,
   types: string[] | undefined,
   exportLevel: string,
-  since?: string
+  since?: string,
+  typeFilters: SearchRequest[] = []
 ): Promise<void> {
   const resourceTypes = getResourceTypesByExportLevel(exportLevel);
   const pageSize = 1000;
@@ -81,7 +82,13 @@ export async function exportResources(
     ) {
       continue;
     }
-    await exportResourceType(exporter, resourceType, pageSize, since);
+    await exportResourceType(
+      exporter,
+      resourceType,
+      pageSize,
+      since,
+      typeFilters.filter((search) => search.resourceType === resourceType)
+    );
   }
 
   // Close the exporter
@@ -92,7 +99,8 @@ export async function exportResourceType<T extends Resource>(
   exporter: BulkExporter,
   resourceType: T['resourceType'],
   count: number,
-  since?: string
+  since?: string,
+  typeFilters: SearchRequest[] = []
 ): Promise<void> {
   const repo = exporter.repo;
   const searchRequest: SearchRequest<T> | undefined = {
@@ -101,10 +109,18 @@ export async function exportResourceType<T extends Resource>(
     filters: since ? [{ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since }] : undefined,
     sortRules: [{ code: '_lastUpdated', descending: false }],
   };
-  await repo.processAllResources(searchRequest, async (resource) => {
-    // Cursor pagination yields each resource exactly once, so skip the exporter's dedupe tracking
-    await exporter.writeResource(resource, { skipDedupe: true });
-  });
+  // Each query is an alternative (OR). Dedupe overlapping matches across alternatives.
+  for (const search of typeFilters.length ? typeFilters : [{ resourceType }]) {
+    await repo.processAllResources(
+      {
+        ...searchRequest,
+        filters: [...(searchRequest.filters ?? []), ...(search.filters ?? [])],
+      },
+      async (resource) => {
+        await exporter.writeResource(resource, { skipDedupe: typeFilters.length <= 1 });
+      }
+    );
+  }
 
   // Close writer and free memory for this resource type immediately
   await exporter.closeWriter(resourceType);
