@@ -101,11 +101,11 @@ normal FHIR search behavior. Search result controls such as `_include`, `_revinc
 `_sort`, `_count`, `_summary`, and `_elements` are not allowed. Invalid or unsupported
 filters return an error with an `OperationOutcome` before an export job is started.
 
-POST `_type` values must each name one resource type; repeat the parameter instead
-of comma-delimiting values, following the
+Prefer repeated POST `_type` entries, following the
 [Bulk Data IG's POST parameter format](https://build.fhir.org/ig/HL7/bulk-data/en/export.html).
-Existing GET and POST query-string requests remain supported, including repeated
-parameters and legacy comma-delimited `_type` query values. `_typeFilter` values are
+Comma-delimited `_type` values remain supported in both POST bodies and query strings,
+including when mixed with repeated entries. Existing GET and POST query-string
+requests remain supported. `_typeFilter` values are
 never split on commas, since commas can be part of a FHIR search expression.
 When a parameter is supplied in both the body and query string, the body takes precedence.
 

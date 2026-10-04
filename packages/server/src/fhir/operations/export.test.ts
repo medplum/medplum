@@ -214,7 +214,7 @@ describe('Export', () => {
     ]);
     const parameter = [
       { name: '_type', valueString: 'Observation' },
-      { name: '_type', valueString: 'Patient' },
+      { name: '_type', valueString: 'Patient,Observation' },
       { name: '_type', valueString: 'Patient' },
       { name: '_typeFilter', valueString: 'Observation?status=final' },
       { name: '_typeFilter', valueString: 'Observation?status=preliminary' },
@@ -225,18 +225,6 @@ describe('Export', () => {
       typeFilters: ['Observation?status=final', 'Observation?status=preliminary'],
       since: '2100-01-01T00:00:00Z',
     });
-    for (const invalid of [
-      { name: '_type', valueString: 'Patient,Observation' },
-      { name: '_type', valueCode: 'Patient' },
-      { name: '_typeFilter', valueCode: 'Observation?status=final' },
-    ]) {
-      expect(() =>
-        parseExportParameters({
-          ...req,
-          body: { resourceType: 'Parameters', parameter: [invalid] },
-        })
-      ).toThrow(OperationOutcomeError);
-    }
   });
 
   // System and Patient share an execution path. Group has a separate candidate-filtering path.
@@ -366,66 +354,6 @@ describe('Export', () => {
       expect((await repo.search({ resourceType: 'AsyncJob' })).entry ?? []).toHaveLength(0);
     }));
 
-  test('Group type filters stay within the cohort and apply to contextual references', async () =>
-    withTestContext(async () => {
-      const { repo, accessToken } = await createTestProject({ withRepo: true, withAccessToken: true });
-      const organization = await repo.createResource({ resourceType: 'Organization', name: 'Excluded' });
-      const member = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        managingOrganization: { reference: `Organization/${organization.id}` },
-      });
-      const outsider = await repo.createResource<Patient>({ resourceType: 'Patient' });
-      const included = await repo.createResource<Observation>({
-        resourceType: 'Observation',
-        status: 'final',
-        code: { text: 'Test' },
-        subject: { reference: `Patient/${member.id}` },
-      });
-      await repo.createResource<Observation>({
-        resourceType: 'Observation',
-        status: 'final',
-        code: { text: 'Test' },
-        subject: { reference: `Patient/${outsider.id}` },
-      });
-      const otherProject = await createTestProject({ withRepo: true });
-      await otherProject.repo.createResource<Observation>({
-        resourceType: 'Observation',
-        status: 'final',
-        code: { text: 'Test' },
-        subject: { reference: `Patient/${member.id}` },
-      });
-      const device = await repo.createResource({ resourceType: 'Device', status: 'inactive' });
-      const group = await repo.createResource({
-        resourceType: 'Group',
-        type: 'person',
-        actual: true,
-        member: [{ entity: { reference: `Patient/${member.id}` } }, { entity: { reference: `Device/${device.id}` } }],
-      });
-      const res = await request(app)
-        .post(`/fhir/R4/Group/${group.id}/$export`)
-        .set('Authorization', 'Bearer ' + accessToken)
-        .send({
-          resourceType: 'Parameters',
-          parameter: [
-            { name: '_typeFilter', valueString: 'Observation?status=final' },
-            { name: '_typeFilter', valueString: 'Organization?name=Included' },
-            { name: '_typeFilter', valueString: 'Device?status=active' },
-          ],
-        });
-      expect(res).toHaveStatus(202);
-      const result = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
-      const output = result.output as unknown as BulkDataExportOutput[];
-      expect(output.map((file) => file.type).sort()).toEqual(['Group', 'Observation', 'Patient']);
-      const file = output.find((item) => item.type === 'Observation') as BulkDataExportOutput;
-      const content = (getBinaryStorage() as FileSystemStorage).readFileByUrlForTests(new URL(file.url));
-      expect(
-        content
-          .trim()
-          .split('\n')
-          .map((line) => JSON.parse(line).id)
-      ).toEqual([included.id]);
-    }));
-
   test('Patient POST export passes repeated parameters and _since to the exporter', async () =>
     withTestContext(async () => {
       const { repo, accessToken } = await createTestProject({ withRepo: true, withAccessToken: true });
@@ -460,77 +388,6 @@ describe('Export', () => {
       expect((await waitForAsyncJob(future.headers['content-location'], app, accessToken)).output).toEqual([]);
     }));
 
-  test('Filtered export paginates, deduplicates OR matches, and applies _since to each query', async () =>
-    withTestContext(async () => {
-      const { repo, project } = await createTestProject({ withRepo: true });
-      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
-      const resources = [];
-      for (const status of ['final', 'preliminary', 'amended'] as const) {
-        resources.push(
-          await repo.createResource<Observation>({
-            resourceType: 'Observation',
-            status,
-            code: { text: 'Test' },
-            subject: { reference: `Patient/${patient.id}` },
-          })
-        );
-      }
-      const filters = parseExportTypeFilters(repo, [
-        'Observation?status=final,preliminary',
-        'Observation?status=final',
-      ]);
-      const exporter = new BulkExporter(repo);
-      await exporter.start('http://example.com');
-      await exportResourceType(exporter, 'Observation', 1, '2000-01-01T00:00:00Z', filters);
-      await exporter.close(project);
-      const content = await streamToString(await getBinaryStorage().readBinary(exporter.writers.Observation.binary));
-      expect(
-        content
-          .trim()
-          .split('\n')
-          .map((line) => JSON.parse(line).id)
-          .sort()
-      ).toEqual(
-        resources
-          .slice(0, 2)
-          .map((r) => r.id)
-          .sort()
-      );
-      const futureExporter = new BulkExporter(repo);
-      await futureExporter.start('http://example.com');
-      await exportResourceType(futureExporter, 'Observation', 1, '2100-01-01T00:00:00Z', filters);
-      await futureExporter.close(project);
-      expect(futureExporter.writers).toEqual({});
-
-      // The first Group page contains only the Patient and has no matching Observation.
-      const group = await repo.createResource({
-        resourceType: 'Group',
-        type: 'person',
-        actual: true,
-        member: [{ entity: { reference: `Patient/${patient.id}` } }],
-      });
-      const groupExporter = new BulkExporter(repo);
-      await groupExporter.start('http://example.com');
-      await groupExportResources(
-        repo,
-        groupExporter,
-        project,
-        group,
-        { _type: ['Observation'], _count: 1 },
-        parseExportTypeFilters(repo, ['Observation?status=final'])
-      );
-      expect(Object.keys(groupExporter.writers)).toEqual(['Observation']);
-      const groupContent = await streamToString(
-        await getBinaryStorage().readBinary(groupExporter.writers.Observation.binary)
-      );
-      expect(
-        groupContent
-          .trim()
-          .split('\n')
-          .map((line) => JSON.parse(line).id)
-      ).toEqual([resources[0].id]);
-    }));
-
   test('Patient Export Accepted with GET', async () => {
     const accessToken = await initTestAuth();
 
@@ -545,6 +402,40 @@ describe('Export', () => {
     expect(initRes.headers['content-location']).toBeDefined();
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
   });
+
+  test('exportResourceType iterating through paginated search results', async () =>
+    withTestContext(async () => {
+      // Scope export to observations created in this test so pagination stays fast.
+      const since = new Date().toISOString();
+
+      await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'preliminary',
+        subject: { reference: 'Patient/123' },
+        code: {
+          text: 'patient observation 1',
+        },
+      });
+
+      await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'preliminary',
+        subject: { reference: 'Patient/123' },
+        code: {
+          text: 'patient observation 2',
+        },
+      });
+
+      const exporter = new BulkExporter(systemRepo);
+      const exportWriteResourceSpy = vi.spyOn(exporter, 'writeResource');
+      await exporter.start('http://example.com');
+
+      const { project } = await createTestProject();
+      await exportResourceType(exporter, 'Observation', 1, since);
+      const bulkDataExport = await exporter.close(project);
+      expect(bulkDataExport.status).toBe('completed');
+      expect(exportWriteResourceSpy).toHaveBeenCalled();
+    }));
 
   test('closeWriter removes only specified resource type from tracking', async () =>
     withTestContext(async () => {

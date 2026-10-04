@@ -2,18 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchRequest, WithId } from '@medplum/core';
 import {
+  arrayify,
   badRequest,
+  flatMapFilter,
   OperationOutcomeError,
   Operator,
   parseSearchRequest,
   singularize,
-  validateResource,
   validateResourceType,
 } from '@medplum/core';
 import type { FhirRequest } from '@medplum/fhir-router';
-import type { Parameters, Resource } from '@medplum/fhirtypes';
+import type { Resource } from '@medplum/fhirtypes';
 import type { Repository } from '../../repo';
 import { getSelectQueryForSearch } from '../../search';
+import { makeOperationDefinition } from '../definitions';
+import { parseInputParameters } from './parameters';
+import { uniqueOn } from './terminology';
 
 export interface ExportParameters {
   types?: string[];
@@ -21,39 +25,38 @@ export interface ExportParameters {
   since?: string;
 }
 
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'export',
+    code: 'export',
+    parameter: [
+      { use: 'in', name: '_type', type: 'string', min: 0, max: '*' },
+      { use: 'in', name: '_typeFilter', type: 'string', min: 0, max: '*' },
+      { use: 'in', name: '_since', type: 'instant', min: 0, max: '1' },
+    ],
+  }
+);
+
+type ExportInput = { _type?: string[]; _typeFilter?: string[]; _since?: string };
+
 export function parseExportParameters(req: FhirRequest): ExportParameters {
-  const body = req.body as Parameters | undefined;
-  const parameters = req.method === 'POST' && body?.resourceType === 'Parameters' ? body : undefined;
-  if (parameters) {
-    validateResource(parameters);
-  }
-
-  // Preserve POST query parameters used by existing clients; body values take precedence.
-  const types = getStrings('_type');
-  if (parameters?.parameter?.some((p) => p.name === '_type') && types?.some((type) => type.includes(','))) {
-    throw new OperationOutcomeError(badRequest('Repeat _type parameters instead of comma-delimiting POST values'));
-  }
-  const since = parameters?.parameter?.find((p) => p.name === '_since')?.valueInstant ?? singularize(req.query._since);
-  return { types: types ? [...new Set(types)] : undefined, typeFilters: getStrings('_typeFilter') ?? [], since };
-
-  function getStrings(name: '_type' | '_typeFilter'): string[] | undefined {
-    const entries = parameters?.parameter?.filter((p) => p.name === name);
-    if (entries?.length) {
-      return entries.map((p) => {
-        if (typeof p.valueString !== 'string' || !p.valueString) {
-          throw new OperationOutcomeError(badRequest(`${name} requires valueString`));
-        }
-        return p.valueString;
-      });
-    }
-    const query = req.query[name];
-    if (query === undefined) {
-      return undefined;
-    }
-    const values = Array.isArray(query) ? query : [query];
-    // Retain the older GET/SDK query-string form, while POST Parameters use repeated entries.
-    return name === '_type' ? values.flatMap((value) => value.split(',')) : values;
-  }
+  const input: ExportInput =
+    req.method === 'POST' && req.body?.resourceType === 'Parameters'
+      ? parseInputParameters<ExportInput>(operation, req)
+      : {};
+  // Body values take precedence, while retaining existing query-string requests.
+  const types = input._type?.length ? input._type : arrayify(req.query._type);
+  return {
+    types: types
+      ? uniqueOn(
+          flatMapFilter(types, (type) => type?.split(',')),
+          (type) => type
+        )
+      : undefined,
+    typeFilters: input._typeFilter?.length ? input._typeFilter : (arrayify(req.query._typeFilter) ?? []),
+    since: input._since ?? singularize(req.query._since),
+  };
 }
 
 export function parseExportTypeFilters(repo: Repository, values: string[]): SearchRequest[] {
