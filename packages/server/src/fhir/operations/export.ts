@@ -8,6 +8,7 @@ import {
   badRequest,
   concatUrls,
   getResourceTypes,
+  isString,
   OperationOutcomeError,
   Operator,
   protectedResourceTypes,
@@ -104,6 +105,10 @@ export function parseExportParameters(req: FhirRequest): ExportParameters {
   // parseInputParameters returns [] for an omitted repeating parameter
   const types = body._type?.length ? arrayify(body._type) : arrayify(req.query._type);
   const typeFilters = body._typeFilter?.length ? arrayify(body._typeFilter) : arrayify(req.query._typeFilter);
+  // A non-string value[x] in the body parses as undefined
+  if (types && !types.every(isString)) {
+    throw new OperationOutcomeError(badRequest('_type values must be strings', '_type'));
+  }
   return {
     since: body._since ?? singularize(req.query._since),
     // The IG requires repeated _type parameters, but comma-delimited values are kept for compatibility

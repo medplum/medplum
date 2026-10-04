@@ -268,6 +268,19 @@ describe('Export', () => {
     });
   });
 
+  test('parseExportParameters rejects non-string _type', () => {
+    expect(() =>
+      parseExportParameters({
+        method: 'POST',
+        url: '',
+        pathname: '/$export',
+        params: {},
+        query: {},
+        body: { resourceType: 'Parameters', parameter: [{ name: '_type', valueInteger: 5 }] },
+      })
+    ).toThrow('_type values must be strings');
+  });
+
   test('exportResourceType iterating through paginated search results', async () =>
     withTestContext(async () => {
       // Scope export to observations created in this test so pagination stays fast.
