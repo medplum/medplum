@@ -347,6 +347,10 @@ function applyProjectAdminAccessPolicy(
     // Project admins can edit their own project
     accessPolicy.resource.push(
       {
+        resourceType: 'AccessPolicy',
+        criteria: `AccessPolicy?_project=${resolveId(membership.project)}`,
+      },
+      {
         // Project admins have full access to their own project, except for a few sensitive fields
         resourceType: 'Project',
         criteria: `Project?_id=${resolveId(membership.project)}`,
