@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { accepted, concatUrls, parseReference, singularize } from '@medplum/core';
+import { accepted, concatUrls, parseReference } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Group, Patient, Project, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import type { Repository } from '../repo';
+import { assertNoTypeFilters, parseExportParameters } from './export';
 import type { PatientEverythingParameters } from './patienteverything';
 import { getPatientEverything } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';
@@ -26,8 +27,8 @@ export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const { id } = req.params;
-  const since = singularize(req.query._since);
-  const types = singularize(req.query._type)?.split(',');
+  const { since, types, typeFilters } = parseExportParameters(req);
+  assertNoTypeFilters(typeFilters);
 
   // First read the group as the user to verify access
   const group = await ctx.repo.readResource<Group>('Group', id);

@@ -4,8 +4,11 @@ import type { SearchRequest } from '@medplum/core';
 import {
   accepted,
   AccessPolicyInteraction,
+  arrayify,
+  badRequest,
   concatUrls,
   getResourceTypes,
+  OperationOutcomeError,
   Operator,
   protectedResourceTypes,
   singularize,
@@ -15,7 +18,34 @@ import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientResourceTypes } from '../patient';
+import { makeOperationDefinition } from './definitions';
 import { BulkExporter } from './utils/bulkexporter';
+import { parseInputParameters } from './utils/parameters';
+
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'export',
+    code: 'export',
+    parameter: [
+      { use: 'in', name: '_since', type: 'instant', min: 0, max: '1' },
+      { use: 'in', name: '_type', type: 'string', min: 0, max: '*' },
+      { use: 'in', name: '_typeFilter', type: 'string', min: 0, max: '*' },
+    ],
+  }
+);
+
+interface ExportInput {
+  _since?: string;
+  _type?: string | string[];
+  _typeFilter?: string | string[];
+}
+
+export interface ExportParameters {
+  since?: string;
+  types?: string[];
+  typeFilters?: string[];
+}
 
 /**
  * Handles a bulk export request.
@@ -50,8 +80,8 @@ export async function patientExportHandler(req: FhirRequest): Promise<FhirRespon
 async function startExport(req: FhirRequest, exportType: string): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
-  const since = singularize(req.query._since);
-  const types = singularize(req.query._type)?.split(',');
+  const { since, types, typeFilters } = parseExportParameters(req);
+  assertNoTypeFilters(typeFilters);
 
   const exporter = new BulkExporter(ctx.repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
@@ -61,6 +91,35 @@ async function startExport(req: FhirRequest, exportType: string): Promise<FhirRe
     .catch((err) => ctx.logger.error('Export failure', { exportType, id: ctx.project.id, error: err }));
 
   return [accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`)];
+}
+
+/**
+ * Parses bulk export parameters from the query string and, for POST requests, a Parameters body.
+ * Body values take precedence over query string values for each parameter.
+ * @param req - The FHIR request.
+ * @returns The parsed export parameters.
+ */
+export function parseExportParameters(req: FhirRequest): ExportParameters {
+  const body = req.method === 'POST' ? parseInputParameters<ExportInput>(operation, req) : {};
+  // parseInputParameters returns [] for an omitted repeating parameter
+  const types = body._type?.length ? arrayify(body._type) : arrayify(req.query._type);
+  const typeFilters = body._typeFilter?.length ? arrayify(body._typeFilter) : arrayify(req.query._typeFilter);
+  return {
+    since: body._since ?? singularize(req.query._since),
+    // The IG requires repeated _type parameters, but comma-delimited values are kept for compatibility
+    types: types?.flatMap((type) => type.split(',')),
+    typeFilters,
+  };
+}
+
+/**
+ * The Bulk Data IG recommends rejecting unsupported _typeFilter requests rather than exporting unfiltered data.
+ * @param typeFilters - The requested _typeFilter values.
+ */
+export function assertNoTypeFilters(typeFilters: string[] | undefined): void {
+  if (typeFilters?.length) {
+    throw new OperationOutcomeError(badRequest('_typeFilter is not supported', '_typeFilter'));
+  }
 }
 
 export async function exportResources(

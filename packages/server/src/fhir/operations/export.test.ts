@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
+import type { FhirRequest } from '@medplum/fhir-router';
 import type { Binary, BulkDataExportOutput, Observation, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -18,7 +19,8 @@ import {
   withTestContext,
 } from '../../test.setup';
 import { getTestProjectSystemRepo } from '../repository/test-utils';
-import { exportResourceType, exportResources } from './export';
+import type { ExportParameters } from './export';
+import { exportResourceType, exportResources, parseExportParameters } from './export';
 import { BulkExporter } from './utils/bulkexporter';
 
 describe('Export', () => {
@@ -197,6 +199,73 @@ describe('Export', () => {
     expect(initRes).toHaveStatus(202);
     expect(initRes.headers['content-location']).toBeDefined();
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
+  });
+
+  test('Rejects _typeFilter before starting a job', async () => {
+    const accessToken = await initTestAuth();
+    const res = await request(app)
+      .post('/fhir/R4/$export')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: '_typeFilter', valueString: 'Observation?status=final' }],
+      });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('_typeFilter is not supported');
+    expect(res.headers['content-location']).toBeUndefined();
+  });
+
+  test.each<[string, Pick<FhirRequest, 'method' | 'query' | 'body'>, ExportParameters]>([
+    ['no parameters', { method: 'GET', query: {}, body: undefined }, {}],
+    [
+      'repeated and comma-delimited query values',
+      {
+        method: 'GET',
+        query: { _type: ['Patient,Observation', 'Encounter'], _since: '2024-01-01T00:00:00Z' },
+        body: {},
+      },
+      { types: ['Patient', 'Observation', 'Encounter'], since: '2024-01-01T00:00:00Z' },
+    ],
+    ['explicitly empty _type', { method: 'GET', query: { _type: '' }, body: {} }, { types: [''] }],
+    [
+      'repeated and comma-delimited body values',
+      {
+        method: 'POST',
+        query: {},
+        body: {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: '_type', valueString: 'Patient,Observation' },
+            { name: '_type', valueString: 'Encounter' },
+            { name: '_typeFilter', valueString: 'Observation?status=final,preliminary' },
+            { name: '_typeFilter', valueString: 'Encounter?status=finished' },
+            { name: '_since', valueInstant: '2024-01-01T00:00:00Z' },
+          ],
+        },
+      },
+      {
+        types: ['Patient', 'Observation', 'Encounter'],
+        typeFilters: ['Observation?status=final,preliminary', 'Encounter?status=finished'],
+        since: '2024-01-01T00:00:00Z',
+      },
+    ],
+    [
+      'body takes precedence, query fills omitted parameters',
+      {
+        method: 'POST',
+        query: { _type: 'Encounter', _since: '2023-01-01T00:00:00Z' },
+        body: { resourceType: 'Parameters', parameter: [{ name: '_type', valueString: 'Patient' }] },
+      },
+      { types: ['Patient'], since: '2023-01-01T00:00:00Z' },
+    ],
+  ])('parseExportParameters: %s', (_name, req, expected) => {
+    expect(parseExportParameters({ url: '', pathname: '/$export', params: {}, ...req })).toStrictEqual({
+      since: undefined,
+      types: undefined,
+      typeFilters: undefined,
+      ...expected,
+    });
   });
 
   test('exportResourceType iterating through paginated search results', async () =>
