@@ -308,6 +308,14 @@ describe('Group Export', () => {
     expect(output.some((o) => o.type === 'Observation')).not.toBeTruthy();
   });
 
+  test('Rejects _typeFilter', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Group/123/$export?_typeFilter=Observation?status=final')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('_typeFilter is not supported');
+  });
+
   test('status accepted with error', async () => {
     // Create group
     const groupRes = await request(app)
