@@ -17,7 +17,6 @@ import type { Repository } from '../../repo';
 import { getSelectQueryForSearch } from '../../search';
 import { makeOperationDefinition } from '../definitions';
 import { parseInputParameters } from './parameters';
-import { uniqueOn } from './terminology';
 
 export interface ExportParameters {
   types?: string[];
@@ -41,19 +40,11 @@ const operation = makeOperationDefinition(
 type ExportInput = { _type?: string[]; _typeFilter?: string[]; _since?: string };
 
 export function parseExportParameters(req: FhirRequest): ExportParameters {
-  const input: ExportInput =
-    req.method === 'POST' && req.body?.resourceType === 'Parameters'
-      ? parseInputParameters<ExportInput>(operation, req)
-      : {};
+  const input: ExportInput = req.method === 'POST' ? parseInputParameters<ExportInput>(operation, req) : {};
   // Body values take precedence, while retaining existing query-string requests.
   const types = input._type?.length ? input._type : arrayify(req.query._type);
   return {
-    types: types
-      ? uniqueOn(
-          flatMapFilter(types, (type) => type?.split(',')),
-          (type) => type
-        )
-      : undefined,
+    types: types ? [...new Set(flatMapFilter(types, (type) => type?.split(',')))] : undefined,
     typeFilters: input._typeFilter?.length ? input._typeFilter : (arrayify(req.query._typeFilter) ?? []),
     since: input._since ?? singularize(req.query._since),
   };
