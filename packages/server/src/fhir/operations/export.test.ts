@@ -209,6 +209,7 @@ describe('Export', () => {
   });
 
   test.each([
+    '',
     'Observation?_sort=date',
     'Observation?_include=Observation:subject',
     'Patient/123/Observation?status=final',
@@ -216,10 +217,8 @@ describe('Export', () => {
   ])('Rejects unsupported _typeFilter %s before starting a job', async (typeFilter) => {
     const accessToken = await initTestAuth();
     const res = await request(app)
-      .post('/fhir/R4/$export')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Parameters', parameter: [{ name: '_typeFilter', valueString: typeFilter }] });
+      .get('/fhir/R4/$export?_typeFilter=' + encodeURIComponent(typeFilter))
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res).toHaveStatus(400);
     expect(res.headers['content-location']).toBeUndefined();
   });

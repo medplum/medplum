@@ -110,7 +110,9 @@ export function parseExportParameters(req: FhirRequest): ExportParameters {
   const typeFilters = body._typeFilter?.length ? arrayify(body._typeFilter) : arrayify(req.query._typeFilter);
   // A non-string value[x] in the body parses as undefined
   if ((types && !types.every(isString)) || (typeFilters && !typeFilters.every(isString))) {
-    throw new OperationOutcomeError(badRequest('_type and _typeFilter values must be strings'));
+    throw new OperationOutcomeError(
+      badRequest('_type and _typeFilter values must be strings', ['_type', '_typeFilter'])
+    );
   }
   return {
     since: body._since ?? singularize(req.query._since),
@@ -138,14 +140,17 @@ export function assertNoTypeFilters(typeFilters: string[] | undefined): void {
  */
 function parseTypeFilters(repo: Repository, typeFilters: string[] | undefined): SearchRequest[] | undefined {
   return typeFilters?.map((typeFilter) => {
-    const search = parseSearchRequest(typeFilter);
-    // Only search criteria are allowed, so reject result controls such as _sort, _count, and _include
+    // parseSearchRequest throws a plain Error for an empty string
+    const search = typeFilter ? parseSearchRequest(typeFilter) : undefined;
+    // Reject paths such as Patient/123/Observation, which would otherwise parse as a plain Observation search.
+    // Only search criteria are allowed, so also reject result controls such as _sort, _count, and _include.
     if (
-      search.resourceType !== typeFilter.split('?')[0] ||
+      search?.resourceType !== typeFilter.split('?')[0] ||
       Object.keys(search).some((key) => key !== 'resourceType' && key !== 'filters')
     ) {
       throw new OperationOutcomeError(badRequest(`Unsupported _typeFilter: ${typeFilter}`, '_typeFilter'));
     }
+    // Throws if the filters are invalid for the resource type
     getSelectQueryForSearch(repo, { ...search });
     return search;
   });
@@ -187,8 +192,9 @@ export async function exportResourceType<T extends Resource>(
 ): Promise<void> {
   const repo = exporter.repo;
   const sinceFilters = since ? [{ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since }] : [];
-  // Multiple _typeFilter values for a type are ORed, so a resource can match more than one search.
-  // A single search yields each resource exactly once, so skip the exporter's dedupe tracking.
+  // Multiple _typeFilter values for a type are ORed: each runs its own paginated search, and dedupe holds
+  // every exported ID of the type in memory until closeWriter. A single search yields each resource once,
+  // so it skips dedupe tracking.
   const skipDedupe = !typeFilters || typeFilters.length <= 1;
   for (const typeFilter of typeFilters?.length ? typeFilters : [undefined]) {
     const searchRequest: SearchRequest<T> = {
