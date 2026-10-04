@@ -11,6 +11,7 @@ import {
   isString,
   OperationOutcomeError,
   Operator,
+  parseSearchRequest,
   protectedResourceTypes,
   singularize,
 } from '@medplum/core';
@@ -19,6 +20,8 @@ import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientResourceTypes } from '../patient';
+import type { Repository } from '../repo';
+import { getSelectQueryForSearch } from '../search';
 import { makeOperationDefinition } from './definitions';
 import { BulkExporter } from './utils/bulkexporter';
 import { parseInputParameters } from './utils/parameters';
@@ -82,12 +85,12 @@ async function startExport(req: FhirRequest, exportType: string): Promise<FhirRe
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const { since, types, typeFilters } = parseExportParameters(req);
-  assertNoTypeFilters(typeFilters);
+  const typeFilterSearches = parseTypeFilters(ctx.repo, typeFilters);
 
   const exporter = new BulkExporter(ctx.repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
 
-  exportResources(exporter, ctx.project, types, exportType, since)
+  exportResources(exporter, ctx.project, types, exportType, since, typeFilterSearches)
     .then(() => ctx.logger.info('Export completed', { exportType, id: ctx.project.id }))
     .catch((err) => ctx.logger.error('Export failure', { exportType, id: ctx.project.id, error: err }));
 
@@ -106,8 +109,10 @@ export function parseExportParameters(req: FhirRequest): ExportParameters {
   const types = body._type?.length ? arrayify(body._type) : arrayify(req.query._type);
   const typeFilters = body._typeFilter?.length ? arrayify(body._typeFilter) : arrayify(req.query._typeFilter);
   // A non-string value[x] in the body parses as undefined
-  if (types && !types.every(isString)) {
-    throw new OperationOutcomeError(badRequest('_type values must be strings', '_type'));
+  if ((types && !types.every(isString)) || (typeFilters && !typeFilters.every(isString))) {
+    throw new OperationOutcomeError(
+      badRequest('_type and _typeFilter values must be strings', ['_type', '_typeFilter'])
+    );
   }
   return {
     since: body._since ?? singularize(req.query._since),
@@ -127,12 +132,37 @@ export function assertNoTypeFilters(typeFilters: string[] | undefined): void {
   }
 }
 
+/**
+ * Parses and validates _typeFilter values before an export job starts.
+ * @param repo - The repository used to validate each search.
+ * @param typeFilters - The requested _typeFilter values.
+ * @returns One search request per _typeFilter value.
+ */
+function parseTypeFilters(repo: Repository, typeFilters: string[] | undefined): SearchRequest[] | undefined {
+  return typeFilters?.map((typeFilter) => {
+    // parseSearchRequest throws a plain Error for an empty string
+    const search = typeFilter ? parseSearchRequest(typeFilter) : undefined;
+    // Reject paths such as Patient/123/Observation, which would otherwise parse as a plain Observation search.
+    // Only search criteria are allowed, so also reject result controls such as _sort, _count, and _include.
+    if (
+      search?.resourceType !== typeFilter.split('?')[0] ||
+      Object.keys(search).some((key) => key !== 'resourceType' && key !== 'filters')
+    ) {
+      throw new OperationOutcomeError(badRequest(`Unsupported _typeFilter: ${typeFilter}`, '_typeFilter'));
+    }
+    // Throws if the filters are invalid for the resource type
+    getSelectQueryForSearch(repo, { ...search });
+    return search;
+  });
+}
+
 export async function exportResources(
   exporter: BulkExporter,
   project: Project,
   types: string[] | undefined,
   exportLevel: string,
-  since?: string
+  since?: string,
+  typeFilters?: SearchRequest[]
 ): Promise<void> {
   const resourceTypes = getResourceTypesByExportLevel(exportLevel);
   const pageSize = 1000;
@@ -145,7 +175,8 @@ export async function exportResources(
     ) {
       continue;
     }
-    await exportResourceType(exporter, resourceType, pageSize, since);
+    const typeFilterSearches = typeFilters?.filter((search) => search.resourceType === resourceType);
+    await exportResourceType(exporter, resourceType, pageSize, since, typeFilterSearches);
   }
 
   // Close the exporter
@@ -156,19 +187,26 @@ export async function exportResourceType<T extends Resource>(
   exporter: BulkExporter,
   resourceType: T['resourceType'],
   count: number,
-  since?: string
+  since?: string,
+  typeFilters?: SearchRequest[]
 ): Promise<void> {
   const repo = exporter.repo;
-  const searchRequest: SearchRequest<T> | undefined = {
-    resourceType,
-    count,
-    filters: since ? [{ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since }] : undefined,
-    sortRules: [{ code: '_lastUpdated', descending: false }],
-  };
-  await repo.processAllResources(searchRequest, async (resource) => {
-    // Cursor pagination yields each resource exactly once, so skip the exporter's dedupe tracking
-    await exporter.writeResource(resource, { skipDedupe: true });
-  });
+  const sinceFilters = since ? [{ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since }] : [];
+  // Multiple _typeFilter values for a type are ORed: each runs its own paginated search, and dedupe holds
+  // every exported ID of the type in memory until closeWriter. A single search yields each resource once,
+  // so it skips dedupe tracking.
+  const skipDedupe = !typeFilters || typeFilters.length <= 1;
+  for (const typeFilter of typeFilters?.length ? typeFilters : [undefined]) {
+    const searchRequest: SearchRequest<T> = {
+      resourceType,
+      count,
+      filters: [...sinceFilters, ...(typeFilter?.filters ?? [])],
+      sortRules: [{ code: '_lastUpdated', descending: false }],
+    };
+    await repo.processAllResources(searchRequest, async (resource) => {
+      await exporter.writeResource(resource, { skipDedupe });
+    });
+  }
 
   // Close writer and free memory for this resource type immediately
   await exporter.closeWriter(resourceType);

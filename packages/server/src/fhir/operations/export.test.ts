@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
 import type { FhirRequest } from '@medplum/fhir-router';
-import type { Binary, BulkDataExportOutput, Observation, Patient } from '@medplum/fhirtypes';
+import type {
+  Binary,
+  BulkDataExportOutput,
+  CodeableConcept,
+  Encounter,
+  Observation,
+  Patient,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -201,19 +208,72 @@ describe('Export', () => {
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
   });
 
-  test('Rejects _typeFilter before starting a job', async () => {
+  test.each([
+    '',
+    'Observation?_sort=date',
+    'Observation?_include=Observation:subject',
+    'Patient/123/Observation?status=final',
+    'Observation?unknown=x',
+  ])('Rejects unsupported _typeFilter %s before starting a job', async (typeFilter) => {
     const accessToken = await initTestAuth();
     const res = await request(app)
+      .get('/fhir/R4/$export?_typeFilter=' + encodeURIComponent(typeFilter))
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(400);
+    expect(res.headers['content-location']).toBeUndefined();
+  });
+
+  test('_typeFilter', async () => {
+    const { repo, accessToken } = await createTestProject({ withAccessToken: true, withRepo: true });
+    const lab = { coding: [{ code: 'laboratory' }] };
+    const vitals = { coding: [{ code: 'vital-signs' }] };
+    const createObservation = (status: Observation['status'], category: CodeableConcept): Promise<Observation> =>
+      repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status,
+        category: [category],
+        code: { text: 'test' },
+      });
+    const finalLab = await createObservation('final', lab);
+    const preliminaryLab = await createObservation('preliminary', lab);
+    const finalVitals = await createObservation('final', vitals);
+    await createObservation('preliminary', vitals);
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    await repo.createResource<Encounter>({ resourceType: 'Encounter', status: 'finished', class: { code: 'AMB' } });
+
+    const initRes = await request(app)
       .post('/fhir/R4/$export')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: '_typeFilter', valueString: 'Observation?status=final' }],
+        parameter: [
+          { name: '_type', valueString: 'Patient' },
+          { name: '_type', valueString: 'Observation' },
+          { name: '_typeFilter', valueString: 'Observation?status=final' },
+          { name: '_typeFilter', valueString: 'Observation?category=laboratory' },
+          { name: '_typeFilter', valueString: 'Encounter?status=finished' },
+        ],
       });
-    expect(res).toHaveStatus(400);
-    expect(res.body.issue[0].details.text).toBe('_typeFilter is not supported');
-    expect(res.headers['content-location']).toBeUndefined();
+    expect(initRes).toHaveStatus(202);
+    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
+
+    const statusRes = await request(app)
+      .get(new URL(initRes.headers['content-location']).pathname)
+      .set('Authorization', 'Bearer ' + accessToken);
+    const output = statusRes.body.output as BulkDataExportOutput[];
+    const getIds = (type: string): string[] =>
+      (getBinaryStorage() as FileSystemStorage)
+        .readFileByUrlForTests(new URL(output.find((o) => o.type === type)?.url as string))
+        .trim()
+        .split('\n')
+        .map((line) => JSON.parse(line).id);
+
+    // Encounter is filtered but not selected by _type, and unfiltered Patient output is unaffected
+    expect(output.map((o) => o.type)).toContainExactly(['Observation', 'Patient']);
+    expect(getIds('Patient')).toStrictEqual([patient.id]);
+    // Filters for the same type are ORed, and finalLab matches both without being duplicated
+    expect(getIds('Observation')).toContainExactly([finalLab.id, preliminaryLab.id, finalVitals.id]);
   });
 
   test.each<[string, Pick<FhirRequest, 'method' | 'query' | 'body'>, ExportParameters]>([
@@ -278,7 +338,7 @@ describe('Export', () => {
         query: {},
         body: { resourceType: 'Parameters', parameter: [{ name: '_type', valueInteger: 5 }] },
       })
-    ).toThrow('_type values must be strings');
+    ).toThrow('_type and _typeFilter values must be strings');
   });
 
   test('exportResourceType iterating through paginated search results', async () =>
