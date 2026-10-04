@@ -464,6 +464,18 @@ The AWS Region identifier.
 **Created by:** `cdk`
 **Default:** `us-east-1`
 
+### awsS3Endpoint
+
+Optional custom endpoint URL for the S3 client used by binary storage (for example `https://s3.example.com`). Use this to store binaries in an S3-compatible object storage service (MinIO, Ceph, OpenStack Swift, etc.) instead of AWS S3. Credentials are read by the AWS SDK default credential chain as usual (e.g. `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`).
+
+**Default:** None (AWS S3 endpoint for `awsRegion`)
+
+### awsS3ForcePathStyle
+
+When `true`, the S3 client addresses buckets with path-style URLs (`https://endpoint/bucket/key`) instead of virtual-hosted style (`https://bucket.endpoint/key`). Most S3-compatible providers require path-style addressing.
+
+**Default:** `false`
+
 ### sseCustomerKey
 
 Optional base64-encoded 256-bit key for S3 Server-Side Encryption with Customer-Provided Keys (SSE-C). When set, all S3 operations (upload, download, copy, presigned URLs) will use SSE-C encryption with the `AES256` algorithm.

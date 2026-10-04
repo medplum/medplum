@@ -233,6 +233,31 @@ describe('Storage', () => {
     ).toHaveLength(1);
   });
 
+  describe('S3-compatible endpoint', () => {
+    afterEach(() => {
+      getConfig().awsS3Endpoint = undefined;
+      getConfig().awsS3ForcePathStyle = undefined;
+    });
+
+    test('Defaults to the AWS endpoint with virtual-hosted style', async () => {
+      initBinaryStorage('s3:foo');
+      const client = (getBinaryStorage() as unknown as { client: S3Client }).client;
+      expect(client.config.forcePathStyle).toBe(false);
+      expect(client.config.endpoint).toBeUndefined();
+    });
+
+    test('Uses the custom endpoint and path-style addressing', async () => {
+      getConfig().awsS3Endpoint = 'https://s3.example.com';
+      getConfig().awsS3ForcePathStyle = true;
+      initBinaryStorage('s3:foo');
+      const client = (getBinaryStorage() as unknown as { client: S3Client }).client;
+      expect(client.config.forcePathStyle).toBe(true);
+      const endpoint = await client.config.endpoint?.();
+      expect(endpoint?.hostname).toBe('s3.example.com');
+      expect(endpoint?.protocol).toBe('https:');
+    });
+  });
+
   describe('SSE-C encryption', () => {
     const testKey = 'MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE='; // base64 of 32-byte key
     const expectedMD5 = createHash('md5').update(Buffer.from(testKey, 'base64')).digest('base64');

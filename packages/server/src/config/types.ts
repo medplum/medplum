@@ -66,6 +66,10 @@ export interface MedplumServerConfig {
   maxBatchSize: string;
   allowedOrigins?: string;
   awsRegion: string;
+  /** Optional custom S3 endpoint URL, for S3-compatible object storage (MinIO, Ceph, OpenStack Swift, etc.) */
+  awsS3Endpoint?: string;
+  /** Use path-style S3 URLs (`https://endpoint/bucket/key`) instead of virtual-hosted style. Required by most S3-compatible providers. */
+  awsS3ForcePathStyle?: boolean;
   /** Optional base64-encoded 256-bit key for S3 SSE-C (Server-Side Encryption with Customer-Provided Keys) */
   sseCustomerKey?: string;
   botLambdaRoleArn: string;
