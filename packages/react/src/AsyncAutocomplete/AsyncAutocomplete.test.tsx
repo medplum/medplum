@@ -310,7 +310,7 @@ describe('AsyncAutocomplete', () => {
     );
 
     const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
-    const removeButtons = selected.getAllByRole('button', { hidden: true });
+    const removeButtons = selected.getAllByRole('button');
 
     await act(async () => {
       fireEvent.click(removeButtons[0]);
@@ -341,6 +341,151 @@ describe('AsyncAutocomplete', () => {
     const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
     expect(selected.getByText('Apple')).toBeInTheDocument();
     expect(selected.queryByText('Banana')).not.toBeInTheDocument();
+  });
+
+  test('remove buttons are focusable and labelled for keyboard and screen reader users', () => {
+    render(
+      <AsyncAutocomplete<TestOption>
+        defaultValue={[apple, banana]}
+        toOption={toOption}
+        loadOptions={defaultLoadOptions}
+        onChange={vi.fn()}
+      />
+    );
+
+    const removeApple = screen.getByRole('button', { name: 'Remove Apple' });
+    expect(removeApple).toHaveAttribute('tabindex', '0');
+    expect(removeApple).not.toHaveAttribute('aria-hidden');
+    expect(screen.getByRole('button', { name: 'Remove Banana' })).toBeInTheDocument();
+  });
+
+  test('disabled renders no remove buttons', () => {
+    render(
+      <AsyncAutocomplete<TestOption>
+        disabled
+        defaultValue={[apple, banana]}
+        toOption={toOption}
+        loadOptions={defaultLoadOptions}
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: /^Remove/, hidden: true })).not.toBeInTheDocument();
+  });
+
+  test('keyboard removal moves focus to the next pill, then the previous one, then the search input', async () => {
+    const onChange = vi.fn();
+    render(
+      <AsyncAutocomplete<TestOption>
+        defaultValue={[apple, banana]}
+        toOption={toOption}
+        loadOptions={defaultLoadOptions}
+        onChange={onChange}
+      />
+    );
+
+    const removeApple = screen.getByRole('button', { name: 'Remove Apple' });
+    removeApple.focus();
+    await act(async () => {
+      fireEvent.click(removeApple);
+    });
+    expect(onChange).toHaveBeenLastCalledWith([banana]);
+    expect(screen.getByRole('button', { name: 'Remove Banana' })).toHaveFocus();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Remove Banana' }));
+    });
+    expect(onChange).toHaveBeenLastCalledWith([]);
+    expect(screen.getByRole('searchbox')).toHaveFocus();
+  });
+
+  test('keyboard removal at the maxValues cap moves focus to a remaining pill', async () => {
+    render(
+      <AsyncAutocomplete<TestOption>
+        maxValues={2}
+        defaultValue={[apple, banana]}
+        toOption={toOption}
+        loadOptions={defaultLoadOptions}
+        onChange={vi.fn()}
+      />
+    );
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+
+    const removeBanana = screen.getByRole('button', { name: 'Remove Banana' });
+    removeBanana.focus();
+    await act(async () => {
+      fireEvent.click(removeBanana);
+    });
+
+    expect(screen.getByRole('button', { name: 'Remove Apple' })).toHaveFocus();
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+  });
+
+  test('mouse removal does not move focus, open the dropdown, or load options', async () => {
+    const loadOptions = vi.fn(defaultLoadOptions);
+    render(
+      <AsyncAutocomplete<TestOption>
+        defaultValue={[apple, banana]}
+        toOption={toOption}
+        loadOptions={loadOptions}
+        onChange={vi.fn()}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Remove Apple' }));
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(200);
+    });
+
+    expect(screen.getByRole('searchbox')).not.toHaveFocus();
+    expect(loadOptions).not.toHaveBeenCalled();
+  });
+
+  test('search text survives moving focus to a pill and is cleared when focus leaves the component', async () => {
+    render(
+      <>
+        <AsyncAutocomplete<TestOption>
+          defaultValue={[apple]}
+          toOption={toOption}
+          loadOptions={defaultLoadOptions}
+          onChange={vi.fn()}
+        />
+        <button type="button">Outside</button>
+      </>
+    );
+
+    const input = screen.getByRole<HTMLInputElement>('searchbox');
+    await typeInAutocomplete(input, 'an');
+    expect(screen.getByText('Banana')).toBeInTheDocument();
+
+    const removeApple = screen.getByRole('button', { name: 'Remove Apple' });
+    await act(async () => {
+      fireEvent.focusOut(input, { relatedTarget: removeApple });
+      fireEvent.focusIn(removeApple);
+    });
+    expect(input.value).toBe('an');
+    await act(async () => {
+      vi.runOnlyPendingTimers();
+    });
+    expect(screen.getByTestId(AsyncAutocompleteTestIds.options)).not.toBeVisible();
+
+    await act(async () => {
+      fireEvent.focusOut(removeApple, { relatedTarget: screen.getByRole('button', { name: 'Outside' }) });
+    });
+    expect(input.value).toBe('');
+  });
+
+  test('Backspace with nothing selected does nothing', async () => {
+    const onChange = vi.fn();
+    render(<AsyncAutocomplete<TestOption> toOption={toOption} loadOptions={defaultLoadOptions} onChange={onChange} />);
+
+    await act(async () => {
+      fireEvent.keyDown(screen.getByRole('searchbox'), { key: 'Backspace', code: 'Backspace' });
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   test('minInputLength delays loadOptions until the threshold is met', async () => {
