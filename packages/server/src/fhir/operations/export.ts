@@ -121,6 +121,7 @@ function getResourceTypesByExportLevel(exportLevel: string): ResourceType[] {
 const unexportedResourceTypes = [
   'Binary',
   'CodeSystem',
+  'OperationDefinition',
   'SearchParameter',
   'StructureDefinition',
   'ValueSet',
