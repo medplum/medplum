@@ -13,7 +13,7 @@ import {
 import type { FhirRequest } from '@medplum/fhir-router';
 import type { Parameters, Resource } from '@medplum/fhirtypes';
 import type { Repository } from '../../repo';
-import { getSelectQueryForSearch, isChainedSearchFilter, parseChainedParameter } from '../../search';
+import { getSelectQueryForSearch } from '../../search';
 
 export interface ExportParameters {
   types?: string[];
@@ -56,79 +56,24 @@ export function parseExportParameters(req: FhirRequest): ExportParameters {
   }
 }
 
-// Result controls and scope-changing extensions cannot be used as export criteria.
-const prohibitedFilterParameters = new Set([
-  '_sort',
-  '_count',
-  '_offset',
-  '_cursor',
-  '_total',
-  '_summary',
-  '_include',
-  '_revinclude',
-  '_elements',
-  '_fields',
-  '_contained',
-  '_containedType',
-  '_format',
-  '_pretty',
-  '_type',
-  '_compartment',
-  '_deleted',
-  '_',
-]);
-
 export function parseExportTypeFilters(repo: Repository, values: string[]): SearchRequest[] {
   return values.map((value) => {
-    const match = /^([A-Za-z][A-Za-z0-9]*)\?([^#?]+)$/.exec(value);
-    if (!match) {
+    const search = parseSearchRequest(value);
+    validateResourceType(search.resourceType);
+    if (value.split('?')[0] !== search.resourceType) {
       throw new OperationOutcomeError(badRequest('_typeFilter must be a search on a single resource type'));
     }
-    try {
-      decodeURIComponent(match[2]);
-    } catch {
-      throw new OperationOutcomeError(badRequest('Invalid URL encoding in _typeFilter'));
+    // Only selection criteria are allowed, not result controls such as _include or _sort.
+    if (
+      Object.keys(search).some((key) => key !== 'resourceType' && key !== 'filters') ||
+      search.filters?.some((filter) => filter.code === '_deleted' || filter.code === '_compartment')
+    ) {
+      throw new OperationOutcomeError(
+        badRequest('Search result controls and scope overrides are not permitted in _typeFilter')
+      );
     }
-    validateResourceType(match[1]);
-    for (const [key, value] of new URLSearchParams(match[2])) {
-      if (prohibitedFilterParameters.has(key.split(':')[0])) {
-        throw new OperationOutcomeError(badRequest(`Search parameter ${key} is not permitted in _typeFilter`));
-      }
-      // The general search parser tolerates some unknown modifiers by dropping them.
-      // Export criteria must not silently become a different search.
-      try {
-        const parsed = parseSearchRequest(match[1], { [key]: value }).filters?.[0];
-        const filter =
-          parsed && isChainedSearchFilter(parsed) ? parseChainedParameter(match[1], parsed).filter : parsed;
-        // Strip chain links only to compare the terminal parameter with the parsed operator.
-        const terminalKey = key
-          .replace(/_has:[^:.]+:[^:.]+:/g, '')
-          .split('.')
-          .at(-1);
-        if (filter && terminalKey !== filter.code && terminalKey !== `${filter.code}:${filter.operator}`) {
-          throw new OperationOutcomeError(badRequest(`Unsupported search modifier in _typeFilter: ${key}`));
-        }
-      } catch (err) {
-        if (err instanceof OperationOutcomeError) {
-          throw err;
-        }
-        throw new OperationOutcomeError(badRequest(`Unsupported _typeFilter search parameter: ${key}`));
-      }
-    }
-    const search = parseSearchRequest(value);
-    if (!search.filters?.length) {
-      throw new OperationOutcomeError(badRequest('_typeFilter must contain search criteria'));
-    }
-    // Compile through the normal search engine before creating the job, so unsupported
-    // parameters, modifiers and expressions return an OperationOutcome at kickoff.
-    try {
-      getSelectQueryForSearch(repo, { ...search, count: 1 });
-    } catch (err) {
-      if (err instanceof OperationOutcomeError) {
-        throw err;
-      }
-      throw new OperationOutcomeError(badRequest('Unsupported _typeFilter search expression'));
-    }
+    // Use normal search validation before starting an asynchronous export.
+    getSelectQueryForSearch(repo, { ...search, count: 1 });
     return search;
   });
 }
