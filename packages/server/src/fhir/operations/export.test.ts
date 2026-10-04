@@ -90,7 +90,6 @@ describe('Export', () => {
     expect(Object.values(output).map((ex) => ex.type)).toContainExactly([
       'ClientApplication',
       'Observation',
-      'OperationDefinition',
       'Patient',
       'Project',
       'ProjectMembership',
