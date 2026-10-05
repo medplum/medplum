@@ -18,7 +18,15 @@ import {
   SchedulingMedicalNecessityURI,
   toAppointmentSiteReference,
 } from '@medplum/core';
-import type { Appointment, Extension, HealthcareService, Location, Patient, Reference } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  Extension,
+  HealthcareService,
+  Location,
+  OperationOutcome,
+  Patient,
+  Reference,
+} from '@medplum/fhirtypes';
 import { CalendarDateInput, ResourceInput, ResourceName } from '@medplum/react';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconAlertCircle, IconCalendarSearch } from '@tabler/icons-react';
@@ -429,11 +437,23 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     [service, candidates]
   );
 
-  const ignoredResource = useResource<Appointment>(ignoreAppointment);
+  // Only a typed time uses the appointment's length and Slots.
+  const [ignoredReadOutcome, setIgnoredReadOutcome] = useState<OperationOutcome>();
+  const ignoredResource = useResource<Appointment>(
+    canBypassSchedulingRules ? ignoreAppointment : undefined,
+    setIgnoredReadOutcome
+  );
+  const ignoredReadFailed = ignoredResource === undefined && ignoredReadOutcome !== undefined;
   // State holds the edit rather than the value, so a different visit type falls back to
   // its own default instead of keeping the last length typed.
   const storedDurationMinutes = ignoredResource ? getRescheduleDurationMinutes(ignoredResource) : undefined;
-  const durationLoading = ignoreAppointment !== undefined && ignoredResource === undefined;
+  const durationLoading = ignoreAppointment !== undefined && ignoredResource === undefined && !ignoredReadFailed;
+  let durationError: string | undefined;
+  if (mode === 'reschedule' && !durationLoading && storedDurationMinutes === undefined) {
+    durationError = ignoredReadFailed
+      ? `This appointment could not be read: ${normalizeErrorString(ignoredReadOutcome)}. Choose a time from the search.`
+      : 'This appointment has no valid length. Choose a time from the search.';
+  }
   const effectiveDurationMinutes =
     mode === 'reschedule' ? storedDurationMinutes : (manualDurationMinutes ?? configuredDurationMinutes);
 
@@ -441,7 +461,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [proposedDurationMinutes, setProposedDurationMinutes] = useState(storedDurationMinutes);
   if (storedDurationMinutes !== proposedDurationMinutes) {
     setProposedDurationMinutes(storedDurationMinutes);
-    if (mode === 'reschedule' && manualDateTime) {
+    if (mode === 'reschedule' && manualDateTime && (!chosen || manual)) {
       enterManualTime(manualDateTime, undefined);
     }
   }
@@ -701,7 +721,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               dateTime={manualDateTime}
               durationMinutes={effectiveDurationMinutes}
               fixedDuration={mode === 'reschedule'}
-              invalidDuration={mode === 'reschedule' && !durationLoading && storedDurationMinutes === undefined}
+              durationError={durationError}
               timezone={timezone}
               conflicts={conflicts}
               onChange={enterManualTime}
@@ -849,7 +869,8 @@ interface ManualTimeProps {
   readonly dateTime: string;
   readonly durationMinutes: number | undefined;
   readonly fixedDuration: boolean;
-  readonly invalidDuration: boolean;
+  /** Why a fixed duration is unavailable, if it is. */
+  readonly durationError: string | undefined;
   /** IANA timezone the visit is held in. */
   readonly timezone: string | undefined;
   readonly conflicts: readonly BookingConflict[];
@@ -863,7 +884,7 @@ interface ManualTimeProps {
  * @returns The fields, and what the time entered clashes with.
  */
 function ManualTime(props: ManualTimeProps): JSX.Element {
-  const { dateTime, durationMinutes, timezone, conflicts, onChange, fixedDuration, invalidDuration } = props;
+  const { dateTime, durationMinutes, timezone, conflicts, onChange, fixedDuration, durationError } = props;
 
   return (
     <Stack gap={4}>
@@ -891,9 +912,9 @@ function ManualTime(props: ManualTimeProps): JSX.Element {
         />
       </Group>
 
-      {invalidDuration && (
+      {durationError && (
         <Text size="xs" c="red">
-          This appointment has no valid length. Choose a time from the search.
+          {durationError}
         </Text>
       )}
       {/* The visit is held where it is held, not where the person booking it is
