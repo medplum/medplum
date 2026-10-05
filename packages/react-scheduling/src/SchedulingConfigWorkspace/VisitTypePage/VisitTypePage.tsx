@@ -264,16 +264,11 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
       )}
 
       <ConfigSection title="General">
-        <Stack gap={4}>
-          <Switch
-            label="Active"
-            checked={fields.active}
-            onChange={(event) => update({ active: event.currentTarget.checked })}
-          />
-          <Text size="xs" c="dimmed">
-            Turning this off stops new bookings. Existing appointments are untouched.
-          </Text>
-        </Stack>
+        <Switch
+          label="Active"
+          checked={fields.active}
+          onChange={(event) => update({ active: event.currentTarget.checked })}
+        />
         <TextInput
           label="Name"
           required
