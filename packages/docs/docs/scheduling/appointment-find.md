@@ -262,8 +262,8 @@ as the R4 cross-version extension, to describe how the series recurs:
 :::tip
 
 Pass a series entry to [`$book`](/docs/scheduling/appointment-book#booking-a-recurring-series)
-unchanged to book every occurrence, all or none. [`$hold`](/docs/scheduling/appointment-hold)
-does not read the `recurrenceTemplate` yet, and holds only the first occurrence.
+or [`$hold`](/docs/scheduling/appointment-hold#holding-a-recurring-series) unchanged to book or
+hold every occurrence, all or none.
 
 :::
 
