@@ -275,7 +275,7 @@ describe('SmartHealthLinkImport utils', () => {
     });
 
     expect(findEntry(result, 'Condition').request?.ifNoneExist).toBe(
-      'subject=Patient/local-patient&code=http://snomed.info/sct|44054006&date=2026-06-01'
+      'subject=Patient/local-patient&code=http://snomed.info/sct|44054006&recorded-date=2026-06-01'
     );
     expect(findEntry(result, 'Observation').request?.ifNoneExist).toBe(
       'subject=Patient/local-patient&code=http://loinc.org|4548-4&date=2026-05-30'
@@ -289,6 +289,78 @@ describe('SmartHealthLinkImport utils', () => {
     );
     expect(findEntry(result, 'DocumentReference').request?.ifNoneExist).toBe(
       'subject=Patient/local-patient&type=http://loinc.org|60591-5&date=2026-06-15'
+    );
+  });
+
+  test('uses the date search parameter that indexes each date field', () => {
+    const subject = { reference: 'Patient/shared-patient' };
+    const resources: Resource[] = [
+      {
+        resourceType: 'Condition',
+        id: 'onset-condition',
+        subject,
+        code: { coding: [{ system: 'http://snomed.info/sct', code: '195967001' }] },
+        onsetDateTime: '2012-05-01',
+      },
+      {
+        resourceType: 'MedicationRequest',
+        id: 'med-request',
+        status: 'active',
+        intent: 'order',
+        subject,
+        medicationCodeableConcept: {
+          coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '314076' }],
+        },
+        authoredOn: '2026-03-04T09:00:00Z',
+      },
+      {
+        resourceType: 'DiagnosticReport',
+        id: 'issued-report',
+        status: 'final',
+        subject,
+        code: { coding: [{ system: 'http://loinc.org', code: '58410-2' }] },
+        issued: '2026-02-03T10:00:00Z',
+      },
+      {
+        resourceType: 'Procedure',
+        id: 'procedure',
+        status: 'completed',
+        subject,
+        code: { coding: [{ system: 'http://snomed.info/sct', code: '80146002' }] },
+        performedDateTime: '2025-11-12',
+      },
+      {
+        resourceType: 'AllergyIntolerance',
+        id: 'onset-allergy',
+        patient: subject,
+        code: { coding: [{ system: 'http://snomed.info/sct', code: '91936005' }] },
+        onsetDateTime: '2010-01-01',
+      },
+    ];
+    const result = buildSmartHealthLinkImportBundle(
+      { resourceType: 'Bundle', type: 'collection', entry: resources.map((resource) => ({ resource })) },
+      new Set(resources.map((r) => `${r.resourceType}/${r.id}`)),
+      sharedPatient,
+      { ...sharedPatient, id: 'local-patient' }
+    );
+
+    // Condition has no `date` search parameter; sending one fails the entry
+    expect(findEntry(result, 'Condition').request?.ifNoneExist).toBe(
+      'subject=Patient/local-patient&code=http://snomed.info/sct|195967001&onset-date=2012-05-01'
+    );
+    // MedicationRequest `date` indexes dosage timing, not authoredOn
+    expect(findEntry(result, 'MedicationRequest').request?.ifNoneExist).toBe(
+      'patient=Patient/local-patient&code=http://www.nlm.nih.gov/research/umls/rxnorm|314076&authoredon=2026-03-04'
+    );
+    expect(findEntry(result, 'DiagnosticReport').request?.ifNoneExist).toBe(
+      'subject=Patient/local-patient&code=http://loinc.org|58410-2&issued=2026-02-03'
+    );
+    expect(findEntry(result, 'Procedure').request?.ifNoneExist).toBe(
+      'subject=Patient/local-patient&code=http://snomed.info/sct|80146002&date=2025-11-12'
+    );
+    // AllergyIntolerance `date` indexes recordedDate only, so an onset-only allergy omits the date
+    expect(findEntry(result, 'AllergyIntolerance').request?.ifNoneExist).toBe(
+      'patient=Patient/local-patient&code=http://snomed.info/sct|91936005'
     );
   });
 

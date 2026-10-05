@@ -259,15 +259,17 @@ function buildIfNoneExist(resource: Resource, targetPatient: WithId<Patient>): s
   const typedResource = resource as Record<string, any>;
   const patientParam = getPatientSearchParam(resource.resourceType);
   const tokenParam = getTokenSearchParam(resource.resourceType);
-  const token = getTokenSearchValue(typedResource.code ?? typedResource.type ?? typedResource.vaccineCode);
+  const token = getTokenSearchValue(
+    typedResource.code ?? typedResource.type ?? typedResource.vaccineCode ?? typedResource.medicationCodeableConcept
+  );
   if (!patientParam || !tokenParam || !token) {
     return undefined;
   }
 
   const params = [`${patientParam}=Patient/${targetPatient.id}`, `${tokenParam}=${token}`];
-  const date = getResourceDate(resource);
-  if (date) {
-    params.push(`date=${date}`);
+  const dateSearch = getDateSearch(resource);
+  if (dateSearch) {
+    params.push(dateSearch);
   }
   return params.join('&');
 }
@@ -317,17 +319,37 @@ function getTokenSearchParam(resourceType: string): string | undefined {
   }
 }
 
-function getResourceDate(resource: Resource): string | undefined {
+/**
+ * Date search parameters per resource type, as `[searchParam, field]` pairs in order of preference.
+ * Each search parameter must index the paired field: a parameter the server does not recognize
+ * fails the entry, and one that indexes a different field never matches and creates duplicates.
+ */
+const DATE_SEARCH_PARAMS: Record<string, [searchParam: string, field: string][]> = {
+  AllergyIntolerance: [['date', 'recordedDate']],
+  Condition: [
+    ['recorded-date', 'recordedDate'],
+    ['onset-date', 'onsetDateTime'],
+  ],
+  DiagnosticReport: [
+    ['date', 'effectiveDateTime'],
+    ['issued', 'issued'],
+  ],
+  DocumentReference: [['date', 'date']],
+  Immunization: [['date', 'occurrenceDateTime']],
+  MedicationRequest: [['authoredon', 'authoredOn']],
+  Observation: [['date', 'effectiveDateTime']],
+  Procedure: [['date', 'performedDateTime']],
+};
+
+function getDateSearch(resource: Resource): string | undefined {
   const typedResource = resource as Record<string, any>;
-  const date =
-    typedResource.effectiveDateTime ??
-    typedResource.issued ??
-    typedResource.recordedDate ??
-    typedResource.onsetDateTime ??
-    typedResource.occurrenceDateTime ??
-    typedResource.authoredOn ??
-    typedResource.date;
-  return typeof date === 'string' ? date.substring(0, 10) : undefined;
+  for (const [searchParam, field] of DATE_SEARCH_PARAMS[resource.resourceType] ?? []) {
+    const value = typedResource[field];
+    if (typeof value === 'string') {
+      return `${searchParam}=${value.substring(0, 10)}`;
+    }
+  }
+  return undefined;
 }
 
 function getTokenSearchValue(input: CodeableConcept | undefined): string | undefined {
