@@ -1,0 +1,62 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.dropdown {
+  max-width: calc(100vw - 32px);
+  padding: 0;
+}
+
+.body {
+  padding: var(--mantine-spacing-md);
+  padding-right: var(--mantine-spacing-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.direction {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.footer {
+  padding: var(--mantine-spacing-sm);
+  border-top: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}
+
+.deleteIcon {
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+}
+
+.deleteButton:disabled {
+  background-color: transparent;
+}
+
+.deleteButton:disabled .deleteIcon {
+  color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
+}
+
+.empty {
+  padding-block: 7px;
+  font-size: var(--mantine-font-size-sm);
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+}
+
+.indicator {
+  --indicator-right: calc(0.25rem * var(--mantine-scale)) !important;
+}
+
+.addButton :global(.mantine-Button-section[data-position='left']) {
+  margin-inline-end: calc(var(--mantine-spacing-xs) * 0.6);
+}

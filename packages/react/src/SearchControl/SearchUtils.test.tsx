@@ -13,6 +13,7 @@ import {
   addYearToDateFilter,
   addYesterdayFilter,
   buildFieldNameString,
+  buildSearchParamFieldLabel,
   clearFilters,
   clearFiltersOnField,
   deleteFilter,
@@ -493,5 +494,14 @@ describe('SearchUtils', () => {
     expect(buildFieldNameString('name')).toBe('Name');
     expect(buildFieldNameString('birthDate')).toBe('Birth Date');
     expect(buildFieldNameString('order-detail')).toBe('Order Detail');
+  });
+
+  test('buildSearchParamFieldLabel marks metadata so it never matches a same-named element', () => {
+    expect(buildSearchParamFieldLabel('name')).toBe('Name');
+    expect(buildSearchParamFieldLabel('project')).toBe('Project');
+    expect(buildSearchParamFieldLabel('_project')).toBe('Project (meta)');
+    expect(buildSearchParamFieldLabel('_lastUpdated')).toBe('Last Updated (meta)');
+    expect(buildSearchParamFieldLabel('_profile')).toBe('Profile (meta)');
+    expect(buildSearchParamFieldLabel('_id')).toBe('ID (meta)');
   });
 });

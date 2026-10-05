@@ -77,22 +77,23 @@ export function HomePage(): JSX.Element {
             .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
         }}
         onDelete={(ids: string[]) => {
-          if (window.confirm('Are you sure you want to delete these resources?')) {
-            medplum.invalidateSearches(search.resourceType);
-            medplum
-              .executeBatch({
-                resourceType: 'Bundle',
-                type: 'batch',
-                entry: ids.map((id) => ({
-                  request: {
-                    method: 'DELETE',
-                    url: `${search.resourceType}/${id}`,
-                  },
-                })),
-              })
-              .then(() => setSearch({ ...search }))
-              .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
-          }
+          medplum.invalidateSearches(search.resourceType);
+          return medplum
+            .executeBatch({
+              resourceType: 'Bundle',
+              type: 'batch',
+              entry: ids.map((id) => ({
+                request: {
+                  method: 'DELETE',
+                  url: `${search.resourceType}/${id}`,
+                },
+              })),
+            })
+            .then(() => setSearch({ ...search }))
+            .catch((err) => {
+              showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
+              throw err;
+            });
         }}
         onBulk={(ids: string[]) => {
           navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`)?.catch(console.error);

@@ -41,6 +41,28 @@ describe('DOM utils', () => {
     expect(isCheckboxCell(div.querySelector('#input2') as Element)).toBe(false);
   });
 
+  test('isCheckboxCell with a tagged cell', () => {
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <table>
+        <tbody>
+          <tr>
+            <td id="cell" data-checkbox-cell>
+              <div id="wrap"><div id="root"><input id="input" type="checkbox"><svg id="icon"></svg></div></div>
+            </td>
+            <td id="other">hello</td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+
+    expect(isCheckboxCell(div.querySelector('#cell') as Element)).toBe(true);
+    expect(isCheckboxCell(div.querySelector('#wrap') as Element)).toBe(true);
+    expect(isCheckboxCell(div.querySelector('#input') as Element)).toBe(true);
+    expect(isCheckboxCell(div.querySelector('#icon') as Element)).toBe(true);
+    expect(isCheckboxCell(div.querySelector('#other') as Element)).toBe(false);
+  });
+
   describe('JSON File Download', () => {
     let jsonFile: any;
 

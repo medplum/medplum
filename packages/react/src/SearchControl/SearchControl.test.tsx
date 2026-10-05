@@ -24,14 +24,17 @@ describe('SearchControl', () => {
   async function setup(
     props: SearchControlProps,
     returnVal?: Bundle,
-    medplum: MockClient = new MockClient()
+    medplum: MockClient = new MockClient(),
+    navigate?: (path: string) => void
   ): Promise<{ rerender: (props: SearchControlProps) => Promise<void> }> {
     if (returnVal) {
       medplum.search = vi.fn().mockResolvedValue(returnVal);
     }
     const { rerender: _rerender } = await act(async () =>
       render(<SearchControl {...props} />, ({ children }) => (
-        <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+        <MedplumProvider medplum={medplum} navigate={navigate}>
+          {children}
+        </MedplumProvider>
       ))
     );
     return {
@@ -63,6 +66,64 @@ describe('SearchControl', () => {
 
     expect(props.onLoad).toHaveBeenCalled();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+  });
+
+  test.each([1, 2])('Renders all performers in a reference array with %i entries', async (count) => {
+    const performers = [
+      { reference: 'Organization/lab-1', display: 'Review Laboratory' },
+      { reference: 'Organization/lab-2', display: 'Second Laboratory' },
+    ].slice(0, count);
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [
+        {
+          resource: {
+            resourceType: 'DiagnosticReport',
+            id: 'report-1',
+            status: 'final',
+            code: { text: 'Reference rendering test' },
+            performer: performers,
+          },
+        },
+      ],
+    };
+
+    await setup({ search: { resourceType: 'DiagnosticReport', fields: ['id', 'performer'] } }, bundle);
+
+    for (const performer of performers) {
+      expect(screen.getByText(performer.display)).toBeInTheDocument();
+    }
+  });
+
+  test.each([undefined, 'Patient/external'])('Renders reference display text with reference %s', async (reference) => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [
+        {
+          resource: {
+            resourceType: 'Observation',
+            id: 'observation-1',
+            status: 'final',
+            code: { text: 'Reference display test' },
+            subject: { reference, display: 'External Patient' },
+          },
+        },
+      ],
+    };
+
+    await setup({ search: { resourceType: 'Observation', fields: ['id', 'subject'] } }, bundle);
+
+    const name = screen.getByText('External Patient');
+    expect(name).toBeInTheDocument();
+    if (reference) {
+      expect(name.closest('a')).toHaveAttribute('href', `/${reference}`);
+    } else {
+      expect(name.closest('a')).toBeNull();
+    }
   });
 
   test('Renders additional columns', async () => {
@@ -193,8 +254,6 @@ describe('SearchControl', () => {
     await setup(props);
 
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
-
-    expect(screen.getByText('greater than or equals', { exact: false })).toBeInTheDocument();
   });
 
   test('Renders empty results', async () => {
@@ -417,16 +476,22 @@ describe('SearchControl', () => {
       onNew,
     });
 
-    expect(await screen.findByText('New...')).toBeInTheDocument();
+    expect(await screen.findByLabelText('New Patient')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('New...'));
+      fireEvent.click(screen.getByLabelText('New Patient'));
     });
 
     expect(onNew).toHaveBeenCalled();
   });
 
-  test('Export button', async () => {
+  async function openActionsMenu(): Promise<void> {
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Actions'));
+    });
+  }
+
+  test('Export action', async () => {
     const onExportCsv = vi.fn();
 
     await setup({
@@ -436,10 +501,9 @@ describe('SearchControl', () => {
       onExportCsv,
     });
 
-    expect(await screen.findByText('Export...')).toBeInTheDocument();
-
+    await openActionsMenu();
     await act(async () => {
-      fireEvent.click(screen.getByText('Export...'));
+      fireEvent.click(await screen.findByText('Export'));
     });
 
     expect(await screen.findByText('Export as CSV')).toBeInTheDocument();
@@ -456,19 +520,37 @@ describe('SearchControl', () => {
       search: {
         resourceType: 'Patient',
       },
+      checkboxesEnabled: true,
       onDelete,
     });
 
-    expect(await screen.findByText('Delete...')).toBeInTheDocument();
+    await openActionsMenu();
+    const deleteItem = await screen.findByText('Delete');
+    expect(deleteItem.closest('button')).toHaveAttribute('data-disabled', 'true');
+    expect(onDelete).not.toHaveBeenCalled();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete...'));
+      fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('all-checkbox'));
     });
 
+    await openActionsMenu();
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Delete'));
+    });
+
+    expect(await screen.findByText(/cannot be undone/i)).toBeInTheDocument();
+    expect(onDelete).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    });
     expect(onDelete).toHaveBeenCalled();
   });
 
-  test('Bulk button', async () => {
+  test('Bulk action', async () => {
     const onBulk = vi.fn();
 
     await setup({
@@ -478,10 +560,9 @@ describe('SearchControl', () => {
       onBulk,
     });
 
-    expect(await screen.findByText('Bulk...')).toBeInTheDocument();
-
+    await openActionsMenu();
     await act(async () => {
-      fireEvent.click(screen.getByText('Bulk...'));
+      fireEvent.click(await screen.findByText('Bulk Apply'));
     });
 
     expect(onBulk).toHaveBeenCalled();
@@ -563,17 +644,32 @@ describe('SearchControl', () => {
     expect(props.onAuxClick).toHaveBeenCalledTimes(3);
   });
 
-  test('Field editor onOk', async () => {
+  test('Right click on row opens the resource context menu', async () => {
     const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
+        fields: ['name'],
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Simpson' }],
+      },
+    };
+
+    await setup(props);
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.contextMenu(screen.getAllByTestId('search-control-row')[0]);
+    });
+
+    expect(await screen.findByText('Open Patient')).toBeInTheDocument();
+    expect(screen.getByText('Open Patient in a New Tab')).toBeInTheDocument();
+    expect(screen.getByText('Copy Link')).toBeInTheDocument();
+  });
+
+  test('Columns editor opens', async () => {
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        fields: ['name', 'birthDate'],
       },
       onLoad: vi.fn(),
     };
@@ -583,29 +679,24 @@ describe('SearchControl', () => {
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Fields'));
+      fireEvent.click(screen.getByText('Columns'));
     });
 
-    expect(await screen.findByText('OK')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
-    });
+    expect(await screen.findByText('Reset Default')).toBeInTheDocument();
+    expect(screen.getByTestId('column-name')).toBeInTheDocument();
   });
 
-  test('Field editor onCancel', async () => {
+  test('Columns editor hides a column', async () => {
+    let currSearch: SearchRequest | undefined;
     const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
+        fields: ['name', 'birthDate'],
       },
       onLoad: vi.fn(),
+      onChange: (e) => {
+        currSearch = e.definition;
+      },
     };
 
     await setup(props);
@@ -613,47 +704,17 @@ describe('SearchControl', () => {
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Fields'));
+      fireEvent.click(screen.getByText('Columns'));
     });
-
-    expect(await screen.findByLabelText('Close')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Close'));
+      fireEvent.click(await screen.findByTestId('column-birthDate'));
     });
+
+    expect(currSearch?.fields).toEqual(['name']);
   });
 
-  test('Filter editor onOk', async () => {
-    const props: SearchControlProps = {
-      search: {
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
-      },
-      onLoad: vi.fn(),
-    };
-
-    await setup(props);
-
-    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Filters'));
-    });
-
-    expect(await screen.findByText('OK')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
-    });
-  });
-
-  test('Filter editor onCancel', async () => {
+  test('Filter popover opens', async () => {
     const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
@@ -676,27 +737,41 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Filters'));
     });
 
-    expect(await screen.findByLabelText('Close')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText('Close'));
-    });
+    expect(await screen.findByText('Add Filter')).toBeInTheDocument();
+    expect(screen.getByText('Add Filter')).toBeInTheDocument();
   });
 
-  test('Popup menu and prompt', async () => {
+  test('Sort popover opens', async () => {
     const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
+      },
+      onLoad: vi.fn(),
+    };
+
+    await setup(props);
+
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sort'));
+    });
+
+    expect(await screen.findByText('Add Sort')).toBeInTheDocument();
+    expect(screen.getByText('Add Sort')).toBeInTheDocument();
+  });
+
+  test('Column header sort menu', async () => {
+    let currSearch: SearchRequest | undefined;
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
         fields: ['id', 'name'],
       },
       onLoad: vi.fn(),
+      onChange: (e) => {
+        currSearch = e.definition;
+      },
     };
 
     await setup(props);
@@ -707,20 +782,12 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Name'));
     });
 
-    const containsButton = await screen.findByText('Contains...');
+    expect(screen.queryByText('Contains...')).not.toBeInTheDocument();
     await act(async () => {
-      fireEvent.click(containsButton);
+      fireEvent.click(await screen.findByText('Sort A to Z'));
     });
 
-    await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Search value'), {
-        target: { value: 'Washington' },
-      });
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
-    });
+    expect(currSearch?.sortRules).toMatchObject([{ code: 'name', descending: false }]);
   });
 
   test('Click all checkbox', async () => {
@@ -860,9 +927,14 @@ describe('SearchControl', () => {
     expect(props.onLoad).toHaveBeenCalled();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.queryByText('Patient')).not.toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Name' }));
+    });
+    expect(await screen.findByText('Sort A to Z')).toBeInTheDocument();
+    expect(screen.queryByText('Filter by this column')).not.toBeInTheDocument();
   });
 
-  test('Hide filters', async () => {
+  test('Deprecated hideFilters is still accepted and has no effect', async () => {
     const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
@@ -904,9 +976,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    expect(await screen.findByText('missing true')).toBeInTheDocument();
-
-    expect(screen.getByText('missing true')).toBeInTheDocument();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 
   test('Refresh results', async () => {
@@ -932,15 +1002,30 @@ describe('SearchControl', () => {
     expect(onLoad).toHaveBeenCalled();
     onLoad.mockReset();
 
-    const refreshButton = screen.getByTitle('Refresh');
-    expect(refreshButton).toBeInTheDocument();
-
+    await openActionsMenu();
     await act(async () => {
-      fireEvent.click(refreshButton);
+      fireEvent.click(await screen.findByText('Refresh'));
     });
 
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
     expect(onLoad).toHaveBeenCalled();
+  });
+
+  test('Custom toolbar action renders and fires onClick', async () => {
+    const onSync = vi.fn();
+    await setup({
+      search: { resourceType: 'Patient' },
+      toolbarActions: [{ key: 'sync', label: 'Sync', icon: <span>sync-icon</span>, onClick: onSync }],
+    });
+
+    const syncButton = await screen.findByLabelText('Sync');
+    expect(syncButton).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(syncButton);
+    });
+
+    expect(onSync).toHaveBeenCalled();
   });
 
   describe('Pagination', () => {
