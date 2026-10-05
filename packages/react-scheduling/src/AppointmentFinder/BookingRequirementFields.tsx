@@ -100,7 +100,7 @@ interface ConceptRowsProps {
 }
 
 /**
- * A list of concepts, one row each, the way `ResourceForm` edits a `CodeableConcept[]`.
+ * A list of concepts, one row each, similar to the way `ResourceForm` edits a `CodeableConcept[]`.
  *
  * The pills in a row are that one concept's codings, so a concept recorded with several codes
  * shows and edits all of them. A row left untouched records its concept exactly as it was held.
