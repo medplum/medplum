@@ -93,7 +93,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
   // Dirty is left to the page, which remounts on what it stored and reports itself clean. A save landing after
   // the viewer moved on must not touch the page now shown.
   const handleActorStored = useCallback(
-    (storedFor: ConfigSelection, resources: WithId<Resource>[], openServiceId: string | null): void => {
+    (storedFor: ConfigSelection, resources: WithId<Resource>[], openServiceId: string | undefined): void => {
       store(resources);
       setSelection((current) =>
         current?.kind === 'actor' && isSameSelection(current, storedFor) ? { ...current, openServiceId } : current

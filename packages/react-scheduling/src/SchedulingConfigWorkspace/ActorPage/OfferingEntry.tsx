@@ -25,7 +25,7 @@ export interface OfferingEntryProps {
   readonly service: WithId<HealthcareService>;
   readonly value: OfferingFields;
   /** What the Schedule set for the visit type when the page opened. */
-  readonly initial: OfferingFields;
+  readonly initialParameters: SchedulingParameterValues;
   readonly onChange: (value: OfferingFields) => void;
   /** The duration in effect and where the hours come from, for the closed entry. */
   readonly summary: string;
@@ -44,12 +44,11 @@ export interface OfferingEntryProps {
  * @returns The entry.
  */
 export function OfferingEntry(props: OfferingEntryProps): JSX.Element {
-  const { service, value, initial, onChange, summary, dirty, errors, availabilityError } = props;
+  const { service, value, initialParameters, onChange, summary, dirty, errors, availabilityError } = props;
   const idPrefix = useId();
   const serviceName = service.name ?? 'this visit type';
   const serviceValues = getHealthcareServiceSchedulingParameterValues(service);
   const { defaults, labels } = getInheritedDefaults(serviceValues, serviceName);
-  const initialParameters: SchedulingParameterValues = initial.parameters;
   const warnings = getSchedulingParameterWarnings(value.parameters, initialParameters, serviceValues);
 
   return (

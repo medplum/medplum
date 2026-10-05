@@ -4,7 +4,6 @@ import {
   Accordion,
   Alert,
   Box,
-  Button,
   Group,
   SimpleGrid,
   Stack,
@@ -15,7 +14,7 @@ import {
   VisuallyHidden,
 } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { deepEquals, getDisplayString, getSchedulingTimezone, normalizeErrorString } from '@medplum/core';
+import { capitalize, deepEquals, getDisplayString, getSchedulingTimezone, normalizeErrorString } from '@medplum/core';
 import type { HealthcareService, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -27,11 +26,11 @@ import {
   getBlockingErrors,
   validateSchedulingParameters,
 } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
-import { ConfigSection, SaveBar } from '../ConfigPage/ConfigPage';
+import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPage';
 import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { summarizeOffering } from '../offeringSummary';
-import { isActorInactive } from '../SchedulingConfigWorkspace.utils';
+import { getActorStatus, isActorInactive } from '../SchedulingConfigWorkspace.utils';
 import type { ConfigStatus } from '../StatusBadge';
 import { StatusBadge } from '../StatusBadge';
 import { OfferingEntry } from './OfferingEntry';
@@ -44,14 +43,14 @@ export interface ActorPageProps {
   /** Every visit type loaded. */
   readonly services: readonly WithId<HealthcareService>[];
   /**
-   * The visit type whose entry opens, when the actor offers it. Left out or null, every entry starts closed.
+   * The visit type whose entry opens, when the actor offers it. Left out, every entry starts closed.
    */
-  readonly initialOpenServiceId?: string | null;
+  readonly initialOpenServiceId?: string;
   /**
    * Called with the resources as the server now holds them, after a save or after reloading newer versions, and
    * the visit type whose entry is open.
    */
-  readonly onStored: (resources: WithId<Resource>[], openServiceId: string | null) => void;
+  readonly onStored: (resources: WithId<Resource>[], openServiceId: string | undefined) => void;
   /** Called whenever the page starts or stops holding unsaved changes. */
   readonly onDirtyChange?: (dirty: boolean) => void;
 }
@@ -88,14 +87,16 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [reloading, setReloading] = useState(false);
 
   const draft = schedule && buildScheduleDraft(schedule, fields, initial, servicesById);
-  // Edits the draft can't store yet, like an emptied week, still count, so the save bar can say why it refuses.
   const actorDirty = !deepEquals(actorDraft, resource);
-  const dirty = actorDirty || (schedule ? !deepEquals(draft, schedule) : false) || !deepEquals(fields, initial);
+  // Compares the fields rather than the draft, so edits the draft can't store yet, like an emptied week, still
+  // count and the save bar can say why it refuses.
+  const dirty = actorDirty || !deepEquals(fields, initial);
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const offered = fields.offered.flatMap((id) => servicesById.get(id) ?? []);
-  const inactive = isActorInactive(actorDraft);
-  const alert = getBookingAlert(actorDraft, schedule && fields.active);
+  const scheduleActive = schedule ? fields.active : undefined;
+  const status = getActorStatus(actorDraft, scheduleActive);
+  const alert = getBookingAlert(actorDraft, status);
 
   function errorsFor(service: WithId<HealthcareService>): ReturnType<typeof getBlockingErrors> {
     const current = fields.offerings[service.id];
@@ -162,7 +163,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       } else {
         onStored(
           result.saved.map(({ resource: saved }) => saved),
-          open
+          open ?? undefined
         );
       }
     } finally {
@@ -180,13 +181,11 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   async function handleReload(): Promise<void> {
     setReloading(true);
     try {
-      const reloaded: WithId<Resource>[] = [
-        await medplum.readResource(resource.resourceType, resource.id, { cache: 'no-cache' }),
-      ];
-      if (schedule) {
-        reloaded.push(await medplum.readResource('Schedule', schedule.id, { cache: 'no-cache' }));
-      }
-      onStored(reloaded, open);
+      const reloaded: WithId<Resource>[] = await Promise.all([
+        medplum.readResource(resource.resourceType, resource.id, { cache: 'no-cache' }),
+        ...(schedule ? [medplum.readResource('Schedule', schedule.id, { cache: 'no-cache' })] : []),
+      ]);
+      onStored(reloaded, open ?? undefined);
     } catch (err) {
       setFailure({ conflict: false, message: `Could not reload it: ${normalizeErrorString(err)}` });
     } finally {
@@ -202,37 +201,22 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         </Text>
         <Group gap="sm">
           <Title order={2}>{actorName}</Title>
-          <StatusBadge status={getStatus(inactive, schedule && fields.active)} />
+          <StatusBadge status={status} />
         </Group>
       </Stack>
 
-      {failure?.conflict && (
-        <Alert
-          color="orange"
-          title={`${actorDirty ? `${actorName} or its Schedule` : `The Schedule for ${actorName}`} changed since you opened it`}
-        >
-          <Stack gap="sm" align="flex-start">
-            <Text size="sm">
-              A newer version was saved somewhere else, so nothing here was written over it. Reload to see the latest
-              version. Your changes on this page will be discarded.
-            </Text>
-            <Button size="xs" variant="light" color="orange" loading={reloading} onClick={handleReload}>
-              Reload
-            </Button>
-          </Stack>
-        </Alert>
-      )}
-      {failure && !failure.conflict && (
-        <Alert color="red" title="Not saved">
-          {failure.message}
-        </Alert>
-      )}
+      <SaveFailureAlert
+        failure={failure}
+        conflictTitle={`${actorDirty ? `${actorName} or its Schedule` : `The Schedule for ${actorName}`} changed since you opened it`}
+        reloading={reloading}
+        onReload={handleReload}
+      />
 
       <ConfigSection title="General">
         <ActorGeneral
           resource={actorDraft}
           onActiveChange={handleActorActiveChange}
-          scheduleActive={schedule && fields.active}
+          scheduleActive={scheduleActive}
           onScheduleActiveChange={(active) => setFields((current) => ({ ...current, active }))}
         />
         {alert && (
@@ -256,7 +240,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
                   key={service.id}
                   service={service}
                   value={fields.offerings[service.id]}
-                  initial={initial.offerings[service.id]}
+                  initialParameters={initial.offerings[service.id].parameters}
                   onChange={(value) => updateOffering(service.id, value)}
                   summary={draft ? summarizeOffering(service, draft) : ''}
                   dirty={isOfferingDirty(service)}
@@ -285,20 +269,12 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   );
 }
 
-function getStatus(inactive: boolean, scheduleActive: boolean | undefined): ConfigStatus {
-  if (inactive) {
-    return 'inactive';
-  }
-  return scheduleActive === false ? 'schedule-inactive' : 'active';
-}
-
-function getBookingAlert(resource: ConfigurableActorResource, scheduleActive: boolean | undefined): string | undefined {
+function getBookingAlert(resource: ConfigurableActorResource, status: ConfigStatus): string | undefined {
   const noun = getActorTypeLabel(resource.resourceType).toLowerCase();
-  // Checked first: switching the Schedule back on wouldn't make an inactive actor bookable.
-  if (isActorInactive(resource)) {
+  if (status === 'inactive') {
     return `This ${noun} is inactive and can't be booked.`;
   }
-  if (scheduleActive === false) {
+  if (status === 'schedule-inactive') {
     const pronoun = resource.resourceType === 'Practitioner' ? 'they' : 'it';
     return `This ${noun}'s Schedule is switched off, so ${pronoun} can't be booked until it's switched back on. Appointments already booked stay booked.`;
   }
@@ -381,7 +357,7 @@ function statusLabel(resource: ConfigurableActorResource): string {
   if (resource.resourceType === 'Practitioner') {
     return resource.active === false ? 'Inactive' : 'Active';
   }
-  return resource.status ? resource.status.charAt(0).toUpperCase() + resource.status.slice(1) : 'Active';
+  return resource.status ? capitalize(resource.status) : 'Active';
 }
 
 function withActorActive(resource: ConfigurableActorResource, active: boolean): ConfigurableActorResource {

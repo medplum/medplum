@@ -13,6 +13,7 @@ import type { BookableActorType } from '../actors';
 import { isBookableActorType } from '../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../configSearch';
 import type { ConfigPanelItem } from './ConfigPanel/ConfigPanel';
+import type { ConfigStatus } from './StatusBadge';
 
 /**
  * What the detail pane shows: a stored visit type or actor, kept by id so it survives a save replacing it in
@@ -26,8 +27,8 @@ export type ConfigSelection =
       readonly kind: 'actor';
       readonly resourceType: BookableActorType;
       readonly id: string;
-      /** The visit type whose entry is open, or null for none. Left out, the page decides. */
-      readonly openServiceId?: string | null;
+      /** The visit type whose entry is open. Left out, every entry is closed. */
+      readonly openServiceId?: string;
     };
 
 /**
@@ -114,6 +115,25 @@ export function isActorInactive(resource: ConfigurableActorResource): boolean {
 }
 
 /**
+ * Whether an actor can be booked as far as its own status and its Schedule's go. The actor's own status wins:
+ * switching the Schedule back on wouldn't make an inactive actor bookable.
+ * @param resource - The provider, room, or device.
+ * @param scheduleActive - Whether its Schedule is active, or undefined when it has none.
+ * @returns Its status.
+ */
+export function getActorStatus(resource: ConfigurableActorResource, scheduleActive: boolean | undefined): ConfigStatus {
+  if (isActorInactive(resource)) {
+    return 'inactive';
+  }
+  return scheduleActive === false ? 'schedule-inactive' : 'active';
+}
+
+function getStoredActorStatus(actor: ConfigurableActor): ConfigStatus {
+  const [schedule] = actor.schedules;
+  return getActorStatus(actor.resource, schedule && schedule.active !== false);
+}
+
+/**
  * The visit types a Schedule offers, in the order it lists them. A visit type that isn't loaded is left out.
  * @param schedule - The Schedule.
  * @param servicesById - Every visit type loaded.
@@ -137,15 +157,14 @@ export function getOfferedServices(
  * @returns The notices to show on its row.
  */
 export function getActorNotices(actor: ConfigurableActor): string[] {
-  const [schedule] = actor.schedules;
   // An inactive actor's row is already marked Inactive, which says more.
-  return schedule?.active === false && !isActorInactive(actor.resource) ? ['Schedule inactive'] : [];
+  return getStoredActorStatus(actor) === 'schedule-inactive' ? ['Schedule inactive'] : [];
 }
 
 // Booking skips an actor when either it or its Schedule is off, so Show inactive hides both alike. An actor with
 // no Schedule yet isn't turned off, only unfinished, so it stays listed.
 function isActorTurnedOff(actor: ConfigurableActor): boolean {
-  return isActorInactive(actor.resource) || actor.schedules[0]?.active === false;
+  return getStoredActorStatus(actor) !== 'active';
 }
 
 /**
@@ -191,10 +210,10 @@ function isActorSelected(actor: ConfigurableActor, selection: ConfigSelection | 
  * @param stored - The resource as the server now holds it.
  * @returns The new list.
  */
-export function withStoredActorResource<T extends ConfigurableActor>(
-  actors: readonly T[],
+export function withStoredActorResource(
+  actors: readonly ConfigurableActor[],
   stored: WithId<Resource>
-): T[] {
+): readonly ConfigurableActor[] {
   if (isBookableActorType(stored.resourceType)) {
     return actors.map((actor) =>
       actor.resource.resourceType === stored.resourceType && actor.resource.id === stored.id
@@ -203,7 +222,7 @@ export function withStoredActorResource<T extends ConfigurableActor>(
     );
   }
   if (stored.resourceType !== 'Schedule' || stored.actor.length !== 1) {
-    return [...actors];
+    return actors;
   }
   const owner = stored.actor[0].reference;
   return actors.map((actor) => {

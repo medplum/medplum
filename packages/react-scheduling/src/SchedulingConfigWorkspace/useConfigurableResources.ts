@@ -87,7 +87,7 @@ export function useConfigurableResources(): ConfigurableResources {
     );
     const withSaved = (list: ResourceList<ConfigurableActor>): ResourceList<ConfigurableActor> => ({
       ...list,
-      items: saved.reduce((actorItems, resource) => withStoredActorResource(actorItems, resource), [...list.items]),
+      items: saved.reduce((actorItems, resource) => withStoredActorResource(actorItems, resource), list.items),
     });
     return {
       services: { ...services, items },

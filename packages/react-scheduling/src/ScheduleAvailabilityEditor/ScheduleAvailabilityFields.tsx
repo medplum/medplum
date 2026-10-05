@@ -176,7 +176,10 @@ export interface ScheduleAvailabilityFieldsProps {
   readonly onChange: (value: AvailabilityFieldsValue) => void;
   /** IANA name of the time zone the times entered are in, shown as a hint beneath the week. */
   readonly timezone?: string;
-  /** In override mode, show only the switch while custom availability is off, not the default's hours read-only. */
+  /**
+   * In override mode, show only the switch while custom availability is off: no read-only default hours, reset
+   * button, or time zone hint.
+   */
   readonly hideInherited?: boolean;
 }
 
@@ -221,7 +224,7 @@ export function ScheduleAvailabilityFields(props: ScheduleAvailabilityFieldsProp
           </Group>
         </>
       )}
-      {!(hideInherited && !overriding) && (
+      {(overriding || !hideInherited) && (
         <>
           <Box className={classes.week} opacity={overriding ? 1 : 0.8}>
             {DAY_DISPLAY_ORDER.map((day) => (

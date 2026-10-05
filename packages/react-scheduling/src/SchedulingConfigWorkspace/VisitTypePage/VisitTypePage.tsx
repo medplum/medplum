@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Badge, Button, Group, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Badge, Group, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { deepClone, deepEquals, normalizeErrorString } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
@@ -29,7 +29,7 @@ import {
   validateSchedulingParameters,
 } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
 import { SchedulingParametersFields } from '../../SchedulingParametersEditor/SchedulingParametersFields';
-import { ConfigSection, SaveBar } from '../ConfigPage/ConfigPage';
+import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPage';
 import type { ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { ParameterWarnings } from '../ConfigPage/ParameterWarnings';
@@ -247,24 +247,12 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
         </Alert>
       )}
 
-      {failure?.conflict && (
-        <Alert color="orange" title={`${initial.name || 'This visit type'} changed since you opened it`}>
-          <Stack gap="sm" align="flex-start">
-            <Text size="sm">
-              A newer version was saved somewhere else, so nothing here was written over it. Reload to see the latest
-              version. Your changes on this page will be discarded.
-            </Text>
-            <Button size="xs" variant="light" color="orange" loading={reloading} onClick={handleReload}>
-              Reload
-            </Button>
-          </Stack>
-        </Alert>
-      )}
-      {failure && !failure.conflict && (
-        <Alert color="red" title="Not saved">
-          {failure.message}
-        </Alert>
-      )}
+      <SaveFailureAlert
+        failure={failure}
+        conflictTitle={`${initial.name || 'This visit type'} changed since you opened it`}
+        reloading={reloading}
+        onReload={handleReload}
+      />
 
       <ConfigSection title="General">
         <Switch
