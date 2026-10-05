@@ -1918,6 +1918,32 @@ describe('Batch and Transaction processing', () => {
     ]);
   });
 
+  test('Transaction without transaction-bundles feature returns batch-response', async () => {
+    const { accessToken } = await createTestProject({ withAccessToken: true });
+    const patientUrn = 'urn:uuid:' + randomUUID();
+    const transaction: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        { fullUrl: patientUrn, request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
+        {
+          request: { method: 'POST', url: 'Observation', ifNoneExist: 'unknown-param=foo' },
+          resource: { resourceType: 'Observation', status: 'final', code: { text: 'test' } },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post('/fhir/R4/')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(transaction);
+    expect(res).toHaveStatus(200);
+    const results = res.body as Bundle;
+    expect(results.type).toStrictEqual('batch-response');
+    expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '400']);
+  });
+
   test('Async batch sleeps over rate limit', async () => {
     const queue = getBatchQueue() as any;
     queue.add.mockClear();

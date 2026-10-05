@@ -72,7 +72,7 @@ This batch creates or updates [`Patient`][patient] resources using conditional u
 
 :::caution[Enable transaction support]
 
-Transactions require the `transaction-bundles` feature flag. Without it, a transaction Bundle is processed as a batch and loses atomicity without an error or warning. Transactions also have [entry limits](/docs/fhir-datastore/fhir-batch-requests#transaction-limits).
+Transactions require the `transaction-bundles` feature flag. Without it, a transaction Bundle is processed as a batch and loses atomicity. The request still succeeds, but the response `Bundle` has `type: "batch-response"` instead of `transaction-response`, so check the type and each entry's `response.status`. Transactions also have [entry limits](/docs/fhir-datastore/fhir-batch-requests#transaction-limits).
 
 :::
 

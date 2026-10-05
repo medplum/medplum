@@ -362,7 +362,8 @@ export class BatchProcessor {
   private buildResultBundle(): Bundle {
     return {
       resourceType: 'Bundle',
-      type: `${this.bundle.type}-response` as Bundle['type'],
+      // A transaction processed without `config.transactions` was not atomic, so report it as a batch
+      type: this.isTransaction() ? 'transaction-response' : 'batch-response',
       entry: this.state.resultEntries,
     };
   }

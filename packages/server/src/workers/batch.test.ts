@@ -174,6 +174,17 @@ describe('Batch worker', () => {
         expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201', '201']);
       }));
 
+    test('Reports a transaction bundle as a batch-response', () =>
+      withTestContext(async () => {
+        const { asyncJob, job } = await setupReentrantJob({ ...multiEntryBundle(2), type: 'transaction' });
+
+        await expect(execBatchJob(job)).resolves.toBeUndefined();
+
+        const results = await readResultsBundle(await readAsyncJob(asyncJob.id));
+        expect(results.type).toStrictEqual('batch-response');
+        expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201']);
+      }));
+
     test('Assembles completion results from memory without re-reading chunks written this run', () =>
       withTestContext(async () => {
         const { asyncJob, job } = await setupReentrantJob(multiEntryBundle(3), { checkpointEntries: 1 });

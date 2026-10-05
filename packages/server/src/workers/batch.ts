@@ -481,7 +481,8 @@ async function assembleResultBundle(
   // Include error results produced during preprocessing (they are not part of any result chunk).
   Object.assign(results, initialState.preprocessResults);
   const entryCount = initialState.bundle.entry?.length ?? 0;
-  const bundle = buildBatchResponseBundle(initialState.bundle.type, entryCount, results);
+  // Re-entrant processing always has batch semantics, including for transaction bundles
+  const bundle = buildBatchResponseBundle('batch', entryCount, results);
   const binary = await uploadBinaryData(repo, JSON.stringify(bundle), { contentType: ContentType.FHIR_JSON });
   return { binary, bundle };
 }

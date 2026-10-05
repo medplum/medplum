@@ -163,7 +163,7 @@ describe('createLabOrderBundle', () => {
     expect(bundle.type).toStrictEqual('transaction');
 
     const txnResponse = await medplum.executeBatch(bundle);
-    expect(txnResponse.type).toStrictEqual('transaction-response');
+    expect(txnResponse.type).toStrictEqual('batch-response');
     expectBundleResultSuccessful(txnResponse);
 
     const orderServiceRequest = await medplum.searchOne('ServiceRequest', {
@@ -210,7 +210,7 @@ describe('createLabOrderBundle', () => {
     expect(bundle.type).toStrictEqual('transaction');
 
     const txnResponse = await medplum.executeBatch(bundle);
-    expect(txnResponse.type).toStrictEqual('transaction-response');
+    expect(txnResponse.type).toStrictEqual('batch-response');
     expectBundleResultSuccessful(txnResponse);
 
     const orderServiceRequest = await medplum.searchOne('ServiceRequest', {
@@ -378,7 +378,7 @@ describe('createLabOrderBundle', () => {
     expect(bundle.type).toStrictEqual('transaction');
 
     const txnResponse = await medplum.executeBatch(bundle);
-    expect(txnResponse.type).toStrictEqual('transaction-response');
+    expect(txnResponse.type).toStrictEqual('batch-response');
     expectBundleResultSuccessful(txnResponse);
 
     const orderServiceRequest = await medplum.searchOne('ServiceRequest', {

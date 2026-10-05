@@ -303,6 +303,19 @@ describe('Batch', () => {
     expect((readResult as Patient).identifier?.[0]?.value).toStrictEqual(id);
   });
 
+  test('Reports a transaction processed without transaction support as a batch', async () => {
+    const bundle = await processBatch({ ...req, config: { transactions: false } }, repo, router, {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
+        { request: { method: 'GET', url: `Patient/${randomUUID()}` } },
+      ],
+    });
+    expect(bundle.type).toStrictEqual('batch-response');
+    expect(bundle.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '404']);
+  });
+
   test('Process batch create ifNoneExist success', async () => {
     const identifier = randomUUID();
 
