@@ -1,8 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, getReferenceString } from '@medplum/core';
-import type { BulkDataExportOutput, Group, Organization, Patient, Project } from '@medplum/fhirtypes';
+import { ContentType, createReference, getReferenceString } from '@medplum/core';
+import type {
+  BulkDataExportOutput,
+  Group,
+  Observation,
+  Organization,
+  Patient,
+  PractitionerRole,
+  Project,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -375,6 +383,42 @@ describe('Group Export', () => {
     await groupExportResources(systemRepo, exporter, project, group);
     const bulkDataExport = await exporter.close(project);
     expect(bulkDataExport.status).toBe('completed');
+  });
+
+  test('groupExportResources includes referenced resources', async () => {
+    const organization = await repo.createResource<Organization>({ resourceType: 'Organization' });
+    const role = await repo.createResource<PractitionerRole>({
+      resourceType: 'PractitionerRole',
+      organization: createReference(organization),
+    });
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const observation = await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+      performer: [createReference(role)],
+    });
+    const group = await repo.createResource<Group>({
+      resourceType: 'Group',
+      type: 'person',
+      actual: true,
+      member: [{ entity: createReference(patient) }],
+    });
+
+    const getExportedReferences = async (types?: string[]): Promise<string[]> => {
+      const exporter = new BulkExporter(repo);
+      const writeResourceSpy = vi.spyOn(exporter, 'writeResource');
+      await exporter.start('http://example.com');
+      await groupExportResources(repo, exporter, project, group, types);
+      return writeResourceSpy.mock.calls.map(([resource]) => getReferenceString(resource));
+    };
+
+    // The Organization is only referenced by the PractitionerRole, which is referenced by the Observation
+    expect(await getExportedReferences()).toContainExactly(
+      [patient, observation, group, role, organization].map(getReferenceString)
+    );
+    expect(await getExportedReferences(['Observation'])).toStrictEqual([getReferenceString(observation)]);
   });
 
   test('Export with read-only access policy (no write scope)', () =>

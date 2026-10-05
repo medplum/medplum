@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { SearchRequest } from '@medplum/core';
+import type { SearchRequest, WithId } from '@medplum/core';
 import {
   accepted,
   AccessPolicyInteraction,
@@ -19,7 +19,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import { getPatientResourceTypes } from '../patient';
+import { getPatientCompartmentParams, getPatientResourceTypes } from '../patient';
 import type { Repository } from '../repo';
 import { getSelectQueryForSearch } from '../search';
 import { makeOperationDefinition } from './definitions';
@@ -156,6 +156,8 @@ function parseTypeFilters(repo: Repository, typeFilters: string[] | undefined): 
   });
 }
 
+export const exportPageSize = 1000;
+
 export async function exportResources(
   exporter: BulkExporter,
   project: Project,
@@ -164,19 +166,9 @@ export async function exportResources(
   since?: string,
   typeFilters?: SearchRequest[]
 ): Promise<void> {
-  const resourceTypes = getResourceTypesByExportLevel(exportLevel);
-  const pageSize = 1000;
-
-  for (const resourceType of resourceTypes) {
-    if (
-      !canBeExported(resourceType) ||
-      (types && !types.includes(resourceType)) ||
-      !exporter.repo.supportsInteraction(AccessPolicyInteraction.SEARCH, resourceType)
-    ) {
-      continue;
-    }
+  for (const resourceType of getExportResourceTypes(exporter.repo, exportLevel, types)) {
     const typeFilterSearches = typeFilters?.filter((search) => search.resourceType === resourceType);
-    await exportResourceType(exporter, resourceType, pageSize, since, typeFilterSearches);
+    await exportResourceType(exporter, resourceType, exportPageSize, since, typeFilterSearches);
   }
 
   // Close the exporter
@@ -188,7 +180,8 @@ export async function exportResourceType<T extends Resource>(
   resourceType: T['resourceType'],
   count: number,
   since?: string,
-  typeFilters?: SearchRequest[]
+  typeFilters?: SearchRequest[],
+  onResource?: (resource: WithId<T>) => void
 ): Promise<void> {
   const repo = exporter.repo;
   const sinceFilters = since ? [{ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since }] : [];
@@ -204,6 +197,7 @@ export async function exportResourceType<T extends Resource>(
       sortRules: [{ code: '_lastUpdated', descending: false }],
     };
     await repo.processAllResources(searchRequest, async (resource) => {
+      onResource?.(resource);
       await exporter.writeResource(resource, { skipDedupe });
     });
   }
@@ -212,9 +206,34 @@ export async function exportResourceType<T extends Resource>(
   await exporter.closeWriter(resourceType);
 }
 
+/**
+ * Returns the resource types to export for an export level, limited to the requested types the caller can search.
+ * @param repo - The caller's repository.
+ * @param exportLevel - The export level: System, Patient, or Group.
+ * @param types - The requested _type values, if any.
+ * @returns The resource types to export.
+ */
+export function getExportResourceTypes(
+  repo: Repository,
+  exportLevel: string,
+  types: string[] | undefined
+): ResourceType[] {
+  return getResourceTypesByExportLevel(exportLevel).filter(
+    (resourceType) =>
+      canBeExported(resourceType) &&
+      (!types || types.includes(resourceType)) &&
+      repo.supportsInteraction(AccessPolicyInteraction.SEARCH, resourceType)
+  );
+}
+
 function getResourceTypesByExportLevel(exportLevel: string): ResourceType[] {
   if (exportLevel === 'Patient') {
     return getPatientResourceTypes();
+  }
+
+  if (exportLevel === 'Group') {
+    // Only these types can have a Patient in their compartments column
+    return getPatientResourceTypes().filter((resourceType) => getPatientCompartmentParams(resourceType)?.length);
   }
 
   return getResourceTypes();
