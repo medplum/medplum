@@ -4,18 +4,20 @@ import {
   ActionIcon,
   Button,
   Center,
+  Checkbox,
   Group,
   Loader,
   Menu,
   Pagination,
   Table,
   Text,
+  Tooltip,
   UnstyledButton,
 } from '@mantine/core';
 import type { Filter, SearchRequest } from '@medplum/core';
 import {
-  DEFAULT_SEARCH_COUNT,
   deepEquals,
+  DEFAULT_SEARCH_COUNT,
   formatSearchQuery,
   isDataTypeLoaded,
   normalizeOperationOutcome,
@@ -23,18 +25,21 @@ import {
 import type { Bundle, OperationOutcome, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import {
-  IconAdjustmentsHorizontal,
-  IconBoxMultiple,
+  IconArrowDown,
+  IconArrowUp,
   IconColumns,
-  IconFilePlus,
+  IconDots,
   IconFilter,
-  IconRefresh,
+  IconLibraryPlus,
+  IconPlus,
+  IconReload,
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import type { ChangeEvent, JSX, MouseEvent, ReactNode } from 'react';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { JSX, KeyboardEvent, MouseEvent, ReactNode } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Container } from '../Container/Container';
+import { Modal } from '../Modal/Modal';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
 import { SearchFieldEditor } from '../SearchFieldEditor/SearchFieldEditor';
@@ -42,11 +47,12 @@ import { SearchFilterEditor } from '../SearchFilterEditor/SearchFilterEditor';
 import { SearchFilterValueDialog } from '../SearchFilterValueDialog/SearchFilterValueDialog';
 import { SearchFilterValueDisplay } from '../SearchFilterValueDisplay/SearchFilterValueDisplay';
 import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
+import { SearchSortEditor } from '../SearchSortEditor/SearchSortEditor';
 import { isAuxClick, isCheckboxCell, killEvent } from '../utils/dom';
 import { getPaginationControlProps } from '../utils/pagination';
 import classes from './SearchControl.module.css';
 import { getFieldDefinitions } from './SearchControlField';
-import { addFilter, buildFieldNameString, getOpString, renderValue, setPage } from './SearchUtils';
+import { addFilter, buildFieldNameString, DEFAULT_SORT_RULES, getOpString, renderValue, setPage } from './SearchUtils';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -78,13 +84,8 @@ export class SearchClickEvent extends Event {
 }
 
 /**
- * An additional, computed column appended after the search-result columns.
- *
- * Unlike the columns derived from {@link SearchControlProps.search} fields, an
- * additional column is not backed by a search parameter and has no sort/filter
- * menu: it renders arbitrary content per row. Use it for values that must be
- * computed or fetched separately from the searched resource (e.g. a related
- * resource's status).
+ * An additional, computed column appended after the search-result columns. It is not backed by a
+ * search parameter, so it has no sort/filter menu and renders arbitrary content per row.
  */
 export interface SearchControlAdditionalColumn {
   /** The column header text. */
@@ -99,6 +100,7 @@ export interface SearchControlProps {
   /** Additional computed columns rendered after the search-result columns. */
   readonly additionalColumns?: readonly SearchControlAdditionalColumn[];
   readonly hideToolbar?: boolean;
+  /** Hides the per-column filter description row under the column headers. */
   readonly hideFilters?: boolean;
   readonly onLoad?: (e: SearchLoadEvent) => void;
   readonly onChange?: (e: SearchChangeEvent) => void;
@@ -108,26 +110,32 @@ export interface SearchControlProps {
   readonly onExport?: () => void;
   readonly onExportCsv?: () => void;
   readonly onExportTransactionBundle?: () => void;
-  readonly onDelete?: (ids: string[]) => void;
+  /**
+   * Deletes the checked rows after confirmation. A returned Promise keeps the modal open with a
+   * loading button until it settles; a rejection leaves the modal open for the caller to report.
+   */
+  readonly onDelete?: (ids: string[]) => void | Promise<void>;
   readonly onBulk?: (ids: string[]) => void;
 }
 
 interface SearchControlState {
   readonly searchResponse?: Bundle;
   readonly selected: { [id: string]: boolean };
+  readonly exportDialogVisible: boolean;
+  readonly deleteConfirmVisible?: boolean;
+  readonly deleting?: boolean;
+  readonly dialogOpenTime?: number;
   readonly fieldEditorVisible: boolean;
   readonly filterEditorVisible: boolean;
   readonly filterDialogVisible: boolean;
-  readonly exportDialogVisible: boolean;
   readonly filterDialogFilter?: Filter;
   readonly filterDialogSearchParam?: SearchParameter;
-  readonly dialogOpenTime?: number;
 }
 
 /**
- * The SearchControl component represents the embeddable search table control.
- * It includes the table, rows, headers, sorting, etc.
- * It does not include the field editor, filter editor, pagination buttons.
+ * Embeddable FHIR search table with a toolbar (column, filter and sort popovers, result count,
+ * actions menu, New button), sortable/filterable column headers, optional row checkboxes and
+ * pagination. Controlled: every change is emitted through `onChange` for the caller to apply.
  * @param props - The SearchControl React props.
  * @returns The SearchControl React node.
  */
@@ -135,25 +143,22 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { search, onLoad } = props;
+  const sortedSearch = search.sortRules?.length ? search : { ...search, sortRules: [...DEFAULT_SORT_RULES] };
 
-  const [memoizedSearch, setMemoizedSearch] = useState(search);
+  const [memoizedSearch, setMemoizedSearch] = useState(sortedSearch);
 
-  if (!deepEquals(search, memoizedSearch)) {
-    setMemoizedSearch(search);
+  if (!deepEquals(sortedSearch, memoizedSearch)) {
+    setMemoizedSearch(sortedSearch);
   }
 
   const [state, setState] = useState<SearchControlState>({
     selected: {},
+    exportDialogVisible: false,
     fieldEditorVisible: false,
     filterEditorVisible: false,
-    exportDialogVisible: false,
     filterDialogVisible: false,
   });
-
-  const stateRef = useRef(state);
-  useLayoutEffect(() => {
-    stateRef.current = state;
-  });
+  const [activeRowId, setActiveRowId] = useState<string>();
 
   const total = memoizedSearch.total ?? 'accurate';
 
@@ -170,13 +175,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           )
         )
         .then((response) => {
-          setState({ ...stateRef.current, searchResponse: response });
+          setState((s) => ({ ...s, searchResponse: response }));
           if (onLoad) {
             onLoad(new SearchLoadEvent(response));
           }
         })
         .catch((reason) => {
-          setState({ ...stateRef.current, searchResponse: undefined });
+          setState((s) => ({ ...s, searchResponse: undefined }));
           setOutcome(normalizeOperationOutcome(reason));
         });
     },
@@ -184,7 +189,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   );
 
   const refreshResults = useCallback(() => {
-    setState({ ...stateRef.current, searchResponse: undefined });
+    setState((s) => ({ ...s, searchResponse: undefined }));
     loadResults({ cache: 'reload' });
   }, [loadResults]);
 
@@ -192,72 +197,45 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     loadResults();
   }, [loadResults]);
 
-  function handleSingleCheckboxClick(e: ChangeEvent, id: string): void {
-    e.stopPropagation();
-
-    const el = e.target as HTMLInputElement;
-    const checked = el.checked;
-    const newSelected = { ...stateRef.current.selected };
-    if (checked) {
-      newSelected[id] = true;
-    } else {
-      delete newSelected[id];
-    }
-    setState({ ...stateRef.current, selected: newSelected });
-  }
-
-  function handleAllCheckboxClick(e: ChangeEvent): void {
-    e.stopPropagation();
-
-    const el = e.target as HTMLInputElement;
-    const checked = el.checked;
-    const newSelected = {} as { [id: string]: boolean };
-    const searchResponse = stateRef.current.searchResponse;
-    if (checked && searchResponse?.entry) {
-      searchResponse.entry.forEach((entry) => {
-        if (entry.resource?.id) {
-          newSelected[entry.resource.id] = true;
-        }
-      });
-    }
-    setState({ ...stateRef.current, selected: newSelected });
-  }
-
-  function isAllSelected(): boolean {
-    if (!state.searchResponse?.entry || state.searchResponse.entry.length === 0) {
-      return false;
-    }
-    for (const e of state.searchResponse.entry) {
-      if (e.resource?.id && !state.selected[e.resource.id]) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   /**
-   * Emits a change event to the optional change listener.
-   * @param newSearch - The new search definition.
+   * Checks or unchecks a row.
+   * @param id - The row's resource ID.
+   * @param checked - The new checked state; toggles the row when omitted.
    */
+  function setRowSelected(id: string, checked?: boolean): void {
+    setState((s) => {
+      const newSelected = { ...s.selected };
+      if (checked ?? !s.selected[id]) {
+        newSelected[id] = true;
+      } else {
+        delete newSelected[id];
+      }
+      return { ...s, selected: newSelected };
+    });
+  }
+
+  function setAllSelected(checked: boolean): void {
+    setState((s) => {
+      const newSelected = {} as { [id: string]: boolean };
+      if (checked && s.searchResponse?.entry) {
+        s.searchResponse.entry.forEach((entry) => {
+          if (entry.resource?.id) {
+            newSelected[entry.resource.id] = true;
+          }
+        });
+      }
+      return { ...s, selected: newSelected };
+    });
+  }
+
   function emitSearchChange(newSearch: SearchRequest): void {
     if (props.onChange) {
       props.onChange(new SearchChangeEvent(newSearch));
     }
   }
 
-  /**
-   * Handles a click on a order row.
-   * @param e - The click event.
-   * @param resource - The FHIR resource.
-   */
   function handleRowClick(e: MouseEvent, resource: Resource): void {
-    if (isCheckboxCell(e.target as Element)) {
-      // Ignore clicks on checkboxes
-      return;
-    }
-
-    if (e.button === 2) {
-      // Ignore right clicks
+    if (isCheckboxCell(e.target as Element) || e.button === 2) {
       return;
     }
 
@@ -274,8 +252,57 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     }
   }
 
-  function isExportPassed(): boolean {
-    return !!(props.onExport ?? props.onExportCsv ?? props.onExportTransactionBundle);
+  /**
+   * Keyboard support for a focused row: arrows and Home/End move between rows, Enter clicks the row
+   * (Ctrl/Cmd+Enter as an auxiliary click) and Space toggles its checkbox.
+   * @param e - The keydown event.
+   * @param resource - The row's resource.
+   */
+  function handleRowKeyDown(e: KeyboardEvent<HTMLTableRowElement>, resource: Resource): void {
+    if (e.target !== e.currentTarget) {
+      return;
+    }
+    const row = e.currentTarget;
+    let nextRow: Element | null | undefined;
+    if (e.key === 'ArrowDown') {
+      nextRow = row.nextElementSibling;
+    } else if (e.key === 'ArrowUp') {
+      nextRow = row.previousElementSibling;
+    } else if (e.key === 'Home') {
+      nextRow = row.parentElement?.firstElementChild;
+    } else if (e.key === 'End') {
+      nextRow = row.parentElement?.lastElementChild;
+    } else if (e.key === 'Enter') {
+      killEvent(e);
+      row.dispatchEvent(
+        new window.MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: e.ctrlKey, metaKey: e.metaKey })
+      );
+      return;
+    } else if (e.key === ' ' && checkboxColumn) {
+      killEvent(e);
+      setRowSelected(resource.id as string);
+      return;
+    } else {
+      return;
+    }
+    killEvent(e);
+    (nextRow as HTMLElement | null | undefined)?.focus();
+  }
+
+  async function runDelete(): Promise<void> {
+    const ids = Object.keys(state.selected);
+    setState((s) => ({ ...s, deleting: true }));
+    try {
+      await props.onDelete?.(ids);
+      setState((s) => ({ ...s, selected: {}, deleting: false, deleteConfirmVisible: false }));
+      loadResults({ cache: 'reload' });
+    } catch {
+      setState((s) => ({ ...s, deleting: false }));
+    }
+  }
+
+  function closeDeleteConfirm(): void {
+    setState((s) => ({ ...s, deleteConfirmVisible: false }));
   }
 
   if (outcome) {
@@ -297,218 +324,275 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const entries = lastResult?.entry;
   const resources = entries?.map((e) => e.resource);
 
-  const buttonVariant = 'subtle';
-  const buttonColor = 'gray';
-  const iconSize = 16;
-  const isMobile = window.innerWidth < 768;
+  const selectedIds = Object.keys(state.selected);
+  const allSelected = !!entries?.length && entries.every((e) => !e.resource?.id || state.selected[e.resource.id]);
+  const showExport = !!(props.onExport ?? props.onExportCsv ?? props.onExportTransactionBundle);
+  const showDelete = !!props.onDelete;
+  const showBulk = !!props.onBulk;
+
+  const focusableRowId =
+    activeRowId && resources?.some((r) => r?.id === activeRowId) ? activeRowId : resources?.find(Boolean)?.id;
 
   return (
     <div className={classes.root} data-testid="search-control">
       {!props.hideToolbar && (
-        <Group justify="space-between" mb="xl">
-          <Group gap={2}>
+        <Group justify="space-between" pb="md" className={classes.toolbar}>
+          <Group gap="xs">
             <Button
+              className={classes.toolbarButton}
               size="compact-md"
-              variant={buttonVariant}
-              color={buttonColor}
-              leftSection={<IconColumns size={iconSize} />}
-              onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true, dialogOpenTime: Date.now() })}
+              variant="subtle"
+              color="gray"
+              leftSection={<IconColumns size={16} />}
+              onClick={() => setState((s) => ({ ...s, fieldEditorVisible: true, dialogOpenTime: Date.now() }))}
             >
               Fields
             </Button>
             <Button
+              className={classes.toolbarButton}
               size="compact-md"
-              variant={buttonVariant}
-              color={buttonColor}
-              leftSection={<IconFilter size={iconSize} />}
-              onClick={() => setState({ ...stateRef.current, filterEditorVisible: true, dialogOpenTime: Date.now() })}
+              variant="subtle"
+              color="gray"
+              leftSection={<IconFilter size={16} />}
+              onClick={() => setState((s) => ({ ...s, filterEditorVisible: true, dialogOpenTime: Date.now() }))}
             >
               Filters
             </Button>
-            {props.onNew && (
-              <Button
-                size="compact-md"
-                variant={buttonVariant}
-                color={buttonColor}
-                leftSection={<IconFilePlus size={iconSize} />}
-                onClick={props.onNew}
-              >
-                New...
-              </Button>
-            )}
-            {!isMobile && isExportPassed() && (
-              <Button
-                size="compact-md"
-                variant={buttonVariant}
-                color={buttonColor}
-                leftSection={<IconTableExport size={iconSize} />}
-                onClick={
-                  props.onExport
-                    ? props.onExport
-                    : () => setState({ ...stateRef.current, exportDialogVisible: true, dialogOpenTime: Date.now() })
-                }
-              >
-                Export...
-              </Button>
-            )}
-            {!isMobile && props.onDelete && (
-              <Button
-                size="compact-md"
-                variant={buttonVariant}
-                color={buttonColor}
-                leftSection={<IconTrash size={iconSize} />}
-                onClick={() => (props.onDelete as (ids: string[]) => any)(Object.keys(state.selected))}
-              >
-                Delete...
-              </Button>
-            )}
-            {!isMobile && props.onBulk && (
-              <Button
-                size="compact-md"
-                variant={buttonVariant}
-                color={buttonColor}
-                leftSection={<IconBoxMultiple size={iconSize} />}
-                onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(state.selected))}
-              >
-                Bulk...
-              </Button>
-            )}
-          </Group>
-          <Group gap={2}>
+            <SearchSortEditor search={memoizedSearch} onChange={emitSearchChange} />
             {lastResult && (
-              <Text size="xs" c="dimmed" data-testid="count-display">
+              <Text size="xs" fw={500} c="dimmed" ml={4} data-testid="count-display">
                 {getStart(memoizedSearch, lastResult).toLocaleString()}-
                 {getEnd(memoizedSearch, lastResult).toLocaleString()}
                 {lastResult.total !== undefined &&
                   ` of ${memoizedSearch.total === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
               </Text>
             )}
-            <ActionIcon variant={buttonVariant} color={buttonColor} title="Refresh" onClick={refreshResults}>
-              <IconRefresh size={iconSize} />
-            </ActionIcon>
+          </Group>
+          <Group gap="xs">
+            <Tooltip label="Refresh" position="bottom" openDelay={500}>
+              <ActionIcon
+                className={classes.actionIcon}
+                variant="transparent"
+                color="gray"
+                size={32}
+                radius="xl"
+                aria-label="Refresh"
+                title="Refresh"
+                onClick={refreshResults}
+              >
+                <IconReload size={16} />
+              </ActionIcon>
+            </Tooltip>
+            <Menu shadow="md" width={200} radius="md" position="bottom-end">
+              <Menu.Target>
+                <ActionIcon
+                  className={classes.actionIcon}
+                  variant="transparent"
+                  color="gray"
+                  size={32}
+                  radius="xl"
+                  aria-label="Actions"
+                >
+                  <IconDots size={16} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown className={classes.menuDropdown}>
+                {showExport && (
+                  <Menu.Item
+                    leftSection={<IconTableExport size={16} />}
+                    onClick={
+                      props.onExport ??
+                      (() => setState((s) => ({ ...s, exportDialogVisible: true, dialogOpenTime: Date.now() })))
+                    }
+                  >
+                    Export
+                  </Menu.Item>
+                )}
+                {showBulk && (
+                  <Menu.Item leftSection={<IconLibraryPlus size={16} />} onClick={() => props.onBulk?.(selectedIds)}>
+                    Bulk Apply
+                  </Menu.Item>
+                )}
+                {showDelete && (
+                  <Menu.Item
+                    leftSection={<IconTrash size={16} />}
+                    disabled={selectedIds.length === 0}
+                    onClick={() => setState((s) => ({ ...s, deleteConfirmVisible: true }))}
+                  >
+                    Delete
+                  </Menu.Item>
+                )}
+              </Menu.Dropdown>
+            </Menu>
+            {props.onNew && (
+              <Tooltip label={`New ${resourceType}`} position="bottom" openDelay={500}>
+                <ActionIcon
+                  variant="filled"
+                  color="blue"
+                  size={32}
+                  radius="xl"
+                  aria-label={`New ${resourceType}`}
+                  onClick={props.onNew}
+                >
+                  <IconPlus size={16} />
+                </ActionIcon>
+              </Tooltip>
+            )}
           </Group>
         </Group>
       )}
-      <Table className={classes.table}>
-        <Table.Thead>
-          <Table.Tr>
-            {checkboxColumn && (
-              <Table.Th>
-                <input
-                  type="checkbox"
-                  value="checked"
-                  aria-label="all-checkbox"
-                  data-testid="all-checkbox"
-                  checked={isAllSelected()}
-                  onChange={(e) => handleAllCheckboxClick(e)}
-                />
-              </Table.Th>
-            )}
-            {fields.map((field) => (
-              <Table.Th key={field.name}>
-                <Menu shadow="md" width={240} position="bottom-end">
-                  <Menu.Target>
-                    <UnstyledButton className={classes.control} p={2}>
-                      <Group justify="space-between" wrap="nowrap">
-                        <Text fw={500}>{buildFieldNameString(field.name)}</Text>
-                        <Center className={classes.icon}>
-                          <IconAdjustmentsHorizontal size={14} stroke={1.5} />
-                        </Center>
-                      </Group>
-                    </UnstyledButton>
-                  </Menu.Target>
-                  <SearchPopupMenu
-                    search={memoizedSearch}
-                    searchParams={field.searchParams}
-                    onPrompt={(searchParam, filter) => {
-                      setState({
-                        ...stateRef.current,
-                        filterDialogVisible: true,
-                        filterDialogSearchParam: searchParam,
-                        filterDialogFilter: filter,
-                        dialogOpenTime: Date.now(),
-                      });
-                    }}
-                    onChange={(result) => {
-                      emitSearchChange(result);
-                    }}
-                  />
-                </Menu>
-              </Table.Th>
-            ))}
-            {props.additionalColumns?.map((col) => (
-              <Table.Th key={col.name}>
-                <Text fw={500} p={2}>
-                  {col.name}
-                </Text>
-              </Table.Th>
-            ))}
-          </Table.Tr>
-          {!props.hideFilters && (
+      <div className={classes.tableScroll}>
+        <Table className={classes.table}>
+          <Table.Thead>
             <Table.Tr>
-              {checkboxColumn && <Table.Th />}
-              {fields.map((field) => (
-                <Table.Th key={field.name}>
-                  {field.searchParams && (
-                    <FilterDescription
-                      resourceType={resourceType}
-                      searchParams={field.searchParams}
-                      filters={memoizedSearch.filters}
+              {checkboxColumn && (
+                <Table.Th
+                  className={classes.checkboxCell}
+                  data-checkbox-cell
+                  data-testid="all-checkbox-cell"
+                  onClick={(e) => handleCheckboxCellClick(e, () => setAllSelected(!allSelected))}
+                  onAuxClick={(e) => e.stopPropagation()}
+                >
+                  <div className={classes.checkboxWrap}>
+                    <Checkbox
+                      size="xs"
+                      aria-label="Select all rows"
+                      data-testid="all-checkbox"
+                      checked={allSelected}
+                      onChange={(e) => setAllSelected(e.currentTarget.checked)}
                     />
-                  )}
+                  </div>
+                </Table.Th>
+              )}
+              {fields.map((field) => {
+                const sortCode = field.searchParams?.[0]?.code;
+                const sortRule = sortCode ? memoizedSearch.sortRules?.find((r) => r.code === sortCode) : undefined;
+                return (
+                  <Table.Th key={field.name} aria-sort={sortRule && (sortRule.descending ? 'descending' : 'ascending')}>
+                    {field.searchParams ? (
+                      <Menu shadow="md" radius="md" position="bottom-start">
+                        <Menu.Target>
+                          <UnstyledButton className={classes.control}>
+                            <Group gap={4} wrap="nowrap">
+                              <ColumnTitle>{buildFieldNameString(field.name)}</ColumnTitle>
+                              {sortRule &&
+                                (sortRule.descending ? (
+                                  <IconArrowDown size={12} stroke={2} aria-hidden />
+                                ) : (
+                                  <IconArrowUp size={12} stroke={2} aria-hidden />
+                                ))}
+                            </Group>
+                          </UnstyledButton>
+                        </Menu.Target>
+                        <SearchPopupMenu
+                          search={memoizedSearch}
+                          searchParams={field.searchParams}
+                          onChange={emitSearchChange}
+                          onPrompt={(searchParam, filter) =>
+                            setState((s) => ({
+                              ...s,
+                              filterDialogVisible: true,
+                              filterDialogSearchParam: searchParam,
+                              filterDialogFilter: filter,
+                              dialogOpenTime: Date.now(),
+                            }))
+                          }
+                        />
+                      </Menu>
+                    ) : (
+                      <ColumnTitle className={classes.staticColumnTitle}>
+                        {buildFieldNameString(field.name)}
+                      </ColumnTitle>
+                    )}
+                  </Table.Th>
+                );
+              })}
+              {props.additionalColumns?.map((col) => (
+                <Table.Th key={col.name}>
+                  <ColumnTitle className={classes.staticColumnTitle}>{col.name}</ColumnTitle>
                 </Table.Th>
               ))}
-              {props.additionalColumns?.map((col) => (
-                <Table.Th key={col.name} />
-              ))}
             </Table.Tr>
-          )}
-        </Table.Thead>
-        <Table.Tbody>
-          {resources?.map(
-            (resource) =>
-              resource && (
-                <Table.Tr
-                  key={resource.id}
-                  className={classes.tr}
-                  data-testid="search-control-row"
-                  onClick={(e) => handleRowClick(e, resource)}
-                  onAuxClick={(e) => handleRowClick(e, resource)}
-                >
-                  {checkboxColumn && (
-                    <Table.Td>
-                      <input
-                        type="checkbox"
-                        value="checked"
-                        data-testid="row-checkbox"
-                        aria-label={`Checkbox for ${resource.id}`}
-                        checked={!!state.selected[resource.id as string]}
-                        onChange={(e) => handleSingleCheckboxClick(e, resource.id as string)}
+            {!props.hideFilters && (
+              <Table.Tr>
+                {checkboxColumn && <Table.Th />}
+                {fields.map((field) => (
+                  <Table.Th key={field.name}>
+                    {field.searchParams && (
+                      <FilterDescription
+                        resourceType={resourceType}
+                        searchParams={field.searchParams}
+                        filters={memoizedSearch.filters}
                       />
-                    </Table.Td>
-                  )}
-                  {fields.map((field) => (
-                    <Table.Td key={field.name}>{renderValue(resource, field)}</Table.Td>
-                  ))}
-                  {props.additionalColumns?.map((col) => (
-                    <Table.Td key={col.name}>{col.renderCell(resource)}</Table.Td>
-                  ))}
-                </Table.Tr>
-              )
-          )}
-        </Table.Tbody>
-      </Table>
+                    )}
+                  </Table.Th>
+                ))}
+                {props.additionalColumns?.map((col) => (
+                  <Table.Th key={col.name} />
+                ))}
+              </Table.Tr>
+            )}
+          </Table.Thead>
+          <Table.Tbody>
+            {resources?.map(
+              (resource) =>
+                resource && (
+                  <Table.Tr
+                    key={resource.id}
+                    className={classes.tr}
+                    data-testid="search-control-row"
+                    tabIndex={resource.id === focusableRowId ? 0 : -1}
+                    onFocus={(e) => {
+                      if (e.target === e.currentTarget) {
+                        setActiveRowId(resource.id);
+                      }
+                    }}
+                    onKeyDown={(e) => handleRowKeyDown(e, resource)}
+                    onClick={(e) => handleRowClick(e, resource)}
+                    onAuxClick={(e) => handleRowClick(e, resource)}
+                  >
+                    {checkboxColumn && (
+                      <Table.Td
+                        className={classes.checkboxCell}
+                        data-checkbox-cell
+                        data-testid="row-checkbox-cell"
+                        onClick={(e) => handleCheckboxCellClick(e, () => setRowSelected(resource.id as string))}
+                        onAuxClick={(e) => e.stopPropagation()}
+                      >
+                        <div className={classes.checkboxWrap}>
+                          <Checkbox
+                            size="xs"
+                            data-testid="row-checkbox"
+                            aria-label={`Checkbox for ${resource.id}`}
+                            checked={!!state.selected[resource.id as string]}
+                            onChange={(e) => setRowSelected(resource.id as string, e.currentTarget.checked)}
+                          />
+                        </div>
+                      </Table.Td>
+                    )}
+                    {fields.map((field) => (
+                      <Table.Td key={field.name}>{renderValue(resource, field)}</Table.Td>
+                    ))}
+                    {props.additionalColumns?.map((col) => (
+                      <Table.Td key={col.name}>{col.renderCell(resource)}</Table.Td>
+                    ))}
+                  </Table.Tr>
+                )
+            )}
+          </Table.Tbody>
+        </Table>
+      </div>
       {!resources?.length && (
         <Container>
           <Center style={{ height: 150 }}>
-            <Text size="xl" c="dimmed">
+            <Text className={classes.mutedText} size="xl">
               No results
             </Text>
           </Center>
         </Container>
       )}
       {lastResult && (
-        <Center m="md" p="md">
+        <Center m={0} p="md" pb={0}>
           <Pagination
             value={getPage(memoizedSearch)}
             total={getTotalPages(memoizedSearch, lastResult)}
@@ -523,17 +607,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         visible={state.fieldEditorVisible}
         onOk={(result) => {
           emitSearchChange(result);
-          setState({
-            ...stateRef.current,
-            fieldEditorVisible: false,
-          });
+          setState((s) => ({ ...s, fieldEditorVisible: false }));
         }}
-        onCancel={() => {
-          setState({
-            ...stateRef.current,
-            fieldEditorVisible: false,
-          });
-        }}
+        onCancel={() => setState((s) => ({ ...s, fieldEditorVisible: false }))}
       />
       <SearchFilterEditor
         key={`search-filter-editor-${state.dialogOpenTime}`}
@@ -541,17 +617,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         visible={state.filterEditorVisible}
         onOk={(result) => {
           emitSearchChange(result);
-          setState({
-            ...stateRef.current,
-            filterEditorVisible: false,
-          });
+          setState((s) => ({ ...s, filterEditorVisible: false }));
         }}
-        onCancel={() => {
-          setState({
-            ...stateRef.current,
-            filterEditorVisible: false,
-          });
-        }}
+        onCancel={() => setState((s) => ({ ...s, filterEditorVisible: false }))}
       />
       <SearchExportDialog
         key={`search-export-dialog-${state.dialogOpenTime}`}
@@ -559,10 +627,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         exportCsv={props.onExportCsv}
         exportTransactionBundle={props.onExportTransactionBundle}
         onCancel={() => {
-          setState({
-            ...stateRef.current,
-            exportDialogVisible: false,
-          });
+          setState((s) => ({ ...s, exportDialogVisible: false }));
         }}
       />
       <SearchFilterValueDialog
@@ -575,19 +640,36 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         defaultValue=""
         onOk={(filter) => {
           emitSearchChange(addFilter(memoizedSearch, filter.code, filter.operator, filter.value));
-          setState({
-            ...stateRef.current,
-            filterDialogVisible: false,
-          });
+          setState((s) => ({ ...s, filterDialogVisible: false }));
         }}
-        onCancel={() => {
-          setState({
-            ...stateRef.current,
-            filterDialogVisible: false,
-          });
-        }}
+        onCancel={() => setState((s) => ({ ...s, filterDialogVisible: false }))}
       />
+      <Modal
+        opened={!!state.deleteConfirmVisible}
+        onClose={state.deleting ? () => undefined : closeDeleteConfirm}
+        title={`Delete selected ${buildFieldNameString(resourceType)} resources?`}
+        actions={
+          <>
+            <Button color="red" w="100%" loading={!!state.deleting} onClick={runDelete}>
+              Delete
+            </Button>
+            <Button variant="outline" w="100%" disabled={!!state.deleting} onClick={closeDeleteConfirm}>
+              Cancel
+            </Button>
+          </>
+        }
+      >
+        <Text>This action cannot be undone.</Text>
+      </Modal>
     </div>
+  );
+}
+
+function ColumnTitle(props: { readonly children: ReactNode; readonly className?: string }): JSX.Element {
+  return (
+    <Text className={`${classes.mutedText} ${props.className ?? ''}`} size="xs" fw={500} lh="sm">
+      {props.children}
+    </Text>
   );
 }
 
@@ -600,20 +682,37 @@ interface FilterDescriptionProps {
 function FilterDescription(props: FilterDescriptionProps): JSX.Element {
   const filters = (props.filters ?? []).filter((f) => props.searchParams.find((p) => p.code === f.code));
   if (filters.length === 0) {
-    return <span>no filters</span>;
+    return (
+      <Text className={classes.mutedText} size="xs" lh="sm">
+        no filters
+      </Text>
+    );
   }
 
   return (
     <>
       {filters.map((filter: Filter) => (
-        <div key={`filter-${filter.code}-${filter.operator}-${filter.value}`}>
+        <Text key={`filter-${filter.code}-${filter.operator}-${filter.value}`} size="xs" lh="sm">
           {getOpString(filter.operator)}
           &nbsp;
           <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />
-        </div>
+        </Text>
       ))}
     </>
   );
+}
+
+/**
+ * Makes the whole checkbox cell a hit target; clicks on the input itself are left to its own handler.
+ * @param e - The click event on the cell.
+ * @param toggle - Toggles the cell's checkbox.
+ */
+function handleCheckboxCellClick(e: MouseEvent, toggle: () => void): void {
+  e.stopPropagation();
+  if ((e.target as Element).closest('input, label')) {
+    return;
+  }
+  toggle();
 }
 
 function getPage(search: SearchRequest): number {
