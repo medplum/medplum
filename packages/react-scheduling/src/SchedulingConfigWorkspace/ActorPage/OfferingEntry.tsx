@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Accordion, Box, Group, Stack, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core';
+import { Accordion, Box, Divider, Group, Stack, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
@@ -95,6 +95,8 @@ export function OfferingEntry(props: OfferingEntryProps): JSX.Element {
             />
             <ParameterWarnings warnings={warnings} />
           </Stack>
+
+          <Divider />
 
           <Stack gap="sm">
             <Title order={4} size="h5">

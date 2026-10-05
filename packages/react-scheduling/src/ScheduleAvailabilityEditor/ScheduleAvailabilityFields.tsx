@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Button, Divider, Group, Modal, Stack, Switch, Text, VisuallyHidden } from '@mantine/core';
+import { ActionIcon, Box, Button, Group, Modal, Stack, Switch, Text, VisuallyHidden } from '@mantine/core';
 import type { DayOfWeek, WithId } from '@medplum/core';
 import { deepEquals } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
@@ -222,7 +222,7 @@ export function ScheduleAvailabilityFields(props: ScheduleAvailabilityFieldsProp
     <>
       {mode === 'override' && (
         <>
-          <Group gap="sm" wrap="nowrap" className={classes.overrideToggle}>
+          <Group gap="sm" wrap="nowrap" mb="md" className={classes.overrideToggle}>
             <Switch
               checked={overriding}
               onChange={(e) => toggleOverriding(e.currentTarget.checked)}
@@ -233,7 +233,6 @@ export function ScheduleAvailabilityFields(props: ScheduleAvailabilityFieldsProp
             />
             <Text fw={500}>Enable custom availability for {serviceName}</Text>
           </Group>
-          <Divider my="lg" />
         </>
       )}
       <Box className={classes.week} opacity={overriding ? 1 : 0.8}>
