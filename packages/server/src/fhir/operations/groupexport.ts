@@ -84,7 +84,7 @@ export async function groupExportResources(
         exportPageSize,
         since,
         [{ resourceType, filters: [compartment] }],
-        (resource) => addResolvableReferences(resource, references, types)
+        (resource) => addResolvableReferences(resource, references)
       );
     }
     await exportReferencedResources(repo, exporter, references, types);
@@ -96,6 +96,8 @@ export async function groupExportResources(
 /**
  * Exports resources such as Organization and Practitioner that are referenced by exported resources,
  * matching the referenced resources included by Patient $everything.
+ * These types must stay outside the Patient compartment, because their writers would already be closed.
+ * References are followed through types excluded by _type, so an included type is still reached.
  * @param repo - The caller's repository.
  * @param exporter - The bulk exporter.
  * @param references - The references collected from exported Patient compartment resources.
@@ -112,20 +114,26 @@ async function exportReferencedResources(
   while (pending.length > 0) {
     pending.forEach((reference) => resolved.add(reference));
     const next = new Set<string>();
-    const resources = await repo.readReferences(pending.map((reference) => ({ reference })));
-    for (const resource of resources) {
-      if (isResource(resource)) {
-        await exporter.writeResource(resource);
-        addResolvableReferences(resource, next, types);
+    for (let i = 0; i < pending.length; i += exportPageSize) {
+      const batch = pending.slice(i, i + exportPageSize);
+      const resources = await repo.readReferences(batch.map((reference) => ({ reference })));
+      for (const resource of resources) {
+        if (!isResource(resource)) {
+          continue;
+        }
+        if (!types || types.includes(resource.resourceType)) {
+          await exporter.writeResource(resource);
+        }
+        addResolvableReferences(resource, next);
       }
     }
     pending = Array.from(next).filter((reference) => !resolved.has(reference));
   }
 }
 
-function addResolvableReferences(resource: Resource, references: Set<string>, types: string[] | undefined): void {
+function addResolvableReferences(resource: Resource, references: Set<string>): void {
   for (const reference of collectReferences(resource)) {
-    if (shouldResolveReference(reference) && (!types || types.includes(reference.split('/')[0]))) {
+    if (shouldResolveReference(reference)) {
       references.add(reference);
     }
   }

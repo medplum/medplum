@@ -419,6 +419,10 @@ describe('Group Export', () => {
       [patient, observation, group, role, organization].map(getReferenceString)
     );
     expect(await getExportedReferences(['Observation'])).toStrictEqual([getReferenceString(observation)]);
+    // The Organization is still reached through the PractitionerRole, which _type excludes
+    expect(await getExportedReferences(['Observation', 'Organization'])).toContainExactly(
+      [observation, organization].map(getReferenceString)
+    );
   });
 
   test('Export with read-only access policy (no write scope)', () =>
