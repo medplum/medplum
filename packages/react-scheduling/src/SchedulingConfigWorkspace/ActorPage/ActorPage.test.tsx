@@ -148,7 +148,7 @@ describe('ActorPage', () => {
     await setup(drSmith, [overriding]);
 
     expect(within(entry('Initial Visit')).getByText('Customized')).toHaveTextContent(
-      'Parameter values defined below override those on the Initial Visit visit type.'
+      'Parameter values defined here override those on the Initial Visit visit type.'
     );
     expect(within(entry('Follow-up')).queryByText('Customized')).not.toBeInTheDocument();
 

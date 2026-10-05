@@ -14,7 +14,7 @@ export interface OverridesBadgeProps {
  * @returns The badge.
  */
 export function OverridesBadge(props: OverridesBadgeProps): JSX.Element {
-  const description = `Parameter values defined below override those on the ${props.serviceName} visit type.`;
+  const description = `Parameter values defined here override those on the ${props.serviceName} visit type.`;
   return (
     <Tooltip label={description} multiline maw={280} withArrow>
       <Badge size="xs" variant="light" color="blue">
