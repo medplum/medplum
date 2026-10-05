@@ -132,10 +132,11 @@ function makeSchedule(
 }
 
 describe('getActorNotices', () => {
-  test('marks an actor whose Schedule is inactive', () => {
+  test('marks an active actor whose Schedule is inactive, but not an inactive one', () => {
     const off = makeSchedule('s', 'Location/procedure', [timed], { active: false });
 
     expect(getActorNotices({ resource: typedRoom, schedules: [off] })).toEqual(['Schedule inactive']);
+    expect(getActorNotices({ resource: { ...typedRoom, status: 'inactive' }, schedules: [off] })).toEqual([]);
     expect(getActorNotices({ resource: drSmith, schedules: [] })).toEqual([]);
   });
 });

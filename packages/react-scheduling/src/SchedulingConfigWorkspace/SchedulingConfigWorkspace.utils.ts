@@ -138,7 +138,8 @@ export function getOfferedServices(
  */
 export function getActorNotices(actor: ConfigurableActor): string[] {
   const [schedule] = actor.schedules;
-  return schedule?.active === false ? ['Schedule inactive'] : [];
+  // An inactive actor's row is already marked Inactive, which says more.
+  return schedule?.active === false && !isActorInactive(actor.resource) ? ['Schedule inactive'] : [];
 }
 
 /**
