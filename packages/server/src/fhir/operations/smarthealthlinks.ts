@@ -360,12 +360,17 @@ async function resolveExternalSmartHealthLink(
   const body = await response.text();
 
   const { contentType, plaintext } = await decryptSmartHealthLinkFile(body, payload.key);
-  if (contentType !== ContentType.FHIR_JSON) {
+  // Some issuers use plain application/json instead of application/fhir+json; accept it if the payload is a FHIR resource
+  if (contentType !== ContentType.FHIR_JSON && contentType !== ContentType.JSON) {
     throw new Error(`Unsupported SMART Health Link content type: ${contentType || 'unknown'}`);
+  }
+  const resource = JSON.parse(plaintext) as Resource;
+  if (!isString(resource?.resourceType)) {
+    throw new Error('SMART Health Link payload is not a FHIR resource');
   }
 
   return {
-    fhirResources: [JSON.parse(plaintext) as Resource],
+    fhirResources: [resource],
     recipient,
     sourceOrigin: url.origin,
     expiresAt: payload.exp !== undefined ? new Date(payload.exp * 1000).toISOString() : undefined,

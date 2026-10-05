@@ -478,12 +478,46 @@ describe('SMART Health operations', () => {
     fetchSpy.mockRestore();
   });
 
+  test('Accepts external SMART Health Link payloads with application/json content type', async () => {
+    const key = base64url.encode(Buffer.alloc(32, 4));
+    const encrypted = await encryptSmartHealthLinkTestFile(
+      { resourceType: 'Bundle', type: 'collection' },
+      key,
+      ContentType.JSON as unknown as 'application/fhir+json'
+    );
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => encrypted,
+    } as Response);
+
+    const resolveResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        shlink: encodeShlinkPayload({
+          url: 'https://issuer.example.com/smart-link/payload',
+          key,
+          flag: 'U',
+          v: 1,
+        }),
+        recipient: 'Test Recipient',
+      });
+    expect(resolveResponse).toHaveStatus(200);
+    expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(true);
+    const fhirResources = JSON.parse(getStringParameter(resolveResponse.body, 'fhirResources')) as Bundle[];
+    expect(fhirResources[0]).toMatchObject({ resourceType: 'Bundle', type: 'collection' });
+
+    fetchSpy.mockRestore();
+  });
+
   test('Rejects invalid external SMART Health Link payload responses', async () => {
     const key = base64url.encode(Buffer.alloc(32, 3));
     const unsupportedContentType = await encryptSmartHealthLinkTestFile(
       { resourceType: 'Bundle', type: 'collection' },
       key,
-      ContentType.JSON as unknown as 'application/fhir+json'
+      ContentType.TEXT as unknown as 'application/fhir+json'
     );
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
@@ -533,6 +567,33 @@ describe('SMART Health operations', () => {
     expect(getStringParameter(unsupportedContentTypeResponse.body, 'error')).toContain(
       'Unsupported SMART Health Link content type'
     );
+
+    const notFhir = await encryptSmartHealthLinkTestFile(
+      { foo: 'bar' } as unknown as Bundle,
+      key,
+      ContentType.JSON as unknown as 'application/fhir+json'
+    );
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: async () => notFhir,
+    } as Response);
+    const notFhirResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        shlink: encodeShlinkPayload({
+          url: 'https://issuer.example.com/smart-link/payload',
+          key,
+          flag: 'U',
+          v: 1,
+        }),
+        recipient: 'Test Recipient',
+      });
+    expect(notFhirResponse).toHaveStatus(200);
+    expect(getBooleanParameter(notFhirResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(notFhirResponse.body, 'error')).toContain('not a FHIR resource');
 
     fetchSpy.mockResolvedValueOnce({
       ok: true,
