@@ -1,12 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
+import { ReadablePromise } from '@medplum/core';
 import type { Bundle, Practitioner, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { TaskBoard } from './TaskBoard';
@@ -19,11 +22,11 @@ describe('TaskBoard', () => {
     vi.clearAllMocks();
   });
 
-  const setup = (
+  const boardElement = (
     query: string = '',
     props: Partial<React.ComponentProps<typeof TaskBoard>> = {}
-  ): ReturnType<typeof render> => {
-    return render(
+  ): JSX.Element => {
+    return (
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
@@ -43,6 +46,18 @@ describe('TaskBoard', () => {
       </MemoryRouter>
     );
   };
+
+  const setup = (
+    query: string = '',
+    props: Partial<React.ComponentProps<typeof TaskBoard>> = {}
+  ): ReturnType<typeof render> => render(boardElement(query, props));
+
+  const searchBundle = (tasks: Task[]): Bundle<WithId<Task>> =>
+    ({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: tasks.map((task) => ({ resource: task })),
+    }) as Bundle<WithId<Task>>;
 
   const mockTask: Task = {
     resourceType: 'Task',
@@ -211,7 +226,6 @@ describe('TaskBoard', () => {
       expect(screen.getByLabelText('Filter tasks')).toBeInTheDocument();
     });
 
-    // Open filter menu
     await user.click(screen.getByLabelText('Filter tasks'));
 
     await waitFor(() => {
@@ -393,20 +407,17 @@ describe('TaskBoard', () => {
       expect(searchSpy).toHaveBeenCalled();
     });
 
-    // Wait for pagination to render
     await waitFor(() => {
       const pagination = document.querySelector('.mantine-Pagination-root');
       expect(pagination).toBeInTheDocument();
     });
 
-    // Click next page button (page 2)
     const page2Button = screen.getByRole('button', { name: /2/i });
     if (page2Button) {
       await user.click(page2Button);
     }
 
     await waitFor(() => {
-      // Should call onChange with SearchRequest containing offset=20
       expect(onChange).toHaveBeenCalled();
       const call = onChange.mock.calls[0];
       expect(call[0]).toHaveProperty('offset', 20);
@@ -427,7 +438,6 @@ describe('TaskBoard', () => {
       expect(searchSpy).toHaveBeenCalled();
     });
 
-    // Switch to All Tasks tab (this should navigate to reset pagination)
     const allTasksTab = screen.getByRole('tab', { name: 'All Tasks' });
     expect(allTasksTab).toBeInTheDocument();
   });
@@ -459,7 +469,6 @@ describe('TaskBoard', () => {
     await medplum.createResource(inProgressTask2);
     await medplum.createResource(completedTask);
 
-    // Mock search to return only in-progress tasks (with all required IDs)
     vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
@@ -484,24 +493,7 @@ describe('TaskBoard', () => {
     const firstTaskLink = screen.getByRole('link', { name: /First In Progress Task/ });
     await user.click(firstTaskLink);
 
-    rerender(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <TaskBoard
-              query="status=in-progress"
-              selectedTaskId="task-in-progress-1"
-              onDelete={vi.fn()}
-              onNew={vi.fn()}
-              onChange={vi.fn()}
-              getTaskUri={vi.fn((task: Task) => `/Task/${task.id}`)}
-              myTasksUri="/Task?owner=Patient/123&_sort=-_lastUpdated"
-              allTasksUri="/Task?_sort=-_lastUpdated"
-            />
-          </MantineProvider>
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+    rerender(boardElement('status=in-progress', { selectedTaskId: 'task-in-progress-1' }));
 
     await waitFor(
       () => {
@@ -549,7 +541,6 @@ describe('TaskBoard', () => {
       authoredOn: '2023-01-01T12:00:00Z',
     };
 
-    // Mock search to return empty initially, then include the new task after creation
     const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
@@ -563,7 +554,6 @@ describe('TaskBoard', () => {
       expect(screen.getByText('My Tasks')).toBeInTheDocument();
     });
 
-    // Open the new task modal
     const plusButtons = screen.getAllByRole('button');
     const plusButton = plusButtons.find((btn) => btn.querySelector('svg.tabler-icon-plus'));
     expect(plusButton).toBeDefined();
@@ -786,5 +776,92 @@ describe('TaskBoard', () => {
       operator: 'eq',
       value: 'urgent',
     });
+  });
+
+  const typedTask = (code: string, display: string): Task => ({
+    ...mockTask,
+    id: `task-${code}`,
+    code: { text: `${display} Task` },
+    performerType: [{ coding: [{ code, display }] }],
+  });
+
+  test('ignores a stale response that resolves after the query has changed', async () => {
+    const stale = Promise.withResolvers<Bundle<WithId<Task>>>();
+    const searchSpy = vi
+      .spyOn(medplum, 'search')
+      .mockReturnValueOnce(new ReadablePromise(stale.promise))
+      .mockResolvedValue(searchBundle([{ ...mockTask, id: 'task-fresh', code: { text: 'Fresh Task' } }]));
+    const { rerender } = setup('status=requested');
+    await waitFor(() => expect(searchSpy).toHaveBeenCalledTimes(1));
+
+    rerender(boardElement('status=in-progress'));
+    expect(await screen.findByText('Fresh Task')).toBeInTheDocument();
+    await act(async () =>
+      stale.resolve(searchBundle([{ ...mockTask, id: 'task-stale', code: { text: 'Stale Task' } }]))
+    );
+
+    expect(screen.queryByText('Stale Task')).not.toBeInTheDocument();
+    expect(screen.getByText('Fresh Task')).toBeInTheDocument();
+  });
+
+  test('shows an error notification and leaves the empty state when the search fails', async () => {
+    vi.spyOn(medplum, 'search').mockRejectedValue(new Error('Search exploded'));
+    const showSpy = vi.spyOn(notifications, 'show');
+    setup();
+
+    await waitFor(() => expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ message: 'Search exploded' })));
+    expect(await screen.findByText('No tasks available.')).toBeInTheDocument();
+  });
+
+  test('filters the list by performer type locally and restores it when Clear All Filters is clicked', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    vi.spyOn(medplum, 'search').mockResolvedValue(
+      searchBundle([typedTask('cardio', 'Cardiology'), typedTask('nurse', 'Nursing')])
+    );
+    setup('owner=Practitioner/p1&status=in-progress&priority=urgent&_offset=20', { onChange });
+
+    expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Filter tasks'));
+    await user.hover(await screen.findByText('Performer Type'));
+    await user.click(await screen.findByText('Cardiology'));
+
+    await waitFor(() => expect(screen.queryByText('Nursing Task')).not.toBeInTheDocument());
+    expect(screen.getByText('Cardiology Task')).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+
+    await user.click(screen.getByLabelText('Filter tasks'));
+    await user.click(await screen.findByText('Clear All Filters'));
+
+    expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
+    expect(screen.getByText('Cardiology Task')).toBeInTheDocument();
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ filters: [{ code: 'owner', operator: 'eq', value: 'Practitioner/p1' }], offset: 0 })
+    );
+  });
+
+  test('falls back to reading the selected task when it is not in the current page', async () => {
+    vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([typedTask('nurse', 'Nursing')]));
+    const readSpy = vi
+      .spyOn(medplum, 'readResource')
+      .mockResolvedValue({ ...mockTask, id: 'task-123', description: 'Read back' });
+    setup('', { selectedTaskId: 'task-123' });
+
+    expect(await screen.findByText('Read back')).toBeInTheDocument();
+    expect(readSpy).toHaveBeenCalledWith('Task', 'task-123');
+  });
+
+  test('refreshes the list and calls onDelete after the selected task is deleted', async () => {
+    const user = userEvent.setup();
+    const onDelete = vi.fn();
+    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([mockTask]));
+    vi.spyOn(medplum, 'deleteResource').mockResolvedValue(undefined);
+    setup('', { selectedTaskId: 'task-123', onDelete });
+
+    await user.click(await screen.findByLabelText('Delete Task'));
+    await user.click(await screen.findByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 'task-123' })));
+    expect(searchSpy).toHaveBeenCalledTimes(2);
   });
 });

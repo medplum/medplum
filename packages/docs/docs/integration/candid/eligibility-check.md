@@ -49,6 +49,7 @@ flowchart TD
 | `insurance[0].coverage` | Reference to the Coverage resource | Yes |
 | `servicedDate` | Date of service for the eligibility check | No |
 | `servicedPeriod.start` | Alternative to `servicedDate` | No |
+| `item[].category` | X12 service type code to check (system: `https://x12.org/codes/service-type-codes`, e.g. `55` for Medical Nutrition Therapy). Defaults to `30` (Health Benefit Plan Coverage) when omitted. | No |
 
 ### Coverage
 
@@ -76,6 +77,8 @@ The payer identifier system for eligibility checks differs from claim submission
 |----------|-----------|--------|
 | 1 | Stedi payer network ID | `https://www.stedi.com/healthcare/network` |
 | 2 | Candid CHC payer ID | `https://www.joincandidhealth.com/chc-payerid` |
+
+Payers saved from the [Payer Directory](/docs/integration/candid/payer-directory) include the CHC payer ID. Add the Stedi payer network ID to the saved Organization when you have it.
 
 ## Running a Check
 
@@ -146,4 +149,5 @@ Candid staging supports mock eligibility checks using specific magic values — 
 
 - [Candid Health Eligibility API Reference](https://docs.joincandidhealth.com/api-reference/pre-encounter/eligibility-checks)
 - [Claim Submission](/docs/integration/candid/claim-submission)
+- [Payer Directory](/docs/integration/candid/payer-directory)
 - [Billing Documentation](/docs/billing)

@@ -1,0 +1,63 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* The pill CTA shape shared by the marketing heroes and CTA bands. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--landing-btn-gap);
+  font-family: var(--landing-font-display);
+  font-weight: var(--landing-btn-weight);
+  font-size: var(--landing-btn-size);
+  padding: var(--landing-btn-padding);
+  border-radius: var(--landing-btn-radius);
+  border: none;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--landing-transition);
+}
+
+.button:hover {
+  text-decoration: none;
+}
+
+/* Primary action. */
+.purple {
+  background: var(--oc-grape-8);
+  color: #fff;
+}
+
+/* `*Active` mirrors the matching `:hover` rule for controls that are visually engaged
+   without the pointer over them — a dropdown trigger whose menu is open. Kept adjacent
+   to the hover rule so the pair can't drift. */
+.purple:hover,
+.purpleActive {
+  background: var(--oc-grape-9);
+  color: #fff;
+}
+
+/* Secondary action: reads as a raised white chip on both light and tinted bands. */
+.white {
+  background: #fff;
+  color: var(--landing-color-heading);
+  box-shadow: var(--landing-shadow-cta-white);
+}
+
+.white:hover,
+.whiteActive {
+  background: #fff;
+  color: var(--oc-grape-8);
+}
+
+[data-theme='dark'] .white {
+  background: var(--landing-surface-elevated);
+  color: var(--oc-gray-2);
+}
+
+[data-theme='dark'] .white:hover,
+[data-theme='dark'] .whiteActive {
+  background: var(--landing-surface-elevated);
+  color: var(--oc-grape-5);
+}

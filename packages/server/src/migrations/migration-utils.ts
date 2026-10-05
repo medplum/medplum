@@ -3,12 +3,13 @@
 import type { WithId } from '@medplum/core';
 import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest } from '@medplum/core';
 import type { AsyncJob } from '@medplum/fhirtypes';
-import type { Pool, PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 import { getConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool, withPoolClient } from '../database';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import type { PgQueryable } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import { getServerVersion } from '../util/version';
@@ -31,7 +32,7 @@ import type { PreDeployMigration } from './schema/types';
  * if there are no pending migrations, or `MigrationVersion.UNKNOWN` if the current post-deploy version
  * cannot be assessed.
  */
-export async function getPendingPostDeployMigration(client: Pool | PoolClient): Promise<number> {
+export async function getPendingPostDeployMigration(client: PgQueryable): Promise<number> {
   const postDeployVersion = await getPostDeployVersion(client, { ignoreFirstBoot: true });
 
   if (postDeployVersion === MigrationVersion.UNKNOWN) {
@@ -46,7 +47,7 @@ export async function getPendingPostDeployMigration(client: Pool | PoolClient): 
   return MigrationVersion.NONE;
 }
 
-export async function isFirstBootMode(client: Pool | PoolClient): Promise<boolean> {
+export async function isFirstBootMode(client: PgQueryable): Promise<boolean> {
   const postDeployVersion = await getPostDeployVersion(client);
   return postDeployVersion === MigrationVersion.FIRST_BOOT;
 }
@@ -176,7 +177,7 @@ export async function queuePostDeployMigration(
   // picked up before the transaction was committed.
   // globalLogger.info('Adding post-deploy migration job', { version, asyncJob: getReferenceString(asyncJob) });
   const jobData = migration.prepareJobData(asyncJob);
-  const result = await addPostDeployMigrationJobData(jobData);
+  const result = await addPostDeployMigrationJobData(jobData, { deduplication: { id: `v${version}` } });
   if (!result) {
     globalLogger.error('Unable to add post-deploy migration job', {
       version,

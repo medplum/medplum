@@ -4,7 +4,15 @@ import { Button, Paper, ScrollArea, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, isGone, normalizeErrorString } from '@medplum/core';
 import type { OperationOutcome, Resource, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
-import { Document, LinkTabs, OperationOutcomeAlert, PatientHeader, useMedplum, useResource } from '@medplum/react';
+import {
+  Document,
+  InfoBarSkeleton,
+  LinkTabs,
+  OperationOutcomeAlert,
+  PatientHeader,
+  useMedplum,
+  useResource,
+} from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { Outlet, useParams } from 'react-router';
@@ -139,16 +147,15 @@ export function ResourcePage(): JSX.Element | null {
         />
       )}
       {value && <QuickServiceRequests value={value} />}
-      {value && (
-        <Paper>
-          {patient && <PatientHeader patient={patient} />}
-          {specimen && <SpecimenHeader specimen={specimen} />}
-          {resourceType !== 'Patient' && <ResourceHeader resource={reference} />}
-          <ScrollArea>
-            <LinkTabs baseUrl={`/${resourceType}/${id}`} tabs={tabs} />
-          </ScrollArea>
-        </Paper>
-      )}
+      <Paper>
+        {!value && <InfoBarSkeleton withAvatar={resourceType === 'Patient'} />}
+        {patient && <PatientHeader patient={patient} />}
+        {specimen && <SpecimenHeader specimen={specimen} />}
+        {value && resourceType !== 'Patient' && <ResourceHeader resource={reference} />}
+        <ScrollArea>
+          <LinkTabs baseUrl={`/${resourceType}/${id}`} tabs={tabs} />
+        </ScrollArea>
+      </Paper>
       <Outlet />
     </>
   );

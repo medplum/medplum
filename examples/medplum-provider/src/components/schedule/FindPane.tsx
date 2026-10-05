@@ -12,13 +12,13 @@ import {
 } from '@medplum/core';
 import type { Appointment, Bundle, Encounter, HealthcareService, Patient, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
+import type { DateTimeRange } from '@medplum/react-scheduling';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
-import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
 import { SchedulingTransientIdentifier } from '../../utils/scheduling';
 
@@ -26,7 +26,7 @@ const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 type FindPaneProps = {
   schedule: WithId<Schedule>;
-  range: Range;
+  range: DateTimeRange;
   onSuccess: (results: { appointment: WithId<Appointment>; slots: WithId<Slot>[] }) => void;
   healthcareService: WithId<HealthcareService> | undefined;
   onSelectHealthcareService: (healthcareService: WithId<HealthcareService> | undefined) => void;
@@ -82,7 +82,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   }, [medplum, schedule]);
 
   const scheduleableServices = useMemo(
-    () => healthcareServices?.filter((service) => hasSchedulingParameters(service)),
+    () => healthcareServices?.filter((service) => service.active !== false && hasSchedulingParameters(service)),
     [healthcareServices]
   );
 
@@ -166,6 +166,10 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
     },
     [onSuccess, onSelectHealthcareService, navigate]
   );
+
+  if (schedule.active === false) {
+    return null;
+  }
 
   if (!scheduleableServices?.length) {
     return null;

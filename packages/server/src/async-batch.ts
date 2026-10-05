@@ -1,20 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { accepted, badRequest, OperationOutcomeError } from '@medplum/core';
-import type { Bundle, Project } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import { json } from 'express';
 import { JSON_TYPE, runMiddleware } from './app';
 import { getConfig } from './config/loader';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import { getAuthenticatedContext } from './context';
 import { AsyncJobExecutor } from './fhir/operations/utils/asyncjobexecutor';
 import { sendOutcome } from './fhir/outcomes';
 import { getProjectScopedUrl } from './util/url';
-import { queueBatchProcessing, queueLegacyBatchProcessing } from './workers/batch';
+import { queueBatchProcessing } from './workers/batch';
 
 export function asyncBatchHandler(
-  config: MedplumServerConfig
+  config: ServerConfig
 ): (req: Request, res: Response, next: NextFunction) => Promise<any> {
   return async function (req: Request, res: Response, next: NextFunction): Promise<any> {
     const { repo, project } = getAuthenticatedContext();
@@ -42,18 +42,10 @@ export function asyncBatchHandler(
     const exec = new AsyncJobExecutor(repo);
     await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     await exec.run(async (asyncJob) => {
-      if (useLegacyBatchProcessing(project)) {
-        await queueLegacyBatchProcessing(bundle, asyncJob);
-      } else {
-        await queueBatchProcessing(bundle, asyncJob);
-      }
+      await queueBatchProcessing(bundle, asyncJob);
     });
 
     const { baseUrl } = getConfig();
     sendOutcome(res, accepted(exec.getContentLocation(getProjectScopedUrl(req.originalUrl, baseUrl))));
   };
-}
-
-function useLegacyBatchProcessing(project: Project): boolean {
-  return !project.systemSetting?.find((s) => s.name === 'reentrantAsyncBatch')?.valueBoolean;
 }

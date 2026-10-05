@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Pool, PoolClient } from 'pg';
+import type { Pool } from 'pg';
 import { vi } from 'vitest';
 import { loadTestConfig } from './config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from './database';
-import { getPostDeployVersion, markPostDeployMigrationCompleted } from './migration-sql';
+import type { PgQueryable } from './fhir/sql';
+import { getPostDeployVersion, markPostDeployMigrationCompleted, setPreDeployVersion } from './migration-sql';
 import type { CustomPostDeployMigration } from './migrations/data/types';
 import type * as MigrationDataV1 from './migrations/data/v1';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
@@ -60,11 +61,7 @@ describe('markPostDeployMigrationCompleted', () => {
     await closeDatabase();
   });
 
-  async function setDataVersionState(
-    client: Pool | PoolClient,
-    dataVersion: number,
-    firstBoot: boolean
-  ): Promise<void> {
+  async function setDataVersionState(client: PgQueryable, dataVersion: number, firstBoot: boolean): Promise<void> {
     await client.query('UPDATE "DatabaseMigration" SET "dataVersion" = $1, "firstBoot" = $2 WHERE "id" = $3', [
       dataVersion,
       firstBoot,
@@ -94,5 +91,60 @@ describe('markPostDeployMigrationCompleted', () => {
 
     await markPostDeployMigrationCompleted(client, latestVersion, { rowId });
     expect(await getPostDeployVersion(client, { rowId })).toEqual(latestVersion);
+  });
+});
+
+describe('setPreDeployVersion', () => {
+  let client: Pool;
+  let rowId: number;
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initDatabase(config);
+
+    client = getDatabasePool(DatabaseMode.WRITER);
+    const result = await client.query<{ id: number }>(
+      `INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion", "firstBoot") VALUES (3, 0, 0, false)
+        ON CONFLICT("id") DO UPDATE SET "version" = EXCLUDED."version", "dataVersion" = EXCLUDED."dataVersion"
+        RETURNING *`
+    );
+    rowId = result.rows[0].id;
+  });
+
+  afterAll(async () => {
+    await closeDatabase();
+  });
+
+  async function getVersion(): Promise<number> {
+    const result = await client.query<{ version: number }>(
+      'SELECT "version" FROM "DatabaseMigration" WHERE "id" = $1',
+      [rowId]
+    );
+    return result.rows[0].version;
+  }
+
+  test('Sets version forward and backward', async () => {
+    expect(await setPreDeployVersion(client, 5, { rowId })).toEqual(5);
+    expect(await getVersion()).toEqual(5);
+
+    expect(await setPreDeployVersion(client, 2, { rowId })).toEqual(2);
+    expect(await getVersion()).toEqual(2);
+  });
+
+  test('Does not modify dataVersion', async () => {
+    await client.query('UPDATE "DatabaseMigration" SET "dataVersion" = 7 WHERE "id" = $1', [rowId]);
+    await setPreDeployVersion(client, 3, { rowId });
+    const result = await client.query<{ dataVersion: number }>(
+      'SELECT "dataVersion" FROM "DatabaseMigration" WHERE "id" = $1',
+      [rowId]
+    );
+    expect(result.rows[0].dataVersion).toEqual(7);
+  });
+
+  test('Returns undefined when row does not exist', async () => {
+    expect(await setPreDeployVersion(client, 1, { rowId: 999_999 })).toBeUndefined();
+  });
+
+  test('Rejects non-integer version', async () => {
+    await expect(setPreDeployVersion(client, 1.5, { rowId })).rejects.toThrow();
   });
 });

@@ -21,10 +21,16 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo, Repository } from '../fhir/repo';
-import { addTestUser, createTestProject, generateSelfSignedCert, withTestContext } from '../test.setup';
+import {
+  addTestUser,
+  createTestProject,
+  generateSelfSignedCert,
+  getSuperAdminTestProject,
+  withTestContext,
+} from '../test.setup';
 import { mockFetchJson, mockFetchStatus, mockFetchText } from '../test.setup.fetch';
 import { validateClientCert } from './cert';
 import { generateSecret, verifyJwt } from './keys';
@@ -116,7 +122,7 @@ describe('OAuth2 Token', () => {
     userInfoMode: 'gcip' as const,
     userInfoApiKey: 'test-api-key',
   };
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
   let adminMembership: WithId<ProjectMembership>;
@@ -1385,7 +1391,7 @@ describe('OAuth2 Token', () => {
     // 2) Get tokens with grant_type=authorization_code
     // 3) Get tokens with grant_type=refresh_token
     // 4) Get tokens again with grant_type=refresh_token
-    // 5) Verify that the first refresh token is invalid
+    // 5) Verify that replaying the first refresh token is rejected and revokes the login
 
     // 1) Authorize
     const res = await request(app).post('/auth/login').type('json').send({
@@ -1438,13 +1444,14 @@ describe('OAuth2 Token', () => {
     expect(res4.body.access_token).toBeDefined();
     expect(res4.body.refresh_token).toBeDefined();
 
-    // 5) Verify that the first refresh token is invalid
+    // 5) Verify that the first refresh token is invalid, and that replaying it revokes the login.
+    //    It is older than the previous token, so the grace period does not apply.
     const res5 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'refresh_token',
       refresh_token: res2.body.refresh_token,
     });
     expect(res5).toHaveStatus(400);
-    expect(res5.body).toMatchObject({ error: 'invalid_request', error_description: 'Invalid token' });
+    expect(res5.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
   });
 
   test('accessTokenLifetime -- Valid duration', async () => {
@@ -2152,6 +2159,29 @@ describe('OAuth2 Token', () => {
     expect(fetchMock).toHaveBeenCalledWith('https://server-config.example.com/oauth2/userinfo', expect.anything());
   });
 
+  test('Token exchange rejects identity provider without user info URL', async () => {
+    const noUserInfoClient = await createClient(systemRepo, {
+      project,
+      name: 'No User Info Client',
+      redirectUri,
+      identityProvider: {
+        issuer: externalAuthIssuer,
+        jwksUrl: 'https://example.com/.well-known/jwks.json',
+      },
+    });
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: noUserInfoClient.id,
+      subject_token: 'opaque-token',
+    });
+    expect(res).toHaveStatus(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Missing user info URL');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   test('Token exchange rejects unknown client ID', async () => {
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
@@ -2494,7 +2524,7 @@ describe('OAuth2 Token', () => {
 
   test('Refresh tokens disabled for super admins', async () => {
     // Create a super admin project
-    const { project: superAdminProject } = await createTestProject({ project: { superAdmin: true } });
+    const { project: superAdminProject } = await getSuperAdminTestProject();
 
     // Create a test user
     const email = `test-${randomUUID()}@example.com`;

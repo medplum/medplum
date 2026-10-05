@@ -1372,17 +1372,53 @@ describe('ChannelQueueWorker', () => {
         log: createMockLogger(),
         sendAck: () => true,
       });
-      // Yield after every park, so "did it yield at all?" is a count assertion
-      // rather than a wall-clock one.
-      startSlot(app, worker, { loopYieldBudgetMs: 0 });
+      // Stub the dispatcher's yield primitive with a queue released by hand: each step
+      // below then runs exactly one more loop iteration, so "did it yield a turn?" is a
+      // step count and not a race between nine parks and one clamped 0ms timer.
+      // `vi.advanceTimersToNextTimerAsync` will not do — it fires the next timer and
+      // then ticks, running two iterations per call.
+      const pendingYields: (() => void)[] = [];
+      const immediate = vi.spyOn(globalThis, 'setImmediate').mockImplementation((cb: () => void) => {
+        pendingYields.push(cb);
+        return undefined as unknown as NodeJS.Immediate;
+      });
+      /** Releases the turn the loop is suspended on and lets it run to its next yield. */
+      const stepOneTurn = async (): Promise<void> => {
+        // Nothing queued here would mean the loop never reached a real event-loop yield:
+        // a microtask downgrade drains the whole backlog on its own, unobserved.
+        expect(pendingYields).toHaveLength(1);
+        pendingYields.shift()?.();
+        await Promise.resolve();
+      };
 
-      // One `await` drains the whole microtask queue. Without the yield the loop
-      // never leaves that drain, so all nine would already be parked here.
-      await sleep(0);
-      expect(queue.getChannelDepth('ch1').delayed).toBeLessThan(followers.length);
+      try {
+        // Yield after every park, so one released turn is one park.
+        startSlot(app, worker, { loopYieldBudgetMs: 0 });
 
-      // The budget only spreads the parks out — it must not lose any.
-      await waitFor(() => queue.getChannelDepth('ch1').delayed === followers.length, 3000, 'backlog fully parked');
+        // `start()` runs the loop synchronously into its first yield, so exactly one row
+        // is parked here. Without the yield all nine would be.
+        expect(queue.getChannelDepth('ch1').delayed).toBe(1);
+
+        // One park per turn, all the way down: never a run of them in a single turn.
+        for (let parked = 2; parked <= followers.length; parked++) {
+          await stepOneTurn();
+          expect(queue.getChannelDepth('ch1').delayed).toBe(parked);
+        }
+
+        // The budget only spreads the parks out — it must not lose any. This last turn
+        // also takes the loop past the drained backlog into its idle wait, which is a
+        // timer rather than a yield, so nothing is left queued here.
+        await stepOneTurn();
+        expect(queue.getChannelDepth('ch1').delayed).toBe(followers.length);
+        expect(pendingYields).toHaveLength(0);
+      } finally {
+        // Restore before releasing: a loop resumed under the stub would park its next
+        // yield in an array nobody drains, and every stop awaiting that loop would hang.
+        immediate.mockRestore();
+        for (const resume of pendingYields.splice(0)) {
+          resume();
+        }
+      }
       await worker.stop();
     });
 

@@ -1,0 +1,72 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: var(--landing-font-display);
+  background: var(--landing-surface);
+  padding: 8rem 0 4rem;
+}
+
+.container {
+  composes: container from './LandingContainer.module.css';
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.copy,
+.visual {
+  min-width: 0;
+}
+
+.headline {
+  font-weight: var(--landing-hero-weight);
+  font-size: var(--landing-hero-size);
+  line-height: var(--landing-hero-leading);
+  letter-spacing: var(--landing-hero-tracking);
+  text-wrap-style: balance;
+  color: var(--landing-color-heading);
+  margin: 0 0 1rem;
+}
+
+.lead {
+  font-size: var(--landing-lead-size);
+  line-height: var(--landing-lead-leading);
+  font-weight: var(--landing-lead-weight);
+  color: var(--landing-color-body);
+  margin: 0;
+  max-width: 640px;
+}
+
+.cta {
+  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--landing-stack-gap);
+}
+
+@media screen and (max-width: 996px) {
+  .section {
+    padding: 5rem 0 3rem;
+  }
+
+  .container {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.5rem;
+  }
+
+  .visual {
+    order: -1;
+    display: flex;
+    justify-content: center;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .cta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

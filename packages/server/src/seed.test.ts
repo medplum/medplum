@@ -4,13 +4,14 @@ import type { Project } from '@medplum/fhirtypes';
 import type { Mock } from 'vitest';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { OutputAction } from './fhir/operations/db-configure-indexes';
 import { configureGinIndexes, vacuumTable } from './fhir/operations/db-configure-indexes';
 import type { SystemRepository } from './fhir/repo';
-import { getGlobalSystemRepo } from './fhir/repo';
+import { getShardSystemRepo } from './fhir/repo';
 import { repoAccess } from './fhir/repository/access-tracker';
+import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { SelectQuery } from './fhir/sql';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
@@ -55,7 +56,7 @@ async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository,
 }
 
 describe('Seed', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let loggerWriteSpy: Mock<typeof globalLogger.write>;
   let seedDatabaseSpy: Mock<(typeof seedModule)['seedDatabase']>;
 
@@ -79,21 +80,21 @@ describe('Seed', () => {
     globalLogger.write(`${new Date().toISOString()} - Initializing app services`);
     await initAppServices(config);
 
-    const repo = getGlobalSystemRepo();
+    const repo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
     // Run post-deploy migrations synchronously
     await synchronouslyRunAllPendingPostDeployMigrations(repo);
 
-    // Scheduling features use serializable transactions that touch these
+    // Scheduling and user creation use serializable transactions that touch these
     // tables. The `fastUpdate` feature can cause seemingly unrelated transactions
     // to append to the same "pending list", which can cause transaction
     // failures.
     //
-    // Here we update the indexes on Appointment and Slot tables to disable `fastUpdate`,
+    // Here we update the indexes on Appointment, Slot, and User tables to disable `fastUpdate`,
     // and then vacuum the tables to clear any existing pending list entries.
     const actions: OutputAction[] = [];
-    const tables = ['Appointment', 'Appointment_References', 'Slot', 'Slot_References'];
+    const tables = ['Appointment', 'Appointment_References', 'Slot', 'Slot_References', 'User', 'User_References'];
     const client = repo.getDatabaseClient(
-      repoAccess.sqlWrite(['Appointment', 'Slot'], { source: 'seed.test.configureIndexes' })
+      repoAccess.sqlWrite(['Appointment', 'Slot', 'User'], { source: 'seed.test.configureIndexes' })
     );
     await configureGinIndexes(client, actions, tables, { fastUpdate: false });
     for (const table of tables) {

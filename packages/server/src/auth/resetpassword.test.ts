@@ -15,6 +15,7 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
+import { resetPassword } from './resetpassword';
 
 const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
   const mockSendMail = vi.fn().mockResolvedValue({ messageId: '123' });
@@ -505,5 +506,60 @@ describe('Reset Password', () => {
     // Verify parsed email content
     const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
     expect(parsed.subject).toBe('Medplum Password Reset');
+  });
+  test('Sets expiration and supersedes prior requests', async () => {
+    const email = `supersede${randomUUID()}@example.com`;
+
+    const { user } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Reset',
+        lastName: 'Reset',
+        projectName: 'Reset Project',
+        email,
+        password: 'password!@#',
+      })
+    );
+
+    const url = await withTestContext(() => resetPassword(systemRepo, user, 'reset'));
+    const firstId = url.split('/').slice(-2)[0];
+    const first = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', firstId);
+    expect(first.used).toBeUndefined();
+    expect(new Date(first.expiresAt as string).getTime()).toBeGreaterThan(Date.now());
+
+    await withTestContext(() => resetPassword(systemRepo, user, 'reset'));
+
+    // The first request is no longer redeemable
+    const firstAfter = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', firstId);
+    expect(firstAfter.used).toBe(true);
+
+    const res = await request(app).post('/auth/setpassword').type('json').send({
+      id: firstId,
+      secret: first.secret,
+      password: 'my-new-password',
+    });
+    expect(res).toHaveStatus(400);
+  });
+
+  test('Supersession is scoped to the request type', async () => {
+    const email = `supersede-type${randomUUID()}@example.com`;
+
+    const { user } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Reset',
+        lastName: 'Reset',
+        projectName: 'Reset Project',
+        email,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteUrl = await withTestContext(() => resetPassword(systemRepo, user, 'invite'));
+    const inviteId = inviteUrl.split('/').slice(-2)[0];
+
+    await withTestContext(() => resetPassword(systemRepo, user, 'reset'));
+
+    // A password reset does not invalidate an outstanding invite
+    const invite = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', inviteId);
+    expect(invite.used).toBeUndefined();
   });
 });

@@ -24,7 +24,7 @@ import type {
 import { r4ProjectId } from '../../constants';
 import { requireSuperAdmin } from '../../context';
 import { globalLogger } from '../../logger';
-import type { Repository, SystemRepository } from '../repo';
+import type { SystemRepository } from '../repo';
 import { parseInputParameters } from './utils/parameters';
 
 const op = getDefinitionResource<OperationDefinition>(
@@ -38,15 +38,15 @@ type InputParams = {
 };
 
 export async function rebuildBaseDefinitionsOperation(req: FhirRequest): Promise<FhirResponse> {
-  const { repo } = requireSuperAdmin();
+  const { systemRepo } = requireSuperAdmin();
 
   const params = parseInputParameters<InputParams>(op, req);
-  await rebuildBaseDefinitions(repo, params.resourceType);
+  await rebuildBaseDefinitions(systemRepo, params.resourceType);
 
   return [allOk];
 }
 
-export async function rebuildBaseDefinitions(repo: Repository, types?: ResourceType[]): Promise<void> {
+export async function rebuildBaseDefinitions(repo: SystemRepository, types?: ResourceType[]): Promise<void> {
   // Search Parameters
   if (shouldProcessType(types, 'SearchParameter')) {
     await processBaseDefinitions(SEARCH_PARAMETER_BUNDLE_FILES, (entry) => processSearchParameterEntry(repo, entry));
@@ -76,7 +76,7 @@ export async function rebuildBaseDefinitions(repo: Repository, types?: ResourceT
   }
 }
 
-async function processSearchParameterEntry(repo: Repository, entry: BundleEntry): Promise<void> {
+async function processSearchParameterEntry(repo: SystemRepository, entry: BundleEntry): Promise<void> {
   if (!isResource<SearchParameter>(entry.resource, 'SearchParameter')) {
     return;
   }
@@ -87,7 +87,7 @@ async function processSearchParameterEntry(repo: Repository, entry: BundleEntry)
 }
 
 async function processStructureDefinitionEntry(
-  repo: Repository,
+  repo: SystemRepository,
   entry: BundleEntry<StructureDefinition>
 ): Promise<void> {
   const sd = entry.resource;
@@ -106,7 +106,7 @@ async function processStructureDefinitionEntry(
 }
 
 async function processOperationDefinitionEntry(
-  repo: Repository,
+  repo: SystemRepository,
   entry: BundleEntry<OperationDefinition>
 ): Promise<void> {
   const op = entry.resource as OperationDefinition;
@@ -119,7 +119,7 @@ async function processOperationDefinitionEntry(
 }
 
 async function processTerminologyDefinitionEntry(
-  repo: Repository,
+  repo: SystemRepository,
   entry: BundleEntry<CodeSystem | ValueSet>
 ): Promise<void> {
   const resource = entry.resource as CodeSystem | ValueSet;

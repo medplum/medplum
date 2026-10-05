@@ -25,7 +25,7 @@ type LabItem = WithId<ServiceRequest> | WithId<DiagnosticReport>;
 // have not yet resolved into a result; the "Revoked" tab lists revoked orders.
 const COMPLETED_RESOURCE_TYPE = 'DiagnosticReport';
 const OPEN_RESOURCE_TYPE = 'ServiceRequest';
-const COMPLETED_REPORT_STATUS = 'final';
+const COMPLETED_REPORT_STATUS = 'final,corrected,amended';
 const OPEN_ORDER_STATUS = 'active,draft,on-hold';
 const REVOKED_ORDER_STATUS = 'revoked';
 const DEFAULT_SORT_RULES: SortRule[] = [{ code: '_lastUpdated', descending: true }];

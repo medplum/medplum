@@ -6,8 +6,9 @@ import { DelayedError, Job, Queue } from 'bullmq';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import type { ServerConfig } from '../config/utils';
+import { getShardSystemRepo } from '../fhir/repo';
+import { GLOBAL_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type {
   CustomPostDeployMigration,
@@ -22,20 +23,23 @@ import * as serverRegistry from '../server-registry';
 import { withTestContext } from '../test.setup';
 import * as versionModule from '../util/version';
 import { getServerVersion } from '../util/version';
+import { getAsyncJobTracking } from './base';
 import {
   addPostDeployMigrationJobData,
+  initPostDeployMigrationWorker,
   jobProcessor,
   PostDeployMigrationQueueName,
   prepareCustomMigrationJobData,
   prepareDynamicMigrationJobData,
   runCustomMigration,
 } from './post-deploy-migration';
+import * as workerUtils from './utils';
 import { queueRegistry } from './utils';
 
 describe('Post-Deploy Migration Worker', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let mockRegisteredServers: ServerRegistryInfo[];
-  const systemRepo = getGlobalSystemRepo();
+  const systemRepo = getShardSystemRepo(GLOBAL_SHARD_ID);
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -90,7 +94,7 @@ describe('Post-Deploy Migration Worker', () => {
     return queue;
   }
 
-  test('prepareCustomMigrationJobData and addPostDeployMigrationJobData', async () => {
+  test('prepareCustomMigrationJobData and addPostDeployMigrationJobData without deduplication', async () => {
     await initWorkers(config);
 
     const queue = getQueueFromRegistryOrThrow();
@@ -116,7 +120,8 @@ describe('Post-Deploy Migration Worker', () => {
       const data1 = prepareCustomMigrationJobData(asyncJob);
       expect(data1).toEqual({
         type: 'custom',
-        asyncJobId: asyncJob.id,
+        target: { kind: 'shard', shardId: TODO_SHARD_ID },
+        tracking: getAsyncJobTracking(asyncJob),
         requestId: expect.any(String),
         traceId: expect.any(String),
       });
@@ -127,16 +132,15 @@ describe('Post-Deploy Migration Worker', () => {
           data: data1,
         })
       );
-      expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data1, {
-        deduplication: { id: expect.any(String) },
-      });
+      expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data1, undefined);
     });
 
     // outside of withTestContext, requestId and traceId are undefined
     const data2 = prepareCustomMigrationJobData(asyncJob);
     expect(data2).toEqual({
       type: 'custom',
-      asyncJobId: asyncJob.id,
+      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      tracking: getAsyncJobTracking(asyncJob),
       requestId: undefined,
       traceId: undefined,
     });
@@ -147,9 +151,7 @@ describe('Post-Deploy Migration Worker', () => {
         data: data2,
       })
     );
-    expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data2, {
-      deduplication: { id: expect.any(String) },
-    });
+    expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data2, undefined);
   });
 
   test.each<[string, Partial<AsyncJob>, boolean]>([
@@ -200,7 +202,7 @@ describe('Post-Deploy Migration Worker', () => {
     const executeMigrationActionsSpy = vi
       .spyOn(migrateModule, 'executeMigrationActions')
       .mockImplementation(async (_client, results) => {
-        results.push({ name: 'some-action', durationMs: 10 });
+        results.push({ name: 'some-action', durationMs: 10, notices: 'index "some_index" was reindexed' });
       });
 
     const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
@@ -246,7 +248,13 @@ describe('Post-Deploy Migration Worker', () => {
     const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', mockAsyncJob.id);
     expect(updatedAsyncJob.status).toBe('completed');
     expect(updatedAsyncJob.output?.parameter).toEqual([
-      { name: 'some-action', part: [{ name: 'durationMs', valueInteger: 10 }] },
+      {
+        name: 'some-action',
+        part: [
+          { name: 'durationMs', valueInteger: 10 },
+          { name: 'notices', valueString: 'index "some_index" was reindexed' },
+        ],
+      },
     ]);
 
     getPostDeployMigrationSpy.mockRestore();
@@ -321,7 +329,7 @@ describe('Post-Deploy Migration Worker', () => {
     executeMigrationActionsSpy.mockRestore();
   });
 
-  test('Job processor runs migration when AsyncJob is active', async () => {
+  test('Job processor runs migration', async () => {
     const mockCustomMigration: CustomPostDeployMigration = {
       type: 'custom',
       prepareJobData: vi.fn(),
@@ -345,17 +353,12 @@ describe('Post-Deploy Migration Worker', () => {
       request: '/admin/super/migrate',
     });
 
-    // temporarily set to {} to appease typescript since it gets set within withTestContext
-    let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
-    await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
-      job = {
-        id: '1',
-        data: jobData,
-        queueName: 'PostDeployMigrationQueue',
-      } as unknown as Job<PostDeployJobData>;
-    });
-    expect(job.data).toBeDefined();
+    const jobData: PostDeployJobData = await withTestContext(async () => prepareCustomMigrationJobData(mockAsyncJob));
+    const job = {
+      id: '1',
+      data: jobData,
+      queueName: PostDeployMigrationQueueName,
+    } as unknown as Job<PostDeployJobData>;
 
     await jobProcessor(job);
 
@@ -368,6 +371,22 @@ describe('Post-Deploy Migration Worker', () => {
       { name: 'first', part: [{ name: 'durationMs', valueInteger: 111 }] },
       { name: 'second', part: [{ name: 'durationMs', valueInteger: 222 }] },
     ]);
+  });
+
+  test('Worker logs async job data', () => {
+    const loggingSpy = vi.spyOn(workerUtils, 'addVerboseQueueLogging');
+    initPostDeployMigrationWorker(config);
+    const logFields = loggingSpy.mock.calls.at(-1)?.[2] as (job: Job<PostDeployJobData>) => Record<string, unknown>;
+    const jobData: PostDeployJobData = {
+      type: 'custom',
+      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      tracking: { owner: 'system', asyncJobId: 'tracked-job' },
+    };
+
+    expect(logFields({ data: jobData } as Job<PostDeployJobData>)).toEqual({
+      asyncJob: 'AsyncJob/tracked-job',
+      jobType: 'custom',
+    });
   });
 
   test.each(['some-token', undefined])(
@@ -579,7 +598,8 @@ describe('Post-Deploy Migration Worker', () => {
 
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
-      asyncJobId: asyncJob.id,
+      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      tracking: getAsyncJobTracking(asyncJob),
       requestId: '123',
       traceId: '456',
     };
@@ -618,7 +638,8 @@ describe('Post-Deploy Migration Worker', () => {
 
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
-      asyncJobId: asyncJob.id,
+      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      tracking: getAsyncJobTracking(asyncJob),
       requestId: '123',
       traceId: '456',
     };
@@ -648,5 +669,32 @@ describe('Post-Deploy Migration Worker', () => {
         },
       ],
     });
+  });
+
+  test('Run custom migration rethrows DelayedError without failing the job', async () => {
+    const asyncJob = await systemRepo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      status: 'accepted',
+      dataVersion: 123,
+      requestTime: new Date().toISOString(),
+      request: '/admin/super/migrate',
+    });
+
+    const jobData: CustomPostDeployMigrationJobData = {
+      type: 'custom',
+      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      tracking: getAsyncJobTracking(asyncJob),
+      requestId: '123',
+      traceId: '456',
+    };
+
+    await expect(
+      runCustomMigration(systemRepo, undefined, jobData, async () => {
+        throw new DelayedError('Delayed since queue is closing');
+      })
+    ).rejects.toBeInstanceOf(DelayedError);
+
+    const updatedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
+    expect(updatedJob.status).toBe('accepted');
   });
 });

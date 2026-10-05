@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { evalFhirPathTyped, HTTP_HL7_ORG, isString, toTypedValue } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
+import { foldText } from '../../../util/text';
 
 const SSN_IDENTIFIER_SYSTEM = `${HTTP_HL7_ORG}/fhir/sid/us-ssn`;
 const ITIN_IDENTIFIER_SYSTEM = `${HTTP_HL7_ORG}/fhir/sid/us-itin`;
@@ -21,6 +22,7 @@ export interface CmsPatientMatchFields {
   readonly lastName: Set<string>;
   readonly dob: Set<string>;
   readonly streetLine: Set<string>;
+  readonly zip: Set<string>;
   readonly phone: Set<string>;
   readonly email: Set<string>;
   readonly ssnLast4: Set<string>;
@@ -42,10 +44,17 @@ export interface CmsPatientMatchResult {
   readonly suffixConflict: boolean;
 }
 
-export function cmsPatientMatch(p1: Patient, p2: Patient): CmsPatientMatchResult {
+export interface CmsPatientMatchOptions {
+  /** Disables fuzzy First Name comparison, for the twin guardrail (§C.7.1). */
+  readonly exactFirstName?: boolean;
+}
+
+// Evaluates Table 2 Category 1 of v3.4.0. Insurance identifier rules (23-28) are not evaluated
+// because the spec does not define how a payer-namespaced identifier is conveyed in a query.
+export function cmsPatientMatch(p1: Patient, p2: Patient, options?: CmsPatientMatchOptions): CmsPatientMatchResult {
   const fields1 = extractCmsMatchFields(p1);
   const fields2 = extractCmsMatchFields(p2);
-  const fieldMatches = compareCmsMatchFields(fields1, fields2);
+  const fieldMatches = compareCmsMatchFields(fields1, fields2, options);
   const suffixConflict = hasGenerationalSuffixConflict(p1, p2);
 
   let exactCount = 0;
@@ -61,14 +70,14 @@ export function cmsPatientMatch(p1: Patient, p2: Patient): CmsPatientMatchResult
     }
   }
 
-  const { firstName, lastName, dob, streetLine, phone, email, ssnLast4, itinLast4, mbi, legalId, namespaceId } =
+  const { firstName, lastName, dob, streetLine, zip, phone, email, ssnLast4, itinLast4, mbi, legalId, namespaceId } =
     fieldMatches;
 
   // `ex` = field must match exactly
   const ex = (m: FieldMatch): boolean => m === 'exact';
 
   // `starred` = the fields marked `*` in the spec, which may
-  // match exactly or fuzzily; it requires every passed field to match and enforces §V.E
+  // match exactly or fuzzily (DOB within ±1 day); it requires every passed field to match and enforces §V.E
   // (at most one of them may be satisfied fuzzily).
   const starred = (...ms: FieldMatch[]): boolean =>
     ms.filter((m) => m === 'none').length === 0 && ms.filter((m) => m === 'fuzzy').length <= 1;
@@ -85,11 +94,11 @@ export function cmsPatientMatch(p1: Patient, p2: Patient): CmsPatientMatchResult
 
   if (suffixConflict) {
     // A disagreeing generational suffix is an explicit CMS blocker when both sides identify one.
-  } else if (starred(firstName, lastName, streetLine) && ex(dob)) {
-    setCriteria('01', firstName, lastName, streetLine, dob);
-  } else if (ex(firstName) && starred(lastName) && ex(dob) && ex(phone)) {
+  } else if (starred(firstName, lastName, dob, streetLine)) {
+    setCriteria('01', firstName, lastName, dob, streetLine);
+  } else if (ex(firstName) && starred(lastName, dob) && ex(phone)) {
     setCriteria('02', firstName, lastName, dob, phone);
-  } else if (starred(firstName, lastName) && ex(dob) && ex(email)) {
+  } else if (starred(firstName, lastName, dob) && ex(email)) {
     setCriteria('03', firstName, lastName, dob, email);
   } else if (starred(firstName) && ex(lastName) && ex(dob) && ex(ssnLast4)) {
     setCriteria('04', firstName, lastName, dob, ssnLast4);
@@ -103,40 +112,43 @@ export function cmsPatientMatch(p1: Patient, p2: Patient): CmsPatientMatchResult
     setCriteria('08', firstName, dob, mbi);
   } else if (ex(firstName) && ex(dob) && ex(legalId)) {
     setCriteria('09', firstName, dob, legalId);
-  } else if (starred(lastName) && ex(dob) && ex(legalId)) {
+  } else if (starred(lastName, dob) && ex(legalId)) {
     setCriteria('10', lastName, dob, legalId);
   } else if (ex(firstName) && ex(dob) && ex(phone)) {
     setCriteria('11', firstName, dob, phone);
   } else if (ex(firstName) && ex(dob) && ex(email)) {
     setCriteria('12', firstName, dob, email);
-  } else if (ex(lastName) && ex(phone) && ex(ssnLast4)) {
-    setCriteria('13', lastName, phone, ssnLast4);
-  } else if (ex(lastName) && ex(phone) && ex(itinLast4)) {
-    setCriteria('14', lastName, phone, itinLast4);
-  } else if (starred(lastName) && ex(email) && ex(ssnLast4)) {
-    setCriteria('15', lastName, email, ssnLast4);
-  } else if (starred(lastName) && ex(email) && ex(itinLast4)) {
-    setCriteria('16', lastName, email, itinLast4);
   } else if (ex(firstName) && ex(phone) && ex(ssnLast4)) {
-    setCriteria('17', firstName, phone, ssnLast4);
+    setCriteria('13', firstName, phone, ssnLast4);
   } else if (ex(firstName) && ex(phone) && ex(itinLast4)) {
-    setCriteria('18', firstName, phone, itinLast4);
+    setCriteria('14', firstName, phone, itinLast4);
   } else if (ex(firstName) && ex(email) && ex(ssnLast4)) {
-    setCriteria('19', firstName, email, ssnLast4);
+    setCriteria('15', firstName, email, ssnLast4);
   } else if (ex(firstName) && ex(email) && ex(itinLast4)) {
-    setCriteria('20', firstName, email, itinLast4);
+    setCriteria('16', firstName, email, itinLast4);
   } else if (ex(phone) && ex(mbi)) {
-    setCriteria('21', phone, mbi);
+    setCriteria('17', phone, mbi);
   } else if (ex(phone) && ex(legalId)) {
-    setCriteria('22', phone, legalId);
+    setCriteria('18', phone, legalId);
   } else if (ex(email) && ex(mbi)) {
-    setCriteria('23', email, mbi);
+    setCriteria('19', email, mbi);
   } else if (ex(email) && ex(legalId)) {
-    setCriteria('24', email, legalId);
+    setCriteria('20', email, legalId);
   } else if (ex(legalId) && ex(mbi)) {
-    setCriteria('25', legalId, mbi);
+    setCriteria('21', legalId, mbi);
   } else if (ex(namespaceId)) {
-    setCriteria('26', namespaceId);
+    setCriteria('22', namespaceId);
+  } else if (
+    starred(firstName, lastName) &&
+    ex(phone) &&
+    ex(zip) &&
+    !(dob === 'none' && fields1.dob.size && fields2.dob.size)
+  ) {
+    // Rule 29 has no DOB to separate a parent and child sharing a name, phone, and ZIP (§IV.D.5),
+    // so it does not apply when both DOBs are known and disagree.
+    setCriteria('29', firstName, lastName, phone, zip);
+  } else if (starred(lastName) && ex(dob) && ex(phone)) {
+    setCriteria('30', lastName, dob, phone);
   }
 
   return {
@@ -156,6 +168,7 @@ export function extractCmsMatchFields(patient: Patient): CmsPatientMatchFields {
     lastName: extractStrings(patient, 'Patient.name.family'),
     dob: extractStrings(patient, 'Patient.birthDate', normalizeFullDate),
     streetLine: extractStrings(patient, 'Patient.address.line'),
+    zip: extractStrings(patient, 'Patient.address.postalCode', normalizeZip),
     phone: extractStrings(patient, "Patient.telecom.where(system = 'phone').value", normalizePhone),
     email: extractStrings(patient, "Patient.telecom.where(system = 'email').value", normalizeEmail),
     ssnLast4: extractStrings(
@@ -190,6 +203,10 @@ export function extractStrings(
     }
   }
   return result;
+}
+
+function normalizeZip(value: string): string {
+  return value.replace(/\D/g, '').slice(0, 5);
 }
 
 export function normalizeLast4(value: string): string {
@@ -241,11 +258,7 @@ export function hasGenerationalSuffixConflict(p1: Patient, p2: Patient): boolean
  * @returns The folded string (may be empty).
  */
 export function foldString(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '');
+  return foldText(value).replace(/[^a-z0-9]/g, '');
 }
 
 function extractGenerationalSuffixes(patient: Patient): Set<string> {
@@ -318,13 +331,15 @@ export function matchField(a: Set<string>, b: Set<string>, allowFuzzy = true): F
 
 export function compareCmsMatchFields(
   p1: CmsPatientMatchFields,
-  p2: CmsPatientMatchFields
+  p2: CmsPatientMatchFields,
+  options?: CmsPatientMatchOptions
 ): CmsPatientFieldMatchResult {
   return {
-    firstName: matchField(p1.firstName, p2.firstName),
+    firstName: matchField(p1.firstName, p2.firstName, !options?.exactFirstName),
     lastName: matchField(p1.lastName, p2.lastName),
-    dob: matchField(p1.dob, p2.dob, false),
+    dob: matchDate(p1.dob, p2.dob),
     streetLine: matchField(p1.streetLine, p2.streetLine),
+    zip: matchField(p1.zip, p2.zip, false),
     phone: matchField(p1.phone, p2.phone, false),
     email: matchField(p1.email, p2.email, false),
     ssnLast4: matchField(p1.ssnLast4, p2.ssnLast4, false),
@@ -333,6 +348,29 @@ export function compareCmsMatchFields(
     legalId: matchField(p1.legalId, p2.legalId, false),
     namespaceId: matchField(p1.namespaceId, p2.namespaceId, false),
   };
+}
+
+// Normalized YYYYMMDD dates within ±1 day are a `fuzzy` DOB match (§III.C Table 2 DOB*).
+function matchDate(a: Set<string>, b: Set<string>): FieldMatch {
+  let result: FieldMatch = 'none';
+  for (const v1 of a) {
+    for (const v2 of b) {
+      const days = Math.abs(parseCompactDate(v1) - parseCompactDate(v2)) / MS_PER_DAY;
+      if (days === 0) {
+        return 'exact';
+      }
+      if (days === 1) {
+        result = 'fuzzy';
+      }
+    }
+  }
+  return result;
+}
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function parseCompactDate(value: string): number {
+  return Date.UTC(Number(value.slice(0, 4)), Number(value.slice(4, 6)) - 1, Number(value.slice(6, 8)));
 }
 
 /** Minimum normalized string length eligible for fuzzy comparison (§V.E.3). */

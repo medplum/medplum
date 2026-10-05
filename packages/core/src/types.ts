@@ -17,6 +17,20 @@ import type { InternalSchemaElement, InternalTypeSchema } from './typeschema/typ
 import { getAllDataTypes, tryGetDataType } from './typeschema/types';
 import { capitalize, EMPTY, getReferenceString, isResourceWithId } from './utils';
 
+/**
+ * Given a type `Reference<X>`, extracts `X`
+ *
+ * The input is constrained to references, so passing anything else is a compile error
+ * rather than a silently unhelpful type. `null` and `undefined` are allowed and pass
+ * through, so an optional reference field dereferences to an optional resource.
+ *
+ * The check is structural, though: this accepts anything assignable to `Reference`, an
+ * interface whose fields are all optional. Object types that are not true references are
+ * therefore accepted, and with no `resource` property to infer from, resolve to
+ * `Resource`, the default type argument of `Reference`.
+ */
+export type Dereference<T extends Reference | null | undefined> = T extends Reference<infer R> ? R : T;
+
 export type TypeName<T> = T extends string
   ? 'string'
   : T extends number

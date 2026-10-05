@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ContentType } from '@medplum/core';
-import type { ClientApplication, Project } from '@medplum/fhirtypes';
+import type { ClientApplication, Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -11,7 +11,7 @@ import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { mockFetchJson, mockFetchText } from '../test.setup.fetch';
@@ -39,7 +39,7 @@ const gcipIdentityProvider = {
   userInfoMode: 'gcip' as const,
   userInfoApiKey: 'test-api-key',
 };
-let config: MedplumServerConfig;
+let config: ServerConfig;
 let project: WithId<Project>;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
@@ -176,6 +176,35 @@ describe('Token Exchange', () => {
     });
     expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('Marks the user email verified', async () => {
+    // Provisioned users start unverified, and the identity provider is their only login
+    const verifiedEmail = `verify-${randomUUID()}@${domain}`;
+    const { user } = await withTestContext(() =>
+      inviteUser({
+        project,
+        email: verifiedEmail,
+        resourceType: 'Practitioner',
+        firstName: 'Verify',
+        lastName: 'User',
+        sendEmail: false,
+      })
+    );
+    expect(user.emailVerified).toBeFalsy();
+
+    fetchMock.mockImplementation(() => mockFetchJson({ email: verifiedEmail }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      clientId: externalAuthClient.id,
+    });
+    expect(res).toHaveStatus(200);
+
+    // Token exchange verifies on the same terms as the external auth callback
+    const systemRepo = await getProjectSystemRepo(project);
+    const updated = await systemRepo.readResource<User>('User', user.id);
+    expect(updated.emailVerified).toBe(true);
   });
 
   test('Server external auth provider success', async () => {

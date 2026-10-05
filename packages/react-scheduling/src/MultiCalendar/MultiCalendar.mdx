@@ -1,0 +1,38 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as MultiCalendarStories from './MultiCalendar.stories';
+
+<Meta of={MultiCalendarStories} />
+
+# Viewing multiple Schedules in a single calendar UI
+
+Pass an array of objects as the `sources` prop. You may specify the name of a
+Mantine theme color to use for the appointments and slots of a source as its
+`color` attribute. You may also specify this on the Schedule included in a
+source via a custom extension:
+
+```
+{
+  "resourceType": "Schedule",
+  "id": "my-schedule-uuid",
+  "actor": [{ "reference": "Practitioner/my-practitioner-uuid" }],
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/SchedulingColor",
+      "valueString": "blue"
+    }
+  ]
+}
+```
+
+ If the color value is not valid under the current Mantine theme, it is
+ ignored. If no color is passed, an arbitrary color will be assigned.
+
+<Canvas of={MultiCalendarStories.Basic} />
+
+# Highlighting Availability
+
+You may pass the `availableTime` prop to highlight recurring availability.
+This takes the same shape as
+[`HealthcareService.availableTime`](https://www.medplum.com/docs/api/fhir/resources/healthcareservice).
+
+<Canvas of={MultiCalendarStories.WithHoursOfAvailability} />

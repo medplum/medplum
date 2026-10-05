@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { Filter, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -25,7 +25,7 @@ import {
 } from '../../util/auditevent';
 import type { Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
-import type { CmsPatientMatchResult } from './utils/cms-patient-match';
+import type { CmsPatientMatchOptions, CmsPatientMatchResult } from './utils/cms-patient-match';
 import { cmsPatientMatch } from './utils/cms-patient-match';
 import { parseInputParameters } from './utils/parameters';
 
@@ -41,7 +41,10 @@ const CMS_MATCH_TYPE_EXTENSION_URL = 'https://medplum.com/fhir/StructureDefiniti
 const CANDIDATE_SEARCH_COUNT = 100;
 const PROBABLE_THRESHOLD = 0.65;
 const POSSIBLE_THRESHOLD = 0.2;
-const CMS_MATCH_FACTOR_COUNT = 11;
+const CMS_MATCH_FACTOR_COUNT = 12;
+
+// Combination IDs are only meaningful relative to a specification version (IDs were renumbered in v3.4.0).
+const CMS_SPEC_VERSION = '3.4.0';
 
 export type MatchGrade = 'certain' | 'probable' | 'possible' | 'certainly-not';
 
@@ -104,7 +107,14 @@ export async function matchPatients(
   const input = params.resource;
   const maxCount = params.count ?? DEFAULT_SEARCH_COUNT;
   const { candidates, truncated } = await gatherCandidates(repo, input);
-  const scored = candidates.map((candidate) => scoreCandidate(candidate, input));
+  let scored = candidates.map((candidate) => scoreCandidate(candidate, input));
+  if (scored.filter((s) => s.result.fieldMatches.dob !== 'none').length > 1) {
+    // Twin guardrail (§C.7.1): when more than one candidate shares the query's DOB (within the
+    // ±1 day tolerance, since twins can be born either side of midnight), First Name must match
+    // exactly. Applied to every candidate: one without a matching DOB can't satisfy a fuzzy First
+    // Name rule except rule 29 with a missing DOB.
+    scored = candidates.map((candidate) => scoreCandidate(candidate, input, { exactFirstName: true }));
+  }
   const relevant = scored.filter((s) => s.grade !== 'certainly-not');
   const certainMatches = relevant.filter((s) => s.grade === 'certain');
   let filtered: ScoredPatient[];
@@ -170,16 +180,16 @@ async function gatherCandidates(
       await runSearch([{ code: 'telecom', operator: Operator.EQUALS, value }]);
     }
 
-    // Strategy 3: search by name + birthdate.
-    if (input.birthDate) {
-      const dobFilter = { code: 'birthdate', operator: Operator.EQUALS, value: input.birthDate };
+    // Strategy 3: search by name + birthdate, within the ±1 day DOB tolerance.
+    const dobFilters = getBirthDateFilters(input.birthDate);
+    if (dobFilters) {
       const family = getFamilyName(input);
       const given = getGivenNames(input)[0];
       if (family) {
-        await runSearch([dobFilter, { code: 'family', operator: Operator.EQUALS, value: family }]);
+        await runSearch([...dobFilters, { code: 'family', operator: Operator.EQUALS, value: family }]);
       }
       if (given) {
-        await runSearch([dobFilter, { code: 'given', operator: Operator.EQUALS, value: given }]);
+        await runSearch([...dobFilters, { code: 'given', operator: Operator.EQUALS, value: given }]);
       }
     }
   } catch (err) {
@@ -194,10 +204,15 @@ async function gatherCandidates(
  * and lightweight FHIR discovery scoring.
  * @param candidate - The candidate patient from the repository.
  * @param input - The input patient to match against.
+ * @param options - Optional CMS comparison constraints.
  * @returns A ScoredPatient with a numeric score and match grade.
  */
-export function scoreCandidate(candidate: WithId<Patient>, input: Patient): ScoredPatient {
-  const result = cmsPatientMatch(input, candidate);
+export function scoreCandidate(
+  candidate: WithId<Patient>,
+  input: Patient,
+  options?: CmsPatientMatchOptions
+): ScoredPatient {
+  const result = cmsPatientMatch(input, candidate, options);
   if (result.criteriaId) {
     return { patient: candidate, result, score: 1, grade: 'certain' };
   }
@@ -269,6 +284,7 @@ function logCmsAuditEvent(ctx: AuthenticatedRequestContext, matches: ScoredPatie
 
   const description = JSON.stringify({
     operation: 'Patient/$match',
+    specVersion: CMS_SPEC_VERSION,
     outcome,
     criteria: matches.map((m) => m.result.criteriaId),
     matchTypes: matches.map((m) => m.result.matchType),
@@ -306,6 +322,30 @@ function getUniquenessResult(
     return 'ambiguous';
   }
   return 'none';
+}
+
+function getBirthDateFilters(birthDate: string | undefined): Filter[] | undefined {
+  if (!birthDate) {
+    return undefined;
+  }
+  const time = birthDate.length === 10 ? Date.parse(birthDate) : Number.NaN;
+  if (Number.isNaN(time)) {
+    // Partial dates can't satisfy a DOB rule, but still find discovery candidates
+    return [{ code: 'birthdate', operator: Operator.EQUALS, value: birthDate }];
+  }
+  const oneDay = 24 * 60 * 60 * 1000;
+  return [
+    {
+      code: 'birthdate',
+      operator: Operator.GREATER_THAN_OR_EQUALS,
+      value: new Date(time - oneDay).toISOString().slice(0, 10),
+    },
+    {
+      code: 'birthdate',
+      operator: Operator.LESS_THAN_OR_EQUALS,
+      value: new Date(time + oneDay).toISOString().slice(0, 10),
+    },
+  ];
 }
 
 function getFamilyName(patient: Patient): string | undefined {

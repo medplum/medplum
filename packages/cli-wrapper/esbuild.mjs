@@ -27,7 +27,6 @@ const options = {
     '@aws-sdk/client-sts',
     '@medplum/core',
     'commander',
-    'dotenv',
     'fast-glob',
     'iconv-lite',
     'tar',

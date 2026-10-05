@@ -1,0 +1,34 @@
+/* CalendarRow.module.css */
+
+.row {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: var(--mantine-radius-sm);
+  text-align: left;
+}
+
+.row[data-interactive] {
+  cursor: pointer;
+}
+
+.row[data-interactive]:hover {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+}
+
+.eyeSlot {
+  display: flex;
+}
+
+.eyeOff {
+  color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
+}
+
+.eyeHint {
+  color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.row:hover .eyeHint {
+  opacity: 1;
+}

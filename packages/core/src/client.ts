@@ -934,8 +934,9 @@ export interface RequestProfileSchemaOptions extends MedplumRequestOptions {
  * Conditional methods (`createResourceIfNoneExist`, `upsertResource`) emit
  * even when the server made no change, except on HTTP 304 "Not Modified".
  *
- * @template T - The type of the modified resource. Defaults to `Resource`; narrow it (e.g. via
- * `useResourceModified('Slot', ...)`) to get a typed `resource` payload without extra guards.
+ * The generic type parameter `T` specifies the type of the modified resource.
+ * It defaults to `Resource`; narrow it (e.g. via `useResourceModified('Slot', ...)`)
+ * to get a typed `resource` payload without extra guards.
  */
 export interface ResourceModifiedEvent<T extends Resource = Resource> {
   /** The type of the modified resource. */
@@ -3418,7 +3419,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       headers['Accept'] = '*/*';
     }
 
-    this.addFetchOptionsDefaults(options);
+    this.addFetchOptionsDefaults(options, url.toString());
     return this.fetchWithRetry(url.toString(), options);
   }
 
@@ -3567,7 +3568,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The response body.
    */
   async startAsyncRequest<T>(url: string, options: MedplumRequestOptions = {}): Promise<T> {
-    this.addFetchOptionsDefaults(options);
+    this.addFetchOptionsDefaults(options, url);
 
     const headers = options.headers as Record<string, string>;
     headers['Prefer'] = 'respond-async';
@@ -3585,7 +3586,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   async wrappedFetch(url: string, options: RequestInit): Promise<Response> {
     await this.refreshIfExpired();
 
-    this.addFetchOptionsDefaults(options);
+    this.addFetchOptionsDefaults(options, url);
 
     return this.fetchWithRetry(url, options);
   }
@@ -3996,7 +3997,30 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Adds default options to the fetch options.
    * @param options - The options to add defaults to.
    */
-  private addFetchOptionsDefaults(options: MedplumRequestOptions): void {
+  /**
+   * Determines if a URL is internal and should receive authentication credentials.
+   * @param url - The URL to check
+   * @returns True if the URL should receive credentials
+   */
+  private isInternalUrl(url: string): boolean {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return true; // Relative URLs are internal
+    }
+
+    try {
+      const target = new URL(url);
+      return (
+        url.startsWith(this.baseUrl) ||
+        url.startsWith(this.fhirBaseUrl) ||
+        (target.origin === new URL(this.baseUrl).origin &&
+          ensureTrailingSlash(target.pathname).startsWith(ensureTrailingSlash(new URL(this.baseUrl).pathname)))
+      );
+    } catch {
+      return false; // Treat unparseable URLs as external
+    }
+  }
+
+  private addFetchOptionsDefaults(options: MedplumRequestOptions, url: string): void {
     // Apply default headers
     Object.entries(this.defaultHeaders).forEach(([name, value]) => {
       this.setRequestHeader(options, name, value);
@@ -4012,14 +4036,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       this.setRequestHeader(options, 'Content-Type', ContentType.FHIR_JSON, true);
     }
 
-    if (this.accessToken) {
-      this.setRequestHeader(options, 'Authorization', 'Bearer ' + this.accessToken);
-    } else if (this.basicAuth) {
-      this.setRequestHeader(options, 'Authorization', 'Basic ' + this.basicAuth);
-    }
+    // Only add authentication credentials for internal URLs
+    if (this.isInternalUrl(url)) {
+      if (this.accessToken) {
+        this.setRequestHeader(options, 'Authorization', 'Bearer ' + this.accessToken);
+      } else if (this.basicAuth) {
+        this.setRequestHeader(options, 'Authorization', 'Basic ' + this.basicAuth);
+      }
 
-    if (!options.credentials) {
-      options.credentials = 'include';
+      if (!options.credentials) {
+        options.credentials = 'include';
+      }
     }
   }
 

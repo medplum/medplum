@@ -132,6 +132,28 @@ describe('LabResultDetails', () => {
     expect(screen.getByText('Error')).toBeInTheDocument();
   });
 
+  test.each<[DiagnosticReport['status'], string]>([
+    ['partial', 'Partial'],
+    ['preliminary', 'Preliminary'],
+    ['cancelled', 'Cancelled'],
+  ])('Displays status badge for %s status as "%s"', (status, label) => {
+    setup(createMockDiagnosticReport({ status }));
+
+    expect(screen.getByText(label)).toBeInTheDocument();
+  });
+
+  test('Displays the raw status for an unrecognized status', () => {
+    setup(createMockDiagnosticReport({ status: 'amended' }));
+
+    expect(screen.getByText('amended')).toBeInTheDocument();
+  });
+
+  test('Displays "Unknown" when status is missing', () => {
+    setup(createMockDiagnosticReport({ status: undefined }));
+
+    expect(screen.getByText('Unknown')).toBeInTheDocument();
+  });
+
   test('Displays issued date in the header', () => {
     const diagnosticReport = createMockDiagnosticReport({ issued: '2024-01-15T10:00:00Z' });
 

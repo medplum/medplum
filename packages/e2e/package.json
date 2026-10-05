@@ -1,6 +1,6 @@
 {
   "name": "@medplum/e2e",
-  "version": "5.1.30",
+  "version": "5.2.1",
   "description": "End-to-end tests for Medplum",
   "keywords": [
     "e2e",
@@ -21,12 +21,15 @@
   "author": "Medplum <hello@medplum.com>",
   "type": "module",
   "scripts": {
+    "docs:screenshots": "npx playwright test docs-screenshots --reporter=list",
     "playwright:codegen": "npx playwright codegen http://localhost:3000",
     "playwright:install": "npx playwright install --with-deps chromium",
     "test:smoke": "npx playwright test smoke/medplum.smoke.test.ts --reporter=list,html"
   },
   "devDependencies": {
-    "@playwright/test": "1.62.1"
+    "@medplum/core": "5.2.1",
+    "@medplum/fhirtypes": "5.2.1",
+    "@playwright/test": "1.63.0"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"

@@ -10,6 +10,7 @@ import type {
   Condition,
   Coverage,
   Encounter,
+  Organization,
   Patient,
   Practitioner,
   Reference,
@@ -23,6 +24,8 @@ export interface BuildClaimArgs {
   chargeItems: ChargeItem[];
   conditions?: Condition[];
   insurance?: Reference<Coverage>[];
+  /** Billing Organization for `Claim.provider`; omit for individual billing under the practitioner. */
+  billingOrganization?: Reference<Organization>;
 }
 
 /**
@@ -31,11 +34,15 @@ export interface BuildClaimArgs {
  * (create or update) is the caller's responsibility, and only happens at export or
  * submit time.
  *
- * @param args - Patient, encounter, practitioner, charge items, conditions, and insurance references.
+ * The billing provider (`Claim.provider`) is the given billing Organization when
+ * provided (organization billing), falling back to the practitioner (individual
+ * billing). The practitioner is always the rendering provider on `Claim.careTeam`.
+ *
+ * @param args - Patient, encounter, practitioner, charge items, conditions, insurance, and billing organization.
  * @returns An unpersisted Claim resource.
  */
 export function buildClaimFromEncounter(args: BuildClaimArgs): Claim {
-  const { patient, encounter, practitioner, chargeItems, conditions, insurance } = args;
+  const { patient, encounter, practitioner, chargeItems, conditions, insurance, billingOrganization } = args;
   return {
     resourceType: 'Claim',
     status: 'draft',
@@ -43,7 +50,7 @@ export function buildClaimFromEncounter(args: BuildClaimArgs): Claim {
     use: 'claim',
     created: new Date().toISOString(),
     patient: createReference(patient),
-    provider: createReference(practitioner),
+    provider: billingOrganization ?? createReference(practitioner),
     careTeam: [
       {
         sequence: 1,

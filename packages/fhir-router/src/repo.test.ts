@@ -191,6 +191,81 @@ describe('MemoryRepository', () => {
     expect(actualResourceCountAfter).toBe(0);
   });
 
+  describe('chained search', () => {
+    test('matches on a forward-chained parameter', async () => {
+      const family = randomUUID();
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+      const otherPatient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: randomUUID() }],
+      });
+      const observation = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patient),
+      });
+      await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(otherPatient),
+      });
+
+      const results = await repo.searchResources<Observation>(
+        parseSearchRequest(`Observation?subject:Patient.name=${family}`)
+      );
+      expect(results.map((r) => r.id)).toEqual([observation.id]);
+    });
+
+    test('no match through a dangling reference, regardless of modifier', async () => {
+      // Mirrors the real server: chained search joins to the referenced row via
+      // `EXISTS(...)`, so a reference to a resource that doesn't exist can't
+      // satisfy the chain — not even a `:not` filter, whose "no value" leniency
+      // only applies to a resource that exists but lacks the field.
+      const observation = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: { reference: 'Patient/does-not-exist' },
+      });
+
+      const results = await repo.searchResources<Observation>(
+        parseSearchRequest(`Observation?_id=${observation.id}&subject:Patient.active:not=false`)
+      );
+      expect(results).toHaveLength(0);
+    });
+
+    test('no match when the referenced resource fails the chained filter', async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: randomUUID() }] });
+      await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patient),
+      });
+
+      const results = await repo.searchResources<Observation>(
+        parseSearchRequest(`Observation?subject:Patient.name=${randomUUID()}`)
+      );
+      expect(results).toHaveLength(0);
+    });
+
+    test('emits an error when trying to chain through an ambiguous multi-target parameter', async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: randomUUID() }] });
+      await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patient),
+      });
+
+      await expect(() =>
+        repo.searchResources<Observation>(parseSearchRequest(`Observation?subject.name=${randomUUID()}`))
+      ).rejects.toThrow('Unable to identify next resource type for search parameter: Observation?subject');
+    });
+  });
+
   describe('searchByReference', () => {
     async function createPatients(repo: MemoryRepository, count: number): Promise<WithId<Patient>[]> {
       const patients = [];
@@ -318,6 +393,18 @@ describe('MemoryRepository', () => {
 
       const results = await Promise.all([p1, p2]);
       expect(results.map((r) => r.outcome.id)).toEqual(['created', 'ok']);
+    });
+
+    test('expungeResource removes current resource and history', async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const v1 = patient.meta?.versionId as string;
+      const updated = await repo.updateResource<Patient>({ ...patient, name: [{ family: 'Smith' }] });
+
+      await repo.expungeResource('Patient', patient.id);
+
+      await expect(repo.readResource('Patient', patient.id)).rejects.toThrow();
+      await expect(repo.readVersion('Patient', patient.id, v1)).rejects.toThrow();
+      await expect(repo.readVersion('Patient', patient.id, updated.meta?.versionId as string)).rejects.toThrow();
     });
   });
 });

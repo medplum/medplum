@@ -66,6 +66,50 @@ export const SparseAvailability = (): JSX.Element => {
 };
 
 /**
+ * A stretch of days, banded across the weeks it spans with both of its ends marked. Drag across
+ * the days to ask for another, or shift-click to move the nearer end of this one — beyond either
+ * end to widen the range, within it to draw that end in.
+ * @returns The story.
+ */
+export const Range = (): JSX.Element => {
+  const [range, setRange] = useState({ start: weekdaysOfMonth()[2], end: weekdaysOfMonth()[8] });
+  return (
+    <Document>
+      <CalendarDateInput
+        availableDates={weekdaysOfMonth()}
+        range={range}
+        allowUnavailableDates
+        onChangeMonth={(date: Date) => console.log(date)}
+        onClick={(date: Date) => setRange({ start: date, end: date })}
+        onSelectRange={(start: Date, end: Date) => setRange({ start, end })}
+      />
+    </Document>
+  );
+};
+
+/**
+ * A day picked, with the stretch shown alongside it banded out from there: the day picked keeps
+ * the darker mark, and the days that came with it are only on show.
+ * @returns The story.
+ */
+export const SelectedDayWithinAStretch = (): JSX.Element => {
+  const [selected, setSelected] = useState<Date>(weekdaysOfMonth()[2]);
+  const shown = { start: selected, end: new Date(selected.getFullYear(), selected.getMonth(), selected.getDate() + 2) };
+  return (
+    <Document>
+      <CalendarDateInput
+        availableDates={weekdaysOfMonth()}
+        selected={selected}
+        range={shown}
+        allowUnavailableDates
+        onChangeMonth={(date: Date) => console.log(date)}
+        onClick={setSelected}
+      />
+    </Document>
+  );
+};
+
+/**
  * A calendar that can be asked about a day with nothing on it.
  * @returns The story.
  */

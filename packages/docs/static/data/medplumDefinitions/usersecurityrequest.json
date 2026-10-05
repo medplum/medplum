@@ -231,6 +231,22 @@
       "inherited": false
     },
     {
+      "name": "expiresAt",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "instant"
+        }
+      ],
+      "path": "UserSecurityRequest.expiresAt",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The time at which this request expires, and is therefore no longer valid.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "redirectUri",
       "depth": 1,
       "types": [

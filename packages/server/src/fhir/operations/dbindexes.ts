@@ -6,7 +6,7 @@ import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import type { PgQueryable } from '../sql';
-import { isValidTableName, replaceNullWithUndefinedInRows, SqlBuilder } from '../sql';
+import { isValidPostgresIdentifier, replaceNullWithUndefinedInRows, SqlBuilder } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import {
   buildOutputParameters,
@@ -50,7 +50,7 @@ export async function dbIndexesHandler(req: FhirRequest): Promise<FhirResponse> 
 
   const tableNames = [];
   for (const tableName of params.tableName?.split(',').map((name) => name.trim()) ?? EMPTY) {
-    if (!isValidTableName(tableName)) {
+    if (!isValidPostgresIdentifier(tableName)) {
       throw new OperationOutcomeError(badRequest('Invalid tableName'));
     }
     tableNames.push(tableName);

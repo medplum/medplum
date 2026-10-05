@@ -1,35 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Card, Stack, Text } from '@mantine/core';
+import type { PatchOperation } from '@medplum/core';
 import { createReference } from '@medplum/core';
-import type { Encounter, Practitioner } from '@medplum/fhirtypes';
+import type { Encounter, Organization, Practitioner, Reference } from '@medplum/fhirtypes';
 import { DateTimeInput, ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
+import { BILLING_ORGANIZATION_IDENTIFIER } from '../../utils/billing';
+import { BillingOrganizationOption } from '../billing/BillingOrganizationOption';
 
 interface VisitDetailsPanelProps {
   practitioner?: Practitioner;
   encounter: Encounter;
-  onEncounterChange: (encounter: Encounter) => void;
+  billingOrganization?: Reference<Organization>;
+  onEncounterChange: (ops: PatchOperation[]) => void;
+  onBillingOrganizationChange: (organization: Organization | undefined) => void;
 }
 
 export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element => {
-  const { practitioner, encounter, onEncounterChange } = props;
+  const { practitioner, encounter, billingOrganization, onEncounterChange, onBillingOrganizationChange } = props;
 
   const handlePractitionerChange = async (practitioner: Practitioner | undefined): Promise<void> => {
     if (!encounter || !practitioner) {
       return;
     }
 
-    const updatedEncounter = {
-      ...encounter,
-      participant: [
-        {
-          individual: createReference(practitioner),
-        },
-      ],
-    };
-
-    onEncounterChange(updatedEncounter);
+    onEncounterChange([{ op: 'add', path: '/participant', value: [{ individual: createReference(practitioner) }] }]);
   };
 
   const handleCheckinChange = async (checkin: string): Promise<void> => {
@@ -37,14 +33,7 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
       return;
     }
 
-    const updatedEncounter = {
-      ...encounter,
-      period: {
-        start: checkin,
-      },
-    };
-
-    onEncounterChange(updatedEncounter);
+    onEncounterChange([{ op: 'add', path: '/period/start', value: checkin }]);
   };
 
   const handleCheckoutChange = async (checkout: string): Promise<void> => {
@@ -52,14 +41,7 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
       return;
     }
 
-    const updatedEncounter = {
-      ...encounter,
-      period: {
-        end: checkout,
-      },
-    };
-
-    onEncounterChange(updatedEncounter);
+    onEncounterChange([{ op: 'add', path: '/period/end', value: checkout }]);
   };
 
   return (
@@ -76,6 +58,19 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
             placeholder="Search for practitioner"
             defaultValue={practitioner}
             onChange={handlePractitionerChange}
+          />
+
+          {/* ResourceInput is uncontrolled; remount when the async-resolved default arrives */}
+          <ResourceInput<Organization>
+            key={billingOrganization?.reference ?? 'no-billing-organization'}
+            resourceType="Organization"
+            name="billingOrganization"
+            label="Billing organization"
+            placeholder="Search for organization"
+            defaultValue={billingOrganization}
+            searchCriteria={{ identifier: BILLING_ORGANIZATION_IDENTIFIER }}
+            itemComponent={BillingOrganizationOption}
+            onChange={onBillingOrganizationChange}
           />
 
           <DateTimeInput

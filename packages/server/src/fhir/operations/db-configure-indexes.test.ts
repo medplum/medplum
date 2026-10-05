@@ -7,7 +7,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { initTestAuth, waitForAsyncJob } from '../../test.setup';
+import { getSuperAdminAccessToken, waitForAsyncJob } from '../../test.setup';
 
 describe('db-configure-indexes', () => {
   const app = express();
@@ -20,7 +20,7 @@ describe('db-configure-indexes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth({ project: { superAdmin: true } });
+    accessToken = await getSuperAdminAccessToken();
 
     // Create a test table
     const client = getDatabasePool(DatabaseMode.WRITER);

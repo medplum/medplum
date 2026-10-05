@@ -11,11 +11,14 @@ describe('utils', () => {
     expect(isBooleanConfig('baseUrl')).toBe(false);
     expect(isBooleanConfig('logRequests')).toBe(true);
     expect(isBooleanConfig('rateLimitsEnabled')).toBe(true);
+    expect(isBooleanConfig('requireVerifiedEmailForProjectCreation')).toBe(true);
+    expect(isBooleanConfig('storeBotInput')).toBe(true);
   });
 
   test('isIntegerConfig', () => {
     expect(isIntegerConfig('baseUrl')).toBe(false);
     expect(isIntegerConfig('port')).toBe(true);
+    expect(isIntegerConfig('defaultMfaRateLimit')).toBe(true);
   });
 
   test('addDefaults sets maxSearchOffset default', () => {
@@ -30,6 +33,7 @@ describe('utils', () => {
       baseUrl: 'https://example.com',
     } as any);
     expect(config.rateLimitsEnabled).toBe(true);
+    expect(config.defaultMfaRateLimit).toBe(10);
   });
 
   test('addDefaults preserves existing maxSearchOffset', () => {
@@ -68,33 +72,25 @@ describe('utils', () => {
     expect(config).toEqual({ rateLimitsEnabled: false });
   });
 
-  test('addDefaults preserves dataWarehouse.startDate as ISO-8601 string', () => {
-    const config = addDefaults({
-      baseUrl: 'https://example.com',
-      dataWarehouse: {
-        startDate: '2024-01-01T00:00:00.000Z',
-      },
-    } as any);
-    expect(config.dataWarehouse?.startDate).toBe('2024-01-01T00:00:00.000Z');
+  test('setValue parses requireVerifiedEmailForProjectCreation as boolean', () => {
+    const config = {};
+    setValue(config, 'requireVerifiedEmailForProjectCreation', 'false');
+    expect(config).toEqual({ requireVerifiedEmailForProjectCreation: false });
   });
 
-  test('setValue stores dataWarehouse.startDate as string', () => {
+  test('setValue stores blockedEmailDomains as comma-separated list', () => {
     const config = {};
-    setValue(config, 'dataWarehouse.startDate', '2024-01-01T00:00:00.000Z');
+    setValue(config, 'blockedEmailDomains', 'example.com,test.com');
     expect(config).toEqual({
-      dataWarehouse: {
-        startDate: '2024-01-01T00:00:00.000Z',
-      },
+      blockedEmailDomains: ['example.com', 'test.com'],
     });
   });
 
-  test('setValue stores dataWarehouse.includeResourceTypes as comma-separated list', () => {
+  test('setValue stores disableChainedSearch as comma-separated list', () => {
     const config = {};
-    setValue(config, 'dataWarehouse.includeResourceTypes', 'Patient,Observation');
+    setValue(config, 'disableChainedSearch', 'Observation, AuditEvent');
     expect(config).toEqual({
-      dataWarehouse: {
-        includeResourceTypes: ['Patient', 'Observation'],
-      },
+      disableChainedSearch: ['Observation', 'AuditEvent'],
     });
   });
 

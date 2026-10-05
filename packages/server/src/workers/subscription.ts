@@ -43,20 +43,22 @@ import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInAuthenticatedContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
+import { findProjectMembership } from '../fhir/projectmembership';
 import type { ResendSubscriptionsOptions, SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
 import type { ActiveSubscriptionEntry } from '../pubsub';
 import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
 import { getCacheRedis } from '../redis';
-import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
-import type { SubEventsOptions } from '../ws/subscriptions';
+import type { SubEventEntry, SubEventPayload } from '../ws/subscriptions';
+import type { ProjectJobTarget } from './base';
+import { getJobSystemRepo } from './base';
 import {
   clearSubscriptionFailures,
   getSubscriptionAutoDisableTriggers,
@@ -66,7 +68,6 @@ import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
   defaultQueueOptions,
-  findProjectMembership,
   getWorkerBullmqConfig,
   isJobSuccessful,
   queueRegistry,
@@ -115,6 +116,7 @@ const MAX_DELAY = 8 * 60 * 60_000;
  */
 
 export interface SubscriptionJobData {
+  readonly target: ProjectJobTarget;
   readonly subscriptionId: string;
   readonly resourceType: ResourceType;
   readonly channelType?: Subscription['channel']['type'];
@@ -353,6 +355,7 @@ export async function addSubscriptionJobs(
 
   const project = context?.project;
   if (!project) {
+    // system resources do not have subscriptions evaluated against them.
     return;
   }
 
@@ -360,7 +363,7 @@ export async function addSubscriptionJobs(
   const subscriptions = await getSubscriptions(resource, project);
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
-  const wsSubEvents = [] as [string, SubEventsOptions][];
+  const wsSubEvents: SubEventEntry[] = [];
   // Cache access policy results per (author, channel type) for the duration of this evaluation.
   // Within one addSubscriptionJobs() call, `resource` and `project` are constant,
   // so the boolean result is identical for all subscriptions sharing the same author AND channel type.
@@ -420,6 +423,7 @@ export async function addSubscriptionJobs(
         }
       }
       await addSubscriptionJobData({
+        target: { kind: 'project', projectId: project.id },
         subscriptionId: subscription.id,
         resourceType: resource.resourceType,
         channelType: subscription.channel.type,
@@ -436,7 +440,10 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
-    await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify({ resource, events: wsSubEvents }));
+    await publish(
+      WEBSOCKET_SUB_PUBLISH_CHANNEL,
+      JSON.stringify({ resource, events: wsSubEvents } satisfies SubEventPayload)
+    );
   }
 }
 
@@ -613,7 +620,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
 
   try {
     const { subscriptionId, resourceType, id, versionId, verbose } = job.data;
-    systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // job.data will eventually include shardId
+    systemRepo = await getJobSystemRepo(job.data.target);
     const logger = getLogger();
     const logFn = verbose ? logger.info : logger.debug;
 
@@ -671,7 +678,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     if (subscription.channel?.endpoint?.startsWith('Bot/')) {
       await execBot(systemRepo, job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
     } else {
-      await sendRestHook(job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
+      await sendRestHook(systemRepo, job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
     }
     // Success - reset the failure counter
     await clearSubscriptionFailures(subscription.id);
@@ -722,6 +729,7 @@ async function tryGetCurrentVersion<T extends Resource = Resource>(
 
 /**
  * Sends a rest-hook subscription.
+ * @param systemRepo - The system repository.
  * @param job - The subscription job details.
  * @param subscription - The subscription.
  * @param resource - The resource that triggered the subscription.
@@ -729,6 +737,7 @@ async function tryGetCurrentVersion<T extends Resource = Resource>(
  * @param requestTime - The request time.
  */
 async function sendRestHook(
+  systemRepo: SystemRepository,
   job: Job<SubscriptionJobData>,
   subscription: WithId<Subscription>,
   resource: Resource,
@@ -749,12 +758,6 @@ async function sendRestHook(
 
   const fetchStartTime = Date.now();
   let fetchEndTime: number;
-  let systemRepo: SystemRepository;
-  if (subscription.meta?.project) {
-    systemRepo = await getProjectSystemRepo(subscription.meta.project);
-  } else {
-    systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
-  }
   try {
     log.info('Sending rest hook', {
       url,
@@ -862,8 +865,9 @@ function buildRestHookHeaders(
   const traceId = job.data.traceId;
   if (traceId) {
     headers['x-trace-id'] = traceId;
-    if (parseTraceparent(traceId)) {
-      headers['traceparent'] = traceId;
+    const traceparent = buildTraceparent(traceId);
+    if (traceparent) {
+      headers['traceparent'] = traceparent;
     }
   }
 

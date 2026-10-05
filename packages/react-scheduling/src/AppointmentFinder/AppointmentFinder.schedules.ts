@@ -1,0 +1,723 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient, WithId } from '@medplum/core';
+import {
+  assertNever,
+  getDisplayString,
+  getReferenceString,
+  isDefined,
+  lazy,
+  serviceTypeIncludesService,
+} from '@medplum/core';
+import type { HealthcareService, Location, PractitionerRole, Reference, Schedule } from '@medplum/fhirtypes';
+import type { BookableActorType, SchedulingActor, SchedulingActorResource, SchedulingActorType } from '../actors';
+import {
+  BOOKABLE_ACTOR_TYPES,
+  getActorType,
+  getActorTypeLabel,
+  isBookableActorType,
+  REQUIRED_ACTOR_TYPES,
+} from '../actors';
+import { getActorsKey } from './AppointmentFinder.times';
+
+/**
+ * A Schedule that can be booked for a service, paired with the actor it belongs
+ * to.
+ */
+export interface ScheduleCandidate {
+  readonly schedule: WithId<Schedule>;
+  /** The actor itself, when the search was able to include it. */
+  readonly actorResource: SchedulingActorResource | undefined;
+}
+
+/**
+ * Returns the actor a candidate's schedule is held on.
+ * @param candidate - The candidate to read.
+ * @returns Its schedule's only actor.
+ */
+export function getCandidateActor(candidate: ScheduleCandidate): SchedulingActor {
+  return candidate.schedule.actor[0];
+}
+
+/**
+ * Names a candidate's actor, for use in plain-text option lists.
+ * @param candidate - The candidate to name.
+ * @returns The name to show.
+ */
+export function getCandidateDisplay(candidate: ScheduleCandidate): string {
+  const actor = getCandidateActor(candidate);
+  return (
+    getActorResourceName(candidate.actorResource) ??
+    actor.display ??
+    actor.reference ??
+    `Schedule/${candidate.schedule.id}`
+  );
+}
+
+/**
+ * The name of an actor's resource, or undefined where it has none.
+ * @param resource - The actor's resource, or undefined where none was read.
+ * @returns The resource's name.
+ */
+function getActorResourceName(resource: SchedulingActorResource | undefined): string | undefined {
+  if (!resource) {
+    return undefined;
+  }
+  const display = getDisplayString(resource);
+  return display === getReferenceString(resource) ? undefined : display;
+}
+
+/**
+ * One thing an appointment needs, of a single actor type.
+ *
+ * The candidates in it are alternatives: a row naming two
+ * providers asks for *either* of them rather than both.
+ */
+export interface ActorRequirement {
+  readonly id: string;
+  readonly candidates: readonly ScheduleCandidate[];
+}
+
+/**
+ * What an appointment is being asked for, per actor type.
+ *
+ * Each actor type holds a list of requirements, and the two directions read
+ * differently: requirements are ANDed, so two provider rows ask for two
+ * providers, while the candidates within one row are ORed.
+ */
+export type ActorSelections = Partial<Record<SchedulingActorType, readonly ActorRequirement[]>>;
+
+// Used to tell one row from another within a form.
+let nextRequirementId = 0;
+
+/**
+ * Opens a new requirement row.
+ * @param candidates - What it starts out asking for. Empty by default.
+ * @returns The row.
+ */
+export function createActorRequirement(candidates: readonly ScheduleCandidate[] = []): ActorRequirement {
+  nextRequirementId++;
+  return { id: `requirement-${nextRequirementId}`, candidates };
+}
+
+export interface SearchScheduleCandidatesOptions {
+  /** Which of the service's actors to offer. */
+  readonly actorType: SchedulingActorType;
+  /** What the user typed. Empty offers whatever the actor type has, unfiltered by name. */
+  readonly query: string;
+  /**
+   * The site being booked at. Actors sited elsewhere are left out: a room or a
+   * device anywhere inside it counts, a provider only if one of their
+   * PractitionerRoles names it.
+   */
+  readonly location?: Reference<Location> | WithId<Location>;
+  readonly signal?: AbortSignal;
+  /** Maximum schedules to consider. Defaults to 25. */
+  readonly count?: number;
+}
+
+/** How many schedules one search offers. */
+const DEFAULT_COUNT = 25;
+
+/**
+ * The chained filters that scope a Schedule search to actors of one type.
+ * @param actorType - The type of actors to offer.
+ * @param query - What the user typed, or empty to match any name.
+ * @returns The `actor:` criteria to search with.
+ */
+function getActorCriteria(actorType: SchedulingActorType, query: string): Record<string, string> {
+  switch (actorType) {
+    case 'Practitioner':
+      return {
+        'actor:Practitioner.active:not': 'false',
+        ...(query ? { 'actor:Practitioner.name': query } : undefined),
+      };
+    case 'Location':
+      return {
+        'actor:Location.status:not': 'inactive',
+        ...(query ? { 'actor:Location.name': query } : undefined),
+      };
+    case 'Device':
+      return {
+        'actor:Device.status:not': 'inactive',
+        ...(query ? { 'actor:Device.device-name': query } : undefined),
+      };
+    case 'HealthcareService':
+    case 'Patient':
+    case 'PractitionerRole':
+    case 'RelatedPerson':
+      throw new Error(`Got unsupported actor type ${actorType}`);
+    default:
+      return assertNever(actorType);
+  }
+}
+
+/**
+ * Finds the Schedules that can be booked for one role, narrowed to the actors
+ * whose name matches what was typed.
+ * @param medplum - The Medplum client.
+ * @param service - The HealthcareService being booked, or undefined to search
+ *   unconstrained by service type — every active, bookable schedule for the role.
+ * @param options - The role, the text typed, the site, an abort signal, and a page size.
+ * @returns The matching schedules, each with its actor, by display name.
+ */
+export async function searchScheduleCandidates(
+  medplum: MedplumClient,
+  service: WithId<HealthcareService> | undefined,
+  options: SearchScheduleCandidatesOptions
+): Promise<ScheduleCandidate[]> {
+  const count = (options.count ?? DEFAULT_COUNT).toString();
+  const actorCriteria = getActorCriteria(options.actorType, options.query);
+
+  const tokens = service ? getServiceTypeTokens(service) : [];
+  const typeCriteria = tokens.length > 0 ? { 'service-type': tokens.join(',') } : {};
+
+  const bundle = await medplum.search(
+    'Schedule',
+    { ...typeCriteria, ...actorCriteria, 'active:not': 'false', _count: count, _include: 'Schedule:actor' },
+    { signal: options.signal }
+  );
+
+  const actorsByReference = new Map<string, SchedulingActorResource>();
+  const schedules: WithId<Schedule>[] = [];
+
+  for (const entry of bundle.entry ?? []) {
+    const resource = entry.resource as WithId<Schedule> | SchedulingActorResource | undefined;
+    if (!resource?.id) {
+      continue;
+    }
+    if (resource.resourceType === 'Schedule') {
+      schedules.push(resource);
+    } else {
+      actorsByReference.set(`${resource.resourceType}/${resource.id}`, resource);
+    }
+  }
+
+  const found = schedules
+    .map((schedule) => toScheduleCandidate(schedule, service, actorsByReference))
+    .filter(isDefined);
+
+  // Filter by location
+  const kept = await filterCandidatesByLocation(medplum, found, options.location, { signal: options.signal });
+  return kept.sort((left, right) => getCandidateDisplay(left).localeCompare(getCandidateDisplay(right)));
+}
+
+function getServiceTypeTokens(service: HealthcareService): string[] {
+  const tokens = (service.type ?? [])
+    .flatMap((concept) => concept.coding ?? [])
+    .filter((coding) => coding.code)
+    .map((coding) => (coding.system ? `${coding.system}|${coding.code}` : (coding.code as string)));
+  return [...new Set(tokens)];
+}
+
+export function toScheduleCandidate(
+  schedule: WithId<Schedule>,
+  service: WithId<HealthcareService> | undefined,
+  actors: Map<string, SchedulingActorResource>
+): ScheduleCandidate | undefined {
+  if (schedule.active === false || (service && !serviceTypeIncludesService(schedule.serviceType, service))) {
+    return undefined;
+  }
+
+  // `$find` errors on schedules with anything other than a single actor, so
+  // offering them would only produce a request that cannot succeed.
+  if (schedule.actor.length !== 1) {
+    return undefined;
+  }
+
+  // Leaves out schedules held on a PractitionerRole, HealthcareService, or other
+  // resource that are not commonly used for scheduling.
+  const actor = schedule.actor[0];
+  const referenceStr = actor.reference;
+  if (!referenceStr || !isBookableActorType(getActorType(actor))) {
+    return undefined;
+  }
+
+  return { schedule, actorResource: actors.get(referenceStr) };
+}
+
+/** How far up a `partOf` chain of Locations to look. */
+const MAX_LOCATION_DEPTH = 4;
+
+export interface FilterCandidatesOptions {
+  readonly signal?: AbortSignal;
+}
+
+/**
+ * Narrows candidates to the ones available at one location.
+ *
+ * A candidate that says nothing about where it is, or whose ancestry cannot be
+ * read, is kept: hiding something the caller may be entitled to book is worse
+ * than offering something at the wrong site.
+ *
+ * @param medplum - The Medplum client.
+ * @param candidates - Candidates to narrow.
+ * @param location - The site being booked at, or undefined to keep everything.
+ * @param options - Abort signal.
+ * @returns The candidates, minus the ones sited elsewhere.
+ */
+export async function filterCandidatesByLocation(
+  medplum: MedplumClient,
+  candidates: readonly ScheduleCandidate[],
+  location: Reference<Location> | WithId<Location> | undefined,
+  options?: FilterCandidatesOptions
+): Promise<ScheduleCandidate[]> {
+  const locationReference = location && getReferenceString(location);
+  if (!locationReference) {
+    return [...candidates];
+  }
+
+  // The location where a Practitioner practices is recorded on their PractitionerRoles.
+  const getRoles = lazy(() => searchRolesByPractitioner(medplum, candidates, options));
+
+  // Test candidates concurrently & let the client's request cache collapse repeated
+  // Location reads.
+  const verdicts = await Promise.all(
+    candidates.map(async (candidate) => isCandidateAtLocation(candidate, medplum, locationReference, getRoles, options))
+  );
+
+  return candidates.filter((_, index) => verdicts[index]);
+}
+
+/**
+ * Loads the PractitionerRoles held by the practitioners among the candidates.
+ *
+ * A provider is booked on their Practitioner, but it is their PractitionerRoles
+ * that record _where_ they practice, so the roles have to be read back to filter
+ * by site. One search covers every candidate.
+ *
+ * @param medplum - The Medplum client.
+ * @param candidates - Candidates whose practitioners should be looked up.
+ * @param options - Abort signal.
+ * @returns The active roles, keyed by the practitioner reference they name.
+ *   Empty when the roles cannot be read, which keeps those candidates on offer.
+ */
+async function searchRolesByPractitioner(
+  medplum: MedplumClient,
+  candidates: readonly ScheduleCandidate[],
+  options: FilterCandidatesOptions | undefined
+): Promise<ReadonlyMap<string, readonly PractitionerRole[]>> {
+  const byPractitioner = new Map<string, PractitionerRole[]>();
+  const references = [
+    ...new Set(
+      candidates
+        .filter((candidate) => getActorType(getCandidateActor(candidate)) === 'Practitioner')
+        .map((candidate) => getCandidateActor(candidate).reference)
+    ),
+  ];
+
+  if (references.length === 0) {
+    return byPractitioner;
+  }
+
+  let roles: PractitionerRole[];
+  try {
+    roles = await medplum.searchResources(
+      'PractitionerRole',
+      // An inactive role no longer places the person at its site.
+      { practitioner: references.join(','), 'active:not': 'false', _count: '1000' },
+      { signal: options?.signal }
+    );
+  } catch {
+    // Unreadable, so where these people practice is unknown.
+    return byPractitioner;
+  }
+
+  for (const role of roles) {
+    const reference = role.practitioner?.reference;
+    if (!reference) {
+      continue;
+    }
+    const held = byPractitioner.get(reference);
+    if (held) {
+      held.push(role);
+    } else {
+      byPractitioner.set(reference, [role]);
+    }
+  }
+
+  return byPractitioner;
+}
+
+/**
+ * Reports whether one candidate can be booked at a location.
+ *
+ * Each role records where it is in a different place, so the role decides which
+ * question to ask; a role that records nothing is kept.
+ *
+ * @param candidate - The candidate to site.
+ * @param medplum - The Medplum client.
+ * @param locationReference - The site being booked at.
+ * @param getRoles - Reads the candidates' PractitionerRoles, once between them all.
+ * @param options - Abort signal.
+ * @returns Whether the candidate is available at the location, or says nothing about it.
+ */
+async function isCandidateAtLocation(
+  candidate: ScheduleCandidate,
+  medplum: MedplumClient,
+  locationReference: string,
+  getRoles: () => Promise<ReadonlyMap<string, readonly PractitionerRole[]>>,
+  options: FilterCandidatesOptions | undefined
+): Promise<boolean> {
+  const actor = candidate.actorResource;
+  const actorReference = getCandidateActor(candidate);
+  const actorType = getActorType(actorReference);
+
+  switch (actorType) {
+    case 'Location':
+      // A room is the Location, so it sites itself.
+      return isWithinLocation(medplum, actorReference.reference, locationReference, options);
+    case 'Device': {
+      // Where a device is kept is recorded on the Device itself, which is only
+      // to hand when the search could include it.
+      const device = actor?.resourceType === 'Device' ? actor : undefined;
+      return isWithinLocation(medplum, device?.location?.reference, locationReference, options);
+    }
+    case 'Practitioner':
+      return isPractitionerAtLocation(actorReference.reference, locationReference, getRoles);
+    case 'HealthcareService':
+    case 'Patient':
+    case 'PractitionerRole':
+    case 'RelatedPerson':
+      // An actor of a type nothing books against, so nothing sites it either.
+      return true;
+    default:
+      return assertNever(actorType);
+  }
+}
+
+/**
+ * Reports whether a practitioner practices at a location.
+ *
+ * Where someone practices lives on their PractitionerRoles, and a person with no
+ * role that names a location is kept rather than hidden.
+ *
+ * @param actorReference - The practitioner the schedule is held on.
+ * @param locationReference - The site being booked at.
+ * @param getRoles - Reads the candidates' PractitionerRoles, once between them all.
+ * @returns Whether one of their roles names the site.
+ */
+async function isPractitionerAtLocation(
+  actorReference: string | undefined,
+  locationReference: string,
+  getRoles: () => Promise<ReadonlyMap<string, readonly PractitionerRole[]>>
+): Promise<boolean> {
+  const roles = await getRoles();
+  const held = (actorReference ? roles.get(actorReference) : undefined) ?? [];
+  const practiceLocations = held.flatMap((role) => role.location ?? []);
+  if (practiceLocations.length === 0) {
+    // Nothing records where this person practices.
+    return true;
+  }
+  return practiceLocations.some((roleLocation) => roleLocation.reference === locationReference);
+}
+
+/**
+ * Walks up from a Location to the one being booked at.
+ * @param medplum - The Medplum client.
+ * @param reference - The Location to start from, or undefined to say nothing.
+ * @param locationReference - The Location being looked for.
+ * @param options - Abort signal.
+ * @returns Whether the target is at or above the Location, or unknowable.
+ */
+async function isWithinLocation(
+  medplum: MedplumClient,
+  reference: string | undefined,
+  locationReference: string,
+  options: FilterCandidatesOptions | undefined
+): Promise<boolean> {
+  if (!reference) {
+    return true;
+  }
+
+  let current: string = reference;
+
+  for (let depth = 0; depth < MAX_LOCATION_DEPTH; depth++) {
+    if (current === locationReference) {
+      return true;
+    }
+    const location = await readLocation(medplum, current, options);
+    if (!location) {
+      return true;
+    }
+    const parent = location.partOf?.reference;
+    if (!parent) {
+      // The chain ends above this Location without passing through the target.
+      return false;
+    }
+    current = parent;
+  }
+
+  // Deeper than we look. Treat it as unverifiable rather than excluded.
+  return true;
+}
+
+/**
+ * Reads a Location, or reports that it cannot be read.
+ * @param medplum - The Medplum client.
+ * @param reference - The Location to read.
+ * @param options - Abort signal.
+ * @returns The Location, or undefined when it cannot be read.
+ */
+async function readLocation(
+  medplum: MedplumClient,
+  reference: string,
+  options: FilterCandidatesOptions | undefined
+): Promise<Location | undefined> {
+  try {
+    return await medplum.readReference<Location>({ reference }, { signal: options?.signal });
+  } catch {
+    // Unreadable, so its ancestry is unknown.
+    return undefined;
+  }
+}
+
+/**
+ * Returns everything chosen, across rows and actor types.
+ * @param selections - What has been chosen.
+ * @returns The chosen candidates in `BOOKABLE_ACTOR_TYPES` order, then row order.
+ */
+export function getSelectedCandidates(selections: ActorSelections): ScheduleCandidate[] {
+  return getRequirements(selections).flatMap((requirement) => [...requirement.candidates]);
+}
+
+/**
+ * Returns every row across every actor type, in the order they are asked about.
+ * @param selections - What has been chosen.
+ * @returns The rows, empty ones included.
+ */
+export function getRequirements(selections: ActorSelections): ActorRequirement[] {
+  return BOOKABLE_ACTOR_TYPES.flatMap((actorType) => selections[actorType] ?? []);
+}
+
+/**
+ * Returns the rows that actually ask for something.
+ *
+ * A row nobody has named anyone in asks for nothing, so it drops out rather than
+ * emptying the product of the rows around it.
+ *
+ * @param selections - What has been chosen.
+ * @returns The rows holding at least one candidate.
+ */
+function getFilledRequirements(selections: ActorSelections): ActorRequirement[] {
+  return getRequirements(selections).filter((requirement) => requirement.candidates.length > 0);
+}
+
+/**
+ * Flattens the loaded actor resources into a map, keyed by their reference.
+ * @param selections - What has been chosen.
+ * @returns The resource behind each chosen actor the search was able to include.
+ */
+export function getSelectedActorResources(selections: ActorSelections): Map<string, SchedulingActorResource> {
+  const resources = new Map<string, SchedulingActorResource>();
+  for (const candidate of getSelectedCandidates(selections)) {
+    const reference = getReferenceString(getCandidateActor(candidate));
+    if (reference && candidate.actorResource) {
+      resources.set(reference, candidate.actorResource);
+    }
+  }
+  return resources;
+}
+
+function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> {
+  return { reference: `Schedule/${candidate.schedule.id}` };
+}
+
+/**
+ * The most alternatives worth expanding into requests at all.
+ *
+ * The search runs a few combinations at a time, so this is not the size of a
+ * round: it is the point past which the whole product is more than anyone is
+ * going to sit through, whatever order it is asked in.
+ */
+export const MAX_ACTOR_COMBINATIONS = 100;
+
+/**
+ * Whether a blocker is a form that is not finished yet, or answers that cannot work.
+ *
+ * Only `invalid` is the user's to undo, so only it is worth showing as an error.
+ */
+export type SelectionBlockerSeverity = 'incomplete' | 'invalid';
+
+/** Why the current selections cannot be searched. */
+export interface SelectionBlocker {
+  /** A whole sentence to show the user. */
+  readonly message: string;
+  readonly severity: SelectionBlockerSeverity;
+}
+
+/** Joins labels the way a sentence offering a choice between them would. */
+const listAlternatives = new Intl.ListFormat('en', { type: 'disjunction' });
+
+/**
+ * Reports why the current selections cannot be searched, if they cannot.
+ * @param selections - What has been chosen.
+ * @returns The blocker to show the user, or undefined when the search can run.
+ */
+export function getSelectionError(selections: ActorSelections): SelectionBlocker | undefined {
+  const missing = [...REQUIRED_ACTOR_TYPES].find(
+    (actorType) => !(selections[actorType] ?? []).some((requirement) => requirement.candidates.length > 0)
+  );
+  if (missing) {
+    return {
+      message: `Choose at least one ${getActorTypeLabel(missing).toLowerCase()} first.`,
+      severity: 'incomplete',
+    };
+  }
+  if (countActorCombinations(selections) > MAX_ACTOR_COMBINATIONS) {
+    // Naming only the types in play keeps the advice actionable: there is nothing
+    // to remove from a row nobody has named anyone in.
+    const crowded = listAlternatives.format(getSelectedActorTypes(selections).map(getActorTypePluralLabel));
+    return {
+      message: `Too many combinations to search at once. Remove a few ${crowded} to find a time.`,
+      severity: 'invalid',
+    };
+  }
+  if (getActorCombinations(selections).length === 0) {
+    return { message: 'Nobody can fill every row at once.', severity: 'invalid' };
+  }
+  return undefined;
+}
+
+/**
+ * Returns the actor types someone has actually been named under.
+ * @param selections - What has been chosen.
+ * @returns The types holding at least one candidate, in `BOOKABLE_ACTOR_TYPES` order.
+ */
+function getSelectedActorTypes(selections: ActorSelections): BookableActorType[] {
+  return BOOKABLE_ACTOR_TYPES.filter((actorType) =>
+    (selections[actorType] ?? []).some((requirement) => requirement.candidates.length > 0)
+  );
+}
+
+/**
+ * Names an actor type the way a sentence about several of them would.
+ * @param actorType - The type being named.
+ * @returns Its label, lowercased and pluralized.
+ */
+function getActorTypePluralLabel(actorType: BookableActorType): string {
+  return `${getActorTypeLabel(actorType).toLowerCase()}s`;
+}
+
+/** Rows that cannot all be filled at once, and where to say so. */
+export interface UnsatisfiableRows {
+  /** The actor type whose rows have no answer between them. */
+  readonly actorType: BookableActorType;
+  /** What to do about it, to show against those rows. */
+  readonly message: string;
+}
+
+/**
+ * Finds the rows that cannot all be filled at once, when there are any. Specifically happens
+ * when two rows offer the same resource, so one resource cannot fill both halves of a visit.
+ * @param selections - What has been chosen.
+ * @returns The first type whose rows have no answer between them, or undefined when
+ *   every type can be satisfied.
+ */
+export function getUnsatisfiableRows(selections: ActorSelections): UnsatisfiableRows | undefined {
+  const actorType = BOOKABLE_ACTOR_TYPES.find((candidateType) => {
+    const alone: ActorSelections = { [candidateType]: selections[candidateType] };
+    return getFilledRequirements(alone).length > 0 && getActorCombinations(alone).length === 0;
+  });
+  return actorType && { actorType, message: 'Name someone else in one of them.' };
+}
+
+/**
+ * One way of holding an appointment: a set of actors whose schedules `$find`
+ * intersects in a single request. Each requirement contributes exactly one
+ * actor, since a row is satisfied by any one of its alternatives.
+ */
+export interface ActorCombination {
+  /** Matches `getActorGroupKey` of the appointments offered for these actors. */
+  readonly key: string;
+  readonly label: string;
+  readonly actors: readonly SchedulingActor[];
+  readonly schedules: readonly Reference<Schedule>[];
+}
+
+/**
+ * Counts the combinations the selections expand into, without building them.
+ *
+ * An upper bound rather than an exact count: the ones that would name the same
+ * actor twice are only recognised while building. Enough to decide whether the
+ * product is worth expanding at all.
+ *
+ * @param selections - What has been chosen.
+ * @returns How many ways there are of satisfying every row, or 0 when nothing
+ *   has been chosen.
+ */
+export function countActorCombinations(selections: ActorSelections): number {
+  const requirements = getFilledRequirements(selections);
+  if (requirements.length === 0) {
+    return 0;
+  }
+  return requirements.reduce((total, requirement) => total * requirement.candidates.length, 1);
+}
+
+/**
+ * Builds the sets of actors an appointment could be held on.
+ *
+ * One combination is one `$find` request: the schedules within it are
+ * intersected, so its times are the times all of those actors are free. Rows are
+ * ANDed and the alternatives within a row are ORed, so the combinations are the
+ * product of the rows — one alternative taken from each.
+ *
+ * Ordered as an odometer with the last row turning fastest, so the first
+ * combination is every row's first pick and the rounds the search runs stay
+ * predictable.
+ *
+ * @param selections - What has been chosen.
+ * @returns One combination per way of satisfying every row, or an empty list
+ *   when nothing is chosen.
+ */
+export function getActorCombinations(selections: ActorSelections): ActorCombination[] {
+  const requirements = getFilledRequirements(selections);
+  if (requirements.length === 0) {
+    return [];
+  }
+
+  const combinations = cartesianProduct(requirements.map((requirement) => requirement.candidates))
+    // Two rows may offer the same person, and nobody fills both halves of a visit.
+    .filter((chosen) => !hasRepeatedActor(chosen))
+    .map(toActorCombination);
+
+  // The key ignores order, so this also collapses the pair {A,B} × {A,B} reaches twice.
+  // First wins: `new Map(entries)` would keep the last, and `label` does read in order.
+  const byKey = new Map<string, ActorCombination>();
+  for (const combination of combinations) {
+    if (!byKey.has(combination.key)) {
+      byKey.set(combination.key, combination);
+    }
+  }
+  return [...byKey.values()];
+}
+
+/**
+ * Every way of taking one element from each list, the last list turning fastest.
+ * @param lists - The lists to take from. One empty list empties the product.
+ * @returns One tuple per combination; one empty tuple when given no lists at all.
+ */
+function cartesianProduct<T>(lists: readonly (readonly T[])[]): T[][] {
+  return lists.reduce<T[][]>((tuples, list) => tuples.flatMap((tuple) => list.map((item) => [...tuple, item])), [[]]);
+}
+
+/**
+ * Reports whether one actor was picked for more than one row.
+ * @param candidates - One pick per row.
+ * @returns Whether any actor appears twice.
+ */
+function hasRepeatedActor(candidates: readonly ScheduleCandidate[]): boolean {
+  // Always set: a candidate only exists for a schedule whose actor is referenced.
+  const actors = candidates.map((candidate) => getCandidateActor(candidate).reference);
+  return new Set(actors).size !== actors.length;
+}
+
+function toActorCombination(candidates: readonly ScheduleCandidate[]): ActorCombination {
+  const actors = candidates.map(getCandidateActor);
+  return {
+    key: getActorsKey(actors),
+    label: candidates.map(getCandidateDisplay).join(' · '),
+    actors,
+    schedules: candidates.map(toScheduleReference),
+  };
+}

@@ -1621,4 +1621,111 @@ describe('PlanDefinition apply', () => {
     expect(res3).toHaveStatus(200);
     expect((res3.body as CarePlan).goal).toBeUndefined();
   });
+
+  describe('Canonical with several versions', () => {
+    async function createQuestionnaire(
+      url: string,
+      version: string,
+      status: Questionnaire['status']
+    ): Promise<WithId<Questionnaire>> {
+      const res = await request(app)
+        .post(`/fhir/R4/Questionnaire`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Questionnaire',
+          url,
+          version,
+          status,
+          title: `Version ${version}`,
+          item: [{ linkId: '1', text: 'First question', type: 'string' }],
+        });
+      expect(res).toHaveStatus(201);
+      return res.body as WithId<Questionnaire>;
+    }
+
+    async function updateQuestionnaire(
+      questionnaire: WithId<Questionnaire>,
+      status: Questionnaire['status']
+    ): Promise<void> {
+      const res = await request(app)
+        .put(`/fhir/R4/Questionnaire/${questionnaire.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ ...questionnaire, status, title: `${questionnaire.title} (${status})` });
+      expect(res).toHaveStatus(200);
+    }
+
+    async function applyAndGetTaskFocus(definitionCanonical: string): Promise<string | undefined> {
+      const planDefinition = await request(app)
+        .post(`/fhir/R4/PlanDefinition`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'PlanDefinition',
+          title: 'Versioned Plan Definition',
+          status: 'active',
+          action: [{ title: 'Questionnaire', definitionCanonical }],
+        });
+      expect(planDefinition).toHaveStatus(201);
+
+      const patient = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'Patient', name: [{ given: ['Workflow'], family: 'Demo' }] });
+      expect(patient).toHaveStatus(201);
+
+      const apply = await request(app)
+        .post(`/fhir/R4/PlanDefinition/${planDefinition.body.id}/$apply`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [{ name: 'subject', valueString: getReferenceString(patient.body as Patient) }],
+        });
+      expect(apply).toHaveStatus(200);
+      const carePlan = apply.body as WithId<CarePlan>;
+
+      const requestGroup = await request(app)
+        .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(requestGroup).toHaveStatus(200);
+
+      const task = await request(app)
+        .get(`/fhir/R4/${(requestGroup.body as RequestGroup).action?.[0]?.resource?.reference}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(task).toHaveStatus(200);
+      return (task.body as Task).focus?.reference;
+    }
+
+    test('Prefers the active version over a more recently updated retired one', async () => {
+      const url = 'http://example.com/Questionnaire/versioned-' + randomUUID();
+      const version1 = await createQuestionnaire(url, '1', 'active');
+      const version2 = await createQuestionnaire(url, '2', 'active');
+      await updateQuestionnaire(version1, 'retired');
+
+      expect(await applyAndGetTaskFocus(url)).toStrictEqual(getReferenceString(version2));
+    });
+
+    test('Prefers the most recently updated active version', async () => {
+      const url = 'http://example.com/Questionnaire/versioned-' + randomUUID();
+      const version1 = await createQuestionnaire(url, '1', 'active');
+      await createQuestionnaire(url, '2', 'active');
+      await updateQuestionnaire(version1, 'active');
+
+      expect(await applyAndGetTaskFocus(url)).toStrictEqual(getReferenceString(version1));
+    });
+
+    test('Without an active version, uses the most recently updated one', async () => {
+      const url = 'http://example.com/Questionnaire/versioned-' + randomUUID();
+      const version1 = await createQuestionnaire(url, '1', 'draft');
+      const version2 = await createQuestionnaire(url, '2', 'retired');
+
+      expect(await applyAndGetTaskFocus(url)).toStrictEqual(getReferenceString(version2));
+
+      await updateQuestionnaire(version1, 'draft');
+      expect(await applyAndGetTaskFocus(url)).toStrictEqual(getReferenceString(version1));
+    });
+  });
 });

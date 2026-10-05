@@ -77,25 +77,38 @@ await medplum.createResource<Communication>({
 // end-block seedSystemPromptsTs
 
 // start-block updateSystemPromptTs
-// To tune the translator at runtime, edit payload[0].contentString on the
-// existing Communication. The next user message picks up the new prompt
-// without redeploying any bot.
-const existing = await medplum.searchOne('Communication', {
+// To tune the translator at runtime, update your own copy of the
+// Communication - a plain search can also return the default base prompt,
+// and that one should never be updated in place. Look for a copy owned by
+// the current project (meta.project) and create one if it doesn't exist yet.
+const currentProject = medplum.getProject();
+const candidates = await medplum.searchResources('Communication', {
   identifier: 'http://medplum.com/ai-spaces|ai-fhir-request-tools',
+  _sort: '-_lastUpdated',
 });
-if (existing?.id) {
+const localCopy = candidates.find((c) => c.meta?.project === currentProject?.id);
+
+const updatedPrompt = [
+  'You are a FHIR data assistant for Medplum.',
+  'Use the fhir_request tool for every FHIR operation.',
+  'When the user asks about vitals, prefer Observation searches that include both code and date.',
+].join('\n');
+const profileContext = localCopy?.payload?.[1] ?? { contentString: 'The requester is {{ref}}.' };
+
+if (localCopy) {
   await medplum.updateResource<Communication>({
-    ...existing,
-    payload: [
-      {
-        contentString: [
-          'You are a FHIR data assistant for Medplum.',
-          'Use the fhir_request tool for every FHIR operation.',
-          'When the user asks about vitals, prefer Observation searches that include both code and date.',
-        ].join('\n'),
-      },
-      existing.payload?.[1] ?? { contentString: 'The requester is {{ref}}.' },
-    ],
+    ...localCopy,
+    payload: [{ contentString: updatedPrompt }, profileContext],
+  });
+} else {
+  // No local copy yet (for example, the default base prompt is still in
+  // effect) - create one. It takes over immediately, without touching the
+  // default Communication.
+  await medplum.createResource<Communication>({
+    resourceType: 'Communication',
+    status: 'completed',
+    identifier: [{ system: 'http://medplum.com/ai-spaces', value: 'ai-fhir-request-tools' }],
+    payload: [{ contentString: updatedPrompt }, profileContext],
   });
 }
 // end-block updateSystemPromptTs

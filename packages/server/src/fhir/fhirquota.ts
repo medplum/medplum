@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Logger } from '@medplum/core';
-import { deepClone, LRUCache, OperationOutcomeError, tooManyRequests } from '@medplum/core';
+import { deepClone, LRUCache, OperationOutcomeError, setRateLimitReset, tooManyRequests } from '@medplum/core';
 import type { Response } from 'express';
 import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
@@ -246,6 +246,7 @@ export class FhirRateLimiter {
 
     const outcome = deepClone(tooManyRequests);
     outcome.issue[0].diagnostics = JSON.stringify({ ...liveResult, limit: this.limiter.points });
+    setRateLimitReset(outcome, liveResult.msBeforeNext);
     throw new OperationOutcomeError(outcome);
   }
 

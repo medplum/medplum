@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SchedulingParametersURI } from '@medplum/core';
 import type { Duration, HealthcareService } from '@medplum/fhirtypes';
-import { getServiceDurationMinutes } from './AppointmentServiceSelect.utils';
+import { getServiceDurationMinutes, isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
 
 function serviceWithDuration(valueDuration: Duration): HealthcareService {
   return {
@@ -45,5 +45,41 @@ describe('getServiceDurationMinutes', () => {
         extension: [{ url: SchedulingParametersURI, extension: [{ url: 'timezone', valueCode: 'America/New_York' }] }],
       })
     ).toBeUndefined();
+  });
+});
+
+describe('isServiceKeptAtLocation', () => {
+  const service: HealthcareService = {
+    resourceType: 'HealthcareService',
+    name: 'Ultrasound Imaging',
+    location: [{ reference: 'Location/main-clinic' }, { reference: 'Location/satellite-clinic' }],
+  };
+
+  test('a site the service names', () => {
+    expect(isServiceKeptAtLocation(service, { reference: 'Location/main-clinic' })).toBe(true);
+    expect(isServiceKeptAtLocation(service, { reference: 'Location/satellite-clinic' })).toBe(true);
+  });
+
+  test('a site the service does not name', () => {
+    expect(isServiceKeptAtLocation(service, { reference: 'Location/other-clinic' })).toBe(false);
+  });
+
+  test('a room inside a site the service names does not count', () => {
+    // The `location` search parameter matches by exact reference and does not walk
+    // `partOf`, so neither does this.
+    expect(isServiceKeptAtLocation(service, { reference: 'Location/exam-room-a' })).toBe(false);
+  });
+
+  test('a service naming no site is kept whatever the site', () => {
+    // Nothing about it was ever tied to a site, so no site can invalidate it — even
+    // though the search would not offer it once a site is chosen.
+    const unsited: HealthcareService = { resourceType: 'HealthcareService', name: 'Walk-in' };
+    expect(isServiceKeptAtLocation(unsited, { reference: 'Location/main-clinic' })).toBe(true);
+    expect(isServiceKeptAtLocation({ ...unsited, location: [] }, { reference: 'Location/main-clinic' })).toBe(true);
+    expect(isServiceKeptAtLocation(unsited, undefined)).toBe(true);
+  });
+
+  test('no site narrows nothing', () => {
+    expect(isServiceKeptAtLocation(service, undefined)).toBe(true);
   });
 });

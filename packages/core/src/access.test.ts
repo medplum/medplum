@@ -74,10 +74,12 @@ describe('Access', () => {
     expect(canWriteResourceType(nullPolicy, 'Patient')).toBe(false);
 
     expect(canWriteResourceType(wildcardPolicy, 'CapabilityStatement')).toBe(true);
+    expect(canWriteResourceType(wildcardPolicy, 'Enterprise')).toBe(false);
     expect(canWriteResourceType(wildcardPolicy, 'Login')).toBe(false);
     expect(canWriteResourceType(wildcardPolicy, 'Patient')).toBe(true);
 
     expect(canWriteResourceType(restrictedPolicy, 'CapabilityStatement')).toBe(false);
+    expect(canWriteResourceType(restrictedPolicy, 'Enterprise')).toBe(false);
     expect(canWriteResourceType(restrictedPolicy, 'Login')).toBe(false);
     expect(canWriteResourceType(restrictedPolicy, 'Patient')).toBe(false);
     expect(canWriteResourceType(restrictedPolicy, 'Observation')).toBe(true);

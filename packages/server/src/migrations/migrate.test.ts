@@ -13,6 +13,7 @@ import {
   combine,
   executeMigrationActions,
   generateConstraintsActions,
+  generateIndexesActions,
   generateMigrationActions,
   getCreateTableQueries,
   indexStructureDefinitionsAndSearchParameters,
@@ -50,6 +51,12 @@ describe('Generator', () => {
       const schemaBuilder = new FileBuilder();
       buildSchema(schemaBuilder);
       expect(() => schemaBuilder.toString()).not.toThrow();
+    });
+
+    test('creates btree_gist extension', () => {
+      const schemaBuilder = new FileBuilder();
+      buildSchema(schemaBuilder);
+      expect(schemaBuilder.toString()).toContain('CREATE EXTENSION IF NOT EXISTS btree_gist;');
     });
   });
 
@@ -360,6 +367,101 @@ describe('Generator', () => {
       }
     });
 
+    describe('search parameter index variants', () => {
+      function getTable(resourceType: 'Task' | 'Appointment' | 'Observation' | 'MedicationRequest'): TableDefinition {
+        const result: SchemaDefinition = { tables: [], functions: [] };
+        buildCreateTables(result, resourceType);
+        return result.tables.find((t) => t.name === resourceType) as TableDefinition;
+      }
+
+      function getIndexColumns(table: TableDefinition): string[][] {
+        return table.indexes.map((i) => i.columns.map((c) => (typeof c === 'string' ? c : c.name)));
+      }
+
+      test('Task indexes replaced with project-scoped variants', () => {
+        const columns = getIndexColumns(getTable('Task'));
+        expect(columns).toContainEqual(['projectId', 'status', 'lastUpdated']);
+        expect(columns).toContainEqual(['projectId', 'authoredOn']);
+        expect(columns).toContainEqual(['projectId', 'dueDate']);
+        expect(columns).toContainEqual(['projectId', 'priority']);
+        expect(columns).toContainEqual(['projectId', '___tag']);
+        expect(columns).toContainEqual(['projectId', '___tagTextTrgm']);
+        expect(columns).toContainEqual(['projectId', '__code']);
+        expect(columns).toContainEqual(['projectId', '__codeTextTrgm']);
+        expect(columns).toContainEqual(['projectId', '__dueDate', '__dueDateSort']);
+        expect(columns).toContainEqual(['projectId', '__authoredOn', '__authoredOnSort']);
+
+        for (const plain of [
+          ['status'],
+          ['authoredOn'],
+          ['dueDate'],
+          ['priority'],
+          ['___tag'],
+          ['___tagTextTrgm'],
+          ['__code'],
+          ['__codeTextTrgm'],
+          ['__dueDate', '__dueDateSort'],
+          ['__authoredOn', '__authoredOnSort'],
+        ]) {
+          expect(columns).not.toContainEqual(plain);
+        }
+      });
+
+      test('date project-scopes btree index but leaves range index unscoped', () => {
+        const table = getTable('Appointment');
+        const columns = getIndexColumns(table);
+        expect(columns).toContainEqual(['date']);
+        expect(columns).toContainEqual(['projectId', 'date']);
+        expect(columns).toContainEqual(['__date', '__dateSort']);
+        expect(columns).not.toContainEqual(['projectId', '__date', '__dateSort']);
+
+        const queries = getCreateTableQueries(table, { includeIfExists: false });
+        expect(queries).toContain(
+          'CREATE INDEX "Appointment___date_sorted_idx" ON "Appointment" USING gist ("__date", "__dateSort")'
+        );
+        expect(queries).toContain(
+          'CREATE INDEX "Appointment___end_sorted_idx" ON "Appointment" USING gist ("__end", "__endSort")'
+        );
+      });
+
+      test('array date is not project-scoped', () => {
+        const columns = getIndexColumns(getTable('MedicationRequest'));
+        expect(columns).toContainEqual(['date']);
+        expect(columns).toContainEqual(['__date', '__dateSort']);
+        expect(columns).not.toContainEqual(['projectId', 'date']);
+        expect(columns).not.toContainEqual(['projectId', '__date', '__dateSort']);
+      });
+
+      test('Observation subject with date sort suffix', () => {
+        const columns = getIndexColumns(getTable('Observation'));
+        expect(columns).toContainEqual(['subject']);
+        expect(columns).toContainEqual(['subject', 'date']);
+      });
+
+      test('HumanName project-scopes its GIN indexes and keeps unscoped btree ones', () => {
+        const schemaBuilder = new FileBuilder();
+        buildSchema(schemaBuilder);
+        const schema = schemaBuilder.toString();
+
+        expect(schema).toContain('"projectId" UUID');
+        for (const column of ['name', 'given', 'family']) {
+          expect(schema).toContain(`CREATE INDEX "HumanName_${column}_idx" ON "HumanName" ("${column}");`);
+          expect(schema).toContain(
+            `CREATE INDEX "HumanName_projectId_${column}_idx" ON "HumanName" ("projectId", "${column}");`
+          );
+          expect(schema).not.toContain(`"HumanName_${column}Trgm_idx"`);
+          expect(schema).toContain(
+            `CREATE INDEX "HumanName_projectId_${column}Trgm_idx" ON "HumanName" USING gin ("projectId", ${column} gin_trgm_ops);`
+          );
+          expect(schema).not.toContain(`"HumanName_${column}_idx_tsv"`);
+          expect(schema).toContain(
+            `CREATE INDEX "HumanName_projectId_${column}_idx_tsv" ON "HumanName" USING gin ("projectId", `
+          );
+        }
+        expect(schema).not.toContain('"HumanName_projectId_resourceId_idx"');
+      });
+    });
+
     describe('identity columns', () => {
       test('create table', () => {
         const tableDef: TableDefinition = {
@@ -439,6 +541,93 @@ describe('Generator', () => {
     });
   });
 
+  describe('generateIndexesActions', () => {
+    test('allows a primary key to satisfy a structurally identical unique index declaration', () => {
+      const startTable: TableDefinition = {
+        name: 'Coding',
+        columns: [{ name: 'id', type: 'BIGSERIAL', primaryKey: true }],
+        indexes: [
+          {
+            columns: ['id'],
+            indexType: 'btree',
+            unique: true,
+            indexdef: 'CREATE UNIQUE INDEX "Coding_pkey" ON public."Coding" USING btree (id)',
+          },
+        ],
+      };
+      const targetTable: TableDefinition = {
+        name: 'Coding',
+        columns: [{ name: 'id', type: 'BIGSERIAL', primaryKey: true }],
+        indexes: [{ columns: ['id'], indexType: 'btree', unique: true }],
+      };
+
+      const result = generateIndexesActions(startTable, targetTable, {
+        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dropUnmatchedIndexes: true,
+      });
+
+      expect(result).toEqual({ preDeploy: [], postDeploy: [] });
+    });
+
+    test('drops concurrent rebuild indexes instead of valid indexes with the same definition', () => {
+      const primaryKeyDefinition = {
+        columns: ['resourceId', 'targetId', 'code'],
+        indexType: 'btree' as const,
+        unique: true,
+      };
+      const targetIdDefinition = {
+        columns: ['targetId', 'code'],
+        indexType: 'btree' as const,
+        include: ['resourceId'],
+      };
+      const startTable: TableDefinition = {
+        name: 'AuditEvent_References',
+        columns: [],
+        indexes: [
+          {
+            ...primaryKeyDefinition,
+            indexdef:
+              'CREATE UNIQUE INDEX "AuditEvent_References_pkey_ccnew" ON public."AuditEvent_References" USING btree ("resourceId", "targetId", code)',
+          },
+          {
+            ...primaryKeyDefinition,
+            indexdef:
+              'CREATE UNIQUE INDEX "AuditEvent_References_pkey" ON public."AuditEvent_References" USING btree ("resourceId", "targetId", code)',
+          },
+          {
+            ...targetIdDefinition,
+            indexdef:
+              'CREATE INDEX "AuditEvent_References_targetId_code_idx_ccnew" ON public."AuditEvent_References" USING btree ("targetId", code) INCLUDE ("resourceId")',
+          },
+          {
+            ...targetIdDefinition,
+            indexdef:
+              'CREATE INDEX "AuditEvent_References_targetId_code_idx" ON public."AuditEvent_References" USING btree ("targetId", code) INCLUDE ("resourceId")',
+          },
+        ],
+      };
+      const targetTable: TableDefinition = {
+        name: 'AuditEvent_References',
+        columns: [],
+        compositePrimaryKey: primaryKeyDefinition.columns,
+        indexes: [targetIdDefinition],
+      };
+
+      const result = generateIndexesActions(startTable, targetTable, {
+        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dropUnmatchedIndexes: true,
+      });
+
+      expect(result).toEqual({
+        preDeploy: [
+          { type: 'DROP_INDEX', indexName: 'AuditEvent_References_pkey_ccnew' },
+          { type: 'DROP_INDEX', indexName: 'AuditEvent_References_targetId_code_idx_ccnew' },
+        ],
+        postDeploy: [],
+      });
+    });
+  });
+
   describe('parseIndexName', () => {
     test('parse index name with quotes', () => {
       const indexdef = 'CREATE INDEX "Account_Token_code_idx" ON "Account_Token" USING btree (code)';
@@ -477,6 +666,8 @@ type MigrationActionTestCase = {
   executionCheck: (mocks: {
     mockQuery: MockInstance;
     mockAnalyzeTable: MockInstance;
+    mockDropInvalidIndexConcurrently: MockInstance;
+    mockReindexConcurrently: MockInstance;
     mockIdempotentCreateIndex: MockInstance;
     mockNonBlockingAlterColumnNotNull: MockInstance;
     mockNonBlockingAddCheckConstraint: MockInstance;
@@ -650,6 +841,27 @@ const migrationActionTestCases: MigrationActionTestCase[] = [
     },
   },
   {
+    name: 'DROP_INVALID_INDEX',
+    action: { type: 'DROP_INVALID_INDEX', schemaName: 'public', indexName: 'Patient_name_idx_ccnew' },
+    builderExpected: "await fns.dropInvalidIndexConcurrently(client, results, 'public', 'Patient_name_idx_ccnew');",
+    executionCheck: ({ mockDropInvalidIndexConcurrently, mockClient, results }) => {
+      expect(mockDropInvalidIndexConcurrently).toHaveBeenCalledWith(
+        mockClient,
+        results,
+        'public',
+        'Patient_name_idx_ccnew'
+      );
+    },
+  },
+  {
+    name: 'REINDEX_CONCURRENTLY',
+    action: { type: 'REINDEX_CONCURRENTLY', target: 'INDEX', name: 'Patient_name_idx' },
+    builderExpected: 'await fns.reindexConcurrently(client, results, \'INDEX\', "Patient_name_idx");',
+    executionCheck: ({ mockReindexConcurrently, mockClient, results }) => {
+      expect(mockReindexConcurrently).toHaveBeenCalledWith(mockClient, results, 'INDEX', 'Patient_name_idx');
+    },
+  },
+  {
     name: 'ADD_CONSTRAINT',
     action: {
       type: 'ADD_CONSTRAINT',
@@ -675,6 +887,8 @@ describe('writeActionsToBuilder and executeMigrationActions', () => {
   let mockClient: { query: Mock };
   let mockQuery: MockInstance;
   let mockAnalyzeTable: MockInstance;
+  let mockDropInvalidIndexConcurrently: MockInstance;
+  let mockReindexConcurrently: MockInstance;
   let mockIdempotentCreateIndex: MockInstance;
   let mockNonBlockingAlterColumnNotNull: MockInstance;
   let mockNonBlockingAddCheckConstraint: MockInstance;
@@ -683,6 +897,8 @@ describe('writeActionsToBuilder and executeMigrationActions', () => {
     mockClient = { query: vi.fn() };
     mockQuery = vi.spyOn(fns, 'query').mockResolvedValue({ rows: [], rowCount: 0 } as any);
     mockAnalyzeTable = vi.spyOn(fns, 'analyzeTable').mockResolvedValue(undefined);
+    mockDropInvalidIndexConcurrently = vi.spyOn(fns, 'dropInvalidIndexConcurrently').mockResolvedValue(undefined);
+    mockReindexConcurrently = vi.spyOn(fns, 'reindexConcurrently').mockResolvedValue(undefined);
     mockIdempotentCreateIndex = vi.spyOn(fns, 'idempotentCreateIndex').mockResolvedValue(undefined);
     mockNonBlockingAlterColumnNotNull = vi.spyOn(fns, 'nonBlockingAlterColumnNotNull').mockResolvedValue(undefined);
     mockNonBlockingAddCheckConstraint = vi.spyOn(fns, 'nonBlockingAddCheckConstraint').mockResolvedValue(undefined);
@@ -766,6 +982,8 @@ async function callback(client: PoolClient, results: MigrationActionResult[]): P
     executionCheck({
       mockQuery,
       mockAnalyzeTable,
+      mockDropInvalidIndexConcurrently,
+      mockReindexConcurrently,
       mockIdempotentCreateIndex,
       mockNonBlockingAlterColumnNotNull,
       mockNonBlockingAddCheckConstraint,

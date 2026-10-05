@@ -10,7 +10,7 @@ import { NIL } from 'uuid';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { initTestAuth } from '../../test.setup';
+import { getSuperAdminAccessToken } from '../../test.setup';
 
 describe('getColumnStatisticsHandler', () => {
   const app = express();
@@ -20,7 +20,7 @@ describe('getColumnStatisticsHandler', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth({ project: { superAdmin: true } });
+    accessToken = await getSuperAdminAccessToken();
   });
 
   afterAll(async () => {

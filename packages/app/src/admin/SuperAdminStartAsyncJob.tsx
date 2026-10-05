@@ -8,7 +8,7 @@ import type { Resource } from '@medplum/fhirtypes';
 import { MedplumLink } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
 
-type StartAsyncJobBody = Record<string, string[] | string | number | boolean>;
+type StartAsyncJobBody = Record<string, unknown>;
 
 export function startAsyncJobAsync<T extends Resource>(
   medplum: MedplumClient,

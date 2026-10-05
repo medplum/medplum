@@ -9,9 +9,9 @@ import { deleteLambda, getLambdaNameForBot } from '../cloud/aws/deploy';
 import { getBotManagementLambdaClient } from '../cloud/aws/lambda';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
-import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
+import type { ProjectJobTarget } from './base';
+import { getJobSystemRepo, getProjectJobTarget } from './base';
 import { addCronJobs } from './cron';
 import { addDicomJobs } from './dicom';
 import { addDownloadJobs } from './download';
@@ -29,6 +29,7 @@ import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetr
  */
 
 export interface DispatchJobData {
+  readonly target: ProjectJobTarget;
   readonly interaction: BackgroundJobInteraction;
   readonly resourceType: ResourceType;
   readonly id: string;
@@ -88,6 +89,7 @@ export async function addDispatchJobs(
 ): Promise<void> {
   const ctx = tryGetRequestContext();
   await addDispatchJobData({
+    target: getProjectJobTarget(resource),
     resourceType: resource.resourceType,
     id: resource.id,
     versionId: resource.meta?.versionId as string,
@@ -115,7 +117,7 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
     return;
   }
 
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in future
+  const systemRepo = await getJobSystemRepo(job.data.target);
   const { resourceType, id, versionId, previousVersionId } = job.data;
   const resource = await systemRepo.readVersion(resourceType, id, versionId);
   const previousVersion = previousVersionId
@@ -156,21 +158,22 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
     });
   }
 
+  // Runs on delete as well: a deleted resource still has a schedule to tear down.
+  try {
+    await addCronJobs(resource, previousVersion, context);
+  } catch (err) {
+    getLogger().error('Error adding cron jobs', {
+      resourceType: resource.resourceType,
+      resource: resource.id,
+      err,
+    });
+  }
+
   if (interaction !== 'delete') {
     try {
       await addDownloadJobs(resource, previousVersion, context);
     } catch (err) {
       getLogger().error('Error adding download jobs', {
-        resourceType: resource.resourceType,
-        resource: resource.id,
-        err,
-      });
-    }
-
-    try {
-      await addCronJobs(resource, previousVersion, context);
-    } catch (err) {
-      getLogger().error('Error adding cron jobs', {
         resourceType: resource.resourceType,
         resource: resource.id,
         err,

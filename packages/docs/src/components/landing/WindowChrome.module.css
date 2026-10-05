@@ -10,11 +10,19 @@
   border-bottom: 1px solid var(--landing-divider);
 }
 
+/* Monochrome frames sit around third-party screenshots, so the bar matches the page
+   surface rather than the inset grey and the dots stay neutral. */
+.barMonochrome {
+  background: var(--landing-surface);
+  border-bottom-color: var(--landing-border);
+}
+
 .dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--landing-border-strong);
 }
 
 .dotRed {

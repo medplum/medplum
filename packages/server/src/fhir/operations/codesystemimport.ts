@@ -141,7 +141,7 @@ export async function importCodeSystem(
     const rows = uniqueOn(concepts, (c) => c.code as string).map((c) => ({
       system: codeSystem.id,
       code: c.code,
-      display: c.display,
+      display: c.display?.normalize('NFC'),
       isSynonym: false,
     }));
     const query = new InsertQuery('Coding', rows).mergeOnConflict(
@@ -171,7 +171,7 @@ export async function importCodeSystem(
       synonyms.push({
         system: codeSystem.id,
         code: designation.code,
-        display: designation.value,
+        display: designation.value.normalize('NFC'),
         isSynonym: true,
         synonymOf: sourceCodingId,
         language: designation.language,
@@ -229,7 +229,7 @@ async function processProperties(
       synonyms.push({
         system: codeSystem.id,
         code: imported.code,
-        display: imported.value,
+        display: imported.value.normalize('NFC'),
         isSynonym: true,
         synonymOf: sourceCodingId,
       });
