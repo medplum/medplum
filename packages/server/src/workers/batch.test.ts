@@ -10,7 +10,7 @@ import type { Mock, MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getUserConfiguration } from '../auth/me';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { runInAuthenticatedContext } from '../context';
 import { BatchCheckpointStore } from '../fhir/batch/checkpoint-store';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -72,7 +72,7 @@ const multiEntryBundle = (count: number): Bundle => ({
 });
 
 describe('Batch worker', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let repo: Repository;
   let systemRepo: SystemRepository;
   let authState: AuthState;

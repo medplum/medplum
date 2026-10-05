@@ -10,7 +10,7 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { createUser } from '../../auth/newuser';
 import { loadTestConfig } from '../../config/loader';
-import type { MedplumServerConfig } from '../../config/types';
+import type { ServerConfig } from '../../config/utils';
 import {
   getSuperAdminAccessToken,
   getSuperAdminTestProject,
@@ -25,7 +25,7 @@ const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 describe('Project $init', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
 
   beforeAll(async () => {
     config = await loadTestConfig();

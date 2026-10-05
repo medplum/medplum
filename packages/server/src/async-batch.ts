@@ -6,7 +6,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { json } from 'express';
 import { JSON_TYPE, runMiddleware } from './app';
 import { getConfig } from './config/loader';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import { getAuthenticatedContext } from './context';
 import { AsyncJobExecutor } from './fhir/operations/utils/asyncjobexecutor';
 import { sendOutcome } from './fhir/outcomes';
@@ -14,7 +14,7 @@ import { getProjectScopedUrl } from './util/url';
 import { queueBatchProcessing } from './workers/batch';
 
 export function asyncBatchHandler(
-  config: MedplumServerConfig
+  config: ServerConfig
 ): (req: Request, res: Response, next: NextFunction) => Promise<any> {
   return async function (req: Request, res: Response, next: NextFunction): Promise<any> {
     const { repo, project } = getAuthenticatedContext();

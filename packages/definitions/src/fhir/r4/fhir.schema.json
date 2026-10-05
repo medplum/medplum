@@ -62341,6 +62341,14 @@
         "basedOn": {
           "description": "The existing login that this login was created from, when an authorization request reused an existing session.",
           "$ref": "#/definitions/Reference"
+        },
+        "previousRefreshSecret": {
+          "description": "The refresh secret that was most recently replaced by refresh token rotation.",
+          "$ref": "#/definitions/string"
+        },
+        "refreshSecretRotatedAt": {
+          "description": "The time at which the refresh secret was most recently rotated.",
+          "$ref": "#/definitions/instant"
         }
       },
       "additionalProperties": false,

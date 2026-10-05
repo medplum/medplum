@@ -275,7 +275,7 @@ describe('SmartHealthLinkImport utils', () => {
     });
 
     expect(findEntry(result, 'Condition').request?.ifNoneExist).toBe(
-      'subject=Patient/local-patient&code=http://snomed.info/sct|44054006&date=2026-06-01'
+      'subject=Patient/local-patient&code=http://snomed.info/sct|44054006&recorded-date=2026-06-01'
     );
     expect(findEntry(result, 'Observation').request?.ifNoneExist).toBe(
       'subject=Patient/local-patient&code=http://loinc.org|4548-4&date=2026-05-30'
