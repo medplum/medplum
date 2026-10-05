@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Divider, Flex, Group, Menu, Skeleton, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Box, Divider, Flex, Group, Menu, Skeleton, Stack, Text } from '@mantine/core';
 import type { MedplumClient, WithId } from '@medplum/core';
 import { formatDate, formatHumanName, resolveId } from '@medplum/core';
 import type { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
@@ -64,11 +64,9 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     <Group align="center" gap="sm" wrap="nowrap" className={styles.headerContent}>
       <ResourceAvatar value={patient} size={48} radius={48} />
       <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-        <Tooltip label={formatHumanName(patient.name?.[0])} position="top-start" openDelay={650}>
-          <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }}>
-            {formatHumanName(patient.name?.[0])}
-          </Text>
-        </Tooltip>
+        <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }}>
+          {formatHumanName(patient.name?.[0])}
+        </Text>
         {createdDate && (
           <Text fz="xs" mt={-2} fw={500} c="gray.6" truncate style={{ minWidth: 0 }}>
             Patient since {formatDate(createdDate)}
