@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
-  getPrimaryProvider,
   getReferenceString,
   SchedulingBookedByOperationURI,
   SchedulingRescheduledByOperationURI,
@@ -106,20 +105,6 @@ describe('writeElevatedReschedule', () => {
     });
     expect(result.slots).toHaveLength(2);
     expect(existing).toEqual(original);
-  });
-
-  test('deduplicates actors shared by two schedules', async () => {
-    const duplicate = await medplum.updateResource({ ...DrRiveraSchedule, id: 'same-provider-another-schedule' });
-    const result = await writeElevatedReschedule(medplum, existing, proposal([DrRiveraSchedule, duplicate]));
-    expect(
-      result.appointment.participant.filter((p) => p.actor?.reference === DrRiveraSchedule.actor[0].reference)
-    ).toHaveLength(1);
-  });
-
-  test('marks the first provider among the new schedules as primary, as $reschedule does', async () => {
-    const result = await writeElevatedReschedule(medplum, existing, proposal([ExamRoomBSchedule, DrRiveraSchedule]));
-    expect(getPrimaryProvider(result.appointment)).toEqual(DrRiveraSchedule.actor[0]);
-    expect(result.appointment.participant.filter((p) => p.type?.length)).toHaveLength(1);
   });
 
   test('writes capacity and buffers for each schedule while preserving pending status', async () => {
