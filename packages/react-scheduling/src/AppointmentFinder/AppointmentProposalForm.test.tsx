@@ -47,7 +47,7 @@ import {
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
 import {
-  addActorRow,
+  addRow,
   bookButton,
   chooseActor,
   chooseAuthorizedService,
@@ -235,7 +235,7 @@ describe('AppointmentProposalForm', () => {
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await addActorRow('provider');
+      await addRow('provider');
       await chooseActor(/^and additional$/i, 'oka', 'Dr. Tunde Okafor');
       await openTimeFinder();
 
@@ -251,7 +251,7 @@ describe('AppointmentProposalForm', () => {
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await addActorRow('provider');
+      await addRow('provider');
       await chooseActor(/^and additional$/i, 'riv', 'Dr. Maya Rivera');
 
       // Nobody attends their own appointment twice. The button says the search is
@@ -1756,8 +1756,10 @@ describe('AppointmentProposalForm', () => {
       await fillAuthorizedBooking();
       await enterAuthorizationDetails();
 
-      await enterCode(/procedure code/i, ProcedureCodes[1]);
-      await enterCode(/diagnosis code/i, DiagnosisCodes[1]);
+      await addRow('procedure');
+      await enterCode(/procedure 2/i, ProcedureCodes[1]);
+      await addRow('diagnosis');
+      await enterCode(/diagnosis 2/i, DiagnosisCodes[1]);
       await clickBook();
 
       // One entry of `reasonCode` per diagnosis: an element there is one reason, and codings inside
