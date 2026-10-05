@@ -83,27 +83,23 @@ export function buildSmartHealthLinkImportBundle(
 }
 
 /**
- * Lists the import entries the server rejected. Projects without the `transaction-bundles` feature
- * process a transaction as a batch, so some entries can fail while the rest are committed.
+ * Lists the import entries the server rejected. Without the `transaction-bundles` project feature,
+ * a transaction is processed as a batch, so some entries can fail while the rest are committed.
  * @param transaction - The import transaction that was sent.
  * @param response - The server's response bundle.
  * @returns One message per failed entry, naming the record and the server's reason.
  */
 export function getFailedImportMessages(transaction: Bundle, response: Bundle): string[] {
-  const messages: string[] = [];
-  response.entry?.forEach((responseEntry, index) => {
-    const status = Number.parseInt(responseEntry.response?.status ?? '', 10);
-    if (status >= 200 && status < 300) {
-      return;
+  return (response.entry ?? []).flatMap((entry, index) => {
+    if (entry.response?.status?.startsWith('2')) {
+      return [];
     }
     const resource = transaction.entry?.[index]?.resource;
     const record = resource
       ? `${getResourceTypeLabel(resource.resourceType)} "${getDisplayString(resource)}"`
       : 'Record';
-    const reason = responseEntry.response?.outcome ? normalizeErrorString(responseEntry.response.outcome) : status;
-    messages.push(`${record}: ${reason}`);
+    return [`${record}: ${normalizeErrorString(entry.response?.outcome ?? entry.response?.status)}`];
   });
-  return messages;
 }
 
 export function getMatchGrade(entry: BundleEntry<WithId<Patient>>): string | undefined {
@@ -289,9 +285,7 @@ function buildIfNoneExist(resource: Resource, targetPatient: WithId<Patient>): s
   const typedResource = resource as Record<string, any>;
   const patientParam = getPatientSearchParam(resource.resourceType);
   const tokenParam = getTokenSearchParam(resource.resourceType);
-  const token = getTokenSearchValue(
-    typedResource.code ?? typedResource.type ?? typedResource.vaccineCode ?? typedResource.medicationCodeableConcept
-  );
+  const token = getTokenSearchValue(typedResource.code ?? typedResource.type ?? typedResource.vaccineCode);
   if (!patientParam || !tokenParam || !token) {
     return undefined;
   }
@@ -349,37 +343,20 @@ function getTokenSearchParam(resourceType: string): string | undefined {
   }
 }
 
-/**
- * Date search parameters per resource type, as `[searchParam, field]` pairs in order of preference.
- * Each search parameter must index the paired field: a parameter the server does not recognize
- * fails the entry, and one that indexes a different field never matches and creates duplicates.
- */
-const DATE_SEARCH_PARAMS: Record<string, [searchParam: string, field: string][]> = {
-  AllergyIntolerance: [['date', 'recordedDate']],
-  Condition: [
-    ['recorded-date', 'recordedDate'],
-    ['onset-date', 'onsetDateTime'],
-  ],
-  DiagnosticReport: [
-    ['date', 'effectiveDateTime'],
-    ['issued', 'issued'],
-  ],
-  DocumentReference: [['date', 'date']],
-  Immunization: [['date', 'occurrenceDateTime']],
-  MedicationRequest: [['authoredon', 'authoredOn']],
-  Observation: [['date', 'effectiveDateTime']],
-  Procedure: [['date', 'performedDateTime']],
+/** The date search parameter for each resource type, and the field it indexes. */
+const DATE_SEARCH_PARAMS: Record<string, [searchParam: string, field: string]> = {
+  AllergyIntolerance: ['date', 'recordedDate'],
+  Condition: ['recorded-date', 'recordedDate'],
+  DiagnosticReport: ['date', 'effectiveDateTime'],
+  DocumentReference: ['date', 'date'],
+  Immunization: ['date', 'occurrenceDateTime'],
+  Observation: ['date', 'effectiveDateTime'],
 };
 
 function getDateSearch(resource: Resource): string | undefined {
-  const typedResource = resource as Record<string, any>;
-  for (const [searchParam, field] of DATE_SEARCH_PARAMS[resource.resourceType] ?? []) {
-    const value = typedResource[field];
-    if (typeof value === 'string') {
-      return `${searchParam}=${value.substring(0, 10)}`;
-    }
-  }
-  return undefined;
+  const [searchParam, field] = DATE_SEARCH_PARAMS[resource.resourceType] ?? [];
+  const value = field ? (resource as Record<string, any>)[field] : undefined;
+  return typeof value === 'string' ? `${searchParam}=${value.substring(0, 10)}` : undefined;
 }
 
 function getTokenSearchValue(input: CodeableConcept | undefined): string | undefined {

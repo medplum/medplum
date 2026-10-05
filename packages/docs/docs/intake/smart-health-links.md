@@ -146,7 +146,7 @@ All records are selected by default. Uncheck any records you do not want to impo
 
 ## Step 7: Import Resources
 
-Click the import button to write the selected resources into the destination FHIR server. The button label names the destination, for example **Create Maria Garcia & Import Records** for a new patient, or **Import Records to Maria Garcia** for an existing one.
+Click the import button to write the selected resources into the destination FHIR server. The button label names the destination, for example **Create David James Williams & Import Records** for a new patient, or **Import Records to David James Williams** for an existing one.
 
 ![Import Records](/img/smart-health-links/medplum-smart-health-links-import-records.webp)
 
