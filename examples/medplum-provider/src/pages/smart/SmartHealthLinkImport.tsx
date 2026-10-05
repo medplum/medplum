@@ -12,6 +12,7 @@ import classes from './SmartHealthLinkImport.module.css';
 import type { SmartHealthLinkPatientMatch } from './SmartHealthLinkImport.utils';
 import {
   buildSmartHealthLinkImportBundle,
+  getFailedImportMessages,
   getImportButtonLabel,
   getMatchGrade,
   getSmartHealthCardFile,
@@ -262,7 +263,18 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
       if (transaction.entry?.length) {
         // Externalize inline base64 attachments to Binary resources so documents (e.g. PDFs) display.
         await uploadInlineAttachments(medplum, transaction);
-        await medplum.executeBatch(transaction);
+        const response = await medplum.executeBatch(transaction);
+        const failures = getFailedImportMessages(transaction, response);
+        if (failures.length > 0) {
+          // The patient and any successful records are already saved. Target that patient so a retry
+          // does not create a duplicate; conditional creates skip the records that were saved.
+          setCreateNewPatient(false);
+          setSelectedPatient(targetPatient);
+          setError(
+            `${failures.length} of ${transaction.entry.length} records could not be imported. ${failures.join('; ')}`
+          );
+          return;
+        }
       }
       setSelectedPatient(targetPatient);
       onImported?.(targetPatient);

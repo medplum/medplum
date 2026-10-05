@@ -3,6 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
+import { badRequest } from '@medplum/core';
 import type {
   AllergyIntolerance,
   Bundle,
@@ -650,6 +651,37 @@ describe('SmartHealthLinkImport', () => {
       expect(await screen.findByText('Batch failed')).toBeInTheDocument();
       expect(onImported).not.toHaveBeenCalled();
       expect(screen.getByText('Select Records to Import to Existing Profile')).toBeInTheDocument();
+    });
+
+    test('Reports records the server rejected and retargets the created patient', async () => {
+      // Without the `transaction-bundles` feature the server processes the transaction as a batch,
+      // so individual entries can fail while the rest are saved.
+      const created = { ...SHARED_PATIENT, id: 'created-patient' } as WithId<Patient>;
+      const createResource = vi.spyOn(medplum, 'createResource').mockResolvedValue(created);
+      vi.mocked(medplum.executeBatch).mockImplementation(async (transaction) => ({
+        resourceType: 'Bundle',
+        type: 'transaction-response',
+        entry: transaction.entry?.map((entry) =>
+          entry.resource?.resourceType === 'AllergyIntolerance'
+            ? { response: { status: '400', outcome: badRequest('Unknown search parameter: date') } }
+            : { response: { status: '201 Created' } }
+        ),
+      }));
+      const onImported = vi.fn();
+      mockOperations({});
+      await goToRecordsStep(onImported);
+
+      await userEvent.click(screen.getByRole('button', { name: 'Create Homer Simpson & Import Records' }));
+
+      expect(
+        await screen.findByText(
+          '1 of 2 records could not be imported. Allergy "Peanuts": Unknown search parameter: date'
+        )
+      ).toBeInTheDocument();
+      expect(onImported).not.toHaveBeenCalled();
+      expect(createResource).toHaveBeenCalledTimes(1);
+      // A retry imports into the patient that was just created instead of creating another one
+      expect(screen.getByRole('button', { name: 'Import Records to Homer Simpson' })).toBeInTheDocument();
     });
 
     test('Steps back to an earlier step from the stepper', async () => {

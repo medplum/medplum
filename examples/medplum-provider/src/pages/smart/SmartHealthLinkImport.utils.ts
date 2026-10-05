@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { convertToTransactionBundle, getDisplayString, getReferenceString, isResource } from '@medplum/core';
+import {
+  convertToTransactionBundle,
+  getDisplayString,
+  getReferenceString,
+  isResource,
+  normalizeErrorString,
+} from '@medplum/core';
 import type { Bundle, BundleEntry, CodeableConcept, Identifier, Patient, Resource } from '@medplum/fhirtypes';
 
 /** A candidate local Patient returned by `Patient/$match` for the shared patient. */
@@ -74,6 +80,30 @@ export function buildSmartHealthLinkImportBundle(
     }
   }
   return transaction;
+}
+
+/**
+ * Lists the import entries the server rejected. Projects without the `transaction-bundles` feature
+ * process a transaction as a batch, so some entries can fail while the rest are committed.
+ * @param transaction - The import transaction that was sent.
+ * @param response - The server's response bundle.
+ * @returns One message per failed entry, naming the record and the server's reason.
+ */
+export function getFailedImportMessages(transaction: Bundle, response: Bundle): string[] {
+  const messages: string[] = [];
+  response.entry?.forEach((responseEntry, index) => {
+    const status = Number.parseInt(responseEntry.response?.status ?? '', 10);
+    if (status >= 200 && status < 300) {
+      return;
+    }
+    const resource = transaction.entry?.[index]?.resource;
+    const record = resource
+      ? `${getResourceTypeLabel(resource.resourceType)} "${getDisplayString(resource)}"`
+      : 'Record';
+    const reason = responseEntry.response?.outcome ? normalizeErrorString(responseEntry.response.outcome) : status;
+    messages.push(`${record}: ${reason}`);
+  });
+  return messages;
 }
 
 export function getMatchGrade(entry: BundleEntry<WithId<Patient>>): string | undefined {
