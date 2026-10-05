@@ -1,7 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
-import { ContentType, createReference, isGone, isNotFound, normalizeOperationOutcome, resolveId } from '@medplum/core';
+import {
+  ContentType,
+  createReference,
+  DEFAULT_MAX_SEARCH_COUNT,
+  isGone,
+  isNotFound,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+  resolveId,
+} from '@medplum/core';
 import type { Bot, Cron, Project, ProjectMembership, Resource, ResourceType, Timing } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
@@ -11,7 +20,6 @@ import { getAllowedProjects } from '../fhir/accesspolicy';
 import { findProjectMembership } from '../fhir/projectmembership';
 import type { Repository } from '../fhir/repo';
 import { getPermittedProjectIds, getShardSystemRepo } from '../fhir/repo';
-import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { ProjectJobTarget } from './base';
 import { getJobSystemRepo, getProjectJobTarget } from './base';
@@ -19,7 +27,9 @@ import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
-const MAX_BOTS_PER_PAGE = 500;
+
+// A lone ascending `_lastUpdated` sort opts the reload into cursor pagination, which has no `maxSearchOffset` cap
+const CURSOR_SORT_RULES = [{ code: '_lastUpdated' }];
 
 /*
  * The Cron worker inspects resources takes a bot,
@@ -27,15 +37,14 @@ const MAX_BOTS_PER_PAGE = 500;
  * Cron job
  */
 
-// PENDING{v5.2} make target required and tighten up based on that throughout
 export type CronJobData =
   | {
-      readonly target?: ProjectJobTarget;
+      readonly target: ProjectJobTarget;
       readonly resourceType: 'Bot';
       readonly botId: string;
     }
   | {
-      readonly target?: ProjectJobTarget;
+      readonly target: ProjectJobTarget;
       readonly resourceType: 'Cron';
       readonly cronId: string;
     };
@@ -375,7 +384,7 @@ async function resolveCronJob(
 }
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
-  const systemRepo = job.data.target ? await getJobSystemRepo(job.data.target) : getShardSystemRepo(TODO_SHARD_ID);
+  const systemRepo = await getJobSystemRepo(job.data.target);
 
   let bot: WithId<Bot>;
   let runAs: WithId<ProjectMembership> | undefined;
@@ -419,15 +428,15 @@ export async function reloadCronBots(shardId: string): Promise<void> {
     await queue.obliterate({ force: true });
 
     const systemRepo = getShardSystemRepo(shardId);
+    // Many schedules share a project, so each project is read once per reload
+    const projects = new Map<string, WithId<Project>>();
 
     await systemRepo.processAllResources<Bot>(
-      { resourceType: 'Bot', count: MAX_BOTS_PER_PAGE },
+      { resourceType: 'Bot', count: DEFAULT_MAX_SEARCH_COUNT, sortRules: CURSOR_SORT_RULES },
       async (bot) => {
         // If the bot has a cron, then add a scheduler for it
         if (bot.cronString || bot.cronTiming) {
-          // We pass `undefined` as previous version to make sure that the latest cron string is used
-          const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
-          await addCronJobs(bot, undefined, { project, interaction: 'update' });
+          await reloadCronJob(systemRepo, projects, bot);
         }
       },
       { delayBetweenPagesMs: 1000 }
@@ -436,14 +445,39 @@ export async function reloadCronBots(shardId: string): Promise<void> {
     // `obliterate` above cleared Cron schedules too, so they have to be re-registered here or
     // every Cron resource silently stops running after a reload.
     await systemRepo.processAllResources<Cron>(
-      { resourceType: 'Cron', count: MAX_BOTS_PER_PAGE },
+      { resourceType: 'Cron', count: DEFAULT_MAX_SEARCH_COUNT, sortRules: CURSOR_SORT_RULES },
       async (cron) => {
         if (cron.active) {
-          const project = await systemRepo.readResource<Project>('Project', cron.meta?.project as string);
-          await addCronJobs(cron, undefined, { project, interaction: 'update' });
+          await reloadCronJob(systemRepo, projects, cron);
         }
       },
       { delayBetweenPagesMs: 1000 }
     );
+  }
+}
+
+async function reloadCronJob(
+  systemRepo: Repository,
+  projects: Map<string, WithId<Project>>,
+  resource: WithId<Bot> | WithId<Cron>
+): Promise<void> {
+  try {
+    const projectId = resource.meta?.project;
+    let project = projectId ? projects.get(projectId) : undefined;
+    if (projectId && !project) {
+      project = await readIfPresent(() => systemRepo.readResource<Project>('Project', projectId));
+      if (project) {
+        projects.set(projectId, project);
+      }
+    }
+    if (!project) {
+      globalLogger.error('Cannot reload cron job, project not found', { ...getResourceIds(resource), projectId });
+      return;
+    }
+    // We pass `undefined` as previous version to make sure that the latest cron string is used
+    await addCronJobs(resource, undefined, { project, interaction: 'update' });
+  } catch (err) {
+    // The queue was already obliterated, so aborting here would leave every remaining schedule unregistered
+    globalLogger.warn('Failed to reload cron job', { ...getResourceIds(resource), error: normalizeErrorString(err) });
   }
 }

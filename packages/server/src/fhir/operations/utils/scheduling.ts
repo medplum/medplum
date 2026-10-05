@@ -661,7 +661,8 @@ export function assertAllMatch<T extends object>(
 export async function slotsOverlappingInterval(
   repo: Repository,
   schedules: (WithId<Schedule> | (Reference<Schedule> & { reference: string }))[],
-  interval: Interval
+  interval: Interval,
+  tooManyMessage = 'Too many slots found in range; try searching with smaller bounds'
 ): Promise<WithId<Slot>[]> {
   const results = await repo.searchResources<Slot>({
     resourceType: 'Slot',
@@ -685,7 +686,7 @@ export async function slotsOverlappingInterval(
   // If we filled a full search page of slots, then there may be slots we
   // didn't fetch that would impact availability. Fail loudly here.
   if (results.length === DEFAULT_MAX_SEARCH_COUNT) {
-    throw new OperationOutcomeError(badRequest('Too many slots found in range; try searching with smaller bounds'));
+    throw new OperationOutcomeError(badRequest(tooManyMessage));
   }
   return results;
 }
@@ -1024,38 +1025,66 @@ export async function createProposedAppointment(
   proposedAppointment: WithPath<Appointment>,
   customizer: (appointment: Appointment, slots: Slot[]) => void
 ): Promise<Bundle<Appointment | Slot>> {
-  const [appointment, slots, healthcareService, schedulingParametersGroup] = await validateProposedAppointment(
-    repo,
-    proposedAppointment
+  return createProposedAppointments(repo, [proposedAppointment], customizer);
+}
+
+/**
+ * Books proposed Appointments all or none, each validated on its own, in one serializable
+ * transaction.
+ *
+ * @param repo - The Repository to operate with.
+ * @param proposedAppointments - The proposed Appointments to book, in order.
+ * @param customizer - Called with each validated Appointment and its Slots before they are created.
+ * @returns A transaction-response Bundle containing every created Appointment, each followed by its Slots.
+ */
+export async function createProposedAppointments(
+  repo: Repository,
+  proposedAppointments: WithPath<Appointment>[],
+  customizer: (appointment: Appointment, slots: Slot[]) => void
+): Promise<Bundle<Appointment | Slot>> {
+  const validated = await Promise.all(
+    proposedAppointments.map(async (proposedAppointment) => {
+      const [appointment, slots, healthcareService, schedulingParametersGroup] = await validateProposedAppointment(
+        repo,
+        proposedAppointment
+      );
+
+      // We will write this attribute later, check that we aren't clobbering something that was submitted
+      if (appointment.slot) {
+        throw new OperationOutcomeError(
+          badRequest('Proposed appointment must not have Slot references', `${getPath(proposedAppointment)}.slot`)
+        );
+      }
+
+      appointment.extension = [
+        ...(appointment.extension ?? []).filter((ext) => ext.url !== SchedulingBookedByOperationURI),
+        { url: SchedulingBookedByOperationURI, valueString: MEDPLUM_VERSION },
+      ];
+
+      stampBookingCapacity(slots, schedulingParametersGroup);
+      customizer(appointment, slots);
+      return { appointment, slots, healthcareService, schedulingParametersGroup };
+    })
   );
-
-  // We will write this attribute later, check that we aren't clobbering something that was submitted
-  if (appointment.slot) {
-    throw new OperationOutcomeError(
-      badRequest('Proposed appointment must not have Slot references', `${getPath(proposedAppointment)}.slot`)
-    );
-  }
-
-  appointment.extension = [
-    ...(appointment.extension ?? []).filter((ext) => ext.url !== SchedulingBookedByOperationURI),
-    { url: SchedulingBookedByOperationURI, valueString: MEDPLUM_VERSION },
-  ];
-
-  stampBookingCapacity(slots, schedulingParametersGroup);
-  customizer(appointment, slots);
 
   const createdResources = await repo.withTransaction(
     async (txRepo) => {
-      await validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup);
-      const createdSlots = new Array<WithId<Slot>>(slots.length);
-      for (const [i, slot] of slots.entries()) {
-        createdSlots[i] = await txRepo.createResource<Slot>(slot);
+      // Sequential: a transaction is pinned to one database connection, and each Appointment's
+      // availability is checked against the ones created before it.
+      const results: (Appointment | Slot)[] = [];
+      for (const { appointment, slots, healthcareService, schedulingParametersGroup } of validated) {
+        await validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup);
+        const createdSlots = new Array<WithId<Slot>>(slots.length);
+        for (const [i, slot] of slots.entries()) {
+          createdSlots[i] = await txRepo.createResource<Slot>(slot);
+        }
+        const createdAppointment = await txRepo.createResource<Appointment>({
+          ...appointment,
+          slot: createdSlots.map((slot) => createReference(slot)),
+        });
+        results.push(createdAppointment, ...createdSlots);
       }
-      const createdAppointment = await txRepo.createResource<Appointment>({
-        ...appointment,
-        slot: createdSlots.map((slot) => createReference(slot)),
-      });
-      return [createdAppointment, ...createdSlots];
+      return results;
     },
     { serializable: true, resourceTypes: ['Appointment', 'Slot'], source: 'createProposedAppointment' }
   );

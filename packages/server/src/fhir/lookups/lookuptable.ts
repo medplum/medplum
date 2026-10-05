@@ -147,7 +147,7 @@ abstract class LookupTable {
    * @param table - The resource table.
    * @param _param - The search parameter.
    * @param filter - The search filter details.
-   * @param _projectIds - The project IDs the search is restricted to, or undefined if unrestricted.
+   * @param projectIds - The project IDs the search is restricted to, or undefined if unrestricted.
    * @returns The select query where expression.
    */
   buildWhere(
@@ -156,7 +156,7 @@ abstract class LookupTable {
     table: string,
     _param: SearchParameter,
     filter: Filter,
-    _projectIds?: string[]
+    projectIds?: string[]
   ): Expression {
     if (filter.operator === FhirOperator.IN || filter.operator === FhirOperator.NOT_IN) {
       throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
@@ -196,11 +196,9 @@ abstract class LookupTable {
     const conditions: Expression[] = [
       new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
     ];
-    // PENDING{v5.2}: Enable once the v49 reindex has backfilled HumanName.projectId, so no rows are left with NULL projectId,
-    // and rename `_projectIds` above
-    // if (this.hasProjectIdColumn && projectIds) {
-    //   conditions.push(new Condition(new Column(lookupTableName, 'projectId'), 'IN', projectIds));
-    // }
+    if (this.hasProjectIdColumn && projectIds) {
+      conditions.push(new Condition(new Column(lookupTableName, 'projectId'), 'IN', projectIds));
+    }
     conditions.push(disjunction);
 
     const exists = new SqlFunction('EXISTS', [new SelectQuery(lookupTableName).whereExpr(new Conjunction(conditions))]);

@@ -86,6 +86,14 @@ describe('utils', () => {
     });
   });
 
+  test('setValue stores disableChainedSearch as comma-separated list', () => {
+    const config = {};
+    setValue(config, 'disableChainedSearch', 'Observation, AuditEvent');
+    expect(config).toEqual({
+      disableChainedSearch: ['Observation', 'AuditEvent'],
+    });
+  });
+
   test('setValue parses objects', () => {
     const config = {};
     const jsonData = '{"host":"smtp.example.com","port":587,"username":"username","password":"p@ssw0rd"}';

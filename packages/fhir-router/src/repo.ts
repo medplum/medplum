@@ -49,7 +49,8 @@ export type ReadHistoryOptions = {
   limit?: number;
 };
 
-type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
+/** One or more resource types, as a single type, an array, or a set. */
+export type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
 
 export interface TransactionOptions {
   readonly resourceTypes: ResourceTypeInput;

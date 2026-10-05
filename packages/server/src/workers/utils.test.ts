@@ -7,7 +7,8 @@ import EventEmitter from 'node:events';
 import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig, WorkerName } from '../config/types';
+import type { WorkerName } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
 import { withTestContext } from '../test.setup';
@@ -474,7 +475,7 @@ describe('worker utils', () => {
     test('returns default options plus global bullmq config when no per-worker overrides', () => {
       const config = {
         bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
-      } as MedplumServerConfig;
+      } as ServerConfig;
 
       const result = getWorkerBullmqConfig(config, 'subscription', defaultOptions);
       expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
@@ -484,7 +485,7 @@ describe('worker utils', () => {
       const config = {
         bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
         workers: { enabled: ['subscription'] },
-      } as MedplumServerConfig;
+      } as ServerConfig;
 
       const result = getWorkerBullmqConfig(config, 'subscription', defaultOptions);
       expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
@@ -498,7 +499,7 @@ describe('worker utils', () => {
             subscription: { concurrency: 50 },
           },
         },
-      } as MedplumServerConfig;
+      } as ServerConfig;
 
       const result = getWorkerBullmqConfig(config, 'subscription', defaultOptions);
       expect(result).toStrictEqual({
@@ -512,7 +513,7 @@ describe('worker utils', () => {
     test('worker defaults supersede global bullmq config', () => {
       const config = {
         bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
-      } as MedplumServerConfig;
+      } as ServerConfig;
 
       const result = getWorkerBullmqConfig(config, 'batch', defaultOptions, { concurrency: 1 });
       expect(result).toStrictEqual({
@@ -531,7 +532,7 @@ describe('worker utils', () => {
             batch: { concurrency: 5 },
           },
         },
-      } as MedplumServerConfig;
+      } as ServerConfig;
 
       const result = getWorkerBullmqConfig(config, 'batch', defaultOptions, { concurrency: 1 });
       expect(result).toStrictEqual({
@@ -550,7 +551,7 @@ describe('worker utils', () => {
             subscription: { concurrency: 50 },
           },
         },
-      } as MedplumServerConfig;
+      } as ServerConfig;
 
       const result = getWorkerBullmqConfig(config, 'download', defaultOptions);
       expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });

@@ -11,7 +11,7 @@ import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { mockFetchJson, mockFetchText } from '../test.setup.fetch';
@@ -39,7 +39,7 @@ const gcipIdentityProvider = {
   userInfoMode: 'gcip' as const,
   userInfoApiKey: 'test-api-key',
 };
-let config: MedplumServerConfig;
+let config: ServerConfig;
 let project: WithId<Project>;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;

@@ -15,6 +15,19 @@ describe('CalendarDateInput', () => {
     expect(screen.getByText('1')).toBeDefined();
   });
 
+  test('Month label replaces the month and year', () => {
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+        monthLabel={<button type="button">Pick a month</button>}
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Pick a month' })).toBeDefined();
+    expect(screen.queryByText(getMonthString(new Date()))).toBeNull();
+  });
+
   test('Disabled days', () => {
     const onClick = vi.fn();
     render(<CalendarDateInput availableDates={[]} onChangeMonth={vi.fn()} onClick={onClick} />);

@@ -3,6 +3,7 @@
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   CPT,
+  createReference,
   extractServiceTypeReferences,
   getAppointmentSite,
   getExtensionValue,
@@ -235,7 +236,7 @@ describe('AppointmentProposalForm', () => {
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await addActorRow('provider');
-      await chooseActor(/^and provider 2$/i, 'oka', 'Dr. Tunde Okafor');
+      await chooseActor(/^and additional$/i, 'oka', 'Dr. Tunde Okafor');
       await openTimeFinder();
 
       // One set of actors, not two: a row each is a second provider the visit needs,
@@ -251,7 +252,7 @@ describe('AppointmentProposalForm', () => {
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await addActorRow('provider');
-      await chooseActor(/^and provider 2$/i, 'riv', 'Dr. Maya Rivera');
+      await chooseActor(/^and additional$/i, 'riv', 'Dr. Maya Rivera');
 
       // Nobody attends their own appointment twice. The button says the search is
       // blocked, and the provider rows say which rows blocked it, so the two halves
@@ -1208,6 +1209,32 @@ describe('AppointmentProposalForm', () => {
     });
   });
 
+  describe('Jumping to a month', () => {
+    test('Moves the calendar to the month picked from its label', async () => {
+      setup(medplum, { defaultService: UltrasoundImagingService });
+      await settleAutocomplete();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      fireEvent.click(screen.getByRole('button', { name: 'August 2026' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Nov' }));
+
+      expect(screen.getByRole('button', { name: 'November 2026' })).toBeInTheDocument();
+    });
+
+    test('Offers no month before today', async () => {
+      setup(medplum, { defaultService: UltrasoundImagingService });
+      await settleAutocomplete();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      fireEvent.click(screen.getByRole('button', { name: 'August 2026' }));
+
+      expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Jul' }).disabled).toBe(true);
+      expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Aug' }).disabled).toBe(false);
+    });
+  });
+
   describe('Identifying the patient', () => {
     test('Asks for the patient below the action that finds a time', async () => {
       setup(medplum);
@@ -1290,8 +1317,11 @@ describe('AppointmentProposalForm', () => {
   });
 
   describe('Booking the appointment', () => {
-    test('Records the site the booking was made at', async () => {
-      setup(medplum, { defaultLocation: MainClinic });
+    test.each([
+      ['the Location', MainClinic],
+      ['a reference to it', createReference(MainClinic)],
+    ])('Records the site the booking was made at, given %s', async (_, defaultLocation) => {
+      setup(medplum, { defaultLocation });
       await fillBooking();
       await clickBook();
 

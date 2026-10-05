@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
-import { SchedulingFixtures } from '../stories/scheduling';
+import { SatelliteClinic, SchedulingFixtures } from '../stories/scheduling';
 import {
   clickAutocompleteOption,
   installAutocompleteTimers,
@@ -22,12 +22,27 @@ await Promise.all(SchedulingFixtures.map(async (resource) => medplum.createResou
  * Renders the fields and keeps whatever they last reported, which is all a host sees
  * of them.
  *
- * @returns A reader for the latest report, empty until something is chosen.
+ * @param defaultValue - What the fields start on.
+ * @returns A reader for the latest report, empty until something is chosen, and how
+ * many reports there have been.
  */
-function setup(): { readonly latest: () => CalendarFilterValues } {
+function setup(defaultValue?: CalendarFilterValues): {
+  readonly latest: () => CalendarFilterValues;
+  readonly reports: () => number;
+} {
   let reported: CalendarFilterValues = {};
-  renderWithMedplum(<CalendarFilters onChange={(next) => (reported = next)} />, medplum);
-  return { latest: () => reported };
+  let count = 0;
+  renderWithMedplum(
+    <CalendarFilters
+      defaultValue={defaultValue}
+      onChange={(next) => {
+        reported = next;
+        count++;
+      }}
+    />,
+    medplum
+  );
+  return { latest: () => reported, reports: () => count };
 }
 
 function locationField(): HTMLElement {
@@ -151,6 +166,36 @@ describe('CalendarFilters', () => {
       // it survives every site change.
       expect(screen.getByText('Telehealth Consult')).toBeInTheDocument();
       expect(screen.queryByText('Ultrasound Imaging')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('starting on a site', () => {
+    test('shows the site without reporting it', async () => {
+      const { reports } = setup({ location: SatelliteClinic });
+      await settleAutocomplete();
+
+      expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('All locations')).not.toBeInTheDocument();
+      expect(reports()).toBe(0);
+    });
+
+    test('narrows the visit types to the ones held there from the start', async () => {
+      setup({ location: SatelliteClinic });
+
+      await openAutocomplete(serviceField());
+
+      expect(screen.getByText('Telehealth Consult')).toBeInTheDocument();
+      expect(screen.queryByText('Ultrasound Imaging')).not.toBeInTheDocument();
+    });
+
+    test('taking the pill off goes back to every site', async () => {
+      const { latest } = setup({ location: SatelliteClinic });
+      await settleAutocomplete();
+
+      await removePill('Uro Associates - Satellite');
+
+      expect(latest().location).toBeUndefined();
+      expect(locationField()).toBeInTheDocument();
     });
   });
 

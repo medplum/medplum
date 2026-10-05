@@ -17,6 +17,7 @@ import { assertMfaLoginActive } from './mfalimit';
 import type { MfaMethod } from './utils';
 import {
   buildTotpEnrollment,
+  clearMfaEmailCode,
   getAllowedMfaMethods,
   getEnrolledMfaMethods,
   getLoginProject,
@@ -206,9 +207,7 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
       emailVerified: true,
     });
     // Consume the emailed code so it cannot be reused.
-    if (ctx.login.emailMfa) {
-      await systemRepo.updateResource<Login>({ ...ctx.login, emailMfa: undefined });
-    }
+    await clearMfaEmailCode(ctx.login as WithId<Login>);
     sendOutcome(res, allOk);
     return;
   }
@@ -380,9 +379,7 @@ mfaRouter.post(
     });
 
     // Consume any emailed verification code so it cannot be reused.
-    if (ctx.login.emailMfa) {
-      await ctx.systemRepo.updateResource<Login>({ ...ctx.login, emailMfa: undefined });
-    }
+    await clearMfaEmailCode(ctx.login as WithId<Login>);
 
     sendOutcome(res, allOk);
   }
