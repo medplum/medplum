@@ -38,8 +38,7 @@ export function supportsTransactionBundles(medplum: MedplumClient): boolean {
 /**
  * The Schedules a proposed time would be held on.
  *
- * Read off the proposal's contained Slots rather than off the answers that found it:
- * the proposal is what is being written, and its Slots are what `$find` laid out.
+ * Read off the proposal's contained Slots, since the proposal is what is being written.
  *
  * @param proposal - A time as `$find` offered it, or as typed.
  * @returns The schedule references, deduped — a schedule holds a buffer Slot either

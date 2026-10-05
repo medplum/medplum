@@ -437,7 +437,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const effectiveDurationMinutes =
     mode === 'reschedule' ? storedDurationMinutes : (manualDurationMinutes ?? configuredDurationMinutes);
 
-  // A time typed before a referenced appointment loaded is proposed again once its length is known.
+  // Re-propose a typed time when the stored length changes, as when a referenced appointment loads.
   const [proposedDurationMinutes, setProposedDurationMinutes] = useState(storedDurationMinutes);
   if (storedDurationMinutes !== proposedDurationMinutes) {
     setProposedDurationMinutes(storedDurationMinutes);
