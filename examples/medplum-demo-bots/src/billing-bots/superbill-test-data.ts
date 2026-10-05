@@ -48,7 +48,7 @@ export const testData: Bundle = {
       },
     },
     {
-      fullUrl: '29b59d2d-a47c-4b8f-a0d7-7d87bd7195d7',
+      fullUrl: 'urn:uuid:29b59d2d-a47c-4b8f-a0d7-7d87bd7195d7',
       request: { method: 'POST', url: 'Coverage' },
       resource: {
         resourceType: 'Coverage',
