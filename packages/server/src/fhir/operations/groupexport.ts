@@ -1,14 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { accepted, concatUrls, parseReference, singularize } from '@medplum/core';
+import { accepted, concatUrls, isResource, Operator, parseReference } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Group, Patient, Project, ResourceType } from '@medplum/fhirtypes';
+import type { Group, Project, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import type { Repository } from '../repo';
-import type { PatientEverythingParameters } from './patienteverything';
-import { getPatientEverything } from './patienteverything';
+import {
+  assertNoTypeFilters,
+  exportPageSize,
+  exportResourceType,
+  getExportResourceTypes,
+  parseExportParameters,
+} from './export';
+import { collectReferences, shouldResolveReference } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';
 
 /**
@@ -26,8 +32,8 @@ export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const { id } = req.params;
-  const since = singularize(req.query._since);
-  const types = singularize(req.query._type)?.split(',');
+  const { since, types, typeFilters } = parseExportParameters(req);
+  assertNoTypeFilters(typeFilters);
 
   // First read the group as the user to verify access
   const group = await ctx.repo.readResource<Group>('Group', id);
@@ -36,10 +42,7 @@ export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse
   const exporter = new BulkExporter(ctx.repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4/' + req.pathname));
 
-  groupExportResources(ctx.repo, exporter, ctx.project, group, {
-    _type: types as ResourceType[] | undefined,
-    _since: since,
-  })
+  groupExportResources(ctx.repo, exporter, ctx.project, group, types, since)
     .then(() => ctx.logger.info('Group export completed', { id: ctx.project.id }))
     .catch((err) => ctx.logger.error('Group export failed', { id: ctx.project.id, error: err }));
 
@@ -51,32 +54,87 @@ export async function groupExportResources(
   exporter: BulkExporter,
   project: Project,
   group: Group,
-  params?: PatientEverythingParameters
+  types?: string[],
+  since?: string
 ): Promise<void> {
-  // Read all patients in the group
-  if (group.member) {
-    for (const member of group.member) {
-      if (!member.entity?.reference) {
-        continue;
-      }
-      const [resourceType, memberId] = parseReference(member.entity);
+  const patientReferences: string[] = [];
+  for (const member of group.member ?? []) {
+    if (!member.entity?.reference) {
+      continue;
+    }
+    const [resourceType, memberId] = parseReference(member.entity);
+    if (resourceType === 'Patient') {
+      patientReferences.push(member.entity.reference);
+    } else if (!types || types.includes(resourceType)) {
       try {
-        if (resourceType === 'Patient') {
-          const patient = await repo.readResource<Patient>('Patient', memberId);
-          const bundle = await getPatientEverything(repo, patient, params);
-          await exporter.writeBundle(bundle);
-        } else {
-          const resource = await repo.readResource(resourceType, memberId);
-          await exporter.writeResource(resource);
-        }
+        await exporter.writeResource(await repo.readResource(resourceType, memberId));
       } catch {
-        getLogger().warn('Unable to read patient for group export', {
-          reference: member.entity.reference,
-        });
+        getLogger().warn('Unable to read member for group export', { reference: member.entity.reference });
       }
     }
+  }
 
-    // Close the exporter
-    await exporter.close(project);
+  if (patientReferences.length > 0) {
+    const compartment = { code: '_compartment', operator: Operator.EQUALS, value: patientReferences.join(',') };
+    const references = new Set<string>();
+    for (const resourceType of getExportResourceTypes(repo, 'Group', types)) {
+      await exportResourceType(
+        exporter,
+        resourceType,
+        exportPageSize,
+        since,
+        [{ resourceType, filters: [compartment] }],
+        (resource) => addResolvableReferences(resource, references)
+      );
+    }
+    await exportReferencedResources(repo, exporter, references, types);
+  }
+
+  await exporter.close(project);
+}
+
+/**
+ * Exports resources such as Organization and Practitioner that are referenced by exported resources,
+ * matching the referenced resources included by Patient $everything.
+ * These types must stay outside the Patient compartment, because their writers would already be closed.
+ * References are followed through types excluded by _type, so an included type is still reached.
+ * @param repo - The caller's repository.
+ * @param exporter - The bulk exporter.
+ * @param references - The references collected from exported Patient compartment resources.
+ * @param types - The requested _type values, if any.
+ */
+async function exportReferencedResources(
+  repo: Repository,
+  exporter: BulkExporter,
+  references: Set<string>,
+  types: string[] | undefined
+): Promise<void> {
+  const resolved = new Set<string>();
+  let pending = Array.from(references);
+  while (pending.length > 0) {
+    pending.forEach((reference) => resolved.add(reference));
+    const next = new Set<string>();
+    for (let i = 0; i < pending.length; i += exportPageSize) {
+      const batch = pending.slice(i, i + exportPageSize);
+      const resources = await repo.readReferences(batch.map((reference) => ({ reference })));
+      for (const resource of resources) {
+        if (!isResource(resource)) {
+          continue;
+        }
+        if (!types || types.includes(resource.resourceType)) {
+          await exporter.writeResource(resource);
+        }
+        addResolvableReferences(resource, next);
+      }
+    }
+    pending = Array.from(next).filter((reference) => !resolved.has(reference));
+  }
+}
+
+function addResolvableReferences(resource: Resource, references: Set<string>): void {
+  for (const reference of collectReferences(resource)) {
+    if (shouldResolveReference(reference)) {
+      references.add(reference);
+    }
   }
 }

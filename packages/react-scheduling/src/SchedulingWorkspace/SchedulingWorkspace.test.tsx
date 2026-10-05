@@ -6,7 +6,7 @@ import type { SinonFakeTimers } from 'sinon';
 import { useFakeTimers } from 'sinon';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
-import { CalendarWeekFixtures, SchedulingFixtures } from '../stories/scheduling';
+import { CalendarWeekFixtures, SatelliteClinic, SchedulingFixtures } from '../stories/scheduling';
 import { pillRemoveButton } from '../test-utils/asyncAutocomplete';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
@@ -188,6 +188,45 @@ describe('SchedulingWorkspace', () => {
       expect(search.mock.calls.filter(([resourceType]) => resourceType === 'Schedule')).toHaveLength(
         BOOKABLE_ACTOR_TYPES.length
       );
+    });
+  });
+
+  describe('starting on a site the host chose', () => {
+    test.each([
+      ['the Location', SatelliteClinic],
+      ['a reference to it', { reference: 'Location/satellite-clinic' }],
+    ])('given %s, lists only the calendars held there', async (_, defaultLocation) => {
+      const medplum = await setupClient();
+      renderWithMedplum(<SchedulingWorkspace defaultLocation={defaultLocation} />, medplum);
+
+      await waitFor(() => expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument());
+      expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument();
+      expect(screen.getByText('Uro Associates - Satellite')).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('All locations')).not.toBeInTheDocument();
+    });
+
+    // Not once on every site and again on the host's once the filter catches up.
+    test('searches the calendars only once', async () => {
+      const medplum = await setupClient();
+      const search = vi.spyOn(medplum, 'search');
+      renderWithMedplum(<SchedulingWorkspace defaultLocation={{ reference: 'Location/satellite-clinic' }} />, medplum);
+
+      await waitFor(() => expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument());
+      await waitFor(() => expect(screen.queryByLabelText(/^Loading /)).not.toBeInTheDocument());
+
+      expect(search.mock.calls.filter(([resourceType]) => resourceType === 'Schedule')).toHaveLength(
+        BOOKABLE_ACTOR_TYPES.length
+      );
+    });
+
+    test('is only where the filter starts: taking the pill off shows every site', async () => {
+      const medplum = await setupClient();
+      renderWithMedplum(<SchedulingWorkspace defaultLocation={SatelliteClinic} />, medplum);
+      await waitFor(() => expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument());
+
+      await clearFilter('Uro Associates - Satellite');
+
+      await waitFor(() => expect(screen.getByText('Exam Room A')).toBeInTheDocument());
     });
   });
 

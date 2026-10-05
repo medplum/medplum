@@ -11,6 +11,7 @@ import {
   isReference,
   OperationOutcomeError,
   serviceTypeIncludesService,
+  setPrimaryProvider,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Appointment, AppointmentParticipant, Reference, Schedule, Slot } from '@medplum/fhirtypes';
@@ -217,6 +218,8 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
  * both the old and new Schedules keeps its existing participant entry, and with it any
  * `status` the actor had already responded with.
  *
+ * As in `$find`, the first provider among the new Schedules is marked primary.
+ *
  * @param repo - Repository to read the outgoing Schedules with.
  * @param existingAppointment - The stored Appointment being rescheduled.
  * @param existingSlots - The Slots currently held by the appointment.
@@ -250,10 +253,13 @@ async function resolveParticipants(
   );
   const keptRefs = new Set(kept.map((p) => p.actor?.reference).filter(isDefined));
 
-  return [
-    ...kept,
-    ...newActors
-      .filter((actor) => actor.reference && !keptRefs.has(actor.reference))
-      .map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
-  ];
+  return setPrimaryProvider(
+    [
+      ...kept,
+      ...newActors
+        .filter((actor) => actor.reference && !keptRefs.has(actor.reference))
+        .map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
+    ],
+    newActors.find((actor) => actor.reference?.startsWith('Practitioner/'))
+  );
 }

@@ -72,17 +72,19 @@ curl -G 'https://api.medplum.com/fhir/R4/Appointment/$find' \
 | `service-type-reference` | `reference(HealthcareService)`   | The HealthcareService describing the type of appointment to be scheduled.                    | Yes      |
 | `schedule`               | `reference(Schedule)`            | A schedule to check for availability. May be passed multiple times with different schedules. | Yes      |
 | `ignore-appointment`     | `reference(Appointment)`         | Compute availability as if this Appointment did not exist. See [Reassigning an existing appointment](#reassigning-an-existing-appointment). | No       |
+| `occurrence-count`       | `positiveInt`                    | Find a weekly series of this many occurrences (2 to 6). See [Finding a recurring series](#finding-a-recurring-series). | No       |
 | `_count`                 | `integer`                        | Maximum number of Appointment resources to return. Defaults to 20. Maximum is 1000.          | No       |
 
 ### Constraints
 
 - `start` must be before `end`
-- The search window cannot exceed **31 days**
+- The search window cannot exceed **31 days**, or **7 days** with `occurrence-count`
 - At least one schedule must be provided
 - Each schedule must have exactly **one actor** reference
 - Each schedule's `serviceType` field must match the requested HealthcareService.type
 - Each schedule's actor (Practitioner, Location, or Device) must have a timezone defined via the `http://hl7.org/fhir/StructureDefinition/timezone` extension
 - `ignore-appointment`, if provided, must reference an Appointment that exists and is readable by the caller
+- `ignore-appointment` cannot be combined with `occurrence-count`
 
 ## Output
 
@@ -211,6 +213,60 @@ moves the appointment in a single transaction.
 
 :::
 
+## Finding a recurring series
+
+Passing `occurrence-count` searches for a weekly series: times that are bookable at the same local
+time for that many weeks in a row.
+
+```
+[base]/R4/Appointment/$find?start=2026-03-09T00:00:00-04:00&end=2026-03-16T00:00:00-04:00&service-type-reference=HealthcareService/my-service-id&schedule=Schedule/my-schedule-id&occurrence-count=6
+```
+
+- The search window covers the first occurrence only, and cannot exceed **7 days**. One local week
+  is accepted even when it runs an hour longer across a DST transition.
+- Each later occurrence starts at the same local time in the schedules' timezone, whole weeks
+  later, so a series keeps its local time across DST transitions. A time that doesn't exist in some
+  week, because of a DST transition, can't start a series.
+- Every schedule must share one timezone.
+- `_count` limits the number of series returned, earliest first.
+
+Each entry in the response is the **first occurrence** of one available series, in the same shape
+as any other `$find` result. It also carries R5's
+[`recurrenceTemplate`](https://hl7.org/fhir/R5/appointment-definitions.html#Appointment.recurrenceTemplate),
+as the R4 cross-version extension, to describe how the series recurs:
+
+```json
+{
+  "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceTemplate",
+  "extension": [
+    {
+      "url": "timezone",
+      "valueCodeableConcept": { "coding": [{ "system": "https://www.iana.org/time-zones", "code": "America/New_York" }] }
+    },
+    {
+      "url": "recurrenceType",
+      "valueCodeableConcept": { "coding": [{ "system": "http://unitsofmeasure.org", "code": "wk", "display": "week" }] }
+    },
+    { "url": "occurrenceCount", "valuePositiveInt": 6 },
+    {
+      "url": "weeklyTemplate",
+      "extension": [
+        { "url": "monday", "valueBoolean": true },
+        { "url": "weekInterval", "valuePositiveInt": 1 }
+      ]
+    }
+  ]
+}
+```
+
+:::tip
+
+Pass a series entry to [`$book`](/docs/scheduling/appointment-book#booking-a-recurring-series)
+unchanged to book every occurrence, all or none. [`$hold`](/docs/scheduling/appointment-hold)
+does not read the `recurrenceTemplate` yet, and holds only the first occurrence.
+
+:::
+
 ## Availability Logic
 
 `$find` calculates available windows by:
@@ -247,6 +303,17 @@ See [Defining Availability](/docs/scheduling/defining-availability) for full det
 {
   "resourceType": "OperationOutcome",
   "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Search range cannot exceed 31 days" } }]
+}
+```
+
+### Range Exceeds 7 Days
+
+Returned when `occurrence-count` is provided and the search window is longer than one week.
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Search range cannot exceed 7 days" } }]
 }
 ```
 

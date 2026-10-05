@@ -176,9 +176,14 @@
     "serverVersion": "5.1.42"
   },
   "v49": {
-    "serverVersion": "5.1.43"
+    "serverVersion": "5.1.43",
+    "requiredBefore": "5.2.0"
   },
   "v50": {
-    "serverVersion": "5.1.44"
+    "serverVersion": "5.1.44",
+    "requiredBefore": "5.2.0"
+  },
+  "v51": {
+    "serverVersion": "5.2.1"
   }
 }
