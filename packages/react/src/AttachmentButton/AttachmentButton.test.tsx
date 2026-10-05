@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button } from '@mantine/core';
-import { showNotification, updateNotification } from '@mantine/notifications';
+import { showNotification } from '@mantine/notifications';
 import type { Attachment } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -11,7 +11,6 @@ import { AttachmentButton } from './AttachmentButton';
 
 vi.mock('@mantine/notifications', () => ({
   showNotification: vi.fn(),
-  updateNotification: vi.fn(),
 }));
 
 const medplum = new MockClient();
@@ -114,7 +113,7 @@ describe('AttachmentButton', () => {
     });
   });
 
-  test('Error handling', async () => {
+  test('Error handling shows notification', async () => {
     const errorFn = vi.fn();
 
     setup(
@@ -134,6 +133,13 @@ describe('AttachmentButton', () => {
       resourceType: 'OperationOutcome',
       issue: [{ code: 'invalid', details: { text: 'Invalid file type' }, severity: 'error' }],
     });
+
+    expect(showNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Upload error',
+        color: 'red',
+      })
+    );
   });
 
   test('Custom text', async () => {
@@ -142,81 +148,6 @@ describe('AttachmentButton', () => {
     );
 
     expect(screen.getByText('My button')).toBeInTheDocument();
-  });
-
-  test('Clears file input after file selection', async () => {
-    setup(<AttachmentButton onUpload={console.log}>{(props) => <Button {...props}>Upload</Button>}</AttachmentButton>);
-
-    const input = screen.getByTestId('upload-file-input') as HTMLInputElement;
-    await act(async () => {
-      const files = [new File(['hello'], 'hello.txt', { type: 'text/plain' })];
-      fireEvent.change(input, {
-        target: { files },
-      });
-    });
-
-    expect(input.value).toBe('');
-  });
-
-  test('Shows notifications on successful upload', async () => {
-    const results: Attachment[] = [];
-
-    setup(
-      <AttachmentButton onUpload={(attachment: Attachment) => results.push(attachment)}>
-        {(props) => <Button {...props}>Upload</Button>}
-      </AttachmentButton>
-    );
-
-    await act(async () => {
-      const files = [new File(['hello'], 'hello.txt', { type: 'text/plain' })];
-      fireEvent.change(screen.getByTestId('upload-file-input'), {
-        target: { files },
-      });
-    });
-
-    expect(showNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'Initializing upload...',
-        loading: true,
-      })
-    );
-
-    expect(updateNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'Upload complete',
-        color: 'teal',
-      })
-    );
-  });
-
-  test('Shows error notification on upload failure', async () => {
-    const errorFn = vi.fn();
-
-    setup(
-      <AttachmentButton onUpload={console.log} onUploadError={errorFn}>
-        {(props) => <Button {...props}>Upload</Button>}
-      </AttachmentButton>
-    );
-
-    await act(async () => {
-      const files = [new File(['exe'], 'hello.exe', { type: 'application/exe' })];
-      fireEvent.change(screen.getByTestId('upload-file-input'), {
-        target: { files },
-      });
-    });
-
-    expect(showNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'Initializing upload...',
-      })
-    );
-
-    expect(updateNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'Upload error',
-        color: 'red',
-      })
-    );
   });
 
   test('Calls onUploadStart callback', async () => {
@@ -238,102 +169,104 @@ describe('AttachmentButton', () => {
     expect(startFn).toHaveBeenCalled();
   });
 
-  test('Uses separate notifications for concurrent uploads', async () => {
-    const createAttachment = vi.spyOn(medplum, 'createAttachment');
-
-    setup(<AttachmentButton onUpload={vi.fn()}>{(props) => <Button {...props}>Upload</Button>}</AttachmentButton>);
-
-    await act(async () => {
-      const files = [
-        new File(['hello'], 'hello.txt', { type: 'text/plain' }),
-        new File(['world'], 'world.txt', { type: 'text/plain' }),
-      ];
-
-      fireEvent.change(screen.getByTestId('upload-file-input'), {
-        target: { files },
-      });
+  test('Passes uploading and progress state inline', async () => {
+    let resolveUpload: (attachment: Attachment) => void = () => {};
+    const pendingPromise = new Promise<Attachment>((resolve) => {
+      resolveUpload = resolve;
     });
 
-    expect(showNotification).toHaveBeenCalledTimes(2);
+    vi.spyOn(medplum, 'createAttachment').mockReturnValue(pendingPromise);
 
-    const firstNotification = vi.mocked(showNotification).mock.calls[0][0];
-    const secondNotification = vi.mocked(showNotification).mock.calls[1][0];
-
-    expect(firstNotification.id).toBeDefined();
-    expect(secondNotification.id).toBeDefined();
-    expect(firstNotification.id).not.toBe(secondNotification.id);
-
-    const firstOptions = createAttachment.mock.calls[0][0] as {
-      onProgress?: (e: ProgressEvent) => void;
-    };
-    const secondOptions = createAttachment.mock.calls[1][0] as {
-      onProgress?: (e: ProgressEvent) => void;
-    };
-
-    firstOptions.onProgress?.({
-      lengthComputable: true,
-      loaded: 25,
-      total: 100,
-    } as ProgressEvent);
-
-    secondOptions.onProgress?.({
-      lengthComputable: true,
-      loaded: 75,
-      total: 100,
-    } as ProgressEvent);
-
-    expect(updateNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: firstNotification.id,
-        title: 'Uploading...',
-      })
+    setup(
+      <AttachmentButton onUpload={console.log}>
+        {(props) => (
+          <button onClick={props.onClick} disabled={props.disabled}>
+            {props.uploading ? `Uploading ${props.progress}%` : 'Upload'}
+          </button>
+        )}
+      </AttachmentButton>
     );
-
-    expect(updateNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: secondNotification.id,
-        title: 'Uploading...',
-      })
-    );
-  });
-
-  test('Updates notification with upload progress', async () => {
-    const createAttachment = vi.spyOn(medplum, 'createAttachment');
-
-    setup(<AttachmentButton onUpload={console.log}>{(props) => <Button {...props}>Upload</Button>}</AttachmentButton>);
 
     await act(async () => {
       const files = [new File(['hello'], 'hello.txt', { type: 'text/plain' })];
-
       fireEvent.change(screen.getByTestId('upload-file-input'), {
         target: { files },
       });
     });
 
-    const options = createAttachment.mock.calls[0][0] as { onProgress?: (e: ProgressEvent) => void };
+    expect(screen.getByText('Uploading 0%')).toBeInTheDocument();
 
-    options.onProgress?.({
-      lengthComputable: true,
-      loaded: 50,
-      total: 100,
-    } as ProgressEvent);
+    const options = vi.mocked(medplum.createAttachment).mock.calls[0][0] as { onProgress?: (e: ProgressEvent) => void };
 
-    expect(updateNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'Uploading...',
-        message: 'Uploaded: 50.00  B / 100.00  B 50.00%',
-        loading: true,
-      })
-    );
+    await act(async () => {
+      options.onProgress?.({
+        lengthComputable: true,
+        loaded: 50,
+        total: 100,
+      } as ProgressEvent);
+    });
+
+    expect(screen.getByText('Uploading 50%')).toBeInTheDocument();
+
+    await act(async () => {
+      resolveUpload({ resourceType: 'Attachment', id: '123' });
+    });
   });
 
-  test('Calls onUploadProgress callback', async () => {
-    const progressFn = vi.fn();
-    const createAttachment = vi.spyOn(medplum, 'createAttachment');
+  test('Aggregates progress for concurrent uploads properly', async () => {
+    const pendingPromises: ((attachment: Attachment) => void)[] = [];
+
+    vi.spyOn(medplum, 'createAttachment').mockImplementation(
+      () =>
+        new Promise<Attachment>((resolve) => {
+          pendingPromises.push(resolve);
+        })
+    );
 
     setup(
-      <AttachmentButton onUpload={vi.fn()} onUploadProgress={progressFn}>
-        {(props) => <Button {...props}>Upload</Button>}
+      <AttachmentButton onUpload={vi.fn()}>
+        {(props) => (
+          <button onClick={props.onClick}>{props.uploading ? `Uploading ${props.progress}%` : 'Upload'}</button>
+        )}
+      </AttachmentButton>
+    );
+
+    await act(async () => {
+      const file1 = new File(['a'.repeat(100)], '1.txt', { type: 'text/plain' });
+      const file2 = new File(['b'.repeat(300)], '2.txt', { type: 'text/plain' });
+
+      fireEvent.change(screen.getByTestId('upload-file-input'), {
+        target: { files: [file1, file2] },
+      });
+    });
+
+    const calls = vi.mocked(medplum.createAttachment).mock.calls;
+    const firstOptions = calls[0][0] as { onProgress?: (e: ProgressEvent) => void };
+    const secondOptions = calls[1][0] as { onProgress?: (e: ProgressEvent) => void };
+
+    await act(async () => {
+      firstOptions.onProgress?.({ lengthComputable: true, loaded: 50, total: 100 } as ProgressEvent);
+      secondOptions.onProgress?.({ lengthComputable: true, loaded: 150, total: 300 } as ProgressEvent);
+    });
+
+    expect(screen.getByText('Uploading 50%')).toBeInTheDocument();
+
+    await act(async () => {
+      pendingPromises.forEach((resolve) => resolve({ resourceType: 'Attachment', id: '123' }));
+    });
+  });
+
+  test('Resets uploading state after upload completes', async () => {
+    let resolveUpload: (attachment: Attachment) => void = () => {};
+    const pendingPromise = new Promise<Attachment>((resolve) => {
+      resolveUpload = resolve;
+    });
+
+    vi.spyOn(medplum, 'createAttachment').mockReturnValue(pendingPromise);
+
+    setup(
+      <AttachmentButton onUpload={vi.fn()}>
+        {(props) => <button>{props.uploading ? `Uploading ${props.progress}%` : 'Upload'}</button>}
       </AttachmentButton>
     );
 
@@ -345,18 +278,12 @@ describe('AttachmentButton', () => {
       });
     });
 
-    const options = createAttachment.mock.calls[0][0] as {
-      onProgress?: (e: ProgressEvent) => void;
-    };
+    expect(screen.getByText('Uploading 0%')).toBeInTheDocument();
 
-    const progress = {
-      lengthComputable: true,
-      loaded: 50,
-      total: 100,
-    } as ProgressEvent;
+    await act(async () => {
+      resolveUpload({ resourceType: 'Attachment', id: '123' });
+    });
 
-    options.onProgress?.(progress);
-
-    expect(progressFn).toHaveBeenCalledWith(progress);
+    expect(screen.getByText('Upload')).toBeInTheDocument();
   });
 });

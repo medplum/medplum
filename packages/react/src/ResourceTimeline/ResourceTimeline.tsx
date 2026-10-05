@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Button, Group, ScrollArea, TextInput } from '@mantine/core';
+import { ActionIcon, Button, Group, RingProgress, ScrollArea, TextInput } from '@mantine/core';
 import type { MedplumClient, ProfileResource } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type {
@@ -222,9 +222,25 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
               </ActionIcon>
               <AttachmentButton securityContext={createReference(resource)} onUpload={createMedia}>
                 {(props) => (
-                  <ActionIcon {...props} radius="xl" color="blue" variant="filled">
-                    <IconCloudUpload size={16} />
-                  </ActionIcon>
+                  <Group gap={6} wrap="nowrap">
+                    <ActionIcon
+                      onClick={props.onClick}
+                      disabled={props.disabled || props.uploading}
+                      radius="xl"
+                      color="blue"
+                      variant="filled"
+                    >
+                      <IconCloudUpload size={16} />
+                    </ActionIcon>
+                    {props.uploading && (
+                      <RingProgress
+                        size={28}
+                        thickness={3}
+                        roundCaps
+                        sections={[{ value: props.progress, color: 'blue' }]}
+                      />
+                    )}
+                  </Group>
                 )}
               </AttachmentButton>
             </Group>
