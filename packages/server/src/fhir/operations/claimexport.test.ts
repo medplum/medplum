@@ -14,7 +14,7 @@ describe('CMS 1500 PDF', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth({ project: { features: ['transaction-bundles'] } });
   });
 
   afterAll(async () => {
