@@ -12,6 +12,7 @@ import {
   SchedulingRescheduledByOperationURI,
   SchedulingUnvalidatedRescheduleURI,
   serviceTypeIncludesService,
+  setPrimaryProvider,
 } from '@medplum/core';
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import type { AppointmentWrite } from './AppointmentFinder.writes';
@@ -173,12 +174,15 @@ export async function writeElevatedReschedule(
     start: geometry.start,
     end: geometry.end,
     slot: newSlots.map((slot) => createReference(slot)),
-    participant: [
-      ...kept,
-      ...newActors
-        .filter((actor) => actor.reference && !keptRefs.has(actor.reference))
-        .map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
-    ],
+    participant: setPrimaryProvider(
+      [
+        ...kept,
+        ...newActors
+          .filter((actor) => actor.reference && !keptRefs.has(actor.reference))
+          .map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
+      ],
+      newActors.find((actor) => actor.reference?.startsWith('Practitioner/'))
+    ),
   };
   let appointment: WithId<Appointment>;
   try {
