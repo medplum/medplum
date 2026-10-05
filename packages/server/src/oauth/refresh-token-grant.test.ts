@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference } from '@medplum/core';
+import { badRequest, createReference, OperationOutcomeError, sleep } from '@medplum/core';
 import type { AccessPolicy, ClientApplication, Login, Project } from '@medplum/fhirtypes';
 import express from 'express';
 import { decodeJwt } from 'jose';
@@ -12,8 +12,9 @@ import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
-import { getProjectSystemRepo } from '../fhir/repo';
-import { createTestProject } from '../test.setup';
+import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from '../fhir/repo';
+import { createTestProject, withTestContext } from '../test.setup';
+import { rotateLoginRefreshSecret } from './token';
 
 // This file deliberately does NOT mock `jose`.
 //
@@ -103,16 +104,33 @@ describe('Refresh token grant', () => {
     return tokenResponse.body;
   }
 
-  function refresh(refreshToken: string): request.Test {
-    return request(app).post('/oauth2/token').type('form').send({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-    });
+  function refresh(refreshToken: string, ip?: string): request.Test {
+    const req = request(app).post('/oauth2/token').type('form');
+    if (ip) {
+      req.set('X-Forwarded-For', ip);
+    }
+    return req.send({ grant_type: 'refresh_token', refresh_token: refreshToken });
   }
 
   function readLoginFor(refreshToken: string): Promise<Login> {
     const claims = decodeJwt(refreshToken) as { login_id: string };
     return systemRepo.readResource<Login>('Login', claims.login_id);
+  }
+
+  function refreshSecretOf(refreshToken: string): string {
+    return (decodeJwt(refreshToken) as { refresh_secret: string }).refresh_secret;
+  }
+
+  /**
+   * Moves the login's last rotation outside the grace period, as if the previous token were
+   * replayed well after it was rotated.
+   * @param refreshToken - Any refresh token for the login.
+   */
+  async function expireGracePeriod(refreshToken: string): Promise<void> {
+    const login = await readLoginFor(refreshToken);
+    await getGlobalSystemRepo().patchResource<Login>('Login', login.id as string, [
+      { op: 'add', path: '/refreshSecretRotatedAt', value: new Date(Date.now() - 60_000).toISOString() },
+    ]);
   }
 
   test('Rejects a refresh token signed with "alg": "none"', async () => {
@@ -181,59 +199,144 @@ describe('Refresh token grant', () => {
     expect(res.body).toMatchObject({ error: 'invalid_request', error_description: 'Invalid refresh token' });
   });
 
-  test('Rotates the refresh secret and invalidates the presented token', async () => {
+  test('Replaying a rotated refresh token revokes the login and its access tokens', async () => {
     const tokens = await getTokens();
     const rotated = await refresh(tokens.refresh_token);
     expect(rotated).toHaveStatus(200);
     expect(rotated.body.refresh_token).toBeDefined();
     expect(rotated.body.refresh_token).not.toStrictEqual(tokens.refresh_token);
 
+    const beforeReuse = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', `Bearer ${rotated.body.access_token}`);
+    expect(beforeReuse).toHaveStatus(200);
+
+    await expireGracePeriod(tokens.refresh_token);
     const replay = await refresh(tokens.refresh_token);
     expect(replay).toHaveStatus(400);
-    expect(replay.body).toMatchObject({ error: 'invalid_request', error_description: 'Invalid token' });
+    expect(replay.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
+
+    const login = await readLoginFor(tokens.refresh_token);
+    expect(login.revoked).toStrictEqual(true);
+
+    const afterReplay = await refresh(rotated.body.refresh_token);
+    expect(afterReplay).toHaveStatus(400);
+    expect(afterReplay.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
+
+    const afterReuse = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', `Bearer ${rotated.body.access_token}`);
+    expect(afterReuse).toHaveStatus(401);
+  });
+
+  test('Rotation loses a write conflict and reports reuse rather than rotating again', async () => {
+    // The concurrent-refresh test below only races if the requests happen to overlap. This one
+    // forces the conflict, so the serialization failure and `withTransaction`'s retry of the
+    // callback are actually exercised.
+    const tokens = await getTokens();
+    const loginId = (decodeJwt(tokens.refresh_token) as { login_id: string }).login_id;
+    const original = await systemRepo.readResource<Login>('Login', loginId);
+    const originalSecret = original.refreshSecret as string;
+
+    const firstWriteDone = Promise.withResolvers<undefined>();
+    const allowFirstCommit = Promise.withResolvers<undefined>();
+
+    const holder = getGlobalSystemRepo().withTransaction(
+      async (txRepo) => {
+        await txRepo.patchResource<Login>('Login', loginId, [
+          { op: 'add', path: '/refreshSecret', value: 'secret-from-the-winning-caller' },
+        ]);
+        firstWriteDone.resolve(undefined);
+        await allowFirstCommit.promise;
+      },
+      { resourceTypes: ['Login'], source: 'test.refreshRotationConflict' }
+    );
+
+    await firstWriteDone.promise;
+    const loser = withTestContext(() => rotateLoginRefreshSecret(original, originalSecret));
+    await sleep(100);
+    allowFirstCommit.resolve(undefined);
+
+    await holder;
+    expect(await loser).toBeUndefined();
+
+    const after = await systemRepo.readResource<Login>('Login', loginId);
+    expect(after.refreshSecret).toStrictEqual('secret-from-the-winning-caller');
+  });
+
+  test('Concurrent refreshes with the same token rotate once and all succeed', async () => {
+    const tokens = await getTokens();
+    const responses = await Promise.all([1, 2, 3, 4, 5].map(() => refresh(tokens.refresh_token)));
+
+    for (const res of responses) {
+      expect(res).toHaveStatus(200);
+    }
+
+    // One request rotated; the rest landed in the grace period and got tokens for the same secret.
+    const login = await readLoginFor(tokens.refresh_token);
+    expect(login.revoked).toBeUndefined();
+    expect(login.previousRefreshSecret).toStrictEqual(refreshSecretOf(tokens.refresh_token));
+    for (const res of responses) {
+      expect(refreshSecretOf(res.body.refresh_token)).toStrictEqual(login.refreshSecret);
+    }
+  });
+
+  test('The grace period accepts a retry of the previous token only from the same IP', async () => {
+    const tokens = await getTokens();
+    const rotated = await refresh(tokens.refresh_token);
+    expect(rotated).toHaveStatus(200);
+    const afterRotation = await readLoginFor(tokens.refresh_token);
+
+    // As if the first response was lost and the client retried
+    const retry = await refresh(tokens.refresh_token);
+    expect(retry).toHaveStatus(200);
+    expect(refreshSecretOf(retry.body.refresh_token)).toStrictEqual(refreshSecretOf(rotated.body.refresh_token));
+
+    const afterRetry = await readLoginFor(tokens.refresh_token);
+    expect(afterRetry.revoked).toBeUndefined();
+    expect(afterRetry.meta?.versionId).toStrictEqual(afterRotation.meta?.versionId);
+
+    // The chain continues from the current secret
+    const next = await refresh(retry.body.refresh_token);
+    expect(next).toHaveStatus(200);
+
+    // The same retry from a different IP, still inside the window, is treated as reuse
+    const replay = await refresh(retry.body.refresh_token, '7.7.7.7');
+    expect(replay).toHaveStatus(400);
+    expect(replay.body).toMatchObject({ error: 'invalid_grant', error_description: 'Token revoked' });
+
+    const login = await readLoginFor(tokens.refresh_token);
+    expect(login.revoked).toStrictEqual(true);
+  });
+
+  test('A rotation rejected for a reason other than the secret does not revoke the login', async () => {
+    const tokens = await getTokens();
+    const patchSpy = vi
+      .spyOn(Repository.prototype, 'patchResource')
+      .mockRejectedValueOnce(new OperationOutcomeError(badRequest('Unrelated validation failure')));
+
+    const failed = await refresh(tokens.refresh_token);
+    patchSpy.mockRestore();
+    expect(failed.status).not.toStrictEqual(200);
+    expect(failed.body.error_description).not.toStrictEqual('Token revoked');
+
+    const login = await readLoginFor(tokens.refresh_token);
+    expect(login.revoked).toBeUndefined();
+
+    // The same token still works once the failure clears
+    const retry = await refresh(tokens.refresh_token);
+    expect(retry).toHaveStatus(200);
   });
 
   /*
    * Every test in this block asserts CURRENT behavior, not desired behavior.
    *
-   * These are the gaps identified while triaging an external disclosure of the refresh grant.
-   * They are captured here so that the fixes land as visible changes to these assertions, and so
-   * that nothing silently regresses in the meantime. Each test names the fix that will change it.
+   * These are the remaining gaps identified while triaging an external disclosure of the refresh
+   * grant. They are captured here so that the fixes land as visible changes to these assertions,
+   * and so that nothing silently regresses in the meantime. Each test names the fix that will
+   * change it.
    */
   describe('Known gaps', () => {
-    test('Replaying a rotated refresh token does not revoke the login', async () => {
-      // Fix: detect reuse of a rotated secret and revoke the login family (BCP 4.14.2).
-      const tokens = await getTokens();
-      const rotated = await refresh(tokens.refresh_token);
-      expect(rotated).toHaveStatus(200);
-
-      const replay = await refresh(tokens.refresh_token);
-      expect(replay).toHaveStatus(400);
-
-      // The replay is rejected, but nothing else happens: the login stays live and the current
-      // token keeps working, so a stolen token grants an indefinitely renewable session and the
-      // theft is never surfaced to anyone.
-      const login = await readLoginFor(tokens.refresh_token);
-      expect(login.revoked).toBeFalsy();
-
-      const afterReplay = await refresh(rotated.body.refresh_token);
-      expect(afterReplay).toHaveStatus(200);
-    });
-
-    test('Concurrent refreshes with the same token all succeed', async () => {
-      // Fix: make the secret check and rotation atomic, via a locking read or a conditional update.
-      const tokens = await getTokens();
-      const responses = await Promise.all([1, 2, 3, 4, 5].map(() => refresh(tokens.refresh_token)));
-
-      // `patchResource` runs in a transaction but takes no row lock, so the `timingSafeEqualStr`
-      // check in `handleRefreshToken` races the `rotateLoginRefreshSecret` that follows it. Every
-      // racing request is issued its own refresh token and its own hour-long access token, and
-      // single use is not enforced.
-      const succeeded = responses.filter((res) => res.status === 200);
-      expect(succeeded.length).toBeGreaterThan(1);
-      expect(new Set(succeeded.map((res) => res.body.refresh_token)).size).toStrictEqual(succeeded.length);
-    });
-
     test('Confidential client can refresh without client authentication', async () => {
       // Fix: require client authentication when the login's client has a secret (RFC 6749 section 6).
       expect(client.secret).toBeDefined();

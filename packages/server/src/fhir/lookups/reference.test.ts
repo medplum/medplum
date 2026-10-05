@@ -361,8 +361,8 @@ describe('ReferenceTable', () => {
       // Existing rows are left stale until reindexed
       const updateRows = await refTable.getExistingRows(getReferenceTestClient('Observation'), [obs]);
       expect(updateRows).toContainExactly([
-        { resourceId: obs.id, code: 'patient', targetId: patient1 },
-        { resourceId: obs.id, code: 'subject', targetId: patient1 },
+        { resourceId: obs.id, code: 'patient', targetId: patient1, projectId: systemResourceProjectId },
+        { resourceId: obs.id, code: 'subject', targetId: patient1, projectId: systemResourceProjectId },
       ]);
 
       await systemRepo.deleteResource('Observation', obs.id);
@@ -373,11 +373,13 @@ describe('ReferenceTable', () => {
     test('always writes ProjectMembership references', async () => {
       getConfig().disableChainedSearch = ['ProjectMembership'];
 
+      const projectId = randomUUID();
       const userId = randomUUID();
       const membership: WithId<ProjectMembership> = {
         resourceType: 'ProjectMembership',
         id: randomUUID(),
-        project: { reference: 'Project/' + randomUUID() },
+        meta: { project: projectId },
+        project: { reference: 'Project/' + projectId },
         user: { reference: 'User/' + userId },
         profile: { reference: 'Practitioner/' + randomUUID() },
       };
@@ -385,7 +387,7 @@ describe('ReferenceTable', () => {
 
       await refTable.batchIndexResources(client, [membership], true);
       const rows = await refTable.getExistingRows(client, [membership]);
-      expect(rows).toContainEqual({ resourceId: membership.id, code: 'user', targetId: userId });
+      expect(rows).toContainEqual({ resourceId: membership.id, code: 'user', targetId: userId, projectId });
 
       await refTable.deleteValuesForResource(client, membership);
     });

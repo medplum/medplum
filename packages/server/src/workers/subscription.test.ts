@@ -1997,8 +1997,9 @@ describe('Subscription Worker', () => {
 
       // Create an access policy in different project
       // This should trigger an error when the subscription is executed
-      const accessPolicy = await repo.createResource<AccessPolicy>({
+      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: repo.currentProject()?.id },
         resource: [{ resourceType: 'Patient', readonly: false }, { resourceType: 'Subscription' }],
       });
 
@@ -2068,8 +2069,9 @@ describe('Subscription Worker', () => {
 
       // Create an access policy in different project
       // This should trigger an error when the subscription is executed
-      const accessPolicy = await repo.createResource<AccessPolicy>({
+      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: repo.currentProject()?.id },
         resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
       });
 
@@ -2564,8 +2566,9 @@ describe('Subscription Worker', () => {
 
         // Create an access policy in different project
         // This should trigger an error when the subscription is executed
-        const accessPolicy = await repo.createResource<AccessPolicy>({
+        const accessPolicy = await systemRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
+          meta: { project: repo.currentProject()?.id },
           resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
         });
 
@@ -2630,8 +2633,9 @@ describe('Subscription Worker', () => {
         const url = 'https://example.com/subscription';
 
         // An access policy that restricts Patient to a specific ID that will never match our patient.
-        const accessPolicy = await repo.createResource<AccessPolicy>({
+        const accessPolicy = await systemRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
+          meta: { project: repo.currentProject()?.id },
           resource: [
             { resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` },
             { resourceType: 'Subscription' },

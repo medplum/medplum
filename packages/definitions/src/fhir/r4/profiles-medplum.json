@@ -3434,6 +3434,36 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "Login.previousRefreshSecret",
+            "path" : "Login.previousRefreshSecret",
+            "definition" : "The refresh secret that was most recently replaced by refresh token rotation.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Login.previousRefreshSecret",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Login.refreshSecretRotatedAt",
+            "path" : "Login.refreshSecretRotatedAt",
+            "definition" : "The time at which the refresh secret was most recently rotated.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "instant"
+            }],
+            "base" : {
+              "path" : "Login.refreshSecretRotatedAt",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }
