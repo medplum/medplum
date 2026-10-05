@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
-import { createReference, setPrimaryProvider, toServiceTypeCodeableConcepts } from '@medplum/core';
+import type { ResourceModifiedEvent, WithId } from '@medplum/core';
+import {
+  createReference,
+  SchedulingUnvalidatedBookingURI,
+  setPrimaryProvider,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
@@ -139,6 +144,16 @@ describe('AppointmentRescheduleForm', () => {
   });
 
   describe('Manual overrides', () => {
+    /**
+     * Collects what the client announces about the resources it writes.
+     * @returns The announcements, in order, filled in as they happen.
+     */
+    function recordModifications(): ResourceModifiedEvent[] {
+      const events: ResourceModifiedEvent[] = [];
+      medplum.addEventListener('resourceModified', (event) => events.push(event.payload));
+      return events;
+    }
+
     async function enterTime(): Promise<void> {
       await openTimeFinder();
       fireEvent.change(screen.getByLabelText('Date & time'), { target: { value: '2026-08-18T14:07' } });
@@ -153,15 +168,17 @@ describe('AppointmentRescheduleForm', () => {
 
     test('admins still send searched times through $reschedule', async () => {
       const post = vi.spyOn(medplum, 'post');
-      const execute = vi.spyOn(medplum, 'executeBatch');
       await setup(medplum, { canBypassSchedulingRules: true });
       await moveToAnotherTime();
       expect(lastRescheduleParameters(post)).toBeDefined();
-      expect(execute).not.toHaveBeenCalled();
+      expect(onRescheduled.mock.calls[0][0].appointment.extension ?? []).not.toContainEqual(
+        expect.objectContaining({ url: SchedulingUnvalidatedBookingURI })
+      );
     });
 
-    test('moves a typed time with fixed length, notifies caches and calls back once', async () => {
+    test('moves a typed time with fixed length, announces each write once and calls back once', async () => {
       const stored = await medplum.readResource('Appointment', APPOINTMENT.id);
+      const events = recordModifications();
       const notify = vi.spyOn(medplum, 'notifyResourceModified');
       const post = vi.spyOn(medplum, 'post');
       await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });
@@ -173,27 +190,25 @@ describe('AppointmentRescheduleForm', () => {
       expect(onRescheduled).toHaveBeenCalledTimes(1);
       const result = onRescheduled.mock.calls[0][0];
       expect(result.appointment.id).toBe(APPOINTMENT.id);
-      for (const slot of HELD_SLOTS) {
-        expect(notify).toHaveBeenCalledWith(
-          expect.objectContaining({ resourceType: 'Slot', operation: 'delete', id: slot.id })
-        );
-      }
-      expect(notify).toHaveBeenCalledWith(
-        expect.objectContaining({ resourceType: 'Appointment', operation: 'update', id: APPOINTMENT.id })
+      expect(events.map(({ resourceType, operation, id }) => `${operation} ${resourceType}/${id}`).sort()).toEqual(
+        [
+          ...result.slots.map((slot: Slot) => `create Slot/${slot.id}`),
+          `update Appointment/${APPOINTMENT.id}`,
+          ...HELD_SLOTS.map((slot) => `delete Slot/${slot.id}`),
+        ].sort()
       );
-      for (const slot of result.slots) {
-        expect(notify).toHaveBeenCalledWith(
-          expect.objectContaining({ resourceType: 'Slot', operation: 'create', id: slot.id })
-        );
-      }
+      expect(notify).not.toHaveBeenCalled();
       expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
     });
 
-    test('blocks manual overrides without project transaction support and keeps searched moves', async () => {
-      vi.spyOn(medplum, 'getProject').mockReturnValue(undefined);
+    test('blocks manual overrides without permission to delete Slots and keeps searched moves', async () => {
+      vi.spyOn(medplum, 'getAccessPolicy').mockReturnValue({
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: '*', interaction: ['read', 'search', 'create', 'update'] }],
+      });
       await setup(medplum, { canBypassSchedulingRules: true });
       await openTimeFinder();
-      expect(screen.getByText(/transaction-bundles project feature/)).toBeInTheDocument();
+      expect(screen.getByText(/permission to create and delete Slots/)).toBeInTheDocument();
       expect(screen.queryByText('Or enter a time')).not.toBeInTheDocument();
       await chooseFirstOfferedTime();
       await clickReschedule();
@@ -266,10 +281,10 @@ describe('AppointmentRescheduleForm', () => {
       expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
     });
 
-    test('keeps entered answers after a rejected transaction without announcing a move', async () => {
+    test('keeps entered answers after a rejected appointment update without announcing a move', async () => {
       const stored = await medplum.readResource('Appointment', APPOINTMENT.id);
-      vi.spyOn(medplum, 'executeBatch').mockRejectedValue(new Error('Write denied'));
-      const notify = vi.spyOn(medplum, 'notifyResourceModified');
+      vi.spyOn(medplum, 'updateResource').mockRejectedValue(new Error('Write denied'));
+      const events = recordModifications();
       await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });
       await enterTime();
       await clickReschedule();
@@ -279,7 +294,7 @@ describe('AppointmentRescheduleForm', () => {
         '2026-08-18T14:07'
       );
       expect(onRescheduled).not.toHaveBeenCalled();
-      expect(notify).not.toHaveBeenCalled();
+      expect(events.some((event) => event.resourceType === 'Appointment')).toBe(false);
     });
   });
 

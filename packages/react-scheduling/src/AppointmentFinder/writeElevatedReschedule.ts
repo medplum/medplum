@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
+  accessPolicySupportsInteraction,
+  createReference,
   extractServiceTypeReferences,
-  generateId,
   getReferenceString,
   isDefined,
   isValidDate,
@@ -11,9 +13,8 @@ import {
   SchedulingUnvalidatedBookingURI,
   serviceTypeIncludesService,
 } from '@medplum/core';
-import type { Appointment, Bundle, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import type { AppointmentWrite } from './AppointmentFinder.writes';
-import { readAppointmentWrite } from './AppointmentFinder.writes';
 import { buildElevatedBooking } from './buildElevatedBooking';
 
 /**
@@ -27,12 +28,21 @@ export function getRescheduleDurationMinutes(appointment: Appointment): number |
 }
 
 /**
- * Whether the client can confirm the project applies transaction bundles atomically.
+ * Whether the user's access policy allows every write a manual reschedule makes.
+ *
+ * A shallow check: a policy whose criteria exclude a particular Slot or Appointment can
+ * still refuse it. Without a policy to read, the server is left to decide.
  * @param medplum - The client to check.
- * @returns True when the project's `transaction-bundles` feature is visible and enabled.
+ * @returns True unless the policy rules out creating or deleting Slots, or updating Appointments.
  */
-export function supportsTransactionBundles(medplum: MedplumClient): boolean {
-  return medplum.getProject()?.features?.includes('transaction-bundles') === true;
+export function canWriteManualReschedule(medplum: MedplumClient): boolean {
+  const accessPolicy = medplum.getAccessPolicy();
+  return (
+    !accessPolicy ||
+    (accessPolicySupportsInteraction(accessPolicy, AccessPolicyInteraction.CREATE, 'Slot') &&
+      accessPolicySupportsInteraction(accessPolicy, AccessPolicyInteraction.DELETE, 'Slot') &&
+      accessPolicySupportsInteraction(accessPolicy, AccessPolicyInteraction.UPDATE, 'Appointment'))
+  );
 }
 
 /**
@@ -53,21 +63,23 @@ export function getProposedSchedules(proposal: Appointment): string[] {
  * Moves an existing appointment without checking availability or start alignment.
  * Rebuilds geometry from current schedules and preserves the stored appointment's length and metadata,
  * marking it with `SchedulingUnvalidatedBooking`.
- * Requires transaction support so a refused update cannot release the original slots.
+ *
+ * Writes in order: creates the new Slots, moves the appointment onto them with one
+ * conditional update, then deletes the old Slots. The appointment is only ever wholly at its
+ * old time or wholly at its new one. A failure before the update deletes the Slots it created;
+ * a failure after it leaves the old Slots behind, logged, with the move complete.
  * @param medplum - The client to write through.
  * @param moving - The appointment being moved. Re-read before writing, so a stale copy is not written back.
  * @param proposal - The manually chosen start and schedules.
- * @returns The updated appointment and replacement slots, after verifying every response entry.
+ * @returns The updated appointment and its new slots.
  */
 export async function writeElevatedReschedule(
   medplum: MedplumClient,
   moving: WithId<Appointment>,
   proposal: Appointment
 ): Promise<AppointmentWrite> {
-  if (!supportsTransactionBundles(medplum)) {
-    throw new Error(
-      'Override rescheduling requires the transaction-bundles project feature to be enabled and available to the client.'
-    );
+  if (!canWriteManualReschedule(medplum)) {
+    throw new Error('Scheduling rule overrides need permission to create and delete Slots and to update Appointments.');
   }
   const scheduleRefs = getProposedSchedules(proposal);
   if (scheduleRefs.length === 0 || scheduleRefs.some((ref) => !/^Schedule\/[^/]+$/.test(ref))) {
@@ -142,7 +154,14 @@ export async function writeElevatedReschedule(
     .map((slot) =>
       existing.status === 'pending' && slot.status === 'busy' ? { ...slot, status: 'busy-tentative' as const } : slot
     );
-  const slotUrls = slots.map(() => `urn:uuid:${generateId()}`);
+  const created = await Promise.allSettled(slots.map((slot) => medplum.createResource(slot)));
+  const newSlots = created.filter(isFulfilled).map((result) => result.value);
+  const failedCreate = created.find(isRejected);
+  if (failedCreate) {
+    await deleteSlots(medplum, newSlots);
+    throw failedCreate.reason;
+  }
+
   const updated: WithId<Appointment> = {
     ...existing,
     extension: [
@@ -153,7 +172,7 @@ export async function writeElevatedReschedule(
     ],
     start: geometry.start,
     end: geometry.end,
-    slot: slotUrls.map((reference) => ({ reference })),
+    slot: newSlots.map((slot) => createReference(slot)),
     participant: [
       ...kept,
       ...newActors
@@ -161,45 +180,38 @@ export async function writeElevatedReschedule(
         .map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
     ],
   };
-  const bundle: Bundle<Appointment | Slot> = {
-    resourceType: 'Bundle',
-    type: 'transaction',
-    entry: [
-      ...oldSlotRefs.map((url) => ({ request: { method: 'DELETE', url } as const })),
-      ...slots.map((resource, index) => ({
-        fullUrl: slotUrls[index],
-        resource,
-        request: { method: 'POST', url: 'Slot' } as const,
-      })),
-      {
-        resource: updated,
-        request: { method: 'PUT', url: `Appointment/${existing.id}`, ifMatch: `W/"${existing.meta.versionId}"` },
-      },
-    ],
-  };
-  const response = (await medplum.executeBatch(bundle)) as Bundle<WithId<Appointment> | WithId<Slot>>;
-  if (
-    response.type !== 'transaction-response' ||
-    response.entry?.length !== bundle.entry?.length ||
-    response.entry?.some((entry) => !/^2\d\d(?:\s|$)/.test(entry.response?.status ?? ''))
-  ) {
-    throw new Error(
-      'The manual reschedule transaction did not return a successful response for every write. Reload before retrying.'
-    );
+  let appointment: WithId<Appointment>;
+  try {
+    appointment = await medplum.updateResource(updated, {
+      headers: { 'If-Match': `W/"${existing.meta.versionId}"` },
+    });
+  } catch (error) {
+    await deleteSlots(medplum, newSlots);
+    throw error;
   }
-  const result = readAppointmentWrite(response, 'Manual reschedule');
-  const writtenSlotRefs = new Set(result.slots.map(getReferenceString));
-  if (
-    result.appointment.id !== existing.id ||
-    result.slots.length !== slots.length ||
-    result.slots.some((slot) => !slot.id) ||
-    writtenSlotRefs.size !== slots.length ||
-    result.appointment.slot?.length !== slots.length ||
-    result.appointment.slot.some((ref) => !writtenSlotRefs.has(getReferenceString(ref)))
-  ) {
-    throw new Error(
-      'The manual reschedule response is missing the updated appointment or replacement slots. Reload before retrying.'
-    );
-  }
-  return result;
+
+  await deleteSlots(medplum, oldSlots);
+  return { appointment, slots: newSlots };
+}
+
+/**
+ * Deletes Slots, logging any that could not be deleted rather than failing.
+ * @param medplum - The client to write through.
+ * @param slots - The Slots to delete.
+ */
+async function deleteSlots(medplum: MedplumClient, slots: readonly WithId<Slot>[]): Promise<void> {
+  const results = await Promise.allSettled(slots.map((slot) => medplum.deleteResource('Slot', slot.id)));
+  results.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      console.error(`Could not delete Slot/${slots[index].id}`, result.reason);
+    }
+  });
+}
+
+function isFulfilled<T>(result: PromiseSettledResult<T>): result is PromiseFulfilledResult<T> {
+  return result.status === 'fulfilled';
+}
+
+function isRejected<T>(result: PromiseSettledResult<T>): result is PromiseRejectedResult {
+  return result.status === 'rejected';
 }

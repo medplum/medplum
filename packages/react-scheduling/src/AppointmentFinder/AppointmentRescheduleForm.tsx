@@ -12,7 +12,7 @@ import { readAppointmentWrite } from './AppointmentFinder.writes';
 import type { AppointmentProposalFormProps, BookOptions } from './AppointmentProposalForm';
 import { AppointmentProposalForm } from './AppointmentProposalForm';
 import { useRescheduleDefaults } from './useRescheduleDefaults';
-import { getProposedSchedules, supportsTransactionBundles, writeElevatedReschedule } from './writeElevatedReschedule';
+import { canWriteManualReschedule, getProposedSchedules, writeElevatedReschedule } from './writeElevatedReschedule';
 
 /** Joins names the way a sentence listing all of them would. */
 const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
@@ -55,10 +55,10 @@ export interface AppointmentRescheduleFormProps extends Omit<
  * moved off, so `$find` is told to ignore it, which is what lets the same hour in a
  * different room be found.
  *
- * Searched times use `Appointment/[id]/$reschedule`; manually entered times use an atomic
- * transaction and preserve the existing length. Announces the appointment, the times it gave up
- * and the times it took, so views reading them refresh, then reports what was written
- * through `onRescheduled`.
+ * Searched times use `Appointment/[id]/$reschedule`; manually entered times are written
+ * Slot by Slot (see {@link writeElevatedReschedule}) and preserve the existing length.
+ * Announces the appointment, the times it gave up and the times it took, so views reading
+ * them refresh, then reports what was written through `onRescheduled`.
  *
  * Only the time and the actors are asked for. Everything else on the appointment — who
  * it is for, its status, its visit type, whatever clinical detail it carries — is left
@@ -75,7 +75,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
   const { appointment, onRescheduled, defaultStart, canBypassSchedulingRules, ...formProps } = props;
   const medplum = useMedplum();
   const defaults = useRescheduleDefaults(appointment);
-  const supportsTransactions = supportsTransactionBundles(medplum);
+  const canOverride = canWriteManualReschedule(medplum);
 
   const reschedule = useCallback(
     async (proposal: Appointment, options: BookOptions): Promise<void> => {
@@ -112,21 +112,24 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
             '$reschedule'
           );
 
-      // Neither `$reschedule` nor a transaction tells the client what changed: the old
-      // slots were deleted, new ones created, and `appointment.slot` repointed.
-      for (const moved of result.appointments) {
-        medplum.notifyResourceModified({
-          resourceType: 'Appointment',
-          operation: 'update',
-          id: moved.id,
-          resource: moved,
-        });
-      }
-      for (const id of releasedSlotIds) {
-        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'delete', id });
-      }
-      for (const slot of result.slots) {
-        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'create', id: slot.id, resource: slot });
+      // `$reschedule` is a custom operation, so the client cannot tell what it changed: the
+      // old slots were deleted, new ones created, and `appointment.slot` repointed. The manual
+      // path writes through CRUD methods, which announce their own changes.
+      if (!options.manual) {
+        for (const moved of result.appointments) {
+          medplum.notifyResourceModified({
+            resourceType: 'Appointment',
+            operation: 'update',
+            id: moved.id,
+            resource: moved,
+          });
+        }
+        for (const id of releasedSlotIds) {
+          medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'delete', id });
+        }
+        for (const slot of result.slots) {
+          medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'create', id: slot.id, resource: slot });
+        }
       }
 
       try {
@@ -174,16 +177,16 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
           if you continue: {droppedNames}
         </Alert>
       )}
-      {canBypassSchedulingRules && !supportsTransactions && (
+      {canBypassSchedulingRules && !canOverride && (
         <Alert color="yellow" mb="sm">
-          Scheduling rule overrides require the transaction-bundles project feature to be enabled and available to the
-          client. You can still choose a time from the search.
+          Scheduling rule overrides need permission to create and delete Slots and to update Appointments. You can still
+          choose a time from the search.
         </Alert>
       )}
       <AppointmentProposalForm
         {...formProps}
         mode="reschedule"
-        canBypassSchedulingRules={canBypassSchedulingRules && supportsTransactions}
+        canBypassSchedulingRules={canBypassSchedulingRules && canOverride}
         defaultService={defaults.service}
         defaultSelections={defaults.selections}
         defaultStart={defaultStart ?? getOpeningDay(appointment)}
