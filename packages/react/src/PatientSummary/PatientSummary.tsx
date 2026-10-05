@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Divider, Flex, Group, Menu, Skeleton, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Box, Divider, Flex, Group, Menu, Skeleton, Stack, Text } from '@mantine/core';
 import type { MedplumClient, WithId } from '@medplum/core';
 import { formatDate, formatHumanName, resolveId } from '@medplum/core';
 import type { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, usePatientSummaryData, useResource, useResourceModified } from '@medplum/react-hooks';
 import { IconDots } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import styles from './PatientSummary.module.css';
@@ -31,8 +31,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const resolvedPatient = useResource(propsPatient, setPatientOutcome);
   const [modifiedPatient, setModifiedPatient] = useState<WithId<Patient> | undefined>();
   const [createdDate, setCreatedDate] = useState<string | undefined>();
-  const nameRef = useRef<HTMLParagraphElement>(null);
-  const [isNameTruncated, setIsNameTruncated] = useState(false);
 
   useResourceModified('Patient', (event) => {
     if (event.resource && event.resource.id === resolvedPatient?.id) {
@@ -58,16 +56,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     }
   }, [propsPatient, medplum]);
 
-  useEffect(() => {
-    const checkTruncation = (): void => {
-      const el = nameRef.current;
-      setIsNameTruncated(!!el && el.scrollWidth > el.clientWidth);
-    };
-    checkTruncation();
-    window.addEventListener('resize', checkTruncation);
-    return () => window.removeEventListener('resize', checkTruncation);
-  }, [patient]);
-
   if (!patient) {
     return patientOutcome ? null : <PatientSummarySkeleton sections={Math.max(sections.length - 1, 1)} />;
   }
@@ -76,16 +64,9 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     <Group align="center" gap="sm" wrap="nowrap" className={styles.headerContent}>
       <ResourceAvatar value={patient} size={48} radius={48} />
       <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-        <Tooltip
-          label={formatHumanName(patient.name?.[0])}
-          position="top-start"
-          openDelay={650}
-          disabled={!isNameTruncated}
-        >
-          <Text ref={nameRef} fz="h4" fw={800} truncate style={{ minWidth: 0 }}>
-            {formatHumanName(patient.name?.[0])}
-          </Text>
-        </Tooltip>
+        <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }}>
+          {formatHumanName(patient.name?.[0])}
+        </Text>
         {createdDate && (
           <Text fz="xs" mt={-2} fw={500} c="gray.6" truncate style={{ minWidth: 0 }}>
             Patient since {formatDate(createdDate)}
