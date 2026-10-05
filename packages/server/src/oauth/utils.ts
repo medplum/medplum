@@ -408,24 +408,26 @@ export async function getMembershipsForLogin(login: Login): Promise<WithId<Proje
 
 /**
  * Returns the project membership for the client application.
+ * A client can be invited into other projects, so its home project membership is preferred.
  * @param systemRepo - The system repository.
  * @param client - The client application.
  * @returns The project membership for the client application if found; otherwise undefined.
  */
-export function getClientApplicationMembership(
+export async function getClientApplicationMembership(
   systemRepo: SystemRepository,
   client: WithId<ClientApplication>
 ): Promise<WithId<ProjectMembership> | undefined> {
-  return systemRepo.searchOne<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [
-      {
-        code: 'user',
-        operator: Operator.EQUALS,
-        value: getReferenceString(client),
-      },
-    ],
-  });
+  const userFilter: Filter = { code: 'user', operator: Operator.EQUALS, value: getReferenceString(client) };
+  if (client.meta?.project) {
+    const membership = await systemRepo.searchOne<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [userFilter, { code: 'project', operator: Operator.EQUALS, value: 'Project/' + client.meta.project }],
+    });
+    if (membership) {
+      return membership;
+    }
+  }
+  return systemRepo.searchOne<ProjectMembership>({ resourceType: 'ProjectMembership', filters: [userFilter] });
 }
 
 /**

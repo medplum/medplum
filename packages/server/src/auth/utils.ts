@@ -10,6 +10,7 @@ import {
   resolveId,
 } from '@medplum/core';
 import type {
+  ClientApplication,
   ContactPoint,
   Login,
   OperationOutcome,
@@ -284,9 +285,9 @@ export async function createProfile(
 
 export async function createProjectMembership(
   systemRepo: SystemRepository,
-  user: User,
+  user: User | ClientApplication,
   project: Project,
-  profile: ProfileResource,
+  profile: ProfileResource | ClientApplication,
   details?: Partial<ProjectMembership>
 ): Promise<WithId<ProjectMembership>> {
   const logger = getLogger();
