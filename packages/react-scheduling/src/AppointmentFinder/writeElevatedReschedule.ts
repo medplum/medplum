@@ -116,7 +116,8 @@ export async function writeElevatedReschedule(
   if (service.active === false) {
     throw new Error('The visit type is inactive.');
   }
-  // The scheduling operations refuse multi-actor Schedules, so an appointment written onto one could not be moved again.
+  // `$find`, `$book` and `$reschedule` refuse multi-actor Schedules, so an appointment
+  // written onto one could not be moved again.
   if (
     schedules.some(
       (schedule) =>

@@ -444,8 +444,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setIgnoredReadOutcome
   );
   const ignoredReadFailed = ignoredResource === undefined && ignoredReadOutcome !== undefined;
-  // State holds the edit rather than the value, so a different visit type falls back to
-  // its own default instead of keeping the last length typed.
   const storedDurationMinutes = ignoredResource ? getRescheduleDurationMinutes(ignoredResource) : undefined;
   const durationLoading = ignoreAppointment !== undefined && ignoredResource === undefined && !ignoredReadFailed;
   let durationError: string | undefined;
@@ -454,6 +452,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       ? `This appointment could not be read: ${normalizeErrorString(ignoredReadOutcome)}. Choose a time from the search.`
       : 'This appointment has no valid length. Choose a time from the search.';
   }
+  // State holds the edit rather than the value, so a different visit type falls back to
+  // its own default instead of keeping the last length typed.
   const effectiveDurationMinutes =
     mode === 'reschedule' ? storedDurationMinutes : (manualDurationMinutes ?? configuredDurationMinutes);
 
