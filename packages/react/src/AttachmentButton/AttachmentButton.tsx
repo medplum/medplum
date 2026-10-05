@@ -33,13 +33,11 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
   const medplum = useMedplum();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Track loaded and total bytes of each concurrent upload by ID
   const [uploadProgress, setUploadProgress] = useState<Record<string, UploadProgress>>({});
 
   const uploadValues = Object.values(uploadProgress);
   const uploading = uploadValues.length > 0;
 
-  // Calculate true aggregate progress across all active uploads
   const totalLoaded = uploadValues.reduce((sum, upload) => sum + upload.loaded, 0);
   const totalBytes = uploadValues.reduce((sum, upload) => sum + upload.total, 0);
   const progress = uploading && totalBytes > 0 ? (totalLoaded / totalBytes) * 100 : 0;
@@ -73,7 +71,6 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
 
     const uploadId = generateId();
 
-    // Initialize progress using the file's total size
     setUploadProgress((prev) => ({
       ...prev,
       [uploadId]: { loaded: 0, total: file.size },
