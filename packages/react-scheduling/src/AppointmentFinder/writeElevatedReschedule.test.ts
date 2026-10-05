@@ -4,8 +4,9 @@ import type { WithId } from '@medplum/core';
 import {
   getReferenceString,
   SchedulingBookedByOperationURI,
+  SchedulingRescheduledByOperationURI,
   SchedulingSlotCapacityURI,
-  SchedulingUnvalidatedBookingURI,
+  SchedulingUnvalidatedRescheduleURI,
   setScheduleSchedulingParameter,
 } from '@medplum/core';
 import type { AccessPolicyResource, Appointment, Schedule } from '@medplum/fhirtypes';
@@ -47,6 +48,7 @@ describe('writeElevatedReschedule', () => {
       extension: [
         { url: 'https://example.org/metadata', valueString: 'keep' },
         { url: SchedulingBookedByOperationURI, valueString: '5.1.0' },
+        { url: SchedulingRescheduledByOperationURI, valueString: '5.1.0' },
       ],
       participant: [
         ...RiveraImagingAppointment.participant.map((p) => ({ ...p, status: 'accepted' as const })),
@@ -86,7 +88,8 @@ describe('writeElevatedReschedule', () => {
     );
     expect(extension).toEqual([
       { url: 'https://example.org/metadata', valueString: 'keep' },
-      { url: SchedulingUnvalidatedBookingURI, valueBoolean: true },
+      { url: SchedulingBookedByOperationURI, valueString: '5.1.0' },
+      { url: SchedulingUnvalidatedRescheduleURI, valueBoolean: true },
     ]);
     expect(participant).toContainEqual(
       existing.participant.find((p) => p.actor?.reference === DrRiveraSchedule.actor[0].reference)

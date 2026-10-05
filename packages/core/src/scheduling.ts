@@ -92,6 +92,27 @@ export const SchedulingUnvalidatedBookingURI =
 export const SchedulingBookedByOperationURI =
   'https://medplum.com/fhir/StructureDefinition/SchedulingBookedByOperation';
 
+/**
+ * This extension marks an `Appointment` whose latest move skipped the scheduling rules:
+ * its current time may be occupied or blocked, past the configured capacity, or off the
+ * configured start interval. The appointment kept the length it had before the move.
+ *
+ * Every move replaces this and {@link SchedulingRescheduledByOperationURI} with its own
+ * marker, so at most one of the two is present and it describes the latest move. How the
+ * appointment was booked is recorded separately, by {@link SchedulingBookedByOperationURI}
+ * or {@link SchedulingUnvalidatedBookingURI}.
+ */
+export const SchedulingUnvalidatedRescheduleURI =
+  'https://medplum.com/fhir/StructureDefinition/SchedulingUnvalidatedReschedule';
+
+/**
+ * This extension marks an `Appointment` whose latest move was made by the `$reschedule`
+ * operation. Its value is a string recording the Medplum server version that handled the
+ * move. See {@link SchedulingUnvalidatedRescheduleURI} for how the two interact.
+ */
+export const SchedulingRescheduledByOperationURI =
+  'https://medplum.com/fhir/StructureDefinition/SchedulingRescheduledByOperation';
+
 /** Extension URI marking which `Appointment.supportingInformation` entry is the site. */
 export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSite';
 

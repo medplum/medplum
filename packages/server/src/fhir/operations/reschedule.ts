@@ -9,7 +9,10 @@ import {
   extractServiceTypeReferences,
   isDefined,
   isReference,
+  MEDPLUM_VERSION,
   OperationOutcomeError,
+  SchedulingRescheduledByOperationURI,
+  SchedulingUnvalidatedRescheduleURI,
   serviceTypeIncludesService,
   setPrimaryProvider,
 } from '@medplum/core';
@@ -61,7 +64,9 @@ type RescheduleParameters = {
  * from the results. The Slot resources are derived from the scheduling parameters rather than
  * submitted, and every attribute of the stored Appointment other than `start`, `end`,
  * `participant` and `slot` is left untouched — including `status`, since the appointment
- * lifecycle belongs to $hold, $confirm, and $cancel.
+ * lifecycle belongs to $hold, $confirm, and $cancel. The one exception is the reschedule
+ * marker: the move is stamped with `SchedulingRescheduledByOperation`, replacing any
+ * marker an earlier move left.
  *
  * The service the move is measured against — the duration it runs for, the grid it aligns to,
  * the buffers around it — is read off the Appointment's own `serviceType`, which must name
@@ -192,6 +197,12 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
       }
       const updatedAppointment = await txRepo.updateResource<Appointment>({
         ...existingAppointment,
+        extension: [
+          ...(existingAppointment.extension ?? []).filter(
+            (ext) => ext.url !== SchedulingRescheduledByOperationURI && ext.url !== SchedulingUnvalidatedRescheduleURI
+          ),
+          { url: SchedulingRescheduledByOperationURI, valueString: MEDPLUM_VERSION },
+        ],
         start: interval.start.toISOString(),
         end: interval.end.toISOString(),
         participant,

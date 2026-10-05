@@ -9,8 +9,8 @@ import {
   getReferenceString,
   isDefined,
   isValidDate,
-  SchedulingBookedByOperationURI,
-  SchedulingUnvalidatedBookingURI,
+  SchedulingRescheduledByOperationURI,
+  SchedulingUnvalidatedRescheduleURI,
   serviceTypeIncludesService,
 } from '@medplum/core';
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
@@ -62,7 +62,7 @@ export function getProposedSchedules(proposal: Appointment): string[] {
 /**
  * Moves an existing appointment without checking availability or start alignment.
  * Rebuilds geometry from current schedules and preserves the stored appointment's length and metadata,
- * marking it with `SchedulingUnvalidatedBooking`.
+ * marking it with `SchedulingUnvalidatedReschedule`.
  *
  * Writes in order: creates the new Slots, moves the appointment onto them with one
  * conditional update, then deletes the old Slots. The appointment is only ever wholly at its
@@ -166,9 +166,9 @@ export async function writeElevatedReschedule(
     ...existing,
     extension: [
       ...(existing.extension ?? []).filter(
-        (ext) => ext.url !== SchedulingBookedByOperationURI && ext.url !== SchedulingUnvalidatedBookingURI
+        (ext) => ext.url !== SchedulingRescheduledByOperationURI && ext.url !== SchedulingUnvalidatedRescheduleURI
       ),
-      { url: SchedulingUnvalidatedBookingURI, valueBoolean: true },
+      { url: SchedulingUnvalidatedRescheduleURI, valueBoolean: true },
     ],
     start: geometry.start,
     end: geometry.end,

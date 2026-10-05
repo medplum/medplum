@@ -3,7 +3,7 @@
 import type { ResourceModifiedEvent, WithId } from '@medplum/core';
 import {
   createReference,
-  SchedulingUnvalidatedBookingURI,
+  SchedulingUnvalidatedRescheduleURI,
   setPrimaryProvider,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
@@ -172,7 +172,7 @@ describe('AppointmentRescheduleForm', () => {
       await moveToAnotherTime();
       expect(lastRescheduleParameters(post)).toBeDefined();
       expect(onRescheduled.mock.calls[0][0].appointment.extension ?? []).not.toContainEqual(
-        expect.objectContaining({ url: SchedulingUnvalidatedBookingURI })
+        expect.objectContaining({ url: SchedulingUnvalidatedRescheduleURI })
       );
     });
 
