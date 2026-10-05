@@ -323,13 +323,12 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const lastResult = state.searchResponse;
   const entries = lastResult?.entry;
   const resources = entries?.map((e) => e.resource);
-  const isMobile = window.innerWidth < 768;
 
   const selectedIds = Object.keys(state.selected);
   const allSelected = !!entries?.length && entries.every((e) => !e.resource?.id || state.selected[e.resource.id]);
-  const showExport = !isMobile && !!(props.onExport ?? props.onExportCsv ?? props.onExportTransactionBundle);
-  const showDelete = !isMobile && !!props.onDelete;
-  const showBulk = !isMobile && !!props.onBulk;
+  const showExport = !!(props.onExport ?? props.onExportCsv ?? props.onExportTransactionBundle);
+  const showDelete = !!props.onDelete;
+  const showBulk = !!props.onBulk;
 
   const focusableRowId =
     activeRowId && resources?.some((r) => r?.id === activeRowId) ? activeRowId : resources?.find(Boolean)?.id;

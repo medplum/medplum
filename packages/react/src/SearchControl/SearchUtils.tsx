@@ -24,7 +24,9 @@ import { StatusBadge } from '../StatusBadge/StatusBadge';
 import classes from './SearchControl.module.css';
 import type { SearchControlField } from './SearchControlField';
 
-const searchParamToOperators: Record<SearchParameter['type'], Operator[]> = {
+type SearchParamType = SearchParameter['type'] | 'fulltext' | 'datetime';
+
+const searchParamToOperators: Partial<Record<SearchParamType, Operator[]>> = {
   string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
   fulltext: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
   token: [Operator.EQUALS, Operator.NOT, Operator.TEXT],
@@ -486,7 +488,7 @@ export function isSortDescending(definition: SearchRequest): boolean {
  * @returns The list of operators that can be used for the search parameter.
  */
 export function getSearchOperators(searchParam: SearchParameter): Operator[] | undefined {
-  return searchParamToOperators[searchParam.type as string];
+  return searchParamToOperators[searchParam.type];
 }
 
 /**

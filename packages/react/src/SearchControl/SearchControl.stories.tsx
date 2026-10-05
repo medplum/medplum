@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchRequest } from '@medplum/core';
 import { calculateAge, Operator } from '@medplum/core';
-import type { Patient } from '@medplum/fhirtypes';
+import type { Patient, Task } from '@medplum/fhirtypes';
+import { HomerSimpson } from '@medplum/mock';
+import { useMedplum } from '@medplum/react-hooks';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SearchControl } from './SearchControl';
 
 export default {
@@ -148,6 +150,72 @@ export const ServiceRequests = (): JSX.Element => {
     resourceType: 'ServiceRequest',
     fields: ['id', '_lastUpdated', 'subject', 'code', 'status', 'orderDetail', 'authoredOn'],
   });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      onLoad={(e) => console.log('onLoad', e)}
+      onClick={(e) => console.log('onClick', e)}
+      onAuxClick={(e) => console.log('auxClick', e)}
+      onChange={(e) => {
+        console.log('onChange', e);
+        setSearch(e.definition);
+      }}
+    />
+  );
+};
+
+const TASK_STATUSES: Task['status'][] = [
+  'draft',
+  'requested',
+  'received',
+  'accepted',
+  'rejected',
+  'ready',
+  'cancelled',
+  'in-progress',
+  'on-hold',
+  'failed',
+  'completed',
+  'entered-in-error',
+];
+
+/**
+ * Seeds one Task per FHIR task status so the `status` column renders every badge color.
+ * @returns The story element.
+ */
+export const StatusBadges = (): JSX.Element => {
+  const medplum = useMedplum();
+  const [seeded, setSeeded] = useState(false);
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Task',
+    fields: ['id', 'description', 'status', 'for', 'priority'],
+    filters: [{ code: 'subject', operator: Operator.EQUALS, value: 'Patient/' + HomerSimpson.id }],
+    sortRules: [{ code: '_lastUpdated', descending: true }],
+    count: TASK_STATUSES.length,
+  });
+
+  useEffect(() => {
+    Promise.all(
+      TASK_STATUSES.map((status, index) =>
+        medplum.createResource<Task>({
+          resourceType: 'Task',
+          status,
+          intent: 'order',
+          priority: index % 4 === 0 ? 'urgent' : 'routine',
+          description: `Task with status "${status}"`,
+          for: { reference: 'Patient/' + HomerSimpson.id, display: 'Homer Simpson' },
+        })
+      )
+    )
+      .then(() => setSeeded(true))
+      .catch(console.error);
+  }, [medplum]);
+
+  if (!seeded) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <SearchControl

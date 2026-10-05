@@ -11,6 +11,7 @@ const config: StorybookConfig = {
     '../src/stories/Introduction.mdx', // redundant, but ensure Intro goes first
     '../src/**/*.mdx',
     '../src/**/*.stories.@(ts|tsx)',
+    '../../react/src/**/*.mdx',
     '../../react/src/**/*.stories.@(ts|tsx)',
     '../../react-scheduling/src/**/*.mdx',
     '../../react-scheduling/src/**/*.stories.@(ts|tsx)',
