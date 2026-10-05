@@ -123,69 +123,47 @@ describe('Saved AuditEvents', () => {
       }
     }));
 
-  test('Saves AuditEvents for users whose access policy does not allow AuditEvent', () =>
+  test('Saves AuditEvents with project metadata for users whose access policy does not allow AuditEvent', () =>
     withTestContext(async () => {
       const errorSpy = vi.spyOn(getLogger(), 'error');
       try {
-        const { repo } = await createTestProject({
+        const compartmentAccount = 'Organization/' + randomUUID();
+        const patientAccount = 'Organization/' + randomUUID();
+        const profileUrl = 'https://example.com/fhir/StructureDefinition/' + randomUUID();
+        const { project, repo } = await createTestProject({
           withRepo: true,
-          accessPolicy: { resource: [{ resourceType: 'Patient' }] },
+          project: { defaultProfile: [{ resourceType: 'AuditEvent', profile: [profileUrl] }] },
+          accessPolicy: {
+            compartment: { reference: compartmentAccount },
+            resource: [{ resourceType: 'Patient' }],
+          },
         });
-        const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const patient = await repo.getSystemRepo().createResource<Patient>({
+          resourceType: 'Patient',
+          meta: { project: project.id, accounts: [{ reference: patientAccount }] },
+        });
+
+        await repo.readResource<Patient>('Patient', patient.id);
 
         const auditEvent = await waitForAuditEvent(repo, patient);
         expect(auditEvent.agent[0].who).toStrictEqual(repo.getAuthor());
+        expect(auditEvent.meta?.author).toStrictEqual({ reference: 'system' });
+        expect(auditEvent.meta?.project).toStrictEqual(project.id);
+        expect(auditEvent.meta?.accounts).toStrictEqual([
+          { reference: compartmentAccount },
+          { reference: patientAccount },
+        ]);
+        expect(auditEvent.meta?.compartment).toStrictEqual(
+          expect.arrayContaining([
+            { reference: compartmentAccount },
+            { reference: patientAccount },
+            { reference: getReferenceString(patient) },
+          ])
+        );
+        expect(auditEvent.meta?.profile).toStrictEqual([profileUrl]);
         expect(errorSpy).not.toHaveBeenCalledWith('Failed to save AuditEvent', expect.anything());
       } finally {
         errorSpy.mockRestore();
       }
-    }));
-
-  test('Copies project and accounts from the user context', () =>
-    withTestContext(async () => {
-      const compartmentAccount = 'Organization/' + randomUUID();
-      const patientAccount = 'Organization/' + randomUUID();
-      const { project, repo } = await createTestProject({
-        withRepo: true,
-        accessPolicy: {
-          compartment: { reference: compartmentAccount },
-          resource: [{ resourceType: 'Patient' }],
-        },
-      });
-      const patient = await repo.getSystemRepo().createResource<Patient>({
-        resourceType: 'Patient',
-        meta: { project: project.id, accounts: [{ reference: patientAccount }] },
-      });
-
-      await repo.readResource<Patient>('Patient', patient.id);
-
-      const auditEvent = await waitForAuditEvent(repo, patient);
-      expect(auditEvent.agent[0].who).toStrictEqual(repo.getAuthor());
-      expect(auditEvent.meta?.author).toStrictEqual({ reference: 'system' });
-      expect(auditEvent.meta?.project).toStrictEqual(project.id);
-      expect(auditEvent.meta?.accounts).toStrictEqual([
-        { reference: compartmentAccount },
-        { reference: patientAccount },
-      ]);
-      expect(auditEvent.meta?.compartment).toStrictEqual(
-        expect.arrayContaining([
-          { reference: compartmentAccount },
-          { reference: patientAccount },
-          { reference: getReferenceString(patient) },
-        ])
-      );
-    }));
-
-  test('Applies the project default AuditEvent profile', () =>
-    withTestContext(async () => {
-      const profileUrl = 'https://example.com/fhir/StructureDefinition/' + randomUUID();
-      const { repo } = await createTestProject({
-        withRepo: true,
-        project: { defaultProfile: [{ resourceType: 'AuditEvent', profile: [profileUrl] }] },
-      });
-      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
-
-      const auditEvent = await waitForAuditEvent(repo, patient);
-      expect(auditEvent.meta?.profile).toStrictEqual([profileUrl]);
     }));
 });
