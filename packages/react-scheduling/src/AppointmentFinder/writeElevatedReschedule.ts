@@ -9,10 +9,10 @@ import {
   getReferenceString,
   isDefined,
   isValidDate,
-  SchedulingRescheduledByOperationURI,
+  rescheduleParticipants,
   SchedulingUnvalidatedRescheduleURI,
   serviceTypeIncludesService,
-  setPrimaryProvider,
+  withRescheduleMarker,
 } from '@medplum/core';
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import type { AppointmentWrite } from './AppointmentFinder.writes';
@@ -105,12 +105,8 @@ export async function writeElevatedReschedule(
   if (serviceRefs.length !== 1) {
     throw new Error('Manual rescheduling requires exactly one visit type.');
   }
-  const slotReferences = (existing.slot ?? []).map(getReferenceString);
-  if (slotReferences.some((ref) => !ref)) {
-    throw new Error('The appointment must reference stored slots before it can be manually rescheduled.');
-  }
-  const oldSlotRefs = [...new Set(slotReferences.filter(isDefined))];
-  if (oldSlotRefs.some((ref) => !/^Slot\/[^/]+$/.test(ref))) {
+  const oldSlotRefs = [...new Set((existing.slot ?? []).map(getReferenceString))];
+  if (oldSlotRefs.some((ref) => !ref || !/^Slot\/[^/]+$/.test(ref))) {
     throw new Error('The appointment must reference stored slots before it can be manually rescheduled.');
   }
   const [service, oldSlots] = await Promise.all([
@@ -133,21 +129,16 @@ export async function writeElevatedReschedule(
       'Every selected schedule must be active, have exactly one actor, and be eligible for this visit type.'
     );
   }
+  // A move that keeps its schedules is moving off ones already read above.
+  const loadedSchedules = new Map(scheduleRefs.map((reference, index) => [reference, schedules[index]]));
   const oldScheduleRefs = [...new Set(oldSlots.map((slot) => getReferenceString(slot.schedule)))];
   const oldSchedules = await Promise.all(
-    oldScheduleRefs.map((reference) => medplum.readReference<Schedule>({ reference }, { cache: 'no-cache' }))
+    oldScheduleRefs.map(
+      (reference) =>
+        (reference ? loadedSchedules.get(reference) : undefined) ??
+        medplum.readReference<Schedule>({ reference }, { cache: 'no-cache' })
+    )
   );
-  const replacedRefs = new Set(
-    oldSchedules.flatMap((schedule) => schedule.actor.map((actor) => actor.reference)).filter(isDefined)
-  );
-  const newActors = [
-    ...new Map(schedules.flatMap((schedule) => schedule.actor).map((actor) => [actor.reference, actor])).values(),
-  ];
-  const newRefs = new Set(newActors.map((actor) => actor.reference).filter(isDefined));
-  const kept = existing.participant.filter(
-    (p) => !p.actor?.reference || !replacedRefs.has(p.actor.reference) || newRefs.has(p.actor.reference)
-  );
-  const keptRefs = new Set(kept.map((p) => p.actor?.reference).filter(isDefined));
 
   const geometry = buildElevatedBooking({ service, schedules, start, durationMinutes });
   const slots = (geometry.contained ?? [])
@@ -156,8 +147,8 @@ export async function writeElevatedReschedule(
       existing.status === 'pending' && slot.status === 'busy' ? { ...slot, status: 'busy-tentative' as const } : slot
     );
   const created = await Promise.allSettled(slots.map((slot) => medplum.createResource(slot)));
-  const newSlots = created.filter(isFulfilled).map((result) => result.value);
-  const failedCreate = created.find(isRejected);
+  const newSlots = created.filter((result) => result.status === 'fulfilled').map((result) => result.value);
+  const failedCreate = created.find((result) => result.status === 'rejected');
   if (failedCreate) {
     await deleteSlots(medplum, newSlots);
     throw failedCreate.reason;
@@ -165,24 +156,14 @@ export async function writeElevatedReschedule(
 
   const updated: WithId<Appointment> = {
     ...existing,
-    extension: [
-      ...(existing.extension ?? []).filter(
-        (ext) => ext.url !== SchedulingRescheduledByOperationURI && ext.url !== SchedulingUnvalidatedRescheduleURI
-      ),
-      { url: SchedulingUnvalidatedRescheduleURI, valueBoolean: true },
-    ],
+    extension: withRescheduleMarker(existing.extension, {
+      url: SchedulingUnvalidatedRescheduleURI,
+      valueBoolean: true,
+    }),
     start: geometry.start,
     end: geometry.end,
     slot: newSlots.map((slot) => createReference(slot)),
-    participant: setPrimaryProvider(
-      [
-        ...kept,
-        ...newActors
-          .filter((actor) => actor.reference && !keptRefs.has(actor.reference))
-          .map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
-      ],
-      newActors.find((actor) => actor.reference?.startsWith('Practitioner/'))
-    ),
+    participant: rescheduleParticipants(existing.participant, oldSchedules, schedules),
   };
   let appointment: WithId<Appointment>;
   try {
@@ -210,12 +191,4 @@ async function deleteSlots(medplum: MedplumClient, slots: readonly WithId<Slot>[
       console.error(`Could not delete Slot/${slots[index].id}`, result.reason);
     }
   });
-}
-
-function isFulfilled<T>(result: PromiseSettledResult<T>): result is PromiseFulfilledResult<T> {
-  return result.status === 'fulfilled';
-}
-
-function isRejected<T>(result: PromiseSettledResult<T>): result is PromiseRejectedResult {
-  return result.status === 'rejected';
 }

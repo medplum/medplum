@@ -113,6 +113,22 @@ export const SchedulingUnvalidatedRescheduleURI =
 export const SchedulingRescheduledByOperationURI =
   'https://medplum.com/fhir/StructureDefinition/SchedulingRescheduledByOperation';
 
+/**
+ * Replaces any reschedule marker in an appointment's extensions with the marker for this move.
+ *
+ * @param extensions - The appointment's extensions.
+ * @param marker - A {@link SchedulingRescheduledByOperationURI} or {@link SchedulingUnvalidatedRescheduleURI} extension.
+ * @returns The extensions, with `marker` as the only reschedule marker.
+ */
+export function withRescheduleMarker(extensions: readonly Extension[] | undefined, marker: Extension): Extension[] {
+  return [
+    ...(extensions ?? []).filter(
+      (ext) => ext.url !== SchedulingRescheduledByOperationURI && ext.url !== SchedulingUnvalidatedRescheduleURI
+    ),
+    marker,
+  ];
+}
+
 /** Extension URI marking which `Appointment.supportingInformation` entry is the site. */
 export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSite';
 
@@ -660,6 +676,49 @@ export function setPrimaryProvider(
     }
     return others.length > 0 ? { ...rest, type: others } : rest;
   });
+}
+
+/**
+ * The participants an appointment holds after moving from one set of Schedules to another.
+ *
+ * Swaps the actors of the Schedules being moved away from for the actors of the new Schedules,
+ * leaving every other participant (the patient, related persons) untouched. An actor present on
+ * both the old and new Schedules keeps its existing participant entry, and with it any `status`
+ * the actor had already responded with. As in `$find`, the first provider among the new
+ * Schedules is marked primary.
+ *
+ * @param participants - The appointment's current participants.
+ * @param oldSchedules - The Schedules the appointment is moving off.
+ * @param newSchedules - The Schedules the appointment is moving to.
+ * @returns The participant list for the moved appointment.
+ */
+export function rescheduleParticipants(
+  participants: readonly AppointmentParticipant[],
+  oldSchedules: readonly Schedule[],
+  newSchedules: readonly Schedule[]
+): AppointmentParticipant[] {
+  const replacedRefs = new Set(oldSchedules.flatMap((s) => s.actor.map((actor) => actor.reference)).filter(isDefined));
+
+  // Two Schedules can name the same actor, so dedupe to avoid emitting it twice
+  const newActors = [
+    ...new Map(newSchedules.flatMap((schedule) => schedule.actor).map((actor) => [actor.reference, actor])).values(),
+  ];
+  const newRefs = new Set(newActors.map((actor) => actor.reference).filter(isDefined));
+
+  const kept = participants.filter(
+    (p) => !p.actor?.reference || !replacedRefs.has(p.actor.reference) || newRefs.has(p.actor.reference)
+  );
+  const keptRefs = new Set(kept.map((p) => p.actor?.reference).filter(isDefined));
+
+  return setPrimaryProvider(
+    [
+      ...kept,
+      ...newActors
+        .filter((actor) => actor.reference && !keptRefs.has(actor.reference))
+        .map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
+    ],
+    newActors.find((actor) => actor.reference?.startsWith('Practitioner/'))
+  );
 }
 
 /**

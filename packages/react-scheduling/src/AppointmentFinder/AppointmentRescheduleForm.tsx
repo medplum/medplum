@@ -79,9 +79,6 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
 
   const reschedule = useCallback(
     async (proposal: Appointment, options: BookOptions): Promise<void> => {
-      if (options.manual && !canBypassSchedulingRules) {
-        throw new Error('Scheduling rule overrides are no longer enabled. Choose a time from the search.');
-      }
       const schedules = getProposedSchedules(proposal);
 
       // Always present, whether the time came from `$find` or was typed.
@@ -92,30 +89,30 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
         throw new Error('The chosen time does not say which schedules to hold it on');
       }
 
-      // Read before the request: the operation deletes these, and the appointment comes
-      // back pointing at the times it took instead.
-      const releasedSlotIds = (appointment.slot ?? []).map(resolveId).filter(isDefined);
+      let result: AppointmentReschedule;
+      if (options.manual) {
+        // Written through CRUD methods, which announce their own changes.
+        result = await writeElevatedReschedule(medplum, appointment, proposal);
+      } else {
+        // Read before the request: the operation deletes these, and the appointment comes
+        // back pointing at the times it took instead.
+        const releasedSlotIds = (appointment.slot ?? []).map(resolveId).filter(isDefined);
+        result = readAppointmentWrite(
+          await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
+            medplum.fhirUrl('Appointment', appointment.id, '$reschedule'),
+            {
+              resourceType: 'Parameters',
+              parameter: [
+                { name: 'start', valueDateTime: proposal.start },
+                ...schedules.map((reference) => ({ name: 'schedule', valueReference: { reference } })),
+              ],
+            } satisfies Parameters
+          ),
+          '$reschedule'
+        );
 
-      const result = options.manual
-        ? await writeElevatedReschedule(medplum, appointment, proposal)
-        : readAppointmentWrite(
-            await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
-              medplum.fhirUrl('Appointment', appointment.id, '$reschedule'),
-              {
-                resourceType: 'Parameters',
-                parameter: [
-                  { name: 'start', valueDateTime: proposal.start },
-                  ...schedules.map((reference) => ({ name: 'schedule', valueReference: { reference } })),
-                ],
-              } satisfies Parameters
-            ),
-            '$reschedule'
-          );
-
-      // `$reschedule` is a custom operation, so the client cannot tell what it changed: the
-      // old slots were deleted, new ones created, and `appointment.slot` repointed. The manual
-      // path writes through CRUD methods, which announce their own changes.
-      if (!options.manual) {
+        // `$reschedule` is a custom operation, so the client cannot tell what it changed: the
+        // old slots were deleted, new ones created, and `appointment.slot` repointed.
         for (const moved of result.appointments) {
           medplum.notifyResourceModified({
             resourceType: 'Appointment',
@@ -138,7 +135,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
         console.error(error);
       }
     },
-    [appointment, medplum, onRescheduled, canBypassSchedulingRules]
+    [appointment, medplum, onRescheduled]
   );
 
   const serviceRefs = extractServiceTypeReferences(appointment.serviceType);

@@ -132,17 +132,13 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
             click {name}
           </button>
         ))}
-        {[
-          ...new Map(
-            (props.sources ?? [])
-              .flatMap((source) => source.appointments)
-              .map((appointment) => [appointment.id, appointment])
-          ).values(),
-        ].map((appointment) => (
-          <button key={appointment.id} type="button" onClick={() => props.onSelectAppointment?.(appointment)}>
-            click appointment {appointment.id}
-          </button>
-        ))}
+        {(props.sources ?? [])
+          .flatMap((source) => source.appointments)
+          .map((appointment) => (
+            <button key={appointment.id} type="button" onClick={() => props.onSelectAppointment?.(appointment)}>
+              click appointment {appointment.id}
+            </button>
+          ))}
         {/* Stands in for the highlight the real grid draws over the interval it is given. */}
         <div data-testid="marked-time">{props.selection ? props.selection.start.toISOString() : 'none'}</div>
       </div>
@@ -246,7 +242,8 @@ describe('SchedulingWorkspace booking', () => {
       });
       renderWithMedplum(<SchedulingWorkspace canBypassSchedulingRules={canBypassSchedulingRules} />, medplum);
       await settleAutocomplete();
-      fireEvent.click(screen.getByRole('button', { name: `click appointment ${appointment.id}` }));
+      // The visit is on several calendars, so the stand-in grid draws it once per calendar.
+      fireEvent.click(screen.getAllByRole('button', { name: `click appointment ${appointment.id}` })[0]);
       fireEvent.click(screen.getByRole('button', { name: 'Reschedule' }));
       await settleAutocomplete();
       await openTimeFinder();

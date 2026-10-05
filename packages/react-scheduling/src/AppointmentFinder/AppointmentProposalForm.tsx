@@ -560,7 +560,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   }
 
   async function handleSubmit(): Promise<void> {
-    if (!chosen || detailsOutstanding || (manual && !canBypassSchedulingRules)) {
+    if (!chosen || detailsOutstanding) {
       return;
     }
 
@@ -905,7 +905,6 @@ function ManualTime(props: ManualTimeProps): JSX.Element {
           allowDecimal={false}
           readOnly={fixedDuration}
           disabled={fixedDuration}
-          hideControls={fixedDuration}
           w={110}
           value={durationMinutes === undefined ? '' : Math.round(durationMinutes)}
           onChange={(value) => onChange(dateTime, typeof value === 'number' ? value : undefined)}
