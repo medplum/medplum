@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { convertToTransactionBundle, getDisplayString, getReferenceString, isResource } from '@medplum/core';
+import {
+  convertToTransactionBundle,
+  getDisplayString,
+  getReferenceString,
+  isResource,
+  normalizeErrorString,
+} from '@medplum/core';
 import type { Bundle, BundleEntry, CodeableConcept, Identifier, Patient, Resource } from '@medplum/fhirtypes';
 
 /** A candidate local Patient returned by `Patient/$match` for the shared patient. */
@@ -74,6 +80,26 @@ export function buildSmartHealthLinkImportBundle(
     }
   }
   return transaction;
+}
+
+/**
+ * Lists the import entries the server rejected. Without the `transaction-bundles` project feature,
+ * a transaction is processed as a batch, so some entries can fail while the rest are committed.
+ * @param transaction - The import transaction that was sent.
+ * @param response - The server's response bundle.
+ * @returns One message per failed entry, naming the record and the server's reason.
+ */
+export function getFailedImportMessages(transaction: Bundle, response: Bundle): string[] {
+  return (response.entry ?? []).flatMap((entry, index) => {
+    if (entry.response?.status?.startsWith('2')) {
+      return [];
+    }
+    const resource = transaction.entry?.[index]?.resource;
+    const record = resource
+      ? `${getResourceTypeLabel(resource.resourceType)} "${getDisplayString(resource)}"`
+      : 'Record';
+    return [`${record}: ${normalizeErrorString(entry.response?.outcome ?? entry.response?.status)}`];
+  });
 }
 
 export function getMatchGrade(entry: BundleEntry<WithId<Patient>>): string | undefined {
@@ -265,9 +291,9 @@ function buildIfNoneExist(resource: Resource, targetPatient: WithId<Patient>): s
   }
 
   const params = [`${patientParam}=Patient/${targetPatient.id}`, `${tokenParam}=${token}`];
-  const date = getResourceDate(resource);
-  if (date) {
-    params.push(`date=${date}`);
+  const dateSearch = getDateSearch(resource);
+  if (dateSearch) {
+    params.push(dateSearch);
   }
   return params.join('&');
 }
@@ -317,17 +343,20 @@ function getTokenSearchParam(resourceType: string): string | undefined {
   }
 }
 
-function getResourceDate(resource: Resource): string | undefined {
-  const typedResource = resource as Record<string, any>;
-  const date =
-    typedResource.effectiveDateTime ??
-    typedResource.issued ??
-    typedResource.recordedDate ??
-    typedResource.onsetDateTime ??
-    typedResource.occurrenceDateTime ??
-    typedResource.authoredOn ??
-    typedResource.date;
-  return typeof date === 'string' ? date.substring(0, 10) : undefined;
+/** The date search parameter for each resource type, and the field it indexes. */
+const DATE_SEARCH_PARAMS: Record<string, [searchParam: string, field: string]> = {
+  AllergyIntolerance: ['date', 'recordedDate'],
+  Condition: ['recorded-date', 'recordedDate'],
+  DiagnosticReport: ['date', 'effectiveDateTime'],
+  DocumentReference: ['date', 'date'],
+  Immunization: ['date', 'occurrenceDateTime'],
+  Observation: ['date', 'effectiveDateTime'],
+};
+
+function getDateSearch(resource: Resource): string | undefined {
+  const [searchParam, field] = DATE_SEARCH_PARAMS[resource.resourceType] ?? [];
+  const value = field ? (resource as Record<string, any>)[field] : undefined;
+  return typeof value === 'string' ? `${searchParam}=${value.substring(0, 10)}` : undefined;
 }
 
 function getTokenSearchValue(input: CodeableConcept | undefined): string | undefined {

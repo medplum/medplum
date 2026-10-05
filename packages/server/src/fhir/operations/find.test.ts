@@ -4,6 +4,8 @@ import type { WithId } from '@medplum/core';
 import {
   ContentType,
   createReference,
+  PARTICIPATION_TYPE_SYSTEM,
+  PRIMARY_PERFORMER_CODE,
   SchedulingSlotCapacityURI,
   ServiceTypeReferenceURI,
   toServiceTypeCodeableConcepts,
@@ -331,6 +333,13 @@ describe('Appointment/$find', () => {
               actor: { reference: `Practitioner/${practitioner.id}` },
               required: 'required',
               status: 'needs-action',
+              type: [
+                {
+                  coding: [
+                    { system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE, display: 'primary performer' },
+                  ],
+                },
+              ],
             },
             {
               actor: { reference: `Location/${location.id}` },

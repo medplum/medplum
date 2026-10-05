@@ -130,18 +130,31 @@ describe('AppointmentActorSelections', () => {
     expect(screen.queryByRole('button', { name: 'Remove provider 1' })).not.toBeInTheDocument();
   });
 
-  test('A second row is another provider the visit needs, and both rows are named', async () => {
+  test('A second row is another provider the visit needs, and the first is named primary', async () => {
     const medplum = await setupClient();
     await setup(medplum);
 
     await pick(/^provider$/i, 'riv', 'Dr. Maya Rivera');
     await click('Add another provider');
+    await pick(/^and additional$/i, 'oka', 'Dr. Tunde Okafor');
+    await click('Add another provider');
 
-    // The lone row was labelled by its type; two rows have to be told apart.
+    // The lone row was labelled by its type; several rows have to be told apart.
     expect(screen.queryByRole('searchbox', { name: /^provider$/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('searchbox', { name: /^provider 1$/i })).toBeInTheDocument();
-    expect(screen.getByRole('searchbox', { name: /^and provider 2$/i })).toBeInTheDocument();
-    expect(latest().Practitioner).toHaveLength(2);
+    expect(screen.getByRole('searchbox', { name: /^primary$/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('searchbox', { name: /^and additional$/i })).toHaveLength(2);
+    expect(latest().Practitioner).toHaveLength(3);
+  });
+
+  test('Rooms are numbered rather than named primary', async () => {
+    const medplum = await setupClient();
+    await setup(medplum);
+
+    await pick(/^room$/i, 'exam', 'Exam Room A');
+    await click('Add another room');
+
+    expect(screen.getByRole('searchbox', { name: /^room 1$/i })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: /^and room 2$/i })).toBeInTheDocument();
   });
 
   test('Adding another is offered only once the row above it has been answered', async () => {
@@ -159,7 +172,7 @@ describe('AppointmentActorSelections', () => {
     await click('Add another provider');
     expect(screen.queryByRole('button', { name: 'Add another provider' })).not.toBeInTheDocument();
 
-    await pick(/^and provider 2$/i, 'oka', 'Dr. Tunde Okafor');
+    await pick(/^and additional$/i, 'oka', 'Dr. Tunde Okafor');
     expect(screen.getByRole('button', { name: 'Add another provider' })).toBeInTheDocument();
   });
 
@@ -180,7 +193,7 @@ describe('AppointmentActorSelections', () => {
 
     await pick(/^provider$/i, 'riv', 'Dr. Maya Rivera');
     await click('Add another provider');
-    await pick(/^and provider 2$/i, 'oka', 'Dr. Tunde Okafor');
+    await pick(/^and additional$/i, 'oka', 'Dr. Tunde Okafor');
 
     // The rows are keyed by their own id. Keyed by position, removing the first
     // would hand the second row the first one's field, pills and all.
