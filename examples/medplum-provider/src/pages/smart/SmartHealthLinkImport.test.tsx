@@ -654,8 +654,6 @@ describe('SmartHealthLinkImport', () => {
     });
 
     test('Reports records the server rejected and retargets the created patient', async () => {
-      // Without the `transaction-bundles` feature the server processes the transaction as a batch,
-      // so individual entries can fail while the rest are saved.
       const created = { ...SHARED_PATIENT, id: 'created-patient' } as WithId<Patient>;
       const createResource = vi.spyOn(medplum, 'createResource').mockResolvedValue(created);
       vi.mocked(medplum.executeBatch).mockImplementation(async (transaction) => ({
@@ -680,7 +678,6 @@ describe('SmartHealthLinkImport', () => {
       ).toBeInTheDocument();
       expect(onImported).not.toHaveBeenCalled();
       expect(createResource).toHaveBeenCalledTimes(1);
-      // A retry imports into the patient that was just created instead of creating another one
       expect(screen.getByRole('button', { name: 'Import Records to Homer Simpson' })).toBeInTheDocument();
     });
 

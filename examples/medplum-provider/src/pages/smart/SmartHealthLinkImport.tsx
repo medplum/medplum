@@ -266,8 +266,8 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
         const response = await medplum.executeBatch(transaction);
         const failures = getFailedImportMessages(transaction, response);
         if (failures.length > 0) {
-          // The patient and any successful records are already saved. Target that patient so a retry
-          // does not create a duplicate; conditional creates skip the records that were saved.
+          // The patient and successful records are already saved. Retry against that patient;
+          // conditional creates skip the saved records.
           setCreateNewPatient(false);
           setSelectedPatient(targetPatient);
           setError(
