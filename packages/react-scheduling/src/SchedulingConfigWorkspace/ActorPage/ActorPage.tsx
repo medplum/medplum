@@ -301,28 +301,30 @@ function ActorGeneral(props: {
   // Only turning off is allowed while the actor is inactive, so a Schedule stored on can still be switched off.
   const scheduleLocked = !active && !scheduleActive;
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-      <ReadOnlyField label="Name" value={getDisplayString(resource)} />
-      <StatusSwitch
-        label={`${typeLabel} status`}
-        value={statusLabel(resource)}
-        checked={active}
-        onChange={onActiveChange}
-        description="Applies everywhere, not only in scheduling. Switching it off switches the Schedule off too."
-      />
-      {scheduleActive !== undefined && (
+    <>
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
         <StatusSwitch
-          label="Schedule status"
-          value={scheduleActive ? 'Active' : 'Inactive'}
-          checked={scheduleActive}
-          onChange={onScheduleActiveChange}
-          disabled={scheduleLocked}
-          description={
-            scheduleLocked ? `Can't be switched on while the ${typeLabel.toLowerCase()} is inactive.` : undefined
-          }
+          label={`${typeLabel} status`}
+          value={statusLabel(resource)}
+          checked={active}
+          onChange={onActiveChange}
+          description="Applies everywhere, not only in scheduling. Switching it off switches the Schedule off too."
         />
-      )}
-    </SimpleGrid>
+        {scheduleActive !== undefined && (
+          <StatusSwitch
+            label="Schedule status"
+            value={scheduleActive ? 'Active' : 'Inactive'}
+            checked={scheduleActive}
+            onChange={onScheduleActiveChange}
+            disabled={scheduleLocked}
+            description={
+              scheduleLocked ? `Can't be switched on while the ${typeLabel.toLowerCase()} is inactive.` : undefined
+            }
+          />
+        )}
+      </SimpleGrid>
+      <ReadOnlyField label="Name" value={getDisplayString(resource)} />
+    </>
   );
 }
 
