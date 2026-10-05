@@ -44,10 +44,7 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
   if (options?.workerEnabled !== false) {
     worker = new Worker<SetAccountsJobData>(
       queueName,
-      trackJobMetrics('set-accounts', (job) => {
-        const { authState, requestId, traceId } = job.data;
-        return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execSetAccountsJob(job));
-      }),
+      trackJobMetrics('set-accounts', setAccountsJobProcessor),
       getWorkerBullmqConfig(config, 'set-accounts', queueOptions)
     );
     addVerboseQueueLogging<SetAccountsJobData>(queue, worker, (job) => {
@@ -59,8 +56,11 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
         return;
       }
 
+      // `failed` also fires for attempts that may already have settled the AsyncJob; only fail it if still active
       const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
-      await exec.failJob();
+      if (isJobActive(exec.getAsyncJob())) {
+        await exec.failJob();
+      }
     });
   }
 
@@ -68,17 +68,17 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
 };
 
 /**
- * Returns the batch queue instance.
+ * Returns the set-accounts queue instance.
  * This is used by the unit tests.
- * @returns The batch queue (if available).
+ * @returns The set-accounts queue (if available).
  */
 export function getSetAccountsQueue(): Queue<SetAccountsJobData> | undefined {
   return queueRegistry.get(queueName);
 }
 
 /**
- * Adds a batch job to the queue.
- * @param job - The batch job details.
+ * Adds a set-accounts job to the queue.
+ * @param job - The set-accounts job details.
  * @returns The enqueued job.
  */
 export async function addSetAccountsJobData(job: SetAccountsJobData): Promise<Job<SetAccountsJobData>> {
@@ -89,16 +89,24 @@ export async function addSetAccountsJobData(job: SetAccountsJobData): Promise<Jo
   return queue.add(jobName, job);
 }
 
-export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<void> {
-  const { repo } = getAuthenticatedContext();
-  const { resourceType, id, accounts } = job.data;
-  const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
+async function setAccountsJobProcessor(job: Job<SetAccountsJobData>): Promise<void> {
+  const { authState, requestId, traceId } = job.data;
+  await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execSetAccountsJob(job));
+}
 
-  if (!isJobActive(exec.getAsyncJob())) {
+/**
+ * Applies the job's accounts to the target resource and its compartment, tracked by the job's AsyncJob.
+ * Must run in an authenticated context. Does nothing if the AsyncJob is no longer active.
+ * @param job - The set-accounts job.
+ */
+export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<void> {
+  const { tracking, resourceType, id, accounts } = job.data;
+  const exec = await getTrackingAsyncJobExecutor(tracking);
+  const asyncJob = exec.getAsyncJob();
+  if (!isJobActive(asyncJob)) {
     return;
   }
 
-  await exec.startAsync(async () => {
-    return setResourceAccounts(repo, resourceType, id, { accounts, propagate: true }, exec.getAsyncJob().id);
-  });
+  const { repo } = getAuthenticatedContext();
+  await exec.startAsync(() => setResourceAccounts(repo, resourceType, id, { accounts, propagate: true }, asyncJob.id));
 }
