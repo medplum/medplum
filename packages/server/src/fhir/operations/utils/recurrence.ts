@@ -14,6 +14,7 @@ import {
 import type { Appointment, Extension } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { Temporal } from 'temporal-polyfill';
+import { getExtensions } from '../../../util/extension';
 import type { WithPath } from '../../../util/withpath';
 import { getPath, withPath } from '../../../util/withpath';
 
@@ -90,16 +91,19 @@ function requireInstant(value: string | undefined, path: string): asserts value 
  */
 export function expandRecurrence(proposed: WithPath<Appointment>): WithPath<Appointment>[] {
   const extensions = proposed.extension ?? [];
-  const templateIdx = extensions.findIndex((ext) => ext.url === RecurrenceTemplateExtensionURI);
-  if (templateIdx < 0) {
+
+  const templates = getExtensions(proposed, RecurrenceTemplateExtensionURI);
+  const template = templates[0];
+  if (!template) {
     return [proposed];
   }
-  const path = `${getPath(proposed)}.extension[${templateIdx}]`;
-  const unsupported = (message: string): OperationOutcomeError =>
-    new OperationOutcomeError(badRequest(`Unsupported recurrenceTemplate: ${message}`, path));
-
-  if (extensions.filter((ext) => ext.url === RecurrenceTemplateExtensionURI).length > 1) {
-    throw unsupported('an Appointment may carry only one');
+  if (templates.length > 1) {
+    throw new OperationOutcomeError(
+      badRequest(
+        'Too many recurrenceTemplate extensions',
+        templates.map((template) => getPath(template))
+      )
+    );
   }
 
   // Assigned below; refused rather than silently replaced.
@@ -122,7 +126,10 @@ export function expandRecurrence(proposed: WithPath<Appointment>): WithPath<Appo
       )
     );
   }
-  const template = extensions[templateIdx];
+
+  const unsupported = (message: string): OperationOutcomeError =>
+    new OperationOutcomeError(badRequest(`Unsupported recurrenceTemplate: ${message}`, getPath(template)));
+
   const occurrenceCount = getExtension(template, 'occurrenceCount')?.valuePositiveInt;
   if (
     occurrenceCount === undefined ||

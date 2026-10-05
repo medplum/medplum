@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  arrayify,
   createReference,
   getExtension,
   isDefined,
@@ -363,7 +364,7 @@ describe('Appointment/$book and $hold with a recurrenceTemplate', () => {
     refuses: string;
     template?: Extension;
     sent?: Pick<Appointment, 'identifier' | 'extension' | 'start'>;
-    expression: string;
+    expression: string | string[];
     message: string;
   }>([
     {
@@ -423,8 +424,8 @@ describe('Appointment/$book and $hold with a recurrenceTemplate', () => {
     {
       refuses: 'a second recurrenceTemplate',
       sent: { extension: [recurrenceTemplate(2)] },
-      expression: 'Parameters.appointment.extension[0]',
-      message: 'an Appointment may carry only one',
+      expression: ['Parameters.appointment.extension[0]', 'Parameters.appointment.extension[1]'],
+      message: 'Too many recurrenceTemplate extensions',
     },
     {
       refuses: 'an occurrence at a local time skipped by DST',
@@ -474,7 +475,7 @@ describe('Appointment/$book and $hold with a recurrenceTemplate', () => {
       extension: [...(first.extension ?? []), ...(sent?.extension ?? [])],
     });
     expect(response).toHaveStatus(400);
-    expect(response.body.issue[0].expression).toEqual([expression]);
+    expect(response.body.issue[0].expression).toEqual(arrayify(expression));
     expect(response.body.issue[0].details.text).toContain(message);
   });
 });
