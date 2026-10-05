@@ -378,7 +378,7 @@ describe('ActorPage', () => {
     expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-alignmentInterval')).toHaveValue('30 min');
   });
 
-  test('names where the time zone comes from', async () => {
+  test('hides inherited hours until custom hours are on, then names where the time zone comes from', async () => {
     const walkIn: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'walk-in', name: 'Walk-in' };
     services.push(walkIn);
     try {
@@ -386,12 +386,17 @@ describe('ActorPage', () => {
         makeSchedule('Practitioner/dr-smith', [initialVisit, walkIn]),
       ]);
       await userEvent.click(entry('Initial Visit'));
+      expect(within(panel('Initial Visit')).queryByTestId('schedule-availability-switch-mon')).not.toBeInTheDocument();
+      expect(within(panel('Initial Visit')).queryByTestId('schedule-availability-reset')).not.toBeInTheDocument();
+      expect(within(panel('Initial Visit')).queryByText(/The time zone comes from/)).not.toBeInTheDocument();
+      await userEvent.click(within(panel('Initial Visit')).getByTestId('schedule-availability-enable'));
 
       await waitFor(() =>
         expect(within(panel('Initial Visit')).getByText('The time zone comes from Initial Visit.')).toBeVisible()
       );
 
       await userEvent.click(entry('Walk-in'));
+      await userEvent.click(within(panel('Walk-in')).getByTestId('schedule-availability-enable'));
       await waitFor(() =>
         expect(within(panel('Walk-in')).getByText('The time zone comes from Dr. Jane Smith.')).toBeVisible()
       );

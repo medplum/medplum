@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Button, Group, Modal, Stack, Switch, Text, VisuallyHidden } from '@mantine/core';
+import { ActionIcon, Box, Button, Group, Stack, Switch, Text, VisuallyHidden } from '@mantine/core';
 import type { DayOfWeek, WithId } from '@medplum/core';
-import { deepEquals } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
 import { IconMinus, IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -177,6 +176,8 @@ export interface ScheduleAvailabilityFieldsProps {
   readonly onChange: (value: AvailabilityFieldsValue) => void;
   /** IANA name of the time zone the times entered are in, shown as a hint beneath the week. */
   readonly timezone?: string;
+  /** In override mode, show only the switch while custom availability is off, not the default's hours read-only. */
+  readonly hideInherited?: boolean;
 }
 
 /**
@@ -186,7 +187,7 @@ export interface ScheduleAvailabilityFieldsProps {
  * @returns The weekly availability fields.
  */
 export function ScheduleAvailabilityFields(props: ScheduleAvailabilityFieldsProps): JSX.Element {
-  const { service, mode, value, onChange, timezone } = props;
+  const { service, mode, value, onChange, timezone, hideInherited } = props;
   const { weekly, overriding } = value;
   // The flash on an auto-moved end time is only visible, so the same change is
   // also announced. Carried with a counter because the same message twice over
@@ -194,7 +195,6 @@ export function ScheduleAvailabilityFields(props: ScheduleAvailabilityFieldsProp
   // never mutates and nothing is read out. Keying the text on the counter
   // replaces the text node instead, which the region does announce.
   const [announcement, setAnnouncement] = useState({ message: '', id: 0 });
-  const [confirmingReset, setConfirmingReset] = useState(false);
 
   const serviceName = service.name ?? 'this visit service type';
 
@@ -202,20 +202,6 @@ export function ScheduleAvailabilityFields(props: ScheduleAvailabilityFieldsProp
   // greyed out hours show that default rather than edits that no longer apply.
   function toggleOverriding(next: boolean): void {
     onChange({ overriding: next, weekly: next ? weekly : toWeeklyAvailability(service.availableTime) });
-  }
-
-  function resetToDefault(): void {
-    onChange({ overriding, weekly: toWeeklyAvailability(service.availableTime) });
-    setConfirmingReset(false);
-  }
-
-  // Asked only when the reset would discard something.
-  function requestReset(): void {
-    if (deepEquals(weekly, toWeeklyAvailability(service.availableTime))) {
-      resetToDefault();
-    } else {
-      setConfirmingReset(true);
-    }
   }
 
   return (
@@ -235,57 +221,45 @@ export function ScheduleAvailabilityFields(props: ScheduleAvailabilityFieldsProp
           </Group>
         </>
       )}
-      <Box className={classes.week} opacity={overriding ? 1 : 0.8}>
-        {DAY_DISPLAY_ORDER.map((day) => (
-          <DayRow
-            key={day}
-            day={day}
-            value={weekly[day]}
-            readOnly={!overriding}
-            onChange={(dayValue) => onChange({ overriding, weekly: { ...weekly, [day]: dayValue } })}
-            onAnnounce={(message) => setAnnouncement((previous) => ({ message, id: previous.id + 1 }))}
-          />
-        ))}
-      </Box>
-      <VisuallyHidden role="status" aria-live="polite" data-testid="schedule-availability-announcement">
-        <Fragment key={announcement.id}>{announcement.message}</Fragment>
-      </VisuallyHidden>
-      <Stack gap="sm" mt="xl">
-        {mode === 'override' && (
-          <Group justify="flex-start">
-            <Button
-              variant="default"
-              size="xs"
-              onClick={requestReset}
-              disabled={!overriding}
-              data-testid="schedule-availability-reset"
-            >
-              Reset to default availability of {serviceName}
-            </Button>
-          </Group>
-        )}
-        <Modal
-          opened={confirmingReset}
-          onClose={() => setConfirmingReset(false)}
-          title={`Reset to the default availability of ${serviceName}?`}
-          centered
-        >
-          <Stack gap="md">
-            <Text size="sm">Reverting to the default will discard your custom hours above.</Text>
-            <Group justify="flex-end" gap="sm">
-              <Button variant="default" onClick={() => setConfirmingReset(false)}>
-                Cancel
-              </Button>
-              <Button onClick={resetToDefault}>Reset to default</Button>
-            </Group>
+      {!(hideInherited && !overriding) && (
+        <>
+          <Box className={classes.week} opacity={overriding ? 1 : 0.8}>
+            {DAY_DISPLAY_ORDER.map((day) => (
+              <DayRow
+                key={day}
+                day={day}
+                value={weekly[day]}
+                readOnly={!overriding}
+                onChange={(dayValue) => onChange({ overriding, weekly: { ...weekly, [day]: dayValue } })}
+                onAnnounce={(message) => setAnnouncement((previous) => ({ message, id: previous.id + 1 }))}
+              />
+            ))}
+          </Box>
+          <VisuallyHidden role="status" aria-live="polite" data-testid="schedule-availability-announcement">
+            <Fragment key={announcement.id}>{announcement.message}</Fragment>
+          </VisuallyHidden>
+          <Stack gap="sm" mt="xl">
+            {mode === 'override' && (
+              <Group justify="flex-start">
+                <Button
+                  variant="default"
+                  size="xs"
+                  onClick={() => onChange({ overriding, weekly: toWeeklyAvailability(service.availableTime) })}
+                  disabled={!overriding}
+                  data-testid="schedule-availability-reset"
+                >
+                  Reset to default availability of {serviceName}
+                </Button>
+              </Group>
+            )}
+            {timezone && (
+              <Text c="dimmed" data-testid="schedule-availability-timezone">
+                All times are in local {timezone} time zone.
+              </Text>
+            )}
           </Stack>
-        </Modal>
-        {timezone && (
-          <Text c="dimmed" data-testid="schedule-availability-timezone">
-            All times are in local {timezone} time zone.
-          </Text>
-        )}
-      </Stack>
+        </>
+      )}
     </>
   );
 }

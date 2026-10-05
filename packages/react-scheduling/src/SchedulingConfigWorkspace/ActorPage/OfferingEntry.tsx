@@ -108,8 +108,9 @@ export function OfferingEntry(props: OfferingEntryProps): JSX.Element {
               value={value.availability}
               onChange={(availability) => onChange({ ...value, availability })}
               timezone={props.timezone?.zone}
+              hideInherited
             />
-            {props.timezone && (
+            {props.timezone && value.availability.overriding && (
               <Text size="sm" c="dimmed">
                 The time zone comes from {props.timezone.source}.
               </Text>

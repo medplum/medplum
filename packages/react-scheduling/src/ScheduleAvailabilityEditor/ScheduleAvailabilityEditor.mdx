@@ -21,8 +21,7 @@ Passing a `schedule` edits that calendar's override of the service's hours. A si
 [override behavior](https://www.medplum.com/docs/scheduling/defining-availability#override-behavior): with
 custom availability off, the Schedule inherits the service-level default and the days are shown read-only;
 switching it on writes an override, seeded from that default so the editor starts from the hours currently
-in effect. A reset button reloads the service default hours without giving up the override, asking first when that
-would discard custom hours.
+in effect. A reset button reloads the service default hours without giving up the override.
 
 <Canvas of={ScheduleAvailabilityEditorStories.CustomHoursOverride} />
 

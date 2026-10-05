@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import { getScheduleSchedulingParameters, SchedulingParametersURI } from '@medplum/core';
 import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { getEffectiveAvailability } from '../availability';
-import { act, fireEvent, render, screen, within } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ScheduleAvailabilityEditor } from './ScheduleAvailabilityEditor';
 import {
   blankWeeklyAvailability,
@@ -1012,21 +1012,6 @@ describe('ScheduleAvailabilityEditor component', () => {
     expect(overridesAvailability(updated, serviceWithHours)).toBe(false);
   });
 
-  test('reset asks first, and Cancel keeps the custom hours', async () => {
-    setup(scheduleWith(availableTime('mon', '09:00:00', '17:00:00')), vi.fn(), vi.fn(), serviceWithHours);
-
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('schedule-availability-reset'));
-    });
-    const dialog = await screen.findByRole('dialog');
-    expect(dialog).toHaveTextContent('Reverting to the default will discard your custom hours above.');
-    await act(async () => {
-      fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
-    });
-
-    expect(screen.getByTestId('schedule-availability-start-mon-0')).toHaveValue('9:00 AM');
-  });
-
   test('reset restores the service default hours while staying an override', async () => {
     const { onSave } = setup(
       scheduleWith(availableTime('mon', '09:00:00', '17:00:00')),
@@ -1037,9 +1022,6 @@ describe('ScheduleAvailabilityEditor component', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('schedule-availability-reset'));
-    });
-    await act(async () => {
-      fireEvent.click(await screen.findByRole('button', { name: 'Reset to default' }));
     });
 
     expect(screen.getByTestId('schedule-availability-start-mon-0')).toHaveValue('8:00 AM');
