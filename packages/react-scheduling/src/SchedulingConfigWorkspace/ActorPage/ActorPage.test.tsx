@@ -148,14 +148,14 @@ describe('ActorPage', () => {
     await setup(drSmith, [overriding]);
 
     expect(within(entry('Initial Visit')).getByText('Customized')).toHaveTextContent(
-      'Overrides buffer after and custom hours. Everything else follows Initial Visit.'
+      'Parameter values defined below override those on the Initial Visit visit type.'
     );
     expect(within(entry('Follow-up')).queryByText('Customized')).not.toBeInTheDocument();
 
     await userEvent.click(entry('Follow-up'));
     await userEvent.type(within(panel('Follow-up')).getByTestId('scheduling-parameters-bufferAfter'), '15');
 
-    expect(within(entry('Follow-up')).getByText('Customized')).toHaveTextContent('Overrides buffer after.');
+    expect(within(entry('Follow-up')).getByText('Customized')).toBeInTheDocument();
   });
 
   test("a Schedule's only visit type starts closed, and opens to its parameters and hours", async () => {

@@ -104,13 +104,15 @@ export function buildScheduleDraft(
 }
 
 /**
- * Names what a Schedule sets of its own for a visit type.
+ * Whether a Schedule sets anything of its own for a visit type: a scheduling parameter, or custom hours.
  * @param fields - What the Schedule sets for it.
- * @returns The names, such as `Buffer after` and `custom hours`.
+ * @returns True when it overrides the visit type in anything.
  */
-export function describeOverrides(fields: OfferingFields): string[] {
-  const overridden = (Object.keys(SCHEDULING_PARAMETER_LABELS) as (keyof SchedulingParameterValues)[])
-    .filter((key) => fields.parameters[key] !== undefined)
-    .map((key) => SCHEDULING_PARAMETER_LABELS[key]);
-  return fields.availability.overriding ? [...overridden, 'custom hours'] : overridden;
+export function hasOverrides(fields: OfferingFields): boolean {
+  return (
+    fields.availability.overriding ||
+    (Object.keys(SCHEDULING_PARAMETER_LABELS) as (keyof SchedulingParameterValues)[]).some(
+      (key) => fields.parameters[key] !== undefined
+    )
+  );
 }

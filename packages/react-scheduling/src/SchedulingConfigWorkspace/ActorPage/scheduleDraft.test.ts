@@ -6,7 +6,7 @@ import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import { setScheduleAvailability } from '../../availability';
 import { setScheduleSchedulingParameterValues } from '../../parameterValues';
-import { buildScheduleDraft, describeOverrides, scheduleFieldsOf } from './scheduleDraft';
+import { buildScheduleDraft, hasOverrides, scheduleFieldsOf } from './scheduleDraft';
 
 const initialVisit: WithId<HealthcareService> = {
   resourceType: 'HealthcareService',
@@ -71,11 +71,13 @@ describe('buildScheduleDraft', () => {
   });
 });
 
-describe('describeOverrides', () => {
-  test('names each parameter the Schedule sets, and custom hours', () => {
+describe('hasOverrides', () => {
+  test('is true when the Schedule sets a parameter or custom hours, and false when it sets nothing', () => {
     const fields = scheduleFieldsOf(stored, servicesById).offerings[initialVisit.id];
 
-    expect(describeOverrides(fields)).toEqual(['Buffer after', 'custom hours']);
-    expect(describeOverrides(scheduleFieldsOf(stored, servicesById).offerings[followUp.id])).toEqual([]);
+    expect(hasOverrides(fields)).toBe(true);
+    expect(hasOverrides({ ...fields, parameters: {} })).toBe(true);
+    expect(hasOverrides({ ...fields, availability: { ...fields.availability, overriding: false } })).toBe(true);
+    expect(hasOverrides(scheduleFieldsOf(stored, servicesById).offerings[followUp.id])).toBe(false);
   });
 });

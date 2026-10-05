@@ -4,23 +4,17 @@ import { Badge, Tooltip, VisuallyHidden } from '@mantine/core';
 import type { JSX } from 'react';
 
 export interface OverridesBadgeProps {
-  /** What the Schedule sets of its own for the visit type, such as `Buffer after` and `custom hours`. */
-  readonly overrides: readonly string[];
+  /** The visit type the Schedule customizes. */
   readonly serviceName: string;
 }
 
 /**
- * Marks a visit type a Schedule customizes, naming what it overrides. Renders nothing when the Schedule follows
- * the visit type in everything.
- * @param props - What the Schedule overrides, and the visit type it otherwise follows.
- * @returns The badge, or null.
+ * Marks a visit type a Schedule customizes, saying that what it sets wins over the visit type's own.
+ * @param props - The visit type the Schedule customizes.
+ * @returns The badge.
  */
-export function OverridesBadge(props: OverridesBadgeProps): JSX.Element | null {
-  const { overrides, serviceName } = props;
-  if (overrides.length === 0) {
-    return null;
-  }
-  const description = `Overrides ${formatList(overrides.map((override) => override.toLowerCase()))}. Everything else follows ${serviceName}.`;
+export function OverridesBadge(props: OverridesBadgeProps): JSX.Element {
+  const description = `Parameter values defined below override those on the ${props.serviceName} visit type.`;
   return (
     <Tooltip label={description} multiline maw={280} withArrow>
       <Badge size="xs" variant="light" color="blue">
@@ -29,8 +23,4 @@ export function OverridesBadge(props: OverridesBadgeProps): JSX.Element | null {
       </Badge>
     </Tooltip>
   );
-}
-
-function formatList(items: readonly string[]): string {
-  return items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
 }
