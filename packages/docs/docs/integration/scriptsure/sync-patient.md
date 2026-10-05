@@ -7,7 +7,7 @@ sidebar_position: 3
 
 **Bot:** `scriptsure-patient-sync-bot`
 
-Syncs a Medplum `Patient` to ScriptSure before an encounter. This bot is the API entry point for patient data sync–if you're embedding the prescribing UI in a React app, see [Prescribing iFrame](/docs/integration/scriptsure/iframe) instead, as the hook there handles patient sync automatically.
+Syncs a Medplum `Patient` to ScriptSure before an encounter. This bot is the API entry point for patient data sync.
 
 This bot is idempotent and safe to call on every encounter. What it does on each call:
 
@@ -54,7 +54,7 @@ For readable local pharmacy references with an NCPDP identifier, sync works in t
 2. Add local preferred pharmacies that are missing from that list. If a newly added pharmacy is marked primary locally, set it as the ScriptSure default.
 3. Fetch the vendor list again if anything was added, then reconcile the pharmacy Organizations and the Patient's preferred-pharmacy extensions.
 
-Changing primary status locally for a pharmacy already listed in ScriptSure does not push that primary-status change. Use `addToFavorites` with `setAsPrimary: true` to update the vendor default. Use the [removal/replacement bot](/docs/integration/scriptsure/pharmacy-search#remove-or-replace-a-preferred-pharmacy) to remove an association from both systems, and finish that operation before running patient sync.
+Changing primary status locally for a pharmacy already listed in ScriptSure does not push that primary-status change. Use `addToFavorites` with `setAsPrimary: true` to update the vendor default. Use the removal/replacement bot to remove an association from both systems, and finish that operation before running patient sync.
 
 For the pharmacy portion, the execution identity needs Organization `search`, `read`, `create`, and `update`, plus Patient `read` and `update`. An existing pharmacy may be refreshed with vendor directory data, so read-only Organization access is insufficient. Other parts of patient sync need their own resource permissions. See [Sharing pharmacy Organizations](/docs/integration/scriptsure/multiple-locations#sharing-pharmacy-organizations).
 

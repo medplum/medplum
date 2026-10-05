@@ -16,13 +16,13 @@ import type {
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { Repository } from './repo';
 import { getGlobalSystemRepo } from './repo';
 
 describe('Medplum Custom Search Parameters', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let repo: Repository;
 
   beforeAll(async () => {

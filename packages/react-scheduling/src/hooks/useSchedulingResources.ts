@@ -38,6 +38,11 @@ export interface UseSchedulingAppointmentsResult {
   error: OperationOutcome | undefined;
 }
 
+export interface UseSchedulingResourcesOptions {
+  /** Called when a fetch fails. */
+  readonly onError?: (error: OperationOutcome) => void;
+}
+
 /**
  * Loads the Slots for a set of schedules within a date range and keeps them live.
  *
@@ -47,14 +52,13 @@ export interface UseSchedulingAppointmentsResult {
  *
  * @param schedules - The schedules whose Slots should be loaded.
  * @param range - The date range to search within; no search runs while this is undefined.
- * @param options - Optional parameters
- * @param options.onError - Callback fired when fetching appointments fails
+ * @param options - Optional parameters.
  * @returns The loaded Slots (undefined until the first fetch resolves) and a loading flag.
  */
 export function useSchedulingSlots(
   schedules: WithId<Schedule>[],
   range: DateTimeRange | undefined,
-  options?: { onError?: (error: OperationOutcome) => void }
+  options?: UseSchedulingResourcesOptions
 ): UseSchedulingSlotsResult {
   const medplum = useMedplum();
   const [slots, setSlots] = useState<WithId<Slot>[] | undefined>(undefined);
@@ -179,14 +183,13 @@ export function useSchedulingSlots(
  * @param schedules - The schedules whose actors' Appointments should be loaded.
  * @param range - The date range to search within; no search runs while this is undefined
  *   or none of the schedules have an actor.
- * @param options - Optional parameters
- * @param options.onError - Callback fired when fetching appointments fails
+ * @param options - Optional parameters.
  * @returns The loaded Appointments (undefined until the first fetch resolves) and a loading flag.
  */
 export function useSchedulingAppointments(
   schedules: WithId<Schedule>[],
   range: DateTimeRange | undefined,
-  options?: { onError?: (error: OperationOutcome) => void }
+  options?: UseSchedulingResourcesOptions
 ): UseSchedulingAppointmentsResult {
   const medplum = useMedplum();
   const [appointments, setAppointments] = useState<WithId<Appointment>[] | undefined>(undefined);
@@ -319,15 +322,14 @@ export function useSchedulingAppointments(
  *
  * @param schedules - The schedules whose Slots and Appointments should be loaded.
  * @param range - The date range to search within; no search runs while this is undefined.
- * @param options - Optional parameters
- * @param options.onError - Callback fired when fetching appointments fails
+ * @param options - Optional parameters.
  * @returns The loaded Slots and Appointments (each undefined until its first fetch resolves)
  *   and a combined loading flag.
  */
 export function useSchedulingResources(
   schedules: WithId<Schedule>[],
   range: DateTimeRange | undefined,
-  options?: { onError?: (error: OperationOutcome) => void }
+  options?: UseSchedulingResourcesOptions
 ): UseSchedulingResourcesResult {
   const slotsResult = useSchedulingSlots(schedules, range, options);
   const appointmentsResult = useSchedulingAppointments(schedules, range, options);

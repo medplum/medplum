@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import type { Binary, BulkDataExportOutput, Observation, Patient } from '@medplum/fhirtypes';
+import type { FhirRequest } from '@medplum/fhir-router';
+import type {
+  Binary,
+  BulkDataExportOutput,
+  CodeableConcept,
+  Encounter,
+  Observation,
+  Patient,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -18,7 +26,8 @@ import {
   withTestContext,
 } from '../../test.setup';
 import { getTestProjectSystemRepo } from '../repository/test-utils';
-import { exportResourceType, exportResources } from './export';
+import type { ExportParameters } from './export';
+import { exportResourceType, exportResources, parseExportParameters } from './export';
 import { BulkExporter } from './utils/bulkexporter';
 
 describe('Export', () => {
@@ -90,7 +99,6 @@ describe('Export', () => {
     expect(Object.values(output).map((ex) => ex.type)).toContainExactly([
       'ClientApplication',
       'Observation',
-      'OperationDefinition',
       'Patient',
       'Project',
       'ProjectMembership',
@@ -198,6 +206,139 @@ describe('Export', () => {
     expect(initRes).toHaveStatus(202);
     expect(initRes.headers['content-location']).toBeDefined();
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
+  });
+
+  test.each([
+    '',
+    'Observation?_sort=date',
+    'Observation?_include=Observation:subject',
+    'Patient/123/Observation?status=final',
+    'Observation?unknown=x',
+  ])('Rejects unsupported _typeFilter %s before starting a job', async (typeFilter) => {
+    const accessToken = await initTestAuth();
+    const res = await request(app)
+      .get('/fhir/R4/$export?_typeFilter=' + encodeURIComponent(typeFilter))
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(400);
+    expect(res.headers['content-location']).toBeUndefined();
+  });
+
+  test('_typeFilter', async () => {
+    const { repo, accessToken } = await createTestProject({ withAccessToken: true, withRepo: true });
+    const lab = { coding: [{ code: 'laboratory' }] };
+    const vitals = { coding: [{ code: 'vital-signs' }] };
+    const createObservation = (status: Observation['status'], category: CodeableConcept): Promise<Observation> =>
+      repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status,
+        category: [category],
+        code: { text: 'test' },
+      });
+    const finalLab = await createObservation('final', lab);
+    const preliminaryLab = await createObservation('preliminary', lab);
+    const finalVitals = await createObservation('final', vitals);
+    await createObservation('preliminary', vitals);
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    await repo.createResource<Encounter>({ resourceType: 'Encounter', status: 'finished', class: { code: 'AMB' } });
+
+    const initRes = await request(app)
+      .post('/fhir/R4/$export')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: '_type', valueString: 'Patient' },
+          { name: '_type', valueString: 'Observation' },
+          { name: '_typeFilter', valueString: 'Observation?status=final' },
+          { name: '_typeFilter', valueString: 'Observation?category=laboratory' },
+          { name: '_typeFilter', valueString: 'Encounter?status=finished' },
+        ],
+      });
+    expect(initRes).toHaveStatus(202);
+    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
+
+    const statusRes = await request(app)
+      .get(new URL(initRes.headers['content-location']).pathname)
+      .set('Authorization', 'Bearer ' + accessToken);
+    const output = statusRes.body.output as BulkDataExportOutput[];
+    const getIds = (type: string): string[] =>
+      (getBinaryStorage() as FileSystemStorage)
+        .readFileByUrlForTests(new URL(output.find((o) => o.type === type)?.url as string))
+        .trim()
+        .split('\n')
+        .map((line) => JSON.parse(line).id);
+
+    // Encounter is filtered but not selected by _type, and unfiltered Patient output is unaffected
+    expect(output.map((o) => o.type)).toContainExactly(['Observation', 'Patient']);
+    expect(getIds('Patient')).toStrictEqual([patient.id]);
+    // Filters for the same type are ORed, and finalLab matches both without being duplicated
+    expect(getIds('Observation')).toContainExactly([finalLab.id, preliminaryLab.id, finalVitals.id]);
+  });
+
+  test.each<[string, Pick<FhirRequest, 'method' | 'query' | 'body'>, ExportParameters]>([
+    ['no parameters', { method: 'GET', query: {}, body: undefined }, {}],
+    [
+      'repeated and comma-delimited query values',
+      {
+        method: 'GET',
+        query: { _type: ['Patient,Observation', 'Encounter'], _since: '2024-01-01T00:00:00Z' },
+        body: {},
+      },
+      { types: ['Patient', 'Observation', 'Encounter'], since: '2024-01-01T00:00:00Z' },
+    ],
+    ['explicitly empty _type', { method: 'GET', query: { _type: '' }, body: {} }, { types: [''] }],
+    [
+      'repeated and comma-delimited body values',
+      {
+        method: 'POST',
+        query: {},
+        body: {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: '_type', valueString: 'Patient,Observation' },
+            { name: '_type', valueString: 'Encounter' },
+            { name: '_typeFilter', valueString: 'Observation?status=final,preliminary' },
+            { name: '_typeFilter', valueString: 'Encounter?status=finished' },
+            { name: '_since', valueInstant: '2024-01-01T00:00:00Z' },
+          ],
+        },
+      },
+      {
+        types: ['Patient', 'Observation', 'Encounter'],
+        typeFilters: ['Observation?status=final,preliminary', 'Encounter?status=finished'],
+        since: '2024-01-01T00:00:00Z',
+      },
+    ],
+    [
+      'body takes precedence, query fills omitted parameters',
+      {
+        method: 'POST',
+        query: { _type: 'Encounter', _since: '2023-01-01T00:00:00Z' },
+        body: { resourceType: 'Parameters', parameter: [{ name: '_type', valueString: 'Patient' }] },
+      },
+      { types: ['Patient'], since: '2023-01-01T00:00:00Z' },
+    ],
+  ])('parseExportParameters: %s', (_name, req, expected) => {
+    expect(parseExportParameters({ url: '', pathname: '/$export', params: {}, ...req })).toStrictEqual({
+      since: undefined,
+      types: undefined,
+      typeFilters: undefined,
+      ...expected,
+    });
+  });
+
+  test('parseExportParameters rejects non-string _type', () => {
+    expect(() =>
+      parseExportParameters({
+        method: 'POST',
+        url: '',
+        pathname: '/$export',
+        params: {},
+        query: {},
+        body: { resourceType: 'Parameters', parameter: [{ name: '_type', valueInteger: 5 }] },
+      })
+    ).toThrow('_type and _typeFilter values must be strings');
   });
 
   test('exportResourceType iterating through paginated search results', async () =>

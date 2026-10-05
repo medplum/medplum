@@ -4,7 +4,7 @@ import type { Project } from '@medplum/fhirtypes';
 import type { Mock } from 'vitest';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { OutputAction } from './fhir/operations/db-configure-indexes';
 import { configureGinIndexes, vacuumTable } from './fhir/operations/db-configure-indexes';
@@ -56,7 +56,7 @@ async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository,
 }
 
 describe('Seed', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let loggerWriteSpy: Mock<typeof globalLogger.write>;
   let seedDatabaseSpy: Mock<(typeof seedModule)['seedDatabase']>;
 

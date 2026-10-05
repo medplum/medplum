@@ -496,6 +496,25 @@ Optional max offset for search queries.
 
 **Default:** `10000`
 
+### disableChainedSearch
+
+Optional list of resource types for which [chained search](/docs/search/chained-search) is disabled. This is a write optimization for high-volume resource types that never need chained search. For each listed type:
+
+- References are no longer written to the `<ResourceType>_References` table on create or update.
+- Chained searches that would read that table, including `_has` reverse chains originating from the type, are rejected with `400 Bad Request`.
+
+Project Admin resource types (e.g. `ProjectMembership`) are always indexed and are ignored if listed.
+
+When using environment variables or parameter store, provide a comma-separated list (e.g. `Observation,AuditEvent`).
+
+:::warning
+
+Disabling chained search is intended to be a one-way operation. To re-enable chained search for a resource type, remove it from this list, restart the server, and then run a reindex of that resource type before using chained search again. Until the reindex completes, chained search results for that type will be incomplete or out of date.
+
+:::
+
+**Default:** None
+
 ### rangeSearch
 
 When `true`, date search parameters compare the full period or range. When unset, a period is indexed as its start, or as its end when the start is missing. Projects can enable the same behavior with the [`range-search`](/docs/self-hosting/project-settings#project-feature-flags) feature. See [Searching by due date range](/docs/careplans/tasks#searching-by-due-date-range).

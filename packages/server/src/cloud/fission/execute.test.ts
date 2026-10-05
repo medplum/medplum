@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import type { MedplumServerConfig } from '../../config/types';
+import type { ServerConfig } from '../../config/utils';
 import { initTestAuth } from '../../test.setup';
 import { mockFetchText } from '../../test.setup.fetch';
 import { executeFissionBot } from './execute';
@@ -17,7 +17,7 @@ const fetchMock = vi.spyOn(globalThis, 'fetch');
 
 describe('Execute Fission bots', () => {
   const app = express();
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let accessToken: string;
 
   beforeAll(async () => {
