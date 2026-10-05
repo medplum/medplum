@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Anchor, Box, Divider, Group, Stack, Switch, Text, VisuallyHidden } from '@mantine/core';
+import { ActionIcon, Box, Button, Divider, Group, Modal, Stack, Switch, Text, VisuallyHidden } from '@mantine/core';
 import type { DayOfWeek, WithId } from '@medplum/core';
+import { deepEquals } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
 import { IconMinus, IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -193,6 +194,7 @@ export function ScheduleAvailabilityFields(props: ScheduleAvailabilityFieldsProp
   // never mutates and nothing is read out. Keying the text on the counter
   // replaces the text node instead, which the region does announce.
   const [announcement, setAnnouncement] = useState({ message: '', id: 0 });
+  const [confirmingReset, setConfirmingReset] = useState(false);
 
   const serviceName = service.name ?? 'this visit service type';
 
@@ -200,6 +202,20 @@ export function ScheduleAvailabilityFields(props: ScheduleAvailabilityFieldsProp
   // greyed out hours show that default rather than edits that no longer apply.
   function toggleOverriding(next: boolean): void {
     onChange({ overriding: next, weekly: next ? weekly : toWeeklyAvailability(service.availableTime) });
+  }
+
+  function resetToDefault(): void {
+    onChange({ overriding, weekly: toWeeklyAvailability(service.availableTime) });
+    setConfirmingReset(false);
+  }
+
+  // Asked only when the reset would discard something.
+  function requestReset(): void {
+    if (deepEquals(weekly, toWeeklyAvailability(service.availableTime))) {
+      resetToDefault();
+    } else {
+      setConfirmingReset(true);
+    }
   }
 
   return (
@@ -238,19 +254,33 @@ export function ScheduleAvailabilityFields(props: ScheduleAvailabilityFieldsProp
       <Stack gap="sm" mt="xl">
         {mode === 'override' && (
           <Group justify="flex-start">
-            <Anchor
-              component="button"
-              type="button"
-              onClick={() => onChange({ overriding, weekly: toWeeklyAvailability(service.availableTime) })}
+            <Button
+              variant="default"
+              size="xs"
+              onClick={requestReset}
               disabled={!overriding}
-              c={overriding ? undefined : 'dimmed'}
-              underline={overriding ? 'hover' : 'never'}
               data-testid="schedule-availability-reset"
             >
               Reset to default availability of {serviceName}
-            </Anchor>
+            </Button>
           </Group>
         )}
+        <Modal
+          opened={confirmingReset}
+          onClose={() => setConfirmingReset(false)}
+          title={`Reset to the default availability of ${serviceName}?`}
+          centered
+        >
+          <Stack gap="md">
+            <Text size="sm">Reverting to the default will discard your custom hours above.</Text>
+            <Group justify="flex-end" gap="sm">
+              <Button variant="default" onClick={() => setConfirmingReset(false)}>
+                Cancel
+              </Button>
+              <Button onClick={resetToDefault}>Reset to default</Button>
+            </Group>
+          </Stack>
+        </Modal>
         {timezone && (
           <Text c="dimmed" data-testid="schedule-availability-timezone">
             All times are in local {timezone} time zone.
