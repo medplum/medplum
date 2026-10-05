@@ -56,9 +56,13 @@ export interface SchedulingWorkspaceProps {
   readonly procedureBinding?: string;
   /** The ValueSet the diagnosis code field binds to. Defaults to full ICD-10-CM valueset. */
   readonly diagnosisBinding?: string;
+  /** See {@link AppointmentProposalFormProps.mrnSystem}. */
+  readonly mrnSystem?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
   readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
+  /** Called with the appointment as written, after its patient or its visit type's codes are edited. */
+  readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
   /**
    * Overrides the value set the appointment detail view offers cancellation reasons
    * from, for a host coding them against its own terminology.
@@ -119,6 +123,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const {
     procedureBinding,
     diagnosisBinding,
+    mrnSystem,
     onBooked,
     appointmentCancellationReasonValueSet,
     canBypassSchedulingRules,
@@ -365,6 +370,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             onCancelled={props.onCancelled}
             onRescheduled={props.onRescheduled}
             onToggleTimeFinder={setRescheduleFinderOpen}
+            onUpdated={props.onUpdated}
+            procedureBinding={procedureBinding}
+            diagnosisBinding={diagnosisBinding}
+            mrnSystem={mrnSystem}
           />
         </section>
       )}
@@ -379,6 +388,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             defaultStart={bookingSelection.start}
             procedureBinding={procedureBinding}
             diagnosisBinding={diagnosisBinding}
+            mrnSystem={mrnSystem}
             canBypassSchedulingRules={canBypassSchedulingRules}
             appointmentExtensions={appointmentExtensions}
             onToggleTimeFinder={setTimeFinderOpen}
