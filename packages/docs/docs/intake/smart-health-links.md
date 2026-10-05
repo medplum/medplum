@@ -90,16 +90,18 @@ The project provides an isolated FHIR server where imported resources will be st
 
 ## Step 4: Import the SMART Health Link
 
-Navigate to **SMART Health Link** from the Provider application's navigation menu.
+Open the search bar by clicking the search icon in the sidebar, or by pressing **Ctrl+K** (**⌘+K** on macOS). Select **Import from SMART Health Link or Card** from the list of actions.
 
-![SMART Health Link menu item](/img/smart-health-links/medplum-smart-health-links-menu-item.webp)
+![Import from SMART Health Link or Card action](/img/smart-health-links/medplum-smart-health-links-spotlight.webp)
+
+The import dialog walks through three steps: **Add Card/Link**, **Select Patient**, and **Import Records**.
 
 You may either:
 
-- Paste the SMART Health Link URL
-- Scan a QR code using your device camera
+- Paste the SMART Health Link URL and click **Open SMART Health Link**
+- Click **Scan SMART Health Card** to scan a QR code using your device camera
 
-![Import SMART Health Link](/img/smart-health-links/medplum-smart-health-links-qr-code.webp)
+![Open SMART Health Link](/img/smart-health-links/medplum-smart-health-links-open-link.webp)
 
 The Provider application resolves the SMART Health Link and retrieves the available resources.
 
@@ -119,9 +121,9 @@ The workflow is:
 4. Select Existing Patient OR Create New Patient
 5. Continue Import
 
-The user may choose an existing patient or create a new patient before continuing.
+The dialog shows the SMART Health Link details (patient, date of birth, source, expiration, and number of records shared), followed by any candidate matches. Choose an existing patient, or choose **Create New Patient** if there is no match, then click **Continue**.
 
-![Create Patient](/img/smart-health-links/medplum-smart-health-links-create-patient.webp)
+![Select Patient](/img/smart-health-links/medplum-smart-health-links-select-patient.webp)
 
 ## Step 6: Review Resources
 
@@ -140,19 +142,19 @@ Examples include:
 - Coverage
 - ExplanationOfBenefit
 
-The user can review the resources before importing them.
+All records are selected by default. Uncheck any records you do not want to import.
 
 ## Step 7: Import Resources
 
-Click **Import** to write the selected resources into the destination FHIR server.
+Click the import button to write the selected resources into the destination FHIR server. The button label names the destination, for example **Create Maria Garcia & Import Records** for a new patient, or **Import Records to Maria Garcia** for an existing one.
 
-Once complete, the imported data becomes part of the patient's chart.
+![Import Records](/img/smart-health-links/medplum-smart-health-links-import-records.webp)
 
-![Import Data](/img/smart-health-links/medplum-smart-health-links-import-data.webp)
+Once complete, the Provider application opens the patient's chart.
 
 ## Step 8: Verify the Results
 
-Navigate to the imported patient's chart.
+Review the imported patient's chart.
 
 Verify that:
 
