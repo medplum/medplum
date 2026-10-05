@@ -82,6 +82,8 @@ export interface AppointmentDetailsProps {
   readonly procedureBinding?: string;
   /** The ValueSet the diagnosis code field binds to. Defaults to the full ICD-10-CM value set. */
   readonly diagnosisBinding?: string;
+  /** See {@link AppointmentProposalFormProps.mrnSystem}. */
+  readonly mrnSystem?: string;
   /** Called with the appointment as written, after the patient or the visit type's codes are saved. */
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
 }
@@ -183,13 +185,22 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
  * @param props.onUpdated - A callback that can be invoked after the editable details are saved
  * @param props.procedureBinding - The value set the procedure code field binds to
  * @param props.diagnosisBinding - The value set the diagnosis code field binds to
+ * @param props.mrnSystem - The system a project issues medical record numbers under
  * @param props.onToggleTimeFinder - A callback told when the reschedule form's time search
  * opens or closes, for a host that has to widen to fit it
  * @returns The details component
  */
 export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element {
-  const { appointment, onCancelled, onToggleTimeFinder, onRescheduled, onUpdated, procedureBinding, diagnosisBinding } =
-    props;
+  const {
+    appointment,
+    onCancelled,
+    onToggleTimeFinder,
+    onRescheduled,
+    onUpdated,
+    procedureBinding,
+    diagnosisBinding,
+    mrnSystem,
+  } = props;
   const patient = getPatientParticipant(appointment)?.actor;
   const otherActors = getOtherActors(appointment);
   const [editing, setEditing] = useState(false);
@@ -298,6 +309,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           appointment={appointment}
           procedureBinding={procedureBinding}
           diagnosisBinding={diagnosisBinding}
+          mrnSystem={mrnSystem}
           onUpdated={(updated) => {
             setEditing(false);
             return onUpdated?.(updated);

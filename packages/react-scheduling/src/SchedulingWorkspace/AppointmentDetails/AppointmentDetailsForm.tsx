@@ -31,6 +31,8 @@ export interface AppointmentDetailsFormProps {
   readonly appointment: WithId<Appointment>;
   readonly procedureBinding?: string;
   readonly diagnosisBinding?: string;
+  /** See {@link AppointmentProposalFormProps.mrnSystem}. */
+  readonly mrnSystem?: string;
   readonly onCancel?: () => void;
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
 }
@@ -49,6 +51,7 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
     appointment,
     procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
     diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
+    mrnSystem,
     onUpdated,
     onCancel,
   } = props;
@@ -104,6 +107,8 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
     <Stack gap="sm">
       <AppointmentPatientInput
         defaultValue={patient}
+        mrnSystem={mrnSystem}
+        required
         onChange={choosePatient}
         error={!patient ? 'Select a patient.' : undefined}
       />

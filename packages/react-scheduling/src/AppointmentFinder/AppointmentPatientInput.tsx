@@ -19,6 +19,7 @@ export interface AppointmentPatientInputProps {
   readonly defaultValue?: WithId<Patient> | Reference<Patient>;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
+  readonly required?: boolean;
   readonly error?: string;
   readonly onChange: (patient: WithId<Patient> | undefined) => void;
 }
@@ -29,27 +30,28 @@ export interface AppointmentPatientInputProps {
  * @returns The field.
  */
 export function AppointmentPatientInput(props: AppointmentPatientInputProps): JSX.Element {
-  const { defaultValue, mrnSystem, onChange, error } = props;
+  const { defaultValue, mrnSystem, required, onChange, error } = props;
 
   const patientItem = useCallback(
-    (option: AsyncAutocompleteOption<WithId<Patient>>) => (
+    (option: AsyncAutocompleteOption<Patient>) => (
       <AppointmentOptionRow label={option.label} detail={formatPatientDetail(option.resource, mrnSystem)} />
     ),
     [mrnSystem]
   );
 
   return (
-    <ResourceInput<WithId<Patient>>
+    <ResourceInput<Patient>
       resourceType="Patient"
       name="patient"
       label="Patient"
       placeholder="Search patients by name"
-      required
+      required={required}
       error={error}
       searchCriteria={PATIENT_SEARCH_CRITERIA}
-      defaultValue={defaultValue as WithId<Patient> | Reference<WithId<Patient>> | undefined}
+      defaultValue={defaultValue}
       itemComponent={patientItem}
-      onChange={onChange}
+      // Options come from a search, so each one has an id.
+      onChange={onChange as (patient: Patient | undefined) => void}
       clearable={false}
     />
   );
@@ -61,7 +63,7 @@ export function AppointmentPatientInput(props: AppointmentPatientInputProps): JS
  * @param mrnSystem - The system a project issues medical record numbers under.
  * @returns The line under their name, or undefined when nothing is on file.
  */
-function formatPatientDetail(patient: WithId<Patient>, mrnSystem: string | undefined): string | undefined {
+function formatPatientDetail(patient: Patient, mrnSystem: string | undefined): string | undefined {
   const mrn = getMedicalRecordNumber(patient, mrnSystem);
   return [formatDate(patient.birthDate), mrn && `MRN ${mrn}`].filter(Boolean).join(' · ') || undefined;
 }
@@ -77,7 +79,7 @@ function formatPatientDetail(patient: WithId<Patient>, mrnSystem: string | undef
  * @param mrnSystem - The system a project issues medical record numbers under.
  * @returns The medical record number, or undefined for a patient with none.
  */
-function getMedicalRecordNumber(patient: WithId<Patient>, mrnSystem: string | undefined): string | undefined {
+function getMedicalRecordNumber(patient: Patient, mrnSystem: string | undefined): string | undefined {
   return (
     getIdentifierByType(patient, MRN_IDENTIFIER_TYPE) ?? (mrnSystem ? getIdentifier(patient, mrnSystem) : undefined)
   );

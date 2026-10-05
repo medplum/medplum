@@ -596,7 +596,12 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         )}
 
         {takesDetails && (
-          <AppointmentPatientInput defaultValue={defaultPatient} mrnSystem={mrnSystem} onChange={choosePatient} />
+          <AppointmentPatientInput
+            defaultValue={defaultPatient}
+            mrnSystem={mrnSystem}
+            required
+            onChange={choosePatient}
+          />
         )}
 
         {/* Each field is shown only for a visit type whose eligibility asks for it. */}
