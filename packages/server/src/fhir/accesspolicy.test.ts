@@ -1879,6 +1879,56 @@ describe('AccessPolicy', () => {
       await expect(repo2.readResource<Task>('Task', task.id)).rejects.toThrow('Forbidden');
     }));
 
+  test.each([
+    [false, 'explicit'],
+    [false, 'wildcard'],
+    [false, 'unassigned'],
+    [true, 'explicit'],
+    [true, 'wildcard'],
+    [true, 'unassigned'],
+  ] as const)('AccessPolicy management with admin=%s and %s policy', (admin, grant) =>
+    withTestContext(async () => {
+      const policy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: testProject.id },
+        resource: [{ resourceType: grant === 'explicit' ? 'AccessPolicy' : '*' }],
+      });
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: 'User/' + randomUUID() },
+        project: createReference(testProject),
+        profile: { reference: 'Practitioner/' + randomUUID() },
+        admin,
+        accessPolicy: grant === 'unassigned' ? undefined : createReference(policy),
+      });
+      const repo = await getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership,
+        project: testProject,
+        userConfig: {} as UserConfiguration,
+      });
+      const broadened: AccessPolicy = { ...policy, resource: [{ resourceType: '*' }] };
+
+      if (admin) {
+        await expect(repo.readResource('AccessPolicy', policy.id)).resolves.toBeDefined();
+        await expect(repo.updateResource(broadened)).resolves.toMatchObject({ resource: [{ resourceType: '*' }] });
+        const created = await repo.createResource<AccessPolicy>({ resourceType: 'AccessPolicy' });
+        await repo.deleteResource('AccessPolicy', created.id);
+      } else {
+        await expect(repo.readResource('AccessPolicy', policy.id)).rejects.toThrow('Forbidden');
+        await expect(repo.updateResource(broadened)).rejects.toThrow('Forbidden');
+        await expect(
+          repo.patchResource('AccessPolicy', policy.id, [
+            { op: 'replace', path: '/resource', value: [{ resourceType: '*' }] },
+          ])
+        ).rejects.toThrow('Forbidden');
+        await expect(repo.createResource<AccessPolicy>({ resourceType: 'AccessPolicy' })).rejects.toThrow('Forbidden');
+        await expect(repo.deleteResource('AccessPolicy', policy.id)).rejects.toThrow('Forbidden');
+        expect((await systemRepo.readResource('AccessPolicy', policy.id)).meta?.versionId).toBe(policy.meta?.versionId);
+      }
+    })
+  );
+
   test('Project admin cannot delete project', () =>
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({

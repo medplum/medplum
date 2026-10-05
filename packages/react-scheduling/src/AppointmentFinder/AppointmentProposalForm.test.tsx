@@ -236,7 +236,7 @@ describe('AppointmentProposalForm', () => {
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await addActorRow('provider');
-      await chooseActor(/^and provider 2$/i, 'oka', 'Dr. Tunde Okafor');
+      await chooseActor(/^and additional$/i, 'oka', 'Dr. Tunde Okafor');
       await openTimeFinder();
 
       // One set of actors, not two: a row each is a second provider the visit needs,
@@ -252,7 +252,7 @@ describe('AppointmentProposalForm', () => {
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await addActorRow('provider');
-      await chooseActor(/^and provider 2$/i, 'riv', 'Dr. Maya Rivera');
+      await chooseActor(/^and additional$/i, 'riv', 'Dr. Maya Rivera');
 
       // Nobody attends their own appointment twice. The button says the search is
       // blocked, and the provider rows say which rows blocked it, so the two halves

@@ -10,12 +10,11 @@ import type {
   StoredDocSearchHit,
   UseDocSearchKeyboardEventsProps,
 } from '@docsearch/react';
-import type { DocSearchSidepanelProps } from '@docsearch/react/sidepanel';
 import { useDocSearchKeyboardEvents } from '@docsearch/react/useDocSearchKeyboardEvents';
 import Head from '@docusaurus/Head';
 import Link from '@docusaurus/Link';
-import { useHistory, useLocation } from '@docusaurus/router';
-import { isRegexpStringMatch, useColorMode, useSearchLinkCreator } from '@docusaurus/theme-common';
+import { useHistory } from '@docusaurus/router';
+import { isRegexpStringMatch, useSearchLinkCreator } from '@docusaurus/theme-common';
 import {
   mergeFacetFilters,
   useAlgoliaContextualFacetFilters,
@@ -25,13 +24,12 @@ import Translate from '@docusaurus/Translate';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import { IconSearch } from '@tabler/icons-react';
 import translations from '@theme/SearchTranslations';
-import type { ComponentType, ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import './styles.css';
 
 import type { AutocompleteState } from '@algolia/autocomplete-core';
-import type { ThemeConfigAlgolia } from '@docusaurus/theme-search-algolia';
 import type { FacetFilters } from 'algoliasearch/lite';
 
 type DocSearchProps = Omit<DocSearchModalProps, 'onClose' | 'initialScrollY' | 'askAi'> & {
@@ -42,12 +40,10 @@ type DocSearchProps = Omit<DocSearchModalProps, 'onClose' | 'initialScrollY' | '
 
 interface DocSearchV4Props extends DocSearchProps {
   indexName: string;
-  askAi?: ThemeConfigAlgolia['askAi'];
   translations?: DocSearchTranslations;
 }
 
 let DocSearchModal: typeof DocSearchModalType | null = null;
-let DocSearchSidepanel: ComponentType<DocSearchSidepanelProps> | null = null;
 
 function importDocSearchModalIfNeeded(): Promise<void> {
   if (DocSearchModal) {
@@ -56,17 +52,6 @@ function importDocSearchModalIfNeeded(): Promise<void> {
   return Promise.all([import('@docsearch/react/modal'), import('@docsearch/react/style')]).then(
     ([{ DocSearchModal: Modal }]) => {
       DocSearchModal = Modal;
-    }
-  );
-}
-
-function importDocSearchSidepanelIfNeeded(): Promise<void> {
-  if (DocSearchSidepanel) {
-    return Promise.resolve();
-  }
-  return Promise.all([import('@docsearch/react/sidepanel'), import('@docsearch/react/style/sidepanel')]).then(
-    ([{ DocSearchSidepanel: Sidepanel }]) => {
-      DocSearchSidepanel = Sidepanel;
     }
   );
 }
@@ -258,7 +243,7 @@ function DocSearch({ externalUrlRegex, ...props }: DocSearchProps): ReactNode {
             {...props}
             translations={props.translations?.modal ?? translations.modal}
             searchParameters={searchParameters}
-            // Ask AI is handled by AskAiSidePanel, not the keyword search modal
+            // AI chat is served by the Kapa widget, not DocSearch
             onAskAiToggle={() => undefined}
           />,
           searchContainer.current
@@ -267,142 +252,7 @@ function DocSearch({ externalUrlRegex, ...props }: DocSearchProps): ReactNode {
   );
 }
 
-function AskAiSidePanel({ algolia }: { algolia: DocSearchV4Props }): ReactNode {
-  const history = useHistory();
-  const { pathname } = useLocation();
-  const { colorMode } = useColorMode();
-  const {
-    siteConfig: { url: siteUrl },
-  } = useDocusaurusContext();
-  const [ready, setReady] = useState(Boolean(DocSearchSidepanel));
-  const isDocsPage = pathname === '/docs' || pathname.startsWith('/docs/');
-
-  const askAi = typeof algolia.askAi === 'string' ? { assistantId: algolia.askAi } : algolia.askAi;
-  const assistantId = askAi?.assistantId;
-
-  useEffect(() => {
-    if (!assistantId || !isDocsPage || ready) {
-      return;
-    }
-    importDocSearchSidepanelIfNeeded()
-      .then(() => setReady(true))
-      .catch(console.error);
-  }, [assistantId, isDocsPage, ready]);
-
-  // DocSearch hardcodes target="_blank" on Ask AI links. Intercept same-site
-  // clicks and route /docs links through Docusaurus's router (useHistory) so the
-  // panel stays open. Non-docs pages open in a new tab.
-  // Note: @docusaurus/router is react-router v5 and exports useHistory, not useNavigate.
-  useEffect(() => {
-    if (!isDocsPage) {
-      return;
-    }
-
-    let siteOrigin: string;
-    try {
-      siteOrigin = new URL(siteUrl).origin;
-    } catch {
-      siteOrigin = window.location.origin;
-    }
-
-    function handleClick(event: MouseEvent): void {
-      if (
-        event.defaultPrevented ||
-        event.button !== 0 ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey
-      ) {
-        return;
-      }
-
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-
-      const anchor = target.closest('a');
-      if (!anchor?.closest('.DocSearch-Sidepanel, .DocSearch-Sidepanel-Container')) {
-        return;
-      }
-
-      const href = anchor.getAttribute('href');
-      if (!href || href.startsWith('#')) {
-        return;
-      }
-
-      let url: URL;
-      try {
-        url = new URL(href, window.location.origin);
-      } catch {
-        return;
-      }
-
-      // Positive protocol allowlist (addresses CodeQL incomplete scheme check).
-      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-        return;
-      }
-
-      const isSameSite = url.origin === window.location.origin || url.origin === siteOrigin;
-      if (!isSameSite) {
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      const path = url.pathname + url.search + url.hash;
-      if (path === '/docs' || path.startsWith('/docs/')) {
-        // Path-only navigation via Docusaurus router — keeps Ask AI mounted.
-        history.push(path);
-      } else {
-        // Non-docs Medplum pages would unmount the Ask AI panel.
-        window.open(url.href, '_blank', 'noopener,noreferrer');
-      }
-    }
-
-    document.addEventListener('click', handleClick, true);
-    return () => document.removeEventListener('click', handleClick, true);
-  }, [history, isDocsPage, siteUrl]);
-
-  if (!isDocsPage || !askAi?.assistantId || !ready || !DocSearchSidepanel) {
-    return null;
-  }
-
-  return createPortal(
-    <DocSearchSidepanel
-      appId={askAi.appId ?? algolia.appId}
-      apiKey={askAi.apiKey ?? algolia.apiKey}
-      indexName={askAi.indexName ?? algolia.indexName}
-      assistantId={askAi.assistantId}
-      // New Algolia assistants use Agent Studio; without this, /chat/token is sent
-      // with an empty body and fails with AI-201.
-      agentStudio
-      theme={colorMode === 'dark' ? 'dark' : 'light'}
-      button={{
-        variant: 'floating',
-        translations: {
-          buttonText: 'Ask AI',
-          buttonAriaLabel: 'Ask AI about Medplum docs',
-        },
-      }}
-      panel={{
-        variant: 'floating',
-        side: 'right',
-      }}
-    />,
-    document.body
-  );
-}
-
 export default function SearchBar(): ReactNode {
   const { siteConfig } = useDocusaurusContext();
-  const { askAi, ...searchConfig } = siteConfig.themeConfig.algolia as DocSearchV4Props;
-  return (
-    <>
-      <DocSearch {...searchConfig} />
-      <AskAiSidePanel algolia={{ ...searchConfig, askAi }} />
-    </>
-  );
+  return <DocSearch {...(siteConfig.themeConfig.algolia as DocSearchV4Props)} />;
 }
