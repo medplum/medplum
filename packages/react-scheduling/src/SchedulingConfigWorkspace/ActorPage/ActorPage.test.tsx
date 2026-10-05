@@ -228,6 +228,10 @@ describe('ActorPage', () => {
 
     expect(scheduleSwitch).not.toBeChecked();
     expect(scheduleSwitch).toBeDisabled();
+    const reason = "Can't be switched on while the provider is inactive.";
+    expect(scheduleSwitch).toHaveAccessibleDescription(reason);
+    await userEvent.hover(scheduleSwitch.closest('.mantine-Switch-root')?.parentElement as HTMLElement);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(reason);
     expect(screen.getByRole('alert')).toHaveTextContent("This provider is inactive and can't be booked.");
     await save();
 

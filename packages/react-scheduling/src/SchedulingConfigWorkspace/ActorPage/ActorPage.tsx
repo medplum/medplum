@@ -1,12 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Accordion, Alert, Badge, Button, Group, SimpleGrid, Stack, Switch, Text, Title } from '@mantine/core';
+import {
+  Accordion,
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Group,
+  SimpleGrid,
+  Stack,
+  Switch,
+  Text,
+  Title,
+  Tooltip,
+  VisuallyHidden,
+} from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { deepEquals, getDisplayString, getSchedulingTimezone, normalizeErrorString } from '@medplum/core';
 import type { HealthcareService, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { getActorTypeLabel } from '../../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
 import { getAvailabilityFieldsError } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
@@ -308,7 +322,6 @@ function ActorGeneral(props: {
           value={statusLabel(resource)}
           checked={active}
           onChange={onActiveChange}
-          description="Applies everywhere, not only in scheduling. Switching it off switches the Schedule off too."
         />
         {scheduleActive !== undefined && (
           <StatusSwitch
@@ -316,8 +329,7 @@ function ActorGeneral(props: {
             value={scheduleActive ? 'Active' : 'Inactive'}
             checked={scheduleActive}
             onChange={onScheduleActiveChange}
-            disabled={scheduleLocked}
-            description={
+            disabledReason={
               scheduleLocked ? `Can't be switched on while the ${typeLabel.toLowerCase()} is inactive.` : undefined
             }
           />
@@ -333,22 +345,29 @@ function StatusSwitch(props: {
   readonly value: string;
   readonly checked: boolean;
   readonly onChange: (checked: boolean) => void;
-  readonly disabled?: boolean;
-  readonly description?: string;
+  /** Why the switch can't be used. Given, the switch is disabled and the reason shows on hover. */
+  readonly disabledReason?: string;
 }): JSX.Element {
+  const reasonId = useId();
   return (
     <Stack gap={2}>
       <Text size="sm" fw={500}>
         {props.label}
       </Text>
-      <Switch
-        aria-label={props.label}
-        label={props.value}
-        checked={props.checked}
-        disabled={props.disabled}
-        description={props.description}
-        onChange={(event) => props.onChange(event.currentTarget.checked)}
-      />
+      <Tooltip label={props.disabledReason} disabled={!props.disabledReason} multiline w={280} withArrow>
+        {/* A disabled input emits no pointer events, so the tooltip hangs on a wrapper instead. */}
+        <Box w="fit-content">
+          <Switch
+            aria-label={props.label}
+            aria-describedby={props.disabledReason ? reasonId : undefined}
+            label={props.value}
+            checked={props.checked}
+            disabled={!!props.disabledReason}
+            onChange={(event) => props.onChange(event.currentTarget.checked)}
+          />
+        </Box>
+      </Tooltip>
+      {props.disabledReason && <VisuallyHidden id={reasonId}>{props.disabledReason}</VisuallyHidden>}
     </Stack>
   );
 }
