@@ -133,10 +133,13 @@ describe('VisitTypePage', () => {
     });
   });
 
-  test('turning Active off stores active false', async () => {
+  test('turning Active off stores active false, and the badge beside the name follows the switch', async () => {
     const { onStored } = await setup();
+    const header = screen.getByRole('heading', { level: 2 }).parentElement as HTMLElement;
+    expect(header).toHaveTextContent('Initial VisitActive');
 
     await userEvent.click(screen.getByRole('switch', { name: 'Active' }));
+    expect(header).toHaveTextContent('Initial VisitInactive');
     await userEvent.click(saveButton());
 
     await waitFor(() => expect(onStored).toHaveBeenCalled());

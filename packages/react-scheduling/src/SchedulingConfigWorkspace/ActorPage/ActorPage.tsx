@@ -3,7 +3,6 @@
 import {
   Accordion,
   Alert,
-  Badge,
   Box,
   Button,
   Group,
@@ -33,6 +32,8 @@ import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { summarizeOffering } from '../offeringSummary';
 import { isActorInactive } from '../SchedulingConfigWorkspace.utils';
+import type { ConfigStatus } from '../StatusBadge';
+import { StatusBadge } from '../StatusBadge';
 import { OfferingEntry } from './OfferingEntry';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
 import { buildScheduleDraft, scheduleFieldsOf } from './scheduleDraft';
@@ -201,7 +202,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         </Text>
         <Group gap="sm">
           <Title order={2}>{actorName}</Title>
-          <HeaderStatusBadge inactive={inactive} scheduleActive={schedule && fields.active} />
+          <StatusBadge status={getStatus(inactive, schedule && fields.active)} />
         </Group>
       </Stack>
 
@@ -284,30 +285,11 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   );
 }
 
-// The page's status as edited, colored as the sidebar marks it.
-function HeaderStatusBadge(props: {
-  readonly inactive: boolean;
-  readonly scheduleActive: boolean | undefined;
-}): JSX.Element {
-  if (props.inactive) {
-    return (
-      <Badge variant="light" color="gray">
-        Inactive
-      </Badge>
-    );
+function getStatus(inactive: boolean, scheduleActive: boolean | undefined): ConfigStatus {
+  if (inactive) {
+    return 'inactive';
   }
-  if (props.scheduleActive === false) {
-    return (
-      <Badge variant="light" color="orange">
-        Schedule inactive
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="light" color="green">
-      Active
-    </Badge>
-  );
+  return scheduleActive === false ? 'schedule-inactive' : 'active';
 }
 
 function getBookingAlert(resource: ConfigurableActorResource, scheduleActive: boolean | undefined): string | undefined {
