@@ -44,7 +44,7 @@ export function getConfig(): ServerConfig {
  * @param configName - The medplum config identifier (comma-separated for multiple sources).
  * @returns The loaded configuration.
  */
-export async function loadConfig(configName: string): Promise<MedplumServerConfig> {
+export async function loadConfig(configName: string): Promise<ServerConfig> {
   const segments = configName.split(',').filter((s) => s.length > 0);
   if (segments.length === 0) {
     throw new Error('Empty config name');
@@ -122,7 +122,7 @@ function deepMerge(base: Record<string, unknown>, overlay: Record<string, unknow
  * Loads the configuration setting for unit and integration tests.
  * @returns The configuration for tests.
  */
-export async function loadTestConfig(): Promise<MedplumServerConfig> {
+export async function loadTestConfig(): Promise<ServerConfig> {
   const config = await loadConfig('file:medplum.config.json');
   config.binaryStorage = 'file:' + mkdtempSync(join(tmpdir(), 'medplum-temp-storage'));
   config.allowedOrigins = undefined;

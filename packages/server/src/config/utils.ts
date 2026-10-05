@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { concatUrls } from '@medplum/core';
+import { concatUrls, projectAdminResourceTypes } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'node:crypto';
 import { getLogger } from '../logger';
 import type { MedplumServerConfig } from './types';
@@ -58,6 +58,11 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.asyncDelayScaling ??= 5;
   config.aiRealtimeTranscriptionUrl ??= 'wss://api.openai.com/v1/realtime?intent=transcription';
 
+  const ignoredResourceTypes = projectAdminResourceTypes.filter((rt) => config.disableChainedSearch?.includes(rt));
+  for (const resourceType of ignoredResourceTypes) {
+    getLogger().warn(`Ignoring ${resourceType} in disableChainedSearch: its references are always indexed`);
+  }
+
   // Automatically generate a signing key if using built-in storage and no signing key is provided
   if (config.storageBaseUrl.startsWith(config.baseUrl) && !config.signingKey) {
     getLogger().warn(
@@ -93,6 +98,7 @@ type DefaultConfigKeys =
   | 'tokenUrl'
   | 'userInfoUrl'
   | 'introspectUrl'
+  | 'registerUrl'
   | 'storageBaseUrl'
   | 'maxJsonSize'
   | 'maxBatchSize'
@@ -118,6 +124,7 @@ type DefaultConfigKeys =
   | 'defaultAuthRateLimit'
   | 'defaultMfaRateLimit'
   | 'defaultFhirQuota'
+  | 'defaultMaxUserWebSocketSubscriptions'
   | 'aiRealtimeTranscriptionUrl'
   | 'asyncDelayScaling'
   | 'serverScopedSubscriptionsEnabled';
@@ -237,7 +244,7 @@ export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
 }
 
-const arrayKeys = new Set(['blockedEmailDomains']);
+const arrayKeys = new Set(['blockedEmailDomains', 'disableChainedSearch']);
 
 export function isArrayConfig(key: string): boolean {
   return arrayKeys.has(key);

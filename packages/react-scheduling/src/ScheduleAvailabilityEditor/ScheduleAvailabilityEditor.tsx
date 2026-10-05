@@ -15,7 +15,8 @@ import {
 } from './ScheduleAvailabilityEditor.utils';
 import { ScheduleAvailabilityFields } from './ScheduleAvailabilityFields';
 
-interface CommonProps {
+/** Props shared by both modes of the ScheduleAvailabilityEditor component. */
+export interface ScheduleAvailabilityEditorCommonProps {
   /** The visit service type the availability being edited applies to. */
   readonly service: WithId<HealthcareService>;
   /**
@@ -36,7 +37,7 @@ interface CommonProps {
  * Promise to keep the save button in its pending state until the write settles. A rejection only ends that state, so
  * telling the user the write failed is the caller's to do.
  */
-export interface ScheduleOverrideEditorProps extends CommonProps {
+export interface ScheduleOverrideEditorProps extends ScheduleAvailabilityEditorCommonProps {
   readonly schedule: Schedule;
   readonly onSave: (updatedSchedule: Schedule) => void | Promise<void>;
 }
@@ -48,7 +49,7 @@ export interface ScheduleOverrideEditorProps extends CommonProps {
  * return a Promise to keep the save button in its pending state until the write settles. A rejection only ends that
  * state, so telling the user the write failed is the caller's to do.
  */
-export interface ServiceDefaultEditorProps extends CommonProps {
+export interface ServiceDefaultEditorProps extends ScheduleAvailabilityEditorCommonProps {
   readonly schedule?: undefined;
   readonly onSave: (updatedService: WithId<HealthcareService>) => void | Promise<void>;
 }

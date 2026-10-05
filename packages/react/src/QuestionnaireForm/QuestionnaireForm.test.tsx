@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getAllQuestionnaireAnswers, getQuestionnaireAnswers } from '@medplum/core';
+import {
+  badRequest,
+  getAllQuestionnaireAnswers,
+  getQuestionnaireAnswers,
+  OperationOutcomeError,
+  serverError,
+} from '@medplum/core';
 import type { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QuestionnaireItemType } from '@medplum/react-hooks';
@@ -1507,6 +1513,100 @@ describe('QuestionnaireForm', () => {
     const answer = getQuestionnaireAnswers(response);
     expect(answer['q1']).toMatchObject({
       valueCoding: { code: 'test-code-0', display: 'Test Display 0', system: 'x' },
+    });
+  });
+
+  describe('Radio and checkbox value sets', () => {
+    const valueSetUrl = 'http://example.com/radio-checkbox-valueset';
+
+    const itemControl = (code: string): Extension[] => [
+      {
+        url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+        valueCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/questionnaire-item-control', code }] },
+      },
+    ];
+
+    async function setupRadioAndCheckbox(): Promise<void> {
+      await setup({
+        questionnaire: {
+          resourceType: 'Questionnaire',
+          status: 'active',
+          item: [
+            {
+              linkId: 'radio',
+              text: 'Radio',
+              type: 'choice',
+              answerValueSet: valueSetUrl,
+              extension: itemControl('radio-button'),
+            },
+            {
+              linkId: 'checkbox',
+              text: 'Checkbox',
+              type: 'choice',
+              answerValueSet: valueSetUrl,
+              extension: itemControl('check-box'),
+            },
+          ],
+        },
+        onSubmit: vi.fn(),
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+    }
+
+    test('Missing value set makes the questions unavailable', async () => {
+      const valueSetExpandSpy = vi
+        .spyOn(medplum, 'valueSetExpand')
+        .mockRejectedValue(new OperationOutcomeError(badRequest('ValueSet not found')));
+
+      try {
+        await setupRadioAndCheckbox();
+
+        expect(screen.getAllByText('This question is unavailable.')).toHaveLength(2);
+        expect(
+          screen.getAllByLabelText(`Why is this unavailable? Value set ${valueSetUrl} is unavailable`)
+        ).toHaveLength(2);
+        expect(screen.queryByText('Suggestions unavailable')).not.toBeInTheDocument();
+      } finally {
+        valueSetExpandSpy.mockRestore();
+      }
+    });
+
+    test('Transient expand failure does not make the questions unavailable', async () => {
+      const valueSetExpandSpy = vi
+        .spyOn(medplum, 'valueSetExpand')
+        .mockRejectedValue(new OperationOutcomeError(serverError(new Error('Upstream timeout'))));
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      try {
+        await setupRadioAndCheckbox();
+
+        expect(screen.queryByText('This question is unavailable.')).not.toBeInTheDocument();
+        expect(screen.getAllByPlaceholderText('No Answers Defined')).toHaveLength(2);
+        expect(consoleErrorSpy).toHaveBeenCalledWith('Error loading value set:', expect.any(OperationOutcomeError));
+      } finally {
+        valueSetExpandSpy.mockRestore();
+        consoleErrorSpy.mockRestore();
+      }
+    });
+
+    test('Empty value set shows no answers rather than unavailable', async () => {
+      const valueSetExpandSpy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+        resourceType: 'ValueSet',
+        status: 'active',
+        expansion: { timestamp: '2026-01-01T00:00:00Z', contains: [] },
+      });
+
+      try {
+        await setupRadioAndCheckbox();
+
+        expect(screen.queryByText('This question is unavailable.')).not.toBeInTheDocument();
+        expect(screen.getAllByPlaceholderText('No Answers Defined')).toHaveLength(2);
+      } finally {
+        valueSetExpandSpy.mockRestore();
+      }
     });
   });
 
