@@ -46,7 +46,7 @@ import {
   unauthorizedTokenAudience,
   unauthorizedTokenExpired,
 } from './outcomes';
-import { MockAsyncClientStorage } from './storage';
+import { ClientStorage, MemoryStorage, MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
 import type { ProfileResource, WithId } from './utils';
 import { createReference, sleep } from './utils';
@@ -4223,6 +4223,190 @@ describe('Client', () => {
   });
 
   describe('Token refresh', () => {
+    test('does not re-enter the refresh lock when auth/me returns 401', async () => {
+      const originalLocks = navigator.locks;
+      let lockHeld = false;
+      const locks = {
+        request: vi.fn(async (_name: string, callback: (lock: Lock) => Promise<unknown>) => {
+          if (lockHeld) {
+            throw new Error('nested refresh lock request');
+          }
+          lockHeld = true;
+          try {
+            return await callback({} as Lock);
+          } finally {
+            lockHeld = false;
+          }
+        }),
+      };
+      Object.defineProperty(navigator, 'locks', { configurable: true, value: locks });
+
+      try {
+        let tokenRequestCount = 0;
+        let profileRequestCount = 0;
+        const fetch = mockFetchWithStatus((url) => {
+          if (url.includes('oauth2/token')) {
+            tokenRequestCount++;
+            return [
+              200,
+              {
+                access_token: createFakeJwt({
+                  client_id: '123',
+                  login_id: '123',
+                  exp: Math.floor(Date.now() / 1000) + 3600,
+                }),
+                refresh_token: createFakeJwt({ client_id: '123' }),
+                profile: { reference: 'Patient/123' },
+              },
+            ];
+          }
+          if (url.includes('auth/me')) {
+            profileRequestCount++;
+            return profileRequestCount === 1
+              ? [401, unauthorized]
+              : [200, { profile: { resourceType: 'Patient', id: '123' } }];
+          }
+          return [200, {}];
+        });
+        const client = new MedplumClient({ fetch, refreshGracePeriod: 0 });
+        client.setAccessToken(
+          createFakeJwt({ client_id: '123', login_id: '123', exp: Math.floor(Date.now() / 1000) - 1 }),
+          createFakeJwt({ client_id: '123' })
+        );
+
+        await client.refreshIfExpired();
+
+        expect(tokenRequestCount).toBe(2);
+        expect(locks.request).toHaveBeenCalledTimes(2);
+      } finally {
+        Object.defineProperty(navigator, 'locks', { configurable: true, value: originalLocks });
+      }
+    });
+
+    test('stops refreshing when auth/me keeps rejecting freshly issued tokens', async () => {
+      let tokenRequestCount = 0;
+      let profileRequestCount = 0;
+      const fetch = mockFetchWithStatus((url) => {
+        if (url.includes('oauth2/token')) {
+          tokenRequestCount++;
+          return [
+            200,
+            {
+              access_token: createFakeJwt({
+                client_id: '123',
+                login_id: '123',
+                exp: Math.floor(Date.now() / 1000) + 3600,
+              }),
+              refresh_token: createFakeJwt({ client_id: '123' }),
+              profile: { reference: 'Patient/123' },
+            },
+          ];
+        }
+        if (url.includes('auth/me')) {
+          profileRequestCount++;
+          return [401, unauthorized];
+        }
+        return [200, {}];
+      });
+      const onUnauthenticated = vi.fn();
+      const client = new MedplumClient({ fetch, onUnauthenticated, refreshGracePeriod: 0 });
+      client.setAccessToken(
+        createFakeJwt({ client_id: '123', login_id: '123', exp: Math.floor(Date.now() / 1000) - 1 }),
+        createFakeJwt({ client_id: '123' })
+      );
+
+      await expect(client.refreshIfExpired()).rejects.toThrow('Unauthorized');
+
+      // Expired token -> refresh -> auth/me 401 -> one forced refresh -> auth/me 401 -> terminal
+      expect(tokenRequestCount).toBe(2);
+      expect(profileRequestCount).toBe(2);
+      expect(onUnauthenticated).toHaveBeenCalledTimes(1);
+      expect(client.getAccessToken()).toBeUndefined();
+    });
+
+    test('refreshes again after adopting a token from a peer tab', async () => {
+      let tokenRequestCount = 0;
+      const fetch = mockFetchWithStatus((url) => {
+        if (url.includes('oauth2/token')) {
+          tokenRequestCount++;
+          return [
+            200,
+            {
+              access_token: createFakeJwt({
+                client_id: '123',
+                login_id: '123',
+                exp: Math.floor(Date.now() / 1000) + 3600,
+              }),
+              refresh_token: createFakeJwt({ client_id: '123' }),
+              profile: { reference: 'Patient/123' },
+            },
+          ];
+        }
+        return [200, { profile: { resourceType: 'Patient', id: '123' } }];
+      });
+      const storage = new ClientStorage(new MemoryStorage());
+      const client = new MedplumClient({ fetch, storage, refreshGracePeriod: 0 });
+      const expiredToken = (): string =>
+        createFakeJwt({ client_id: '123', login_id: '123', exp: Math.floor(Date.now() / 1000) - 1 });
+
+      // A peer tab already refreshed: storage holds a valid token, so no network call is needed
+      client.setAccessToken(expiredToken(), createFakeJwt({ client_id: '123' }));
+      storage.setObject('activeLogin', {
+        accessToken: createFakeJwt({ client_id: '123', login_id: '123', exp: Math.floor(Date.now() / 1000) + 3600 }),
+        refreshToken: createFakeJwt({ client_id: '123' }),
+        profile: { reference: 'Patient/123' },
+      });
+      await client.refreshIfExpired();
+      expect(tokenRequestCount).toBe(0);
+
+      // The adopted token later expires: this tab must be able to refresh again
+      storage.setObject('activeLogin', undefined);
+      client.setAccessToken(expiredToken(), createFakeJwt({ client_id: '123' }));
+      await client.refreshIfExpired();
+      expect(tokenRequestCount).toBe(1);
+    });
+
+    test('releases the refresh lock when the token request times out', async () => {
+      const originalLocks = navigator.locks;
+      const timeoutController = new AbortController();
+      vi.spyOn(AbortSignal, 'timeout').mockReturnValue(timeoutController.signal);
+      let lockHeld = false;
+      const locks = {
+        request: vi.fn(async (_name: string, callback: (lock: Lock) => Promise<unknown>) => {
+          lockHeld = true;
+          try {
+            return await callback({} as Lock);
+          } finally {
+            lockHeld = false;
+          }
+        }),
+      };
+      Object.defineProperty(navigator, 'locks', { configurable: true, value: locks });
+
+      try {
+        const fetch = vi.fn((_url: string, options: RequestInit) => {
+          return new Promise<Response>((_resolve, reject) => {
+            options.signal?.addEventListener('abort', () => reject(options.signal?.reason));
+          });
+        });
+        const client = new MedplumClient({ fetch, refreshGracePeriod: 0 });
+        client.setAccessToken(
+          createFakeJwt({ client_id: '123', login_id: '123', exp: Math.floor(Date.now() / 1000) - 1 }),
+          createFakeJwt({ client_id: '123' })
+        );
+
+        const refreshPromise = client.refreshIfExpired();
+        await vi.waitFor(() => expect(lockHeld).toBe(true));
+        timeoutController.abort();
+
+        await expect(refreshPromise).rejects.toThrow();
+        expect(lockHeld).toBe(false);
+        expect(AbortSignal.timeout).toHaveBeenCalledWith(60000);
+      } finally {
+        Object.defineProperty(navigator, 'locks', { configurable: true, value: originalLocks });
+      }
+    });
+
     test('should not clear sessionDetails when profile is refreshing', async () => {
       const fetch = mockFetch(200, (url) => {
         if (url.includes('Patient/123')) {
