@@ -598,6 +598,31 @@ describe('SMART Health operations', () => {
     expect(getBooleanParameter(notFhirResponse.body, 'valid')).toBe(false);
     expect(getStringParameter(notFhirResponse.body, 'error')).toContain('not a FHIR resource');
 
+    const invalidJson = await new CompactEncrypt(Buffer.from('not json'))
+      .setProtectedHeader({ alg: 'dir', enc: 'A256GCM', cty: ContentType.FHIR_JSON })
+      .encrypt(base64url.decode(key));
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: async () => invalidJson,
+    } as Response);
+    const invalidJsonResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        shlink: encodeShlinkPayload({
+          url: 'https://issuer.example.com/smart-link/payload',
+          key,
+          flag: 'U',
+          v: 1,
+        }),
+        recipient: 'Test Recipient',
+      });
+    expect(invalidJsonResponse).toHaveStatus(200);
+    expect(getBooleanParameter(invalidJsonResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(invalidJsonResponse.body, 'error')).toBe('SMART Health Link payload is not valid JSON');
+
     fetchSpy.mockResolvedValueOnce({
       ok: true,
       status: 200,

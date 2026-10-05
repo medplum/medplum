@@ -15,6 +15,7 @@ import {
   getSmartHealthLinkId,
   isGone,
   isNotFound,
+  isResource,
   isString,
   normalizeErrorString,
   normalizeOperationOutcome,
@@ -368,8 +369,13 @@ async function resolveExternalSmartHealthLink(
   if (contentType !== ContentType.FHIR_JSON && contentType !== ContentType.JSON) {
     throw new Error(`Unsupported SMART Health Link content type: ${contentType || 'unknown'}`);
   }
-  const resource = JSON.parse(plaintext) as Resource;
-  if (!isString(resource?.resourceType)) {
+  let resource: unknown;
+  try {
+    resource = JSON.parse(plaintext);
+  } catch {
+    throw new Error('SMART Health Link payload is not valid JSON');
+  }
+  if (!isResource(resource)) {
     throw new Error('SMART Health Link payload is not a FHIR resource');
   }
 
