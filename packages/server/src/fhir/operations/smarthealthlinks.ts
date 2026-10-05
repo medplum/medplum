@@ -34,6 +34,7 @@ import QRCode from 'qrcode';
 import { bcryptHashPassword } from '../../auth/utils';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 import { safeFetch } from '../../util/url';
@@ -347,10 +348,13 @@ async function resolveExternalSmartHealthLink(
   const url = new URL(payload.url);
   url.searchParams.set('recipient', recipient);
   const response = await safeFetch(url, {
-    redirect: 'error',
+    // Issuers commonly redirect to signed storage URLs; safeAgent re-validates each hop
+    redirect: 'follow',
     signal: AbortSignal.timeout(EXTERNAL_SMART_HEALTH_LINK_FETCH_TIMEOUT_MS),
   });
   if (!response.ok) {
+    // Origin only: the path and query identify the link and recipient
+    getLogger().warn('SMART Health Link payload request failed', { origin: url.origin, status: response.status });
     throw new Error(`SMART Health Link payload request failed with HTTP ${response.status}`);
   }
   const contentLength = response.headers?.get('content-length');
@@ -391,7 +395,9 @@ async function decryptSmartHealthLinkFile(
 ): Promise<{ contentType: string | undefined; plaintext: string }> {
   const { plaintext, protectedHeader } = await compactDecrypt(jwe, base64url.decode(key));
   const bytes = protectedHeader.zip === 'DEF' ? inflateRawSync(plaintext) : plaintext;
-  return { contentType: protectedHeader.cty, plaintext: Buffer.from(bytes).toString('utf8') };
+  // Ignore media type parameters such as ";fhirVersion=4.0.1"
+  const contentType = protectedHeader.cty?.split(';')[0].trim().toLowerCase();
+  return { contentType, plaintext: Buffer.from(bytes).toString('utf8') };
 }
 
 async function buildSmartHealthLinkManifest(
