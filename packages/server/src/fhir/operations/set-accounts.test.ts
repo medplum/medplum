@@ -496,7 +496,9 @@ describe('Patient Set Accounts Operation', () => {
   });
 
   test('Keeps target accounts when the job is cancelled during propagation', async () => {
-    const asyncJob = await (await getProjectSystemRepo(project)).createResource<AsyncJob>({
+    const asyncJob = await (
+      await getProjectSystemRepo(project)
+    ).createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'cancelled',
       requestTime: new Date().toISOString(),
