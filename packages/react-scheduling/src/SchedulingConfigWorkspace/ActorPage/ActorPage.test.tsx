@@ -180,21 +180,25 @@ describe('ActorPage', () => {
   const INACTIVE = "This provider is inactive and can't be booked.";
 
   test.each([
-    [true, true, undefined],
-    [true, false, SCHEDULE_OFF],
-    [false, true, INACTIVE],
-    [false, false, INACTIVE],
-  ])('provider active: %s, Schedule active: %s, alert: %s', async (providerActive, scheduleActive, expected) => {
-    await setup({ ...drSmith, active: providerActive }, [
-      { ...makeSchedule('Practitioner/dr-smith', [initialVisit]), active: scheduleActive },
-    ]);
+    [true, true, 'Active', undefined],
+    [true, false, 'Schedule inactive', SCHEDULE_OFF],
+    [false, true, 'Inactive', INACTIVE],
+    [false, false, 'Inactive', INACTIVE],
+  ])(
+    'provider active: %s, Schedule active: %s, badge: %s, alert: %s',
+    async (providerActive, scheduleActive, badge, expected) => {
+      await setup({ ...drSmith, active: providerActive }, [
+        { ...makeSchedule('Practitioner/dr-smith', [initialVisit]), active: scheduleActive },
+      ]);
 
-    if (expected) {
-      expect(screen.getByRole('alert')).toHaveTextContent(expected);
-    } else {
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 2 }).parentElement).toHaveTextContent(`Dr. Jane Smith${badge}`);
+      if (expected) {
+        expect(screen.getByRole('alert')).toHaveTextContent(expected);
+      } else {
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      }
     }
-  });
+  );
 
   test("a room whose Schedule is off is called 'it'", async () => {
     await setup(room3, [{ ...makeSchedule('Location/room-3', [initialVisit]), active: false }]);
@@ -214,7 +218,8 @@ describe('ActorPage', () => {
   test('a room with no status reads as active', async () => {
     await setup({ ...room3, status: undefined });
 
-    expect(screen.getByText('Active')).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Room status' })).toBeChecked();
+    expect(screen.getByRole('heading', { level: 2 }).parentElement).toHaveTextContent('Room 3Active');
   });
 
   test('switching a provider off switches its Schedule off and locks it, and both save in one bundle', async () => {
@@ -228,6 +233,7 @@ describe('ActorPage', () => {
 
     expect(scheduleSwitch).not.toBeChecked();
     expect(scheduleSwitch).toBeDisabled();
+    expect(screen.getByRole('heading', { level: 2 }).parentElement).toHaveTextContent('Dr. Jane SmithInactive');
     const reason = "Can't be switched on while the provider is inactive.";
     expect(scheduleSwitch).toHaveAccessibleDescription(reason);
     await userEvent.hover(scheduleSwitch.closest('.mantine-Switch-root')?.parentElement as HTMLElement);

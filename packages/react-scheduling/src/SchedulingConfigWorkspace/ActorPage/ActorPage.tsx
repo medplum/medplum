@@ -201,11 +201,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         </Text>
         <Group gap="sm">
           <Title order={2}>{actorName}</Title>
-          {inactive && (
-            <Badge variant="light" color="gray">
-              Inactive
-            </Badge>
-          )}
+          <HeaderStatusBadge inactive={inactive} scheduleActive={schedule && fields.active} />
         </Group>
       </Stack>
 
@@ -285,6 +281,32 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         onDiscard={handleDiscard}
       />
     </Stack>
+  );
+}
+
+// The page's status as edited, colored as the sidebar marks it.
+function HeaderStatusBadge(props: {
+  readonly inactive: boolean;
+  readonly scheduleActive: boolean | undefined;
+}): JSX.Element {
+  if (props.inactive) {
+    return (
+      <Badge variant="light" color="gray">
+        Inactive
+      </Badge>
+    );
+  }
+  if (props.scheduleActive === false) {
+    return (
+      <Badge variant="light" color="orange">
+        Schedule inactive
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="light" color="green">
+      Active
+    </Badge>
   );
 }
 
