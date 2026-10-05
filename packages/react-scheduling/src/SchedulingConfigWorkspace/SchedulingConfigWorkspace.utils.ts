@@ -142,12 +142,19 @@ export function getActorNotices(actor: ConfigurableActor): string[] {
   return schedule?.active === false && !isActorInactive(actor.resource) ? ['Schedule inactive'] : [];
 }
 
+// Booking skips an actor when either it or its Schedule is off, so Show inactive hides both alike. An actor with
+// no Schedule yet isn't turned off, only unfinished, so it stays listed.
+function isActorTurnedOff(actor: ConfigurableActor): boolean {
+  return isActorInactive(actor.resource) || actor.schedules[0]?.active === false;
+}
+
 /**
  * Builds the rows of a Providers, Rooms, or Devices section, narrowed by the filter.
  * @param actors - Every actor of the section's type loaded.
  * @param selection - What is selected, if anything.
  * @param filter - What was typed into the panel's filter.
- * @param showInactive - Whether turned-off actors are listed. The selected one always is.
+ * @param showInactive - Whether actors that are turned off, or whose Schedule is, are listed. The selected one
+ * always is.
  * @returns The rows to list.
  */
 export function buildActorItems(
@@ -157,7 +164,7 @@ export function buildActorItems(
   showInactive: boolean
 ): ConfigPanelItem[] {
   return actors
-    .filter((actor) => showInactive || !isActorInactive(actor.resource) || isActorSelected(actor, selection))
+    .filter((actor) => showInactive || !isActorTurnedOff(actor) || isActorSelected(actor, selection))
     .map((actor): ConfigPanelItem => ({
       id: actor.resource.id,
       label: getDisplayString(actor.resource),

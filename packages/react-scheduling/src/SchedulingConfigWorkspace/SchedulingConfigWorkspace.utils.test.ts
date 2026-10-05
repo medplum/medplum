@@ -142,16 +142,21 @@ describe('getActorNotices', () => {
 });
 
 describe('buildActorItems', () => {
+  const onLeave: WithId<Practitioner> = { ...drSmith, id: 'dr-leave', name: [{ family: 'Leave' }] };
   const actors: ConfigurableActor[] = [
     { resource: drLeft, schedules: [] },
+    { resource: onLeave, schedules: [makeSchedule('s', 'Practitioner/dr-leave', [configured], { active: false })] },
     { resource: drSmith, schedules: [] },
   ];
 
-  test('hides inactive actors unless asked, but always lists the selected one', () => {
+  test('hides actors that are inactive or whose Schedule is, unless asked, but always lists the selected one', () => {
     expect(buildActorItems(actors, undefined, '', false).map((item) => item.label)).toEqual(['Smith']);
-    expect(buildActorItems(actors, undefined, '', true).map((item) => [item.label, item.inactive])).toEqual([
-      ['Left', true],
-      ['Smith', false],
+    expect(
+      buildActorItems(actors, undefined, '', true).map((item) => [item.label, item.inactive, item.notices])
+    ).toEqual([
+      ['Left', true, []],
+      ['Leave', false, ['Schedule inactive']],
+      ['Smith', false, []],
     ]);
     const selected = buildActorItems(actors, { kind: 'actor', resourceType: 'Practitioner', id: 'dr-left' }, '', false);
     expect(selected.map((item) => [item.label, item.selected])).toEqual([

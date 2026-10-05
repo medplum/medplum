@@ -26,12 +26,12 @@ refused.
 The sidebar lists what booking leaves out, since that is often what an admin is looking for: visit types with
 no duration in effect, which booking never offers, visit types and actors that are turned off, and providers,
 rooms, and devices with no Schedule yet. Turned-off ones are hidden until **Show inactive** is ticked under the
-filters button, and are then marked **Inactive**.
+filters button. For a provider, room, or device that means either it or its Schedule is off, as booking skips
+both. Once listed, a turned-off one is marked **Inactive**, or **Schedule inactive** when only its Schedule is off.
 
 Schedules are not rows of their own: each actor's Schedule is part of its page. Rooms are the
 Locations typed as a room or a bed, and any Location with a Schedule, which booking lists as a room whatever its
-type. A row is marked **Schedule inactive** when the actor's Schedule is turned off, unless the actor itself is
-inactive and so already marked **Inactive**.
+type.
 
 Each section reads one page of up to 1000, and says so when there are more. A section that can't be read is
 named above the page, and the others still list. The **+** beside Visit types starts a new visit type, which is
