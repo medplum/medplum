@@ -28,9 +28,7 @@ export interface OfferingFields {
 /** What the page holds for an actor's Schedule. */
 export interface ScheduleFields {
   readonly active: boolean;
-  /** The ids of the visit types offered, in the order they are listed. */
-  readonly offered: readonly string[];
-  /** Keyed by visit type id, for each one offered. */
+  /** Keyed by visit type id, for each one offered, in the order they are listed. */
   readonly offerings: Readonly<Record<string, OfferingFields>>;
 }
 
@@ -51,7 +49,7 @@ export function scheduleFieldsOf(
       offerings[service.id] = offeringFieldsOf(service, schedule);
     }
   }
-  return { active: schedule?.active !== false, offered: services.map((service) => service.id), offerings };
+  return { active: schedule?.active !== false, offerings };
 }
 
 function offeringFieldsOf(service: WithId<HealthcareService>, schedule: Schedule): OfferingFields {
@@ -82,12 +80,11 @@ export function buildScheduleDraft(
     draft.active = fields.active;
   }
 
-  for (const id of fields.offered) {
+  for (const [id, current] of Object.entries(fields.offerings)) {
     const service = servicesById.get(id);
     if (!service) {
       continue;
     }
-    const current = fields.offerings[id];
     const before = initial.offerings[id];
     if (!deepEquals(current.parameters, before.parameters)) {
       draft = setScheduleSchedulingParameterValues(draft, service, current.parameters);

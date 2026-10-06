@@ -77,7 +77,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [fields, setFields] = useState(initial);
   const [actorDraft, setActorDraft] = useState<ConfigurableActorResource>(resource);
   const [open, setOpen] = useState<string | null>(() =>
-    initialOpenServiceId && initial.offered.includes(initialOpenServiceId) ? initialOpenServiceId : null
+    initialOpenServiceId && Object.hasOwn(initial.offerings, initialOpenServiceId) ? initialOpenServiceId : null
   );
   const [saving, setSaving] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
@@ -91,7 +91,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const dirty = actorDirty || !deepEquals(fields, initial);
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
-  const offered = fields.offered.flatMap((id) => servicesById.get(id) ?? []);
+  const offered = Object.keys(fields.offerings).flatMap((id) => servicesById.get(id) ?? []);
   const scheduleActive = schedule ? fields.active : undefined;
   const status = getActorStatus(actorDraft, scheduleActive);
   const alert = getBookingAlert(actorDraft, status);
