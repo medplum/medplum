@@ -9,6 +9,7 @@ import {
   getReferenceString,
   hasSchedulingParameters,
   isDefined,
+  serviceTypeIncludesAllServices,
 } from '@medplum/core';
 import type { Appointment, Bundle, Encounter, HealthcareService, Patient, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
@@ -23,6 +24,10 @@ import { showErrorNotification } from '../../utils/notifications';
 import { SchedulingTransientIdentifier } from '../../utils/scheduling';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Eventually we should paginate the HealthcareService search so this is not a
+// hard limit. We expect that 1000 rows should be plenty for most providers.
+const MAX_SERVICES = 1000;
 
 type FindPaneProps = {
   schedule: WithId<Schedule>;
@@ -48,8 +53,9 @@ function HealthcareServiceDisplay(props: { value: HealthcareService }): JSX.Elem
 }
 
 // Allows selection of a schedulable HealthcareService that matches
-// `props.schedule.serviceType`. Uses $find to look for available appointment
-// times. On selection, uses $book to create an appointment.
+// `props.schedule.serviceType`: the ones it references, or every active one
+// when it is marked as offering all visit types. Uses $find to look for
+// available appointment times. On selection, uses $book to create an appointment.
 //
 // See https://www.medplum.com/docs/scheduling/defining-availability for details.
 export function FindPane(props: FindPaneProps): JSX.Element | null {
@@ -62,6 +68,18 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   const [healthcareServices, setHealthcareServices] = useState<WithId<HealthcareService>[] | undefined>();
 
   useEffect(() => {
+    // A schedule marked as offering all visit types references none of them, so
+    // they are searched for instead of read.
+    if (serviceTypeIncludesAllServices(schedule.serviceType)) {
+      medplum
+        .searchResources('HealthcareService', { 'active:not': 'false', _sort: 'name', _count: MAX_SERVICES.toString() })
+        .then(
+          (services) => setHealthcareServices(services),
+          (err) => showErrorNotification(err)
+        );
+      return;
+    }
+
     const seen = new Set<string>();
     const allRefs = extractServiceTypeReferences(schedule.serviceType);
     const refs = allRefs.filter((ref) => {

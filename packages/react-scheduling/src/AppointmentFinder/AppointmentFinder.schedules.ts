@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
 import {
+  ALL_SERVICE_TYPES_CODE,
   assertNever,
   getDisplayString,
   getReferenceString,
   isDefined,
   lazy,
-  serviceTypeIncludesService,
+  SCHEDULING_SERVICE_TYPE_SYSTEM,
+  serviceTypeOffersService,
 } from '@medplum/core';
 import type { HealthcareService, Location, PractitionerRole, Reference, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType, SchedulingActor, SchedulingActorResource, SchedulingActorType } from '../actors';
@@ -119,6 +121,9 @@ export interface SearchScheduleCandidatesOptions {
 /** How many schedules one search offers. */
 const DEFAULT_COUNT = 25;
 
+/** The `service-type` token of a schedule that offers every visit type, which carries none of a service's own codes. */
+const ALL_SERVICE_TYPES_TOKEN = `${SCHEDULING_SERVICE_TYPE_SYSTEM}|${ALL_SERVICE_TYPES_CODE}`;
+
 /**
  * The chained filters that scope a Schedule search to actors of one type.
  * @param actorType - The type of actors to offer.
@@ -170,7 +175,7 @@ export async function searchScheduleCandidates(
   const actorCriteria = getActorCriteria(options.actorType, options.query);
 
   const tokens = service ? getServiceTypeTokens(service) : [];
-  const typeCriteria = tokens.length > 0 ? { 'service-type': tokens.join(',') } : {};
+  const typeCriteria = tokens.length > 0 ? { 'service-type': [...tokens, ALL_SERVICE_TYPES_TOKEN].join(',') } : {};
 
   const bundle = await medplum.search(
     'Schedule',
@@ -215,7 +220,7 @@ export function toScheduleCandidate(
   service: WithId<HealthcareService> | undefined,
   actors: Map<string, SchedulingActorResource>
 ): ScheduleCandidate | undefined {
-  if (schedule.active === false || (service && !serviceTypeIncludesService(schedule.serviceType, service))) {
+  if (schedule.active === false || (service && !serviceTypeOffersService(schedule.serviceType, service))) {
     return undefined;
   }
 

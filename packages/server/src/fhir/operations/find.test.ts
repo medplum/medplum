@@ -8,6 +8,7 @@ import {
   PRIMARY_PERFORMER_CODE,
   SchedulingSlotCapacityURI,
   ServiceTypeReferenceURI,
+  toAllServiceTypesCodeableConcept,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
@@ -1054,6 +1055,44 @@ describe('Appointment/$find', () => {
       },
     ]);
     expect(response).toHaveStatus(400);
+  });
+
+  test('finds times on a Schedule marked as offering all visit types', async () => {
+    const followUp = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      meta: { project: project.id },
+      name: 'Follow-up',
+      availableTime: [{ daysOfWeek: ['fri'], availableStartTime: '10:30:00', availableEndTime: '12:30:00' }],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [{ url: 'duration', valueDuration: { value: 60, unit: 'min' } }],
+        },
+      ],
+    });
+    // Names no HealthcareService anywhere: the marker alone makes it bookable, on the visit type's own hours.
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.id },
+      actor: [createReference(practitioner)],
+      serviceType: [toAllServiceTypesCodeableConcept()],
+    });
+
+    const response = await makeRequest({
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${followUp.id}`,
+      schedule: `Schedule/${schedule.id}`,
+    });
+
+    expect(response).toHaveStatus(200);
+    const proposals = (response.body as Bundle<Appointment>).entry?.map((entry) => entry.resource as Appointment);
+    // Fri 10:30am-12:30pm EDT holds one hour-aligned 60 minute visit
+    expect(proposals?.map((proposal) => [proposal.start, proposal.end])).toStrictEqual([
+      ['2026-03-20T15:00:00.000Z', '2026-03-20T16:00:00.000Z'],
+    ]);
+    // The proposal records the visit type being booked, never the marker
+    expect(proposals?.[0].serviceType).toStrictEqual(toServiceTypeCodeableConcepts(followUp));
   });
 
   test('errors on a schedule with multiple actors', async () => {

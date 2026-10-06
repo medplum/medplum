@@ -329,6 +329,23 @@ const scheduleServiceTypeLink: Schedule =
   };
 // end-block scheduleServiceTypeLink
 
+// A Schedule that can be booked for every HealthcareService, without referencing any of them.
+const scheduleAllServiceTypes: Schedule =
+  // start-block scheduleAllServiceTypes
+  {
+    resourceType: 'Schedule',
+    id: 'dr-smith-schedule',
+    comment: "Dr. Smith's availability, for any visit type",
+    actor: [{ reference: 'Practitioner/dr-smith' }],
+    serviceType: [
+      {
+        text: 'All visit types',
+        coding: [{ system: 'https://medplum.com/fhir/CodeSystem/scheduling-service-type', code: 'all' }],
+      },
+    ],
+  };
+// end-block scheduleAllServiceTypes
+
 // A Schedule that overrides only `availability`, inheriting everything else from the HealthcareService.
 const scheduleOverride: Schedule =
   // start-block scheduleOverride
@@ -1162,6 +1179,7 @@ console.log(
   scheduleAvailability,
   healthcareServiceServiceLevel,
   scheduleServiceTypeLink,
+  scheduleAllServiceTypes,
   scheduleOverride,
   overbookingSchedule,
   slotBlocking,
