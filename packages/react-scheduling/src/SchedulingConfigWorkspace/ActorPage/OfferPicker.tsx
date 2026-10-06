@@ -6,6 +6,7 @@ import type { HealthcareService } from '@medplum/fhirtypes';
 import { IconChevronDown } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
+import { matchesFilter } from '../SchedulingConfigWorkspace.utils';
 
 const PAGE_SIZE = 10;
 const SHOW_MORE = '__show-more';
@@ -93,6 +94,7 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
             aria-label="Search visit types"
           />
           <Combobox.Options mah={280} style={{ overflowY: 'auto' }} aria-multiselectable>
+            {/* Combobox keeps a closed dropdown mounted, so options are built only while it's open. */}
             {combobox.dropdownOpened && (
               <OfferOptions services={services} search={search} shown={shown} checked={checked} pinned={pinned} />
             )}
@@ -116,15 +118,10 @@ interface OfferOptionsProps {
   readonly pinned: ReadonlySet<string>;
 }
 
-// Built only while the dropdown is open: Combobox keeps a closed dropdown mounted, so every option would otherwise
-// re-render with the page.
 function OfferOptions(props: OfferOptionsProps): JSX.Element {
   const { services, search, shown, checked, pinned } = props;
-  const needle = search.trim().toLowerCase();
   const first = services.filter((service) => pinned.has(service.id));
-  const matches = services.filter(
-    (service) => !pinned.has(service.id) && (service.name ?? '').toLowerCase().includes(needle)
-  );
+  const matches = services.filter((service) => !pinned.has(service.id) && matchesFilter(service.name ?? '', search));
   if (first.length + matches.length === 0) {
     return <Combobox.Empty>No visit types match</Combobox.Empty>;
   }

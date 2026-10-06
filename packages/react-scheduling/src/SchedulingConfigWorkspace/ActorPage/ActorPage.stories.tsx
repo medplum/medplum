@@ -71,8 +71,6 @@ function StoredActor(props: { readonly resourceType: BookableActorType; readonly
  * Dr. Linh Nguyen offers two visit types. Ultrasound Imaging follows the visit type in everything. Telehealth
  * Consult has a longer buffer after and custom hours on this Schedule: open its entry to see both, with every
  * field it leaves empty showing what it inherits.
- *
- * Offer another visit type, or stop offering one, and the save bar appears.
  * @returns The story.
  */
 export const ProviderWithOverrides = (): JSX.Element => (

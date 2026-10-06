@@ -6,7 +6,8 @@ import {
   createReference,
   deepClone,
   deepEquals,
-  getReferenceString,
+  extractServiceTypeReferences,
+  resolveId,
   SchedulingParametersURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
@@ -26,7 +27,7 @@ import {
   initialAvailabilityFieldsValue,
   toWeeklyAvailability,
 } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
-import { getOfferedServices, isActorInactive, serviceTypeOffers } from '../SchedulingConfigWorkspace.utils';
+import { getOfferedServices, isActorInactive } from '../SchedulingConfigWorkspace.utils';
 
 /** What a Schedule sets for one visit type it offers. */
 export interface OfferingFields {
@@ -54,8 +55,10 @@ export function scheduleFieldsOf(
 ): ScheduleFields {
   const services = getOfferedServices(schedule, servicesById);
   const offerings: Record<string, OfferingFields> = {};
-  for (const service of services) {
-    offerings[service.id] = schedule ? offeringFieldsOf(service, schedule) : newOfferingFields(service);
+  if (schedule) {
+    for (const service of services) {
+      offerings[service.id] = offeringFieldsOf(service, schedule);
+    }
   }
   return { active: schedule?.active !== false, offerings };
 }
@@ -78,11 +81,20 @@ export function newOfferingFields(service: WithId<HealthcareService>): OfferingF
 }
 
 /**
+ * What a visit type's fields are compared against to find its edits: as the page opened, or as first offered.
+ * @param initial - What the page opened with.
+ * @param service - The visit type.
+ * @returns The fields it started from.
+ */
+export function startingOfferingFields(initial: ScheduleFields, service: WithId<HealthcareService>): OfferingFields {
+  return initial.offerings[service.id] ?? newOfferingFields(service);
+}
+
+/**
  * Builds the Schedule to store from what the page holds. Only what was edited is rewritten, so saving one field
  * leaves the rest of the Schedule as another tool wrote it.
  *
- * Returns undefined for an actor with no Schedule that offers nothing yet: a Schedule is created only once a
- * visit type is offered, and never on its own.
+ * A Schedule is created only once a visit type is offered, never on its own.
  * @param stored - The Schedule as stored, if the actor has one.
  * @param actor - The actor as edited, which a new Schedule is held on alone, and active only while it is.
  * @param fields - What the page holds.
@@ -120,19 +132,17 @@ export function buildScheduleDraft(
     if (!service) {
       continue;
     }
-    const before = initial.offerings[id];
-    if (!before) {
+    if (!Object.hasOwn(initial.offerings, id)) {
+      draft = withoutService(draft, service);
       draft.serviceType = [...(draft.serviceType ?? []), ...toServiceTypeCodeableConcepts(service)];
     }
-    if (!before || !deepEquals(current.parameters, before.parameters)) {
+    const before = startingOfferingFields(initial, service);
+    if (!deepEquals(current.parameters, before.parameters)) {
       draft = setScheduleSchedulingParameterValues(draft, service, current.parameters);
     }
     // An emptied week has no stored form. The page refuses to save it, so it is left as stored meanwhile.
     const { overriding, weekly } = current.availability;
-    if (
-      (!before || !deepEquals(current.availability, before.availability)) &&
-      (!overriding || hasAnyAvailableDay(weekly))
-    ) {
+    if (!deepEquals(current.availability, before.availability) && (!overriding || hasAnyAvailableDay(weekly))) {
       draft = overriding
         ? setScheduleAvailability(draft, service, fromWeeklyAvailability(weekly))
         : clearScheduleSchedulingParameter(draft, service, 'availability');
@@ -151,8 +161,9 @@ export function buildScheduleDraft(
  */
 export function withoutService(schedule: Schedule, service: WithId<HealthcareService>): Schedule {
   const draft = deepClone(schedule);
-  const reference = getReferenceString(service);
-  const serviceType = draft.serviceType?.filter((concept) => !serviceTypeOffers([concept], service));
+  const serviceType = draft.serviceType?.filter(
+    (concept) => !extractServiceTypeReferences([concept]).some((reference) => resolveId(reference) === service.id)
+  );
   if (serviceType?.length) {
     draft.serviceType = serviceType;
   } else {
@@ -161,9 +172,7 @@ export function withoutService(schedule: Schedule, service: WithId<HealthcareSer
   const extension = draft.extension?.filter(
     (entry) =>
       entry.url !== SchedulingParametersURI ||
-      !entry.extension?.some(
-        (sub) => sub.url === 'service' && sub.valueReference?.reference?.split('/').slice(0, 2).join('/') === reference
-      )
+      !entry.extension?.some((sub) => sub.url === 'service' && resolveId(sub.valueReference) === service.id)
   );
   if (extension?.length) {
     draft.extension = extension;

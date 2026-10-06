@@ -38,12 +38,12 @@ import { StatusBadge } from '../StatusBadge';
 import { OfferingEditor, OfferingMenu, OfferingSummary } from './OfferingEditor';
 import { OfferPicker } from './OfferPicker';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
-import { buildScheduleDraft, newOfferingFields, scheduleFieldsOf } from './scheduleDraft';
+import { buildScheduleDraft, newOfferingFields, scheduleFieldsOf, startingOfferingFields } from './scheduleDraft';
 
 export interface ActorPageProps {
   /** The provider, room, or device, with its Schedules as stored. The first Schedule is the one edited. */
   readonly actor: ConfigurableActor;
-  /** Every visit type loaded, which is what can be offered. */
+  /** Every visit type loaded. */
   readonly services: readonly WithId<HealthcareService>[];
   /**
    * The visit type whose entry opens, when the actor offers it. Left out, every entry starts closed.
@@ -107,21 +107,20 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     return getBlockingErrors(
       validateSchedulingParameters(current.parameters),
       current.parameters,
-      initial.offerings[service.id]?.parameters ?? {}
+      startingOfferingFields(initial, service).parameters
     );
   }
 
   function availabilityErrorFor(service: WithId<HealthcareService>): string | undefined {
     const current = fields.offerings[service.id];
-    const before = initial.offerings[service.id];
-    return before && deepEquals(current.availability, before.availability)
+    return deepEquals(current.availability, startingOfferingFields(initial, service).availability)
       ? undefined
       : getAvailabilityFieldsError(current.availability, service, 'override');
   }
 
   function isOfferingDirty(service: WithId<HealthcareService>): boolean {
     const before = initial.offerings[service.id];
-    return !before || !deepEquals(fields.offerings[service.id], before);
+    return !deepEquals(fields.offerings[service.id], before);
   }
 
   const checks = offered.map((service) => ({
@@ -174,8 +173,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       if (result.failures.length > 0) {
         setFailure(result.failures[0]);
       } else if (result.saved.length === 0) {
-        // Nothing differed from what is stored (say, a visit type stopped and offered again), so no new version
-        // remounts the page.
+        // Nothing differed from what is stored, so no new version remounts the page.
         handleDiscard();
       } else {
         onSynced(
@@ -276,7 +274,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
                     <OfferingEditor
                       service={service}
                       value={fields.offerings[service.id]}
-                      initialParameters={initial.offerings[service.id]?.parameters ?? {}}
+                      initialParameters={startingOfferingFields(initial, service).parameters}
                       onChange={(value) => updateOffering(service.id, value)}
                       errors={errors}
                       availabilityError={triedToSave ? availabilityError : undefined}

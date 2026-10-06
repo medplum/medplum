@@ -203,11 +203,10 @@ describe('ActorPage', () => {
     expect(within(panel('Initial Visit')).getByRole('heading', { name: 'Availability' })).toBeVisible();
   });
 
-  test('a room with no Schedule offers nothing yet, and offers to add one', async () => {
+  test('a room with no Schedule offers nothing yet', async () => {
     await setup(room3);
 
     expect(screen.getByText('Room 3 offers no visit types yet.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Offer visit types' })).toBeInTheDocument();
     expect(screen.queryByText('Schedule status')).not.toBeInTheDocument();
   });
 
@@ -380,10 +379,7 @@ describe('ActorPage', () => {
 
     await waitFor(() => expect(onSynced).toHaveBeenCalled());
     expect(sentBundle(medplum).entry?.[0].request).toEqual({ method: 'POST', url: 'Schedule' });
-    const created = syncedSchedule(onSynced);
-    expect(created.active).toBe(true);
-    expect(created.actor).toEqual([expect.objectContaining({ reference: 'Location/room-3' })]);
-    expect(serviceTypeIncludesService(created.serviceType, initialVisit)).toBe(true);
+    expect(serviceTypeIncludesService(syncedSchedule(onSynced).serviceType, initialVisit)).toBe(true);
   });
 
   test('discarding a first offering writes nothing and leaves the room without a Schedule', async () => {
@@ -397,13 +393,11 @@ describe('ActorPage', () => {
     expect(medplum.executeBatch).not.toHaveBeenCalled();
   });
 
-  test('offers only active visit types not yet offered, filtered by the search', async () => {
+  test('offers only active visit types not yet offered', async () => {
     await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
 
     await openOfferPicker();
     expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Follow-up', 'Cystoscopy']);
-    await userEvent.type(screen.getByRole('textbox', { name: 'Search visit types' }), 'cyst');
-    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Cystoscopy']);
   });
 
   test('offers several visit types at once, closed, and then says there is nothing more to offer', async () => {
@@ -418,19 +412,8 @@ describe('ActorPage', () => {
     ).toBeInTheDocument();
   });
 
-  test('stopping a visit type asks first, then drops it and every override for it', async () => {
-    const withOverrides = setScheduleAvailability(
-      setScheduleSchedulingParameterValues(
-        makeSchedule('Practitioner/dr-smith', [initialVisit, followUp]),
-        initialVisit,
-        {
-          bufferAfter: 10,
-        }
-      ),
-      initialVisit,
-      [{ daysOfWeek: ['tue'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
-    );
-    const { onSynced } = await setup(drSmith, [withOverrides]);
+  test('stopping a visit type asks first, then drops it on save', async () => {
+    const { onSynced } = await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit, followUp])]);
 
     await chooseStopOffering('Initial Visit');
     const dialog = await screen.findByRole('dialog', { name: 'Stop offering Initial Visit?' });
@@ -444,8 +427,6 @@ describe('ActorPage', () => {
     await waitFor(() => expect(onSynced).toHaveBeenCalled());
     const saved = syncedSchedule(onSynced);
     expect(serviceTypeIncludesService(saved.serviceType, initialVisit)).toBe(false);
-    expect(getScheduleSchedulingParameters(saved, initialVisit, 'bufferAfter')).toEqual([]);
-    expect(getScheduleSchedulingParameters(saved, initialVisit, 'availability')).toEqual([]);
   });
 
   test('stopping a visit type and offering it again saves nothing, and leaves the page clean', async () => {

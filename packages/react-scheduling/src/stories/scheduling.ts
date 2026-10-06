@@ -775,7 +775,7 @@ export const Ultrasound3Schedule: WithId<Schedule> = {
   active: false,
 };
 
-/** A room with no Schedule, so it offers nothing until one is offered from its page. */
+/** A room with no Schedule, so it offers nothing. */
 export const ExamRoomC: WithId<Location> = {
   resourceType: 'Location',
   id: 'exam-room-c',
@@ -797,18 +797,10 @@ export const DrPatelSchedule = buildSchedule('schedule-dr-patel', 'Practitioner/
 });
 
 /**
- * The clinic as an administrator configuring it sees it: `SchedulingFixtures`, with its visit types filled out
- * the way a clinic would set them, more visit types covering service facilities, split hours, and group
- * capacity, and what booking hides. Visit types that have no duration or are turned off, a provider on leave
- * whose Schedule is switched off, a retired device, a room with no Schedule, and a provider with no time zone.
- *
- * Kept out of `SchedulingFixtures`, whose tests read the whole list.
+ * Visit types nobody offers, so the config workspace has enough to page through and search when offering from an
+ * actor's page.
  */
-/**
- * More visit types that nobody offers yet, so the config workspace has a catalog long enough to page through and
- * search when offering visit types from an actor's page.
- */
-export const CatalogServices: WithId<HealthcareService>[] = (
+const CatalogServices: WithId<HealthcareService>[] = (
   [
     ['annual-physical', 'Annual Physical', 'Office visit', 45],
     ['sick-visit', 'Sick Visit', 'Office visit', 20],
@@ -836,6 +828,14 @@ export const CatalogServices: WithId<HealthcareService>[] = (
   availableTime: [weeklyHours(WEEKDAYS, '09:00:00', '17:00:00')],
 }));
 
+/**
+ * The clinic as an administrator configuring it sees it: `SchedulingFixtures`, with its visit types filled out
+ * the way a clinic would set them, more visit types covering service facilities, split hours, and group
+ * capacity, and what booking hides. Visit types that have no duration or are turned off, a provider on leave
+ * whose Schedule is switched off, a retired device, a room with no Schedule, and a provider with no time zone.
+ *
+ * Kept out of `SchedulingFixtures`, whose tests read the whole list.
+ */
 export const ConfigFixtures = [
   ...SchedulingFixtures.map((resource) => (resource.id && CONFIGURED_SERVICES.get(resource.id)) || resource),
   InitialConsultationService,

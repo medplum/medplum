@@ -64,8 +64,7 @@ export interface OfferingMenuProps {
 }
 
 /**
- * What can be done with one visit type an actor's Schedule offers, from beside its entry so it's there while the
- * entry is closed.
+ * What can be done with one visit type an actor's Schedule offers.
  * @param props - The visit type, and what to do when it's stopped.
  * @returns The menu.
  */
