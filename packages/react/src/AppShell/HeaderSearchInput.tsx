@@ -102,73 +102,77 @@ const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<HeaderS
   }
 );
 
+/**
+ * FHIR search parameters that can be targeted directly from the nav search,
+ * e.g. "email:homer@example.com". Both separators are accepted: ":" reads like
+ * a search engine, "=" reads like a FHIR query string.
+ */
+const SEARCH_SHORTCUTS: Record<string, readonly HeaderSearchTypes['resourceType'][]> = {
+  birthdate: ['Patient'],
+  email: ['Patient'],
+  identifier: ['Patient', 'ServiceRequest'],
+  name: ['Patient'],
+  phone: ['Patient'],
+};
+
+const PATIENT_SELECTION = 'resourceType id identifier { system value } name { given family } birthDate';
+const SERVICE_REQUEST_SELECTION = 'resourceType id identifier { system value } subject { display }';
+
+/**
+ * Parses a "param:value" or "param=value" shortcut out of the search input.
+ * @param input - The user entered search string.
+ * @returns The search parameter and value, or undefined for a plain search.
+ */
+function parseSearchShortcut(input: string): { param: string; value: string } | undefined {
+  const separatorIndex = input.search(/[:=]/);
+  if (separatorIndex < 0) {
+    return undefined;
+  }
+  const param = input.slice(0, separatorIndex).trim().toLowerCase();
+  const value = input.slice(separatorIndex + 1).trim();
+  // An unrecognized prefix falls through to a plain search, so a value that
+  // merely contains a separator - a token search such as "http://acme.org|123"
+  // - is still searched verbatim.
+  if (!value || !Object.hasOwn(SEARCH_SHORTCUTS, param)) {
+    return undefined;
+  }
+  return { param, value };
+}
+
 function buildGraphQLQuery(input: string): string {
   const escaped = JSON.stringify(input);
   if (isUUID(input)) {
     return `{
       Patients1: PatientList(_id: ${escaped}, _count: 1) {
-        resourceType
-        id
-        identifier {
-          system
-          value
-        }
-        name {
-          given
-          family
-        }
-        birthDate
+        ${PATIENT_SELECTION}
       }
       ServiceRequestList(_id: ${escaped}, _count: 1) {
-        resourceType
-        id
-        identifier {
-          system
-          value
-        }
-        subject {
-          display
-        }
+        ${SERVICE_REQUEST_SELECTION}
       }
     }`.replaceAll(/\s+/g, ' ');
   }
+  const shortcut = parseSearchShortcut(input);
+  if (shortcut) {
+    const value = JSON.stringify(shortcut.value);
+    const targets = SEARCH_SHORTCUTS[shortcut.param];
+    const queries = [];
+    if (targets.includes('Patient')) {
+      queries.push(`Patients1: PatientList(${shortcut.param}: ${value}, _count: 5) { ${PATIENT_SELECTION} }`);
+    }
+    if (targets.includes('ServiceRequest')) {
+      queries.push(`ServiceRequestList(${shortcut.param}: ${value}, _count: 5) { ${SERVICE_REQUEST_SELECTION} }`);
+    }
+    return `{ ${queries.join(' ')} }`.replaceAll(/\s+/g, ' ');
+  }
   return `{
     Patients1: PatientList(name: ${escaped}, _count: 5) {
-      resourceType
-      id
-      identifier {
-        system
-        value
-      }
-      name {
-        given
-        family
-      }
-      birthDate
+      ${PATIENT_SELECTION}
     }
     Patients2: PatientList(identifier: ${escaped}, _count: 5) {
-      resourceType
-      id
-      identifier {
-        system
-        value
-      }
-      name {
-        given
-        family
-      }
-      birthDate
+      ${PATIENT_SELECTION}
     }
     ServiceRequestList(identifier: ${escaped}, _count: 5) {
-      resourceType
-      id
-      identifier {
-        system
-        value
-      }
-      subject {
-        display
-      }
+      ${SERVICE_REQUEST_SELECTION}
     }
   }`.replaceAll(/\s+/g, ' ');
 }
@@ -192,7 +196,8 @@ function getResourcesFromResponse(response: SearchGraphQLResponse, query: string
   if (response.data.ServiceRequestList) {
     resources.push(...response.data.ServiceRequestList);
   }
-  return sortByRelevance(dedupeResources(resources), query).slice(0, 5);
+  const term = parseSearchShortcut(query)?.value ?? query;
+  return sortByRelevance(dedupeResources(resources), term).slice(0, 5);
 }
 
 /**
