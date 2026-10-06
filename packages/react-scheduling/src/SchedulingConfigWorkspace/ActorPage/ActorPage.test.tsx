@@ -141,6 +141,11 @@ async function openOfferPicker(): Promise<void> {
   await userEvent.click(await screen.findByRole('button', { name: 'Offer visit types' }));
 }
 
+async function chooseStopOffering(name: string): Promise<void> {
+  await userEvent.click(screen.getByRole('button', { name: `Actions for ${name}` }));
+  await userEvent.click(await screen.findByRole('menuitem', { name: 'Stop offering' }));
+}
+
 async function offer(...names: string[]): Promise<void> {
   await openOfferPicker();
   for (const name of names) {
@@ -353,8 +358,8 @@ describe('ActorPage', () => {
 
     expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'true');
     expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'false');
-    expect(entry('Initial Visit')).toHaveTextContent('Unsaved changes');
-    expect(entry('Follow-up')).not.toHaveTextContent('Unsaved changes');
+    expect(entry('Initial Visit')).toHaveTextContent('Unsaved');
+    expect(entry('Follow-up')).not.toHaveTextContent('Unsaved');
 
     await userEvent.click(entry('Initial Visit'));
     expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter')).toHaveValue('15 min');
@@ -368,7 +373,8 @@ describe('ActorPage', () => {
     const { medplum, onSynced } = await setup(room3);
 
     await offer('Initial Visit');
-    expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'true');
+    expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'false');
+    expect(entry('Initial Visit')).toHaveTextContent('Unsaved');
     expect(medplum.executeBatch).not.toHaveBeenCalled();
     await save();
 
@@ -400,12 +406,12 @@ describe('ActorPage', () => {
     expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Cystoscopy']);
   });
 
-  test('offers several visit types at once, opening the first, and then says there is nothing more to offer', async () => {
+  test('offers several visit types at once, closed, and then says there is nothing more to offer', async () => {
     await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
 
     await offer('Cystoscopy', 'Follow-up');
 
-    expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'true');
+    expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'false');
     expect(entry('Cystoscopy')).toHaveAttribute('aria-expanded', 'false');
     expect(
       screen.getByText('There is nothing more to offer: every active visit type is offered here.')
@@ -425,11 +431,8 @@ describe('ActorPage', () => {
       [{ daysOfWeek: ['tue'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
     );
     const { onSynced } = await setup(drSmith, [withOverrides]);
-    await userEvent.click(entry('Initial Visit'));
 
-    await userEvent.click(
-      await within(panel('Initial Visit')).findByRole('button', { name: 'Stop offering Initial Visit' })
-    );
+    await chooseStopOffering('Initial Visit');
     const dialog = await screen.findByRole('dialog', { name: 'Stop offering Initial Visit?' });
     expect(dialog).toHaveTextContent("Existing appointments aren't changed.");
     await userEvent.click(within(dialog).getByRole('button', { name: 'Stop offering' }));
@@ -449,10 +452,7 @@ describe('ActorPage', () => {
     const { medplum, onSynced } = await setup(drSmith, [
       makeSchedule('Practitioner/dr-smith', [initialVisit, followUp]),
     ]);
-    await userEvent.click(entry('Initial Visit'));
-    await userEvent.click(
-      await within(panel('Initial Visit')).findByRole('button', { name: 'Stop offering Initial Visit' })
-    );
+    await chooseStopOffering('Initial Visit');
     await userEvent.click(
       within(await screen.findByRole('dialog', { name: 'Stop offering Initial Visit?' })).getByRole('button', {
         name: 'Stop offering',
@@ -471,10 +471,7 @@ describe('ActorPage', () => {
   test('keeping a visit type from the confirmation changes nothing', async () => {
     await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
 
-    await userEvent.click(entry('Initial Visit'));
-    await userEvent.click(
-      await within(panel('Initial Visit')).findByRole('button', { name: 'Stop offering Initial Visit' })
-    );
+    await chooseStopOffering('Initial Visit');
     await userEvent.click(await screen.findByRole('button', { name: 'Keep offering' }));
 
     expect(entry('Initial Visit')).toBeInTheDocument();

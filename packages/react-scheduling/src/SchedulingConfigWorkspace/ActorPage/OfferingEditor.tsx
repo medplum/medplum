@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Divider, Group, Stack, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core';
+import { ActionIcon, Badge, Divider, Group, Menu, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
+import { IconDots, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useId } from 'react';
 import type { SchedulingParameterValues } from '../../parameterValues';
@@ -17,7 +18,6 @@ import {
 import { SchedulingParametersFields } from '../../SchedulingParametersEditor/SchedulingParametersFields';
 import { ParameterWarnings } from '../ConfigPage/ParameterWarnings';
 import { OverridesBadge } from '../OverridesBadge';
-import classes from './ActorPage.module.css';
 import type { OfferingFields } from './scheduleDraft';
 import { hasOverrides } from './scheduleDraft';
 
@@ -46,18 +46,44 @@ export function OfferingSummary(props: OfferingSummaryProps): JSX.Element {
         </Text>
         {hasOverrides(value) && <OverridesBadge serviceName={serviceName} />}
         {dirty && (
-          <>
-            <Tooltip label="Unsaved changes" withArrow>
-              <Box className={classes.dot} aria-hidden />
-            </Tooltip>
-            <VisuallyHidden>Unsaved changes</VisuallyHidden>
-          </>
+          <Badge size="xs" variant="light" color="orange">
+            Unsaved
+          </Badge>
         )}
       </Group>
       <Text size="sm" c="dimmed" truncate>
         {summary}
       </Text>
     </Stack>
+  );
+}
+
+export interface OfferingMenuProps {
+  readonly service: WithId<HealthcareService>;
+  readonly onStopOffering: () => void;
+}
+
+/**
+ * What can be done with one visit type an actor's Schedule offers, from beside its entry so it's there while the
+ * entry is closed.
+ * @param props - The visit type, and what to do when it's stopped.
+ * @returns The menu.
+ */
+export function OfferingMenu(props: OfferingMenuProps): JSX.Element {
+  const serviceName = props.service.name ?? 'this visit type';
+  return (
+    <Menu position="bottom-end" withinPortal>
+      <Menu.Target>
+        <ActionIcon variant="subtle" color="gray" aria-label={`Actions for ${serviceName}`}>
+          <IconDots size={16} />
+        </ActionIcon>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Item color="red" leftSection={<IconTrash size={14} />} onClick={props.onStopOffering}>
+          Stop offering
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
   );
 }
 
@@ -72,7 +98,6 @@ export interface OfferingEditorProps {
   readonly availabilityError?: string;
   /** The time zone the hours are read in, and where it comes from. Absent when none resolves. */
   readonly timezone?: { readonly zone: string; readonly source: string };
-  readonly onStopOffering: () => void;
 }
 
 /**
@@ -134,12 +159,6 @@ export function OfferingEditor(props: OfferingEditorProps): JSX.Element {
           </Text>
         )}
       </Stack>
-
-      <Group justify="flex-end">
-        <Button variant="subtle" color="red" onClick={props.onStopOffering}>
-          Stop offering {serviceName}
-        </Button>
-      </Group>
     </Stack>
   );
 }

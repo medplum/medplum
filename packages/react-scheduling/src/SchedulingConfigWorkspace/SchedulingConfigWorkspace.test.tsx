@@ -268,7 +268,7 @@ describe('SchedulingConfigWorkspace', () => {
     await userEvent.click(saveButton());
 
     await waitFor(() => expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeInTheDocument());
-    expect(entry('Telehealth Consult')).toHaveAttribute('aria-expanded', 'true');
+    expect(entry('Telehealth Consult')).not.toHaveTextContent('Unsaved');
     expect(row('Exam Room C')).toHaveAttribute('aria-current', 'true');
   });
 

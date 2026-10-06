@@ -35,7 +35,7 @@ import { summarizeOffering } from '../offeringSummary';
 import { getActorStatus, isActorInactive } from '../SchedulingConfigWorkspace.utils';
 import type { ConfigStatus } from '../StatusBadge';
 import { StatusBadge } from '../StatusBadge';
-import { OfferingEditor, OfferingSummary } from './OfferingEditor';
+import { OfferingEditor, OfferingMenu, OfferingSummary } from './OfferingEditor';
 import { OfferPicker } from './OfferPicker';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
 import { buildScheduleDraft, newOfferingFields, scheduleFieldsOf } from './scheduleDraft';
@@ -149,7 +149,6 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   function offer(chosen: WithId<HealthcareService>[]): void {
     const added = Object.fromEntries(chosen.map((service) => [service.id, newOfferingFields(service)]));
     setFields((current) => ({ ...current, offerings: { ...current.offerings, ...added } }));
-    setOpen(chosen[0]?.id ?? null);
   }
 
   function stopOffering(service: WithId<HealthcareService>): void {
@@ -261,14 +260,18 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
               const timezone = getSchedulingTimezone(service, draft, resource);
               return (
                 <Accordion.Item key={service.id} value={service.id}>
-                  <Accordion.Control>
-                    <OfferingSummary
-                      service={service}
-                      value={fields.offerings[service.id]}
-                      summary={draft ? summarizeOffering(service, draft) : ''}
-                      dirty={isOfferingDirty(service)}
-                    />
-                  </Accordion.Control>
+                  {/* Beside the control rather than in it, which is itself a button. */}
+                  <Group gap={0} wrap="nowrap" pr="sm">
+                    <Accordion.Control>
+                      <OfferingSummary
+                        service={service}
+                        value={fields.offerings[service.id]}
+                        summary={draft ? summarizeOffering(service, draft) : ''}
+                        dirty={isOfferingDirty(service)}
+                      />
+                    </Accordion.Control>
+                    <OfferingMenu service={service} onStopOffering={() => setStopping(service)} />
+                  </Group>
                   <Accordion.Panel>
                     <OfferingEditor
                       service={service}
@@ -282,7 +285,6 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
                           ? { zone: timezone, source: timezoneSource(fields.offerings[service.id], service, actorName) }
                           : undefined
                       }
-                      onStopOffering={() => setStopping(service)}
                     />
                   </Accordion.Panel>
                 </Accordion.Item>
