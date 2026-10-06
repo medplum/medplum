@@ -75,6 +75,16 @@ describe('Logger', () => {
     );
   });
 
+  test('Unserializable data falls back to minimal entry', () => {
+    expect(() => testLogger.info('Big number', { value: BigInt(1) })).not.toThrow();
+    expect(testOutput).toHaveBeenCalledWith({
+      level: 'INFO',
+      timestamp: expect.any(String),
+      msg: 'Big number',
+      logError: expect.stringContaining('BigInt'),
+    });
+  });
+
   test('Does not write when logger is disabled', () => {
     const unlogger = new Logger((msg) => testOutput(JSON.parse(msg)), undefined, LogLevel.NONE);
     unlogger.error('Annihilation imminent');

@@ -146,7 +146,17 @@ export class Logger implements ILogger {
       serialized = JSON.stringify(entry);
     } catch {
       // Log data may contain circular references (e.g. HTTP request/response objects attached to errors)
-      serialized = JSON.stringify(entry, getCircularReplacer());
+      try {
+        serialized = JSON.stringify(entry, getCircularReplacer());
+      } catch (err) {
+        // Last resort (e.g. BigInt values or throwing toJSON); logging must never throw
+        serialized = JSON.stringify({
+          level: entry.level,
+          timestamp: entry.timestamp,
+          msg: entry.msg,
+          logError: String(err),
+        });
+      }
     }
     this.write(serialized);
   }
