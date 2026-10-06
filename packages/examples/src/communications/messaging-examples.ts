@@ -7,7 +7,7 @@
 // start-block imports
 import type { BotEvent } from '@medplum/core';
 import { ContentType, formatHumanName, getReferenceString, MedplumClient, SNOMED } from '@medplum/core';
-import type { Appointment, Bundle, Communication, Patient } from '@medplum/fhirtypes';
+import type { Communication, Patient } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -534,78 +534,6 @@ const mixedMessage = await medplum.createResource({
 // end-block messageWithTextAndAttachment
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- retain for doc block extraction; satisfies noUnusedLocals
 [mixedMessage];
-// start-block oooRerouteTs
-// Bot: reroute Tasks to the pool when the assigned provider is out of office.
-// Uses Appointment $find to check availability at message receive time.
-export async function oooRerouteHandler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
-  const message = event.input;
-  const threadRef = message.partOf?.[0]?.reference;
-  if (!threadRef) {
-    return;
-  }
-
-  const openTasks = await medplum.searchResources('Task', {
-    focus: threadRef,
-    status: 'requested,accepted',
-  });
-
-  if (openTasks.length === 0) {
-    return;
-  }
-
-  const rerouteTask = openTasks[0];
-  if (!rerouteTask.id) {
-    return;
-  }
-  const ownerRef = rerouteTask.owner?.reference;
-  if (!ownerRef) {
-    return;
-  }
-
-  const schedules = await medplum.searchResources('Schedule', {
-    actor: ownerRef,
-  });
-
-  if (schedules.length === 0) {
-    return;
-  }
-
-  const schedule = schedules[0];
-  if (!schedule.id) {
-    return;
-  }
-
-  const now = new Date();
-  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-  const params = new URLSearchParams({
-    start: now.toISOString(),
-    end: oneHourLater.toISOString(),
-    schedule: `Schedule/${schedule.id}`,
-  });
-  const bundle: Bundle<Appointment> = await medplum.get(medplum.fhirUrl('Appointment', `$find?${params}`));
-
-  if (bundle.entry && bundle.entry.length > 0) {
-    return;
-  }
-
-  // Provider is unavailable — reroute Task back to the pool
-  const threadHeaderId = threadRef.split('/')[1];
-  await medplum.patchResource('Task', rerouteTask.id, [
-    { op: 'remove', path: '/owner' },
-    { op: 'replace', path: '/status', value: 'requested' },
-    {
-      op: 'add',
-      path: '/note/-',
-      value: {
-        text: `Auto-rerouted: ${rerouteTask.owner?.display ?? ownerRef} is currently unavailable`,
-        time: now.toISOString(),
-      },
-    },
-  ]);
-  await medplum.patchResource('Communication', threadHeaderId, [{ op: 'remove', path: '/recipient' }]);
-}
-// end-block oooRerouteTs
-
 // start-block subscriptionOooRerouteTs
 await medplum.createResource({
   resourceType: 'Subscription',

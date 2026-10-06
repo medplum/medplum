@@ -5,7 +5,7 @@ import type { MedplumClient } from '@medplum/core';
 import { OperationOutcomeError } from '@medplum/core';
 import type { Bundle, CarePlan, Communication, Task } from '@medplum/fhirtypes';
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { test } from 'vitest';
 import { claimTask, rerouteToPool, rerouteToProvider } from '../communications/task-routing-examples.js';
 import { createCase, findCasePlans } from './longitudinal-tracking-examples.js';
 
@@ -22,7 +22,7 @@ const alice = { reference: 'Practitioner/alice' };
 const bob = { reference: 'Practitioner/bob' };
 const note = { authorReference: alice, time: '2026-10-06T17:00:00Z', text: 'Transferred for review' };
 
-await test('competing claims keep the first owner and do not retry the stale write', async () => {
+test('competing claims keep the first owner and do not retry the stale write', async () => {
   let stored = structuredClone(ready);
   let writes = 0;
   const client = {
@@ -43,14 +43,14 @@ await test('competing claims keep the first owner and do not retry the stale wri
   assert.equal(ready.owner, undefined);
 });
 
-await test('claiming rejects unversioned or already owned work before writing', async () => {
+test('claiming rejects unversioned or already owned work before writing', async () => {
   const client = { updateResource: () => assert.fail('Unexpected write') } as unknown as MedplumClient;
   await assert.rejects(claimTask(client, { ...ready, meta: undefined }, alice), /version/);
   await assert.rejects(claimTask(client, { ...ready, owner: bob }, alice), /no longer available/);
   await assert.rejects(claimTask(client, { ...ready, status: 'completed' }, alice), /no longer available/);
 });
 
-await test('claiming propagates errors other than a stale version', async () => {
+test('claiming propagates errors other than a stale version', async () => {
   const error = new Error('Network unavailable');
   const client = {
     updateResource: async () => {
@@ -60,7 +60,7 @@ await test('claiming propagates errors other than a stale version', async () => 
   await assert.rejects(claimTask(client, ready, alice), (actual) => actual === error);
 });
 
-await test('rerouting preserves participants and history and checks both resource versions', async () => {
+test('rerouting preserves participants and history and checks both resource versions', async () => {
   const thread: Communication = {
     resourceType: 'Communication',
     id: 'thread',
@@ -93,7 +93,7 @@ await test('rerouting preserves participants and history and checks both resourc
   );
 });
 
-await test('returning to a pool changes only the Task and keeps context and prior notes', async () => {
+test('returning to a pool changes only the Task and keeps context and prior notes', async () => {
   const role = { coding: [{ system: 'https://example.org/roles', code: 'reviewer' }] };
   const current: Task = {
     ...ready,
@@ -119,7 +119,7 @@ await test('returning to a pool changes only the Task and keeps context and prio
   assert.deepEqual(current.owner, alice);
 });
 
-await test('case creation reuses stable keys and the returned episode reference after an interrupted run', async () => {
+test('case creation reuses stable keys and the returned episode reference after an interrupted run', async () => {
   const records = new Map<string, CarePlan | { resourceType: 'EpisodeOfCare'; id: string }>();
   let failPlan = true;
   const client = {
@@ -149,7 +149,7 @@ await test('case creation reuses stable keys and the returned episode reference 
   assert.equal(records.size, 2);
 });
 
-await test('case retrieval follows pagination and excludes other episodes for the same patient', async () => {
+test('case retrieval follows pagination and excludes other episodes for the same patient', async () => {
   const plan = (id: string, episode: string): CarePlan => ({
     resourceType: 'CarePlan',
     id,
