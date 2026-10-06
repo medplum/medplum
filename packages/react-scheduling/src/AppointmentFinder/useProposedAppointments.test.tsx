@@ -185,7 +185,9 @@ describe('useProposedAppointments', () => {
     await settle();
 
     expect(get).not.toHaveBeenCalled();
-    expect(screen.getByTestId('window-error')).toHaveTextContent('Choose at most 7 days at a time.');
+    expect(screen.getByTestId('window-error')).toHaveTextContent(
+      'Choose at most 7 days at a time for a recurring appointment.'
+    );
   });
 
   test('Names a service given only as a reference, without reading it', async () => {

@@ -355,7 +355,16 @@ describe('getFindWindowError', () => {
     const weekEnd = new Date('2026-08-17T03:59:59.999Z');
     expect(getFindWindowError({ start, end: weekEnd }, 2)).toBeUndefined();
     expect(getFindWindowError({ start, end: new Date('2026-08-18T03:59:59.999Z') }, 2)).toBe(
-      'Choose at most 7 days at a time.'
+      'Choose at most 7 days at a time for a recurring appointment.'
+    );
+  });
+
+  test('A series week that falls back from daylight time runs an hour long and can still be searched', () => {
+    // Monday midnight EDT to the close of Sunday EST in New York: 7 days and an hour.
+    const start = new Date('2026-10-26T04:00:00Z');
+    expect(getFindWindowError({ start, end: new Date('2026-11-02T04:59:59.999Z') }, 2)).toBeUndefined();
+    expect(getFindWindowError({ start, end: new Date('2026-11-02T05:00:00.001Z') }, 2)).toBe(
+      'Choose at most 7 days at a time for a recurring appointment.'
     );
   });
 

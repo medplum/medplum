@@ -292,7 +292,7 @@ describe('SchedulingWorkspace booking', () => {
     await dragDays('18', '27');
     await chooseRepeat('Weekly, 3 times');
 
-    expect(screen.getByText('Choose at most 7 days at a time.')).toBeInTheDocument();
+    expect(screen.getByText('Choose at most 7 days at a time for a recurring appointment.')).toBeInTheDocument();
     expect(lastFindParams(get)?.has('occurrence-count')).toBe(false);
   });
 

@@ -13,7 +13,14 @@ export const MAX_FIND_WINDOW_DAYS = 31;
 /** The longest window `Appointment/$find` accepts when searching for a recurring series. */
 export const MAX_RECURRING_FIND_WINDOW_DAYS = 7;
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+/** 1 extra hour allows selecting the week spanning a DST change (in most timezones). */
+const DST_FUDGE_HOURS = 1;
+
+const MS_PER_HOUR = 60 * 60 * 1000;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
+
+const MAX_FIND_WINDOW_MS = MAX_FIND_WINDOW_DAYS * MS_PER_DAY;
+const MAX_RECURRING_FIND_WINDOW_MS = MAX_RECURRING_FIND_WINDOW_DAYS * MS_PER_DAY + DST_FUDGE_HOURS * MS_PER_HOUR;
 
 /**
  * The most days one listing will name. A search that grows a few days at a time can
@@ -572,8 +579,18 @@ export function getFindWindowError(range: DateRange, occurrenceCount = 1): strin
   if (!start || !end) {
     return undefined;
   }
-  const maxDays = occurrenceCount > 1 ? MAX_RECURRING_FIND_WINDOW_DAYS : MAX_FIND_WINDOW_DAYS;
-  return getDayCount(start, end) > maxDays ? `Choose at most ${maxDays} days at a time.` : undefined;
+
+  const durationMs = end.getTime() - start.getTime();
+  const allowedMs = occurrenceCount > 1 ? MAX_RECURRING_FIND_WINDOW_MS : MAX_FIND_WINDOW_MS;
+
+  if (durationMs <= allowedMs) {
+    return undefined;
+  }
+
+  if (occurrenceCount > 1) {
+    return `Choose at most ${MAX_RECURRING_FIND_WINDOW_DAYS} days at a time for a recurring appointment.`;
+  }
+  return `Choose at most ${MAX_FIND_WINDOW_DAYS} days at a time.`;
 }
 
 /**
