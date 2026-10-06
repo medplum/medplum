@@ -578,17 +578,11 @@ describe('SearchControl', () => {
     expect(props.onAuxClick).toHaveBeenCalledTimes(3);
   });
 
-  test('Field editor onOk', async () => {
+  test('Columns editor opens', async () => {
     const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
+        fields: ['name', 'birthDate'],
       },
       onLoad: vi.fn(),
     };
@@ -598,29 +592,24 @@ describe('SearchControl', () => {
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Fields'));
+      fireEvent.click(screen.getByText('Columns'));
     });
 
-    expect(await screen.findByText('OK')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
-    });
+    expect(await screen.findByText('Reset Default')).toBeInTheDocument();
+    expect(screen.getByTestId('column-name')).toBeInTheDocument();
   });
 
-  test('Field editor onCancel', async () => {
+  test('Columns editor hides a column', async () => {
+    let currSearch: SearchRequest | undefined;
     const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
+        fields: ['name', 'birthDate'],
       },
       onLoad: vi.fn(),
+      onChange: (e) => {
+        currSearch = e.definition;
+      },
     };
 
     await setup(props);
@@ -628,14 +617,14 @@ describe('SearchControl', () => {
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Fields'));
+      fireEvent.click(screen.getByText('Columns'));
     });
-
-    expect(await screen.findByLabelText('Close')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Close'));
+      fireEvent.click(await screen.findByTestId('column-birthDate'));
     });
+
+    expect(currSearch?.fields).toEqual(['name']);
   });
 
   test('Filter editor onOk', async () => {
