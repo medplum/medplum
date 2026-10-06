@@ -71,8 +71,8 @@ function offeringFieldsOf(service: WithId<HealthcareService>, schedule: Schedule
 }
 
 /**
- * What a visit type starts with when it is first offered: nothing of the Schedule's own, so it follows the
- * visit type in everything.
+ * The fields for a visit type the actor has just started offering: no overrides, so the Schedule
+ * uses the visit type's own parameters and hours.
  * @param service - The visit type.
  * @returns The fields.
  */
@@ -129,24 +129,34 @@ export function buildScheduleDraft(
 
   for (const [id, current] of Object.entries(fields.offerings)) {
     const service = servicesById.get(id);
-    if (!service) {
-      continue;
+    if (service) {
+      draft = withOfferingEdits(draft, service, current, initial);
     }
-    if (!Object.hasOwn(initial.offerings, id)) {
-      draft = withoutService(draft, service);
-      draft.serviceType = [...(draft.serviceType ?? []), ...toServiceTypeCodeableConcepts(service)];
-    }
-    const before = startingOfferingFields(initial, service);
-    if (!deepEquals(current.parameters, before.parameters)) {
-      draft = setScheduleSchedulingParameterValues(draft, service, current.parameters);
-    }
-    // An emptied week has no stored form. The page refuses to save it, so it is left as stored meanwhile.
-    const { overriding, weekly } = current.availability;
-    if (!deepEquals(current.availability, before.availability) && (!overriding || hasAnyAvailableDay(weekly))) {
-      draft = overriding
-        ? setScheduleAvailability(draft, service, fromWeeklyAvailability(weekly))
-        : clearScheduleSchedulingParameter(draft, service, 'availability');
-    }
+  }
+  return draft;
+}
+
+function withOfferingEdits(
+  schedule: Schedule,
+  service: WithId<HealthcareService>,
+  current: OfferingFields,
+  initial: ScheduleFields
+): Schedule {
+  let draft = schedule;
+  if (!Object.hasOwn(initial.offerings, service.id)) {
+    draft = withoutService(draft, service);
+    draft.serviceType = [...(draft.serviceType ?? []), ...toServiceTypeCodeableConcepts(service)];
+  }
+  const before = startingOfferingFields(initial, service);
+  if (!deepEquals(current.parameters, before.parameters)) {
+    draft = setScheduleSchedulingParameterValues(draft, service, current.parameters);
+  }
+  // An emptied week has no stored form. The page refuses to save it, so it is left as stored meanwhile.
+  const { overriding, weekly } = current.availability;
+  if (!deepEquals(current.availability, before.availability) && (!overriding || hasAnyAvailableDay(weekly))) {
+    draft = overriding
+      ? setScheduleAvailability(draft, service, fromWeeklyAvailability(weekly))
+      : clearScheduleSchedulingParameter(draft, service, 'availability');
   }
   return draft;
 }
