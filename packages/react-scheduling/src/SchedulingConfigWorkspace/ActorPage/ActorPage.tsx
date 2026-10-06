@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   Group,
-  Menu,
   Modal,
   SimpleGrid,
   Stack,
@@ -20,7 +19,6 @@ import type { WithId } from '@medplum/core';
 import { capitalize, deepEquals, getDisplayString, getSchedulingTimezone, normalizeErrorString } from '@medplum/core';
 import type { HealthcareService, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconChevronDown } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { getActorTypeLabel } from '../../actors';
@@ -38,6 +36,7 @@ import { getActorStatus, isActorInactive } from '../SchedulingConfigWorkspace.ut
 import type { ConfigStatus } from '../StatusBadge';
 import { StatusBadge } from '../StatusBadge';
 import { OfferingEditor, OfferingSummary } from './OfferingEditor';
+import { OfferPicker } from './OfferPicker';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
 import { buildScheduleDraft, newOfferingFields, scheduleFieldsOf } from './scheduleDraft';
 
@@ -147,12 +146,10 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     setFields((current) => ({ ...current, offerings: { ...current.offerings, [id]: value } }));
   }
 
-  function offer(service: WithId<HealthcareService>): void {
-    setFields((current) => ({
-      ...current,
-      offerings: { ...current.offerings, [service.id]: newOfferingFields(service) },
-    }));
-    setOpen(service.id);
+  function offer(chosen: WithId<HealthcareService>[]): void {
+    const added = Object.fromEntries(chosen.map((service) => [service.id, newOfferingFields(service)]));
+    setFields((current) => ({ ...current, offerings: { ...current.offerings, ...added } }));
+    setOpen(chosen[0]?.id ?? null);
   }
 
   function stopOffering(service: WithId<HealthcareService>): void {
@@ -294,7 +291,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           </Accordion>
         )}
 
-        <OfferMenu services={offerable} onOffer={offer} />
+        <OfferPicker services={offerable} onOffer={offer} />
       </ConfigSection>
 
       <Modal
@@ -438,43 +435,6 @@ function ReadOnlyField(props: { readonly label: string; readonly value: string }
       </Text>
       <Text size="sm">{props.value}</Text>
     </Stack>
-  );
-}
-
-interface OfferMenuProps {
-  /** The active visit types the Schedule doesn't offer yet. */
-  readonly services: readonly WithId<HealthcareService>[];
-  readonly onOffer: (service: WithId<HealthcareService>) => void;
-}
-
-function OfferMenu(props: OfferMenuProps): JSX.Element {
-  const { services, onOffer } = props;
-  if (services.length === 0) {
-    return (
-      <Text size="sm" c="dimmed">
-        There is nothing more to offer: every active visit type is offered here.
-      </Text>
-    );
-  }
-  return (
-    <Group>
-      <Menu position="bottom-start" withinPortal>
-        <Menu.Target>
-          <Button variant="light" rightSection={<IconChevronDown size={16} />}>
-            Offer a visit type
-          </Button>
-        </Menu.Target>
-        <Menu.Dropdown>
-          {services.map((service) => {
-            return (
-              <Menu.Item key={service.id} onClick={() => onOffer(service)}>
-                <Text size="sm">{service.name ?? 'Untitled visit type'}</Text>
-              </Menu.Item>
-            );
-          })}
-        </Menu.Dropdown>
-      </Menu>
-    </Group>
   );
 }
 

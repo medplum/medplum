@@ -137,8 +137,16 @@ function syncedSchedule(onSynced: Setup['onSynced']): WithId<Schedule> {
   return onSynced.mock.calls.at(-1)?.[0].find((resource: Resource) => resource.resourceType === 'Schedule');
 }
 
-async function openOfferMenu(): Promise<void> {
-  await userEvent.click(await screen.findByRole('button', { name: 'Offer a visit type' }));
+async function openOfferPicker(): Promise<void> {
+  await userEvent.click(await screen.findByRole('button', { name: 'Offer visit types' }));
+}
+
+async function offer(...names: string[]): Promise<void> {
+  await openOfferPicker();
+  for (const name of names) {
+    await userEvent.click(screen.getByRole('option', { name }));
+  }
+  await userEvent.click(screen.getByRole('button', { name: /^Offer \d/ }));
 }
 
 describe('ActorPage', () => {
@@ -194,7 +202,7 @@ describe('ActorPage', () => {
     await setup(room3);
 
     expect(screen.getByText('Room 3 offers no visit types yet.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Offer a visit type' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Offer visit types' })).toBeInTheDocument();
     expect(screen.queryByText('Schedule status')).not.toBeInTheDocument();
   });
 
@@ -359,8 +367,7 @@ describe('ActorPage', () => {
   test('a first visit type for a room creates one active Schedule held by the room alone', async () => {
     const { medplum, onSynced } = await setup(room3);
 
-    await openOfferMenu();
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Initial Visit' }));
+    await offer('Initial Visit');
     expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'true');
     expect(medplum.executeBatch).not.toHaveBeenCalled();
     await save();
@@ -376,8 +383,7 @@ describe('ActorPage', () => {
   test('discarding a first offering writes nothing and leaves the room without a Schedule', async () => {
     const { medplum } = await setup(room3);
 
-    await openOfferMenu();
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Initial Visit' }));
+    await offer('Initial Visit');
     await userEvent.click(within(saveBar() as HTMLElement).getByRole('button', { name: 'Discard' }));
 
     expect(screen.getByText('Room 3 offers no visit types yet.')).toBeInTheDocument();
@@ -385,13 +391,22 @@ describe('ActorPage', () => {
     expect(medplum.executeBatch).not.toHaveBeenCalled();
   });
 
-  test('offers only active visit types, and says when every one is already offered', async () => {
-    await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit, followUp])]);
+  test('offers only active visit types not yet offered, filtered by the search', async () => {
+    await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
 
-    await openOfferMenu();
-    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Cystoscopy']);
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Cystoscopy' }));
+    await openOfferPicker();
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Follow-up', 'Cystoscopy']);
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search visit types' }), 'cyst');
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Cystoscopy']);
+  });
 
+  test('offers several visit types at once, opening the first, and then says there is nothing more to offer', async () => {
+    await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+
+    await offer('Cystoscopy', 'Follow-up');
+
+    expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'true');
+    expect(entry('Cystoscopy')).toHaveAttribute('aria-expanded', 'false');
     expect(
       screen.getByText('There is nothing more to offer: every active visit type is offered here.')
     ).toBeInTheDocument();
@@ -443,8 +458,7 @@ describe('ActorPage', () => {
         name: 'Stop offering',
       })
     );
-    await openOfferMenu();
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Initial Visit' }));
+    await offer('Initial Visit');
     expect(saveBar()).not.toBeNull();
 
     await save();

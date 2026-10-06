@@ -261,9 +261,9 @@ describe('SchedulingConfigWorkspace', () => {
     await setup();
     await userEvent.click(row('Exam Room C'));
 
-    await userEvent.click(within(details()).getByRole('button', { name: 'Offer a visit type' }));
-    const telehealth = screen.getByRole('menuitem', { name: 'Telehealth Consult' });
-    await userEvent.click(telehealth);
+    await userEvent.click(within(details()).getByRole('button', { name: 'Offer visit types' }));
+    await userEvent.click(screen.getByRole('option', { name: 'Telehealth Consult' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Offer 1 visit type' }));
     await userEvent.click(saveButton());
 
     await waitFor(() => expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeInTheDocument());
