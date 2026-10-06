@@ -9,6 +9,7 @@ import {
   buildLambdaPayload,
   getExecuteLambdaClient,
   getLambdaFunctionName,
+  normalizeLambdaExecutionError,
   parseLambdaLog,
   sanitizeLogResult,
 } from './execute';
@@ -41,7 +42,7 @@ export async function runInLambdaStreaming(request: BotExecutionContext): Promis
 
     return await processEventStream(response.EventStream, responseStream);
   } catch (err) {
-    return { success: false, logResult: normalizeErrorString(err) };
+    return { success: false, logResult: normalizeLambdaExecutionError(err, bot) };
   }
 }
 
