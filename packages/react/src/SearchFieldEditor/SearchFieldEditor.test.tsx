@@ -5,6 +5,20 @@ import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { SearchFieldEditor } from './SearchFieldEditor';
 
+async function openFieldOptions(fields: string[]): Promise<void> {
+  render(
+    <SearchFieldEditor search={{ resourceType: 'Patient', fields }} visible={true} onOk={vi.fn()} onCancel={vi.fn()} />
+  );
+  await act(async () => {
+    fireEvent.focus(screen.getByPlaceholderText('Select fields to display'));
+  });
+  await screen.findByRole('option', { name: 'Name', hidden: true });
+}
+
+function option(name: string): HTMLElement | null {
+  return screen.queryByRole('option', { name, hidden: true });
+}
+
 describe('SearchFieldEditor', () => {
   beforeAll(async () => {
     await new MockClient().requestSchema('Patient');
@@ -62,5 +76,25 @@ describe('SearchFieldEditor', () => {
     });
 
     expect(onCancel).toHaveBeenCalled();
+  });
+
+  test('Offers resource properties that have no search parameter', async () => {
+    await openFieldOptions(['name']);
+    expect(option('Photo')).toBeInTheDocument();
+    expect(option('Marital Status')).toBeInTheDocument();
+    expect(option('Meta')).toBeInTheDocument();
+  });
+
+  test('Offers a property once, even when a search parameter shares its name', async () => {
+    await openFieldOptions(['name']);
+    expect(option('Birth Date')).toBeInTheDocument();
+    expect(option('Birthdate')).toBeNull();
+    expect(screen.getAllByRole('option', { name: 'ID', hidden: true })).toHaveLength(1);
+  });
+
+  test('Still offers search parameters that are not properties', async () => {
+    await openFieldOptions(['name']);
+    expect(option('Last Updated')).toBeInTheDocument();
+    expect(option('Phone')).toBeInTheDocument();
   });
 });
