@@ -1,6 +1,7 @@
 ---
 sidebar_position: 2
 title: Clinical Decision Support and Follow-Through
+tags: [care coordination, clinical decision support, compliance]
 ---
 
 # Clinical Decision Support and Follow-Through
@@ -68,6 +69,14 @@ Choose this additional model only after defining retention and retrieval require
 
 Track who maintains the rules, how versions are introduced, when repeat review is warranted, and how to recover missed work. Measure actionable reviews, accepted and declined recommendations, follow-up completion, and alert burden with clear denominators. Clinical outcomes need separate evidence.
 
-Apply [Access Policies](/docs/access/access-policies) to the service context and stored outputs. For applicable certification requirements, use the [ONC documentation](/docs/compliance/onc) and evaluate the specific product and use case. Certification material supports this workflow design; it does not replace it.
+Apply [Access Policies](/docs/access/access-policies) to the service context and stored outputs.
+
+## Understand the Certification Context {/* #certification-context */}
+
+Medplum's [ONC certification documentation](/docs/compliance/onc#criteria-certified) lists the certified product and criteria, including (b)(11) Decision Support Interventions. Use that page and its linked product listing for certification scope. Building a CDS workflow on Medplum still requires evaluating the particular application, intervention, and use case.
+
+Under HTI-1, the (b)(11) criterion replaced the legacy (a)(9) CDS criterion. The [ONC Decision Support Interventions guidance](https://healthit.gov/test-method/decision-support-interventions/) describes evidence-based and predictive interventions, source information, feedback, and applicable risk-management requirements. Treat the [Insights Condition](https://healthit.gov/certification-health-it/insights-condition/) as a separate reporting topic with its own applicability and measures; operational Task counts alone do not establish that reporting model.
+
+For context-aware reference links, [HL7 Infobutton](https://www.hl7.org/implement/standards/product_brief.cfm?product_id=208) is another integration option. Choose the interaction that fits the clinician's workflow, then confirm the requirements for the product being delivered.
 
 See [Automating Care Workflows](/docs/careplans/automating-workflows) for event handling and [Operational Reporting](/docs/careplans/operational-reporting) for transitions and measures.

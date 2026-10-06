@@ -106,18 +106,32 @@ You can search for all unassigned tasks using the [`:missing`](/docs/search/basi
   </TabItem>
 </Tabs>
 
-### Describe the Role Required
+### Describe the Role Required {/* #describe-the-role-required */}
 
 Use `Task.performerType` for the kind of participant needed, such as a coordinator or clinical reviewer. Keep the role vocabulary consistent with your PractitionerRole model and verify that each code describes the actual role. A general assistant and a physician assistant, for example, have different responsibilities.
 
 ```ts
 {
   resourceType: 'Task',
-  // Illustrative label; configure a verified code for searchable role pools.
-  performerType: [{ text: 'Intake coordinator' }],
+  // Illustrative local vocabulary; replace the namespace with one you govern.
+  performerType: [{
+    coding: [{
+      system: 'https://example.org/CodeSystem/workflow-roles',
+      code: 'intake-coordinator',
+      display: 'Intake coordinator',
+    }],
+  }],
   // ...
 }
 ```
+
+The `example.org` namespace and code above define an illustrative local role, not a standard clinical code. Use the same coding in your role model and in the pool's token search:
+
+```http
+GET /fhir/R4/Task?performer=https%3A%2F%2Fexample.org%2FCodeSystem%2Fworkflow-roles%7Cintake-coordinator&owner:missing=true&status=ready
+```
+
+`text` alone does not supply the `system|code` token used by this query. Add a work-type filter when the same role handles several queues.
 
 See [Teams and Delegation](/docs/careplans/teams-and-delegation) for eligibility and [Message Response Tracking and Routing](/docs/communications/message-response-tracking-and-routing) for a conversation-based work queue.
 
@@ -254,7 +268,7 @@ Use `Task.for` for the patient beneficiary, and set the clinical request's own p
 
 Use [Operational Reporting](/docs/careplans/operational-reporting) for stage durations and queue aging. The most recent modification time is not necessarily when an item entered its current stage.
 
-## Give Patients and Caregivers Their Own Work List
+## Give Patients and Caregivers Their Own Work List {/* #give-patients-and-caregivers-their-own-work-list */}
 
 A patient completing intake has a different job from the clinician reviewing the answers. Give each a separate Task so the portal can show the patient's next action while staff track review in their own queue.
 

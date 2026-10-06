@@ -67,7 +67,7 @@ Use a [scheduled Bot](/docs/bots/bot-cron-job) to evaluate eligible plans or cas
 
 For overdue work, update or escalate the existing item rather than creating a new copy of the obligation. See [Handoffs and Escalation](/docs/careplans/handoffs-and-escalation) for deadline semantics and paused clocks.
 
-## Let the Assignee Know
+## Let the Assignee Know {/* #let-the-assignee-know */}
 
 Use [WebSocket subscriptions](/docs/react/use-subscription) to refresh an open work queue when Tasks are assigned, changed, or escalated. On reconnect, query the current queue so the UI catches changes that happened while it was offline.
 

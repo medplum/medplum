@@ -5,6 +5,9 @@ tags: [communications, task, routing]
 keywords: [task, routing, assignment, communication, thread, pool, reroute, claim]
 ---
 
+import RoutingCode from '!!raw-loader!@site/../examples/src/communications/task-routing-examples.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # Message Response Tracking and Routing
 
 A conversation can move between teams while the patient keeps replying in the same thread. Use a Task to track who owes the next response, and Communication to retain what everyone said. Reassigning the work then preserves the conversation and its history.
@@ -60,13 +63,19 @@ Create a Task when a message needs an accountable response. Informational messag
 }
 ```
 
-The role label is illustrative. Configure a verified role code for searchable pools. Set an `owner` when assigning directly, retaining `performerType` when the role requirement remains relevant.
+The role label is illustrative. Use the [coded role and matching query](/docs/careplans/tasks#describe-the-role-required) when building a searchable pool. Set an `owner` when assigning directly, retaining `performerType` when the role requirement remains relevant.
 
 ## Claim a Task from the Pool
 
 Query for the pool's work type, role, open status, and `owner:missing=true`. A role filter alone also returns work that someone has already claimed. A group-owned queue instead searches for that group's owner reference.
 
 Read the current Task, check the claimant's eligibility, and update `owner` using `If-Match` for the version read. If the version changed, reload the Task and let the user review the current assignment. Follow [Build a Queue and Let Staff Claim Work](/docs/careplans/tasks#build-and-claim-a-queue) for the shared claiming pattern.
+
+After checking eligibility in your controlled assignment path, pass the Task version the user reviewed to this function. A conflict returns `undefined`; reload the queue and ask the user to review the current assignment before another attempt.
+
+<MedplumCodeBlock language="ts" selectBlocks="routingImports, versionedTask, claimTaskTs">
+  {RoutingCode}
+</MedplumCodeBlock>
 
 Claiming establishes ownership. Set `in-progress` when the response work begins. Workflows that explicitly request and acknowledge a handoff can use `requested` and `accepted` as described in [Handoffs](/docs/careplans/handoffs-and-escalation#define-lifecycle-and-completion).
 
@@ -76,9 +85,21 @@ For the same response obligation, update the existing Task's `owner` with a vers
 
 Use a transaction Bundle when linked resource updates must succeed together. Apply version checks to both records. See [FHIR Batch and Transaction Requests](/docs/fhir-datastore/fhir-batch-requests).
 
+This example also adds the assignee to the thread. Pass the Practitioner who will participate in the conversation, even if a PractitionerRole owns the Task. Check eligibility and permission to join before calling it. The transaction requires the project's [transaction support](/docs/fhir-datastore/fhir-batch-requests) to be enabled. On a version conflict, reload both records and review the proposed transfer; retrying must preserve any intervening membership changes.
+
+<MedplumCodeBlock language="ts" selectBlocks="rerouteToProviderTs">
+  {RoutingCode}
+</MedplumCodeBlock>
+
 ## Reroute to a Provider Pool
 
 Clear `Task.owner`, set the required `performerType`, and return the work to the pool's actionable status. Retain its `focus`, patient context, and history. Keep the thread's participant list intact; the pool is a routing destination for work.
+
+The helper below updates only the Task. It preserves earlier notes and leaves the conversation's participants intact. Use the same version-checking helper shown above; let a conflict reach the caller for review.
+
+<MedplumCodeBlock language="ts" selectBlocks="rerouteToPoolTs">
+  {RoutingCode}
+</MedplumCodeBlock>
 
 Configure eligibility through [Teams and Delegation](/docs/careplans/teams-and-delegation#check-eligibility-before-assignment) and visibility through the [assignment and access rules](/docs/careplans/teams-and-delegation#assignment-and-access). This includes access to the thread and individual messages the assignee needs to read.
 
@@ -98,11 +119,11 @@ Create Provenance targeting the relevant Task version, recording the actor and a
 
 Decide whether the previous owner should retain access through AccessPolicy. Their access to a Task and to the conversation are separate policy decisions.
 
-#### Update Task in Place
+### Update Task in Place
 
 Keep one Task when the obligation stays the same. Updating its owner preserves one work history, and access policies can permit the former owner to retain visibility where required.
 
-#### Create a New Task for the New Owner
+### Create a New Task for the New Owner
 
 Create a separate Task when the next person has a distinct obligation with its own completion criteria, such as a clinical review alongside a coordinator's patient response. Both can focus on the same thread. Choose this pattern because the work is separate, rather than to duplicate an item for visibility.
 

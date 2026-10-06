@@ -4,6 +4,9 @@ title: Longitudinal Patient Case Tracking
 tags: [care plans, episode of care, longitudinal tracking]
 ---
 
+import ExampleCode from '!!raw-loader!@site/../examples/src/careplans/longitudinal-tracking-examples.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # Longitudinal Patient Case Tracking
 
 A patient may have several visits, messages, and follow-up Tasks during one care program. The team still needs a way to answer: who is responsible for this case, and is it still active?
@@ -65,6 +68,12 @@ For a plan formed in the context of a case, this guide uses `CarePlan.supporting
 }
 ```
 
+Use a stable enrollment key to create the episode and its plan. This function takes references to an existing patient and organization and uses the episode's returned ID in the plan. Each conditional create can be retried with the same key if the process stops between writes; existing records retain their current state.
+
+<MedplumCodeBlock language="ts" selectBlocks="caseImports, createCaseTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
 Apply the [patient-context and access rules](/docs/careplans/teams-and-delegation#assignment-and-access) to the linked records.
 
 ## Find the Records for One Case {/* #retrieve-the-correct-case-context */}
@@ -76,6 +85,12 @@ GET /fhir/R4/CarePlan?patient=Patient/example
 ```
 
 For the last query, follow pagination and select plans whose `supportingInfo` explicitly references the episode. This selection resolves an association among already authorized resources; access remains enforced by AccessPolicy.
+
+This example follows every page of authorized plans and checks the explicit episode reference:
+
+<MedplumCodeBlock language="ts" selectBlocks="findCasePlansTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 A Condition search can find plans addressing a diagnosis, but cannot uniquely find an episode's plans. There is no standard R4 CarePlan search parameter for this `supportingInfo` association. If direct server-side episode-to-plan queries are essential at scale, agree on and validate a custom SearchParameter before relying on one.
 
