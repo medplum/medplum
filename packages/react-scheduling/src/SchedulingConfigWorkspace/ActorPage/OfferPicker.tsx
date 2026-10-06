@@ -7,6 +7,9 @@ import { IconChevronDown } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 
+const PAGE_SIZE = 10;
+const SHOW_MORE = '__show-more';
+
 export interface OfferPickerProps {
   /** The active visit types the Schedule doesn't offer yet. */
   readonly services: readonly WithId<HealthcareService>[];
@@ -23,12 +26,18 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
   const { services, onOffer } = props;
   const [search, setSearch] = useState('');
   const [checked, setChecked] = useState<ReadonlySet<string>>(new Set());
+  const [shown, setShown] = useState(PAGE_SIZE);
+  // What was ticked when the search last changed, listed first so a new search can't hide it. A box ticked since
+  // stays where it is, so the list doesn't move under the pointer.
+  const [pinned, setPinned] = useState<ReadonlySet<string>>(new Set());
   const combobox = useCombobox({
     onDropdownOpen: () => combobox.focusSearchInput(),
     onDropdownClose: () => {
       combobox.resetSelectedOption();
       setSearch('');
       setChecked(new Set());
+      setPinned(new Set());
+      setShown(PAGE_SIZE);
     },
   });
 
@@ -40,10 +49,11 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
     );
   }
 
-  const needle = search.trim().toLowerCase();
-  const matches = services.filter((service) => (service.name ?? '').toLowerCase().includes(needle));
-
-  function toggle(id: string): void {
+  function handleOptionSubmit(id: string): void {
+    if (id === SHOW_MORE) {
+      setShown((current) => current + PAGE_SIZE);
+      return;
+    }
     setChecked((current) => {
       const next = new Set(current);
       if (!next.delete(id)) {
@@ -60,7 +70,7 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
 
   return (
     <Group>
-      <Combobox store={combobox} width={320} position="bottom-start" onOptionSubmit={toggle}>
+      <Combobox store={combobox} width={360} position="bottom-start" onOptionSubmit={handleOptionSubmit}>
         <Combobox.Target withAriaAttributes={false}>
           <Button
             variant="light"
@@ -75,34 +85,16 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
             value={search}
             onChange={(event) => {
               setSearch(event.currentTarget.value);
+              setShown(PAGE_SIZE);
+              setPinned(checked);
               combobox.updateSelectedOptionIndex();
             }}
             placeholder="Search visit types"
             aria-label="Search visit types"
           />
           <Combobox.Options mah={280} style={{ overflowY: 'auto' }} aria-multiselectable>
-            {matches.length === 0 ? (
-              <Combobox.Empty>No visit types match</Combobox.Empty>
-            ) : (
-              matches.map((service) => (
-                <Combobox.Option
-                  key={service.id}
-                  value={service.id}
-                  active={checked.has(service.id)}
-                  aria-selected={checked.has(service.id)}
-                >
-                  <Group gap="sm" wrap="nowrap">
-                    <Checkbox
-                      checked={checked.has(service.id)}
-                      onChange={() => undefined}
-                      aria-hidden
-                      tabIndex={-1}
-                      style={{ pointerEvents: 'none' }}
-                    />
-                    <Text size="sm">{service.name ?? 'Untitled visit type'}</Text>
-                  </Group>
-                </Combobox.Option>
-              ))
+            {combobox.dropdownOpened && (
+              <OfferOptions services={services} search={search} shown={shown} checked={checked} pinned={pinned} />
             )}
           </Combobox.Options>
           <Combobox.Footer>
@@ -113,6 +105,59 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
         </Combobox.Dropdown>
       </Combobox>
     </Group>
+  );
+}
+
+interface OfferOptionsProps {
+  readonly services: readonly WithId<HealthcareService>[];
+  readonly search: string;
+  readonly shown: number;
+  readonly checked: ReadonlySet<string>;
+  readonly pinned: ReadonlySet<string>;
+}
+
+// Built only while the dropdown is open: Combobox keeps a closed dropdown mounted, so every option would otherwise
+// re-render with the page.
+function OfferOptions(props: OfferOptionsProps): JSX.Element {
+  const { services, search, shown, checked, pinned } = props;
+  const needle = search.trim().toLowerCase();
+  const first = services.filter((service) => pinned.has(service.id));
+  const matches = services.filter(
+    (service) => !pinned.has(service.id) && (service.name ?? '').toLowerCase().includes(needle)
+  );
+  if (first.length + matches.length === 0) {
+    return <Combobox.Empty>No visit types match</Combobox.Empty>;
+  }
+  const hidden = matches.length - shown;
+  return (
+    <>
+      {[...first, ...matches.slice(0, shown)].map((service) => (
+        <Combobox.Option
+          key={service.id}
+          value={service.id}
+          active={checked.has(service.id)}
+          aria-selected={checked.has(service.id)}
+        >
+          <Group gap="sm" wrap="nowrap">
+            <Checkbox
+              checked={checked.has(service.id)}
+              onChange={() => undefined}
+              aria-hidden
+              tabIndex={-1}
+              style={{ pointerEvents: 'none' }}
+            />
+            <Text size="sm">{service.name ?? 'Untitled visit type'}</Text>
+          </Group>
+        </Combobox.Option>
+      ))}
+      {hidden > 0 && (
+        <Combobox.Option value={SHOW_MORE}>
+          <Text size="sm" c="blue">
+            Show more ({hidden} not shown)
+          </Text>
+        </Combobox.Option>
+      )}
+    </>
   );
 }
 
