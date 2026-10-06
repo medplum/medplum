@@ -33,7 +33,7 @@ import { summarizeOffering } from '../offeringSummary';
 import { getActorStatus, isActorInactive } from '../SchedulingConfigWorkspace.utils';
 import type { ConfigStatus } from '../StatusBadge';
 import { StatusBadge } from '../StatusBadge';
-import { OfferingEntry } from './OfferingEntry';
+import { OfferingEditor, OfferingSummary } from './OfferingEditor';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
 import { buildScheduleDraft, scheduleFieldsOf } from './scheduleDraft';
 
@@ -234,22 +234,31 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
             {checks.map(({ service, errors, availabilityError }) => {
               const timezone = getSchedulingTimezone(service, draft, resource);
               return (
-                <OfferingEntry
-                  key={service.id}
-                  service={service}
-                  value={fields.offerings[service.id]}
-                  initialParameters={initial.offerings[service.id].parameters}
-                  onChange={(value) => updateOffering(service.id, value)}
-                  summary={draft ? summarizeOffering(service, draft) : ''}
-                  dirty={isOfferingDirty(service)}
-                  errors={errors}
-                  availabilityError={triedToSave ? availabilityError : undefined}
-                  timezone={
-                    timezone
-                      ? { zone: timezone, source: timezoneSource(fields.offerings[service.id], service, actorName) }
-                      : undefined
-                  }
-                />
+                <Accordion.Item key={service.id} value={service.id}>
+                  <Accordion.Control>
+                    <OfferingSummary
+                      service={service}
+                      value={fields.offerings[service.id]}
+                      summary={draft ? summarizeOffering(service, draft) : ''}
+                      dirty={isOfferingDirty(service)}
+                    />
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <OfferingEditor
+                      service={service}
+                      value={fields.offerings[service.id]}
+                      initialParameters={initial.offerings[service.id].parameters}
+                      onChange={(value) => updateOffering(service.id, value)}
+                      errors={errors}
+                      availabilityError={triedToSave ? availabilityError : undefined}
+                      timezone={
+                        timezone
+                          ? { zone: timezone, source: timezoneSource(fields.offerings[service.id], service, actorName) }
+                          : undefined
+                      }
+                    />
+                  </Accordion.Panel>
+                </Accordion.Item>
               );
             })}
           </Accordion>
