@@ -27,8 +27,8 @@ export const SchedulingRescheduledByOperationURI =
   'https://medplum.com/fhir/StructureDefinition/SchedulingRescheduledByOperation';
 
 /**
- * Reads the stored interval without rounding fractional minutes.
- * @param appointment - The appointment being moved.
+ * Reads an appointment's interval without rounding fractional minutes.
+ * @param appointment - The appointment being moved, or the proposal it is moving to.
  * @returns Its positive duration, or undefined for a missing or invalid interval.
  */
 export function getRescheduleDurationMinutes(appointment: Appointment): number | undefined {
@@ -51,9 +51,9 @@ export function getProposedSchedules(proposal: Appointment): string[] {
 }
 
 /**
- * Moves an existing appointment without checking availability or start alignment.
- * Rebuilds geometry from current schedules and preserves the stored appointment's length and metadata,
- * marking it with `SchedulingUnvalidatedReschedule`.
+ * Moves an existing appointment without checking availability, start alignment, or length.
+ * Rebuilds geometry from current schedules at the proposal's start and length, preserving the
+ * stored appointment's metadata and marking it with `SchedulingUnvalidatedReschedule`.
  *
  * Writes in order: creates the new Slots, moves the appointment onto them with one
  * conditional update, then deletes the old Slots. The appointment is only ever wholly at its
@@ -61,7 +61,7 @@ export function getProposedSchedules(proposal: Appointment): string[] {
  * a failure after it leaves the old Slots behind, logged, with the move complete.
  * @param medplum - The client to write through.
  * @param moving - The appointment being moved. Re-read before writing, so a stale copy is not written back.
- * @param proposal - The manually chosen start and schedules.
+ * @param proposal - The manually chosen start, length, and schedules.
  * @returns The updated appointment and its new slots.
  */
 export async function writeElevatedReschedule(
@@ -83,10 +83,10 @@ export async function writeElevatedReschedule(
   if (existing.status !== 'pending' && existing.status !== 'booked') {
     throw new Error('Only pending or booked appointments can be rescheduled.');
   }
-  const durationMinutes = getRescheduleDurationMinutes(existing);
+  const durationMinutes = getRescheduleDurationMinutes(proposal);
   const start = new Date(proposal.start ?? '');
   if (!durationMinutes || !isValidDate(start)) {
-    throw new Error('Manual rescheduling requires a valid start and an existing appointment length.');
+    throw new Error('Manual rescheduling requires a valid start and length.');
   }
   const serviceRefs = extractServiceTypeReferences(existing.serviceType);
   if (serviceRefs.length !== 1) {

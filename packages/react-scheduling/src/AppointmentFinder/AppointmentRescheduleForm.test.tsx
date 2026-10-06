@@ -170,20 +170,20 @@ describe('AppointmentRescheduleForm', () => {
       );
     });
 
-    test('moves a typed time with fixed length, announces each write once and calls back once', async () => {
+    test('moves a typed time at its stored length, announces each write once and calls back once', async () => {
       const stored = await medplum.readResource('Appointment', APPOINTMENT.id);
       const events = recordModifications();
       const notify = vi.spyOn(medplum, 'notifyResourceModified');
       const post = vi.spyOn(medplum, 'post');
       await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });
       await enterTime();
-      expect(screen.getByLabelText('Minutes')).toHaveAttribute('readonly');
       expect(screen.getByLabelText('Minutes')).toHaveValue('30');
       await clickReschedule();
       expect(lastRescheduleParameters(post)).toBeUndefined();
       expect(onRescheduled).toHaveBeenCalledTimes(1);
       const result = onRescheduled.mock.calls[0][0];
       expect(result.appointments[0].id).toBe(APPOINTMENT.id);
+      expect(result.appointments[0].end).toBe('2026-08-18T18:37:00.000Z');
       expect(events.map(({ resourceType, operation, id }) => `${operation} ${resourceType}/${id}`).sort()).toEqual(
         [
           ...result.slots.map((slot: Slot) => `create Slot/${slot.id}`),
@@ -195,11 +195,24 @@ describe('AppointmentRescheduleForm', () => {
       expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
     });
 
-    test('requires a valid original duration and never falls back to the configured duration', async () => {
-      await setup(medplum, { appointment: { ...APPOINTMENT, end: undefined }, canBypassSchedulingRules: true });
+    test('moves a typed time at a typed length', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
       await enterTime();
-      expect(screen.getByText(/has no valid length/)).toBeInTheDocument();
+      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '45' } });
+      await settleAutocomplete();
+      await clickReschedule();
+      expect(onRescheduled.mock.calls[0][0].appointments[0].end).toBe('2026-08-18T18:52:00.000Z');
+    });
+
+    test('asks for a length when the appointment has none, rather than using the configured one', async () => {
+      const stored = await medplum.updateResource({ ...APPOINTMENT, end: undefined });
+      await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });
+      await enterTime();
+      expect(screen.getByLabelText('Minutes')).toHaveValue('');
       expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
+      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '20' } });
+      await settleAutocomplete();
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeEnabled();
     });
 
     test('clears a manual selection if permission is withdrawn', async () => {

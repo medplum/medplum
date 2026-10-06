@@ -172,8 +172,8 @@ export interface AppointmentProposalFormProps {
   /** Extensions to put on every appointment this form books. */
   readonly appointmentExtensions?: readonly Extension[];
   /**
-   * Allows manual time entry, bypassing `$find`. Booking can edit length; rescheduling
-   * preserves the interval of `ignoreAppointment`.
+   * Allows manual entry of a time and length, bypassing `$find`. Rescheduling starts from
+   * the length of `ignoreAppointment`.
    */
   readonly canBypassSchedulingRules?: boolean;
   /**
@@ -430,14 +430,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   );
 
   const storedDurationMinutes = ignoreAppointment ? getRescheduleDurationMinutes(ignoreAppointment) : undefined;
-  const durationError =
-    mode === 'reschedule' && storedDurationMinutes === undefined
-      ? 'This appointment has no valid length. Choose a time from the search.'
-      : undefined;
   // State holds the edit rather than the value, so a different visit type falls back to
   // its own default instead of keeping the last length typed.
   const effectiveDurationMinutes =
-    mode === 'reschedule' ? storedDurationMinutes : (manualDurationMinutes ?? configuredDurationMinutes);
+    manualDurationMinutes ?? (mode === 'reschedule' ? storedDurationMinutes : configuredDurationMinutes);
 
   // Reconcile permission changes before rendering, so a revoked choice cannot be submitted.
   if (!canBypassSchedulingRules && manualChoice) {
@@ -458,7 +454,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setManualDateTime(dateTime);
     setManualDurationMinutes(durationMinutes);
 
-    durationMinutes = mode === 'reschedule' ? storedDurationMinutes : durationMinutes;
     const start = parseZonedDateTimeInput(dateTime, timezone);
     if (!start || !durationMinutes || durationMinutes <= 0 || !service || candidates.length === 0) {
       setManualChoice(undefined);
@@ -693,8 +688,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
             <ManualTime
               dateTime={manualDateTime}
               durationMinutes={effectiveDurationMinutes}
-              fixedDuration={mode === 'reschedule'}
-              durationError={durationError}
               timezone={timezone}
               conflicts={conflicts}
               onChange={enterManualTime}
@@ -841,9 +834,6 @@ interface ManualTimeProps {
   /** A `YYYY-MM-DDTHH:MM` wall-clock value, read in the visit's timezone. */
   readonly dateTime: string;
   readonly durationMinutes: number | undefined;
-  readonly fixedDuration: boolean;
-  /** Why a fixed duration is unavailable, if it is. */
-  readonly durationError: string | undefined;
   /** IANA timezone the visit is held in. */
   readonly timezone: string | undefined;
   readonly conflicts: readonly BookingConflict[];
@@ -857,7 +847,7 @@ interface ManualTimeProps {
  * @returns The fields, and what the time entered clashes with.
  */
 function ManualTime(props: ManualTimeProps): JSX.Element {
-  const { dateTime, durationMinutes, timezone, conflicts, onChange, fixedDuration, durationError } = props;
+  const { dateTime, durationMinutes, timezone, conflicts, onChange } = props;
 
   return (
     <Stack gap={4}>
@@ -876,19 +866,12 @@ function ManualTime(props: ManualTimeProps): JSX.Element {
           label="Minutes"
           min={1}
           allowDecimal={false}
-          readOnly={fixedDuration}
-          disabled={fixedDuration}
           w={110}
           value={durationMinutes === undefined ? '' : Math.round(durationMinutes)}
           onChange={(value) => onChange(dateTime, typeof value === 'number' ? value : undefined)}
         />
       </Group>
 
-      {durationError && (
-        <Text size="xs" c="red">
-          {durationError}
-        </Text>
-      )}
       {/* The visit is held where it is held, not where the person booking it is
           sitting, and a typed time is read there. */}
       {!isViewerTimezone(timezone) && timezone && (

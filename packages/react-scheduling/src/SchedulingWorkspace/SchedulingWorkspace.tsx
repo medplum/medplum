@@ -69,8 +69,7 @@ export interface SchedulingWorkspaceProps {
    */
   readonly appointmentCancellationReasonValueSet?: string;
   /**
-   * Lets booking take a typed time and length, and rescheduling take a typed time
-   * while preserving the existing length, placing a visit the scheduling
+   * Lets booking and rescheduling take a typed time and length, placing a visit the scheduling
    * rules would refuse: over occupied or blocked time, past the configured capacity,
    * or at a time or length the visit type does not offer.
    *

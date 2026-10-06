@@ -55,8 +55,9 @@ export interface AppointmentRescheduleFormProps extends Omit<
  * moved off, so `$find` is told to ignore it, which is what lets the same hour in a
  * different room be found.
  *
- * Searched times use `Appointment/[id]/$reschedule`. Manually entered times create the new
- * Slots, move the appointment onto them, then delete the old Slots, keeping the existing length.
+ * Searched times use `Appointment/[id]/$reschedule`, keeping the configured length. Manually
+ * entered times and lengths create the new Slots, move the appointment onto them, then delete
+ * the old Slots.
  * Announces the appointment, the times it gave up and the times it took, so views reading
  * them refresh, then reports what was written through `onRescheduled`.
  *

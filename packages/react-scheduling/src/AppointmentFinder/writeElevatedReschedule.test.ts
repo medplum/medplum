@@ -29,9 +29,15 @@ import {
 } from './writeElevatedReschedule';
 
 const START = new Date('2026-08-18T03:07:00.000Z');
+const DURATION_MS = 2220123;
 
 function proposal(schedules: WithId<Schedule>[] = [DrRiveraSchedule, ExamRoomBSchedule]): Appointment {
-  return buildElevatedBooking({ service: UltrasoundImagingService, schedules, start: START, durationMinutes: 999 });
+  return buildElevatedBooking({
+    service: UltrasoundImagingService,
+    schedules,
+    start: START,
+    durationMinutes: DURATION_MS / 60000,
+  });
 }
 
 describe('writeElevatedReschedule', () => {
@@ -46,7 +52,7 @@ describe('writeElevatedReschedule', () => {
     existing = await medplum.createResource({
       ...RiveraImagingAppointment,
       start: '2026-08-18T15:00:00Z',
-      end: new Date(Date.parse('2026-08-18T15:00:00Z') + 2220123).toISOString(),
+      end: '2026-08-18T15:30:00Z',
       created: '2026-01-01T00:00:00Z',
       comment: 'Keep this clinical detail',
       extension: [
@@ -61,7 +67,7 @@ describe('writeElevatedReschedule', () => {
     });
   });
 
-  test('updates the same appointment, preserves exact length and metadata, and replaces only scheduled actors', async () => {
+  test('updates the same appointment to the exact proposed length, preserving metadata and unscheduled actors', async () => {
     const update = vi.spyOn(medplum, 'updateResource');
     const original = structuredClone(existing);
     const result = await writeElevatedReschedule(medplum, existing, proposal());
@@ -77,7 +83,7 @@ describe('writeElevatedReschedule', () => {
     expect(result.appointments[0].slot?.map(getReferenceString)).toEqual(result.slots.map(getReferenceString));
     expect(result.appointments[0].id).toBe(existing.id);
     expect(Date.parse(result.appointments[0].end as string) - Date.parse(result.appointments[0].start as string)).toBe(
-      2220123
+      DURATION_MS
     );
     const {
       start: _start,
@@ -158,9 +164,12 @@ describe('writeElevatedReschedule', () => {
     expect(result.appointments[0].comment).toBe('Edited elsewhere');
   });
 
-  test.each([undefined, '2026-01-01T00:00:00Z'])('refuses an invalid original interval (%s)', async (end) => {
-    const stored = await medplum.updateResource({ ...existing, end });
-    await expect(writeElevatedReschedule(medplum, stored, proposal())).rejects.toThrow('length');
+  test('refuses a proposal without a valid length', async () => {
+    const create = vi.spyOn(medplum, 'createResource');
+    await expect(writeElevatedReschedule(medplum, existing, { ...proposal(), end: undefined })).rejects.toThrow(
+      'length'
+    );
+    expect(create).not.toHaveBeenCalled();
   });
 
   test.each([

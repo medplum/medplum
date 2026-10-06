@@ -61,7 +61,7 @@ export interface AppointmentCancelFormProps {
 export interface AppointmentDetailsProps {
   /**
    * Allows users to override scheduling rules when rescheduling or reassigning
-   * an appointment. Preserves the current visit length. The host controls access.
+   * an appointment, including its length. The host controls access.
    */
   readonly canBypassSchedulingRules?: boolean;
   readonly appointment: WithId<Appointment>;
