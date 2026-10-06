@@ -50,6 +50,31 @@ describe('Logger', () => {
     );
   });
 
+  test('Error with circular custom property', () => {
+    const shared = { id: 'shared' };
+    const res: Record<string, any> = { statusCode: 500, shared };
+    const req: Record<string, any> = { method: 'PUT', res, shared };
+    // Mirrors Node's IncomingMessage/ClientRequest: error.response.req.res === error.response (the cycle).
+    // `shared` is referenced twice but is not a cycle, so it must not become '[Circular]'.
+    res.req = req;
+    const error = new Error('Upload failed') as Error & { response: unknown };
+    error.response = res;
+
+    testLogger.error('Fatal error', error);
+    expect(testOutput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'ERROR',
+        msg: 'Fatal error',
+        error: 'Error: Upload failed',
+        response: {
+          statusCode: 500,
+          shared: { id: 'shared' },
+          req: { method: 'PUT', res: '[Circular]', shared: { id: 'shared' } },
+        },
+      })
+    );
+  });
+
   test('Does not write when logger is disabled', () => {
     const unlogger = new Logger((msg) => testOutput(JSON.parse(msg)), undefined, LogLevel.NONE);
     unlogger.error('Annihilation imminent');
