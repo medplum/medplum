@@ -5,6 +5,8 @@ title: Referrals
 
 # Referrals
 
+<span id="referral-overview" />
+
 A referral can be sent successfully and still go nowhere. The receiving clinic may need another document, the patient may need help scheduling, or the consultation note may never make it back to the referring team. A useful referral workflow keeps those next steps visible.
 
 In Medplum, start with a [ServiceRequest](/docs/api/fhir/resources/servicerequest) for the requested clinical service. Add Tasks for the work around it and link the messages, documents, appointments, and results as they arrive.
@@ -22,6 +24,8 @@ For an internal referral, such as primary care referring to the practice's behav
 For a referral to another system, add the transmission and intake steps: agree on identifiers and supported payloads, track delivery, resolve incoming patient references, and reconcile status updates. Each server uses its own local resource IDs while preserving the business referral identifier.
 
 The [worked example](/docs/careplans/referrals/fhir-resource-examples) uses two teams in one project so every reference can be followed locally. The same milestones apply across systems, with the integration carrying messages and status updates between them.
+
+<span id="key-resources" />
 
 ## Connect the Request to the Work Around It {/* #the-referral-data-model */}
 

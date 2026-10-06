@@ -46,7 +46,7 @@ Preserve the sender's request semantics, including the clinical requester, servi
 
 | Intake outcome | Representation |
 | --- | --- |
-| Received for review | `Task.status: received` when acknowledging a request for work |
+| Claimed for evaluation | `Task.status: received` when a potential performer has claimed the work and is deciding whether to accept it |
 | Accepted by the receiving team | `Task.status: accepted`, with an accountable owner |
 | Review has begun | `Task.status: in-progress` |
 | Waiting for missing material | `Task.status: on-hold`, local `businessStatus`, and an explanatory `statusReason` |

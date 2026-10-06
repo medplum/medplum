@@ -10,6 +10,8 @@ Both teams use one Medplum project in this example. The package is shared throug
 
 The examples use fictional IDs and text labels. Configure validated terminology and local workflow CodeSystems, and use your server's returned IDs for later references.
 
+<span id="servicerequest-example" />
+
 ## 1. Create the Request and Initial Work
 
 Assume `Patient/example`, `PractitionerRole/referring-clinician`, `Organization/referral-coordination`, and `Organization/receiving-clinic` already exist. The transaction creates an active order and a Task to coordinate it. The Task's `focus` uses the request's `urn:uuid` fullUrl so the server can resolve the new reference.
@@ -67,11 +69,13 @@ Conditional creates make replaying this initial submission safe for FHIR resourc
 
 For the remaining snapshots, assume the transaction returned `ServiceRequest/referral-001` and `Task/coordinate-001`. Each snapshot shows a later persisted state in the workflow.
 
+<span id="documentreference-example" />
+
 ## 2. Store the Referral Package
 
 Upload the reviewed PDF bytes with `createBinary` or `createAttachment`, setting `securityContext` to the DocumentReference that controls access. You can also use `createDocumentReference` to perform the document creation, upload, and attachment update. See [Recipients and Referral Packages](/docs/careplans/referrals/recipients-and-packages).
 
-After uploading, the DocumentReference looks like this. `Binary/package-001` is the ID returned by the upload; no base64 is embedded in the attachment.
+After uploading, the DocumentReference looks like this. `Binary/package-pdf-001` is the ID returned by the upload; no base64 is embedded in the attachment.
 
 ```json
 {
@@ -85,7 +89,7 @@ After uploading, the DocumentReference looks like this. `Binary/package-001` is 
   "content": [{
     "attachment": {
       "contentType": "application/pdf",
-      "url": "Binary/package-001",
+      "url": "Binary/package-pdf-001",
       "title": "Referral package REF-2026-001"
     }
   }],
@@ -96,6 +100,8 @@ After uploading, the DocumentReference looks like this. `Binary/package-001` is 
 ```
 
 The upload may use the DocumentReference as security context before the final attachment URL is populated. Establish the document's access rules first and recover incomplete uploads explicitly. A document's `final` status describes the document; it does not complete the referral.
+
+<span id="communication-example" />
 
 ## 3. Record the Thread and Sent Message
 
@@ -130,7 +136,6 @@ The sent child message carries the package. Record `sent` after the send event a
   "about": [{ "reference": "ServiceRequest/referral-001" }],
   "sender": { "reference": "Organization/referral-coordination" },
   "recipient": [
-    { "reference": "Organization/referral-coordination" },
     { "reference": "Organization/receiving-clinic" }
   ],
   "sent": "2026-10-06T17:00:00Z",
@@ -145,6 +150,8 @@ The sent child message carries the package. Record `sent` after the send event a
 Here, both teams participate in an in-app conversation. For external delivery, the integration resolves the intended destination separately from the complete local participant list and retains the provider's transmission identifier.
 
 :::
+
+<span id="task-example" />
 
 ## 4. Accept the Work and Assign Scheduling
 
@@ -181,9 +188,11 @@ Once acceptance and required authorization checks are recorded, conditionally cr
 }
 ```
 
+The referring team's `coordinate-001` Task owns follow-through and returned-note review. The receiving team's fulfillment and scheduling Tasks are independent obligations linked through the same ServiceRequest, outside that coordination tree. Different owners can share a Task hierarchy when the workflow calls for it; this example keeps the two teams' obligations separate.
+
 The shared view can now show receiving-team acceptance independently of the message's sent time. See [status updates](/docs/careplans/referrals/processing-and-coordination#keep-the-referring-team-in-the-loop) for notifying the referrer.
 
-## 5. Link the Booking {/* #4-link-the-booking */}
+## 5. Link the Booking {/* #link-the-booking */}
 
 The receiving team's booking workflow creates an Appointment. This snapshot omits scheduling extensions and Slot details; use the [Scheduling operations](/docs/scheduling) to create the booking for your configured service.
 
@@ -204,7 +213,7 @@ The receiving team's booking workflow creates an Appointment. This snapshot omit
 
 Version-check the update to `Task/schedule-001`, setting `status: completed` and `output` to a typed Appointment reference: `type.text = "Confirmed booking"` and `valueReference.reference = "Appointment/consultation-001"`. Notify the referring team of the booking. The overall coordination Task stays open because its scope includes the returned-note review.
 
-## 6. Retain and Review the Returned Note {/* #5-retain-and-review-the-returned-note */}
+## 6. Retain and Review the Returned Note {/* #review-the-returned-note */}
 
 The receiving team moves its fulfillment Task to `in-progress` when that work begins, then to `completed` when its consultation criteria are met. After the service, upload the returned note using the same Binary pattern. Preserve the author and match the source referral identifier before linking it.
 
@@ -220,7 +229,7 @@ The receiving team moves its fulfillment Task to `in-progress` when that work be
   "content": [{
     "attachment": {
       "contentType": "application/pdf",
-      "url": "Binary/consultation-note-001",
+      "url": "Binary/consultation-note-pdf-001",
       "title": "Consultation note REF-2026-001"
     }
   }],
@@ -249,6 +258,10 @@ Create the review Task once for the relevant note/version. The referring clinici
     "valueReference": { "reference": "DocumentReference/consultation-note-001" }
   }],
   "businessStatus": { "text": "Reviewed; no additional coordination needed" },
+  "output": [{
+    "type": { "text": "Review disposition" },
+    "valueCodeableConcept": { "text": "No additional coordination needed" }
+  }],
   "note": [{
     "authorReference": { "reference": "Practitioner/referring-clinician" },
     "time": "2026-10-14T17:00:00Z",

@@ -15,6 +15,8 @@ A fax receipt is useful evidence that something was delivered. The coordinator s
 | C-CDA exchange | Use a generator and validator appropriate to the agreed document template and receiving system |
 | In-app messaging | Use Medplum's Communication thread and message model, with referral context and document references |
 
+<span id="c-cda-transitions-of-care" />
+
 A Bot can coordinate generation and transmission. For C-CDA, follow the [C-CDA integration guidance](/docs/integration/c-cda) and verify the capabilities of your chosen generator; producing XML does not establish template conformance.
 
 Across systems, preserve the referral's business identifier and map local resource references. Agree on which party owns each update. Two servers may represent the same business request with different resource IDs.
@@ -25,7 +27,7 @@ Follow the [Messaging Data Model](/docs/communications/messaging-data-model):
 
 - A thread header groups the conversation and has no `payload` or `partOf`.
 - Each message has `partOf` pointing to the header and its own payload.
-- Include all participants, including the sender or thread creator, in the recipient list used by the workflow.
+- Include all participants, including the sender or thread creator, in `recipient` on the thread header. A child message identifies its intended recipients.
 - Set patient context on the header and each patient-related message. Access does not propagate through `partOf`.
 - Use `about` to reference the ServiceRequest and `payload.contentReference` to reference the DocumentReference actually sent.
 
