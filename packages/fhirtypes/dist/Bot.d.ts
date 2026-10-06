@@ -162,9 +162,9 @@ export interface Bot {
   publicWebhook?: boolean;
 
   /**
-   * Whether to provide the original UTF-8 JSON text in BotEvent.input
-   * instead of parsed JSON. Defaults to false. Set to true for webhook
-   * signature verification.
+   * Whether public webhooks provide the original UTF-8 JSON text in
+   * BotEvent.input instead of parsed JSON. Defaults to false. Set to true
+   * for webhook signature verification.
    */
   rawBody?: boolean;
 
