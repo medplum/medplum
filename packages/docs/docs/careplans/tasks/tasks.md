@@ -153,7 +153,7 @@ Below is an example of a `Task.performerType` [CodeableConcept](/docs/fhir-basic
         },
         // US SOC
         {
-          code:"29-2072"
+          code:"29-2072",
           system: "https://www.bls.gov/soc"
         }
       ],
