@@ -2359,10 +2359,13 @@ describe('Subscription Worker', () => {
       const criteriaResourceType = criteria.split('?')[0] as ResourceType;
       const subRef = `Subscription/${subscription.id}`;
       const expiration = Math.floor(Date.now() / 1000) + 3600;
-      await setResourceCacheEntry({
-        ...subscription,
-        meta: { ...subscription.meta, project: projectId },
-      });
+      await setResourceCacheEntry(
+        {
+          ...subscription,
+          meta: { ...subscription.meta, project: projectId },
+        },
+        repo.shardId
+      );
       await addUserActiveWebSocketSubscription(authorRef, subRef);
       await setActiveSubscription(projectId, criteriaResourceType, subRef, {
         criteria,

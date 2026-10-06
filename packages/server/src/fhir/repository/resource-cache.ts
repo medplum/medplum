@@ -5,12 +5,15 @@ import { stringify } from '@medplum/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getCacheRedis } from '../../redis';
+import { GLOBAL_SHARD_ID, normalizeShardId } from '../sharding';
 
 const RESOURCE_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 
 export interface CacheEntry<T extends Resource = Resource> {
   resource: T;
   projectId: string;
+  /** The normalized id of the shard holding the resource. */
+  shardId: string;
 }
 
 /**
@@ -24,7 +27,11 @@ export async function getResourceCacheEntry<T extends Resource>(
   id: string
 ): Promise<CacheEntry<WithId<T>> | undefined> {
   const cachedValue = await getCacheRedis().get(getResourceCacheKey(resourceType, id));
-  return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<WithId<T>>) : undefined;
+  const cacheEntry = cachedValue ? (JSON.parse(cachedValue) as CacheEntry<WithId<T>>) : undefined;
+  if (cacheEntry) {
+    cacheEntry.shardId ??= GLOBAL_SHARD_ID;
+  }
+  return cacheEntry;
 }
 
 /**
@@ -71,12 +78,17 @@ export async function getResourceCacheEntries(references: Reference[]): Promise<
  * Writes a cache entry to Redis.
  * If the `cacheResourcesOnWrite` server config is disabled, does not create a new cache entry unless `force` is set.
  * @param resource - The resource to cache.
+ * @param shardId - The shard holding the resource.
  * @param options - Optional write options.
  * @param options.force - Create the entry even if it does not already exist.
  */
-export async function setResourceCacheEntry(resource: WithId<Resource>, options?: { force?: boolean }): Promise<void> {
+export async function setResourceCacheEntry(
+  resource: WithId<Resource>,
+  shardId: string,
+  options?: { force?: boolean }
+): Promise<void> {
   const key = getResourceCacheKey(resource.resourceType, resource.id);
-  const value = stringify({ resource, projectId: resource.meta?.project });
+  const value = stringify({ resource, projectId: resource.meta?.project, shardId: normalizeShardId(shardId) });
   if (!options?.force && getConfig().cacheResourcesOnWrite === false) {
     await getCacheRedis().set(key, value, 'EX', RESOURCE_CACHE_EX_SECONDS, 'XX');
   } else {

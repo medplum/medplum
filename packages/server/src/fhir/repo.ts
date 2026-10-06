@@ -146,7 +146,14 @@ import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { lookupTables } from './searchparameter';
 import type { ShardRouting } from './sharding';
-import { GLOBAL_SHARD_ID, normalizeShardId, resolveShardId, shardRoutingError, TODO_SHARD_ID } from './sharding';
+import {
+  getResourceTypeShardId,
+  GLOBAL_SHARD_ID,
+  normalizeShardId,
+  resolveShardId,
+  shardRoutingError,
+  TODO_SHARD_ID,
+} from './sharding';
 import type { Expression, PgQueryable } from './sql';
 import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
 
@@ -2548,7 +2555,8 @@ export class Repository extends FhirRepository implements Disposable {
       return undefined;
     }
     this.recordCacheAccess('read', resourceType, 'repo.getCacheEntry');
-    return getResourceCacheEntry<T>(resourceType, id);
+    const entry = await getResourceCacheEntry<T>(resourceType, id);
+    return this.cacheEntryOnShard(entry);
   }
 
   /**
@@ -2563,7 +2571,24 @@ export class Repository extends FhirRepository implements Disposable {
     }
 
     this.recordCacheAccess('read', getResourceTypesFromReferences(references), 'repo.getCacheEntries');
-    return getResourceCacheEntries(references);
+    const entries = await getResourceCacheEntries(references);
+    for (let i = 0; i < entries.length; i++) {
+      entries[i] = this.cacheEntryOnShard(entries[i]);
+    }
+    return entries;
+  }
+
+  /**
+   * An entry cached by a repository on another shard is a copy this repository's database may not hold,
+   * so reads treat it as a miss.
+   * @param entry - The cache entry.
+   * @returns The entry if it was cached from the shard this repository reads its resource type from.
+   */
+  private cacheEntryOnShard<T extends Resource>(entry: CacheEntry<T> | undefined): CacheEntry<T> | undefined {
+    if (entry) {
+      return entry.shardId === getResourceTypeShardId(this.shardId, entry.resource.resourceType) ? entry : undefined;
+    }
+    return undefined;
   }
 
   /**
@@ -2583,7 +2608,7 @@ export class Repository extends FhirRepository implements Disposable {
     }
 
     this.recordCacheAccess('write', resource.resourceType, 'repo.setCacheEntry');
-    await setResourceCacheEntry(resource, options);
+    await setResourceCacheEntry(resource, getResourceTypeShardId(this.shardId, resource.resourceType), options);
   }
 
   /**
