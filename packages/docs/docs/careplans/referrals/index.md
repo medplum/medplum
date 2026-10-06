@@ -15,7 +15,7 @@ Use the [Referrals Decision Guide](/docs/decision-guides/referrals) to decide wh
 
 :::
 
-## The Referral Data Model
+## Connect the Request to the Work Around It {/* #the-referral-data-model */}
 
 | Resource | Role in the workflow |
 | --- | --- |
@@ -38,9 +38,9 @@ flowchart LR
   result[DiagnosticReport] -->|basedOn| referral
 ```
 
-Each patient-related resource also needs its own patient reference. The arrows in this diagram connect clinical and workflow context; access is enforced by [AccessPolicy and ProjectMembership](/docs/access/access-policies).
+You can follow these links from the clinical request to the work, messages, and evidence around it. Each patient-related resource also needs its own patient reference. The arrows in this diagram connect clinical and workflow context; access is enforced by [AccessPolicy and ProjectMembership](/docs/access/access-policies).
 
-## Keep the Milestones Distinct
+## Know What Each Milestone Actually Tells You {/* #keep-the-milestones-distinct */}
 
 A delivery receipt tells you that a package arrived. It does not tell you that the clinic accepted the referral or that the patient received the service. Track these milestones separately:
 

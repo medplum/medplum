@@ -6,7 +6,7 @@ title: Results and Closing the Loop
 
 The specialist saw the patient, but the referring team is still waiting for the note. From one team's perspective the service is complete; from the other's, there is work left to do. Model both so that a referral doesn't disappear from the queue too early.
 
-## Link the Returned Evidence
+## Bring the Note Back to the Original Referral {/* #link-the-returned-evidence */}
 
 | Returned record | Link to the original referral |
 | --- | --- |
@@ -19,7 +19,7 @@ For a DocumentReference, use `context.encounter` only for an Encounter or Episod
 
 Preserve the patient, author, clinical status, and relevant times on each returned record. If a DiagnosticReport has a rendered report, its `presentedForm` can use a Binary URL; it should not embed base64 attachment data.
 
-## Match Before Attaching
+## Check Which Referral the Result Belongs To {/* #match-before-attaching */}
 
 Prefer source referral identifiers and the correlation established during exchange. Verify the patient and service context as well. A patient can have several open referrals, so matching only on patient or specialty is insufficient.
 
@@ -35,7 +35,21 @@ Record the review disposition and rationale. Reference any resulting clinical re
 
 Use a stable identifier for the review work, derived from the referral and returned result/version or another defined review occurrence. Repeated delivery of the same report should not create repeated open review Tasks. Define when an amended report warrants another review.
 
-## Define Completion for Each Side
+## Decide When Each Team Is Done {/* #define-completion-for-each-side */}
+
+The two teams finish at different points. In a workflow that includes returned-note review, the referring team still has work after the consultation:
+
+```mermaid
+sequenceDiagram
+  participant Referring as Referring team
+  participant Receiving as Receiving team
+  Referring->>Receiving: Send referral and package
+  Receiving-->>Referring: Accept referral
+  Note over Receiving: Schedule and perform the service
+  Receiving->>Referring: Return consultation note
+  Note over Referring: Review note and assign any follow-up
+  Note over Referring: Close coordination when its criteria are met
+```
 
 | Record | What completion means |
 | --- | --- |
@@ -47,11 +61,15 @@ Use a stable identifier for the review work, derived from the referral and retur
 
 Use an appropriate terminal `Task.status` as well as the local `businessStatus`. A business-stage label alone does not close the Task. If the service was declined or cancelled, record that outcome rather than marking the ServiceRequest completed.
 
+:::tip[Make the closure boundary visible to staff]
+
 For closed-loop workflows, completion usually needs both returned evidence and review. For outbound tracking that ends at acceptance, document that narrower boundary clearly in the product and reports.
 
-## Handle Missing Results and Reopened Work
+:::
 
-A scheduled Bot can identify work past its agreed deadline and create or escalate a follow-up obligation once. Follow the [Medplum deadline convention](/docs/careplans/handoffs-and-escalation#represent-time-accurately), including pause rules and date-range queries.
+## Follow Up When the Note Is Missing or Changes {/* #handle-missing-results-and-reopened-work */}
+
+A visit may be over while the note is still missing. Give that missing result an owner and a deadline. A scheduled Bot can identify work past its agreed deadline and create or escalate a follow-up obligation once. Follow the [Medplum deadline convention](/docs/careplans/handoffs-and-escalation#represent-time-accurately), including pause rules and date-range queries.
 
 When new information arrives after closure, preserve the original completion history. Create a new review Task for genuinely new work, or reopen an existing Task only under a defined lifecycle policy. Report the additional interval separately; `lastModified` alone cannot tell you how long either interval lasted.
 

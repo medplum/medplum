@@ -23,9 +23,9 @@ You can also use a parent Task to track an overall coordination obligation, with
 
 See [Teams and Delegation](/docs/careplans/teams-and-delegation) for role eligibility and [Handoffs and Escalation](/docs/careplans/handoffs-and-escalation) for claiming, deadlines, and exception handling.
 
-## Track Coverage and Authorization
+## Find Out What Is Needed Before Booking {/* #track-coverage-and-authorization */}
 
-Separate the questions the payer integration must answer:
+Before telling the patient they are ready to book, establish which coverage or authorization checks your workflow requires. The payer integration may need to answer several different questions:
 
 | Question | Starting model |
 | --- | --- |
@@ -35,13 +35,17 @@ Separate the questions the payer integration must answer:
 | What was submitted for authorization? | Claim with `use: preauthorization` when this matches the exchange contract |
 | What did the payer decide? | ClaimResponse and its authorization/adjudication details, mapped according to that contract |
 
+:::caution[A processed response is not an authorization approval]
+
 A successful transport response or `ClaimResponse.outcome: complete` is not by itself an approval. Interpret the payer's actual adjudication and authorization details, including the covered services, dates, units, and identifiers. Eligibility is also distinct from authorization approval.
+
+:::
 
 The integration may use a payer API, an implementation guide, or an EDI mapping. Choose and validate that contract before defining the scheduling gate. These resources do not provide a universal clearinghouse connection or guarantee coverage. See the [R4 eligibility response fields](https://hl7.org/fhir/R4/coverageeligibilityresponse-definitions.html) for the information a response can carry.
 
 Keep the coordination Task on hold when required evidence is missing, with a reason and an accountable owner. Record a denial, expiration, or approved exception explicitly so it remains actionable.
 
-## Connect Scheduling to the Request
+## Book the Visit and Keep the Referral Linked {/* #connect-scheduling-to-the-request */}
 
 Reference the ServiceRequest from `Appointment.basedOn` and, when the service occurs, `Encounter.basedOn`. Scheduling the appointment completes the scheduling work item; the clinical service still has to happen.
 
@@ -49,7 +53,7 @@ Use the [Scheduling guides](/docs/scheduling) for availability and booking. Crea
 
 The [UnityAI scheduling case study](/blog/scheduling-agents-unity-ai) shows how referral data can support outreach and scheduling. Automation still needs a route back to staff when a patient cannot be reached or a booking cannot proceed.
 
-## Cancel or Reroute Deliberately
+## Change the Destination Without Losing the History {/* #cancel-or-reroute-deliberately */}
 
 If only the destination changes and the clinical order remains valid, the authorized workflow can update `ServiceRequest.performer`, resolve the old work items, and create work for the new destination. Preserve prior messages and notify affected parties through the integration.
 

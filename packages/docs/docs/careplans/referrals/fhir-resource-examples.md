@@ -137,7 +137,11 @@ The sent child message carries the package. Record `sent` after the send event a
 }
 ```
 
+:::note[Thread participants and delivery destinations serve different purposes]
+
 The participant list supports Medplum's thread model. The transport integration separately resolves the actual external destination; it should not send the package back to every local thread participant. The JSON records evidence of sending, not the network operation itself.
+
+:::
 
 ## 4. Link the Booking
 
@@ -215,7 +219,7 @@ Create the review Task once for the relevant note/version. The note author is th
 
 The responsible party reconciles the ServiceRequest's status from evidence that the requested service occurred. The coordinator completes the parent Task once all of its obligations are resolved. Receipt of the note alone should not perform either transition automatically.
 
-## Queries for the Referral View
+## Show the Coordinator the Whole Referral {/* #queries-for-the-referral-view */}
 
 ```http
 GET /fhir/R4/Task?focus=ServiceRequest/referral-001
@@ -224,4 +228,4 @@ GET /fhir/R4/Appointment?based-on=ServiceRequest/referral-001
 GET /fhir/R4/DocumentReference?related=ServiceRequest/referral-001
 ```
 
-The Communication query uses the known thread ID to retrieve its messages. R4 does not define an `about` search parameter for Communication; do not assume the reference field provides one. Follow pagination and run each query under the appropriate AccessPolicy. These are separate resource searches; a ServiceRequest search does not automatically return everything linked to the referral. When the receiving clinic uses another server, exchange identifiers and map references through the integration instead of assuming these local queries reach its records.
+These queries bring the work items, conversation, booking, and documents into one referral view. The Communication query uses the known thread ID to retrieve its messages. R4 does not define an `about` search parameter for Communication; do not assume the reference field provides one. Follow pagination and run each query under the appropriate AccessPolicy. These are separate resource searches; a ServiceRequest search does not automatically return everything linked to the referral. When the receiving clinic uses another server, exchange identifiers and map references through the integration instead of assuming these local queries reach its records.

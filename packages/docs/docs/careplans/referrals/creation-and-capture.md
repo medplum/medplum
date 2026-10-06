@@ -6,7 +6,7 @@ title: Creating and Capturing Referrals
 
 Referral forms vary by specialty, but the receiving team usually needs the same starting point: who the patient is, what service is requested, why it is needed, and who is requesting it. Capture that common information consistently, then add the specialty-specific details.
 
-## Start with the ServiceRequest
+## Give Each Requested Service Its Own Identity {/* #start-with-the-servicerequest */}
 
 Use one [ServiceRequest](/docs/api/fhir/resources/servicerequest) for each independently managed requested service. If a form requests several distinct services, create separate requests and use a shared `requisition` identifier when they were authorized together.
 
@@ -23,9 +23,13 @@ Use one [ServiceRequest](/docs/api/fhir/resources/servicerequest) for each indep
 | `supportingInfo` | Relevant assessments, results, or documents |
 | `encounter` | The originating encounter, when the request arose during one |
 
+:::tip[A referral does not need a visit first]
+
 You can create a referral outside a visit. Keep `encounter` optional for intake or outreach workflows rather than creating an Encounter just to fill the field.
 
-## Capture and Map the Form
+:::
+
+## Turn Form Answers into a Referral {/* #capture-and-map-the-form */}
 
 A simple application form can construct the ServiceRequest directly. For reusable forms, use a [Questionnaire](/docs/questionnaires) and retain the QuestionnaireResponse. A shared set of core questions helps specialty forms produce a consistent request model.
 
@@ -41,7 +45,7 @@ flowchart LR
 
 Keep an audit of the mapping and clinical author. The Bot executing the write is not necessarily the clinician who authorized the referral, and its execution identity should not be substituted for `ServiceRequest.requester`.
 
-## Save Drafts and Release Orders
+## Let the Clinician Review Before Release {/* #save-drafts-and-release-orders */}
 
 A draft order uses `status: draft` and `intent: order`. Once the authorized user releases it, change the status to `active` and record when it became actionable in `authoredOn`. Sending is a later operational step and can fail while the clinical order remains active.
 
@@ -73,7 +77,7 @@ This example shows a released order. The Patient and PractitionerRole must alrea
 
 ## Make Submission Safe to Repeat
 
-Use a stable submission or referral identifier for conditional create, including when a Bot processes the form. `createResourceIfNoneExist` avoids a search-then-create race. Replaying the same submission should retrieve the existing request, not create another referral.
+A user may click Submit twice, or a Bot may receive the same event again. Use a stable submission or referral identifier for conditional create, including when a Bot processes the form. `createResourceIfNoneExist` avoids a search-then-create race. Replaying the same submission should retrieve the existing request, not create another referral.
 
 If the request and its initial Task must be created together, use a transaction Bundle with `urn:uuid` fullUrls for their cross-references. See the [Worked Referral Example](/docs/careplans/referrals/fhir-resource-examples). Conditional create does not apply later edits to an existing match; use an authorized, version-checked update path for amendments.
 

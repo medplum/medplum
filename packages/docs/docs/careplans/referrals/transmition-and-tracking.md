@@ -6,7 +6,7 @@ title: Sending Referrals and Tracking Delivery
 
 A fax receipt is useful evidence that something was delivered. The coordinator still needs to know whether the clinic accepted the referral and what happens next. Keep transport progress separate from the receiving team's clinical and operational decisions.
 
-## Choose a Channel and Payload
+## Agree on What the Other System Can Receive {/* #choose-a-channel-and-payload */}
 
 | Channel | Implementation considerations |
 | --- | --- |
@@ -19,7 +19,7 @@ A Bot can coordinate generation and transmission. For C-CDA, follow the [C-CDA i
 
 Across systems, preserve the referral's business identifier and map local resource references. Agree on which party owns each update. Two servers may represent the same business request with different resource IDs.
 
-## Record the Conversation
+## Keep the Package with Its Conversation {/* #record-the-conversation */}
 
 Follow the [Messaging Data Model](/docs/communications/messaging-data-model):
 
@@ -33,9 +33,9 @@ In Medplum's messaging convention, a sent message uses `status: in-progress` wit
 
 The [Worked Referral Example](/docs/careplans/referrals/fhir-resource-examples) includes a thread, message, and document linked to the same request.
 
-## Reconcile Delivery Acknowledgments
+## Match Delivery Receipts to the Right Send {/* #reconcile-delivery-acknowledgments */}
 
-Persist the external provider's message or transmission identifier in a namespaced `Communication.identifier`. Correlate callbacks to that identifier and retain the provider's evidence. Populate `received` only when the acknowledged event means receipt under the channel's agreed contract.
+When a delivery callback arrives, the coordinator should be able to trace it to the exact package that was sent. Persist the external provider's message or transmission identifier in a namespaced `Communication.identifier`. Correlate callbacks to that identifier and retain the provider's evidence. Populate `received` only when the acknowledged event means receipt under the channel's agreed contract.
 
 Use a delivery Task when staff need to own failures or missing acknowledgments. Its completion criterion might be confirmed delivery; a separate receiving-side Task records acceptance and processing. Avoid interpreting a successful API response as acceptance unless the integration contract explicitly gives it that meaning.
 
@@ -45,6 +45,10 @@ For callbacks, validate the source, deduplicate events, and handle out-of-order 
 
 Before the external call, persist the intended send and a stable correlation key. Use the transport provider's idempotency feature when available. If a timeout leaves the outcome unknown, check the provider's state or route the item to staff before sending again.
 
+:::caution[Check an uncertain send before trying again]
+
 A FHIR transaction can make linked resource writes atomic. It cannot undo a fax or email already sent by another system. See [Automating Care Workflows](/docs/careplans/automating-workflows) for the distinction between repeatable FHIR writes and external side effects.
+
+:::
 
 Next, handle [receiving and triage](/docs/careplans/referrals/receiving-and-triage), or continue outbound follow-up with [Processing and Coordination](/docs/careplans/referrals/processing-and-coordination).
