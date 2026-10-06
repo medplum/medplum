@@ -9,7 +9,7 @@ export default defineConfig({
   },
   test: {
     name: '@medplum/dosespot-core',
-    maxWorkers: process.env.TEST_MAX_WORKERS,
+    maxWorkers: process.env.TEST_MAX_WORKERS ?? '50%',
     globals: true,
     pool: 'threads',
   },

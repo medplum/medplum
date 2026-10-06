@@ -47,7 +47,7 @@ export default defineConfig({
   },
   test: {
     name: '@medplum/server',
-    maxWorkers: process.env.TEST_MAX_WORKERS,
+    maxWorkers: process.env.TEST_MAX_WORKERS ?? '50%',
     globals: true,
     environment: 'node',
     setupFiles: ['./src/test.setup.ts'],
