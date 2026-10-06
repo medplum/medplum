@@ -1,0 +1,62 @@
+---
+title: Handoffs, Deadlines, and Escalation
+---
+
+# Handoffs, Deadlines, and Escalation
+
+An item marked "done" can still leave the next person wondering what to do. A useful handoff tells them what is ready, what evidence to review, and who to contact if they get stuck. Use Tasks to make that next obligation visible, with its own owner and completion criteria.
+
+## Define lifecycle and completion
+
+Use `Task.status` for its R4 lifecycle and `businessStatus` for local stages such as waiting for documents or awaiting review. Publish the local stage codes and permitted transitions. Use `statusReason` to explain the current blocked, failed, or cancelled state.
+
+For internally actionable work, `ready` can identify an item available to perform. Use `requested`, `received`, `accepted`, and `rejected` when the workflow explicitly exchanges and acknowledges a request for work. Set `in-progress` when execution begins, and a terminal status when it ends. Choose `intent` at creation; R4 Task intent is immutable.
+
+Write completion criteria before implementing transitions. A scheduling Task might require an Appointment reference; a response Task might require the resolving Communication; a clinical review Task might require a documented disposition. A recommendation may be declined even though its review Task was successfully completed.
+
+```json
+{
+  "resourceType": "Task",
+  "id": "review-assessment",
+  "status": "completed",
+  "intent": "order",
+  "code": { "text": "Review assessment" },
+  "for": { "reference": "Patient/example" },
+  "focus": { "reference": "QuestionnaireResponse/assessment" },
+  "owner": { "reference": "PractitionerRole/reviewer" },
+  "executionPeriod": {
+    "start": "2026-10-06T16:00:00Z",
+    "end": "2026-10-06T16:10:00Z"
+  },
+  "output": [{
+    "type": { "text": "Follow-up request" },
+    "valueReference": { "reference": "ServiceRequest/follow-up" }
+  }]
+}
+```
+
+The identifiers refer to example resources that must exist in your project. Completing the review does not mean the follow-up service was delivered.
+
+## Release the next step
+
+When preparation completes, the application or a scoped transition Subscription can initiate review. Derive a stable identifier from the source work and next step, and conditionally create the review Task. Replaying the same transition should find that same Task.
+
+For changes that must succeed together, use a [transaction Bundle](/docs/fhir-datastore/fhir-batch-requests), version-check the update, and conditionally create the successor. Newly created resources that reference one another use `urn:uuid` fullUrls. A batch does not provide those transactional guarantees.
+
+Use `partOf` for decomposition into subtasks. Store executable dependency rules in the application or Bot; neither a parent link nor the existence of a PlanDefinition releases work automatically.
+
+## Represent time accurately
+
+`authoredOn` is when the Task was authored. `executionPeriod` records actual execution. Neither is a planned deadline.
+
+For a Task fulfilling a request in `focus`, `restriction.period` limits the fulfillment window, with `end` as the due time. See the [R4 field definition](https://hl7.org/fhir/R4/task-definitions.html#Task.restriction) and [Medplum date-range queries](/docs/careplans/tasks#searching-by-due-date-range). When start and end are both present, range-aware searching requires `range-search`; an ordinary comparison against the default index may compare the start.
+
+The existing Medplum Task guide also uses `restriction.period.start/end` as the planned start/due-date convention for general work queues. Follow that convention consistently within a Medplum application. Its use beyond request fulfillment is broader than the R4 field description; agree on the mapping when exchanging Tasks with another system. Do not invent a request merely to attach a deadline.
+
+Compute business-hour deadlines in application or Bot logic using a defined time zone, calendar, and pause policy. Capture effective pause/resume times if waiting periods are excluded. Resource history records persistence times; use explicit transition records when those differ from the business event time.
+
+## Escalate without duplicating work
+
+A scheduled Bot can find overdue open work and reassign it or create a distinct escalation Task. Preserve the original item and its history. Use a stable escalation identifier or milestone to prevent a new alert on every run.
+
+Decide whether escalation transfers ownership, requests help, or informs a supervisor. These have different completion rules. Failed automation must leave an actionable recovery path; see [Automating Care Workflows](/docs/careplans/automating-workflows) and [Operational Reporting](/docs/careplans/operational-reporting).

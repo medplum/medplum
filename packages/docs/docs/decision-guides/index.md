@@ -51,6 +51,13 @@ Scope your referral workflow – which sides of the lifecycle you build (send, r
 - **[Decision Guide →](/docs/decision-guides/referrals)**
 - **Docs:** [Referral Management](/docs/careplans/referrals)
 
+### Care Coordination
+
+Scope operational workflows across the practice: top-of-license delegation, shared queues and ownership, handoffs and deadlines, longitudinal cases, care plans and goals, protocols, clinical decision support, and follow-through.
+
+- **[Decision Guide →](/docs/decision-guides/care-coordination)**
+- **Docs:** [Care Coordination](/docs/careplans)
+
 ### Messaging & Communications
 
 Scope your messaging workflow – thread structure, live updates, routing and assignment, read receipts, attachments, drafts and editing, automations, external channels (SMS, email), and async encounter billing.
