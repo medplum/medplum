@@ -191,6 +191,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     }
   }
 
+  const conflictSubject = actorDirty ? `${actorName} or its Schedule` : `The Schedule for ${actorName}`;
+
   return (
     <Stack gap="lg">
       <Stack gap={2}>
@@ -205,7 +207,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
       <SaveFailureAlert
         failure={failure}
-        conflictTitle={`${actorDirty ? `${actorName} or its Schedule` : `The Schedule for ${actorName}`} changed since you opened it`}
+        conflictTitle={`${conflictSubject} changed since you opened it`}
         reloading={reloading}
         onReload={handleReload}
       />

@@ -210,19 +210,17 @@ export function ScheduleAvailabilityFields(props: ScheduleAvailabilityFieldsProp
   return (
     <>
       {mode === 'override' && (
-        <>
-          <Group gap="sm" wrap="nowrap" mb="md" className={classes.overrideToggle}>
-            <Switch
-              checked={overriding}
-              onChange={(e) => toggleOverriding(e.currentTarget.checked)}
-              color="green.6"
-              withThumbIndicator={false}
-              aria-label={`Enable custom availability for ${serviceName}`}
-              data-testid="schedule-availability-enable"
-            />
-            <Text fw={500}>Enable custom availability for {serviceName}</Text>
-          </Group>
-        </>
+        <Group gap="sm" wrap="nowrap" mb="md" className={classes.overrideToggle}>
+          <Switch
+            checked={overriding}
+            onChange={(e) => toggleOverriding(e.currentTarget.checked)}
+            color="green.6"
+            withThumbIndicator={false}
+            aria-label={`Enable custom availability for ${serviceName}`}
+            data-testid="schedule-availability-enable"
+          />
+          <Text fw={500}>Enable custom availability for {serviceName}</Text>
+        </Group>
       )}
       {(overriding || !hideInherited) && (
         <>
