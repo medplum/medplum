@@ -127,31 +127,16 @@ export const PRIMARY_PERFORMER_CODE = 'PPRF';
  */
 export const ServiceTypeReferenceURI = 'https://medplum.com/fhir/service-type-reference';
 
-/** Code system for the `Schedule.serviceType` concepts scheduling defines itself, which refer to no HealthcareService. */
+/** Code system for the `Schedule.serviceType` codes Medplum scheduling defines. */
 export const SCHEDULING_SERVICE_TYPE_SYSTEM = 'https://medplum.com/fhir/CodeSystem/scheduling-service-type';
 
 /**
  * The `Schedule.serviceType` code marking a Schedule that offers every HealthcareService, including ones
  * created later.
  *
- * The marker decides only which services the Schedule accepts. It supplies no hours: those still resolve
- * from the Schedule's SchedulingParameters for the service, then the service's own, then the defaults.
- *
- * Example: a Schedule that can be booked for any HealthcareService:
- * ```json
- * {
- *   "resourceType": "Schedule",
- *   "actor": [{ "reference": "Practitioner/abc" }],
- *   "serviceType": [
- *     {
- *       "coding": [
- *         { "system": "https://medplum.com/fhir/CodeSystem/scheduling-service-type", "code": "all" }
- *       ],
- *       "text": "All visit types"
- *     }
- *   ]
- * }
- * ```
+ * It decides only which services the Schedule accepts, not when: hours still resolve from the Schedule's
+ * SchedulingParameters for the service, then the service's own, then the defaults. Build it with
+ * `toAllServiceTypesCodeableConcept`.
  */
 export const ALL_SERVICE_TYPES_CODE = 'all';
 
@@ -573,7 +558,7 @@ export function toAllServiceTypesCodeableConcept(): CodeableConcept {
 /**
  * Returns whether serviceType concepts carry the marker for offering every HealthcareService.
  *
- * Only the marker counts. An empty or missing `serviceType` offers nothing.
+ * An empty or missing `serviceType` does not count.
  * @param serviceType - CodeableConcept values to inspect
  * @returns True if any concept is the marker
  */
@@ -590,8 +575,6 @@ export function serviceTypeIncludesAllServices(serviceType: CodeableConcept[] | 
 /**
  * Returns whether a Schedule with these serviceType concepts can be booked for the given HealthcareService:
  * because it refers to the service, or because it carries the marker for offering every one.
- *
- * Use `serviceTypeIncludesService` to ask only whether the service is listed by reference.
  * @param serviceType - CodeableConcept values to inspect
  * @param service - HealthcareService or reference to match
  * @returns True if the concepts offer the service
@@ -606,8 +589,8 @@ export function serviceTypeOffersService(
 /**
  * Returns whether any serviceType concept refers to the given HealthcareService.
  *
- * This asks only whether the service is listed by reference. A Schedule marked as offering every
- * HealthcareService lists none of them; use `serviceTypeOffersService` to ask whether it can be booked.
+ * Ignores the marker for offering every HealthcareService; use `serviceTypeOffersService` to ask whether a
+ * Schedule can be booked for the service.
  * @param serviceType - CodeableConcept values to inspect
  * @param service - HealthcareService or reference to match
  * @returns True if any concept references the service

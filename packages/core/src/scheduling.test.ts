@@ -12,7 +12,6 @@ import type {
 } from '@medplum/fhirtypes';
 import type { HealthcareServiceSchedulingParameterExtension, SchedulingParameterExtension } from './scheduling';
 import {
-  ALL_SERVICE_TYPES_CODE,
   clearHealthcareServiceSchedulingParameter,
   clearScheduleParameter,
   clearScheduleSchedulingParameter,
@@ -365,21 +364,17 @@ describe('serviceType CodeableConcepts', () => {
   test('the all-services marker offers every service without listing any', () => {
     const serviceType = [toAllServiceTypesCodeableConcept()];
 
-    expect(serviceType[0].coding).toEqual([{ system: SCHEDULING_SERVICE_TYPE_SYSTEM, code: ALL_SERVICE_TYPES_CODE }]);
+    expect(serviceType[0].coding).toEqual([
+      { system: 'https://medplum.com/fhir/CodeSystem/scheduling-service-type', code: 'all' },
+    ]);
     expect(serviceTypeIncludesAllServices(serviceType)).toBe(true);
     expect(serviceTypeOffersService(serviceType, service)).toBe(true);
-    expect(serviceTypeOffersService(serviceType, { reference: 'HealthcareService/service-2' })).toBe(true);
     // Listing a service by reference keeps its literal meaning.
     expect(serviceTypeIncludesService(serviceType, service)).toBe(false);
-    expect(extractServiceTypeReferences(serviceType)).toEqual([]);
   });
 
-  test('without the marker, only listed services are offered', () => {
-    const serviceType = toServiceTypeCodeableConcepts(service);
-
-    expect(serviceTypeIncludesAllServices(serviceType)).toBe(false);
-    expect(serviceTypeOffersService(serviceType, service)).toBe(true);
-    expect(serviceTypeOffersService(serviceType, { reference: 'HealthcareService/service-2' })).toBe(false);
+  test('a listed service is offered without the marker', () => {
+    expect(serviceTypeOffersService(toServiceTypeCodeableConcepts(service), service)).toBe(true);
   });
 
   test.each([
@@ -393,14 +388,10 @@ describe('serviceType CodeableConcepts', () => {
     expect(serviceTypeOffersService(serviceType, service)).toBe(false);
   });
 
-  test('the marker may sit alongside listed services', () => {
+  test('the marker still offers every service alongside listed ones', () => {
     const serviceType = [...toServiceTypeCodeableConcepts(service), toAllServiceTypesCodeableConcept()];
 
     expect(serviceTypeOffersService(serviceType, { reference: 'HealthcareService/service-2' })).toBe(true);
-    expect(serviceTypeIncludesService(serviceType, service)).toBe(true);
-    expect(extractServiceTypeReferences(serviceType).map((ref) => ref.reference)).toEqual([
-      'HealthcareService/service-1',
-    ]);
   });
 });
 

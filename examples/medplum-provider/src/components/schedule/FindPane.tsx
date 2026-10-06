@@ -25,8 +25,6 @@ import { SchedulingTransientIdentifier } from '../../utils/scheduling';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-// Eventually we should paginate the HealthcareService search so this is not a
-// hard limit. We expect that 1000 rows should be plenty for most providers.
 const MAX_SERVICES = 1000;
 
 type FindPaneProps = {
@@ -68,8 +66,6 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   const [healthcareServices, setHealthcareServices] = useState<WithId<HealthcareService>[] | undefined>();
 
   useEffect(() => {
-    // A schedule marked as offering all visit types references none of them, so
-    // they are searched for instead of read.
     if (serviceTypeIncludesAllServices(schedule.serviceType)) {
       medplum
         .searchResources('HealthcareService', { 'active:not': 'false', _sort: 'name', _count: MAX_SERVICES.toString() })

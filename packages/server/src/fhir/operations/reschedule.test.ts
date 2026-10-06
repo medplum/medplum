@@ -845,7 +845,7 @@ describe('Appointment/:id/$reschedule', () => {
 
     const booked = await book(makeProposal({ start, end, schedules: [roomOneSchedule] }));
 
-    // Lists no HealthcareService by reference: the marker alone makes it bookable for the office visit
+    // Only the marker; the office visit isn't listed by reference
     const anyVisitSchedule = await systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
       meta: { project: project.project.id },
@@ -860,7 +860,7 @@ describe('Appointment/:id/$reschedule', () => {
     const resources = bundleResources(response.body);
     const slots = resources.filter((r) => isResource<Slot>(r, 'Slot'));
     expect(slots.map((slot) => slot.schedule.reference)).toStrictEqual([`Schedule/${anyVisitSchedule.id}`]);
-    // The appointment keeps the visit type it was booked under, and never takes on the marker
+    // Keeps the visit type it was booked under, never the marker
     const appointment = resources.find((r) => isResource<Appointment>(r, 'Appointment'));
     expect(appointment?.serviceType).toStrictEqual(booked.serviceType);
   });

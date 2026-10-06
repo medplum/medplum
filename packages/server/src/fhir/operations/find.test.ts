@@ -1070,7 +1070,7 @@ describe('Appointment/$find', () => {
         },
       ],
     });
-    // Names no HealthcareService anywhere: the marker alone makes it bookable, on the visit type's own hours.
+    // Only the marker: no service reference and no SchedulingParameters of its own
     const schedule = await systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
       meta: { project: project.id },

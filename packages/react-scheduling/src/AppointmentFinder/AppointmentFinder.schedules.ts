@@ -121,7 +121,7 @@ export interface SearchScheduleCandidatesOptions {
 /** How many schedules one search offers. */
 const DEFAULT_COUNT = 25;
 
-/** The `service-type` token of a schedule that offers every visit type, which carries none of a service's own codes. */
+/** A schedule offering every visit type carries none of the service's codes, so the search asks for this too. */
 const ALL_SERVICE_TYPES_TOKEN = `${SCHEDULING_SERVICE_TYPE_SYSTEM}|${ALL_SERVICE_TYPES_CODE}`;
 
 /**

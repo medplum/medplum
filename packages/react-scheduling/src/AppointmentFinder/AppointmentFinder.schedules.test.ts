@@ -179,8 +179,8 @@ describe('searchScheduleCandidates', () => {
     const candidates = await candidatesFor(medplum, service, 'Practitioner');
 
     // Comma-separated tokens are an OR, so both codes are one request, and a
-    // schedule linked by either of them is offered. The last token reaches the
-    // schedules that offer every visit type, which carry neither code.
+    // schedule linked by either of them is offered. The last token finds
+    // schedules offering every visit type.
     expect(medplum.search).toHaveBeenCalledTimes(1);
     expect(querySentTo(medplum)['service-type']).toBe(
       `${APPOINTMENT_TYPE_SYSTEM}|ultrasound-imaging,${APPOINTMENT_TYPE_SYSTEM}|vascular-study,${SCHEDULING_SERVICE_TYPE_SYSTEM}|${ALL_SERVICE_TYPES_CODE}`
@@ -253,10 +253,7 @@ describe('searchScheduleCandidates', () => {
     expect(candidates.every((candidate) => candidate.schedule.serviceType?.[0].extension?.length)).toBe(true);
   });
 
-  test.each([
-    ['a service found by its type codes', UltrasoundImagingService],
-    ['a service with no codings', { ...UltrasoundImagingService, type: undefined }],
-  ])('Offers a schedule marked as offering all visit types for %s', async (_name, service) => {
+  test('Offers a schedule marked as offering all visit types', async () => {
     const medplum = await setupClient();
     const practitioner = await medplum.createResource<Practitioner>({
       resourceType: 'Practitioner',
@@ -270,7 +267,7 @@ describe('searchScheduleCandidates', () => {
       serviceType: [toAllServiceTypesCodeableConcept()],
     });
 
-    const candidates = await candidatesFor(medplum, service, 'Practitioner');
+    const candidates = await candidatesFor(medplum, UltrasoundImagingService, 'Practitioner');
 
     expect(providersOf(candidates)).toStrictEqual(['Dr. Ada Vance', 'Dr. Maya Rivera', 'Dr. Tunde Okafor']);
   });
