@@ -49,6 +49,11 @@ import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomple
 const MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS = 30;
 const MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS = 50;
 
+// See: https://www.hl7.org/fhir/R4/extension-regex.html
+const REGEX_EXTENSION_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/regex`;
+// See: https://www.hl7.org/fhir/R4/extension-entryformat.html
+const ENTRY_FORMAT_EXTENSION_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/entryFormat`;
+
 export interface QuestionnaireFormItemProps {
   readonly formState?: QuestionnaireFormLoadedState;
   readonly context?: QuestionnaireResponseItem[];
@@ -208,13 +213,18 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       );
       break;
     case QuestionnaireItemType.string:
-    case QuestionnaireItemType.url:
+    case QuestionnaireItemType.url: {
+      const pattern = getExtension(item, REGEX_EXTENSION_URL)?.valueString;
+      const entryFormat = getExtension(item, ENTRY_FORMAT_EXTENSION_URL)?.valueString;
       formComponent = (
         <TextInput
           id={inputId}
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
+          pattern={pattern}
+          placeholder={entryFormat}
+          title={entryFormat ? `Format: ${entryFormat}` : undefined}
           onChange={(e) => {
             const value = e.currentTarget.value;
             onChangeAnswer(value === '' ? [] : [{ valueString: value }]);
@@ -222,6 +232,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         />
       );
       break;
+    }
     case QuestionnaireItemType.text:
       formComponent = (
         <Textarea
