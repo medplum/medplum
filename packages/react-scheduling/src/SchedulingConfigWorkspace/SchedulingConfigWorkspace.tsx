@@ -81,7 +81,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     setPending(undefined);
   }
 
-  const handleStored = useCallback(
+  const handleSynced = useCallback(
     (stored: WithId<HealthcareService>): void => {
       store([stored]);
       setSelection({ kind: 'service', id: stored.id });
@@ -92,11 +92,11 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
 
   // Dirty is left to the page, which remounts on what it stored and reports itself clean. A save landing after
   // the viewer moved on must not touch the page now shown.
-  const handleActorStored = useCallback(
-    (storedFor: ConfigSelection, resources: WithId<Resource>[], openServiceId: string | undefined): void => {
+  const handleActorSynced = useCallback(
+    (syncedFor: ConfigSelection, resources: WithId<Resource>[], openServiceId: string | undefined): void => {
       store(resources);
       setSelection((current) =>
-        current?.kind === 'actor' && isSameSelection(current, storedFor) ? { ...current, openServiceId } : current
+        current?.kind === 'actor' && isSameSelection(current, syncedFor) ? { ...current, openServiceId } : current
       );
     },
     [store]
@@ -112,7 +112,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     detail = (
       <VisitTypePage
         key={`new-${selection.key}`}
-        onStored={handleStored}
+        onSynced={handleSynced}
         onDiscardNew={handleDiscardNew}
         onDirtyChange={setDirty}
       />
@@ -124,7 +124,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         // The version is in the key, so a save or reload remounts the page on what was stored.
         key={`${service.id}-${service.meta?.versionId}`}
         service={service}
-        onStored={handleStored}
+        onSynced={handleSynced}
         onDirtyChange={setDirty}
       />
     ) : (
@@ -148,7 +148,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
           actor={actor}
           services={services.items}
           initialOpenServiceId={selection.openServiceId}
-          onStored={(resources, openServiceId) => handleActorStored(selection, resources, openServiceId)}
+          onSynced={(resources, openServiceId) => handleActorSynced(selection, resources, openServiceId)}
           onDirtyChange={setDirty}
         />
       );

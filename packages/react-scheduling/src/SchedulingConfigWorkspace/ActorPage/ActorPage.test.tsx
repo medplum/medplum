@@ -62,7 +62,7 @@ function makeSchedule(
 
 interface Setup {
   readonly medplum: MockClient;
-  readonly onStored: ReturnType<typeof vi.fn>;
+  readonly onSynced: ReturnType<typeof vi.fn>;
   readonly schedules: WithId<Schedule>[];
 }
 
@@ -80,19 +80,19 @@ async function setup(
   for (const schedule of schedules) {
     stored.push(await medplum.createResource(schedule));
   }
-  const onStored = vi.fn();
+  const onSynced = vi.fn();
   vi.spyOn(medplum, 'executeBatch');
   const configurable: ConfigurableActor = { resource: actor, schedules: stored };
   renderWithMedplum(
     <ActorPage
       actor={configurable}
       services={services}
-      onStored={onStored}
+      onSynced={onSynced}
       initialOpenServiceId={initialOpenServiceId}
     />,
     medplum
   );
-  return { medplum, onStored, schedules: stored };
+  return { medplum, onSynced, schedules: stored };
 }
 
 function entry(name: string): HTMLElement {
@@ -115,8 +115,8 @@ function sentBundle(medplum: MockClient): Bundle {
   return vi.mocked(medplum.executeBatch).mock.calls[0][0];
 }
 
-function storedSchedule(onStored: Setup['onStored']): WithId<Schedule> {
-  return onStored.mock.calls.at(-1)?.[0].find((resource: Resource) => resource.resourceType === 'Schedule');
+function syncedSchedule(onSynced: Setup['onSynced']): WithId<Schedule> {
+  return onSynced.mock.calls.at(-1)?.[0].find((resource: Resource) => resource.resourceType === 'Schedule');
 }
 
 describe('ActorPage', () => {
@@ -223,7 +223,7 @@ describe('ActorPage', () => {
   });
 
   test('switching a provider off switches its Schedule off and locks it, and both save in one bundle', async () => {
-    const { medplum, onStored, schedules } = await setup(drSmith, [
+    const { medplum, onSynced, schedules } = await setup(drSmith, [
       makeSchedule('Practitioner/dr-smith', [initialVisit]),
     ]);
     const scheduleSwitch = screen.getByRole('switch', { name: 'Schedule status' });
@@ -241,13 +241,13 @@ describe('ActorPage', () => {
     expect(screen.getByRole('alert')).toHaveTextContent("This provider is inactive and can't be booked.");
     await save();
 
-    await waitFor(() => expect(onStored).toHaveBeenCalled());
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
     expect(sentBundle(medplum).entry?.map((item) => item.request?.url)).toEqual([
       'Practitioner/dr-smith',
       `Schedule/${schedules[0].id}`,
     ]);
-    expect(onStored.mock.calls[0][0].find((r: Resource) => r.resourceType === 'Practitioner').active).toBe(false);
-    expect(storedSchedule(onStored).active).toBe(false);
+    expect(onSynced.mock.calls[0][0].find((r: Resource) => r.resourceType === 'Practitioner').active).toBe(false);
+    expect(syncedSchedule(onSynced).active).toBe(false);
   });
 
   test('switching a provider back on puts the Schedule back as stored, leaving nothing to save', async () => {
@@ -272,7 +272,7 @@ describe('ActorPage', () => {
   });
 
   test("a room with no Schedule saves only its own status, and a suspended room's status is kept until switched", async () => {
-    const { medplum, onStored } = await setup({ ...room3, status: 'suspended' });
+    const { medplum, onSynced } = await setup({ ...room3, status: 'suspended' });
     const roomSwitch = screen.getByRole('switch', { name: 'Room status' });
 
     expect(roomSwitch).toBeChecked();
@@ -280,37 +280,37 @@ describe('ActorPage', () => {
     await userEvent.click(roomSwitch);
     await save();
 
-    await waitFor(() => expect(onStored).toHaveBeenCalled());
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
     expect(sentBundle(medplum).entry?.map((item) => item.request?.url)).toEqual(['Location/room-3']);
-    expect(onStored.mock.calls[0][0][0].status).toBe('inactive');
+    expect(onSynced.mock.calls[0][0][0].status).toBe('inactive');
   });
 
   test('turning off bookings saves Schedule.active false, and every field stays editable', async () => {
-    const { onStored } = await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+    const { onSynced } = await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
 
     await userEvent.click(screen.getByRole('switch', { name: 'Schedule status' }));
 
     expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter')).toBeEnabled();
     await save();
 
-    await waitFor(() => expect(onStored).toHaveBeenCalled());
-    expect(storedSchedule(onStored).active).toBe(false);
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(syncedSchedule(onSynced).active).toBe(false);
   });
 
   test('saving the Schedule sends only the Schedule, conditional on the version loaded', async () => {
-    const { medplum, onStored, schedules } = await setup(drSmith, [
+    const { medplum, onSynced, schedules } = await setup(drSmith, [
       makeSchedule('Practitioner/dr-smith', [initialVisit]),
     ]);
 
     await userEvent.type(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter'), '15');
     await save();
 
-    await waitFor(() => expect(onStored).toHaveBeenCalled());
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
     const bundle = sentBundle(medplum);
     expect(bundle.entry?.map((item) => item.request)).toEqual([
       { method: 'PUT', url: `Schedule/${schedules[0].id}`, ifMatch: `W/"${schedules[0].meta?.versionId}"` },
     ]);
-    expect(getScheduleSchedulingParameterValues(storedSchedule(onStored), initialVisit).bufferAfter).toBe(15);
+    expect(getScheduleSchedulingParameterValues(syncedSchedule(onSynced), initialVisit).bufferAfter).toBe(15);
   });
 
   test('one entry opens at a time, closing leaves none open, and edits survive either', async () => {
@@ -334,7 +334,7 @@ describe('ActorPage', () => {
   });
 
   test("custom hours start from the visit type's, and save as this Schedule's hours for it", async () => {
-    const { onStored } = await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+    const { onSynced } = await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
     const initial = panel('Initial Visit');
 
     await userEvent.click(within(initial).getByTestId('schedule-availability-enable'));
@@ -344,8 +344,8 @@ describe('ActorPage', () => {
     await userEvent.click(within(initial).getByTestId('schedule-availability-switch-tue'));
     await save();
 
-    await waitFor(() => expect(onStored).toHaveBeenCalled());
-    expect(getScheduleSchedulingParameters(storedSchedule(onStored), initialVisit, 'availability')).toHaveLength(1);
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(getScheduleSchedulingParameters(syncedSchedule(onSynced), initialVisit, 'availability')).toHaveLength(1);
   });
 
   test('an emptied custom week blocks the save, with the reason', async () => {
@@ -417,7 +417,7 @@ describe('ActorPage', () => {
   });
 
   test('a Schedule another system changed since it was loaded is not written over, and reload hands back the newer one', async () => {
-    const { medplum, onStored, schedules } = await setup(drSmith, [
+    const { medplum, onSynced, schedules } = await setup(drSmith, [
       makeSchedule('Practitioner/dr-smith', [initialVisit]),
     ]);
     await medplum.updateResource({ ...schedules[0], comment: 'Changed elsewhere' });
@@ -426,10 +426,10 @@ describe('ActorPage', () => {
     await save();
 
     expect(await screen.findByText('The Schedule for Dr. Jane Smith changed since you opened it')).toBeInTheDocument();
-    expect(onStored).not.toHaveBeenCalled();
+    expect(onSynced).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole('button', { name: 'Reload' }));
 
-    await waitFor(() => expect(onStored).toHaveBeenCalled());
-    expect(storedSchedule(onStored).comment).toBe('Changed elsewhere');
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(syncedSchedule(onSynced).comment).toBe('Changed elsewhere');
   });
 });

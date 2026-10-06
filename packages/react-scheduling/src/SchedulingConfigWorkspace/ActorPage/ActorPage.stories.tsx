@@ -61,7 +61,7 @@ function StoredActor(props: { readonly resourceType: BookableActorType; readonly
         key={`${schedule?.id}-${schedule?.meta?.versionId}`}
         actor={loaded.actor}
         services={loaded.services}
-        onStored={() => setReads((count) => count + 1)}
+        onSynced={() => setReads((count) => count + 1)}
       />
     </Box>
   );

@@ -40,7 +40,7 @@ export interface VisitTypePageProps {
   /** The visit type as stored. Omitted to create one. */
   readonly service?: WithId<HealthcareService>;
   /** Called with the visit type as the server now holds it: after a save, or after reloading a newer version. */
-  readonly onStored: (service: WithId<HealthcareService>) => void;
+  readonly onSynced: (service: WithId<HealthcareService>) => void;
   /** Called when a visit type that was being created is discarded instead. */
   readonly onDiscardNew?: () => void;
   /** Called whenever the page starts or stops holding unsaved changes. */
@@ -123,7 +123,7 @@ function buildVisitType(
  * @returns The page.
  */
 export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
-  const { service, onStored, onDiscardNew, onDirtyChange } = props;
+  const { service, onSynced, onDiscardNew, onDirtyChange } = props;
   const medplum = useMedplum();
   const creating = !service;
   const [initial] = useState(() => fieldsOf(service));
@@ -189,7 +189,7 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
       const result = await saveConfigChanges(medplum, [{ stored: service, draft }]);
       const [stored] = result.saved;
       if (stored) {
-        onStored(stored.resource as WithId<HealthcareService>);
+        onSynced(stored.resource as WithId<HealthcareService>);
       } else {
         setFailure(result.failures[0]);
       }
@@ -214,7 +214,7 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
     }
     setReloading(true);
     try {
-      onStored(await medplum.readResource('HealthcareService', service.id, { cache: 'no-cache' }));
+      onSynced(await medplum.readResource('HealthcareService', service.id, { cache: 'no-cache' }));
     } catch (err) {
       setFailure({ conflict: false, message: `Could not reload it: ${normalizeErrorString(err)}` });
     } finally {

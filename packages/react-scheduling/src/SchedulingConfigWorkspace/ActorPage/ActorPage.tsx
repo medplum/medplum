@@ -50,7 +50,7 @@ export interface ActorPageProps {
    * Called with the resources as the server now holds them, after a save or after reloading newer versions, and
    * the visit type whose entry is open.
    */
-  readonly onStored: (resources: WithId<Resource>[], openServiceId: string | undefined) => void;
+  readonly onSynced: (resources: WithId<Resource>[], openServiceId: string | undefined) => void;
   /** Called whenever the page starts or stops holding unsaved changes. */
   readonly onDirtyChange?: (dirty: boolean) => void;
 }
@@ -65,7 +65,7 @@ export interface ActorPageProps {
  * @returns The page.
  */
 export function ActorPage(props: ActorPageProps): JSX.Element {
-  const { actor, services, initialOpenServiceId, onStored, onDirtyChange } = props;
+  const { actor, services, initialOpenServiceId, onSynced, onDirtyChange } = props;
   const medplum = useMedplum();
   const resource = actor.resource;
   const [schedule] = actor.schedules;
@@ -159,7 +159,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         // Nothing differed from what is stored, so no new version remounts the page.
         handleDiscard();
       } else {
-        onStored(
+        onSynced(
           result.saved.map(({ resource: saved }) => saved),
           open ?? undefined
         );
@@ -183,7 +183,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         medplum.readResource(resource.resourceType, resource.id, { cache: 'no-cache' }),
         ...(schedule ? [medplum.readResource('Schedule', schedule.id, { cache: 'no-cache' })] : []),
       ]);
-      onStored(reloaded, open ?? undefined);
+      onSynced(reloaded, open ?? undefined);
     } catch (err) {
       setFailure({ conflict: false, message: `Could not reload it: ${normalizeErrorString(err)}` });
     } finally {
