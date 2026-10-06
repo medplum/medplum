@@ -1,0 +1,56 @@
+---
+title: Automating Care Workflows
+---
+
+# Automating Care Workflows
+
+Once a coordinator completes intake, the review Task should appear without someone remembering to create it. That's a good candidate for automation. The less obvious part is making sure the same event doesn't create three review Tasks when it is retried.
+
+Start by defining the owners, completion evidence, and exception paths. Medplum Bots and Subscriptions execute your rules; FHIR resources retain the state those rules act on.
+
+## Choose how work starts
+
+| Trigger | Implementation | Identity for generated work |
+| --- | --- | --- |
+| Staff action | Application creates a Task | Stable action/submission identifier |
+| Resource transition | Scoped Subscription invokes a Bot | Source resource plus step and relevant occurrence |
+| Recurring follow-up | Scheduled Bot evaluates due occurrences | Source plan/case plus step and occurrence date or sequence |
+| Reusable clinical protocol | Apply PlanDefinition and ActivityDefinition | Track each intended application and inspect its generated resources |
+
+Use local work-type and stage CodeSystems consistently. An identifier is an identity key, not the current stage; it must remain stable across retries.
+
+## Apply a protocol
+
+[Clinical Protocols](/docs/careplans/protocols) describes authoring PlanDefinition and ActivityDefinition. Medplum's [`PlanDefinition/$apply`](/docs/api/fhir/operations/plandefinition-apply) creates a patient CarePlan whose activity references a RequestGroup. RequestGroup actions reference generated Tasks; supported ActivityDefinitions can also produce a ServiceRequest.
+
+Inspect generated Tasks' focus, inputs, owners, status, and patient context. Configure supported task-element extensions where appropriate. Applying a definition is not a guarantee that arbitrary FHIR conditions, repetition rules, or temporal dependencies will execute. Verify the supported subset against the deployed Medplum version and implement the remaining orchestration explicitly.
+
+Do not blindly retry `$apply` after a timeout: it can create another set of resources. Reconcile the previous application's outcome before retrying. Applications that need a fully idempotent launch should design the launch identity and resource creation workflow explicitly; this is separate from reusable protocol authoring.
+
+## Scope subscriptions to meaningful events
+
+Subscribe to the resource type and work type you intend to handle. For preparation becoming completed, use the Medplum interaction and FHIRPath criteria extensions to restrict execution to updates where status changes to the required state. Handle creation separately if it should trigger work; `%previous` is absent then.
+
+The [Subscription Extensions guide](/docs/subscriptions/subscription-extensions) defines these Medplum-specific features. Re-check the current source resource in the Bot before acting: another update may have cancelled or replaced the work since the event occurred.
+
+## Make processing repeatable
+
+Use conditional create keyed by `identifier`, such as `createResourceIfNoneExist`, for generated work. Do not search and then create: concurrent runs can both observe no match. Use version checking when advancing an existing Task so a stale event cannot overwrite a later decision.
+
+When linked writes must succeed together, use a transaction Bundle with conditional creates and version-checked updates. A transaction covers FHIR writes; it cannot roll back an external fax, email, or payer submission.
+
+For external side effects, persist the intended operation and correlation identifier, use the provider's idempotency mechanism when available, and reconcile uncertain outcomes before resending. Reusing a Task does not prevent duplicate delivery by itself.
+
+## Schedule recurring and overdue work
+
+Use a [scheduled Bot](/docs/bots/bot-cron-job) to evaluate eligible plans or cases and create each due occurrence once. Define the calendar, time zone, missed-run catch-up policy, and stop conditions. Re-check eligibility before creation so a closed case does not keep generating work.
+
+For overdue work, update or escalate the existing item rather than creating a new copy of the obligation. See [Handoffs and Escalation](/docs/careplans/handoffs-and-escalation) for deadline semantics and paused clocks.
+
+## Operate and recover
+
+Monitor Bot failures and maintain a recovery queue with source identifiers and the failed step. Bot-channel Subscriptions do not use the external rest-hook retry policy; implement the recovery behavior you require. See [Bots in Production](/docs/bots/bots-in-production).
+
+Test duplicate events, out-of-order events, competing claims, a cancelled source, and partial external failure. Run Bots under access policies appropriate to their work, and preserve the distinction between the software actor and clinical requester.
+
+When a protocol changes, decide whether existing patients retain their original plan or receive an explicit reviewed migration. Record the definition/version used where the chosen canonical model supports it. A new definition version should not silently reinterpret completed work.
