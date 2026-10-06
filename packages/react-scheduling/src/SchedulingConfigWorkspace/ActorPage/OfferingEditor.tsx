@@ -115,6 +115,8 @@ export function OfferingEditor(props: OfferingEditorProps): JSX.Element {
 
   return (
     <Stack gap="lg">
+      <Divider />
+
       <Stack gap="sm">
         <Title order={4} size="h5">
           Scheduling parameters
