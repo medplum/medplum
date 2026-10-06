@@ -49,6 +49,7 @@ export async function rerouteToProvider(
 ): Promise<Bundle> {
   const taskVersion = versionHeader(current);
   const threadVersion = versionHeader(thread);
+  // Thread headers group messages and carry no payload of their own.
   if (current.focus?.reference !== `Communication/${thread.id}` || thread.partOf?.length || thread.payload?.length) {
     throw new Error('Expected the thread header referenced by this Task');
   }
