@@ -155,6 +155,7 @@ export class Logger implements ILogger {
           timestamp: entry.timestamp,
           msg: entry.msg,
           logError: String(err),
+          ...this.metadata,
         });
       }
     }
