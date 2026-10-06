@@ -3,7 +3,7 @@
 import { Alert, Box, Button, Center, Group, Loader, Modal, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
-import type { HealthcareService } from '@medplum/fhirtypes';
+import type { HealthcareService, Resource } from '@medplum/fhirtypes';
 import { IconCalculatorFilled, IconCalendarEvent, IconMapPinFilled } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -40,7 +40,7 @@ const ACTOR_SECTIONS: readonly ActorSectionConfig[] = [
 
 /**
  * Where an admin sets up scheduling: every visit type, provider, room, and device listed down the side, and the
- * one picked opened beside it. The configuration counterpart to `SchedulingWorkspace`, which books.
+ * one picked edited in place beside it. The configuration counterpart to `SchedulingWorkspace`, which books.
  *
  * It fetches its own resources, including what booking hides: visit types that are turned off or have no
  * duration, and actors that are turned off or have no Schedule yet. Nothing is written until the page's Save,
@@ -81,11 +81,23 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     setPending(undefined);
   }
 
-  const handleStored = useCallback(
+  const handleSynced = useCallback(
     (stored: WithId<HealthcareService>): void => {
       store([stored]);
       setSelection({ kind: 'service', id: stored.id });
       setDirty(false);
+    },
+    [store]
+  );
+
+  // Dirty is left to the page, which remounts on what it stored and reports itself clean. A save landing after
+  // the viewer moved on must not touch the page now shown.
+  const handleActorSynced = useCallback(
+    (syncedFor: ConfigSelection, resources: WithId<Resource>[], openServiceId: string | undefined): void => {
+      store(resources);
+      setSelection((current) =>
+        current?.kind === 'actor' && isSameSelection(current, syncedFor) ? { ...current, openServiceId } : current
+      );
     },
     [store]
   );
@@ -100,7 +112,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     detail = (
       <VisitTypePage
         key={`new-${selection.key}`}
-        onStored={handleStored}
+        onSynced={handleSynced}
         onDiscardNew={handleDiscardNew}
         onDirtyChange={setDirty}
       />
@@ -112,7 +124,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         // The version is in the key, so a save or reload remounts the page on what was stored.
         key={`${service.id}-${service.meta?.versionId}`}
         service={service}
-        onStored={handleStored}
+        onSynced={handleSynced}
         onDirtyChange={setDirty}
       />
     ) : (
@@ -128,7 +140,18 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         </Center>
       );
     } else if (actor) {
-      detail = <ActorPage actor={actor} services={services.items} />;
+      const [schedule] = actor.schedules;
+      detail = (
+        <ActorPage
+          // Every version the page reads is in the key, so a save or reload remounts it on what was stored.
+          key={`${selection.resourceType}/${actor.resource.id}-${actor.resource.meta?.versionId}-${schedule?.id}-${schedule?.meta?.versionId}`}
+          actor={actor}
+          services={services.items}
+          initialOpenServiceId={selection.openServiceId}
+          onSynced={(resources, openServiceId) => handleActorSynced(selection, resources, openServiceId)}
+          onDirtyChange={setDirty}
+        />
+      );
     } else {
       detail = <ConfigEmptyState notFound />;
     }

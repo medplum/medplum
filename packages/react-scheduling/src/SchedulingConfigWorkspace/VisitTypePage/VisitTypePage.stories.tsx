@@ -49,7 +49,7 @@ function StoredVisitType(props: { readonly outdate?: boolean }): JSX.Element {
       <VisitTypePage
         key={stored?.meta?.versionId ?? service.meta?.versionId}
         service={stored ?? service}
-        onStored={setStored}
+        onSynced={setStored}
       />
     </Box>
   );
@@ -72,7 +72,7 @@ export const Existing = (): JSX.Element => <StoredVisitType />;
  */
 export const Create = (): JSX.Element => (
   <Box p="md">
-    <VisitTypePage onStored={() => undefined} onDiscardNew={() => undefined} />
+    <VisitTypePage onSynced={() => undefined} onDiscardNew={() => undefined} />
   </Box>
 );
 
