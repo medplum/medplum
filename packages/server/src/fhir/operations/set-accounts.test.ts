@@ -308,6 +308,71 @@ describe('Patient Set Accounts Operation', () => {
     expect(updatedCommunication.meta?.security).toBeDefined();
   });
 
+  test('Preserves accounts from other patients on resources in multiple patient compartments', async () => {
+    const org1 = { reference: getReferenceString(organization1) };
+    const org2 = { reference: getReferenceString(organization2) };
+
+    const bobRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Bob'], family: 'Jones' }],
+        meta: { accounts: [org2] },
+      } satisfies Patient);
+    expect(bobRes).toHaveStatus(201);
+    const bob = bobRes.body as Patient;
+    expect(bob.meta?.accounts).toStrictEqual([org2]);
+    const patients = [{ reference: getReferenceString(patient) }, { reference: getReferenceString(bob) }];
+
+    // In Alice's compartment via subject, and Bob's via recipient
+    const commRes = await request(app)
+      .post('/fhir/R4/Communication')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Communication',
+        status: 'completed',
+        subject: createReference(patient),
+        recipient: [createReference(bob)],
+      } satisfies Communication);
+    expect(commRes).toHaveStatus(201);
+    const communication = commRes.body as Communication;
+    expect(communication.meta?.accounts).toStrictEqual([org2]);
+
+    // Alice gets one account of her own, and one she shares with Bob
+    const add = await setPatientAccounts([organization1, organization2], true);
+    expect(add).toHaveStatus(200);
+    expect(add.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 4 });
+
+    const added = await readExtended<Communication>(`Communication/${communication.id}`);
+    expect(added.meta?.accounts).toStrictEqual([org2, org1]);
+    expect(added.meta?.compartment).toStrictEqual(expect.arrayContaining([org1, org2, ...patients]));
+
+    // Removing the account only Alice has drops it
+    const removeOwn = await setPatientAccounts([organization2], true);
+    expect(removeOwn).toHaveStatus(200);
+
+    const ownRemoved = await readExtended<Communication>(`Communication/${communication.id}`);
+    expect(ownRemoved.meta?.accounts).toStrictEqual([org2]);
+    expect(ownRemoved.meta?.compartment).toStrictEqual(expect.arrayContaining([org2, ...patients]));
+    expect(ownRemoved.meta?.compartment).not.toContainEqual(org1);
+
+    // Removing the account Alice shares with Bob keeps it, since Bob still has it
+    const removeShared = await setPatientAccounts([], true);
+    expect(removeShared).toHaveStatus(200);
+
+    const sharedRemoved = await readExtended<Communication>(`Communication/${communication.id}`);
+    expect(sharedRemoved.meta?.accounts).toStrictEqual([org2]);
+    expect(sharedRemoved.meta?.compartment).toStrictEqual(expect.arrayContaining([org2, ...patients]));
+
+    // Bob is not in the target's compartment, so is left untouched
+    const bobAfter = await readExtended<Patient>(`Patient/${bob.id}`);
+    expect(bobAfter.meta?.versionId).toBe(bob.meta?.versionId);
+    expect(bobAfter.meta?.accounts).toStrictEqual([org2]);
+  });
+
   test.each([
     [
       'meta.accounts',
@@ -496,7 +561,8 @@ describe('Patient Set Accounts Operation', () => {
   });
 
   test('Keeps target accounts when the job is cancelled during propagation', async () => {
-    const asyncJob = await (await getProjectSystemRepo(project)).createResource<AsyncJob>({
+    const systemRepo = await getProjectSystemRepo(project);
+    const asyncJob = await systemRepo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'cancelled',
       requestTime: new Date().toISOString(),

@@ -30,6 +30,7 @@ import { getCacheRedis } from '../../redis';
 import { getAsyncJobTracking } from '../../workers/base';
 import { addSetAccountsJobData } from '../../workers/set-accounts';
 import { CancelledError } from '../../workers/utils';
+import { getPatients } from '../patient';
 import type { Repository, SystemRepository } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { searchPatientCompartment } from './patienteverything';
@@ -177,9 +178,8 @@ async function setLockedResourceAccounts(
   const accounts = params.accounts;
 
   await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
-  // Each read-modify-write below runs in one transaction, so the read comes from the database rather
-  // than the cache, and a concurrent write to the same resource fails it with a serialization error;
-  // withTransaction then re-runs the callback against the newer version
+  // Each read+write below runs in one transaction, so the read comes from the database rather
+  // than the cache, and a concurrent write to the same resource retries against the newer version
   const { target, oldAccounts } = await systemRepo.withTransaction(
     async (txRepo) => {
       const target = await txRepo.readResource(resourceType, id);
@@ -211,37 +211,7 @@ async function setLockedResourceAccounts(
 
     try {
       // Update the resources in the target compartment to trigger meta.accounts refresh
-      const search: Partial<SearchRequest> = { offset: 0, count: 1000 };
-      const maxSearchOffset = getConfig().maxSearchOffset ?? Number.POSITIVE_INFINITY;
-      while ((search.offset ?? 0) <= maxSearchOffset) {
-        await lock.renewIfDue();
-        if (asyncJobId) {
-          const shouldContinue = await shouldJobContinue(systemRepo, asyncJobId);
-          if (!shouldContinue) {
-            throw new CancelledError('Job cancelled');
-          }
-        }
-
-        const bundle = await searchPatientCompartment(userRepo, target, search);
-        for (const entry of bundle.entry ?? EMPTY) {
-          const resource = entry.resource;
-          if (resource && resource.resourceType !== 'Patient') {
-            await lock.renewIfDue();
-            if (await updateCompartmentResource(systemRepo, resource, accounts, removals)) {
-              count++;
-            }
-          }
-        }
-        const nextLink = bundle.link?.find((l) => l.relation === 'next');
-        if (nextLink?.url) {
-          // Update search pagination to next page
-          const nextSearch = parseSearchRequest(nextLink.url);
-          search.offset = nextSearch.offset;
-          search.cursor = nextSearch.cursor;
-        } else {
-          break;
-        }
-      }
+      count += await propagateToCompartment(userRepo, target, accounts, removals, lock, asyncJobId);
     } catch (err) {
       // Restore the old accounts on the target so that re-running the operation computes the same
       // additions and removals, and finishes propagating them. A cancelled job keeps the new accounts.
@@ -255,22 +225,60 @@ async function setLockedResourceAccounts(
   return buildOutputParameters(operation, { resourcesUpdated: count });
 }
 
-/**
- * Applies account additions and removals to a compartment resource.
- * @param systemRepo - The system repository.
- * @param resource - The compartment resource, as returned by search.
- * @param additions - Accounts to add.
- * @param removals - Accounts to remove.
- * @returns True if the resource has the desired accounts, or false if it was deleted since the compartment search.
- */
+async function propagateToCompartment(
+  repo: Repository,
+  target: WithId<Resource>,
+  accounts: Reference[],
+  removals: Reference[],
+  lock: TargetLock,
+  asyncJobId: string | undefined
+): Promise<number> {
+  let count = 0;
+  const systemRepo = repo.getSystemRepo();
+
+  const search: Partial<SearchRequest> = { offset: 0, count: 1000 };
+  const maxSearchOffset = getConfig().maxSearchOffset ?? Number.POSITIVE_INFINITY;
+  while ((search.offset ?? 0) <= maxSearchOffset) {
+    await lock.renewIfDue();
+    if (asyncJobId) {
+      const shouldContinue = await shouldJobContinue(systemRepo, asyncJobId);
+      if (!shouldContinue) {
+        throw new CancelledError('Job cancelled');
+      }
+    }
+
+    const bundle = await searchPatientCompartment(repo, target, search);
+    for (const entry of bundle.entry ?? EMPTY) {
+      const resource = entry.resource;
+      if (resource && resource.resourceType !== 'Patient') {
+        await lock.renewIfDue();
+        if (await updateCompartmentResource(systemRepo, target, resource, accounts, removals)) {
+          count++;
+        }
+      }
+    }
+    const nextLink = bundle.link?.find((l) => l.relation === 'next');
+    if (nextLink?.url) {
+      // Update search pagination to next page
+      const nextSearch = parseSearchRequest(nextLink.url);
+      search.offset = nextSearch.offset;
+      search.cursor = nextSearch.cursor;
+    } else {
+      break;
+    }
+  }
+
+  return count;
+}
+
 async function updateCompartmentResource(
   systemRepo: SystemRepository,
+  target: WithId<Resource>,
   resource: Resource,
   additions: Reference[],
   removals: Reference[]
 ): Promise<boolean> {
-  // The compartment search ran after the target was updated, so a resource that already had the
-  // desired accounts then needs no write
+  // The compartment search ran after the target was updated; skip resources that are already correct
   if (hasAccounts(resource, applyAccountChanges(extractAccountReferences(resource.meta), additions, removals))) {
     return true;
   }
@@ -282,16 +290,20 @@ async function updateCompartmentResource(
     await systemRepo.withTransaction(
       async (txRepo) => {
         const current = await txRepo.readResource(resourceType, id);
-        const accountList = applyAccountChanges(extractAccountReferences(current.meta), additions, removals);
+        const currentAccounts = extractAccountReferences(current.meta);
+        const accountList = applyAccountChanges(
+          currentAccounts,
+          additions,
+          await excludeOtherPatientAccounts(txRepo, target, current, currentAccounts, removals)
+        );
         current.meta = {
           ...current.meta,
           accounts: accountList,
           account: accountList?.[0],
         };
-        // Use system repo to force update meta.accounts
         await txRepo.updateResource(current);
       },
-      { resourceTypes: resourceType, source: 'setAccounts.compartment' }
+      { resourceTypes: [resourceType, 'Patient'], source: 'setAccounts.compartment' }
     );
     return true;
   } catch (err) {
@@ -300,6 +312,31 @@ async function updateCompartmentResource(
     }
     throw err;
   }
+}
+
+async function excludeOtherPatientAccounts(
+  txRepo: SystemRepository,
+  target: WithId<Resource>,
+  resource: Resource,
+  accounts: Reference[] | undefined,
+  removals: Reference[]
+): Promise<Reference[]> {
+  const applicable = removals.filter((r) => accounts?.some((a) => a.reference === r.reference));
+  if (!applicable.length) {
+    return applicable;
+  }
+  const targetRef = getReferenceString(target);
+  const patientRefs = getPatients(resource).filter((p) => p.reference !== targetRef);
+  if (!patientRefs.length) {
+    return applicable;
+  }
+
+  // Don't remove any accounts provided by other existing Patients
+  const otherPatients = await txRepo.readReferences(patientRefs);
+  const retained = otherPatients.flatMap((p) =>
+    p instanceof Error ? EMPTY : (extractAccountReferences(p.meta) ?? EMPTY)
+  );
+  return applicable.filter((r) => !retained.some((a) => a.reference === r.reference));
 }
 
 /**
