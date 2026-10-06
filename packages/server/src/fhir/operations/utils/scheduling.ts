@@ -1020,14 +1020,6 @@ function stampBookingCapacity(
   }
 }
 
-export async function createProposedAppointment(
-  repo: Repository,
-  proposedAppointment: WithPath<Appointment>,
-  customizer: (appointment: Appointment, slots: Slot[]) => void
-): Promise<Bundle<Appointment | Slot>> {
-  return createProposedAppointments(repo, [proposedAppointment], customizer);
-}
-
 /**
  * Books proposed Appointments all or none, each validated on its own, in one serializable
  * transaction.

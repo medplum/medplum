@@ -21,11 +21,11 @@
   "devDependencies": {
     "@medplum/core": "5.2.1",
     "@medplum/eslint-config": "5.2.1",
-    "@types/node": "22.20.4",
+    "@types/node": "22.20.5",
     "tsx": "4.23.15",
     "typescript": "6.0.3"
   },
-  "packageManager": "npm@11.19.1",
+  "packageManager": "npm@11.21.0",
   "engines": {
     "node": "^22.18.0 || >=24.2.0"
   }
