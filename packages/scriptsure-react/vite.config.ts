@@ -9,6 +9,7 @@ export default defineConfig({
   },
   test: {
     name: '@medplum/scriptsure-react',
+    maxWorkers: process.env.TEST_MAX_WORKERS,
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test.setup.ts',

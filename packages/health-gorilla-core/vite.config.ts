@@ -9,6 +9,7 @@ export default defineConfig({
   },
   test: {
     name: '@medplum/health-gorilla-core',
+    maxWorkers: process.env.TEST_MAX_WORKERS,
     globals: true,
     pool: 'threads',
   },

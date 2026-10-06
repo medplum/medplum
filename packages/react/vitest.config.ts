@@ -32,6 +32,7 @@ export default defineConfig({
   },
   test: {
     name: '@medplum/react',
+    maxWorkers: process.env.TEST_MAX_WORKERS,
     globals: true,
     environment: 'jsdom',
     environmentOptions: {

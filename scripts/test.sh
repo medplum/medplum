@@ -38,10 +38,7 @@ fi
 # Test
 # Even though docs do not have a "test" action, we still will build the docs via the
 # global "build" job unless we filter it out
-# TEST_MAX_WORKERS (a count or a percentage of cores) caps Vitest workers via --maxWorkers, which
-# packages with fileParallelism: false still honor. Vitest's own VITEST_MAX_WORKERS env var would
-# override that and run agent and hl7 test files in parallel.
-npx turbo run test --concurrency=1 --filter='!@medplum/docs' --filter='!./examples/*' -- $COVERAGE_FLAGS ${TEST_MAX_WORKERS:+--maxWorkers=$TEST_MAX_WORKERS}
+npx turbo run test --concurrency=1 --filter='!@medplum/docs' --filter='!./examples/*' -- $COVERAGE_FLAGS
 
 if [ -z "$NO_COVERAGE" ]; then
   # A package missing its blob drops out of the merged report entirely, which reads as a

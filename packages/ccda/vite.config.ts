@@ -9,6 +9,7 @@ export default defineConfig({
   },
   test: {
     name: '@medplum/ccda',
+    maxWorkers: process.env.TEST_MAX_WORKERS,
     globals: true,
     environment: 'node',
     pool: 'threads',

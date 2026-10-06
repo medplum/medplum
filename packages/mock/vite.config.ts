@@ -9,6 +9,7 @@ export default defineConfig({
   },
   test: {
     name: '@medplum/mock',
+    maxWorkers: process.env.TEST_MAX_WORKERS,
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test.setup.ts'],
