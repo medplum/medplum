@@ -65,6 +65,13 @@ describe('SearchControl', () => {
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
+  test('Hides actions button when no actions are available', async () => {
+    await setup({ search: { resourceType: 'Patient' } });
+
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
+  });
+
   test('Renders additional columns', async () => {
     const props: SearchControlProps = {
       search: {
