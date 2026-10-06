@@ -211,7 +211,7 @@ describe('MultiCalendar', () => {
     await userEvent.hover(screen.getByText('John Doe'));
 
     const primary = await screen.findByText('Primary');
-    const card = within(primary.closest('.mantine-HoverCard-dropdown') as HTMLElement);
+    const card = within(primary.closest('.mantine-Popover-dropdown') as HTMLElement);
     expect((await card.findByText('Ultrasound imaging')).parentElement).toHaveTextContent(
       /^Ultrasound imaging · 10:00\sAM – 10:30\sAM$/
     );

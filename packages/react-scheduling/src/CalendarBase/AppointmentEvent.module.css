@@ -1,6 +1,7 @@
 /* Wraps an appointment event's lines: lays them out as the event itself would, and fills the
  * event. */
 .eventContent {
+  position: relative;
   display: flex;
   flex: 1 1 auto;
   flex-direction: inherit;
@@ -8,6 +9,13 @@
   gap: inherit;
   min-width: 0;
   min-height: 0;
+}
+
+/* Where the card is placed from: over the whole event, without taking its pointer. */
+.anchor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
 /* The service type keeps to one line, cut short with an ellipsis: in a time grid so the patient

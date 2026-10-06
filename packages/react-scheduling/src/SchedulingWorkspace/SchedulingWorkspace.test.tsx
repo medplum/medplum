@@ -409,8 +409,11 @@ describe('SchedulingWorkspace', () => {
       const title = within(appointmentEvents('Miles Cooper')[0] as HTMLElement).getByText('Miles Cooper');
       await userEvent.hover(title);
       const card = await waitFor(() => {
-        const dropdown = document.querySelector<HTMLElement>('.mantine-HoverCard-dropdown');
-        expect(dropdown).not.toBeNull();
+        const dropdown = screen
+          .getAllByText('Miles Cooper')
+          .map((element) => element.closest<HTMLElement>('.mantine-Popover-dropdown'))
+          .find(Boolean);
+        expect(dropdown).toBeDefined();
         return within(dropdown as HTMLElement);
       });
       expect(await card.findByText('Dr. Maya Rivera')).toBeInTheDocument();
