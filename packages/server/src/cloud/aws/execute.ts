@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
+import { InvokeCommand, LambdaClient, ResourceNotFoundException } from '@aws-sdk/client-lambda';
 import { Hl7Message, createReference, getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import { TextDecoder, TextEncoder } from 'node:util';
@@ -79,9 +79,24 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
   } catch (err) {
     return {
       success: false,
-      logResult: normalizeErrorString(err),
+      logResult: normalizeLambdaExecutionError(err, request.bot),
     };
   }
+}
+
+/**
+ * Converts a Lambda invocation error into a log result string.
+ * A missing function means the bot was never deployed, so AWS's bare "Function not found"
+ * is replaced with a message that names the bot and the deploy operation.
+ * @param err - The error thrown while invoking the Lambda.
+ * @param bot - The Bot resource being executed.
+ * @returns The log result string.
+ */
+export function normalizeLambdaExecutionError(err: unknown, bot: Bot): string {
+  if (err instanceof ResourceNotFoundException) {
+    return `Bot "${bot.name ?? bot.id}" is not deployed. Deploy the bot with Bot/$deploy and try again.`;
+  }
+  return normalizeErrorString(err);
 }
 
 /**
