@@ -277,7 +277,7 @@ describe('SchedulingWorkspace booking', () => {
     await openTimeFinder();
     expect(lastFindParams(get)?.has('occurrence-count')).toBe(false);
 
-    await chooseRepeat('Weekly, 3 times');
+    await chooseRepeat('Once a week for 3 weeks');
     expect(lastFindParams(get)?.get('occurrence-count')).toBe('3');
   });
 
@@ -290,7 +290,7 @@ describe('SchedulingWorkspace booking', () => {
     await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
     await openTimeFinder();
     await dragDays('18', '27');
-    await chooseRepeat('Weekly, 3 times');
+    await chooseRepeat('Once a week for 3 weeks');
 
     expect(screen.getByText('Choose at most 7 days at a time for a recurring appointment.')).toBeInTheDocument();
     expect(lastFindParams(get)?.has('occurrence-count')).toBe(false);

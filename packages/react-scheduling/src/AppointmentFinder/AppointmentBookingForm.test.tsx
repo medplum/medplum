@@ -150,7 +150,7 @@ describe('AppointmentBookingForm', () => {
       setup(medplum, { allowRecurring: true });
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await chooseRepeat('Weekly, 2 times');
+      await chooseRepeat('Once a week for 2 weeks');
       await openTimeFinder();
       await chooseFirstOfferedTime();
       await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
@@ -166,7 +166,7 @@ describe('AppointmentBookingForm', () => {
       setup(medplum, { allowRecurring: true });
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await chooseRepeat('Weekly, 2 times');
+      await chooseRepeat('Once a week for 2 weeks');
       await openTimeFinder();
       await chooseFirstOfferedTime();
       await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));

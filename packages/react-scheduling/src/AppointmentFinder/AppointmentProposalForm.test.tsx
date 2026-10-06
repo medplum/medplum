@@ -1807,7 +1807,7 @@ describe('AppointmentProposalForm', () => {
       const { rerender } = renderWithMedplum(<AppointmentProposalForm onSubmit={onSubmit} allowRecurring />, medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await chooseRepeat('Weekly, 3 times');
+      await chooseRepeat('Once a week for 3 weeks');
       await openTimeFinder();
       expect(lastFindParams(get)?.get('occurrence-count')).toBe('3');
 
@@ -1822,7 +1822,7 @@ describe('AppointmentProposalForm', () => {
       setup(medplum, { allowRecurring: true });
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await chooseRepeat('Weekly, 3 times');
+      await chooseRepeat('Once a week for 3 weeks');
       await openTimeFinder();
       await chooseFirstOfferedTime();
 
@@ -1836,7 +1836,7 @@ describe('AppointmentProposalForm', () => {
 
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await chooseRepeat('Weekly, 3 times');
+      await chooseRepeat('Once a week for 3 weeks');
 
       expect(bookButton()).toHaveTextContent('Book 3 appointments');
     });
@@ -1855,7 +1855,7 @@ describe('AppointmentProposalForm', () => {
       const { rerender } = renderWithMedplum(<AppointmentProposalForm onSubmit={onSubmit} allowRecurring />, medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await chooseRepeat('Weekly, 2 times');
+      await chooseRepeat('Once a week for 2 weeks');
       await openTimeFinder();
       await chooseFirstOfferedTime();
       expect(chosenTimeField()).toBeInTheDocument();
@@ -1872,7 +1872,7 @@ describe('AppointmentProposalForm', () => {
       const { rerender } = renderWithMedplum(<AppointmentProposalForm onSubmit={onSubmit} allowRecurring />, medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await chooseRepeat('Weekly, 3 times');
+      await chooseRepeat('Once a week for 3 weeks');
       rerender(<AppointmentProposalForm onSubmit={onSubmit} />);
       await openTimeFinder();
       await chooseFirstOfferedTime();
@@ -1881,7 +1881,7 @@ describe('AppointmentProposalForm', () => {
       await settleAutocomplete();
 
       // The field says three times again, and a single visit is not what it says.
-      expect(screen.getByRole('textbox', { name: 'Repeat' })).toHaveValue('Weekly, 3 times');
+      expect(screen.getByRole('textbox', { name: 'Repeat' })).toHaveValue('Once a week for 3 weeks');
       expect(chosenTimeField()).not.toBeInTheDocument();
     });
   });

@@ -1,16 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Alert,
-  Button,
-  Group,
-  Loader,
-  NumberInput,
-  Select,
-  Stack,
-  Text,
-  TextInput,
-} from '@mantine/core';
+import { Alert, Button, Group, Loader, NumberInput, Select, Stack, Text, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
@@ -92,7 +82,7 @@ const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
 // `Appointment/$find` searches a weekly series of two to six occurrences.
 const OCCURRENCE_OPTIONS = [
   { value: '1', label: 'Does not repeat' },
-  ...[2, 3, 4, 5, 6].map((count) => ({ value: count.toString(), label: `Weekly, ${count} times` })),
+  ...[2, 3, 4, 5, 6].map((count) => ({ value: count.toString(), label: `Once a week for ${count} weeks` })),
 ];
 
 /**
