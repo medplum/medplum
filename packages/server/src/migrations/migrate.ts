@@ -1039,7 +1039,7 @@ export function writePostDeployActionsToBuilder(b: FileBuilder, actions: Migrati
   b.newLine();
   b.append('export const migration: CustomPostDeployMigration = {');
   b.append("  type: 'custom',");
-  b.append('  prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),');
+  b.append('  prepareJobData: prepareCustomMigrationJobData,');
   b.append('  run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),');
   b.append('};');
   b.newLine();
