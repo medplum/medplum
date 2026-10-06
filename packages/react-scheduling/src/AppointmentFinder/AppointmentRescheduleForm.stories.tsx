@@ -122,7 +122,8 @@ function reportReschedule(
   setAppointment: (appointment: WithId<Appointment>) => void
 ): (reschedule: AppointmentReschedule) => void {
   return (reschedule) => {
-    console.info('Rescheduled', reschedule.appointment.id, `onto ${reschedule.slots.length} slot(s)`);
-    setAppointment(reschedule.appointment);
+    const [moved] = reschedule.appointments;
+    console.info('Rescheduled', moved.id, `onto ${reschedule.slots.length} slot(s)`);
+    setAppointment(moved);
   };
 }
