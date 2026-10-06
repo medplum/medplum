@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { normalizeOperationOutcome, singularize } from '@medplum/core';
+import { ContentType, normalizeOperationOutcome, singularize } from '@medplum/core';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { sendOutcome } from '../fhir/outcomes';
@@ -14,7 +14,7 @@ keyValueRouter.get('/:key', async (req: Request, res: Response) => {
   const key = singularize(req.params.key) ?? '';
   try {
     const value = await getValue(key);
-    res.status(200).send(value);
+    res.status(200).type(ContentType.TEXT).send(value);
   } catch (err) {
     sendOutcome(res, normalizeOperationOutcome(err));
   }

@@ -48,6 +48,7 @@ describe('Key Value Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2).toHaveStatus(200);
     expect(res2.text).toBe(value);
+    expect(res2.headers['content-type']).toContain(ContentType.TEXT);
 
     const res3 = await request(app)
       .delete(`/keyvalue/v1/${key}`)
