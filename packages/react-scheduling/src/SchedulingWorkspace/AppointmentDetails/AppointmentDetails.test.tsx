@@ -244,10 +244,15 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
   });
 
-  test('uses only the first referenced visit type', () => {
+  test('uses only the first visit type referring to a HealthcareService', () => {
     renderDetails({
       ...BOOKED_APPOINTMENT,
       serviceType: [
+        // Carries the extension, but what it refers to is not a HealthcareService.
+        {
+          text: 'Misfiled visit type',
+          extension: [{ url: ServiceTypeReferenceURI, valueReference: { reference: 'Practitioner/dr-rivera' } }],
+        },
         ...(BOOKED_APPOINTMENT.serviceType ?? []),
         {
           text: 'Ignored visit type',
@@ -259,6 +264,7 @@ describe('AppointmentDetails', () => {
 
     expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
     expect(screen.queryByText(/Ignored visit type/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Misfiled visit type/)).not.toBeInTheDocument();
     expect(screen.getByText('Abdominal ultrasound')).toBeInTheDocument();
   });
 

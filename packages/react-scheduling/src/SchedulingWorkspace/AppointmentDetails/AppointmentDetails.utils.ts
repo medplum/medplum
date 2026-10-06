@@ -5,6 +5,7 @@ import {
   deepEquals,
   getExtension,
   getExtensionValue,
+  isReference,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
@@ -24,7 +25,8 @@ export interface ServiceTypes {
 }
 
 /**
- * Reads the first entry carrying a HealthcareService reference as the visit type.
+ * Reads the first entry carrying a HealthcareService reference as the visit type: the entry
+ * `extractServiceTypeReferences` reads first, so the service named is the one acted on.
  * Additional referenced entries are ignored. Entries without a reference are procedures.
  *
  * @param appointment - The appointment being described.
@@ -33,7 +35,9 @@ export interface ServiceTypes {
 export function partitionServiceTypes(appointment: Appointment): ServiceTypes {
   const serviceType = appointment.serviceType ?? [];
   return {
-    visitType: serviceType.find((concept) => getExtension(concept, ServiceTypeReferenceURI)),
+    visitType: serviceType.find((concept) =>
+      isReference(getExtensionValue(concept, ServiceTypeReferenceURI), 'HealthcareService')
+    ),
     procedures: serviceType.filter((concept) => !getExtension(concept, ServiceTypeReferenceURI)),
   };
 }
