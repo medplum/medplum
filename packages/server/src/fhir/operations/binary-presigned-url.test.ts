@@ -131,6 +131,8 @@ describe('Binary/$presigned-url', () => {
       .auth(owner.accessToken, { type: 'bearer' })
       .send();
     expect(ownerWriteUrlRes).toHaveStatus(200);
+    const ownerWriteUrl = new URL((ownerWriteUrlRes.body as Parameters).parameter?.[0]?.valueUri as string);
+    expect(ownerWriteUrl.searchParams.get('Project')).toStrictEqual(owner.project.id);
 
     // Linked project can read
     const linkedReadUrlRes = await request(server)
@@ -138,6 +140,8 @@ describe('Binary/$presigned-url', () => {
       .auth(linked.accessToken, { type: 'bearer' })
       .send();
     expect(linkedReadUrlRes).toHaveStatus(200);
+    const linkedReadUrl = new URL((linkedReadUrlRes.body as Parameters).parameter?.[0]?.valueUri as string);
+    expect(linkedReadUrl.searchParams.get('Project')).toStrictEqual(owner.project.id);
 
     // Linked project cannot upload
     const linkedWriteUrlRes = await request(server)
