@@ -671,14 +671,15 @@ describe('SmartHealthLinkImport', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'Create Homer Simpson & Import Records' }));
 
-      expect(
-        await screen.findByText(
-          '1 of 2 records could not be imported. Allergy "Peanuts": Unknown search parameter: date'
-        )
-      ).toBeInTheDocument();
+      expect(await screen.findByText('1 of 2 records could not be imported')).toBeInTheDocument();
+      expect(screen.getByText('Allergy "Peanuts": Unknown search parameter: date')).toBeInTheDocument();
+      expect(screen.getByText(/Saved 1 record to Homer Simpson/)).toBeInTheDocument();
       expect(onImported).not.toHaveBeenCalled();
       expect(createResource).toHaveBeenCalledTimes(1);
       expect(screen.getByRole('button', { name: 'Import Records to Homer Simpson' })).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ignore 1 record and finish' }));
+      expect(onImported).toHaveBeenCalledWith(created);
     });
 
     test('Steps back to an earlier step from the stepper', async () => {

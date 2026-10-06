@@ -7,7 +7,8 @@ import { getAuthenticatedContext } from '../../context';
 import { withPath } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { createProposedAppointment } from './utils/scheduling';
+import { expandRecurrence } from './utils/recurrence';
+import { createProposedAppointments } from './utils/scheduling';
 
 const holdOperation = makeOperationDefinition(
   { scope: 'type', resource: 'Appointment' },
@@ -28,6 +29,8 @@ type HoldParameters = {
 /**
  * Handles HTTP requests for the Appointment $hold operation.
  *
+ * Holds one appointment or, given a weekly `recurrenceTemplate`, all or none of its series.
+ *
  * Endpoints:
  *   [fhir base]/Appointment/$hold
  *
@@ -38,9 +41,9 @@ type HoldParameters = {
 export async function appointmentHoldHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const params = parseInputParameters<HoldParameters>(holdOperation, req);
-  const bundle = await createProposedAppointment(
+  const bundle = await createProposedAppointments(
     ctx.repo,
-    withPath(params.appointment, 'Parameters.appointment'),
+    expandRecurrence(withPath(params.appointment, 'Parameters.appointment')),
     (appointment, slots) => {
       // Create appointment with "pending" status
       appointment.status = 'pending';

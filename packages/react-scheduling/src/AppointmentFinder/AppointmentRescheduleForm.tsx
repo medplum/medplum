@@ -34,6 +34,7 @@ export interface AppointmentRescheduleFormProps extends Omit<
   | 'diagnosisBinding'
   | 'canBypassSchedulingRules'
   | 'appointmentExtensions'
+  | 'allowRecurring'
 > {
   /** The appointment being moved. */
   readonly appointment: WithId<Appointment>;
@@ -108,12 +109,14 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
       // `$reschedule` is a custom operation, so the client cannot tell what it changed.
       // It deletes the existing slots, creates new ones, and updates `appointment.slot`
       // with the fresh references.
-      medplum.notifyResourceModified({
-        resourceType: 'Appointment',
-        operation: 'update',
-        id: result.appointment.id,
-        resource: result.appointment,
-      });
+      for (const moved of result.appointments) {
+        medplum.notifyResourceModified({
+          resourceType: 'Appointment',
+          operation: 'update',
+          id: moved.id,
+          resource: moved,
+        });
+      }
       for (const id of releasedSlotIds) {
         medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'delete', id });
       }

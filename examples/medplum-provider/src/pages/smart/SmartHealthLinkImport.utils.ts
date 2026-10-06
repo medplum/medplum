@@ -50,13 +50,15 @@ export function buildSmartHealthLinkImportBundle(
   sharedPatient: Patient,
   targetPatient: WithId<Patient>
 ): Bundle {
+  // A shared bundle can hold one Patient per source system, so match every Patient entry, not just the first
   const sharedPatientRefs = new Set<string>();
   if (sharedPatient.id) {
     sharedPatientRefs.add(`Patient/${sharedPatient.id}`);
   }
-  const sharedPatientFullUrl = bundle.entry?.find((entry) => isResource<Patient>(entry.resource, 'Patient'))?.fullUrl;
-  if (sharedPatientFullUrl) {
-    sharedPatientRefs.add(sharedPatientFullUrl);
+  for (const entry of bundle.entry ?? []) {
+    if (isResource<Patient>(entry.resource, 'Patient') && entry.fullUrl) {
+      sharedPatientRefs.add(entry.fullUrl);
+    }
   }
   const targetPatientRef = `Patient/${targetPatient.id}`;
   const selectedBundle: Bundle = {
@@ -264,7 +266,7 @@ function rewritePatientReference<T extends Resource>(
 ): T {
   return JSON.parse(
     JSON.stringify(resource, (key, value) => {
-      if (key === 'reference' && sharedPatientRefs.has(value)) {
+      if (key === 'reference' && (sharedPatientRefs.has(value) || isPatientReference(value))) {
         return targetPatientRef;
       }
       return value;
@@ -272,18 +274,29 @@ function rewritePatientReference<T extends Resource>(
   ) as T;
 }
 
+/**
+ * True for a relative or absolute Patient reference, e.g. `Patient/123` or `https://ehr.example.com/fhir/Patient/123`.
+ * The shared records belong to one person, so every Patient reference means the import's target patient.
+ * @param value - The reference value.
+ * @returns True if the value is a Patient reference.
+ */
+function isPatientReference(value: unknown): boolean {
+  return typeof value === 'string' && /(^|\/)Patient\/[^/?#]+(\/_history\/[^/?#]+)?$/.test(value);
+}
+
 function buildIfNoneExist(resource: Resource, targetPatient: WithId<Patient>): string | undefined {
   if (!CONDITIONAL_CREATE_RESOURCE_TYPES.has(resource.resourceType)) {
     return undefined;
   }
 
+  const patientParam = getPatientSearchParam(resource.resourceType);
   const identifier = getIdentifierSearch(resource);
   if (identifier) {
-    return identifier;
+    // Scope to the target patient so a copy saved on another patient does not count as already imported
+    return patientParam ? `${identifier}&${patientParam}=Patient/${targetPatient.id}` : identifier;
   }
 
   const typedResource = resource as Record<string, any>;
-  const patientParam = getPatientSearchParam(resource.resourceType);
   const tokenParam = getTokenSearchParam(resource.resourceType);
   const token = getTokenSearchValue(typedResource.code ?? typedResource.type ?? typedResource.vaccineCode);
   if (!patientParam || !tokenParam || !token) {
