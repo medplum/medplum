@@ -102,8 +102,8 @@ Each independently managed requested service uses a `ServiceRequest`; requests a
 | Category and service type | Bind `category` / `code` to agreed ValueSets (SNOMED, custom, or mix); drives search and reporting. |
 | Priority | Set `ServiceRequest.priority`; keep labels aligned with clinical operations. |
 | Display referral number | `ServiceRequest.identifier` with your namespace; assign at create when needed for ops or correspondence. |
-| Default – signed at send | Set `intent = order` and `status = active` through the authorized release path. Sending is tracked separately from order status. |
-| Draft before release (less common) | Use `status = draft` with `intent = order` for an order being prepared. For a true proposal, retain it and create a separate authorized order with `basedOn` referencing the proposal. |
+| Released order | Set `intent = order` and `status = active` through the authorized release path. Sending is tracked separately from order status. |
+| Draft before release | Use `status = draft` with `intent = order` for an order being prepared. For a true proposal, retain it and create a separate authorized order with `basedOn` referencing the proposal. |
 
 ---
 
@@ -230,9 +230,9 @@ After a referral is created or accepted, decide how it gets to the right person,
 | :---- | :---- |
 | Ownership and assignment | Set `Task.for` to the patient and `focus` to the ServiceRequest. Use `owner` for the accountable person/group and `performerType` for required roles; claim and reassign with version checks. |
 | Check in-network status / covered benefits | Use CoverageEligibilityRequest with `purpose: benefits` where supported. Evaluate network participation against authoritative payer data for the selected provider/service; do not assume a universal eligibility or clearinghouse response. |
-| Check whether prior auth is required | Use CoverageEligibilityRequest with `purpose: auth-requirements` where supported. Interpret `CoverageEligibilityResponse.insurance.item.authorizationRequired` and supporting requirements under the payer contract. |
+| Check whether prior auth is required | Use CoverageEligibilityRequest with `purpose: auth-requirements` where supported. Interpret `authorizationRequired` in the response's insurance items and supporting requirements under the payer contract. |
 | Submit a prior auth request | Use Claim with `use: preauthorization` and interpret ClaimResponse under the chosen payer API, implementation guide, or EDI mapping. Configure that integration explicitly; transport success does not mean approval. |
-| Gate scheduling on authorization | Keep the Task on hold with an authorization-pending business stage until the required approval evidence is present and valid for the service/date. `ClaimResponse.outcome: complete` alone does not prove approval. |
+| Authorization gate | Keep the Task on hold with an authorization-pending business stage until the required approval evidence is present and valid for the service/date. `ClaimResponse.outcome: complete` alone does not prove approval. |
 | Scheduling the work | See the [Scheduling Decision Guide](/docs/decision-guides/scheduling). From the referral side, link the resulting Appointment and downstream Encounter back to the referral via basedOn → ServiceRequest. |
 | Aging and SLA | Use Task history or explicit transitions for time in stage; `lastModified` may reflect unrelated edits. Use the Medplum `restriction.period` planned-date convention for deadlines, with range-aware search and a defined pause policy. |
 
