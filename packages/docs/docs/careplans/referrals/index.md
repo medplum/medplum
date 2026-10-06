@@ -5,7 +5,7 @@ title: Referrals
 
 # Referrals
 
-<span id="referral-overview" />
+<span id="referral-overview" style={{ scrollMarginTop: 'calc(var(--ifm-navbar-height) + 1rem)' }} />
 
 A referral can be sent successfully and still go nowhere. The receiving clinic may need another document, the patient may need help scheduling, or the consultation note may never make it back to the referring team. A useful referral workflow keeps those next steps visible.
 
@@ -25,7 +25,7 @@ For a referral to another system, add the transmission and intake steps: agree o
 
 The [worked example](/docs/careplans/referrals/fhir-resource-examples) uses two teams in one project so every reference can be followed locally. The same milestones apply across systems, with the integration carrying messages and status updates between them.
 
-<span id="key-resources" />
+<span id="key-resources" style={{ scrollMarginTop: 'calc(var(--ifm-navbar-height) + 1rem)' }} />
 
 ## Connect the Request to the Work Around It {/* #the-referral-data-model */}
 

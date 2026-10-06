@@ -15,7 +15,7 @@ A fax receipt is useful evidence that something was delivered. The coordinator s
 | C-CDA exchange | Use a generator and validator appropriate to the agreed document template and receiving system |
 | In-app messaging | Use Medplum's Communication thread and message model, with referral context and document references |
 
-<span id="c-cda-transitions-of-care" />
+<span id="c-cda-transitions-of-care" style={{ scrollMarginTop: 'calc(var(--ifm-navbar-height) + 1rem)' }} />
 
 A Bot can coordinate generation and transmission. For C-CDA, follow the [C-CDA integration guidance](/docs/integration/c-cda) and verify the capabilities of your chosen generator; producing XML does not establish template conformance.
 

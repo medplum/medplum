@@ -280,7 +280,6 @@ Decide what should come back after the referral is acted on, how those items att
 | Linking | Manual selection or automated match using identifiers you control – define when human confirmation is required. |
 | Closure | End each Task with the appropriate `status` and disposition. Reconcile ServiceRequest completion from service evidence through the responsible authority. For closed-loop care, separately require returned-result review and assignment of follow-up. |
 
-
 ## Implementation Guides
 
 Use the decisions above to choose the next implementation guide:
