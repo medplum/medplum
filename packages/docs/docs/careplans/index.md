@@ -15,7 +15,7 @@ Use the [Care Coordination Decision Guide](/docs/decision-guides/care-coordinati
 
 :::
 
-## Choose the resources for your workflow
+## Start with the Work Your Team Needs to Do {/* #choose-the-resources-for-your-workflow */}
 
 | Need | Model | What it represents |
 | --- | --- | --- |
@@ -38,7 +38,7 @@ flowchart LR
 
 This diagram shows one directly authored plan. Resources also carry their own patient references. The `supportingInfo` association is an application convention; a shared Condition alone does not establish case membership. Protocol-generated plans can have an intermediate RequestGroup.
 
-## Build the operational workflow
+## Build Your Care Coordination Workflow {/* #build-the-operational-workflow */}
 
 1. [Tasks and Work Queues](/docs/careplans/tasks): identify work, expose queues, and claim items safely.
 2. [Teams, Assignment, and Top-of-License Care](/docs/careplans/teams-and-delegation): assign eligible roles and preserve required review.
@@ -49,7 +49,7 @@ This diagram shows one directly authored plan. Resources also carry their own pa
 7. [Clinical Decision Support and Follow-Through](/docs/careplans/clinical-decision-support): connect guidance to review and action.
 8. [Operational Reporting](/docs/careplans/operational-reporting): measure workload, delays, and outcomes.
 
-## Connect to other workflows
+## Connect the Rest of the Practice {/* #connect-to-other-workflows */}
 
 [Referrals](/docs/careplans/referrals), [messaging](/docs/communications/messaging-data-model), and [scheduling](/docs/scheduling) use these coordination patterns. Keep domain-specific clinical records in those models and use Tasks for the work around them. [Clinical Protocols](/docs/careplans/protocols) covers reusable definition authoring.
 

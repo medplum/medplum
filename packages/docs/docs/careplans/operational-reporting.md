@@ -8,7 +8,7 @@ A coordinator needs to see what is waiting today. A team lead may want to know w
 
 Use current FHIR resources for actionable lists. For historical measures, capture the transitions that tell you when work arrived, changed hands, paused, and finished.
 
-## Build current work lists
+## Show the Team What Needs Attention Today {/* #build-current-work-lists */}
 
 Use Task searches for owner, lifecycle status, work type, and local business stage. For example:
 
@@ -24,9 +24,13 @@ For deadlines, follow the [Task date-range guidance](/docs/careplans/tasks#searc
 
 All queries run within the caller's AccessPolicy. An application filter is not an access boundary. Aggregate reporting credentials also need an explicitly permitted scope.
 
-## Build a transition model
+## Capture When Work Changed Hands {/* #build-a-transition-model */}
+
+:::caution[Editing a note should not reset queue age]
 
 `Task.lastModified` and `meta.lastUpdated` describe the latest edit, which might be a note correction. Neither field alone tells you when the current stage began. Compare [resource-history versions](/docs/fhir-datastore/resource-history) to detect stage and owner changes.
+
+:::
 
 For structured actor, reason, or business-event time, create `Provenance` targeting the affected resource version. Use `occurredDateTime` for the effective event time and `recorded` for when it was recorded. These can differ for delayed inbound updates. Provenance supplements history; it does not automatically contain old and new status values.
 
@@ -42,7 +46,9 @@ A reporting table can contain:
 
 This is an analytics schema, not an invented FHIR resource. Make ingestion replayable, tolerate late events, and retain enough source history to rebuild intervals.
 
-## Define measures before calculating them
+## Agree on What the Clock Measures {/* #define-measures-before-calculating-them */}
+
+Two teams can both report "turnaround time" and measure different things. Settle the start, stop, and pause rules before comparing their numbers.
 
 | Measure | Definition to settle |
 | --- | --- |
@@ -54,8 +60,12 @@ This is an analytics schema, not an invented FHIR resource. Make ingestion repla
 
 Count work at the appropriate level. One referral may have several Tasks, so completed Task counts do not produce a referral completion rate. A reopened item needs another interval; do not replace its original completion time in reporting history.
 
-## Connect to clinical outcomes
+## Put Work Completion Alongside Patient Progress {/* #connect-to-clinical-outcomes */}
 
 Use Goal targets, `achievementStatus`, and supporting Observations for clinical progress. Report them alongside work completion without treating one as proof of the other. The clinical team defines measures and denominators; the pipeline preserves the evidence and timing needed to calculate them.
 
+:::tip[Start with one measure you can explain]
+
 Start with an open-work dashboard and one well-defined turnaround measure. Add measures once transitions and exception handling are reliably captured.
+
+:::

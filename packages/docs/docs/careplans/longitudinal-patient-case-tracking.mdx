@@ -10,7 +10,7 @@ A patient may have several visits, messages, and follow-up Tasks during one care
 
 Use an [EpisodeOfCare](/docs/api/fhir/resources/episodeofcare) for that period of responsibility. A program enrollment, treatment course, or ongoing case can justify an episode. Independent tasks or a single visit can use their existing resources.
 
-## Establish case identity and responsibility
+## Start a Case and Name the Responsible Team {/* #establish-case-identity-and-responsibility */}
 
 | Field | Purpose |
 | --- | --- |
@@ -25,9 +25,13 @@ Use an [EpisodeOfCare](/docs/api/fhir/resources/episodeofcare) for that period o
 
 EpisodeOfCare can record both coordinator and team assignments. Clinical goals and planned activities belong in CarePlan and Goal.
 
+:::tip[Two cases can share a diagnosis]
+
 Create each case with its own identity. Two concurrent episodes can address the same Condition; the diagnosis is not the case identifier. Use conditional create on a stable enrollment identifier when imports or launch requests may repeat.
 
-## Link visits and clinical plans
+:::
+
+## Bring Visits and Plans into the Case {/* #link-visits-and-clinical-plans */}
 
 ```mermaid
 flowchart LR
@@ -42,7 +46,11 @@ flowchart LR
 
 `Encounter.episodeOfCare` is an array, so one visit can contribute to multiple episodes. Use Appointment for the booking workflow; create a planned Encounter only when the encounter model calls for it, rather than creating one merely to group an appointment.
 
+:::note[Choose the plan-to-case convention explicitly]
+
 For a plan formed in the context of a case, this guide uses `CarePlan.supportingInfo` to reference the EpisodeOfCare. This is a supporting-context convention, not a dedicated R4 case-membership field. Decide whether one plan can relate to multiple episodes and document that rule consistently.
+
+:::
 
 ```json
 {
@@ -59,7 +67,7 @@ For a plan formed in the context of a case, this guide uses `CarePlan.supporting
 
 The referenced resources must exist. Every patient-related resource still needs its own patient association and access policy.
 
-## Retrieve the correct case context
+## Find the Records for One Case {/* #retrieve-the-correct-case-context */}
 
 ```http
 GET /fhir/R4/EpisodeOfCare?patient=Patient/example&status=active
@@ -73,7 +81,7 @@ A Condition search can find plans addressing a diagnosis, but cannot uniquely fi
 
 For work authorized by the plan, `Task.basedOn` can reference the CarePlan; keep `focus` for the actual request or resource being acted on. Work directly concerning case administration can focus on the EpisodeOfCare. Avoid overwriting a clinical focus merely to simplify case grouping. Other case-level work may need a documented grouping convention; an Encounter reference alone cannot identify one case when the visit spans several.
 
-## Change responsibility and close the case
+## Transfer or Close the Case Without Dropping Work {/* #change-responsibility-and-close-the-case */}
 
 For a coordinator change within the same period of organizational responsibility, update `careManager` or team membership and retain history. Update individual open Task owners separately. A transfer to another organization can require a new episode, particularly when responsibility periods or system ownership differ; agree on the transfer boundary instead of silently reassigning the entire history.
 

@@ -20,21 +20,17 @@ For role eligibility and clinical review, see [Teams and Delegation](/docs/carep
 
 The Medplum [Clinical Task Management Demo](https://github.com/medplum/medplum-task-demo) provides an in-depth reference implementation of a task management system that addresses these concerns.
 
-<div className="responsive-iframe-wrapper">
-  <iframe width="560" height="315" src="https://www.youtube.com/embed/xQH27B8sP9o?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen/>
-</div>
+## Start with One Clear Unit of Work {/* #introduction */}
 
-## Introduction
-
-While the majority of FHIR resources represent clinical data that is _operated on_, FHIR also defines a set of workflow resources that describe and track _work to be done._ This guide will discuss the usage of the [`Task`](/docs/api/fhir/resources/task) resource, which is the basic building-block resource used to implement care plans and track workflow progress.
+Start with an action someone can finish: call the patient, review the result, or collect a missing document. A Task gives that action an owner and a lifecycle. Its links give the assignee the clinical context they need to do the work.
 
 For example, a [`Task`](/docs/api/fhir/resources/task) might represent the task of having a practitioner complete a [PHQ-9 questionnaire](https://www.apa.org/depression-guideline/patient-health-questionnaire.pdf) for a patient as part of their onboarding.
 
 A common application is for organizations to build **task queue systems** to route tasks to the correct practitioner based on specialty, level of credential, and availability. The [Medplum Task Demo](https://github.com/medplum/medplum-task-demo) application provides a minimalist task queue that demonstrates task search, assignment, and status. For real-time task updates, consider using [Subscriptions](/docs/subscriptions).
 
-## Task type
+## Name the Work to Be Done {/* #task-type */}
 
-The `Task.code` element is used to represent the task type, equivalent to the task title. This can either be different from task to task, or selected from a standard set of task types. Using the latter approach helps enable querying across all `Tasks` of the same type.
+Use `Task.code` to describe the kind of work. A title such as "Review intake assessment" tells the assignee what to do. Reusing a consistent code for that work type also lets you find all assessment reviews in one query.
 
 While using SNOMED or LOINC codes are preferred, many implementations simply use the `Task.code.text` element, as task types are often implementation-specific.
 
@@ -58,21 +54,21 @@ While using SNOMED or LOINC codes are preferred, many implementations simply use
 }
 ```
 
-## Task status
+## Show Where the Work Stands {/* #task-status */}
 
-Designing status codes for tasks varies from implementation to implementation, and requires a good understanding of your operations.
+A coordinator should be able to tell whether work is ready, underway, or waiting on someone else. Start with those operational questions when choosing your status transitions.
 
 [`Task`](/docs/api/fhir/resources/task) provides three fields: `status`, `businessStatus`, and `statusReason`.
 
 `Task.status` maps to the FHIR task lifecycle shown below. It provides coarse-grained information about the activity state of a [`Task`](/docs/api/fhir/resources/task) and is most useful for day-to-day operations, as it allows for efficient queries on active, completed, and cancelled tasks. These queries will remain stable as your implementation scales. Use `requested`, `received`, `accepted`, and `rejected` when the workflow includes a request/acknowledgment exchange, including within one system. Internal actionable work can start at `ready`.
 
-![Task lifecyle](./task-state-machine.svg)
+![Task lifecycle](./task-state-machine.svg)
 
 `Task.businessStatus` should map to your implementation's specific operational funnel. It provides fine-grained information to help customer service and operations teams troubleshoot tasks and monitor progress. It is also useful for analytics teams to compute conversion metrics between pipeline stages.
 
 `Task.statusReason` describes _why_ the [`Task`](/docs/api/fhir/resources/task) has the current status, and is most commonly used when `status` is set to `"on-hold"` or `"cancelled"`. Using an orthogonal `statusReason` allows operations teams to efficiently query for all tasks at the same point in the funnel, while analytics teams can further break down by all the reasons they may be on hold.
 
-## Task priority
+## Make Urgency Visible {/* #task-priority */}
 
 `Task.priority` can be used to indicate the urgency of the task. This field uses a fixed set of codes that are borrowed from acute in-patient care settings.
 
@@ -85,7 +81,7 @@ Designing status codes for tasks varies from implementation to implementation, a
 
 While these terms might feel awkward in a digital health setting, Medplum recommends that implementations use these codes rather than create their own extensions in order to maintain interoperability with the ecosystem.
 
-## Task assignment
+## Give the Task an Owner {/* #task-assignment */}
 
 `Task.for` indicates who _benefits_ from the task, and is most commonly the patient for whom care is being delivered.
 
@@ -164,13 +160,13 @@ Below is an example of a `Task.performerType` [CodeableConcept](/docs/fhir-basic
 
 :::
 
-## Task focus
+## Link the Record Someone Needs to Act On {/* #task-focus */}
 
 The `Task.focus` element tracks the FHIR resource being _operated on_ by this task, known as the "focal resource". See the [Examples](#examples) section below for examples of focal resources in common scenarios.
 
-Well maintained `Task.focus` elements are critical for data hygiene and streamlining operations and analytics . Populating `focus` when an actual request or resource is being acted on will make it easier to find all touchpoints for a given clinical resource, spot operational bottlenecks, and calculate turnaround-times, conversions, and care quality metrics as your implementation scales.
+When several people work on the same referral, their Tasks can all point to that ServiceRequest. Populating `focus` makes it possible to find those work items together and see where the referral is waiting.
 
-## Task start / due dates
+## Set Start Dates and Due Dates {/* #task-start--due-dates */}
 
 For a Task seeking fulfillment of a request referenced by `focus`, the `Task.restriction.period` field describes the fulfillment window, with `Task.restriction.period.end` representing the _due date_, and `Task.restriction.period.start` representing the (potentially optional) start date. A task that cannot be started until November 1 and is due at the end of December looks like this:
 
@@ -242,7 +238,7 @@ GET [base]/Task?due-date=eb2026-12-01
 GET [base]/Task?due-date=sa2026-09-30
 ```
 
-## Task completion times
+## Record When the Work Happened {/* #task-completion-times */}
 
 The `Task.executionPeriod` field describes the time period over which the [`Task`](/docs/api/fhir/resources/task) was actually actioned. Properly populating this field makes it easier to identify stalled tasks and compute turnaround-time metrics.
 
@@ -250,17 +246,17 @@ The `Task.executionPeriod` field describes the time period over which the [`Task
 
 `Task.executionPeriod.end` is used to mark the completion time of the _final action_ taken against this task.
 
-## Task comments
+## Leave Context for the Next Person {/* #task-comments */}
 
 `Task.note` can be used to capture narrative text that is not represented elsewhere in the resource.
 
-The most common use for this field is to record comments from the task assignee as they work on the task. When used this way, it is a best practice to include the `author` and `time` fields in the [`Annotation`](/docs/api/fhir/datatypes/annotation).
+The most common use for this field is to record comments from the task assignee as they work on the task. When used this way, it is a best practice to include `authorReference` or `authorString`, along with `time`, in the [`Annotation`](/docs/api/fhir/datatypes/annotation).
 
-## Subtasks
+## Break Larger Jobs into Subtasks {/* #subtasks */}
 
-`Tasks` can be organized into a hierarchical structure to create subtasks. To represent this hierarchy, subtasks should reference their parent using the using the `Task.partOf` element. `Task.partOf` is a searchable field that can be used to query all sub-tasks of a given task, and can be combined with the [`_revinclude`](/docs/search/includes#_include-and-_revinclude) and [`:iterate`](/docs/search/includes#iterate-modifier) directives to query the entire [`Task`](/docs/api/fhir/resources/task) tree.
+`Tasks` can be organized into a hierarchical structure to create subtasks. To represent this hierarchy, subtasks should reference their parent using the `Task.partOf` element. `Task.partOf` is a searchable field that can be used to query all sub-tasks of a given task, and can be combined with the [`_revinclude`](/docs/search/includes#_include-and-_revinclude) and [`:iterate`](/docs/search/includes#iterate-modifier) directives to query the entire [`Task`](/docs/api/fhir/resources/task) tree.
 
-:::caution[]
+:::caution[Start with a shallow Task hierarchy]
 
 While task hierarchy functionality is powerful, it can be complex to maintain and operationalize. Medplum recommends that most implementations start with a single-level [`Task`](/docs/api/fhir/resources/task) hierarchy and gradually add depth over time.
 
@@ -275,16 +271,7 @@ While task hierarchy functionality is powerful, it can be complex to maintain an
 | Verify patient identity (e.g. driver's license) | Patient. Care Coordinator     | `DocumentReference`  | <ol><li>Identification document requested</li><li>Documentation received</li><li>Documentation received</li><li>Documentation verified</li></ol>                                                   |                                                                  |
 | Complete encounter notes                        | Physician                     | `ClinicalImpression` | <ol><li>Encounter complete. Physician note required</li><li>Note drafted</li> <li>Note finalized</li></ol>                                                                                         | Use `Task.encounter` to reference the original encounter         |
 
-## See Also
-
-- The [FHIR Workflow Specification](http://hl7.org/fhir/R4/workflow.html)
-- [Medplum Task Demo](https://github.com/medplum/medplum-task-demo)
-- [Medplum Task Demo Video](https://youtu.be/PHZr9q20tbM) on Youtube
-- [Blog Post: Task Management Apps](/blog/task-management-apps#dashboards)
-- [Chart data model](/docs/charting/chart-data-model#encounter-centric-resources)
-
-
-## Build and claim a queue
+## Build a Queue and Let Staff Claim Work {/* #build-and-claim-a-queue */}
 
 A queue is a filtered view of Tasks, not a separate FHIR resource. Use `code` for work type, `status` for lifecycle, `businessStatus` for a local stage, `performerType` for the required role, and `owner` for current accountability. Keep a stable local coding namespace for operational concepts that do not have an appropriate verified standard code.
 
@@ -296,8 +283,19 @@ GET /fhir/R4/Task?owner=PractitionerRole/coordinator&status=ready,in-progress
 
 Replace example IDs with your resources. Add work-type and role filters for the actual pool, and follow pagination. Group-owned items are not returned by `owner:missing=true`; choose whether the group or an unassigned role pool owns the work before writing queue queries.
 
+:::caution[Two people may claim the same Task]
+
 To claim an item, read the Task, check its current state and the claimant's eligibility, then update `owner` with `If-Match` for the version read. A `412 Precondition Failed` means the record changed; reload and let the user act on the current state. Do not automatically overwrite another claimant. See [Version Checking](/docs/fhir-datastore/updating-data#preventing-lost-updates-with-version-checking).
+
+:::
 
 Use `Task.for` for the patient beneficiary, and set the clinical request's own patient reference separately. Non-patient work can omit `for` when there is no beneficiary. Enforce queue and resource access through [Access Policies](/docs/access/access-policies); assignment and client-side filters are not access controls.
 
 Use [Operational Reporting](/docs/careplans/operational-reporting) for stage durations and queue aging. The most recent modification time is not necessarily when an item entered its current stage.
+
+## See Also
+
+- The [FHIR Workflow Specification](http://hl7.org/fhir/R4/workflow.html)
+- [Medplum Task Demo](https://github.com/medplum/medplum-task-demo)
+- [Blog Post: Task Management Apps](/blog/task-management-apps#dashboards)
+- [Chart data model](/docs/charting/chart-data-model#encounter-centric-resources)
