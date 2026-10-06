@@ -59,8 +59,6 @@ export interface ActorPageProps {
  * The page for one provider, room, or device: its own fields, and the visit types its Schedule offers, each
  * opening to the Schedule's own parameters and hours for it. Everything is saved together.
  *
- * The actor's Schedule isn't a thing of its own here.
- *
  * It opens on what is stored and is not reset by a change of props, so the caller remounts it with a `key`
  * when the actor or its Schedule is replaced.
  * @param props - The actor and its Schedules, the visit types, and what to do once something is stored.
