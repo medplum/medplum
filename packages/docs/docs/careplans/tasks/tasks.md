@@ -32,7 +32,7 @@ A common application is for organizations to build **task queue systems** to rou
 
 Use `Task.code` to describe the kind of work. A title such as "Review intake assessment" tells the assignee what to do. Reusing a consistent code for that work type also lets you find all assessment reviews in one query.
 
-While using SNOMED or LOINC codes are preferred, many implementations simply use the `Task.code.text` element, as task types are often implementation-specific.
+Use a verified standard code when it matches the work. Otherwise, start with `Task.code.text` or define a local CodeSystem for work types that need consistent search and automation.
 
 `Task.description` can be used to add additional descriptive text to the specific [`Task`](/docs/api/fhir/resources/task) instance.
 
@@ -44,10 +44,6 @@ While using SNOMED or LOINC codes are preferred, many implementations simply use
   id: 'example-task',
   code: {
     text: 'Complete PHQ-9',
-    coding: [{
-      code: '715252007',
-      system: 'http://snomed.info/sct'
-    }]
   },
   description: "Patient to complete PHQ-9 depression screening",
   //...
@@ -110,55 +106,20 @@ You can search for all unassigned tasks using the [`:missing`](/docs/search/basi
   </TabItem>
 </Tabs>
 
-:::tip[Assigning tasks to roles]
+### Describe the Role Required
 
-A common pattern in telehealth practices is the assignment of tasks to all practitioners with a given role (e.g., clinical specialty, level of credential, etc.). `Task.performerType` is a searchable element that can be used to indicate which roles can/should perform this task.
-
-It is a best practice to select these roles from a standard code system to promote interoperability. The [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses) recommend using the [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) valueset for `performerType`.
-
-In rare instances, SNOMED might not contain an appropriate code for a given role (e.g., Customer Service Representative). Medplum recommends using the [Standard Occupational Classification (SOC)](https://www.bls.gov/soc/) codes published by the Bureau of Labor Statistics.
-
-The table below contains SNOMED codes for common roles used in digital healthcare. Use the [SNOMED online browser](https://browser.ihtsdotools.org/?perspective=full&conceptId1=223366009&edition=MAIN/2023-06-30&release=&languages=en) to search for additional codes.
-
-| Name                       | SNOMED Code                                                                                                                                                    | SOC Code                                                  |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Doctors                    | 158965000 ([Doctor](https://browser.ihtsdotools.org/?perspective=full&conceptId1=158965000&edition=MAIN/2023-03-31&release=&languages=en))                     | 29-1210 (Physicians)                                      |
-| Nurse Practitioner         | 224571005 ([Nurse Practitioner](https://browser.ihtsdotools.org/?perspective=full&conceptId1=224571005&edition=MAIN/2023-03-31&release=&languages=en))         | 29-1171 (Nurse Practitioners)                             |
-| Registered Nurse           | 224535009 ([Registered Nurse](https://browser.ihtsdotools.org/?perspective=full&conceptId1=224535009&edition=MAIN/2023-03-31&release=&languages=en))           | 29-1141 (Registered Nurses)                               |
-| Care Coordinator           | 768820003 ([Care Coordinator](https://browser.ihtsdotools.org/?perspective=full&conceptId1=768820003&edition=MAIN/2023-03-31&release=&languages=en))           | 11-9111 (Medical and Health Services Managers)            |
-| Care Team Coordinator      | 768821004 ([Care Team Coordinator](https://browser.ihtsdotools.org/?perspective=full&conceptId1=768821004&edition=MAIN/2023-03-31&release=&languages=en))      | 11-9111 (Medical and Health Services Managers)            |
-| Medical Billing Specialist | 1251542004 ([Medical Coder](https://browser.ihtsdotools.org/?perspective=full&conceptId1=1251542004&edition=MAIN/2023-04-30&release=&languages=en))            | 29-2072 (Medical Records Specialists)                     |
-| Quality Assurance          | 56542007 ([Medical record administrator](https://browser.ihtsdotools.org/?perspective=full&conceptId1=56542007&edition=MAIN/2023-04-30&release=&languages=en)) | 15-1253 (Software Quality Assurance Analysts and Testers) |
-| Assistant                  | 449161006 ([Physician assistant](https://browser.ihtsdotools.org/?perspective=full&conceptId1=449161006&edition=MAIN/2023-03-31&release=&languages=en))        | 29-1071 (Physician Assistants)                            |
-
-Below is an example of a `Task.performerType` [CodeableConcept](/docs/fhir-basics#standardizing-data-codeable-concepts) using both SNOMED and SOC systems.
+Use `Task.performerType` for the kind of participant needed, such as a coordinator or clinical reviewer. Keep the role vocabulary consistent with your PractitionerRole model and verify that each code describes the actual role. A general assistant and a physician assistant, for example, have different responsibilities.
 
 ```ts
 {
   resourceType: 'Task',
+  // Illustrative label; configure a verified code for searchable role pools.
+  performerType: [{ text: 'Intake coordinator' }],
   // ...
-  performerType: [
-    {
-      text:'Medical Billing Specialist',
-      coding:[
-        // Snomed
-        {
-          code:'1251542004',
-          system: 'http://snomed.info/sct',
-          display: 'Medical Coder'
-        },
-        // US SOC
-        {
-          code:"29-2072",
-          system: "https://www.bls.gov/soc"
-        }
-      ],
-    }
-  ]
 }
 ```
 
-:::
+See [Teams and Delegation](/docs/careplans/teams-and-delegation) for eligibility and [Message Response Tracking and Routing](/docs/communications/message-response-tracking-and-routing) for a conversation-based work queue.
 
 ## Link the Record Someone Needs to Act On {/* #task-focus */}
 
@@ -186,7 +147,7 @@ For a Task seeking fulfillment of a request referenced by `focus`, the `Task.res
 }
 ```
 
-Medplum also uses `restriction.period.start/end` as the planned start/due-date convention for general work queues. This broader application convention should be mapped explicitly when exchanging non-fulfillment Tasks with another system. See [Deadline Modeling](/docs/careplans/handoffs-and-escalation#represent-time-accurately). `executionPeriod` records actual work and must not be repurposed for planned deadlines.
+These guides use `restriction.period.start/end` for planned start and due dates in general work queues as well as request fulfillment. The broader use is an application convention; agree on its mapping when exchanging Tasks with another system. Use `executionPeriod` for actual work. See [Handoffs and Deadlines](/docs/careplans/handoffs-and-escalation#represent-time-accurately) for business calendars and pauses.
 
 ### Searching by due date range
 
@@ -281,7 +242,7 @@ GET /fhir/R4/Task?owner:missing=true&status=ready
 GET /fhir/R4/Task?owner=PractitionerRole/coordinator&status=ready,in-progress
 ```
 
-Replace example IDs with your resources. Add work-type and role filters for the actual pool, and follow pagination. Group-owned items are not returned by `owner:missing=true`; choose whether the group or an unassigned role pool owns the work before writing queue queries.
+Add work-type and role filters for the actual pool, and follow pagination. Group-owned items are not returned by `owner:missing=true`; choose whether the group or an unassigned role pool owns the work before writing queue queries.
 
 :::caution[Two people may claim the same Task]
 
@@ -289,9 +250,35 @@ To claim an item, read the Task, check its current state and the claimant's elig
 
 :::
 
-Use `Task.for` for the patient beneficiary, and set the clinical request's own patient reference separately. Non-patient work can omit `for` when there is no beneficiary. Enforce queue and resource access through [Access Policies](/docs/access/access-policies); assignment and client-side filters are not access controls.
+Use `Task.for` for the patient beneficiary, and set the clinical request's own patient reference separately. Non-patient work can omit `for` when there is no beneficiary. Configure [assignment and access rules](/docs/careplans/teams-and-delegation#assignment-and-access) for each queue. For work arising from a conversation, see [Message Response Tracking and Routing](/docs/communications/message-response-tracking-and-routing).
 
 Use [Operational Reporting](/docs/careplans/operational-reporting) for stage durations and queue aging. The most recent modification time is not necessarily when an item entered its current stage.
+
+## Give Patients and Caregivers Their Own Work List
+
+A patient completing intake has a different job from the clinician reviewing the answers. Give each a separate Task so the portal can show the patient's next action while staff track review in their own queue.
+
+For a questionnaire assignment, set `owner` and `for` to the Patient and `focus` to the Questionnaire. This example shows the assignment after submission:
+
+```json
+{
+  "resourceType": "Task",
+  "status": "completed",
+  "intent": "order",
+  "code": { "text": "Complete intake questionnaire" },
+  "owner": { "reference": "Patient/example" },
+  "for": { "reference": "Patient/example" },
+  "focus": { "reference": "Questionnaire/intake" },
+  "output": [{
+    "type": { "text": "Submitted answers" },
+    "valueReference": { "reference": "QuestionnaireResponse/intake-response" }
+  }]
+}
+```
+
+The portal queries the authenticated participant's open assignments and displays the action, due date, and progress. Use the assignment's Questionnaire to render the form, retain the QuestionnaireResponse with the patient as `subject`, and complete the Task when the required submission criteria are met. If staff must review the answers, create a separate review Task focused on that response.
+
+For caregiver work, use a RelatedPerson owner and keep `Task.for` pointing to the patient. Configure the caregiver's permitted actions through [Access Policies](/docs/access/access-policies). The QuestionnaireResponse's `source` can identify the patient or caregiver who supplied the answers, while `author` identifies who recorded them. See [Questionnaires](/docs/questionnaires) for form rendering and response handling.
 
 ## See Also
 

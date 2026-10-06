@@ -14,8 +14,11 @@ Start by defining the owners, completion evidence, and exception paths. Medplum 
 | --- | --- | --- |
 | Staff action | Application creates a Task | Stable action/submission identifier |
 | Resource transition | Scoped Subscription invokes a Bot | Source resource plus step and relevant occurrence |
+| Admission or discharge event | HL7 integration maps the event to FHIR; a Bot creates the follow-up work | Source encounter plus the intended follow-up occurrence |
 | Recurring follow-up | Scheduled Bot evaluates due occurrences | Source plan/case plus step and occurrence date or sequence |
 | Reusable clinical protocol | Apply PlanDefinition and ActivityDefinition | Track each intended application and inspect its generated resources |
+
+For example, an [HL7 ADT discharge message](/docs/integration/hl7-interfacing/adt) can lead to a follow-up Task after the integration resolves the patient and encounter. Define which discharge event starts the work and how corrections or cancellations affect it. Preserve source message identifiers for ingestion and a stable encounter/step key for the follow-up.
 
 Use local work-type and stage CodeSystems consistently. An identifier is an identity key, not the current stage; it must remain stable across retries.
 
@@ -63,6 +66,12 @@ For external side effects, persist the intended operation and correlation identi
 Use a [scheduled Bot](/docs/bots/bot-cron-job) to evaluate eligible plans or cases and create each due occurrence once. Define the calendar, time zone, missed-run catch-up policy, and stop conditions. Re-check eligibility before creation so a closed case does not keep generating work.
 
 For overdue work, update or escalate the existing item rather than creating a new copy of the obligation. See [Handoffs and Escalation](/docs/careplans/handoffs-and-escalation) for deadline semantics and paused clocks.
+
+## Let the Assignee Know
+
+Use [WebSocket subscriptions](/docs/react/use-subscription) to refresh an open work queue when Tasks are assigned, changed, or escalated. On reconnect, query the current queue so the UI catches changes that happened while it was offline.
+
+When staff need an alert outside the application, use a scoped Subscription and Bot to invoke the configured notification integration. Define the recipient, channel, and a stable notification key for the assignment or escalation event. Keep sensitive details in the authenticated application, and let staff reach the Task from the notification. The Task remains the work record even if delivery fails; monitor and retry notification delivery separately.
 
 ## Give Failed Runs a Recovery Path {/* #operate-and-recover */}
 

@@ -65,7 +65,7 @@ For a plan formed in the context of a case, this guide uses `CarePlan.supporting
 }
 ```
 
-The referenced resources must exist. Every patient-related resource still needs its own patient association and access policy.
+Apply the [patient-context and access rules](/docs/careplans/teams-and-delegation#assignment-and-access) to the linked records.
 
 ## Find the Records for One Case {/* #retrieve-the-correct-case-context */}
 
@@ -77,7 +77,7 @@ GET /fhir/R4/CarePlan?patient=Patient/example
 
 For the last query, follow pagination and select plans whose `supportingInfo` explicitly references the episode. This selection resolves an association among already authorized resources; access remains enforced by AccessPolicy.
 
-A Condition search can find plans addressing a diagnosis, but cannot uniquely find an episode's plans. There is no standard R4 CarePlan search parameter for this `supportingInfo` association. If direct server-side episode-to-plan queries are essential at scale, agree on and validate a custom SearchParameter before relying on one. Do not publish an invented standard query.
+A Condition search can find plans addressing a diagnosis, but cannot uniquely find an episode's plans. There is no standard R4 CarePlan search parameter for this `supportingInfo` association. If direct server-side episode-to-plan queries are essential at scale, agree on and validate a custom SearchParameter before relying on one.
 
 For work authorized by the plan, `Task.basedOn` can reference the CarePlan; keep `focus` for the actual request or resource being acted on. Work directly concerning case administration can focus on the EpisodeOfCare. Avoid overwriting a clinical focus merely to simplify case grouping. Other case-level work may need a documented grouping convention; an Encounter reference alone cannot identify one case when the visit spans several.
 

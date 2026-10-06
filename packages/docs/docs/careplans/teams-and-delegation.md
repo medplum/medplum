@@ -41,7 +41,7 @@ These arrows show the handoff your application manages. The resource links below
 
 Every input and output needs a `type` and one `value[x]`, for example `type.text = "Prepared assessment"` with `valueReference`. Text labels are readable examples; use a governed local CodeSystem when automation must recognize the meaning.
 
-Create the review Task when preparation completes, using a stable identifier and conditional create. Use `partOf` only when both are subtasks of a real parent Task. It does not represent a prerequisite or trigger the next step. See [Handoffs](/docs/careplans/handoffs-and-escalation).
+Create the review Task when preparation completes, using a stable identifier and conditional create. Use `partOf` when both belong to a real parent Task, and implement the transition as described in [Handoffs](/docs/careplans/handoffs-and-escalation#release-the-next-step).
 
 :::caution[Keep clinical authorization with the reviewer]
 
@@ -59,14 +59,14 @@ Agree on which roles may perform each action with the practice, including any su
 
 ## Hand Off Work Without Losing Its Owner {/* #claim-transfer-and-escalate */}
 
-Use a version-checked update when changing `Task.owner`. If another person has claimed the item, reload and evaluate the new state. A conflict is not permission to overwrite it.
+Use a version-checked update when changing `Task.owner`. If another person has claimed the item, reload and evaluate the new state. Let the user act on the current assignment.
 
 For the same work item, reassignment normally updates the existing Task. Record a transfer reason in an authored, timestamped `note`, or explicit `Provenance` when a structured reason is needed. If the next person has a distinct obligation, create a separate Task with its own completion evidence.
 
 If no eligible assignee is available, put the Task `on-hold`, explain why in `statusReason`, and assign an accountable escalation owner. A local `businessStatus` can identify the exception queue.
 
-:::note[Assignment and access need separate rules]
+## Configure Who Can See the Work {/* #assignment-and-access */}
 
-Enforce resource access separately with [Access Policies](/docs/access/access-policies), including what the former owner can read after transfer. A queue filter or matching PractitionerRole does not grant access to patient data.
+Enforce resource access with [Access Policies](/docs/access/access-policies) and ProjectMembership, including what the former owner can read after transfer. Assignment records responsibility; permission rules determine visibility for the Task and each linked resource. Keep patient references on each patient-related resource.
 
-:::
+For conversation-based work, use [Message Response Tracking and Routing](/docs/communications/message-response-tracking-and-routing). It applies these ownership rules while retaining the conversation's participants.

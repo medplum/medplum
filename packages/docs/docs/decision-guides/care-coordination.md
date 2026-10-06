@@ -9,7 +9,7 @@ download_slug: care-coordination
 
 _Companion to the [Care Coordination](/docs/careplans) docs._
 
-Care coordination covers operational workflows across the practice: deciding what work needs to happen, routing it to the right person, following it through to completion, and maintaining continuity across visits and teams. This guide scopes both everyday work queues and longitudinal patient care. A practice can start with task management and add care plans, case tracking, or decision support where those capabilities serve a specific need.
+Use this guide with your clinical and operations teams to decide what work needs to happen, who owns it, and how to follow it through. Start with the practice's first workflow, then add care plans, case tracking, or decision support as needed.
 
 ## Section 1: Use Case & Participants
 
@@ -35,7 +35,7 @@ Care coordination covers operational workflows across the practice: deciding wha
 
 **1.3 What creates work, and where is it managed today?**
 
-- Staff action, completed intake, an incoming message, an order or result, a missed appointment, a scheduled follow-up, or a recommendation?
+- Staff action, completed intake, an incoming message, an admission/discharge event, an order or result, a missed appointment, a scheduled follow-up, or a recommendation?
 - Are you replacing spreadsheets, inboxes, or another task system, or coordinating work that will remain in those systems?
 - Which system owns the clinical record, the work item, and its completion status?
 
@@ -49,6 +49,14 @@ Care coordination covers operational workflows across the practice: deciding wha
 - What must improve to consider the first release successful?
 
 *Why: determines the need for case grouping, concurrent assignment controls, escalation, and reporting.*
+
+**1.5 Does a care program require consent or service-time records?**
+
+- What program consent must be captured, reviewed, renewed, or withdrawn before enrollment or ongoing work?
+- Which activities require time records, and who performed them for which patient and program?
+- How will you record actual effort, corrections, overlapping activity, and the reporting period required by the program or payer?
+
+*Why: identifies program-specific consent and time-recording requirements. Task execution windows alone do not establish billable effort. Choose the time-record model and any Consent representation after confirming the program's requirements; see [Consent](/docs/consent).*
 
 ---
 
@@ -124,6 +132,7 @@ Decide how staff discover work, take responsibility, and hand it to someone else
 - Can two staff members attempt to claim the same item? Who resolves conflicts?
 - Does the patient have an ongoing care team or coordinator distinct from the person handling today's task?
 - How do absence, workload, and shift changes affect assignment?
+- How do staff discover new or escalated work: a live queue, an outbound notification, or both? See [assignee notifications](/docs/careplans/automating-workflows#let-the-assignee-know).
 
 | Situation | Approach |
 | :---- | :---- |
@@ -135,7 +144,7 @@ Decide how staff discover work, take responsibility, and hand it to someone else
 
 Care team membership and task assignment describe responsibility; neither automatically grants access to related patient data.
 
-See [Version Checking](/docs/fhir-datastore/updating-data#preventing-lost-updates-with-version-checking) and [Resource History](/docs/fhir-datastore/resource-history).
+See [Message Response Tracking and Routing](/docs/communications/message-response-tracking-and-routing), [Version Checking](/docs/fhir-datastore/updating-data#preventing-lost-updates-with-version-checking), and [Resource History](/docs/fhir-datastore/resource-history).
 
 ### 3.4 Lifecycle, Handoffs & Deadlines
 
@@ -151,13 +160,11 @@ Decide what each stage means and what evidence allows work to move forward.
 | :---- | :---- |
 | Standard lifecycle plus local workflow stages | Use `Task.status` for lifecycle, `businessStatus` for local stages, and `statusReason` for why work is blocked or cancelled. |
 | Completion requires a resulting artifact | Use `Task.output.valueReference` for the result, such as a `QuestionnaireResponse`, `DocumentReference`, or response `Communication`. Validate the required output before setting `status` to `completed`; record actual completion in `executionPeriod.end`. |
-| Several independently tracked handoffs | On completion of the prerequisite Task, have the application or Bot conditionally create the next Task with its owner and required inputs. Use `partOf` only for hierarchy; it does not encode a dependency or release the next step. |
-| Due dates or response targets | Use `restriction.period.end` for the deadline and `executionPeriod` for actual work. Medplum applies this timing convention to general queues as well as request fulfillment; document that broader convention for exchange. Calculate business-hour deadlines and paused intervals in application or Bot logic. |
+| Several independently tracked handoffs | On completion of the prerequisite Task, have the application or Bot conditionally create the next Task with its owner and required inputs. Use `partOf` for hierarchy; implement transitions through the [handoff workflow](/docs/careplans/handoffs-and-escalation#release-the-next-step). |
+| Due dates or response targets | Use `restriction.period.end` for the deadline and `executionPeriod` for actual work. Follow the [planned-date convention](/docs/careplans/tasks#task-start--due-dates) for general queues and exchange. Calculate business-hour deadlines and paused intervals in application or Bot logic. |
 | Time in each stage matters | Derive stage changes from Task resource history; add `Provenance` when actor, reason, or effective transition time needs explicit recording. Build reporting intervals from those changes. `Task.lastModified` alone is insufficient. |
 
 See the [Task guide](/docs/careplans/tasks) for status and timing fields. Queue ordering, deadline calculations, and escalation require application or Bot logic.
-
-For overdue searches, follow the Task guide's [date-range guidance](/docs/careplans/tasks#searching-by-due-date-range). When both planned start and due dates are present, the default index can compare the start instead of the deadline; range-aware queries require the `range-search` project feature.
 
 ### 3.5 Longitudinal Patient Case Tracking
 
@@ -215,7 +222,7 @@ Decide which patterns should repeat and which decisions remain with people.
 | A resource event should create or advance work | Use tightly scoped Subscriptions and Bots. Select create/update events and transition criteria where needed to avoid triggering on unrelated edits. |
 | Recurring or overdue work | Use a scheduled Bot to create one Task per due occurrence. Put a stable source/step/occurrence key in `Task.identifier`; stop creating work when the source plan or case is no longer eligible. For overdue work, update or escalate the existing Task. |
 | Events may be processed more than once | Conditionally create generated Tasks by `identifier`, for example with `createResourceIfNoneExist`. Reprocessing the same event must reuse the same key. Track and retry external delivery separately; avoiding duplicate Tasks does not make an external send idempotent. |
-| Conditional or dependent workflow steps | Use scoped transition Subscriptions and Bots to evaluate prerequisites and create or release the next Task. Do not treat `Task.partOf` or a stored `PlanDefinition` as an executing dependency engine. |
+| Conditional or dependent workflow steps | Use scoped transition Subscriptions and Bots to evaluate prerequisites and create or release the next Task. Implement the dependency rules in the application or Bot. |
 
 See [Clinical Protocols](/docs/careplans/protocols), [Subscription Extensions](/docs/subscriptions/subscription-extensions), [Cron Jobs for Bots](/docs/bots/bot-cron-job), and [Working with FHIR Data](/docs/fhir-datastore/working-with-fhir).
 
@@ -252,6 +259,7 @@ Decide what each participant can see and how work crosses organizational boundar
 
 | Situation | Approach |
 | :---- | :---- |
+| Patients or caregivers complete assigned work | Set `owner` to Patient or RelatedPerson and `for` to the patient. For forms, focus on the Questionnaire and return the QuestionnaireResponse in Task output; give staff review a separate Task. See [patient work lists](/docs/careplans/tasks#give-patients-and-caregivers-their-own-work-list). |
 | Participants need different visibility | Enforce access through `AccessPolicy` and `ProjectMembership`; define permissions for each relevant resource type. |
 | Patient-related resources are linked together | Populate each resource's own patient-compartment references. A link to a Task, CarePlan, or message thread does not by itself propagate patient access. |
 | Work includes messaging | Point `Task.focus` to the `Communication` thread header and `Task.for` to the patient. Reference the resolving message in `Task.output.valueReference`. Complete the Task only when the response satisfies the workflow's completion criteria. |
@@ -272,7 +280,7 @@ Decide what the practice needs to measure and what each completion signal means.
 | Situation | Approach |
 | :---- | :---- |
 | Staff need actionable work lists | Query Tasks by `owner`, `status`, `code`, and `business-status`, within the caller's access policy. Use `owner:missing=true` for unowned pools; group-owned queues require the group's owner reference instead. |
-| Managers need aggregate or historical metrics | Build a reporting table with Task ID, previous/new stage or owner, transition time, actor, and reason, derived from history and any explicit Provenance. Calculate stage durations and paused intervals from this event sequence. This is an analytics schema, not a new FHIR resource. |
+| Managers need aggregate or historical metrics | Build a reporting table with Task ID, previous/new stage or owner, transition time, actor, and reason, derived from history and any explicit Provenance. Calculate stage durations and paused intervals from this event sequence. Store the derived intervals in the reporting system. |
 | Care outcomes matter | Measure goal achievement through `Goal.achievementStatus`, targets, and the Observations in `outcomeReference`. Report those alongside completed Tasks; Task completion alone does not demonstrate an improved clinical outcome. |
 | Work, plans, and cases close independently | Update each applicable lifecycle explicitly: `Task.status`, `CarePlan.status`, `Goal.lifecycleStatus`, and `EpisodeOfCare.status`. Before closing a case, resolve or reassign its open work; no automatic cascade should be assumed. |
 
@@ -284,5 +292,3 @@ Decide what the practice needs to measure and what each completion signal means.
 - Lifecycle stages, completion evidence, deadlines, and escalation rules
 - Automation and CDS behavior, including human review and failure recovery
 - Access boundaries, external handoffs, and the measures of success
-
-Use these decisions to select the implementation guides and examples needed for the first release. Start with [Teams and Delegation](/docs/careplans/teams-and-delegation), [Handoffs and Escalation](/docs/careplans/handoffs-and-escalation), [Automation](/docs/careplans/automating-workflows), and [Operational Reporting](/docs/careplans/operational-reporting).

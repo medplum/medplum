@@ -18,11 +18,11 @@ GET /fhir/R4/Task?owner:missing=true&status=ready
 GET /fhir/R4/Task?focus=ServiceRequest/example
 ```
 
-Replace these example IDs with resources in your project. An unowned pool uses `owner:missing=true`; a group-owned queue searches for that Organization, HealthcareService, or CareTeam instead. Add the work-type or role filter that defines the pool. Follow pagination rather than treating the first page as the complete queue.
+An unowned pool uses `owner:missing=true`; a group-owned queue searches for that Organization, HealthcareService, or CareTeam instead. Add the work-type or role filter that defines the pool. Follow pagination rather than treating the first page as the complete queue.
 
 For deadlines, follow the [Task date-range guidance](/docs/careplans/tasks#searching-by-due-date-range). Use the [planned-date convention](/docs/careplans/handoffs-and-escalation#represent-time-accurately) consistently, including its interoperability limits, and account for the project's date-range indexing behavior. Tasks with no deadline are a separate group, not automatically on time.
 
-All queries run within the caller's AccessPolicy. An application filter is not an access boundary. Aggregate reporting credentials also need an explicitly permitted scope.
+Run operational and aggregate queries under the [access rules agreed for the workflow](/docs/careplans/teams-and-delegation#assignment-and-access).
 
 ## Capture When Work Changed Hands {/* #build-a-transition-model */}
 
@@ -44,7 +44,7 @@ A reporting table can contain:
 | Actor and reason | Context from the workflow record or explicit Provenance |
 | Patient, request, and plan references | Dimensions for authorized aggregation |
 
-This is an analytics schema, not an invented FHIR resource. Make ingestion replayable, tolerate late events, and retain enough source history to rebuild intervals.
+Build this table in your reporting store. Make ingestion replayable, tolerate late events, and retain enough source history to rebuild intervals.
 
 ## Agree on What the Clock Measures {/* #define-measures-before-calculating-them */}
 

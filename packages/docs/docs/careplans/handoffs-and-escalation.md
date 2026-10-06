@@ -35,7 +35,7 @@ Before wiring up a Complete button, decide what the next person needs to see. A 
 }
 ```
 
-The identifiers refer to example resources that must exist in your project. Completing the review does not mean the follow-up service was delivered.
+The review is complete; the follow-up ServiceRequest still has its own fulfillment lifecycle.
 
 ## Create the Next Work Item {/* #release-the-next-step */}
 
@@ -51,15 +51,9 @@ Use `partOf` for decomposition into subtasks. Store executable dependency rules 
 
 ## Set Start Dates and Deadlines {/* #represent-time-accurately */}
 
-`authoredOn` is when the Task was authored. `executionPeriod` records actual execution. Neither is a planned deadline.
+Use `authoredOn` for creation time, `executionPeriod` for actual work, and the [Task planned-date convention](/docs/careplans/tasks#task-start--due-dates) for start dates and deadlines.
 
-For a Task fulfilling a request in `focus`, `restriction.period` limits the fulfillment window, with `end` as the due time. See the [R4 field definition](https://hl7.org/fhir/R4/task-definitions.html#Task.restriction) and [Medplum date-range queries](/docs/careplans/tasks#searching-by-due-date-range). When start and end are both present, range-aware searching requires `range-search`; an ordinary comparison against the default index may compare the start.
-
-:::note[Medplum planned dates and R4 exchange]
-
-The existing Medplum Task guide also uses `restriction.period.start/end` as the planned start/due-date convention for general work queues. Follow that convention consistently within a Medplum application. Its use beyond request fulfillment is broader than the R4 field description; agree on the mapping when exchanging Tasks with another system. Do not invent a request merely to attach a deadline.
-
-:::
+Use [range-aware date queries](/docs/careplans/tasks#searching-by-due-date-range) when a Task has both a start and an end.
 
 Compute business-hour deadlines in application or Bot logic using a defined time zone, calendar, and pause policy. Capture effective pause/resume times if waiting periods are excluded. Resource history records persistence times; use explicit transition records when those differ from the business event time.
 
