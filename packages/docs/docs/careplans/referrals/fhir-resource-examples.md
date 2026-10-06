@@ -6,11 +6,13 @@ title: Worked Referral Example
 
 Let's follow a referral from release to review of the returned note. A clinician requests a consultation, a coordinator sends the package, and the receiving team schedules the patient. After the visit, the referring team reviews the specialist's note.
 
-The examples use fictional IDs and text labels so you can see the relationships without adopting unverified clinical codes. Configure validated terminology and local workflow CodeSystems for your implementation.
+Both teams use one Medplum project in this example. The package is shared through an in-app conversation, and each team works with the same ServiceRequest. For an external recipient, the integration exchanges these records and maps identifiers as described in [Referrals](/docs/careplans/referrals#decide-whether-the-teams-share-a-project).
+
+The examples use fictional IDs and text labels. Configure validated terminology and local workflow CodeSystems, and use your server's returned IDs for later references.
 
 ## 1. Create the Request and Initial Work
 
-Assume `Patient/example`, `PractitionerRole/referring-clinician`, and `Organization/referral-coordination` already exist. The transaction creates an active order and a Task to coordinate it. The Task's `focus` uses the request's `urn:uuid` fullUrl so the server can resolve the new reference.
+Assume `Patient/example`, `PractitionerRole/referring-clinician`, `Organization/referral-coordination`, and `Organization/receiving-clinic` already exist. The transaction creates an active order and a Task to coordinate it. The Task's `focus` uses the request's `urn:uuid` fullUrl so the server can resolve the new reference.
 
 ```json
 {
@@ -27,6 +29,7 @@ Assume `Patient/example`, `PractitionerRole/referring-clinician`, and `Organizat
         "code": { "text": "Specialist consultation" },
         "subject": { "reference": "Patient/example" },
         "requester": { "reference": "PractitionerRole/referring-clinician" },
+        "performer": [{ "reference": "Organization/receiving-clinic" }],
         "authoredOn": "2026-10-06T16:00:00Z",
         "reasonCode": [{ "text": "Clinical reason documented by the referring clinician" }]
       },
@@ -62,7 +65,7 @@ Submit with `medplum.executeBatch` using the transaction Bundle, and read the re
 
 Conditional creates make replaying this initial submission safe for FHIR resource creation. A match leaves the existing resource unchanged. Handle a multiple-match error as a data-quality issue rather than silently picking a request.
 
-For the remaining examples, assume the server returned `ServiceRequest/referral-001` and `Task/coordinate-001`. Replace these illustrative IDs with the actual response IDs. The remaining JSON objects illustrate persisted records and are not another atomic transaction.
+For the remaining snapshots, assume the transaction returned `ServiceRequest/referral-001` and `Task/coordinate-001`. Each snapshot shows a later persisted state in the workflow.
 
 ## 2. Store the Referral Package
 
@@ -96,7 +99,7 @@ The upload may use the DocumentReference as security context before the final at
 
 ## 3. Record the Thread and Sent Message
 
-Assume `Organization/receiving-clinic` is the selected destination. Update the ServiceRequest's `performer` through the authorized workflow. The Communication header below groups the exchange and contains all participants, including its creator.
+The selected destination is `Organization/receiving-clinic`. The Communication header below groups the exchange and contains all participants, including its creator.
 
 ```json
 {
@@ -114,13 +117,13 @@ Assume `Organization/receiving-clinic` is the selected destination. Update the S
 }
 ```
 
-The sent child message carries the package. Record `sent` after the send event and retain the actual external transmission identifier when a provider assigns one.
+The sent child message carries the package. Record `sent` after the send event and retain a stable message identifier.
 
 ```json
 {
   "resourceType": "Communication",
   "id": "send-001",
-  "identifier": [{ "system": "https://example.org/transmissions", "value": "TX-001" }],
+  "identifier": [{ "system": "https://example.org/referral-messages", "value": "TX-001" }],
   "status": "in-progress",
   "subject": { "reference": "Patient/example" },
   "partOf": [{ "reference": "Communication/referral-thread" }],
@@ -139,13 +142,50 @@ The sent child message carries the package. Record `sent` after the send event a
 
 :::note[Thread participants and delivery destinations serve different purposes]
 
-The participant list supports Medplum's thread model. The transport integration separately resolves the actual external destination; it should not send the package back to every local thread participant. The JSON records evidence of sending, not the network operation itself.
+Here, both teams participate in an in-app conversation. For external delivery, the integration resolves the intended destination separately from the complete local participant list and retains the provider's transmission identifier.
 
 :::
 
-## 4. Link the Booking
+## 4. Accept the Work and Assign Scheduling
 
-After acceptance and any required authorization checks, the receiving team's booking workflow creates an Appointment. This snapshot omits scheduling extensions and Slot details; use the [Scheduling operations](/docs/scheduling) to create the booking for your configured service.
+Conditionally create the receiving team's fulfillment Task with `status: requested`, using the stable identifier below. When the team agrees to perform the work, version-check the update to `accepted`. The snapshot after that acknowledgment is:
+
+```json
+{
+  "resourceType": "Task",
+  "id": "fulfill-001",
+  "identifier": [{ "system": "https://example.org/referral-work", "value": "REF-2026-001-fulfill" }],
+  "status": "accepted",
+  "intent": "order",
+  "code": { "text": "Fulfill specialist consultation" },
+  "focus": { "reference": "ServiceRequest/referral-001" },
+  "for": { "reference": "Patient/example" },
+  "requester": { "reference": "Organization/referral-coordination" },
+  "owner": { "reference": "Organization/receiving-clinic" }
+}
+```
+
+Once acceptance and required authorization checks are recorded, conditionally create a separate scheduling Task. Its completion criterion is a confirmed booking:
+
+```json
+{
+  "resourceType": "Task",
+  "id": "schedule-001",
+  "identifier": [{ "system": "https://example.org/referral-work", "value": "REF-2026-001-schedule" }],
+  "status": "ready",
+  "intent": "order",
+  "code": { "text": "Schedule specialist consultation" },
+  "focus": { "reference": "ServiceRequest/referral-001" },
+  "for": { "reference": "Patient/example" },
+  "owner": { "reference": "Organization/receiving-clinic" }
+}
+```
+
+The shared view can now show receiving-team acceptance independently of the message's sent time. See [status updates](/docs/careplans/referrals/processing-and-coordination#keep-the-referring-team-in-the-loop) for notifying the referrer.
+
+## 5. Link the Booking {/* #4-link-the-booking */}
+
+The receiving team's booking workflow creates an Appointment. This snapshot omits scheduling extensions and Slot details; use the [Scheduling operations](/docs/scheduling) to create the booking for your configured service.
 
 ```json
 {
@@ -162,11 +202,11 @@ After acceptance and any required authorization checks, the receiving team's boo
 }
 ```
 
-The scheduling Task can now be completed with this Appointment in its output. The overall coordination Task stays open because its scope includes the returned-note review.
+Version-check the update to `Task/schedule-001`, setting `status: completed` and `output` to a typed Appointment reference: `type.text = "Confirmed booking"` and `valueReference.reference = "Appointment/consultation-001"`. Notify the referring team of the booking. The overall coordination Task stays open because its scope includes the returned-note review.
 
-## 5. Retain and Review the Returned Note
+## 6. Retain and Review the Returned Note {/* #5-retain-and-review-the-returned-note */}
 
-After the service, upload the returned note using the same Binary pattern. Preserve the author and match the source referral identifier before linking it.
+The receiving team moves its fulfillment Task to `in-progress` when that work begins, then to `completed` when its consultation criteria are met. After the service, upload the returned note using the same Binary pattern. Preserve the author and match the source referral identifier before linking it.
 
 ```json
 {
@@ -190,7 +230,7 @@ After the service, upload the returned note using the same Binary pattern. Prese
 }
 ```
 
-Create the review Task once for the relevant note/version. The note author is the Practitioner referenced by the referring PractitionerRole; R4 Annotation author references do not accept PractitionerRole. This example shows it after the reviewer has completed their work:
+Create the review Task once for the relevant note/version. The referring clinician reviews the specialist's note here. The review annotation is signed by `Practitioner/referring-clinician`, the Practitioner behind the Task owner's PractitionerRole; the consultation document retains the specialist as its author. This example shows it after the reviewer has completed their work:
 
 ```json
 {
@@ -217,7 +257,7 @@ Create the review Task once for the relevant note/version. The note author is th
 }
 ```
 
-The responsible party reconciles the ServiceRequest's status from evidence that the requested service occurred. The coordinator completes the parent Task once all of its obligations are resolved. Receipt of the note alone should not perform either transition automatically.
+The responsible party reconciles the ServiceRequest's status from evidence that the requested service occurred. The coordinator completes the parent Task after the required note review and follow-up decisions are recorded.
 
 ## Show the Coordinator the Whole Referral {/* #queries-for-the-referral-view */}
 
@@ -228,4 +268,4 @@ GET /fhir/R4/Appointment?based-on=ServiceRequest/referral-001
 GET /fhir/R4/DocumentReference?related=ServiceRequest/referral-001
 ```
 
-These queries bring the work items, conversation, booking, and documents into one referral view. The Communication query uses the known thread ID to retrieve its messages. R4 does not define an `about` search parameter for Communication; do not assume the reference field provides one. Follow pagination and run each query under the appropriate AccessPolicy. These are separate resource searches; a ServiceRequest search does not automatically return everything linked to the referral. When the receiving clinic uses another server, exchange identifiers and map references through the integration instead of assuming these local queries reach its records.
+These queries bring the work items, conversation, booking, and documents into one referral view. The Communication query uses the known thread ID to retrieve its messages. Use `part-of` for these messages; R4 defines `about` as a reference field without a corresponding standard search parameter. Follow pagination and run each query under the appropriate AccessPolicy. These are separate resource searches; a ServiceRequest search does not automatically return everything linked to the referral. When the receiving clinic uses another server, exchange identifiers and map references through the integration instead of assuming these local queries reach its records.

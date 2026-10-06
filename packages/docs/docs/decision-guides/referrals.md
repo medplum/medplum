@@ -38,6 +38,8 @@ A referral needs more than a send button. Use this guide with your clinical and 
 
 *Why: drives how recipients are stored and selected (3.3), and which outbound channels you support (3.5).*
 
+For teams sharing one project, create receiving work against the shared ServiceRequest directly. Add transmission and identifier reconciliation when records cross systems. See [internal and external referrals](/docs/careplans/referrals#decide-whether-the-teams-share-a-project).
+
 **1.4 Is this a new build or replacing/extending something, and what other systems must it work with?**
 
 - If replacing: what system or workflow, and what gaps drove the change?
@@ -225,6 +227,8 @@ After a referral is created or accepted, decide how it gets to the right person,
 - Does the referral need to clear an authorization or coverage check before scheduling, and how do you track that authorization through to approval or denial?
 - When the referral becomes an actual visit (appointment, procedure, completed encounter), how do you tie that visit back to the originating referral?
 - Do you track aging or service-level expectations on open referrals (e.g. days since received, days pending an action), and how do staff find work that is overdue?
+- What happens after unsuccessful outreach, a patient decline, a no-show, or expiration? Who can stop attempts, and how is the referrer informed?
+- Which referral and authorization details must be available to billing, including effective dates and visit or unit limits?
 
 | Situation | Approach |
 | :---- | :---- |
@@ -234,7 +238,9 @@ After a referral is created or accepted, decide how it gets to the right person,
 | Submit a prior auth request | Use Claim with `use: preauthorization` and interpret ClaimResponse under the chosen payer API, implementation guide, or EDI mapping. Configure that integration explicitly; transport success does not mean approval. |
 | Authorization gate | Keep the Task on hold with an authorization-pending business stage until the required approval evidence is present and valid for the service/date. `ClaimResponse.outcome: complete` alone does not prove approval. |
 | Scheduling the work | See the [Scheduling Decision Guide](/docs/decision-guides/scheduling). From the referral side, link the resulting Appointment and downstream Encounter back to the referral via basedOn → ServiceRequest. |
-| Aging and SLA | Use Task history or explicit transitions for time in stage; `lastModified` may reflect unrelated edits. Use the Medplum `restriction.period` planned-date convention for deadlines, with range-aware search and a defined pause policy. |
+| Unsuccessful scheduling | Record outreach against the referral, assign retry/stop decisions, and close each work item according to its scope. Report the disposition to the referring team; see [unsuccessful scheduling](/docs/careplans/referrals/processing-and-coordination#follow-through-when-scheduling-does-not-succeed). |
+| Billing handoff | When required, use `Claim.referral` for the ServiceRequest and `Claim.insurance.preAuthRef` for the authorization number. Preserve payer-specific validity and service limits. |
+| Aging and SLA | Use Task history or explicit transitions for time in stage; `lastModified` may reflect unrelated edits. Follow the [Task planned-date convention](/docs/careplans/tasks#task-start--due-dates), range-aware search, and a defined pause policy. |
 
 ---
 
@@ -244,7 +250,7 @@ Decide how you track a referral from request through completion – or cancellat
 
 **Questions:**
 
-- Which milestones matter enough to show and operate on (e.g. sent, accepted, scheduled, completed, cancelled)?
+- Which milestones matter enough to show and operate on (e.g. sent, accepted, scheduled, declined, unable to schedule, completed, cancelled)? Which updates must reach the referrer?
 - How do you standardize labels for those milestones so reports, queues, and integrations all use the same meanings?
 - If a referral is cancelled or the recipient changes, do you revise the existing referral or create a new one?
 

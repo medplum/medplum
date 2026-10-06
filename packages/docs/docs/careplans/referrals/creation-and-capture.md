@@ -43,7 +43,7 @@ flowchart LR
   referral -->|supportingInfo| form
 ```
 
-Keep an audit of the mapping and clinical author. The Bot executing the write is not necessarily the clinician who authorized the referral, and its execution identity should not be substituted for `ServiceRequest.requester`.
+Keep an audit of the mapping and clinical author. Record the clinical author in `ServiceRequest.requester` and preserve the Bot's execution identity separately.
 
 ## Let the Clinician Review Before Release {/* #save-drafts-and-release-orders */}
 
@@ -55,7 +55,7 @@ A proposal recommends care; a draft order is an order being prepared. If your wo
 
 :::
 
-This example shows a released order. The Patient and PractitionerRole must already exist in your project. The text labels are illustrative; configure clinically validated terminology for production forms.
+This example shows a released order. The text labels are illustrative; configure clinically validated terminology for production forms.
 
 ```json
 {
@@ -77,7 +77,7 @@ This example shows a released order. The Patient and PractitionerRole must alrea
 
 ## Make Submission Safe to Repeat
 
-A user may click Submit twice, or a Bot may receive the same event again. Use a stable submission or referral identifier for conditional create, including when a Bot processes the form. `createResourceIfNoneExist` avoids a search-then-create race. Replaying the same submission should retrieve the existing request, not create another referral.
+A user may click Submit twice, or a Bot may receive the same event again. Use a stable submission or referral identifier for conditional create, including when a Bot processes the form. `createResourceIfNoneExist` avoids a search-then-create race. Replaying the same submission should retrieve the existing request.
 
 If the request and its initial Task must be created together, use a transaction Bundle with `urn:uuid` fullUrls for their cross-references. See the [Worked Referral Example](/docs/careplans/referrals/fhir-resource-examples). Conditional create does not apply later edits to an existing match; use an authorized, version-checked update path for amendments.
 

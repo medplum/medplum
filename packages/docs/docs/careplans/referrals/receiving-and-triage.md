@@ -32,7 +32,7 @@ Match against trusted identifiers with their assigning namespaces. When identifi
 
 If the patient is not yet identified, create an intake Task focused on the source DocumentReference. Omit `Task.for` and `DocumentReference.subject` until the match is established, and protect both through an organization-scoped intake AccessPolicy. Binary uses the corresponding security context. These unmatched records will not appear in a patient-compartment view.
 
-After confirmation, add the patient references to the intake records and create or reconcile the ServiceRequest. A patient referral needs a valid `ServiceRequest.subject`; do not attach an uncertain referral to a convenient placeholder patient.
+After confirmation, add the patient references to the intake records and create or reconcile the ServiceRequest. Set `ServiceRequest.subject` to the confirmed patient.
 
 :::tip[Identity and duplicate handling are different steps]
 
@@ -54,7 +54,7 @@ Preserve the sender's request semantics, including the clinical requester, servi
 
 These statuses belong to the Task whose requested work is being accepted or declined. If you model triage as its own review Task, that review can be `completed` with a declined disposition while the fulfillment request remains unaccepted. Choose the scope of each Task before defining its transitions.
 
-The receiver's decision does not itself revoke the sender's clinical order. Reconcile `ServiceRequest.status` through the agreed request-authority model.
+Reconcile the clinical order through the [agreed request-authority and rerouting rules](/docs/careplans/referrals/processing-and-coordination#cancel-or-reroute-deliberately).
 
 ## Recognize a Repeat Delivery or a Changed Request {/* #handle-repeated-and-amended-referrals */}
 

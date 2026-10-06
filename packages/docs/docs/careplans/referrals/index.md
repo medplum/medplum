@@ -15,6 +15,14 @@ Use the [Referrals Decision Guide](/docs/decision-guides/referrals) to decide wh
 
 :::
 
+## Decide Whether the Teams Share a Project
+
+For an internal referral, such as primary care referring to the practice's behavioral health team, both teams can use the same ServiceRequest. Create the receiving team's Task directly, assign its owner, and track acceptance and follow-up. Use Communications when the teams need to exchange context; a separate delivery workflow is optional. Configure access for each team's work and clinical records.
+
+For a referral to another system, add the transmission and intake steps: agree on identifiers and supported payloads, track delivery, resolve incoming patient references, and reconcile status updates. Each server uses its own local resource IDs while preserving the business referral identifier.
+
+The [worked example](/docs/careplans/referrals/fhir-resource-examples) uses two teams in one project so every reference can be followed locally. The same milestones apply across systems, with the integration carrying messages and status updates between them.
+
 ## Connect the Request to the Work Around It {/* #the-referral-data-model */}
 
 | Resource | Role in the workflow |

@@ -17,7 +17,7 @@ The specialist saw the patient, but the referring team is still waiting for the 
 
 For a DocumentReference, use `context.encounter` only for an Encounter or EpisodeOfCare. A referral reference belongs in `context.related`. The [R4 DocumentReference definitions](https://hl7.org/fhir/R4/documentreference-definitions.html#DocumentReference.context.related) describe this distinction.
 
-Preserve the patient, author, clinical status, and relevant times on each returned record. If a DiagnosticReport has a rendered report, its `presentedForm` can use a Binary URL; it should not embed base64 attachment data.
+Preserve the patient, author, clinical status, and relevant times on each returned record. If a DiagnosticReport has a rendered report, its `presentedForm` can use the [Binary URL pattern](/docs/careplans/referrals/recipients-and-packages#store-documents-with-binary).
 
 ## Check Which Referral the Result Belongs To {/* #match-before-attaching */}
 
@@ -33,7 +33,7 @@ Create a review Task when the referring team must acknowledge or act on returned
 
 Record the review disposition and rationale. Reference any resulting clinical request in `output`, and track its fulfillment separately. A clinician may finish reviewing a note while leaving a new follow-up obligation for the coordinator.
 
-Use a stable identifier for the review work, derived from the referral and returned result/version or another defined review occurrence. Repeated delivery of the same report should not create repeated open review Tasks. Define when an amended report warrants another review.
+Use a stable identifier for the review work, derived from the referral and returned result/version or another defined review occurrence. Repeated delivery of the same report reuses that review work. Define when an amended report warrants another review.
 
 ## Decide When Each Team Is Done {/* #define-completion-for-each-side */}
 
@@ -45,11 +45,14 @@ sequenceDiagram
   participant Receiving as Receiving team
   Referring->>Receiving: Send referral and package
   Receiving-->>Referring: Accept referral
-  Note over Receiving: Schedule and perform the service
+  Receiving-->>Referring: Confirm booking
+  Note over Receiving: Perform the service
   Receiving->>Referring: Return consultation note
   Note over Referring: Review note and assign any follow-up
   Note over Referring: Close coordination when its criteria are met
 ```
+
+For declined, missed, or unscheduled referrals, use the [unsuccessful scheduling workflow](/docs/careplans/referrals/processing-and-coordination#follow-through-when-scheduling-does-not-succeed) and send its disposition back to the referring team.
 
 | Record | What completion means |
 | --- | --- |
