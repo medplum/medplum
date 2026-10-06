@@ -209,7 +209,7 @@ describe('AttachmentButton', () => {
     expect(screen.getByText('Uploading 50%')).toBeInTheDocument();
 
     await act(async () => {
-      resolveUpload({ resourceType: 'Attachment', id: '123' });
+      resolveUpload({ id: '123', url: 'https://example.com/hello.txt' });
     });
   });
 
@@ -252,7 +252,7 @@ describe('AttachmentButton', () => {
     expect(screen.getByText('Uploading 50%')).toBeInTheDocument();
 
     await act(async () => {
-      pendingPromises.forEach((resolve) => resolve({ resourceType: 'Attachment', id: '123' }));
+      pendingPromises.forEach((resolve) => resolve({ id: '123', url: 'https://example.com/file.txt' }));
     });
   });
 
@@ -281,7 +281,7 @@ describe('AttachmentButton', () => {
     expect(screen.getByText('Uploading 0%')).toBeInTheDocument();
 
     await act(async () => {
-      resolveUpload({ resourceType: 'Attachment', id: '123' });
+      resolveUpload({ id: '123', url: 'https://example.com/hello.txt' });
     });
 
     expect(screen.getByText('Upload')).toBeInTheDocument();
