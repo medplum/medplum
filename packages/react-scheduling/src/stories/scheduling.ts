@@ -804,12 +804,45 @@ export const DrPatelSchedule = buildSchedule('schedule-dr-patel', 'Practitioner/
  *
  * Kept out of `SchedulingFixtures`, whose tests read the whole list.
  */
+/**
+ * More visit types that nobody offers yet, so the config workspace has a catalog long enough to page through and
+ * search when offering visit types from an actor's page.
+ */
+export const CatalogServices: WithId<HealthcareService>[] = (
+  [
+    ['annual-physical', 'Annual Physical', 'Office visit', 45],
+    ['sick-visit', 'Sick Visit', 'Office visit', 20],
+    ['follow-up-visit', 'Follow-up Visit', 'Office visit', 20],
+    ['medication-review', 'Medication Review', 'Office visit', 30],
+    ['pre-op-evaluation', 'Pre-op Evaluation', 'Office visit', 45],
+    ['cardiology-consult', 'Cardiology Consult', 'Specialist', 60],
+    ['dermatology-consult', 'Dermatology Consult', 'Specialist', 30],
+    ['nutrition-counseling', 'Nutrition Counseling', 'Counseling', 45],
+    ['behavioral-health-intake', 'Behavioral Health Intake', 'Counseling', 60],
+    ['physical-therapy', 'Physical Therapy Session', 'Therapy', 45],
+    ['lab-draw', 'Lab Draw', 'Procedure', 15],
+    ['vaccination', 'Vaccination', 'Procedure', 15],
+    ['echocardiogram', 'Echocardiogram', 'Imaging', 60],
+  ] as const
+).map(([id, name, category, durationMinutes]) => ({
+  ...buildSchedulableService({
+    id,
+    name,
+    category,
+    durationMinutes,
+    alignmentMinutes: 15,
+    locationIds: ['main-clinic'],
+  }),
+  availableTime: [weeklyHours(WEEKDAYS, '09:00:00', '17:00:00')],
+}));
+
 export const ConfigFixtures = [
   ...SchedulingFixtures.map((resource) => (resource.id && CONFIGURED_SERVICES.get(resource.id)) || resource),
   InitialConsultationService,
   GroupEducationService,
   UnconfiguredService,
   DiscontinuedService,
+  ...CatalogServices,
   DrNguyenPractitioner,
   DrNguyenSchedule,
   DrReyesPractitioner,
