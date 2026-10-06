@@ -54,15 +54,19 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
             resourceType: 'Parameters',
             parameter: [{ name: 'appointment', resource: proposal }],
           });
-      const booking = readAppointmentWrite(written, options.manual ? 'manual booking' : '$book');
+      const booking = readAppointmentWrite(written, options.manual ? 'manual booking' : '$book', {
+        allowSeries: !options.manual,
+      });
 
       // Neither path above notifies the client what it changed.
-      medplum.notifyResourceModified({
-        resourceType: 'Appointment',
-        operation: 'create',
-        id: booking.appointment.id,
-        resource: booking.appointment,
-      });
+      for (const appointment of booking.appointments) {
+        medplum.notifyResourceModified({
+          resourceType: 'Appointment',
+          operation: 'create',
+          id: appointment.id,
+          resource: appointment,
+        });
+      }
       for (const slot of booking.slots) {
         medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'create', id: slot.id, resource: slot });
       }
