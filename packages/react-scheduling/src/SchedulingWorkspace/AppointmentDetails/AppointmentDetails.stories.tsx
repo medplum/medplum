@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Paper } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { createReference, RecurrenceIdExtensionURI, SchedulingMedicalNecessityURI, toServiceTypeCodeableConcepts } from '@medplum/core';
+import {
+  createReference,
+  RecurrenceIdExtensionURI,
+  SchedulingMedicalNecessityURI,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';

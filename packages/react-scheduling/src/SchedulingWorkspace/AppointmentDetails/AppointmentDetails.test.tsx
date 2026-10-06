@@ -3,10 +3,10 @@
 import type { WithId } from '@medplum/core';
 import {
   CPT,
-  REQUIRES_DIAGNOSIS_CODE,
-  REQUIRES_PROCEDURE_CODE,
   RecurrenceIdExtensionURI,
   RecurrenceTemplateExtensionURI,
+  REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_PROCEDURE_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
   SchedulingMedicalNecessityURI,

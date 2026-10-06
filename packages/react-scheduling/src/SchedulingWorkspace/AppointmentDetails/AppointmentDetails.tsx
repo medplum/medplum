@@ -8,9 +8,9 @@ import {
   getExtensionValue,
   isDefined,
   normalizeErrorString,
-  resolveId,
   RecurrenceIdExtensionURI,
   RecurrenceTemplateExtensionURI,
+  resolveId,
   SchedulingMedicalNecessityURI,
 } from '@medplum/core';
 import type { Appointment, CodeableConcept, Parameters, Reference } from '@medplum/fhirtypes';
