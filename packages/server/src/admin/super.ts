@@ -55,6 +55,21 @@ export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_cost_delay: 'float',
 } as const satisfies Record<string, 'float' | 'int'>;
 
+/**
+ * Validates the request and sends an error response if there are validation errors.
+ * @param req - The Express request object.
+ * @param res - The Express response object.
+ * @returns True if there were validation errors and a response was sent.
+ */
+function validateRequest(req: Request, res: Response): boolean {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    sendOutcome(res, invalidRequest(errors));
+    return true;
+  }
+  return false;
+}
+
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
 
@@ -141,10 +156,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (validateRequest(req, res)) {
       return;
     }
 
@@ -244,10 +256,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (validateRequest(req, res)) {
       return;
     }
 
@@ -298,10 +307,7 @@ superAdminRouter.post(
   ],
   async (req: Request, res: Response) => {
     const { repo } = requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (validateRequest(req, res)) {
       return;
     }
 
@@ -326,10 +332,7 @@ superAdminRouter.post(
   ],
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (validateRequest(req, res)) {
       return;
     }
 
@@ -345,10 +348,7 @@ superAdminRouter.post(
   [body('botId').notEmpty().withMessage('Bot ID is required')],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (validateRequest(req, res)) {
       return;
     }
 
@@ -395,10 +395,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (validateRequest(req, res)) {
       return;
     }
 
@@ -473,10 +470,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (validateRequest(req, res)) {
       return;
     }
 
@@ -542,10 +536,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (validateRequest(req, res)) {
       return;
     }
 
@@ -587,10 +578,7 @@ superAdminRouter.post(
   [body('dataVersion').isInt().withMessage('dataVersion must be an integer')],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (validateRequest(req, res)) {
       return;
     }
 
@@ -621,10 +609,7 @@ superAdminRouter.post(
   ],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (validateRequest(req, res)) {
       return;
     }
 
@@ -678,10 +663,7 @@ superAdminRouter.post(
   ],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (validateRequest(req, res)) {
       return;
     }
 
@@ -721,10 +703,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (validateRequest(req, res)) {
       return;
     }
 
