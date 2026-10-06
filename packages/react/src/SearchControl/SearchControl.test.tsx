@@ -65,6 +65,13 @@ describe('SearchControl', () => {
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
+  test('Hides actions button when no actions are available', async () => {
+    await setup({ search: { resourceType: 'Patient' } });
+
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
+  });
+
   test('Renders additional columns', async () => {
     const props: SearchControlProps = {
       search: {
@@ -417,10 +424,10 @@ describe('SearchControl', () => {
       onNew,
     });
 
-    expect(await screen.findByText('New...')).toBeInTheDocument();
+    expect(await screen.findByLabelText('New Patient')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('New...'));
+      fireEvent.click(screen.getByLabelText('New Patient'));
     });
 
     expect(onNew).toHaveBeenCalled();
@@ -436,10 +443,12 @@ describe('SearchControl', () => {
       onExportCsv,
     });
 
-    expect(await screen.findByText('Export...')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Export...'));
+      fireEvent.click(await screen.findByText('Export'));
     });
 
     expect(await screen.findByText('Export as CSV')).toBeInTheDocument();
@@ -456,13 +465,24 @@ describe('SearchControl', () => {
       search: {
         resourceType: 'Patient',
       },
+      checkboxesEnabled: true,
       onDelete,
     });
 
-    expect(await screen.findByText('Delete...')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(await screen.findByTestId('all-checkbox'));
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete...'));
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Delete'));
+    });
+
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
     });
 
     expect(onDelete).toHaveBeenCalled();
@@ -478,10 +498,12 @@ describe('SearchControl', () => {
       onBulk,
     });
 
-    expect(await screen.findByText('Bulk...')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(await screen.findByLabelText('Actions'));
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Bulk...'));
+      fireEvent.click(await screen.findByText('Bulk Apply'));
     });
 
     expect(onBulk).toHaveBeenCalled();
@@ -941,6 +963,112 @@ describe('SearchControl', () => {
 
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
     expect(onLoad).toHaveBeenCalled();
+  });
+
+  test('Row keyboard navigation', async () => {
+    const onClick = vi.fn();
+    const onAuxClick = vi.fn();
+    await setup({
+      search: {
+        resourceType: 'Patient',
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Simpson' }],
+      },
+      checkboxesEnabled: true,
+      onClick,
+      onAuxClick,
+    });
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+    const rows = screen.getAllByTestId('search-control-row');
+    expect(rows.length).toBeGreaterThan(1);
+    const first = rows[0];
+    const second = rows[1];
+    const last = rows[rows.length - 1];
+
+    // Roving tab index: one tab stop, following focus
+    expect(first).toHaveAttribute('tabindex', '0');
+    expect(second).toHaveAttribute('tabindex', '-1');
+    await act(async () => {
+      second.focus();
+    });
+    expect(first).toHaveAttribute('tabindex', '-1');
+    expect(second).toHaveAttribute('tabindex', '0');
+
+    // Arrow keys move between rows and stop at the edges
+    await act(async () => {
+      first.focus();
+      fireEvent.keyDown(first, { key: 'ArrowDown' });
+    });
+    expect(second).toHaveFocus();
+    await act(async () => {
+      fireEvent.keyDown(second, { key: 'ArrowUp' });
+    });
+    expect(first).toHaveFocus();
+    await act(async () => {
+      fireEvent.keyDown(first, { key: 'ArrowUp' });
+    });
+    expect(first).toHaveFocus();
+    await act(async () => {
+      last.focus();
+      fireEvent.keyDown(last, { key: 'ArrowDown' });
+    });
+    expect(last).toHaveFocus();
+
+    // Home and End
+    await act(async () => {
+      fireEvent.keyDown(last, { key: 'Home' });
+    });
+    expect(first).toHaveFocus();
+    await act(async () => {
+      fireEvent.keyDown(first, { key: 'End' });
+    });
+    expect(last).toHaveFocus();
+
+    // Enter clicks the row; Ctrl/Cmd+Enter is an aux click
+    await act(async () => {
+      fireEvent.keyDown(first, { key: 'Enter' });
+    });
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onClick.mock.calls[0][0].resource.id).toEqual(HomerSimpson.id);
+    expect(onAuxClick).not.toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.keyDown(first, { key: 'Enter', ctrlKey: true });
+      fireEvent.keyDown(first, { key: 'Enter', metaKey: true });
+    });
+    expect(onAuxClick).toHaveBeenCalledTimes(2);
+    expect(onClick).toHaveBeenCalledTimes(1);
+
+    // Space toggles the row checkbox without clicking the row
+    const checkbox = screen.getAllByTestId<HTMLInputElement>('row-checkbox')[0];
+    expect(checkbox.checked).toEqual(false);
+    await act(async () => {
+      fireEvent.keyDown(first, { key: ' ' });
+    });
+    expect(checkbox.checked).toEqual(true);
+    await act(async () => {
+      fireEvent.keyDown(first, { key: ' ' });
+    });
+    expect(checkbox.checked).toEqual(false);
+    expect(onClick).toHaveBeenCalledTimes(1);
+
+    // Unrelated keys keep their default; handled keys do not
+    let letterDefaultAllowed = false;
+    let arrowDefaultAllowed = true;
+    await act(async () => {
+      letterDefaultAllowed = fireEvent.keyDown(first, { key: 'a' });
+      arrowDefaultAllowed = fireEvent.keyDown(first, { key: 'ArrowDown' });
+    });
+    expect(letterDefaultAllowed).toEqual(true);
+    expect(arrowDefaultAllowed).toEqual(false);
+
+    // Keys from a control inside the row are not handled
+    const cell = first.querySelector('td') as HTMLElement;
+    await act(async () => {
+      first.focus();
+      fireEvent.keyDown(cell, { key: 'ArrowDown' });
+      fireEvent.keyDown(cell, { key: 'Enter' });
+    });
+    expect(first).toHaveFocus();
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 
   describe('Pagination', () => {
