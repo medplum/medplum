@@ -172,15 +172,46 @@ async function setLockedResourceAccounts(
   asyncJobId?: string
 ): Promise<Parameters | undefined> {
   // Use extended mode to read the resource, ensuring we get access to the full `meta.accounts`
-  const systemRepo = repo.getSystemRepo();
   const userRepo = repo.withOverrideConfig({ extendedMode: true });
-
   const accounts = params.accounts;
 
   await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
+  const { target, oldAccounts } = await updateTargetResource(userRepo, resourceType, id, accounts);
+  let count = 1; // Target resource is updated already
+
+  if (params.propagate && target.resourceType === 'Patient') {
+    // Every target account is added, so a re-run restores any that are missing. Removals come from
+    // the difference with the previous accounts, which only this run knows.
+    const removals = oldAccounts?.filter((o) => !accounts.some((a) => a.reference === o.reference)) ?? [];
+
+    try {
+      // Update the resources in the target compartment to trigger meta.accounts refresh
+      count += await propagateToCompartment(userRepo, target, accounts, removals, lock, asyncJobId);
+    } catch (err) {
+      // Restore the old accounts on the target so that re-running the operation computes the same
+      // additions and removals, and finishes propagating them. A cancelled job keeps the new accounts.
+      if (!(err instanceof CancelledError)) {
+        const systemRepo = repo.getSystemRepo();
+        await revertTargetAccounts(systemRepo, target, oldAccounts);
+      }
+      throw err;
+    }
+  }
+
+  return buildOutputParameters(operation, { resourcesUpdated: count });
+}
+
+async function updateTargetResource(
+  userRepo: Repository,
+  resourceType: ResourceType,
+  id: string,
+  accounts: Reference[]
+): Promise<{ target: WithId<Resource>; oldAccounts: Reference[] | undefined }> {
+  const systemRepo = userRepo.getSystemRepo();
+
   // Each read+write below runs in one transaction, so the read comes from the database rather
   // than the cache, and a concurrent write to the same resource retries against the newer version
-  const { target, oldAccounts } = await systemRepo.withTransaction(
+  return systemRepo.withTransaction(
     async (txRepo) => {
       const target = await txRepo.readResource(resourceType, id);
       // Ensure user's repo can read this resource as well
@@ -202,27 +233,6 @@ async function setLockedResourceAccounts(
     },
     { resourceTypes: resourceType, source: 'setAccounts.target' }
   );
-  let count = 1; // Target resource is updated already
-
-  if (params.propagate && target.resourceType === 'Patient') {
-    // Every target account is added, so a re-run restores any that are missing. Removals come from
-    // the difference with the previous accounts, which only this run knows.
-    const removals = oldAccounts?.filter((o) => !accounts.some((a) => a.reference === o.reference)) ?? [];
-
-    try {
-      // Update the resources in the target compartment to trigger meta.accounts refresh
-      count += await propagateToCompartment(userRepo, target, accounts, removals, lock, asyncJobId);
-    } catch (err) {
-      // Restore the old accounts on the target so that re-running the operation computes the same
-      // additions and removals, and finishes propagating them. A cancelled job keeps the new accounts.
-      if (!(err instanceof CancelledError)) {
-        await revertTargetAccounts(systemRepo, target, oldAccounts);
-      }
-      throw err;
-    }
-  }
-
-  return buildOutputParameters(operation, { resourcesUpdated: count });
 }
 
 async function propagateToCompartment(
