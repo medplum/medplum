@@ -47,7 +47,7 @@ import {
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
 import {
-  addActorRow,
+  addRow,
   bookButton,
   chooseActor,
   chooseAuthorizedService,
@@ -55,6 +55,7 @@ import {
   chooseFirstOfferedTime,
   chooseImagingService,
   choosePatient,
+  chooseRepeat,
   chooseSecondOfferedTime,
   chooseSite,
   chosenTimeField,
@@ -235,7 +236,7 @@ describe('AppointmentProposalForm', () => {
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await addActorRow('provider');
+      await addRow('provider');
       await chooseActor(/^and additional$/i, 'oka', 'Dr. Tunde Okafor');
       await openTimeFinder();
 
@@ -251,7 +252,7 @@ describe('AppointmentProposalForm', () => {
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await addActorRow('provider');
+      await addRow('provider');
       await chooseActor(/^and additional$/i, 'riv', 'Dr. Maya Rivera');
 
       // Nobody attends their own appointment twice. The button says the search is
@@ -1756,8 +1757,10 @@ describe('AppointmentProposalForm', () => {
       await fillAuthorizedBooking();
       await enterAuthorizationDetails();
 
-      await enterCode(/procedure code/i, ProcedureCodes[1]);
-      await enterCode(/diagnosis code/i, DiagnosisCodes[1]);
+      await addRow('procedure');
+      await enterCode(/procedure 2/i, ProcedureCodes[1]);
+      await addRow('diagnosis');
+      await enterCode(/diagnosis 2/i, DiagnosisCodes[1]);
       await clickBook();
 
       // One entry of `reasonCode` per diagnosis: an element there is one reason, and codings inside
@@ -1782,6 +1785,104 @@ describe('AppointmentProposalForm', () => {
       await clickBook();
 
       expect(proposedAppointment().reasonCode).toHaveLength(1);
+    });
+  });
+
+  describe('Booking a weekly series', () => {
+    test('Offers to repeat only a booking that can search for a series', async () => {
+      setup(medplum, { allowRecurring: true, mode: 'reschedule' });
+      await settleAutocomplete();
+      // `$find` refuses a series search that ignores an appointment, as a move's does.
+      expect(screen.queryByRole('textbox', { name: 'Repeat' })).not.toBeInTheDocument();
+    });
+
+    test('Offers nothing to repeat for a booking ignoring an appointment', async () => {
+      setup(medplum, { allowRecurring: true, ignoreAppointment: { reference: 'Appointment/held' } });
+      await settleAutocomplete();
+      expect(screen.queryByRole('textbox', { name: 'Repeat' })).not.toBeInTheDocument();
+    });
+
+    test('Stops searching for a series once the field is taken away', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      const { rerender } = renderWithMedplum(<AppointmentProposalForm onSubmit={onSubmit} allowRecurring />, medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Once a week for 3 weeks');
+      await openTimeFinder();
+      expect(lastFindParams(get)?.get('occurrence-count')).toBe('3');
+
+      rerender(<AppointmentProposalForm onSubmit={onSubmit} />);
+      await settleAutocomplete();
+
+      // A count nobody can see, or change, is not one to keep searching by.
+      expect(lastFindParams(get)?.has('occurrence-count')).toBe(false);
+    });
+
+    test('Names the later dates a series books beside the time chosen', async () => {
+      setup(medplum, { allowRecurring: true });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Once a week for 3 weeks');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      // The search opens on Monday 17 August, so the series runs on into the next two Mondays.
+      expect(screen.getByText(/Also books Aug 24 and Aug 31 at the same time\./)).toBeInTheDocument();
+    });
+
+    test('Says how many appointments Book writes for a series', async () => {
+      setup(medplum, { allowRecurring: true });
+      expect(bookButton()).toHaveTextContent('Book appointment');
+
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Once a week for 3 weeks');
+
+      expect(bookButton()).toHaveTextContent('Book 3 appointments');
+    });
+
+    test('Names no later dates for a visit that does not repeat', async () => {
+      setup(medplum, { allowRecurring: true });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      expect(screen.queryByText(/Also books/)).not.toBeInTheDocument();
+    });
+
+    test('Drops a series chosen before the field was taken away', async () => {
+      const { rerender } = renderWithMedplum(<AppointmentProposalForm onSubmit={onSubmit} allowRecurring />, medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Once a week for 2 weeks');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      expect(chosenTimeField()).toBeInTheDocument();
+
+      rerender(<AppointmentProposalForm onSubmit={onSubmit} />);
+      await settleAutocomplete();
+
+      // Booked as it stood, it would write a series with no repeat on screen.
+      expect(chosenTimeField()).not.toBeInTheDocument();
+      expect(bookButton()).toBeDisabled();
+    });
+
+    test('Drops a single time chosen before the field came back', async () => {
+      const { rerender } = renderWithMedplum(<AppointmentProposalForm onSubmit={onSubmit} allowRecurring />, medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Once a week for 3 weeks');
+      rerender(<AppointmentProposalForm onSubmit={onSubmit} />);
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      rerender(<AppointmentProposalForm onSubmit={onSubmit} allowRecurring />);
+      await settleAutocomplete();
+
+      // The field says three times again, and a single visit is not what it says.
+      expect(screen.getByRole('textbox', { name: 'Repeat' })).toHaveValue('Once a week for 3 weeks');
+      expect(chosenTimeField()).not.toBeInTheDocument();
     });
   });
 

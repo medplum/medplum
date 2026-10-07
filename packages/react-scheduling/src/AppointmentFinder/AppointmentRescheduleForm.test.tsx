@@ -28,7 +28,7 @@ import {
   setupBookingClient,
 } from '../test-utils/bookingForm';
 import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
-import type { AppointmentRescheduleFormProps } from './AppointmentRescheduleForm';
+import type { AppointmentReschedule, AppointmentRescheduleFormProps } from './AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from './AppointmentRescheduleForm';
 
 installAutocompleteTimers();
@@ -317,8 +317,8 @@ describe('AppointmentRescheduleForm', () => {
       await moveToAnotherTime();
 
       const parameters = lastRescheduleParameters(post);
-      const [appointment] = onRescheduled.mock.calls[0] as [{ appointment: Appointment }];
-      expect(parameterValues(parameters, 'start')).toEqual([appointment.appointment.start]);
+      const [reschedule] = onRescheduled.mock.calls[0] as [AppointmentReschedule];
+      expect(parameterValues(parameters, 'start')).toEqual([reschedule.appointments[0].start]);
       expect(parameterValues(parameters, 'schedule')).toEqual(expect.arrayContaining(HELD_SCHEDULES));
 
       // The visit type is not sent: the operation reads the one the visit is on file for.
@@ -346,8 +346,8 @@ describe('AppointmentRescheduleForm', () => {
 
       await moveToAnotherTime();
 
-      const [reschedule] = onRescheduled.mock.calls[0] as [{ appointment: Appointment }];
-      expect(reschedule.appointment.serviceType).toStrictEqual(APPOINTMENT.serviceType);
+      const [reschedule] = onRescheduled.mock.calls[0] as [AppointmentReschedule];
+      expect(reschedule.appointments[0].serviceType).toStrictEqual(APPOINTMENT.serviceType);
     });
 
     test('Reports what the move wrote', async () => {
@@ -356,9 +356,9 @@ describe('AppointmentRescheduleForm', () => {
       await moveToAnotherTime();
 
       expect(onRescheduled).toHaveBeenCalledTimes(1);
-      const [reschedule] = onRescheduled.mock.calls[0] as [{ appointment: Appointment; slots: Slot[] }];
-      expect(reschedule.appointment.id).toBe(APPOINTMENT.id);
-      expect(reschedule.appointment.start).not.toBe(APPOINTMENT.start);
+      const [reschedule] = onRescheduled.mock.calls[0] as [AppointmentReschedule];
+      expect(reschedule.appointments[0].id).toBe(APPOINTMENT.id);
+      expect(reschedule.appointments[0].start).not.toBe(APPOINTMENT.start);
       expect(reschedule.slots.length).toBe(HELD_SCHEDULES.length);
     });
 

@@ -1214,6 +1214,10 @@ async function tryAddOnBehalfOf(
     }
   }
 
+  if (onBehalfOfMembership?.active === false) {
+    throw new OperationOutcomeError(forbidden);
+  }
+
   const onBehalfOf = await systemRepo.readReference(onBehalfOfMembership.profile as Reference<ProfileResource>);
   authState.onBehalfOf = onBehalfOf;
   authState.onBehalfOfMembership = onBehalfOfMembership;

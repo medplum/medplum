@@ -65,6 +65,13 @@ describe('SearchControl', () => {
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
+  test('Hides actions button when no actions are available', async () => {
+    await setup({ search: { resourceType: 'Patient' } });
+
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
+  });
+
   test('Renders additional columns', async () => {
     const props: SearchControlProps = {
       search: {
@@ -636,6 +643,41 @@ describe('SearchControl', () => {
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Close'));
     });
+  });
+
+  async function openFieldOptions(): Promise<void> {
+    await setup({ search: { resourceType: 'Patient', fields: ['name'] }, onLoad: vi.fn() });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Fields'));
+    });
+    await act(async () => {
+      fireEvent.focus(await screen.findByPlaceholderText('Select fields to display'));
+    });
+    await screen.findByRole('option', { name: 'Name', hidden: true });
+  }
+
+  function fieldOption(name: string): HTMLElement | null {
+    return screen.queryByRole('option', { name, hidden: true });
+  }
+
+  test('Field editor offers resource properties that have no search parameter', async () => {
+    await openFieldOptions();
+    expect(fieldOption('Photo')).toBeInTheDocument();
+    expect(fieldOption('Marital Status')).toBeInTheDocument();
+    expect(fieldOption('Meta')).toBeInTheDocument();
+  });
+
+  test('Field editor offers a property once, even when a search parameter shares its name', async () => {
+    await openFieldOptions();
+    expect(fieldOption('Birth Date')).toBeInTheDocument();
+    expect(fieldOption('Birthdate')).toBeNull();
+    expect(screen.getAllByRole('option', { name: 'ID', hidden: true })).toHaveLength(1);
+  });
+
+  test('Field editor still offers search parameters that are not properties', async () => {
+    await openFieldOptions();
+    expect(fieldOption('Last Updated')).toBeInTheDocument();
+    expect(fieldOption('Phone')).toBeInTheDocument();
   });
 
   test('Filter editor onOk', async () => {
