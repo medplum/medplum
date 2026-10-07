@@ -122,7 +122,7 @@ export async function writeElevatedReschedule(
   const oldScheduleRefs = [...new Set(oldSlots.map((slot) => getReferenceString(slot.schedule)))];
   const oldSchedules = await Promise.all(
     oldScheduleRefs.map(
-      (reference) =>
+      async (reference) =>
         (reference ? loadedSchedules.get(reference) : undefined) ??
         medplum.readReference<Schedule>({ reference }, { cache: 'no-cache' })
     )
