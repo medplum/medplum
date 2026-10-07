@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Text, TextInput, UnstyledButton, VisuallyHidden } from '@mantine/core';
+import { Button, Text, TextInput, UnstyledButton } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import { getSearchParameters, tryGetDataType } from '@medplum/core';
 import { IconCheck, IconColumns3, IconGripVertical, IconRotate2, IconSearch } from '@tabler/icons-react';
-import type { JSX, KeyboardEvent, PointerEvent } from 'react';
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { JSX, PointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_SEARCH_FIELDS } from '../SearchControl/SearchControlField';
 import { SearchToolbarPopover } from '../SearchControl/SearchToolbarPopover';
 import popoverClasses from '../SearchControl/SearchToolbarPopover.module.css';
@@ -100,17 +100,6 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
   const overIndexRef = useRef<number | undefined>(undefined);
   const endDragRef = useRef<(() => void) | undefined>(undefined);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const itemRefs = useRef(new Map<string, HTMLButtonElement>());
-  const pendingFocusRef = useRef<string | undefined>(undefined);
-  const [announcement, setAnnouncement] = useState('');
-  const reorderHintId = useId();
-
-  useLayoutEffect(() => {
-    if (pendingFocusRef.current) {
-      itemRefs.current.get(pendingFocusRef.current)?.focus();
-      pendingFocusRef.current = undefined;
-    }
-  });
 
   useEffect(() => () => endDragRef.current?.(), []);
 
@@ -154,28 +143,6 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
     const nextOrder = arrayMove(order, from, to);
     setOrder(nextOrder);
     emitFields(nextOrder, visibleSet);
-  }
-
-  /**
-   * Moves a column one step up or down among the columns currently listed (Alt+Up / Alt+Down).
-   * @param e - The keydown event.
-   * @param name - The column being moved.
-   * @param listedNames - The column names currently listed, in order.
-   */
-  function handleItemKeyDown(e: KeyboardEvent<HTMLButtonElement>, name: string, listedNames: string[]): void {
-    if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) {
-      return;
-    }
-    e.preventDefault();
-    const position = listedNames.indexOf(name);
-    const neighbor = listedNames[e.key === 'ArrowUp' ? position - 1 : position + 1];
-    if (!neighbor) {
-      return;
-    }
-    pendingFocusRef.current = name;
-    reorder(order.indexOf(name), order.indexOf(neighbor));
-    const newPosition = e.key === 'ArrowUp' ? position : position + 2;
-    setAnnouncement(`${buildSearchParamFieldLabel(name)} moved to position ${newPosition} of ${listedNames.length}`);
   }
 
   function resetDefault(): void {
@@ -269,8 +236,6 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
           onChange={(e) => setQuery(e.currentTarget.value)}
         />
       </div>
-      <VisuallyHidden id={reorderHintId}>Press Alt+Up or Alt+Down to reorder</VisuallyHidden>
-      <VisuallyHidden aria-live="polite">{announcement}</VisuallyHidden>
       <div className={dragIndex !== undefined ? `${classes.body} ${classes.dragActive}` : classes.body}>
         {order.map((name, index) => {
           if (!listed.includes(name)) {
@@ -288,19 +253,10 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
           return (
             <UnstyledButton
               key={name}
-              ref={(el: HTMLButtonElement | null) => {
-                if (el) {
-                  itemRefs.current.set(name, el);
-                } else {
-                  itemRefs.current.delete(name);
-                }
-              }}
               className={rowClass}
               aria-pressed={visible}
-              aria-describedby={reorderHintId}
               data-testid={`column-${name}`}
               onClick={() => toggleColumn(name)}
-              onKeyDown={(e) => handleItemKeyDown(e, name, listed)}
               onPointerMove={() => {
                 if (dragIndexRef.current !== undefined && overIndexRef.current !== index) {
                   overIndexRef.current = index;
