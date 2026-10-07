@@ -23,8 +23,10 @@ import { formatDayHeading, formatZonedTime } from '../../AppointmentFinder/Appoi
 import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
+import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
+import { partitionServiceTypes } from '../../serviceTypes';
 import classes from './AppointmentDetails.module.css';
-import { getPatientParticipant, partitionServiceTypes } from './AppointmentDetails.utils';
+import { getPatientParticipant } from './AppointmentDetails.utils';
 import { AppointmentDetailsForm } from './AppointmentDetailsForm';
 
 /** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
@@ -281,7 +283,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   }
 
   const cancelable = CANCELABLE_STATUSES.has(appointment.status);
-  const { procedures } = partitionServiceTypes(appointment);
+  const { visitType, procedures } = partitionServiceTypes(appointment);
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
 
   // Both pages fill the pane the same way, so what can be done to the visit sits at the
@@ -292,7 +294,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       {!editing && patientLine}
       {whenLine}
       <Detail label="Repeats" value={formatSeries(appointment)} />
-      <Detail label="Service" value={formatService(appointment)} />
+      <Detail label="Service" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
       <Detail
         label="With"
         value={
@@ -434,14 +436,4 @@ function formatSeries(appointment: Appointment): string | undefined {
   // Only the first occurrence keeps the template, so only it says how many there are.
   const count = getExtension(appointment, RecurrenceTemplateExtensionURI, 'occurrenceCount')?.valuePositiveInt;
   return count ? `Weekly · visit ${position} of ${count}` : `Weekly · visit ${position}`;
-}
-
-/**
- * Names what the visit is for, preferring the service over the kind of visit.
- * @param appointment - The appointment being described.
- * @returns The service or appointment type, or undefined when neither is on file.
- */
-function formatService(appointment: Appointment): string | undefined {
-  const service = formatCodeableConcept(partitionServiceTypes(appointment).visitType);
-  return service || formatCodeableConcept(appointment.appointmentType) || undefined;
 }
