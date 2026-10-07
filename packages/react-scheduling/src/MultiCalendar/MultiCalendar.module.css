@@ -1,11 +1,28 @@
+/* Booked and its successor states render as solid blocks; everything else
+ * renders as a dashed outline over a pale tint of the calendar color. */
 .wrapper {
   :global(.appointment.pending),
   :global(.appointment.proposed),
+  :global(.appointment.waitlist),
   :global(.appointment.cancelled),
   :global(.appointment.noshow),
   :global(.appointment.entered-in-error) {
-    background: color-mix(in oklch, var(--fc-event-color), light-dark(white, black) 20%);
-    border: 1px dashed var(--mantine-color-default-border);
+    background: color-mix(in oklch, var(--fc-event-color) 15%, var(--fc-classic-background));
+
+    /* An outline drawn inside the event doesn't change its size the way a border
+     * would. Skipped while focused so FullCalendar's focus ring still shows. */
+    &:not(:focus-visible) {
+      outline: 2px dashed var(--fc-event-color);
+      outline-offset: -2px;
+    }
+
+    .eventInner,
+    .eventTime {
+      color: light-dark(
+        color-mix(in oklch, var(--fc-event-color), black 40%),
+        color-mix(in oklch, var(--fc-event-color), white 55%)
+      );
+    }
   }
 }
 
