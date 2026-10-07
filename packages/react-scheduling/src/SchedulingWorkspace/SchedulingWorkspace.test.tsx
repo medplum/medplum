@@ -64,6 +64,26 @@ function calendarColor(label: string): string {
   return color;
 }
 
+/**
+ * The appointment events on the calendar for a patient.
+ *
+ * @param patient - The patient's name, which is what an appointment event is titled.
+ * @returns The events.
+ */
+function appointmentEvents(patient: string): Element[] {
+  return [...document.querySelectorAll('.appointment')].filter((event) => event.textContent?.includes(patient));
+}
+
+/**
+ * The color a patient's one appointment event is drawn in.
+ *
+ * @param patient - The patient's name.
+ * @returns The color FullCalendar was handed.
+ */
+function eventColor(patient: string): string | undefined {
+  return (appointmentEvents(patient)[0] as HTMLElement | undefined)?.style.getPropertyValue('--fc-event-color');
+}
+
 describe('SchedulingWorkspace', () => {
   test('deselecting a provider marks its row inactive', async () => {
     const medplum = await setupClient();
@@ -361,36 +381,65 @@ describe('SchedulingWorkspace', () => {
       expect(screen.getAllByText('Blocked').length).toBeGreaterThan(0);
     });
 
-    test('a source only shows appointments booked on its own schedule', async () => {
+    test("an appointment is drawn once, in its service type's color, while any of its calendars is on show", async () => {
       clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
 
-      const medplum = await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]);
-      renderWithMedplum(<SchedulingWorkspace />, medplum);
+      renderWithMedplum(<SchedulingWorkspace />, await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]));
 
-      await waitFor(() => expect(screen.getAllByText('Miles Cooper').length).toBeGreaterThan(0));
-      const milesCountBefore = screen.getAllByText('Miles Cooper').length;
+      // Miles Cooper's visit is held on Dr. Rivera, Ultrasound 1 and Exam Room A, and is
+      // still one event, titled and colored by its imaging service type.
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(1));
+      const imaging = eventColor('Miles Cooper');
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')[0]).toHaveTextContent('Ultrasound Imaging'));
+      expect(eventColor('Renee Alvarez')).toBe(imaging);
+      expect(eventColor('Liam Jones')).not.toBe(imaging);
+      // The Slots it holds are not drawn as blocked time either; the one block on show is
+      // Exam Room A's maintenance.
+      expect(screen.getAllByText('Blocked')).toHaveLength(1);
 
-      // Dr. Okafor's schedule is not one of Miles Cooper's participants (that
-      // appointment is Dr. Rivera's), so deselecting it must leave the Miles Cooper
-      // count exactly unchanged. If sources ever stopped filtering by their own
-      // schedule's actor — e.g. handing every source every appointment — removing
-      // Okafor's source would *also* drop a Miles Cooper copy, since that source
-      // would incorrectly be carrying one. An unrelated toggle changing an
-      // unrelated appointment's count is exactly the bug this guards against.
+      // Hiding a calendar the visit is not held on leaves it alone.
       await userEvent.click(screen.getByText('Dr. Tunde Okafor').closest('button') as HTMLElement);
-      await waitFor(() => expect(screen.getAllByText('Renee Alvarez').length).toBeGreaterThan(0));
-      expect(screen.getAllByText('Miles Cooper').length).toBe(milesCountBefore);
+      await waitFor(() => expect(appointmentEvents('Renee Alvarez')).toHaveLength(1));
+      expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
 
-      // Deselecting every schedule actually tied to Miles Cooper's appointment
-      // (provider, device, and room) must clear it entirely, while the still
-      // partly-selected Okafor/Renee appointment (device + room still selected)
-      // stays visible.
-      for (const label of ['Dr. Maya Rivera', 'Ultrasound 1 (Main Campus)', 'Exam Room A']) {
+      // Hiding the provider leaves it too: it is still held on the device and the room.
+      await userEvent.click(screen.getByText('Dr. Maya Rivera').closest('button') as HTMLElement);
+      await waitFor(() =>
+        expect(screen.getByText('Dr. Maya Rivera').closest('button')).toHaveAttribute('aria-pressed', 'false')
+      );
+      expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
+      expect(eventColor('Miles Cooper')).toBe(imaging);
+
+      // Hiding the rest takes it off the calendar.
+      for (const label of ['Ultrasound 1 (Main Campus)', 'Exam Room A']) {
         await userEvent.click(screen.getByText(label).closest('button') as HTMLElement);
       }
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(0));
+      expect(appointmentEvents('Renee Alvarez')).toHaveLength(1);
+    });
 
-      await waitFor(() => expect(screen.queryByText('Miles Cooper')).not.toBeInTheDocument());
-      expect(screen.getAllByText('Renee Alvarez').length).toBeGreaterThan(0);
+    test('a service type keeps its color when another is added ahead of it', async () => {
+      clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
+      const { unmount } = renderWithMedplum(
+        <SchedulingWorkspace />,
+        await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures])
+      );
+      await waitFor(() => expect(eventColor('Liam Jones')).toBeDefined());
+      const color = eventColor('Liam Jones');
+      unmount();
+
+      // A service type sorting ahead of every other one, which would move each of them onto
+      // the next color if their colors were picked by their place in the list.
+      renderWithMedplum(
+        <SchedulingWorkspace />,
+        await setupClient([
+          { resourceType: 'HealthcareService', name: 'Allergy Consult' },
+          ...SchedulingFixtures,
+          ...CalendarWeekFixtures,
+        ])
+      );
+      await waitFor(() => expect(eventColor('Liam Jones')).toBeDefined());
+      expect(eventColor('Liam Jones')).toBe(color);
     });
   });
 

@@ -8,7 +8,8 @@ import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useMemo } from 'react';
-import type { FhirEventSource } from '../CalendarBase/CalendarBase';
+import { AppointmentEvent } from '../CalendarBase/AppointmentEvent';
+import type { ExtendedEvent, FhirEventSource } from '../CalendarBase/CalendarBase';
 import { CalendarBase } from '../CalendarBase/CalendarBase';
 import { resolveThemeColor } from '../colors';
 import type { DateTimeRange } from '../types';
@@ -76,6 +77,11 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
       eventInnerClass={classes.eventInner}
       eventTimeClass={classes.eventTime}
       availableTime={props.availableTime}
+      eventContent={(info) => {
+        const ext = info.event.extendedProps as ExtendedEvent;
+        // `true` keeps FullCalendar's own content for everything but appointments.
+        return ext.type === 'appointment' ? <AppointmentEvent appointment={ext.appointment} info={info} /> : true;
+      }}
       eventTimeFormat={{
         hour: 'numeric',
         minute: '2-digit',

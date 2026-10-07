@@ -1212,6 +1212,21 @@ export const ChenInfusionAppointment: WithId<Appointment> = {
   ],
 };
 
+// This represents an appointment that was made through the FHIR API
+// that does not have supporting links to resources HealthcareService
+// or Slot.
+export const LonelyAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-lonely',
+  status: 'booked',
+  start: '2020-05-07T18:00:00Z',
+  end: '2020-05-07T19:00:00Z',
+  participant: [
+    { status: 'accepted', actor: createReference(ElderJordanPatient) },
+    { status: 'accepted', actor: createReference(DrChenPractitioner) },
+  ],
+};
+
 export const CalendarWeekFixtures = [
   RiveraImagingAppointment,
   ...RiveraImagingHeldSlots,
@@ -1229,4 +1244,5 @@ export const CalendarWeekFixtures = [
   DrChenInfusionSchedule,
   ChenInfusionHeldSlot,
   ChenInfusionAppointment,
+  LonelyAppointment,
 ];

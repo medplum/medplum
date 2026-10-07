@@ -21,7 +21,8 @@ import { AppointmentBookingForm } from '../AppointmentFinder/AppointmentBookingF
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
-import { resolveThemeColor } from '../colors';
+import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
+import { fallbackColorIndex, resolveThemeColor } from '../colors';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
@@ -33,7 +34,7 @@ import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
-import { getCalendarTimezones } from './SchedulingWorkspace.utils';
+import { getCalendarTimezones, groupAppointmentsByService } from './SchedulingWorkspace.utils';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
@@ -101,6 +102,8 @@ export interface SchedulingWorkspaceProps {
  *
  * - Picks a color for each Schedule so that it can render consistently across
  *   those components.
+ * - Draws each appointment once, however many of the calendars on show it is held on,
+ *   in the color of its service type, picked by hashing the HealthcareService's reference.
  * - Books from the calendar: clicking open time opens {@link AppointmentBookingForm}
  *   in a pane on the right, with its time search opened on the day that was clicked.
  *   The form writes the booking and announces what it wrote, which is what puts the
@@ -230,23 +233,43 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   } = useSchedulingResources(schedules, range);
 
   const sources = useMemo((): MultiCalendarSource[] => {
-    return activeCandidates.map((candidate) => {
+    const actorsOnShow = new Set(
+      activeCandidates
+        .flatMap((candidate) => candidate.schedule.actor.map((actor) => actor.reference))
+        .filter(isDefined)
+    );
+    const visibleAppointments = (appointments ?? []).filter(
+      (appointment) =>
+        appointment.status !== 'cancelled' &&
+        appointment.participant.some(
+          (participant) => participant.actor?.reference && actorsOnShow.has(participant.actor.reference)
+        )
+    );
+    // Appointments are drawn by service type rather than on the calendars they are held on,
+    // so the Slots they hold have to be cleared here: a source only clears the ones behind
+    // its own appointments.
+    const openSlots = filterBookedSlots(slots ?? [], visibleAppointments);
+    const calendarSources = activeCandidates.map((candidate): MultiCalendarSource => {
       const scheduleReference = getReferenceString(candidate.schedule);
-      const actorReferences = new Set(candidate.schedule.actor.map((actor) => actor.reference).filter(isDefined));
       return {
         schedule: candidate.schedule,
         color: colorByScheduleId.get(candidate.schedule.id),
-        slots: (slots ?? []).filter((slot: Slot) => slot.schedule?.reference === scheduleReference),
-        appointments: (appointments ?? []).filter(
-          (appointment: Appointment) =>
-            appointment.status !== 'cancelled' &&
-            (appointment.participant ?? []).some(
-              (participant) => participant.actor?.reference && actorReferences.has(participant.actor.reference)
-            )
-        ),
+        slots: openSlots.filter((slot: Slot) => slot.schedule?.reference === scheduleReference),
+        appointments: [],
       };
     });
-  }, [activeCandidates, slots, appointments, colorByScheduleId]);
+    const serviceSources = Array.from(
+      groupAppointmentsByService(visibleAppointments),
+      ([reference, group]): MultiCalendarSource => ({
+        // Picked by the service type's reference, so its color holds whichever week is on show,
+        // for everyone, and as other service types come and go.
+        color: reference ? resolveThemeColor(theme, undefined, fallbackColorIndex(reference)) : 'gray',
+        slots: [],
+        appointments: group,
+      })
+    );
+    return [...calendarSources, ...serviceSources];
+  }, [activeCandidates, slots, appointments, colorByScheduleId, theme]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
