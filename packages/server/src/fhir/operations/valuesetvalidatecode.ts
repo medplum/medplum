@@ -28,6 +28,8 @@ import {
   selectCoding,
 } from './utils/terminology';
 
+import { findSnapshotCoding, getValueSetSnapshot } from './utils/valueset-snapshot';
+
 const operation = getOperationDefinition('ValueSet', 'validate-code');
 
 type ValueSetValidateCodeParameters = {
@@ -67,7 +69,10 @@ export async function valueSetValidateOperation(req: FhirRequest): Promise<FhirR
     return [badRequest('No coding specified')];
   }
 
-  const found = await validateCodingInValueSet(repo, valueSet, codings);
+  // A separately supplied display applies to Coding/CodeableConcept input too.
+  const candidates =
+    params.display && getValueSetSnapshot(valueSet) ? codings.map((c) => ({ ...c, display: params.display })) : codings;
+  const found = await validateCodingInValueSet(repo, valueSet, candidates);
 
   const output = {
     result: Boolean(found) && (!params.display || found?.display === params.display),
@@ -82,10 +87,12 @@ export async function validateCodingInValueSet(
   valueSet: ValueSet,
   codings: Coding[]
 ): Promise<Coding | undefined> {
+  const snapshot = getValueSetSnapshot(valueSet);
+  if (snapshot) {
+    return findSnapshotCoding(snapshot, codings);
+  }
   let found: Coding | undefined;
-  if (valueSet.expansion && !valueSet.expansion.parameter) {
-    found = valueSet.expansion.contains?.find((e) => codings.some((c) => e.system === c.system && e.code === c.code));
-  } else if (valueSet.compose) {
+  if (valueSet.compose) {
     for (const include of valueSet.compose.include) {
       found = await findIncludedCode(repo, include, ...codings);
       if (found) {
