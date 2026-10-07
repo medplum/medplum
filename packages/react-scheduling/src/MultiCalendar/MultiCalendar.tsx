@@ -71,7 +71,6 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
       eventSources={eventSources}
       nowIndicator
       {...calendarBaseProps}
-      eventInnerClass={classes.eventInner}
       eventTimeClass={classes.eventTime}
       availableTime={props.availableTime}
       eventTimeFormat={{
