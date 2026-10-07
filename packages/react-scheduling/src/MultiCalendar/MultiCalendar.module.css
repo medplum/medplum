@@ -1,10 +1,12 @@
-:global(.appointment.pending),
-:global(.appointment.proposed),
-:global(.appointment.cancelled),
-:global(.appointment.noshow),
-:global(.appointment.entered-in-error) {
-  background: color-mix(in oklch, var(--fc-event-color), light-dark(white, black) 20%);
-  border: 1px dashed var(--mantine-color-default-border);
+.wrapper {
+  :global(.appointment.pending),
+  :global(.appointment.proposed),
+  :global(.appointment.cancelled),
+  :global(.appointment.noshow),
+  :global(.appointment.entered-in-error) {
+    background: color-mix(in oklch, var(--fc-event-color), light-dark(white, black) 20%);
+    border: 1px dashed var(--mantine-color-default-border);
+  }
 }
 
 .eventTime {
