@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  allServiceTypesCodeableConcept,
   ContentType,
   createReference,
   PARTICIPATION_TYPE_SYSTEM,
   PRIMARY_PERFORMER_CODE,
   SchedulingSlotCapacityURI,
   ServiceTypeReferenceURI,
-  toAllServiceTypesCodeableConcept,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
@@ -1075,7 +1075,7 @@ describe('Appointment/$find', () => {
       resourceType: 'Schedule',
       meta: { project: project.id },
       actor: [createReference(practitioner)],
-      serviceType: [toAllServiceTypesCodeableConcept()],
+      serviceType: [allServiceTypesCodeableConcept()],
     });
 
     const response = await makeRequest({

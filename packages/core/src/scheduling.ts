@@ -136,7 +136,7 @@ export const SCHEDULING_SERVICE_TYPE_SYSTEM = 'https://medplum.com/fhir/CodeSyst
  *
  * It decides only which services the Schedule accepts, not when: hours still resolve from the Schedule's
  * SchedulingParameters for the service, then the service's own, then the defaults. Build it with
- * `toAllServiceTypesCodeableConcept`.
+ * `allServiceTypesCodeableConcept`.
  */
 export const ALL_SERVICE_TYPES_CODE = 'all';
 
@@ -548,7 +548,7 @@ export function toServiceTypeCodeableConcepts(service: WithId<HealthcareService>
  * `Schedule.serviceType`. An Appointment never carries it: it records the service actually booked.
  * @returns The marker concept
  */
-export function toAllServiceTypesCodeableConcept(): CodeableConcept {
+export function allServiceTypesCodeableConcept(): CodeableConcept {
   return {
     coding: [{ system: SCHEDULING_SERVICE_TYPE_SYSTEM, code: ALL_SERVICE_TYPES_CODE }],
     text: 'All service types',

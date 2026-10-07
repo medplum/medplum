@@ -3,10 +3,10 @@
 import type { WithId } from '@medplum/core';
 import {
   ALL_SERVICE_TYPES_CODE,
+  allServiceTypesCodeableConcept,
   parseReference,
   SCHEDULING_SERVICE_TYPE_SYSTEM,
   ServiceTypeReferenceURI,
-  toAllServiceTypesCodeableConcept,
 } from '@medplum/core';
 import type { Device, HealthcareService, Location, Practitioner, PractitionerRole, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -264,7 +264,7 @@ describe('searchScheduleCandidates', () => {
       resourceType: 'Schedule',
       active: true,
       actor: [{ reference: `Practitioner/${practitioner.id}` }],
-      serviceType: [toAllServiceTypesCodeableConcept()],
+      serviceType: [allServiceTypesCodeableConcept()],
     });
 
     const candidates = await candidatesFor(medplum, UltrasoundImagingService, 'Practitioner');

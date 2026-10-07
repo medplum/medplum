@@ -12,6 +12,7 @@ import type {
 } from '@medplum/fhirtypes';
 import type { HealthcareServiceSchedulingParameterExtension, SchedulingParameterExtension } from './scheduling';
 import {
+  allServiceTypesCodeableConcept,
   clearHealthcareServiceSchedulingParameter,
   clearScheduleParameter,
   clearScheduleSchedulingParameter,
@@ -43,7 +44,6 @@ import {
   setScheduleParameter,
   setScheduleSchedulingParameter,
   TimezoneExtensionURI,
-  toAllServiceTypesCodeableConcept,
   toAppointmentSiteReference,
   toServiceTypeCodeableConcepts,
 } from './scheduling';
@@ -362,7 +362,7 @@ describe('serviceType CodeableConcepts', () => {
   });
 
   test('the all-services marker offers every service without listing any', () => {
-    const serviceType = [toAllServiceTypesCodeableConcept()];
+    const serviceType = [allServiceTypesCodeableConcept()];
 
     expect(serviceType[0].coding).toEqual([
       { system: 'https://medplum.com/fhir/CodeSystem/scheduling-service-type', code: 'all' },
@@ -389,7 +389,7 @@ describe('serviceType CodeableConcepts', () => {
   });
 
   test('the marker still offers every service alongside listed ones', () => {
-    const serviceType = [...toServiceTypeCodeableConcepts(service), toAllServiceTypesCodeableConcept()];
+    const serviceType = [...toServiceTypeCodeableConcepts(service), allServiceTypesCodeableConcept()];
 
     expect(serviceTypeOffersService(serviceType, { reference: 'HealthcareService/service-2' })).toBe(true);
   });

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  allServiceTypesCodeableConcept,
   createReference,
   getPrimaryProvider,
   getReferenceString,
@@ -9,7 +10,6 @@ import {
   isResource,
   ServiceTypeReferenceURI,
   setPrimaryProvider,
-  toAllServiceTypesCodeableConcept,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
@@ -850,7 +850,7 @@ describe('Appointment/:id/$reschedule', () => {
       resourceType: 'Schedule',
       meta: { project: project.project.id },
       actor: [createReference(roomTwo)],
-      serviceType: [toAllServiceTypesCodeableConcept()],
+      serviceType: [allServiceTypesCodeableConcept()],
       extension: [makeSchedulingExtension()],
     });
 
