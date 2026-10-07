@@ -9,6 +9,7 @@ export default defineConfig({
   },
   test: {
     name: '@medplum/fhir-router',
+    maxWorkers: process.env.TEST_MAX_WORKERS ?? '50%',
     globals: true,
     environment: 'jsdom',
     testTimeout: 120_000,
