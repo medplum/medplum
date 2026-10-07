@@ -198,19 +198,22 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
       const timeChanged =
         interval.start.valueOf() !== Date.parse(existingAppointment.start as string) ||
         interval.end.valueOf() !== Date.parse(existingAppointment.end as string);
+
+      const nextExtension =
+        timeChanged && getExtension(existingAppointment, RecurrenceIdExtensionURI)
+          ? [
+              ...(existingAppointment.extension ?? []).filter((ext) => ext.url !== OccurrenceChangedExtensionURI),
+              { url: OccurrenceChangedExtensionURI, valueBoolean: true },
+            ]
+          : existingAppointment.extension;
+
       const updatedAppointment = await txRepo.updateResource<Appointment>({
         ...existingAppointment,
         start: interval.start.toISOString(),
         end: interval.end.toISOString(),
         participant,
         slot: createdSlots.map((slot) => createReference(slot)),
-        extension:
-          timeChanged && getExtension(existingAppointment, RecurrenceIdExtensionURI)
-            ? [
-                ...(existingAppointment.extension ?? []).filter((ext) => ext.url !== OccurrenceChangedExtensionURI),
-                { url: OccurrenceChangedExtensionURI, valueBoolean: true },
-              ]
-            : existingAppointment.extension,
+        extension: nextExtension,
       });
 
       return [updatedAppointment, ...createdSlots];
