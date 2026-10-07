@@ -427,9 +427,9 @@ describe('SchedulingWorkspace', () => {
       expect(await serviceTypeColor('Ultrasound Imaging')).toBe(imaging);
       expect(await serviceTypeColor('Telehealth Consult')).toBe(eventColor('Liam Jones'));
       await userEvent.unhover(screen.getByRole('button', { name: 'Legend' }));
-      // The Slots it holds are not drawn as blocked time either; the one block on show is
-      // Exam Room A's maintenance.
-      expect(screen.getAllByText('Blocked')).toHaveLength(1);
+      // The Slots it holds are not drawn as blocked time either; the blocks on show are
+      // Exam Room A's maintenance and the buffer after Dr. Chen's infusion.
+      expect(screen.getAllByText('Blocked')).toHaveLength(2);
 
       // Hiding a calendar the visit is not held on leaves it alone.
       await userEvent.click(screen.getByText('Dr. Tunde Okafor').closest('button') as HTMLElement);

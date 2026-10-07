@@ -569,6 +569,7 @@ export const InfusionService = buildSchedulableService({
   alignmentMinutes: 30,
   locationIds: ['main-clinic'],
   requirements: SCHEDULING_REQUIREMENT_CODES,
+  bufferAfterMinutes: 15,
 });
 
 /**
@@ -1234,6 +1235,16 @@ export const ChenInfusionHeldSlot: WithId<Slot> = {
   schedule: createReference(DrChenInfusionSchedule),
 };
 
+export const ChenInfusionBufferSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-chen-infusion-thu-after',
+  status: 'busy-unavailable',
+  start: '2020-05-07T15:00:00Z',
+  end: '2020-05-07T15:15:00Z',
+  schedule: createReference(DrChenInfusionSchedule),
+  comment: 'buffer after appointment',
+};
+
 /**
  * An infusion on Dr. Chen's calendar, booked for a visit type asking for procedure and diagnosis
  * codes and a medical necessity attestation, with all three given.
@@ -1288,6 +1299,7 @@ export const CalendarWeekFixtures = [
   InfusionService,
   DrChenInfusionSchedule,
   ChenInfusionHeldSlot,
+  ChenInfusionBufferSlot,
   ChenInfusionAppointment,
   LonelyAppointment,
 ];
