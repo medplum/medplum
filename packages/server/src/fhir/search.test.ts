@@ -2507,7 +2507,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         const beforeReindex = await repo.search(searchRequest);
         expect(beforeReindex.entry).toHaveLength(0);
 
-        await systemRepo.reindexResources([obs]);
+        await systemRepo.reindexResource('Observation', obs.id);
         const afterReindex = await repo.search(searchRequest);
         expect(afterReindex.entry?.map((e) => e.resource?.id)).toStrictEqual([patient.id]);
       }));
