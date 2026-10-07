@@ -208,8 +208,9 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   }
 
   const conflictSubject = actorDirty ? `${actorName} or its Schedule` : `The Schedule for ${actorName}`;
-  const offerable = services.filter(
-    (service) => service.active !== false && !Object.hasOwn(fields.offerings, service.id)
+  const offerable = useMemo(
+    () => services.filter((service) => service.active !== false && !Object.hasOwn(fields.offerings, service.id)),
+    [services, fields.offerings]
   );
 
   return (

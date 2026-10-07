@@ -5,7 +5,7 @@ import type { WithId } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
 import { IconChevronDown } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { matchesFilter } from '../SchedulingConfigWorkspace.utils';
 
 const PAGE_SIZE = 10;
@@ -46,6 +46,7 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
       setShown(PAGE_SIZE);
     },
   });
+  const options = useMemo(() => listOptions(services, search, shown, pinned), [services, search, shown, pinned]);
 
   if (services.length === 0) {
     return (
@@ -74,8 +75,8 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
     combobox.focusTarget();
   }
 
-  // Combobox keeps a closed dropdown mounted, so the list is built only while it's open.
-  const list = combobox.dropdownOpened ? listOptions(services, search, shown, pinned) : undefined;
+  // Combobox keeps a closed dropdown mounted, so its options are rendered only while it's open.
+  const list = combobox.dropdownOpened ? options : undefined;
 
   return (
     <Group>
