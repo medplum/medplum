@@ -400,16 +400,14 @@ describe('ActorPage', () => {
     expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Follow-up', 'Cystoscopy']);
   });
 
-  test('offers several visit types at once, closed, and then says there is nothing more to offer', async () => {
+  test('offers several visit types at once, closed, and then says none are left to offer', async () => {
     await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
 
     await offer('Cystoscopy', 'Follow-up');
 
     expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'false');
     expect(entry('Cystoscopy')).toHaveAttribute('aria-expanded', 'false');
-    expect(
-      screen.getByText('There is nothing more to offer: every active visit type is offered here.')
-    ).toBeInTheDocument();
+    expect(screen.getByText('No active visit types are left to offer.')).toBeInTheDocument();
   });
 
   test('stopping a visit type asks first, then drops it on save', async () => {
