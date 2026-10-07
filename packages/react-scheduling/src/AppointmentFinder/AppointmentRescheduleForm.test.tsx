@@ -237,6 +237,38 @@ describe('AppointmentRescheduleForm', () => {
       expect(result.slots.map((slot: Slot) => slot.schedule.reference)).toContain('Schedule/schedule-exam-room-b');
     });
 
+    test('proposes the same time when the move only drops an actor that can no longer be offered', async () => {
+      await medplum.updateResource({ ...ExamRoomASchedule, active: false });
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await openTimeFinder();
+      await clickReschedule();
+      const result = onRescheduled.mock.calls[0][0];
+      expect(result.appointments[0].start).toBe('2026-08-18T15:00:00.000Z');
+      expect(result.slots.map((slot: Slot) => slot.schedule.reference)).not.toContain(
+        `Schedule/${ExamRoomASchedule.id}`
+      );
+    });
+
+    test('keeps a typed time and length when the actors change', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await enterTime();
+      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '45' } });
+      await settleAutocomplete();
+      await removePill(/Exam Room A/);
+      await chooseActor(/room/i, 'Exam Room B', 'Exam Room B');
+      expect(screen.getAllByLabelText('Date & time').find((input) => !input.hasAttribute('readonly'))).toHaveValue(
+        '2026-08-18T14:07'
+      );
+      expect(screen.getByLabelText('Minutes')).toHaveValue('45');
+      await clickReschedule();
+      const result = onRescheduled.mock.calls[0][0];
+      expect([result.appointments[0].start, result.appointments[0].end]).toEqual([
+        '2026-08-18T18:07:00.000Z',
+        '2026-08-18T18:52:00.000Z',
+      ]);
+      expect(result.slots.map((slot: Slot) => slot.schedule.reference)).toContain('Schedule/schedule-exam-room-b');
+    });
+
     test('asks for a length when the appointment has none, rather than using the configured one', async () => {
       const stored = await medplum.updateResource({ ...APPOINTMENT, end: undefined });
       await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });

@@ -28,6 +28,7 @@ export interface AppointmentRescheduleFormProps extends Omit<
   | 'defaultSelections'
   | 'defaultPatient'
   | 'ignoreAppointment'
+  | 'ignoreAppointmentSchedules'
   | 'mrnSystem'
   | 'procedureBinding'
   | 'diagnosisBinding'
@@ -182,6 +183,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
         defaultSelections={defaults.selections}
         defaultStart={defaultStart ?? getOpeningDay(appointment)}
         ignoreAppointment={appointment}
+        ignoreAppointmentSchedules={defaults.heldSchedules}
         onSubmit={reschedule}
       />
     </>
