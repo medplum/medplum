@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { evalFhirPath } from '../fhirpath/parse';
 import { globalSchema, indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { deriveIdentifierSearchParameter } from './derived';
@@ -320,6 +321,29 @@ describe('SearchParameterDetails', () => {
     expect(details.parsedExpression.toString()).toStrictEqual(
       'Observation.subject.where((resolve() is Patient)).identifier'
     );
+  });
+
+  test('Enterprise-production-project', () => {
+    const searchParam = searchParams.find((e) => e.id === 'Enterprise-production-project') as SearchParameter;
+    const details = getSearchParameterDetails('Enterprise', searchParam);
+    expect(details.array).toBe(true);
+    expect(details.type).toStrictEqual(SearchParameterType.REFERENCE);
+    expect(details.parsedExpression.toString()).toStrictEqual(
+      "Enterprise.project.where((code = 'production')).project"
+    );
+
+    const enterprise = {
+      resourceType: 'Enterprise',
+      project: [
+        { project: { reference: 'Project/prod-1' }, code: 'production' },
+        { project: { reference: 'Project/dev-1' }, code: 'non-production' },
+        { project: { reference: 'Project/prod-2' }, code: 'production' },
+      ],
+    };
+    expect(evalFhirPath(searchParam.expression as string, enterprise)).toStrictEqual([
+      { reference: 'Project/prod-1' },
+      { reference: 'Project/prod-2' },
+    ]);
   });
 
   test('Everything', () => {
