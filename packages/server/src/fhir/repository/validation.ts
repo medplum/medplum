@@ -25,6 +25,7 @@ import { getLogger } from '../../logger';
 import { recordHistogramValue } from '../../otel/otel';
 import { validateResourceWithJsonSchema } from '../jsonschema';
 import { findTerminologyResource } from '../operations/utils/terminology';
+import { createSnapshotMembershipValidator } from '../operations/utils/valueset-snapshot';
 import { validateCodingInValueSet } from '../operations/valuesetvalidatecode';
 import type { Repository } from '../repo';
 import { cacheProfile, getCachedProfile } from './profile-cache';
@@ -188,6 +189,7 @@ async function validateTerminology(
   for (const [url, values] of Object.entries(tokens)) {
     const valueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
 
+    const snapshotValidator = createSnapshotMembershipValidator(valueSet);
     const resultCache: Record<string, boolean | undefined> = Object.create(null);
     for (const value of values) {
       let codings: Coding[] | undefined;
@@ -219,7 +221,9 @@ async function validateTerminology(
         continue;
       }
 
-      const matchedCoding = await validateCodingInValueSet(repo, valueSet, codings);
+      const matchedCoding = snapshotValidator
+        ? snapshotValidator(codings)
+        : await validateCodingInValueSet(repo, valueSet, codings);
       resultCache[`${value.type}|${value.value}`] = Boolean(matchedCoding);
       if (!matchedCoding) {
         issues.push({

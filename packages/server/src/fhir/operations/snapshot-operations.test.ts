@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ValueSet } from '@medplum/fhirtypes';
+import { strict as assert } from 'node:assert';
 import type { Repository } from '../repo';
 import { expandValueSet } from './expand';
 import { validateCodingInValueSet } from './valuesetvalidatecode';
@@ -66,18 +67,18 @@ test('Empty sets, display languages, and abstract concepts use snapshot semantic
   expect(translated.expansion).toMatchObject({ total: 1001 });
   expect(translated.expansion?.contains?.[0]).toMatchObject({ code: 'TEST-1', display: 'Sintetico 1' });
 });
-test('Snapshot membership uses source versions and accepts only known displays', async () => {
+test('Binding membership preserves permissive display and version behavior', async () => {
   const valueSet = snapshot();
   expect(await validateCodingInValueSet(repo, valueSet, [{ system, code: 'TEST-1001' }])).toMatchObject({
     code: 'TEST-1001',
   });
   expect(
     await validateCodingInValueSet(repo, valueSet, [{ system, code: 'TEST-1001', display: 'Sintetico 1001' }])
-  ).toMatchObject({ display: 'Sintetico 1001' });
-  expect(await validateCodingInValueSet(repo, valueSet, [{ system, code: 'TEST-1001', version: '2' }])).toBeUndefined();
+  ).toMatchObject({ display: 'Synthetic 1001' });
+  expect(await validateCodingInValueSet(repo, valueSet, [{ system, code: 'TEST-1001', version: '2' }])).toBeDefined();
   expect(
     await validateCodingInValueSet(repo, valueSet, [{ system, code: 'TEST-1001', display: 'Wrong' }])
-  ).toBeUndefined();
+  ).toBeDefined();
   expect(await validateCodingInValueSet(repo, valueSet, [{ system, code: 'MISSING' }])).toBeUndefined();
 });
 test('Partial snapshots cannot validate membership as though complete', async () => {
@@ -88,12 +89,34 @@ test('Partial snapshots cannot validate membership as though complete', async ()
   expect(await validateCodingInValueSet(repo, valueSet, [{ system, code: 'TEST-1' }])).toBeUndefined();
   await expect(expandValueSet(repo, valueSet, {})).rejects.toThrow('Missing ValueSet definition');
 });
-test.each([{ offset: -1 }, { count: -1 }, { offset: 0.5 }])('Rejects invalid pagination %j', async (params) => {
-  await expect(expandValueSet(repo, snapshot(), params)).rejects.toThrow('Invalid expansion');
-});
+test.each([{ offset: -1 }, { count: -1 }, { offset: 0.5 }, { count: 0.5 }, { count: Infinity }])(
+  'Rejects invalid pagination %j',
+  async (params) => {
+    await expect(expandValueSet(repo, snapshot(), params)).rejects.toThrow('Invalid expansion');
+    await expect(
+      expandValueSet(repo, { resourceType: 'ValueSet', status: 'active', compose: { include: [] } }, params)
+    ).rejects.toThrow('Invalid expansion');
+  }
+);
 
 test('Filtered operation results retain their context and cannot become unqualified snapshots', async () => {
   const result = await expandValueSet(repo, snapshot(), { filter: 'Synthetic 1001' });
   expect(result.expansion?.parameter).toContainEqual({ name: 'filter', valueString: 'Synthetic 1001' });
   await expect(expandValueSet(repo, result, {})).rejects.toThrow('Missing ValueSet definition');
+});
+
+test('Expansion results leave the source snapshot intact and discard source result metadata', async () => {
+  const source = snapshot();
+  assert(source.expansion);
+  source.expansion.identifier = 'urn:uuid:source-expansion';
+  source.expansion.extension = [{ url: 'https://example.org/next-page', valueUri: 'https://example.org/page' }];
+  const before = structuredClone(source);
+  const result = await expandValueSet(repo, source, { filter: 'Synthetic 1001' });
+  expect(source).toEqual(before);
+  expect(result).not.toBe(source);
+  expect(result.expansion?.identifier).toBeUndefined();
+  expect(result.expansion?.extension).toBeUndefined();
+  expect(await validateCodingInValueSet(repo, source, [{ system, code: 'TEST-0' }])).toBeDefined();
+  const unfiltered = await expandValueSet(repo, source, {});
+  expect(unfiltered.expansion?.parameter).toBeUndefined();
 });

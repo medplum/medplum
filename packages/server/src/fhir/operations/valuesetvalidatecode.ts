@@ -27,7 +27,6 @@ import {
   getParentProperty,
   selectCoding,
 } from './utils/terminology';
-
 import { findSnapshotCoding, getValueSetSnapshot } from './utils/valueset-snapshot';
 
 const operation = getOperationDefinition('ValueSet', 'validate-code');
@@ -69,10 +68,36 @@ export async function valueSetValidateOperation(req: FhirRequest): Promise<FhirR
     return [badRequest('No coding specified')];
   }
 
-  // A separately supplied display applies to Coding/CodeableConcept input too.
-  const candidates =
-    params.display && getValueSetSnapshot(valueSet) ? codings.map((c) => ({ ...c, display: params.display })) : codings;
-  const found = await validateCodingInValueSet(repo, valueSet, candidates);
+  const snapshot = getValueSetSnapshot(valueSet);
+  if (snapshot) {
+    // Operation-level checks must not change required-binding validation on resource writes.
+    let member: Coding | undefined;
+    for (const coding of codings) {
+      const display = params.display ?? coding.display;
+      for (const found of snapshot) {
+        if (
+          found.system !== coding.system ||
+          found.code !== coding.code ||
+          (coding.version && found.version !== coding.version)
+        ) {
+          continue;
+        }
+        member ??= found;
+        if (!display || display === found.display || found.designation?.some((d) => d.value === display)) {
+          return [allOk, buildOutputParameters(operation, { result: true, display: display ?? found.display })];
+        }
+      }
+    }
+    return [
+      allOk,
+      buildOutputParameters(operation, {
+        result: false,
+        display: member?.display,
+        message: member ? 'The supplied display does not match the code in the ValueSet' : 'Code not found in ValueSet',
+      }),
+    ];
+  }
+  const found = await validateCodingInValueSet(repo, valueSet, codings);
 
   const output = {
     result: Boolean(found) && (!params.display || found?.display === params.display),

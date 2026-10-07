@@ -71,6 +71,26 @@ describe('Expand', () => {
       'SYNTHETIC-1000',
       'SYNTHETIC-1001',
     ]);
+    const nested = await request(app)
+      .post('/fhir/R4/ValueSet/$expand')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'count', valueInteger: 1 },
+          {
+            name: 'valueSet',
+            resource: {
+              resourceType: 'ValueSet',
+              status: 'active',
+              compose: { include: [{ valueSet: [valueSet.url] }] },
+            },
+          },
+        ],
+      });
+    expect(nested).toHaveStatus(200);
+    expect(nested.body.expansion.contains).toHaveLength(1);
+    expect(nested.body.expansion.total).toBe(1);
     const zero = await expand('count=0');
     expect(zero.body.expansion.total).toBe(1002);
     expect(zero.body.expansion.contains ?? []).toEqual([]);
@@ -95,6 +115,11 @@ describe('Expand', () => {
         });
       expect(result).toHaveStatus(200);
       expect(result.body.parameter.find((p: { name: string }) => p.name === 'result').valueBoolean).toBe(expected);
+      if (display === 'Wrong') {
+        expect(result.body.parameter.find((p: { name: string }) => p.name === 'message').valueString).toContain(
+          'display'
+        );
+      }
     }
   });
 
@@ -193,6 +218,36 @@ describe('Expand', () => {
     expect(res.body.expansion.contains.length).toBe(10);
     expect(res.body.expansion.contains[0].system).toBe(LOINC);
   });
+
+  test.each(['', '&filter=rate'])(
+    'Compose count zero calculates a total without returning concepts (%s)',
+    async (filter) => {
+      const url = encodeURIComponent('http://hl7.org/fhir/ValueSet/observation-codes');
+      const expand = (count: number): request.Test =>
+        request(app)
+          .get(`/fhir/R4/ValueSet/$expand?url=${url}${filter}&count=${count}`)
+          .set('Authorization', 'Bearer ' + accessToken);
+      const normal = await expand(1000);
+      const zero = await expand(0);
+      expect(normal).toHaveStatus(200);
+      expect(zero).toHaveStatus(200);
+      expect(normal.body.expansion.total).toBeGreaterThan(0);
+      expect(zero.body.expansion.total).toBe(normal.body.expansion.total);
+      expect(zero.body.expansion.contains ?? []).toEqual([]);
+    }
+  );
+
+  test.each(['offset=-1', 'offset=0.5', 'count=-1', 'count=0.5'])(
+    'Compose rejects invalid pagination %s',
+    async (query) => {
+      const res = await request(app)
+        .get(
+          `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/observation-codes')}&${query}`
+        )
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(400);
+    }
+  );
 
   test('Multiple filters', async () => {
     const res = await request(app)
