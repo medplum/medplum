@@ -169,6 +169,68 @@ describe('SearchFilterPopover', () => {
     );
   });
 
+  test('Changing the operator keeps the value and applies the updated filter at once', async () => {
+    const { onChange } = await setup({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Simpson' }],
+    });
+    await openPopover();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Filter 1 operator', { selector: 'input' }));
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('option', { name: 'contains', hidden: true }));
+    });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ filters: [{ code: 'name', operator: Operator.CONTAINS, value: 'Simpson' }] })
+    );
+    expect(screen.getByTestId('filter-0-value')).toHaveValue('Simpson');
+  });
+
+  test('Changing to a field with the same input type keeps the operator and value', async () => {
+    const { onChange } = await setup({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.CONTAINS, value: 'Simpson' }],
+    });
+    await openPopover();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Filter 1 field', { selector: 'input' }));
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('option', { name: 'Family', hidden: true }));
+    });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ filters: [{ code: 'family', operator: Operator.CONTAINS, value: 'Simpson' }] })
+    );
+    expect(screen.getByTestId('filter-0-value')).toHaveValue('Simpson');
+  });
+
+  test('Changing to a field with a different input type clears the value and drops the filter', async () => {
+    const { onChange } = await setup({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.CONTAINS, value: 'Simpson' }],
+    });
+    await openPopover();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Filter 1 field', { selector: 'input' }));
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('option', { name: 'Birthdate', hidden: true }));
+    });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ filters: [] }));
+    expect(screen.getByLabelText('Filter 1 operator', { selector: 'input' })).toHaveValue('equals');
+    expect(screen.getByTestId('filter-0-value')).toHaveValue('');
+  });
+
   test('Deleting a row keeps the next row showing its own value', async () => {
     await setup({
       resourceType: 'Patient',

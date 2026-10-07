@@ -391,6 +391,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             mrnSystem={mrnSystem}
             canBypassSchedulingRules={canBypassSchedulingRules}
             appointmentExtensions={appointmentExtensions}
+            allowRecurring
             onToggleTimeFinder={setTimeFinderOpen}
             onChangeTime={setHighlight}
             onBooked={finishBooking}

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, createReference, Operator, resolveId } from '@medplum/core';
-import type { Patient } from '@medplum/fhirtypes';
+import type { Patient, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -62,8 +62,16 @@ describe('New patient', () => {
 
     const projectId = resolveId(res3.body.project) as string;
 
+    // Enable open registration by setting the default patient access policy
+    await withTestContext(async () => {
+      const project = await systemRepo.readResource<Project>('Project', projectId);
+      const patientPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'Patient')?.accessPolicy;
+      await systemRepo.patchResource('Project', projectId, [
+        { op: 'add', path: '/defaultPatientAccessPolicy', value: patientPolicy },
+      ]);
+    });
+
     // Register as a patient in the new project
-    // Projects now have a default patient access policy, so this should succeed
     const res4 = await request(app)
       .post('/auth/newuser')
       .type('json')
@@ -161,9 +169,7 @@ describe('New patient', () => {
     expect(res12.body.entry[0].resource.id).toStrictEqual(res9.body.id);
   });
 
-  test('Fails when defaultPatientAccessPolicy is removed', async () => {
-    const systemRepo = getGlobalSystemRepo();
-
+  test('Fails when defaultPatientAccessPolicy is not set', async () => {
     // Register as Christina
     const res1 = await request(app)
       .post('/auth/newuser')
@@ -194,12 +200,7 @@ describe('New patient', () => {
 
     const projectId = resolveId(res3.body.project) as string;
 
-    // Remove the default patient access policy from the project
-    await withTestContext(() =>
-      systemRepo.patchResource('Project', projectId, [{ op: 'remove', path: '/defaultPatientAccessPolicy' }])
-    );
-
-    // Registration should be rejected up front without a default policy
+    // New projects do not set a default patient access policy, so registration is rejected up front
     const res4 = await request(app)
       .post('/auth/newuser')
       .type('json')

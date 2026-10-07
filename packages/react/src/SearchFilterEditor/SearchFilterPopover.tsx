@@ -4,7 +4,7 @@ import type { ComboboxData } from '@mantine/core';
 import { ActionIcon, Select, Text } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { Filter, SearchRequest } from '@medplum/core';
-import { Operator, deepEquals, getSearchParameters } from '@medplum/core';
+import { Operator, deepEquals, getSearchParameterDetails, getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import { IconFilter2Plus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -31,7 +31,8 @@ const FILTER_VALUE_DEBOUNCE_MS = 300;
  * `SearchRequest.filters` is a flat AND-combined array, so the leading conjunction is a static
  * label rather than an editable and/or toggle. Incomplete rows stay local until they have a value.
  * Field, operator and remove changes apply at once; typed values apply after a short pause, or
- * when the popover closes.
+ * when the popover closes. Changing the field or operator of an applied condition keeps its value
+ * when the new field takes the same kind of input, so the condition is updated rather than dropped.
  * @param props - The filter popover props.
  * @returns The filter popover React node.
  */
@@ -137,10 +138,29 @@ interface FilterConditionRowProps {
  * @returns The condition row React node.
  */
 function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
-  const { value, searchParams, index } = props;
+  const { value, searchParams, resourceType, index } = props;
   const searchParam = value.code ? searchParams[value.code] : undefined;
   const operators = searchParam && getSearchOperators(searchParam);
   const multiInput = !!value.operator && searchParam?.type === 'reference' && searchParam.target?.length !== 1;
+
+  function changeField(code: string | null): void {
+    const nextParam = code ? searchParams[code] : undefined;
+    const keepOperator = !!value.operator && !!nextParam && !!getSearchOperators(nextParam)?.includes(value.operator);
+    const keepValue =
+      !!searchParam &&
+      !!nextParam &&
+      getSearchParameterDetails(resourceType, searchParam).type ===
+        getSearchParameterDetails(resourceType, nextParam).type;
+    props.onChange({
+      code: code ?? undefined,
+      operator: keepOperator ? value.operator : Operator.EQUALS,
+      value: keepValue ? value.value : '',
+    });
+  }
+
+  function changeOperator(op: string | null): void {
+    props.onChange({ code: value.code, operator: (op as Operator) ?? undefined, value: value.value });
+  }
 
   const valueInput = (
     <div className={classes.value}>
@@ -183,7 +203,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
         searchable
         data={props.fieldData}
         value={value.code ?? null}
-        onChange={(code) => props.onChange({ code: code ?? undefined, operator: Operator.EQUALS, value: '' })}
+        onChange={changeField}
       />
       <Select
         comboboxProps={{ withinPortal: false }}
@@ -193,7 +213,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
         disabled={!operators}
         data={operators ? operators.map((op) => ({ value: op, label: getOpString(op) })) : []}
         value={value.operator ?? null}
-        onChange={(op) => props.onChange({ code: value.code, operator: (op as Operator) ?? undefined, value: '' })}
+        onChange={changeOperator}
       />
       {multiInput ? (
         <>

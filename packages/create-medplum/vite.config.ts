@@ -9,6 +9,7 @@ export default defineConfig({
   },
   test: {
     name: 'create-medplum',
+    maxWorkers: process.env.TEST_MAX_WORKERS ?? '50%',
     globals: true,
     environment: 'node',
     pool: 'threads',

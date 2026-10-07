@@ -39,6 +39,10 @@ async function showInactive(): Promise<void> {
   await userEvent.click(screen.getByLabelText('Show inactive'));
 }
 
+function entry(name: string): HTMLElement {
+  return within(details()).getByRole('button', { name: new RegExp(`^${name}`) });
+}
+
 function details(): HTMLElement {
   return screen.getByRole('region', { name: 'Configuration details' });
 }
@@ -233,6 +237,39 @@ describe('SchedulingConfigWorkspace', () => {
 
     expect(row('Ultrasound 3 (Retired)')).toHaveTextContent('Inactive');
     expect(row('Dr. Hana Lee')).toHaveTextContent('Inactive');
+  });
+
+  test('a saved Schedule replaces the one listed, so its row and page follow at once', async () => {
+    const medplum = await setup();
+    const search = vi.spyOn(medplum, 'searchResourcePages');
+    await userEvent.click(row('Dr. Maya Rivera'));
+    // Every entry starts closed, so opening one shows the save keeps what the viewer had open.
+    await userEvent.click(entry('Ultrasound Imaging'));
+
+    await userEvent.click(within(details()).getByRole('switch', { name: 'Schedule status' }));
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Dr. Maya Rivera')).toHaveTextContent('Schedule inactive'));
+    expect(row('Dr. Maya Rivera')).toHaveAttribute('aria-current', 'true');
+    expect(within(details()).getByRole('switch', { name: 'Schedule status' })).not.toBeChecked();
+    expect(entry('Ultrasound Imaging')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.queryByRole('region', { name: 'Unsaved changes' })).not.toBeInTheDocument();
+    expect(search).not.toHaveBeenCalled();
+  });
+
+  test("offering a room's first visit type creates its Schedule, and the room stays selected", async () => {
+    await setup();
+    await userEvent.click(row('Exam Room C'));
+
+    await userEvent.click(within(details()).getByRole('button', { name: 'Offer visit types' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search visit types' }), 'Telehealth');
+    await userEvent.click(screen.getByRole('option', { name: 'Telehealth Consult' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Offer 1 visit type' }));
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeInTheDocument());
+    expect(entry('Telehealth Consult')).not.toHaveTextContent('Unsaved');
+    expect(row('Exam Room C')).toHaveAttribute('aria-current', 'true');
   });
 
   test('an empty project says each section has nothing yet, and still offers to create a visit type', async () => {

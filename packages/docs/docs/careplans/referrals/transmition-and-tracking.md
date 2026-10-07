@@ -1,259 +1,56 @@
-# Referral Transmission & Tracking
+---
+title: Sending Referrals and Tracking Delivery
+---
 
-## Transmitting Referrals
+# Sending Referrals and Tracking Delivery
 
-Referrals need to be securely transmitted to receiving providers. This can be done using various methods depending on the technical capabilities of the receiving system.
+A fax receipt is useful evidence that something was delivered. The coordinator still needs to know whether the clinic accepted the referral and what happens next. Keep transport progress separate from the receiving team's clinical and operational decisions.
 
-The [`Communication`](/docs/api/fhir/resources/communication) resource is used to represent the transmission event, including details about the sender, recipient, and payload. For recipients without a FHIR API, a [`Bot`](/docs/bots/) can be used to generate and send a PDF of the referral information.
+## Agree on What the Other System Can Receive {/* #choose-a-channel-and-payload */}
 
-### C-CDA Transitions of Care
+| Channel | Implementation considerations |
+| --- | --- |
+| FHIR API | Agree on supported profiles, identifiers, authentication, reference resolution, and acknowledgment behavior with the peer |
+| PDF over an external channel | Generate a reviewed package, store it as DocumentReference/Binary, and send through the configured integration |
+| C-CDA exchange | Use a generator and validator appropriate to the agreed document template and receiving system |
+| In-app messaging | Use Medplum's Communication thread and message model, with referral context and document references |
 
-For interoperability with external systems, referrals often need to be transmitted as C-CDA (Consolidated Clinical Document Architecture) documents. The Transitions of Care template is specifically designed for referral scenarios and includes structured sections for:
+<span id="c-cda-transitions-of-care" style={{ scrollMarginTop: 'calc(var(--ifm-navbar-height) + 1rem)' }} />
 
-- Reason for referral
-- Current medications
-- Allergies and adverse reactions
-- Problem list
-- Relevant diagnostic results
-- Care plan and instructions
+A Bot can coordinate generation and transmission. For C-CDA, follow the [C-CDA integration guidance](/docs/integration/c-cda) and verify the capabilities of your chosen generator; producing XML does not establish template conformance.
 
-See the [C-CDA Transitions of Care documentation](/docs/integration/c-cda#transitions-of-care) for implementation details on generating standards-compliant referral documents.
+Across systems, preserve the referral's business identifier and map local resource references. Agree on which party owns each update. Two servers may represent the same business request with different resource IDs.
 
-```typescript
-// Example of generating a C-CDA Transitions of Care document for a referral
-const ccdaDocument = await medplum.generateCCDA({
-  patient: patientReference,
-  templateType: 'transitions-of-care',
-  serviceRequest: serviceRequestReference,
-  includeSection: [
-    'reason-for-referral',
-    'medications',
-    'allergies',
-    'problems',
-    'results',
-    'care-plan'
-  ]
-});
-```
+## Keep the Package with Its Conversation {/* #record-the-conversation */}
 
-## Essential Referral Data Requirements
+Follow the [Messaging Data Model](/docs/communications/messaging-data-model):
 
-### Clinical Documentation Requirements
+- A thread header groups the conversation and has no `payload` or `partOf`.
+- Each message has `partOf` pointing to the header and its own payload.
+- Include all participants, including the sender or thread creator, in `recipient` on the thread header. A child message identifies its intended recipients.
+- Set patient context on the header and each patient-related message. Access does not propagate through `partOf`.
+- Use `about` to reference the ServiceRequest and `payload.contentReference` to reference the DocumentReference actually sent.
 
-Successful referrals require comprehensive clinical documentation to ensure:
-- **Specialist acceptance**: Clear justification for the referral
-- **Insurance authorization**: Medical necessity documentation
-- **Reimbursement compliance**: Proper diagnostic and procedural coding
-- **Continuity of care**: Complete clinical context transfer
+In Medplum's messaging convention, a sent message uses `status: in-progress` with `sent` populated. This is the message lifecycle, not the referral's acceptance or completion state. Track read receipts according to the [message-status guide](/docs/communications/read-receipts-and-message-status).
 
-### Core Data Elements
+The [Worked Referral Example](/docs/careplans/referrals/fhir-resource-examples) includes a thread, message, and document linked to the same request.
 
-| **Category** | **Required Elements** | **FHIR Resources** | **Billing Impact** |
-|--------------|----------------------|-------------------|-------------------|
-| **Patient Demographics** | Name, DOB, MRN, Insurance ID | [`Patient`](/docs/api/fhir/resources/patient) | Required for claims processing |
-| **Clinical Justification** | Primary/secondary diagnoses with ICD-10 codes | [`Condition`](/docs/api/fhir/resources/condition) | Medical necessity for authorization |
-| **Diagnostic Evidence** | Lab results, imaging reports, diagnostic tests | [`Observation`](/docs/api/fhir/resources/observation), [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport) | Supports medical necessity |
-| **Treatment History** | Previous interventions, medications tried | [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest), [`Procedure`](/docs/api/fhir/resources/procedure) | Demonstrates step therapy compliance |
-| **Current Medications** | Active prescriptions with dosages | [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) | Drug interaction screening |
-| **Allergies & Intolerances** | Known allergies and adverse reactions | [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance) | Safety screening |
-| **Insurance Information** | Coverage details, authorization requirements | [`Coverage`](/docs/api/fhir/resources/coverage) | Claims processing and authorization |
+## Match Delivery Receipts to the Right Send {/* #reconcile-delivery-acknowledgments */}
 
+When a delivery callback arrives, the coordinator should be able to trace it to the exact package that was sent. Persist the external provider's message or transmission identifier in a namespaced `Communication.identifier`. Correlate callbacks to that identifier and retain the provider's evidence. Populate `received` only when the acknowledged event means receipt under the channel's agreed contract.
 
-## Tracking Referral Status
+Use a delivery Task when staff need to own failures or missing acknowledgments. Its completion criterion might be confirmed delivery; a separate receiving-side Task records acceptance and processing. Avoid interpreting a successful API response as acceptance unless the integration contract explicitly gives it that meaning.
 
-Once a referral has been sent, it's important to track its status through the entire lifecycle. The [`Task`](/docs/api/fhir/resources/task) resource is ideal for this purpose, as it provides a standard way to represent workflow status.
+For callbacks, validate the source, deduplicate events, and handle out-of-order updates. A late delivery failure should not overwrite a later confirmed outcome without reconciliation.
 
-```mermaid
-flowchart LR
-  requested[Requested]
-  authPending[Authorization Pending]
-  authorized[Authorized]
-  accepted[Accepted]
-  rejected[Rejected]
-  scheduled[Scheduled]
-  inProgress[In Progress]
-  completed[Completed]
-  
-  requested --> authPending
-  authPending --> authorized
-  authPending --> rejected
-  authorized --> accepted
-  authorized --> rejected
-  accepted --> scheduled
-  scheduled --> inProgress
-  inProgress --> completed
+## Retry Without Sending Duplicates
 
-  classDef status fill:#f9f9f9,stroke:#333,stroke-width:1px;
-  class requested,authPending,authorized,accepted,rejected,scheduled,inProgress,completed status;
-```
+Before the external call, persist the intended send and a stable correlation key. Use the transport provider's idempotency feature when available. If a timeout leaves the outcome unknown, check the provider's state or route the item to staff before sending again.
 
-### Enhanced Status Tracking
+:::caution[Check an uncertain send before trying again]
 
-The Task resource should include business-specific status information:
+A FHIR transaction can make linked resource writes atomic. It cannot undo a fax or email already sent by another system. See [Automating Care Workflows](/docs/careplans/automating-workflows) for the distinction between repeatable FHIR writes and external side effects.
 
-```json
-{
-  "resourceType": "Task",
-  "businessStatus": {
-    "coding": [
-      {
-        "system": "http://example.org/referral-status",
-        "code": "prior-auth-pending",
-        "display": "Prior authorization pending"
-      }
-    ]
-  },
-  "statusReason": {
-    "text": "Waiting for insurance authorization - submitted 2024-01-15"
-  }
-}
-```
+:::
 
-### Diagnostic Report Transfer
-
-When diagnostic reports are required for the referral, ensure proper linkage:
-
-```json
-{
-  "resourceType": "DiagnosticReport",
-  "id": "ecg-report-for-referral",
-  "status": "final",
-  "category": [
-    {
-      "coding": [
-        {
-          "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
-          "code": "CUS",
-          "display": "Cardiology"
-        }
-      ]
-    }
-  ],
-  "code": {
-    "coding": [
-      {
-        "system": "http://loinc.org",
-        "code": "11524-6",
-        "display": "EKG study"
-      }
-    ]
-  },
-  "basedOn": [
-    {
-      "reference": "ServiceRequest/cardiology-referral-example"
-    }
-  ],
-  "presentedForm": [
-    {
-      "contentType": "application/pdf",
-      "data": "JVBERi0xLjMKJcTl8uXrp...",
-      "title": "ECG Report - John Smith"
-    }
-  ]
-}
-```
-
-## Specialist Response Integration
-
-When a specialist responds to a referral, their response can be captured as a [`DocumentReference`](/docs/api/fhir/resources/documentreference) and linked to the original referral through the [`ServiceRequest`](/docs/api/fhir/resources/servicerequest). If the response results in an appointment, an [`Appointment`](/docs/api/fhir/resources/appointment) resource can be created and linked to the referral.
-
-### Billing Code Integration
-
-Specialist responses should include appropriate billing codes for services rendered:
-
-```json
-{
-  "resourceType": "Encounter",
-  "id": "specialist-consultation",
-  "status": "finished",
-  "class": {
-    "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-    "code": "AMB",
-    "display": "ambulatory"
-  },
-  "type": [
-    {
-      "coding": [
-        {
-          "system": "http://www.ama-assn.org/go/cpt",
-          "code": "99244",
-          "display": "Office consultation for a new or established patient"
-        }
-      ]
-    }
-  ],
-  "basedOn": [
-    {
-      "reference": "ServiceRequest/cardiology-referral-example"
-    }
-  ],
-  "diagnosis": [
-    {
-      "condition": {
-        "reference": "Condition/final-cardiac-diagnosis"
-      },
-      "use": {
-        "coding": [
-          {
-            "system": "http://terminology.hl7.org/CodeSystem/diagnosis-role",
-            "code": "AD",
-            "display": "Admission diagnosis"
-          }
-        ]
-      }
-    }
-  ]
-}
-```
-
-## Example Specialist Response
-
-```json
-{
-  "resourceType": "DocumentReference",
-  "id": "specialist-response-example",
-  "status": "current",
-  "docStatus": "final",
-  "type": {
-    "coding": [
-      {
-        "system": "http://loinc.org",
-        "code": "11488-4",
-        "display": "Consultation note"
-      }
-    ]
-  },
-  "subject": {
-    "reference": "Patient/example-patient-id",
-    "display": "John Smith"
-  },
-  "date": "2023-06-15T10:00:00Z",
-  "author": [
-    {
-      "reference": "Practitioner/cardiologist-id",
-      "display": "Dr. Helen Cardio"
-    }
-  ],
-  "authenticator": {
-    "reference": "Practitioner/cardiologist-id",
-    "display": "Dr. Helen Cardio"
-  },
-  "content": [
-    {
-      "attachment": {
-        "contentType": "application/pdf",
-        "data": "JVBERi0xLjMKJcTl8uXrp...",
-        "title": "Cardiology Consultation Report - John Smith",
-        "creation": "2023-06-15T10:00:00Z"
-      }
-    }
-  ],
-  "context": {
-    "related": [
-      {
-        "reference": "ServiceRequest/cardiology-referral-example"
-      }
-    ]
-  }
-}
-```
+Next, handle [receiving and triage](/docs/careplans/referrals/receiving-and-triage), or continue outbound follow-up with [Processing and Coordination](/docs/careplans/referrals/processing-and-coordination).

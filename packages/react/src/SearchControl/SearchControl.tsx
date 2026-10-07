@@ -371,47 +371,49 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 <IconReload size={16} />
               </ActionIcon>
             </Tooltip>
-            <Menu shadow="md" width={200} radius="md" position="bottom-end">
-              <Menu.Target>
-                <ActionIcon
-                  className={classes.actionIcon}
-                  variant="transparent"
-                  color="gray"
-                  size={32}
-                  radius="xl"
-                  aria-label="Actions"
-                >
-                  <IconDots size={16} />
-                </ActionIcon>
-              </Menu.Target>
-              <Menu.Dropdown className={classes.menuDropdown}>
-                {showExport && (
-                  <Menu.Item
-                    leftSection={<IconTableExport size={16} />}
-                    onClick={
-                      props.onExport ??
-                      (() => setState((s) => ({ ...s, exportDialogVisible: true, dialogOpenTime: Date.now() })))
-                    }
+            {(showExport || showBulk || showDelete) && (
+              <Menu shadow="md" width={200} radius="md" position="bottom-end">
+                <Menu.Target>
+                  <ActionIcon
+                    className={classes.actionIcon}
+                    variant="transparent"
+                    color="gray"
+                    size={32}
+                    radius="xl"
+                    aria-label="Actions"
                   >
-                    Export
-                  </Menu.Item>
-                )}
-                {showBulk && (
-                  <Menu.Item leftSection={<IconLibraryPlus size={16} />} onClick={() => props.onBulk?.(selectedIds)}>
-                    Bulk Apply
-                  </Menu.Item>
-                )}
-                {showDelete && (
-                  <Menu.Item
-                    leftSection={<IconTrash size={16} />}
-                    disabled={selectedIds.length === 0}
-                    onClick={() => setState((s) => ({ ...s, deleteConfirmVisible: true }))}
-                  >
-                    Delete
-                  </Menu.Item>
-                )}
-              </Menu.Dropdown>
-            </Menu>
+                    <IconDots size={16} />
+                  </ActionIcon>
+                </Menu.Target>
+                <Menu.Dropdown className={classes.menuDropdown}>
+                  {showExport && (
+                    <Menu.Item
+                      leftSection={<IconTableExport size={16} />}
+                      onClick={
+                        props.onExport ??
+                        (() => setState((s) => ({ ...s, exportDialogVisible: true, dialogOpenTime: Date.now() })))
+                      }
+                    >
+                      Export
+                    </Menu.Item>
+                  )}
+                  {showBulk && (
+                    <Menu.Item leftSection={<IconLibraryPlus size={16} />} onClick={() => props.onBulk?.(selectedIds)}>
+                      Bulk Apply
+                    </Menu.Item>
+                  )}
+                  {showDelete && (
+                    <Menu.Item
+                      leftSection={<IconTrash size={16} />}
+                      disabled={selectedIds.length === 0}
+                      onClick={() => setState((s) => ({ ...s, deleteConfirmVisible: true }))}
+                    >
+                      Delete
+                    </Menu.Item>
+                  )}
+                </Menu.Dropdown>
+              </Menu>
+            )}
             {props.onNew && (
               <Tooltip label={`New ${resourceType}`} position="bottom" openDelay={500}>
                 <ActionIcon

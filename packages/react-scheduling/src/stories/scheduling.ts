@@ -797,6 +797,38 @@ export const DrPatelSchedule = buildSchedule('schedule-dr-patel', 'Practitioner/
 });
 
 /**
+ * Visit types nobody offers, so the config workspace has enough to page through and search when offering from an
+ * actor's page.
+ */
+const CatalogServices: WithId<HealthcareService>[] = (
+  [
+    ['annual-physical', 'Annual Physical', 'Office visit', 45],
+    ['sick-visit', 'Sick Visit', 'Office visit', 20],
+    ['follow-up-visit', 'Follow-up Visit', 'Office visit', 20],
+    ['medication-review', 'Medication Review', 'Office visit', 30],
+    ['pre-op-evaluation', 'Pre-op Evaluation', 'Office visit', 45],
+    ['cardiology-consult', 'Cardiology Consult', 'Specialist', 60],
+    ['dermatology-consult', 'Dermatology Consult', 'Specialist', 30],
+    ['nutrition-counseling', 'Nutrition Counseling', 'Counseling', 45],
+    ['behavioral-health-intake', 'Behavioral Health Intake', 'Counseling', 60],
+    ['physical-therapy', 'Physical Therapy Session', 'Therapy', 45],
+    ['lab-draw', 'Lab Draw', 'Procedure', 15],
+    ['vaccination', 'Vaccination', 'Procedure', 15],
+    ['echocardiogram', 'Echocardiogram', 'Imaging', 60],
+  ] as const
+).map(([id, name, category, durationMinutes]) => ({
+  ...buildSchedulableService({
+    id,
+    name,
+    category,
+    durationMinutes,
+    alignmentMinutes: 15,
+    locationIds: ['main-clinic'],
+  }),
+  availableTime: [weeklyHours(WEEKDAYS, '09:00:00', '17:00:00')],
+}));
+
+/**
  * The clinic as an administrator configuring it sees it: `SchedulingFixtures`, with its visit types filled out
  * the way a clinic would set them, more visit types covering service facilities, split hours, and group
  * capacity, and what booking hides. Visit types that have no duration or are turned off, a provider on leave
@@ -810,6 +842,7 @@ export const ConfigFixtures = [
   GroupEducationService,
   UnconfiguredService,
   DiscontinuedService,
+  ...CatalogServices,
   DrNguyenPractitioner,
   DrNguyenSchedule,
   DrReyesPractitioner,
@@ -1172,7 +1205,7 @@ export const DrBrownSlots: WithId<Slot>[] = (
 export const DrBrownAppointments: WithId<Appointment>[] = DrBrownSlots.map((slot, idx) => ({
   resourceType: 'Appointment',
   id: `appointment-${slot.id}`,
-  status: 'booked',
+  status: idx === 2 ? 'pending' : 'booked',
   start: slot.start,
   end: slot.end,
   serviceType: toServiceTypeCodeableConcepts(TelehealthService),
