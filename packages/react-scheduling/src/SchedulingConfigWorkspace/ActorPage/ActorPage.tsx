@@ -4,9 +4,7 @@ import {
   Accordion,
   Alert,
   Box,
-  Button,
   Group,
-  Modal,
   SimpleGrid,
   Stack,
   Switch,
@@ -28,7 +26,7 @@ import {
   getBlockingErrors,
   validateSchedulingParameters,
 } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
-import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPage';
+import { ConfigSection, ConfirmModal, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPage';
 import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { summarizeOffering } from '../offeringSummary';
@@ -294,29 +292,19 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         <OfferPicker services={offerable} onOffer={offer} />
       </ConfigSection>
 
-      <Modal
+      <ConfirmModal
         opened={stopping !== undefined}
-        onClose={() => setStopping(undefined)}
         title={stopping && `Stop offering ${stopping.name ?? 'this visit type'}?`}
-        centered
+        cancelLabel="Keep offering"
+        confirmLabel="Stop offering"
+        destructive
+        onCancel={() => setStopping(undefined)}
+        onConfirm={() => stopping && stopOffering(stopping)}
       >
-        {stopping && (
-          <Stack gap="md">
-            <Text size="sm">
-              {actorName} will no longer be offered for {stopping.name ?? 'this visit type'} once you save. Existing
-              appointments aren't changed.
-            </Text>
-            <Group justify="flex-end" gap="sm">
-              <Button variant="default" onClick={() => setStopping(undefined)}>
-                Keep offering
-              </Button>
-              <Button color="red" onClick={() => stopOffering(stopping)}>
-                Stop offering
-              </Button>
-            </Group>
-          </Stack>
-        )}
-      </Modal>
+        {stopping &&
+          `${actorName} will no longer be offered for ${stopping.name ?? 'this visit type'} once you save. ` +
+            "Existing appointments aren't changed."}
+      </ConfirmModal>
 
       <SaveBar
         dirty={dirty}
