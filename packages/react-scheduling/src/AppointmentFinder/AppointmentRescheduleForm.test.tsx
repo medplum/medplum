@@ -204,6 +204,39 @@ describe('AppointmentRescheduleForm', () => {
       expect(onRescheduled.mock.calls[0][0].appointments[0].end).toBe('2026-08-18T18:52:00.000Z');
     });
 
+    test('opens the typed time on the appointment as it stands, proposing nothing until something changes', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await openTimeFinder();
+      // 11:00 in New York is 15:00Z, where the appointment is now.
+      expect(screen.getByLabelText('Date & time')).toHaveValue('2026-08-18T11:00');
+      expect(screen.getByLabelText('Minutes')).toHaveValue('30');
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
+    });
+
+    test('changes only the length, keeping the time it opened on', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await openTimeFinder();
+      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '45' } });
+      await settleAutocomplete();
+      await clickReschedule();
+      const [moved] = onRescheduled.mock.calls[0][0].appointments;
+      expect([moved.start, moved.end]).toEqual(['2026-08-18T15:00:00.000Z', '2026-08-18T15:45:00.000Z']);
+    });
+
+    test('proposes the same time on other schedules once an actor changes, with nothing typed', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await removePill(/Exam Room A/);
+      await chooseActor(/room/i, 'Exam Room B', 'Exam Room B');
+      await openTimeFinder();
+      await clickReschedule();
+      const result = onRescheduled.mock.calls[0][0];
+      expect([result.appointments[0].start, result.appointments[0].end]).toEqual([
+        '2026-08-18T15:00:00.000Z',
+        '2026-08-18T15:30:00.000Z',
+      ]);
+      expect(result.slots.map((slot: Slot) => slot.schedule.reference)).toContain('Schedule/schedule-exam-room-b');
+    });
+
     test('asks for a length when the appointment has none, rather than using the configured one', async () => {
       const stored = await medplum.updateResource({ ...APPOINTMENT, end: undefined });
       await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });

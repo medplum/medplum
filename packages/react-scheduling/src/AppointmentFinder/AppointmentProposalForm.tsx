@@ -50,6 +50,7 @@ import {
 } from './AppointmentFinder.schedules';
 import {
   formatTimezoneLabel,
+  formatZonedDateTimeInput,
   getAppointmentActors,
   getDurationMinutes,
   getLaterOccurrenceStarts,
@@ -240,7 +241,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>(undefined);
   const [manualChoice, setManualChoice] = useState<Appointment | undefined>(undefined);
-  const [manualDateTime, setManualDateTime] = useState('');
+  const [manualDateTime, setManualDateTime] = useState<string | undefined>(undefined);
   const [manualDurationMinutes, setManualDurationMinutes] = useState<number | undefined>(undefined);
   const [conflicts, setConflicts] = useState<readonly BookingConflict[]>([]);
   const [occurrenceCount, setOccurrenceCount] = useState(1);
@@ -287,6 +288,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const combinations = useMemo(() => (searching ? getActorCombinations(selections) : []), [searching, selections]);
 
   const candidates = useMemo(() => getSelectedCandidates(selections), [selections]);
+  const scheduleKey = useMemo(
+    () =>
+      candidates
+        .map((candidate) => getReferenceString(candidate.schedule))
+        .sort()
+        .join(','),
+    [candidates]
+  );
+  // What the visit is held on as the form opens, so a move that keeps it can be told apart.
+  const [openingScheduleKey] = useState(scheduleKey);
 
   // `$find` applies each Schedule's own parameters, so the actors in one search need not
   // agree on a timezone. The first one is taken as the exemplar for what to display:
@@ -298,7 +309,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const clearManualTime = useCallback((): void => {
     setManualChoice(undefined);
-    setManualDateTime('');
+    setManualDateTime(undefined);
     setManualDurationMinutes(undefined);
     setConflicts([]);
   }, []);
@@ -434,6 +445,28 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // its own default instead of keeping the last length typed.
   const effectiveDurationMinutes =
     manualDurationMinutes ?? (mode === 'reschedule' ? storedDurationMinutes : configuredDurationMinutes);
+  // A move starts from where the visit is now, so only what changes needs typing.
+  const storedStart = mode === 'reschedule' && ignoreAppointment?.start ? new Date(ignoreAppointment.start) : undefined;
+  const effectiveDateTime = manualDateTime ?? (storedStart ? formatZonedDateTimeInput(storedStart, timezone) : '');
+
+  // Proposes the visit's own time and length once it is to be held on other schedules,
+  // so a reassignment at the same hour needs nothing typed.
+  const prefillKey =
+    searching &&
+    canBypassSchedulingRules &&
+    storedStart &&
+    manualDateTime === undefined &&
+    manualDurationMinutes === undefined &&
+    scheduleKey !== openingScheduleKey
+      ? scheduleKey
+      : undefined;
+  const [prefilledKey, setPrefilledKey] = useState(prefillKey);
+  if (prefillKey !== prefilledKey) {
+    setPrefilledKey(prefillKey);
+    if (prefillKey !== undefined && !chosen) {
+      enterManualTime(effectiveDateTime, effectiveDurationMinutes);
+    }
+  }
 
   // Reconcile permission changes before rendering, so a revoked choice cannot be submitted.
   if (!canBypassSchedulingRules && manualChoice) {
@@ -455,7 +488,12 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setManualDurationMinutes(durationMinutes);
 
     const start = parseZonedDateTimeInput(dateTime, timezone);
-    if (!start || !durationMinutes || durationMinutes <= 0 || !service || candidates.length === 0) {
+    // Moving a visit to exactly where it already is would rewrite its Slots for nothing.
+    const unchanged =
+      scheduleKey === openingScheduleKey &&
+      start?.getTime() === storedStart?.getTime() &&
+      durationMinutes === storedDurationMinutes;
+    if (!start || !durationMinutes || durationMinutes <= 0 || !service || candidates.length === 0 || unchanged) {
       setManualChoice(undefined);
       // Only ever clears a manual time: a time from the search is not this field's to drop.
       setChosen((current) => (current === manualChoice ? undefined : current));
@@ -686,7 +724,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         <Stack className={classes.results} gap="lg">
           {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
             <ManualTime
-              dateTime={manualDateTime}
+              dateTime={effectiveDateTime}
               durationMinutes={effectiveDurationMinutes}
               timezone={timezone}
               conflicts={conflicts}
