@@ -18,7 +18,8 @@
     "build": "npm run clean && tsc",
     "clean": "rimraf dist",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@medplum/core": "5.2.2",
