@@ -79,11 +79,6 @@ export class ReferenceTable extends LookupTable {
       return;
     }
 
-    // When `create` is true, existing rows are not read and inserts fall through to
-    // ON CONFLICT DO NOTHING, which would leave a stale `projectId` in place. No caller reaches
-    // this path with pre-existing reference rows: soft delete purges them via
-    // `deleteFromLookupTables`, `purgeResources` deletes them before rewriting, and reindex
-    // passes `create: false`.
     const existingRows = create ? undefined : await this.getExistingRows(client, resources);
     if (existingRows === undefined || existingRows.length === 0) {
       const newRows: ReferenceTableRow[] = [];
@@ -231,10 +226,6 @@ export class ReferenceTable extends LookupTable {
     }
     const tableName = this.getTableName(resourceType);
 
-    // A conflict means a row with the same primary key already exists. `projectId` is not part of
-    // the key, so a conflicting row could in principle differ on it -- but it never does in
-    // practice, because `projectId` is part of the row hash, so a project move is detected as a
-    // change and routed through delete + re-insert rather than reaching a conflicting insert.
     for (let i = 0; i < values.length; i += 10_000) {
       const batchedValues = values.slice(i, i + 10_000);
       const insert = new InsertQuery(tableName, batchedValues).ignoreOnConflict();
@@ -245,10 +236,6 @@ export class ReferenceTable extends LookupTable {
 
 /**
  * Creates a hash string for a reference row for efficient comparison.
- *
- * `projectId` is included even though it is not part of the primary key: inserts use
- * ON CONFLICT DO NOTHING and so can never update it, so a resource moving between projects has to
- * register as a change here in order to be routed through delete + re-insert.
  * @param row - The reference table row.
  * @returns A hash string combining all columns of the row.
  */

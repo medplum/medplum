@@ -1904,24 +1904,15 @@ function nextChainedTable(link: ChainedSearchLink): string {
 
 /**
  * Constructs the condition for joining a resource table to a reference lookup table for chained search.
- *
- * Unlike every other join in a chained search, this one carries no project filter. It cannot yet:
- * `"<ResourceType>_References"."projectId"` is still NULL for rows written before data migration
- * v47, and widening the filter to admit NULL makes the covering
- * `(projectId, code, targetId)` index unusable -- Postgres will not build a BitmapOr for
- * `"projectId" IN (...) OR "projectId" IS NULL`, so it falls back to scanning the table. That is
- * worse than no filter at all, which at least leaves the index-only scans on the primary key and
- * the `(targetId, code)` index intact.
- *
- * TODO: once v47 is known to have completed on every deployment, add the project filter here (as
- * a plain `IN`, with no NULL arm) so that chained search can range scan on the `(projectId, code)`
- * prefix instead of driving the reference table from its join key.
  * @param currentTable - The "current" table in the chained search construction, assumed to be a resource table.
  * @param link - The current link of the chained search.
  * @param nextTable - The reference lookup table next in the chained search.
  * @returns The expression relating the two tables, which can be used as a JOIN condition or in a WHERE clause.
  */
 function lookupTableJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
+  // PENDING{5.3}: add `repo: Repository` as the first parameter, then wrap the result:
+  // const referenceOwnerType = link.direction === Direction.FORWARD ? link.originType : link.targetType;
+  // return withProjectFilter(repo, <the Conjunction below>, nextTable, referenceOwnerType);
   const column = link.direction === Direction.FORWARD ? 'resourceId' : 'targetId';
   return new Conjunction([
     new Condition(new Column(nextTable, column), '=', new Column(currentTable, 'id')),
