@@ -119,12 +119,22 @@ describe('writeElevatedReschedule', () => {
     expect(existing).toEqual(original);
   });
 
-  test('deduplicates actors shared by two schedules', async () => {
-    const duplicate = await medplum.updateResource({ ...DrRiveraSchedule, id: 'same-provider-another-schedule' });
-    const result = await writeElevatedReschedule(medplum, existing, proposal([DrRiveraSchedule, duplicate]));
+  test('adds an actor two schedules share once, as the last of them names it, as $reschedule does', async () => {
+    const renamed = await medplum.updateResource({
+      ...ExamRoomBSchedule,
+      id: 'same-room-another-schedule',
+      actor: [{ ...ExamRoomBSchedule.actor[0], display: 'Exam Room B (renamed)' }],
+    });
+    const result = await writeElevatedReschedule(
+      medplum,
+      existing,
+      proposal([DrRiveraSchedule, ExamRoomBSchedule, renamed])
+    );
     expect(
-      result.appointments[0].participant.filter((p) => p.actor?.reference === DrRiveraSchedule.actor[0].reference)
-    ).toHaveLength(1);
+      result.appointments[0].participant
+        .filter((p) => p.actor?.reference === ExamRoomBSchedule.actor[0].reference)
+        .map((p) => p.actor?.display)
+    ).toEqual(['Exam Room B (renamed)']);
   });
 
   test('marks the first provider among the new schedules as primary, as $reschedule does', async () => {

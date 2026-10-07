@@ -184,10 +184,10 @@ function rescheduleParticipants(
   newSchedules: readonly Schedule[]
 ): AppointmentParticipant[] {
   const oldRefs = new Set(oldSchedules.flatMap((schedule) => schedule.actor).map((actor) => actor.reference));
-  // Keyed by reference, so an actor two Schedules share is added once.
+  // Keyed by reference, so an actor two Schedules share is added once, as the last of them names it.
   const incoming = new Map<string, Schedule['actor'][number]>();
   for (const actor of newSchedules.flatMap((schedule) => schedule.actor)) {
-    if (actor.reference && !incoming.has(actor.reference)) {
+    if (actor.reference) {
       incoming.set(actor.reference, actor);
     }
   }
