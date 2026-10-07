@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Divider, Group, Stack, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core';
+import { ActionIcon, Badge, Divider, Group, Menu, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
+import { IconDots, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useId } from 'react';
 import type { SchedulingParameterValues } from '../../parameterValues';
@@ -17,7 +18,6 @@ import {
 import { SchedulingParametersFields } from '../../SchedulingParametersEditor/SchedulingParametersFields';
 import { ParameterWarnings } from '../ConfigPage/ParameterWarnings';
 import { OverridesBadge } from '../OverridesBadge';
-import classes from './ActorPage.module.css';
 import type { OfferingFields } from './scheduleDraft';
 import { hasOverrides } from './scheduleDraft';
 
@@ -46,12 +46,9 @@ export function OfferingSummary(props: OfferingSummaryProps): JSX.Element {
         </Text>
         {hasOverrides(value) && <OverridesBadge serviceName={serviceName} />}
         {dirty && (
-          <>
-            <Tooltip label="Unsaved changes" withArrow>
-              <Box className={classes.dot} aria-hidden />
-            </Tooltip>
-            <VisuallyHidden>Unsaved changes</VisuallyHidden>
-          </>
+          <Badge size="xs" variant="light" color="orange">
+            Unsaved
+          </Badge>
         )}
       </Group>
       <Text size="sm" c="dimmed" truncate>
@@ -61,10 +58,38 @@ export function OfferingSummary(props: OfferingSummaryProps): JSX.Element {
   );
 }
 
+export interface OfferingMenuProps {
+  readonly service: WithId<HealthcareService>;
+  readonly onStopOffering: () => void;
+}
+
+/**
+ * What can be done with one visit type an actor's Schedule offers.
+ * @param props - The visit type, and what to do when it's stopped.
+ * @returns The menu.
+ */
+export function OfferingMenu(props: OfferingMenuProps): JSX.Element {
+  const serviceName = props.service.name ?? 'this visit type';
+  return (
+    <Menu position="bottom-end" withinPortal>
+      <Menu.Target>
+        <ActionIcon variant="subtle" color="gray" aria-label={`Actions for ${serviceName}`}>
+          <IconDots size={16} />
+        </ActionIcon>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Item color="red" leftSection={<IconTrash size={14} />} onClick={props.onStopOffering}>
+          Stop offering
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
+  );
+}
+
 export interface OfferingEditorProps {
   readonly service: WithId<HealthcareService>;
   readonly value: OfferingFields;
-  /** What the Schedule set for the visit type when the page opened. */
+  /** What the Schedule set for the visit type when the page opened, empty for one offered since. */
   readonly initialParameters: SchedulingParameterValues;
   readonly onChange: (value: OfferingFields) => void;
   readonly errors: SchedulingParameterErrors;
