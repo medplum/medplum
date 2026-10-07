@@ -7,14 +7,24 @@ import {
   getReferenceString,
   isDefined,
   isValidDate,
-  rescheduleParticipants,
-  SchedulingUnvalidatedRescheduleURI,
   serviceTypeIncludesService,
-  withRescheduleMarker,
+  setPrimaryProvider,
 } from '@medplum/core';
-import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, AppointmentParticipant, Schedule, Slot } from '@medplum/fhirtypes';
 import type { AppointmentWrite } from './AppointmentFinder.writes';
 import { buildElevatedBooking } from './buildElevatedBooking';
+
+/**
+ * Marks an `Appointment` whose latest move skipped the scheduling rules: its current time may
+ * be occupied or blocked, past the configured capacity, or off the configured start interval.
+ * Duplicated in the server's `$reschedule`, which replaces it.
+ */
+export const SchedulingUnvalidatedRescheduleURI =
+  'https://medplum.com/fhir/StructureDefinition/SchedulingUnvalidatedReschedule';
+
+/** Marks an `Appointment` whose latest move was made by `$reschedule`. Duplicated from the server. */
+export const SchedulingRescheduledByOperationURI =
+  'https://medplum.com/fhir/StructureDefinition/SchedulingRescheduledByOperation';
 
 /**
  * Reads the stored interval without rounding fractional minutes.
@@ -134,10 +144,12 @@ export async function writeElevatedReschedule(
 
   const updated: WithId<Appointment> = {
     ...existing,
-    extension: withRescheduleMarker(existing.extension, {
-      url: SchedulingUnvalidatedRescheduleURI,
-      valueBoolean: true,
-    }),
+    extension: [
+      ...(existing.extension ?? []).filter(
+        (ext) => ext.url !== SchedulingRescheduledByOperationURI && ext.url !== SchedulingUnvalidatedRescheduleURI
+      ),
+      { url: SchedulingUnvalidatedRescheduleURI, valueBoolean: true },
+    ],
     start: geometry.start,
     end: geometry.end,
     slot: newSlots.map((slot) => createReference(slot)),
@@ -155,6 +167,44 @@ export async function writeElevatedReschedule(
 
   await deleteSlots(medplum, oldSlots);
   return { appointment, slots: newSlots };
+}
+
+/**
+ * Swaps the actors of the Schedules being moved away from for the actors of the new Schedules,
+ * leaving every other participant untouched. Mirrors `$reschedule`: an actor on both keeps its
+ * existing entry, and the first provider among the new Schedules is marked primary.
+ * @param participants - The appointment's current participants.
+ * @param oldSchedules - The Schedules the appointment is moving off.
+ * @param newSchedules - The Schedules the appointment is moving to.
+ * @returns The participant list for the moved appointment.
+ */
+function rescheduleParticipants(
+  participants: readonly AppointmentParticipant[],
+  oldSchedules: readonly Schedule[],
+  newSchedules: readonly Schedule[]
+): AppointmentParticipant[] {
+  const replacedRefs = new Set(oldSchedules.flatMap((s) => s.actor.map((actor) => actor.reference)).filter(isDefined));
+
+  // Two Schedules can name the same actor, so dedupe to avoid emitting it twice
+  const newActors = [
+    ...new Map(newSchedules.flatMap((schedule) => schedule.actor).map((actor) => [actor.reference, actor])).values(),
+  ];
+  const newRefs = new Set(newActors.map((actor) => actor.reference).filter(isDefined));
+
+  const kept = participants.filter(
+    (p) => !p.actor?.reference || !replacedRefs.has(p.actor.reference) || newRefs.has(p.actor.reference)
+  );
+  const keptRefs = new Set(kept.map((p) => p.actor?.reference).filter(isDefined));
+
+  return setPrimaryProvider(
+    [
+      ...kept,
+      ...newActors
+        .filter((actor) => actor.reference && !keptRefs.has(actor.reference))
+        .map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
+    ],
+    newActors.find((actor) => actor.reference?.startsWith('Practitioner/'))
+  );
 }
 
 /**

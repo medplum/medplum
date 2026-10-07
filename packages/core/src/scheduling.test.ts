@@ -30,13 +30,10 @@ import {
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
-  rescheduleParticipants,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   schedulingDurationToMinutes,
   SchedulingParametersURI,
-  SchedulingRescheduledByOperationURI,
   SchedulingSiteURI,
-  SchedulingUnvalidatedRescheduleURI,
   serviceTypeIncludesService,
   setHealthcareServiceSchedulingParameter,
   setPrimaryProvider,
@@ -45,7 +42,6 @@ import {
   TimezoneExtensionURI,
   toAppointmentSiteReference,
   toServiceTypeCodeableConcepts,
-  withRescheduleMarker,
 } from './scheduling';
 import type { WithId } from './utils';
 import { createReference } from './utils';
@@ -717,52 +713,6 @@ describe('setPrimaryProvider', () => {
     expect(
       getPrimaryProvider({ resourceType: 'Appointment', status: 'booked', participant: participants })
     ).toBeUndefined();
-  });
-});
-
-describe('rescheduleParticipants', () => {
-  const schedule = (...actors: Schedule['actor']): Schedule => ({ resourceType: 'Schedule', actor: actors });
-  const patient = { reference: 'Patient/pt' };
-  const rivera = { reference: 'Practitioner/rivera' };
-  const okafor = { reference: 'Practitioner/okafor' };
-  const room = { reference: 'Location/room-a' };
-
-  test('swaps the actors of the schedules left for the new ones, keeping everyone else and kept responses', () => {
-    const participants = rescheduleParticipants(
-      [
-        { actor: patient, status: 'accepted' },
-        { actor: rivera, status: 'accepted' },
-        { actor: room, status: 'accepted' },
-      ],
-      [schedule(rivera), schedule(room)],
-      [schedule(room), schedule(okafor), schedule(okafor)]
-    );
-    expect(participants).toEqual([
-      { actor: patient, status: 'accepted' },
-      { actor: room, status: 'accepted' },
-      {
-        actor: okafor,
-        required: 'required',
-        status: 'needs-action',
-        type: [
-          {
-            coding: [{ system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE, display: 'primary performer' }],
-          },
-        ],
-      },
-    ]);
-  });
-});
-
-describe('withRescheduleMarker', () => {
-  test('leaves only the marker for this move, keeping other extensions', () => {
-    const other = { url: 'https://example.com/other', valueString: 'keep' };
-    expect(
-      withRescheduleMarker([other, { url: SchedulingRescheduledByOperationURI, valueString: '5.1.0' }], {
-        url: SchedulingUnvalidatedRescheduleURI,
-        valueBoolean: true,
-      })
-    ).toEqual([other, { url: SchedulingUnvalidatedRescheduleURI, valueBoolean: true }]);
   });
 });
 

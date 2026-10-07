@@ -9,8 +9,6 @@ import {
   isResource,
   MEDPLUM_VERSION,
   SchedulingBookedByOperationURI,
-  SchedulingRescheduledByOperationURI,
-  SchedulingUnvalidatedRescheduleURI,
   ServiceTypeReferenceURI,
   setPrimaryProvider,
   toServiceTypeCodeableConcepts,
@@ -35,6 +33,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { addTestUser, createTestProject } from '../../test.setup';
+import { SchedulingRescheduledByOperationURI, SchedulingUnvalidatedRescheduleURI } from './reschedule';
 import type {
   SchedulingParametersExtension,
   SchedulingParametersExtensionExtension,

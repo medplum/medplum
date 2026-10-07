@@ -11,10 +11,8 @@ import {
   isReference,
   MEDPLUM_VERSION,
   OperationOutcomeError,
-  rescheduleParticipants,
-  SchedulingRescheduledByOperationURI,
   serviceTypeIncludesService,
-  withRescheduleMarker,
+  setPrimaryProvider,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Appointment, AppointmentParticipant, Reference, Schedule, Slot } from '@medplum/fhirtypes';
@@ -34,6 +32,20 @@ import {
 } from './utils/scheduling';
 import { extractCommonParameters } from './utils/scheduling-parameters';
 import { uniqueOn } from './utils/terminology';
+
+/**
+ * Marks an `Appointment` whose latest move was made by `$reschedule`, valued with the server
+ * version that handled it.
+ */
+export const SchedulingRescheduledByOperationURI =
+  'https://medplum.com/fhir/StructureDefinition/SchedulingRescheduledByOperation';
+
+/**
+ * Marks an `Appointment` whose latest move skipped the scheduling rules, as written by the
+ * manual reschedule in `@medplum/react-scheduling`. Both URIs are duplicated there.
+ */
+export const SchedulingUnvalidatedRescheduleURI =
+  'https://medplum.com/fhir/StructureDefinition/SchedulingUnvalidatedReschedule';
 
 const rescheduleOperation = makeOperationDefinition(
   { scope: 'instance', resource: 'Appointment' },
@@ -197,10 +209,12 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
       }
       const updatedAppointment = await txRepo.updateResource<Appointment>({
         ...existingAppointment,
-        extension: withRescheduleMarker(existingAppointment.extension, {
-          url: SchedulingRescheduledByOperationURI,
-          valueString: MEDPLUM_VERSION,
-        }),
+        extension: [
+          ...(existingAppointment.extension ?? []).filter(
+            (ext) => ext.url !== SchedulingRescheduledByOperationURI && ext.url !== SchedulingUnvalidatedRescheduleURI
+          ),
+          { url: SchedulingRescheduledByOperationURI, valueString: MEDPLUM_VERSION },
+        ],
         start: interval.start.toISOString(),
         end: interval.end.toISOString(),
         participant,
@@ -222,8 +236,12 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
 }
 
 /**
- * Reads the Schedules the appointment is moving off, then swaps their actors for those of the
- * new Schedules (see {@link rescheduleParticipants}).
+ * Swaps the actors of the Schedules being moved away from for the actors of the new Schedules,
+ * leaving every other participant (the patient, related persons) untouched. An actor present on
+ * both the old and new Schedules keeps its existing participant entry, and with it any
+ * `status` the actor had already responded with.
+ *
+ * As in `$find`, the first provider among the new Schedules is marked primary.
  *
  * @param repo - Repository to read the outgoing Schedules with.
  * @param existingAppointment - The stored Appointment being rescheduled.
@@ -245,5 +263,26 @@ async function resolveParticipants(
     .then((schedules) => withPaths(schedules, 'Appointment.slot.schedule'));
   assertAllLoaded(oldSchedules, 'Loading schedules for existing slots failed');
 
-  return rescheduleParticipants(existingAppointment.participant, oldSchedules, newSchedules);
+  const replacedRefs = new Set(oldSchedules.flatMap((s) => s.actor.map((actor) => actor.reference)).filter(isDefined));
+
+  // Two Schedules can name the same actor, so dedupe to avoid emitting it twice
+  const newActors = [
+    ...new Map(newSchedules.flatMap((schedule) => schedule.actor).map((actor) => [actor.reference, actor])).values(),
+  ];
+  const newRefs = new Set(newActors.map((actor) => actor.reference).filter(isDefined));
+
+  const kept = existingAppointment.participant.filter(
+    (p) => !p.actor?.reference || !replacedRefs.has(p.actor.reference) || newRefs.has(p.actor.reference)
+  );
+  const keptRefs = new Set(kept.map((p) => p.actor?.reference).filter(isDefined));
+
+  return setPrimaryProvider(
+    [
+      ...kept,
+      ...newActors
+        .filter((actor) => actor.reference && !keptRefs.has(actor.reference))
+        .map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
+    ],
+    newActors.find((actor) => actor.reference?.startsWith('Practitioner/'))
+  );
 }

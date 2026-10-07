@@ -1,12 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ResourceModifiedEvent, WithId } from '@medplum/core';
-import {
-  createReference,
-  SchedulingUnvalidatedRescheduleURI,
-  setPrimaryProvider,
-  toServiceTypeCodeableConcepts,
-} from '@medplum/core';
+import { createReference, setPrimaryProvider, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
@@ -35,6 +30,7 @@ import {
 import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
 import type { AppointmentReschedule, AppointmentRescheduleFormProps } from './AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from './AppointmentRescheduleForm';
+import { SchedulingUnvalidatedRescheduleURI } from './writeElevatedReschedule';
 
 installAutocompleteTimers();
 
