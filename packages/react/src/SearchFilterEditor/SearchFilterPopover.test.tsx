@@ -41,6 +41,20 @@ async function waitForDebounce(): Promise<void> {
   });
 }
 
+/**
+ * Finds a field option by search parameter code, ignoring same-named options in reference value inputs.
+ * @param code - The search parameter code.
+ * @returns The field option element.
+ */
+async function findFieldOption(code: string): Promise<HTMLElement> {
+  const options = await screen.findAllByRole('option', { hidden: true });
+  const option = options.find((o) => o.getAttribute('value') === code);
+  if (!option) {
+    throw new Error(`Field option not found: ${code}`);
+  }
+  return option;
+}
+
 describe('SearchFilterPopover', () => {
   test('Shows the active filter count and existing conditions', async () => {
     await setup({
@@ -229,6 +243,44 @@ describe('SearchFilterPopover', () => {
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ filters: [] }));
     expect(screen.getByLabelText('Filter 1 operator', { selector: 'input' })).toHaveValue('equals');
     expect(screen.getByTestId('filter-0-value')).toHaveValue('');
+  });
+
+  test('Changing to a reference field that cannot target the value clears it', async () => {
+    const { onChange } = await setup({
+      resourceType: 'Patient',
+      filters: [{ code: 'general-practitioner', operator: Operator.EQUALS, value: 'Practitioner/123' }],
+    });
+    await openPopover();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Filter 1 field', { selector: 'input' }));
+    });
+    await act(async () => {
+      fireEvent.click(await findFieldOption('organization'));
+    });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ filters: [] }));
+  });
+
+  test('Changing to a reference field that can target the value keeps it', async () => {
+    const { onChange } = await setup({
+      resourceType: 'Observation',
+      filters: [{ code: 'subject', operator: Operator.EQUALS, value: 'Patient/123' }],
+    });
+    await openPopover();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Filter 1 field', { selector: 'input' }));
+    });
+    await act(async () => {
+      fireEvent.click(await findFieldOption('patient'));
+    });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ filters: [{ code: 'patient', operator: Operator.EQUALS, value: 'Patient/123' }] })
+    );
   });
 
   test('Deleting a row keeps the next row showing its own value', async () => {

@@ -4,8 +4,14 @@ import type { ComboboxData } from '@mantine/core';
 import { ActionIcon, Select, Text } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { Filter, SearchRequest } from '@medplum/core';
-import { Operator, deepEquals, getSearchParameterDetails, getSearchParameters } from '@medplum/core';
-import type { SearchParameter } from '@medplum/fhirtypes';
+import {
+  Operator,
+  SearchParameterType,
+  deepEquals,
+  getSearchParameterDetails,
+  getSearchParameters,
+} from '@medplum/core';
+import type { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { IconFilter2Plus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
@@ -146,11 +152,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
   function changeField(code: string | null): void {
     const nextParam = code ? searchParams[code] : undefined;
     const keepOperator = !!value.operator && !!nextParam && !!getSearchOperators(nextParam)?.includes(value.operator);
-    const keepValue =
-      !!searchParam &&
-      !!nextParam &&
-      getSearchParameterDetails(resourceType, searchParam).type ===
-        getSearchParameterDetails(resourceType, nextParam).type;
+    const keepValue = !!searchParam && !!nextParam && canKeepValue(resourceType, searchParam, nextParam, value.value);
     props.onChange({
       code: code ?? undefined,
       operator: keepOperator ? value.operator : Operator.EQUALS,
@@ -228,6 +230,32 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
       )}
     </div>
   );
+}
+
+/**
+ * Whether a condition's value still fits after its field changes: the new field must take the same
+ * kind of input, and a reference must point at a resource type the new field can target.
+ * @param resourceType - The searched resource type.
+ * @param prevParam - The search parameter the value was entered for.
+ * @param nextParam - The newly selected search parameter.
+ * @param value - The current condition value.
+ * @returns True if the value can be carried over to the new field.
+ */
+function canKeepValue(
+  resourceType: string,
+  prevParam: SearchParameter,
+  nextParam: SearchParameter,
+  value: string | undefined
+): boolean {
+  const type = getSearchParameterDetails(resourceType, nextParam).type;
+  if (type !== getSearchParameterDetails(resourceType, prevParam).type) {
+    return false;
+  }
+  if (type !== SearchParameterType.REFERENCE) {
+    return true;
+  }
+  const targetType = value?.split('/')[0];
+  return !!targetType && !!nextParam.target?.includes(targetType as ResourceType);
 }
 
 function getInitialFilters(search: SearchRequest): Partial<Filter>[] {
