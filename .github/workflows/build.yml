@@ -362,6 +362,10 @@ jobs:
       PG_VERSION: ${{ matrix.pg-version }}
       REDIS_VERSION: ${{ matrix.redis-version }}
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      # Vitest defaults to one worker per core minus one; with coverage on 16 cores, that
+      # contention pushes CPU-bound tests past their timeouts. Each non-serial vite config reads
+      # this (falling back to 50%), so serial packages (agent, hl7, cdk) keep maxWorkers: 1.
+      TEST_MAX_WORKERS: '50%'
     services:
       postgres:
         image: postgres:${{ matrix.pg-version }}
