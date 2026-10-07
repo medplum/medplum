@@ -1307,6 +1307,33 @@ describe('Appointment/$find', () => {
     expect(response.body.issue[0].expression).toEqual(['Parameters.schedule[1]']);
   });
 
+  test('errors when one schedule actor is inactive', async () => {
+    const inactivePractitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.id },
+      active: false,
+    });
+    const practitionerSchedule = await makeSchedule(
+      [{ service: genericVisit, duration: 30, availability: monTueAvailability }],
+      { actor: [createReference(inactivePractitioner)] }
+    );
+    const locationSchedule = await makeSchedule(
+      [{ service: genericVisit, duration: 30, availability: tueWedAvailability }],
+      { actor: [createReference(location)] }
+    );
+
+    const response = await makeRequest({
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: [`Schedule/${practitionerSchedule.id}`, `Schedule/${locationSchedule.id}`],
+    });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toBe('Practitioner is inactive');
+    expect(response.body.issue[0].expression).toEqual(['Parameters.schedule[0].actor[0]']);
+  });
+
   test('errors when one schedule has a planning horizon that excludes the requested range', async () => {
     const practitionerSchedule = await makeSchedule(
       [{ service: genericVisit, duration: 30, availability: monTueAvailability }],

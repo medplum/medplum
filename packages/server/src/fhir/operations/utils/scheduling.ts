@@ -10,6 +10,7 @@ import {
   getExtension,
   getExtensionValue,
   getReferenceString,
+  isActorInactive,
   isDefined,
   isResource,
   MEDPLUM_VERSION,
@@ -600,6 +601,12 @@ export async function getSchedulingParametersGroup(
   const actors = await repo
     .readReferences(schedules.map((schedule) => schedule.actor[0]))
     .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
+
+  actors.forEach((actor) => {
+    if (isResource(actor) && isActorInactive(actor)) {
+      throw new OperationOutcomeError(badRequest(`${actor.resourceType} is inactive`, getPath(actor)));
+    }
+  });
 
   const serviceParams = getHealthcareServiceSchedulingParameters(healthcareService);
 
