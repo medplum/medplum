@@ -29,15 +29,18 @@ import {
   chooseDay,
   chooseImagingService,
   choosePatient,
+  chooseRepeat,
   chooseSecondOfferedTime,
   clickBook,
   codePill,
+  dragDays,
   enterAuthorizationDetails,
   enterCode,
   field,
   fillAuthorizedBooking,
   fillBooking,
   hasPill,
+  lastFindParams,
   lastFindStart,
   MONDAY_MORNING,
   openTimeFinder,
@@ -264,6 +267,35 @@ describe('SchedulingWorkspace booking', () => {
     expect(new Date(start as string).getDate()).toBe(TUESDAY_MORNING.getDate());
   });
 
+  test('Searches for a weekly series of the length asked for', async () => {
+    const get = vi.spyOn(medplum, 'get');
+    setup();
+    await clickCalendar();
+
+    await chooseImagingService();
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
+    expect(lastFindParams(get)?.has('occurrence-count')).toBe(false);
+
+    await chooseRepeat('Once a week for 3 weeks');
+    expect(lastFindParams(get)?.get('occurrence-count')).toBe('3');
+  });
+
+  test('Searches at most a week of days for a weekly series', async () => {
+    const get = vi.spyOn(medplum, 'get');
+    setup();
+    await clickCalendar();
+
+    await chooseImagingService();
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await openTimeFinder();
+    await dragDays('18', '27');
+    await chooseRepeat('Once a week for 3 weeks');
+
+    expect(screen.getByText('Choose at most 7 days at a time for a recurring appointment.')).toBeInTheDocument();
+    expect(lastFindParams(get)?.has('occurrence-count')).toBe(false);
+  });
+
   test('Books the appointment and closes the form', async () => {
     const post = vi.spyOn(medplum, 'post');
     setup();
@@ -292,7 +324,7 @@ describe('SchedulingWorkspace booking', () => {
     // it however it announces things.
     expect(onBooked).toHaveBeenCalledTimes(1);
     const booking = onBooked.mock.calls[0][0] as AppointmentBooking;
-    expect(booking.appointment.participant).toContainEqual(
+    expect(booking.appointments[0].participant).toContainEqual(
       expect.objectContaining({ actor: expect.objectContaining({ display: 'Jordan Reyes' }) })
     );
   });
@@ -424,8 +456,8 @@ describe('SchedulingWorkspace booking', () => {
       // The host reads the codes off the appointment it is handed, so nothing extra is threaded
       // through the components between here and the form to carry them.
       const [booking] = onBooked.mock.calls[0] as [AppointmentBooking];
-      expect(booking.appointment.reasonCode?.[0]?.coding?.[0]?.code).toBe(DiagnosisCodes[0].code);
-      expect(booking.appointment.serviceType?.at(-1)?.coding?.[0]?.code).toBe(ProcedureCodes[0].code);
+      expect(booking.appointments[0].reasonCode?.[0]?.coding?.[0]?.code).toBe(DiagnosisCodes[0].code);
+      expect(booking.appointments[0].serviceType?.at(-1)?.coding?.[0]?.code).toBe(ProcedureCodes[0].code);
     });
   });
 
