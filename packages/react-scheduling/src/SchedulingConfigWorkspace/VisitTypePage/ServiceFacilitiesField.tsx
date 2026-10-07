@@ -7,7 +7,7 @@ import { MultiResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { LOCATION_SEARCH_CRITERIA } from '../../constants';
-import { ConfirmModal } from '../ConfigPage/ConfigPage';
+import { ConfirmModal } from '../ConfirmModal';
 
 export interface ServiceFacilitiesFieldProps {
   /** The service facilities the visit type names. Empty means every service facility. */

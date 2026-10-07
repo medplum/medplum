@@ -27,9 +27,10 @@ import {
   getBlockingErrors,
   validateSchedulingParameters,
 } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
-import { ConfigSection, ConfirmModal, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPage';
+import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPage';
 import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
+import { ConfirmModal } from '../ConfirmModal';
 import { summarizeOffering } from '../offeringSummary';
 import { getActorStatus, isActorInactive } from '../SchedulingConfigWorkspace.utils';
 import type { ConfigStatus } from '../StatusBadge';
