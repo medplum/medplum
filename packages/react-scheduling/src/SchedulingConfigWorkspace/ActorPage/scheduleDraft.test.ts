@@ -127,6 +127,32 @@ describe('withoutService', () => {
     expect(withoutService(withUnknown, initialVisit).extension).toBeUndefined();
   });
 
+  test('an entry also scoped to another visit type loses only this one', () => {
+    const shared: Schedule = {
+      ...stored,
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'service', valueReference: { reference: 'HealthcareService/initial-visit' } },
+            { url: 'service', valueReference: { reference: 'HealthcareService/follow-up' } },
+            { url: 'bufferAfter', valueDuration: { value: 5, unit: 'min' } },
+          ],
+        },
+      ],
+    };
+
+    expect(withoutService(shared, initialVisit).extension).toEqual([
+      {
+        url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+        extension: [
+          { url: 'service', valueReference: { reference: 'HealthcareService/follow-up' } },
+          { url: 'bufferAfter', valueDuration: { value: 5, unit: 'min' } },
+        ],
+      },
+    ]);
+  });
+
   test('drops the visit type when the Schedule names it by a versioned reference', () => {
     const versioned: Schedule = {
       ...stored,

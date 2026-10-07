@@ -11,7 +11,7 @@ import {
   SchedulingParametersURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
-import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
+import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { setScheduleAvailability } from '../../availability';
 import type { ConfigurableActorResource } from '../../configSearch';
 import type { SchedulingParameterValues } from '../../parameterValues';
@@ -164,7 +164,7 @@ function withOfferingEdits(
 /**
  * Stops a Schedule offering a visit type: drops it from `serviceType`, and drops every scheduling parameter
  * entry scoped to it, including any this package doesn't edit. Left behind, they would come back if the visit
- * type were offered again.
+ * type were offered again. An entry also scoped to other visit types keeps applying to them.
  * @param schedule - The Schedule.
  * @param service - The visit type to stop offering.
  * @returns A copy of the Schedule without it.
@@ -179,11 +179,15 @@ export function withoutService(schedule: Schedule, service: WithId<HealthcareSer
   } else {
     delete draft.serviceType;
   }
-  const extension = draft.extension?.filter(
-    (entry) =>
-      entry.url !== SchedulingParametersURI ||
-      !entry.extension?.some((sub) => sub.url === 'service' && resolveId(sub.valueReference) === service.id)
-  );
+  const isThisService = (sub: Extension): boolean =>
+    sub.url === 'service' && resolveId(sub.valueReference) === service.id;
+  const extension = draft.extension?.flatMap((entry) => {
+    if (entry.url !== SchedulingParametersURI || !entry.extension?.some(isThisService)) {
+      return [entry];
+    }
+    const rest = entry.extension.filter((sub) => !isThisService(sub));
+    return rest.some((sub) => sub.url === 'service') ? [{ ...entry, extension: rest }] : [];
+  });
   if (extension?.length) {
     draft.extension = extension;
   } else {
