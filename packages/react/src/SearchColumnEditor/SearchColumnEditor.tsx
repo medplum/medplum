@@ -100,7 +100,9 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
 
   const visibleSet = useMemo(() => new Set(visibleFields), [visibleFields]);
   const lowerQuery = query.toLowerCase();
-  const listed = order.filter((name) => !query || buildSearchParamFieldLabel(name).toLowerCase().includes(lowerQuery));
+  const listed = new Set(
+    order.filter((name) => !query || buildSearchParamFieldLabel(name).toLowerCase().includes(lowerQuery))
+  );
   const visibleCount = order.filter((name) => visibleSet.has(name)).length;
 
   function toggleOpen(): void {
@@ -189,7 +191,7 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
       </div>
       <div className={drag.dragIndex !== undefined ? `${classes.body} ${classes.dragActive}` : classes.body}>
         {order.map((name, index) => {
-          if (!listed.includes(name)) {
+          if (!listed.has(name)) {
             return null;
           }
           const visible = visibleSet.has(name);
