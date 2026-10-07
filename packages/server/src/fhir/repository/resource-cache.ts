@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { stringify } from '@medplum/core';
+import { stringify, tryParseReference } from '@medplum/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getCacheRedis } from '../../redis';
@@ -27,11 +27,7 @@ export async function getResourceCacheEntry<T extends Resource>(
   id: string
 ): Promise<CacheEntry<WithId<T>> | undefined> {
   const cachedValue = await getCacheRedis().get(getResourceCacheKey(resourceType, id));
-  const cacheEntry = cachedValue ? (JSON.parse(cachedValue) as CacheEntry<WithId<T>>) : undefined;
-  if (cacheEntry) {
-    cacheEntry.shardId ??= GLOBAL_SHARD_ID;
-  }
-  return cacheEntry;
+  return cachedValue ? parseCacheEntry<WithId<T>>(cachedValue) : undefined;
 }
 
 /**
@@ -47,9 +43,9 @@ export async function getResourceCacheEntries(references: Reference[]): Promise<
   // is constructed in the correct order.
   const referenceKeyIndices: (number | undefined)[] = new Array(references.length);
   for (let i = 0; i < references.length; i++) {
-    const r = references[i];
-    if (r.reference) {
-      referenceKeys.push(r.reference);
+    const parsed = tryParseReference(references[i]);
+    if (parsed) {
+      referenceKeys.push(getResourceCacheKey(parsed[0], parsed[1]));
       referenceKeyIndices[i] = referenceKeys.length - 1;
     }
   }
@@ -68,10 +64,16 @@ export async function getResourceCacheEntries(references: Reference[]): Promise<
       result[i] = undefined;
     } else {
       const cachedValue = cachedValues[referenceKeyIndex];
-      result[i] = cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined;
+      result[i] = cachedValue ? parseCacheEntry(cachedValue) : undefined;
     }
   }
   return result;
+}
+
+function parseCacheEntry<T extends Resource>(cachedValue: string): CacheEntry<T> {
+  const cacheEntry = JSON.parse(cachedValue) as CacheEntry<T>;
+  cacheEntry.shardId ??= GLOBAL_SHARD_ID;
+  return cacheEntry;
 }
 
 /**

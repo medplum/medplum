@@ -217,6 +217,10 @@ describe('Repository resource cache', () => {
         await expect(otherShardRepo.readResource('Patient', legacy.id, { checkCacheOnly: true })).rejects.toThrow(
           'Not found'
         );
+
+        // Bulk reads apply the same default. The patient exists only in the cache, so a miss would return an Error
+        const [fromGlobal] = await globalRepo.readReferences([{ reference: `Patient/${legacy.id}` }]);
+        expect(fromGlobal).toMatchObject({ id: legacy.id });
       } finally {
         await getCacheRedis().del(key);
       }
