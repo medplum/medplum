@@ -1,77 +1,79 @@
 ---
 sidebar_position: 0
+title: Referrals
 ---
 
-# Referral Management
+# Referrals
 
-:::tip[Planning this workflow?]
-The [Referrals Decision Guide](/docs/decision-guides/referrals) walks through requirements questions and FHIR modeling decisions for referrals — use it alongside these docs.
+<span id="referral-overview" style={{ scrollMarginTop: 'calc(var(--ifm-navbar-height) + 1rem)' }} />
+
+A referral can be sent successfully and still go nowhere. The receiving clinic may need another document, the patient may need help scheduling, or the consultation note may never make it back to the referring team. A useful referral workflow keeps those next steps visible.
+
+In Medplum, start with a [ServiceRequest](/docs/api/fhir/resources/servicerequest) for the requested clinical service. Add Tasks for the work around it and link the messages, documents, appointments, and results as they arrive.
+
+:::tip[Plan the workflow first]
+
+Use the [Referrals Decision Guide](/docs/decision-guides/referrals) to decide which sending, receiving, and follow-up steps your product supports. You can build either side of the exchange without implementing every workflow in this section.
+
 :::
 
-Building out a referral management experience requires composing multiple FHIR resources into a workflow that meets the requirements of both referring and receiving providers. There are three primary interactions that developers should consider when building out a custom referral management solution:
+## Decide Whether the Teams Share a Project
 
-- **Capturing referral requests** from the referring provider
-- **Transmitting referrals** to receiving providers
-- **Tracking referral status** throughout the workflow
+For an internal referral, such as primary care referring to the practice's behavioral health team, both teams can use the same ServiceRequest. Create the receiving team's Task directly, assign its owner, and track acceptance and follow-up. Use Communications when the teams need to exchange context; a separate delivery workflow is optional. Configure access for each team's work and clinical records.
 
-## Referral Overview
+For a referral to another system, add the transmission and intake steps: agree on identifiers and supported payloads, track delivery, resolve incoming patient references, and reconcile status updates. Each server uses its own local resource IDs while preserving the business referral identifier.
 
-Here is a **sample** of what a referral management experience might look like - to be clear, referral interfaces can look however you want them to. A sample referral application could be built using Medplum [React components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs).
+The [worked example](/docs/careplans/referrals/fhir-resource-examples) uses two teams in one project so every reference can be followed locally. The same milestones apply across systems, with the integration carrying messages and status updates between them.
 
-When capturing referral information, gathering the essential details using a [Questionnaire](/docs/api/fhir/resources/questionnaire.mdx) is a good first step. This can be used to create a [ServiceRequest](/docs/api/fhir/resources/servicerequest.mdx) which serves as the core referral resource. You can query all resources related to a given referral from the [ServiceRequest](/docs/api/fhir/resources/servicerequest.mdx) endpoint.
+<span id="key-resources" style={{ scrollMarginTop: 'calc(var(--ifm-navbar-height) + 1rem)' }} />
 
-Depending on your use case, you might need to include different supporting information such as [Conditions](/docs/api/fhir/resources/condition.mdx), [Observations](/docs/api/fhir/resources/observation.mdx), or [DocumentReferences](/docs/api/fhir/resources/documentreference.mdx). [Search](/docs/search/) is useful to construct the specific queries that will give the context needed for a complete referral.
+## Connect the Request to the Work Around It {/* #the-referral-data-model */}
 
-React components are available to aid in building a quick referral experience. [QuestionnaireForm](https://storybook.medplum.com/?path=/docs/medplum-questionnaireform--basic), [ResourceTable](https://storybook.medplum.com/?path=/docs/medplum-resourcetable--basic), [Search control](https://storybook.medplum.com/?path=/docs/medplum-searchcontrol--checkboxes), [ResourceAvatar](https://storybook.medplum.com/?path=/docs/medplum-resourceavatar--image), and [Timeline](https://storybook.medplum.com/?path=/docs/medplum-timeline--basic) are potential components that can speed development of the referral management interface.
+| Resource | Role in the workflow |
+| --- | --- |
+| `ServiceRequest` | The requested service, patient, requester, intended performer, and clinical context |
+| `Task` | An accountable work item, such as intake review, scheduling, or reviewing the returned note |
+| `QuestionnaireResponse` | Answers captured in a referral form, retained alongside the resulting request |
+| `Communication` | Messages about the referral, including the material sent and relevant transmission times |
+| `DocumentReference` and `Binary` | Document metadata and the actual file bytes |
+| `Appointment` and `Encounter` | The booking and the care interaction that follows |
+| `DiagnosticReport` or another clinical result | Evidence of the service provided |
 
 ```mermaid
-
-flowchart BT
-    referral[<table><thead><tr><th>ServiceRequest</th></tr></thead><tbody><tr><td>Cardiology Referral</td></tr></tbody></table>]
-    patient[<table><thead><tr><th>Patient</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr></tbody></table>]
-    requester[<table><thead><tr><th>Practitioner</th></tr></thead><tbody><tr><td>Dr. Julius Hibbert</td></tr></tbody></table>]
-    performer[<table><thead><tr><th>Practitioner</th></tr></thead><tbody><tr><td>Dr. Nick Riviera</td></tr></tbody></table>]
-    condition[<table><thead><tr><th>Condition</th></tr></thead><tbody><tr><td>Chest Pain</td></tr></tbody></table>]
-    obs[<table><thead><tr><th>Observation</th></tr></thead><tbody><tr><td>ECG: Abnormal</td></tr></tbody></table>]
-    task[<table><thead><tr><th>Task</th></tr></thead><tbody><tr><td>Referral Tracking</td></tr></tbody></table>]
-    comm[<table><thead><tr><th>Communication</th></tr></thead><tbody><tr><td>Referral Document</td></tr></tbody></table>]
-
-referral -->|subject| patient
-referral -->|requester| requester
-referral -->|performer| performer
-referral -->|reasonReference| condition
-referral -->|supportingInfo| obs
-task -->|focus| referral
-comm -->|about| referral
-
+flowchart LR
+  task[Task] -->|focus| referral[ServiceRequest]
+  message[Communication] -->|about| referral
+  message -->|payload.contentReference| document[DocumentReference]
+  document -->|content.attachment.url| binary[Binary]
+  appointment[Appointment] -->|basedOn| referral
+  encounter[Encounter] -->|basedOn| referral
+  result[DiagnosticReport] -->|basedOn| referral
 ```
 
-### Key Resources
+You can follow these links from the clinical request to the work, messages, and evidence around it. Each patient-related resource also needs its own patient reference. The arrows in this diagram connect clinical and workflow context; access is enforced by [AccessPolicy and ProjectMembership](/docs/access/access-policies).
 
-| **Resource**                                                   | **Description**                                                                                                                                  |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [`ServiceRequest`](/docs/api/fhir/resources/servicerequest)    | The primary resource for representing a referral. Contains details about the requested service, priority, and supporting information.             |
-| [`Task`](/docs/api/fhir/resources/task)                        | Used to track the status of the referral through its lifecycle (requested, accepted, rejected, in-progress, completed).                          |
-| [`Questionnaire`](/docs/api/fhir/resources/questionnaire)      | Defines structured forms for capturing referral information consistently.                                                                         |
-| [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) | Contains the completed referral form data that can be processed to create a ServiceRequest.                                          |
-| [`Communication`](/docs/api/fhir/resources/communication)      | Represents the transmission of referral information between providers, including attachments and delivery status.                                 |
-| [`DocumentReference`](/docs/api/fhir/resources/documentreference) | Used to attach clinical documents, images, or other files to the referral.                                                                    |
-| [`Condition`](/docs/api/fhir/resources/condition)              | Represents diagnoses that justify the reason for the referral.                                                                                    |
-| [`Observation`](/docs/api/fhir/resources/observation)          | Contains clinical measurements or findings that support the referral.                                                                             |
+## Know What Each Milestone Actually Tells You {/* #keep-the-milestones-distinct */}
 
-### Key Code Systems
+A delivery receipt tells you that a package arrived. It does not tell you that the clinic accepted the referral or that the patient received the service. Track these milestones separately:
 
-| **Code System**                                                | **Description**                                                                                                                                |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| [SNOMED CT](https://www.snomed.org/)                           | Used in [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) resources to specify referral types and specialties.                       |
-| [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) | Used in [`Condition`](/docs/api/fhir/resources/condition) resources to specify diagnoses that justify the referral.                           |
-| [LOINC](https://loinc.org/)                                    | Used in [`Observation`](/docs/api/fhir/resources/observation) resources to specify clinical measurements included in the referral.            |
+| Milestone | Evidence |
+| --- | --- |
+| Package delivered | Channel acknowledgment correlated to the outbound message |
+| Referral accepted | Receiving team's explicit acceptance of the work |
+| Visit scheduled | Appointment linked to the ServiceRequest |
+| Service performed | Encounter or clinical result, with request status reconciled by the responsible party |
+| Loop closed | Returned information reviewed and any required follow-up assigned |
 
+`ServiceRequest.status` describes the clinical request. `Task.status` describes a particular unit of work. Use `Task.businessStatus` for local stages such as waiting for documents; keep the meaning of each stage consistent across the UI and automation.
 
-## Reference
+## Build Your Referral Workflow
 
-- [FHIR ServiceRequest Resource](https://hl7.org/fhir/R4/servicerequest.html)
-- [FHIR Task Resource](https://hl7.org/fhir/R4/task.html)
-- [FHIR Communication Resource](https://hl7.org/fhir/R4/communication.html)
-- [Medplum Questionnaires Documentation](/docs/questionnaires/)
-- [Medplum Bots Documentation](/docs/bots/)
+1. [Creating and Capturing Referrals](/docs/careplans/referrals/creation-and-capture): forms, draft orders, identifiers, and release.
+2. [Recipients and Referral Packages](/docs/careplans/referrals/recipients-and-packages): directory choices, supporting context, and file handling.
+3. [Sending Referrals and Tracking Delivery](/docs/careplans/referrals/transmition-and-tracking): channels, communication records, acknowledgments, and retries.
+4. [Receiving and Triaging Referrals](/docs/careplans/referrals/receiving-and-triage): source retention, patient matching, duplicate handling, and review.
+5. [Processing and Coordinating Referrals](/docs/careplans/referrals/processing-and-coordination): ownership, authorization, scheduling, and rerouting.
+6. [Results and Closing the Loop](/docs/careplans/referrals/results-and-closure): matching returned records and defining completion.
+7. [Worked Referral Example](/docs/careplans/referrals/fhir-resource-examples): a connected set of R4 resources.
+
+For patterns shared with other practice workflows, see [Care Coordination](/docs/careplans), especially [Tasks and Work Queues](/docs/careplans/tasks) and [Handoffs and Escalation](/docs/careplans/handoffs-and-escalation).

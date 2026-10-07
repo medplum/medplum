@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Box, Button, Center, Group, Loader, Modal, Stack, Text } from '@mantine/core';
+import { Alert, Box, Center, Loader, Stack } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { HealthcareService, Resource } from '@medplum/fhirtypes';
@@ -14,6 +14,7 @@ import { ActorPage } from './ActorPage/ActorPage';
 import { ConfigEmptyState } from './ConfigPage/ConfigEmptyState';
 import type { ConfigPanelSection } from './ConfigPanel/ConfigPanel';
 import { ConfigPanel } from './ConfigPanel/ConfigPanel';
+import { ConfirmModal } from './ConfirmModal';
 import classes from './SchedulingConfigWorkspace.module.css';
 import type { ConfigSelection } from './SchedulingConfigWorkspace.utils';
 import { buildActorItems, buildServiceItems, isSameSelection } from './SchedulingConfigWorkspace.utils';
@@ -218,24 +219,17 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         </Stack>
       </Box>
 
-      <Modal
+      <ConfirmModal
         opened={pending !== undefined}
-        onClose={() => setPending(undefined)}
         title="Discard unsaved changes?"
-        centered
+        cancelLabel="Keep editing"
+        confirmLabel="Discard changes"
+        destructive
+        onCancel={() => setPending(undefined)}
+        onConfirm={confirmDiscard}
       >
-        <Stack gap="md">
-          <Text size="sm">The changes on this page haven't been saved.</Text>
-          <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={() => setPending(undefined)}>
-              Keep editing
-            </Button>
-            <Button color="red" onClick={confirmDiscard}>
-              Discard changes
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+        The changes on this page haven't been saved.
+      </ConfirmModal>
     </Box>
   );
 }

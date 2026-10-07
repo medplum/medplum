@@ -77,12 +77,11 @@ describe('Project $init', () => {
     expect(isUUID(project.id)).toBe(true);
     expect(project.owner).toStrictEqual(createReference(owner));
 
-    // Verify default patient access policy was created and set on the project
+    // Open patient registration is disabled by default
     const updatedProject = await withTestContext(() =>
       getGlobalSystemRepo().readResource<Project>('Project', project.id)
     );
-    expect(updatedProject.defaultPatientAccessPolicy).toBeDefined();
-    expect(updatedProject.defaultPatientAccessPolicy?.reference).toMatch(/^AccessPolicy\//);
+    expect(updatedProject.defaultPatientAccessPolicy).toBeUndefined();
 
     // Verify defaultAccessPolicies array is provisioned with Patient, RelatedPerson, Admin, and Practitioner entries
     expect(updatedProject.defaultAccessPolicies).toHaveLength(4);
