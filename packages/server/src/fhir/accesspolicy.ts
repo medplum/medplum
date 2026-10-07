@@ -11,6 +11,7 @@ import {
   isString,
   OperationOutcomeError,
   projectAdminResourceTypes,
+  readInteractions,
   resolveId,
 } from '@medplum/core';
 import type {
@@ -398,8 +399,18 @@ function applyProjectAdminAccessPolicy(
       }
     );
   } else {
-    // Remove any references to project admin resource types
-    accessPolicy.resource = accessPolicy.resource?.filter((r) => !projectAdminResourceTypes.includes(r.resourceType));
+    // Preserve policy reads, including wildcard grants, but never grant non-admins policy writes.
+    const policyReadRules = accessPolicy.resource
+      .filter((r) => r.resourceType === 'AccessPolicy' || r.resourceType === '*')
+      .map((r) => ({
+        ...r,
+        resourceType: 'AccessPolicy',
+        criteria: r.criteria?.replace(/^\*\?/, 'AccessPolicy?'),
+        interaction: r.interaction?.filter((i) => readInteractions.includes(i)) ?? [...readInteractions],
+      }));
+
+    accessPolicy.resource = accessPolicy.resource.filter((r) => !projectAdminResourceTypes.includes(r.resourceType));
+    accessPolicy.resource.push(...policyReadRules);
   }
 
   return accessPolicy;
