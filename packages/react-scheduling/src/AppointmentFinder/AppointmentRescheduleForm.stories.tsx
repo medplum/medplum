@@ -147,8 +147,8 @@ export const ManualOverride = (): JSX.Element => {
     <Document>
       {written && (
         <Alert color="green" title="Appointment rescheduled" mb="md">
-          Same appointment: {written.appointment.id}. Reserved {written.slots.length} replacement slots. Start:{' '}
-          {written.appointment.start}. End: {written.appointment.end}.
+          Same appointment: {written.appointments[0].id}. Reserved {written.slots.length} replacement slots. Start:{' '}
+          {written.appointments[0].start}. End: {written.appointments[0].end}.
         </Alert>
       )}
       {appointment && (
@@ -156,7 +156,7 @@ export const ManualOverride = (): JSX.Element => {
           appointment={appointment}
           canBypassSchedulingRules
           onRescheduled={(result) => {
-            setAppointment(result.appointment);
+            setAppointment(result.appointments[0]);
             setWritten(result);
           }}
         />

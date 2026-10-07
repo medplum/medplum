@@ -74,9 +74,11 @@ describe('writeElevatedReschedule', () => {
     for (const reference of existing.slot ?? []) {
       await expect(medplum.readReference(reference, { cache: 'no-cache' })).rejects.toThrow();
     }
-    expect(result.appointment.slot?.map(getReferenceString)).toEqual(result.slots.map(getReferenceString));
-    expect(result.appointment.id).toBe(existing.id);
-    expect(Date.parse(result.appointment.end as string) - Date.parse(result.appointment.start as string)).toBe(2220123);
+    expect(result.appointments[0].slot?.map(getReferenceString)).toEqual(result.slots.map(getReferenceString));
+    expect(result.appointments[0].id).toBe(existing.id);
+    expect(Date.parse(result.appointments[0].end as string) - Date.parse(result.appointments[0].start as string)).toBe(
+      2220123
+    );
     const {
       start: _start,
       end: _end,
@@ -85,7 +87,7 @@ describe('writeElevatedReschedule', () => {
       meta: _meta,
       extension,
       ...unchanged
-    } = result.appointment;
+    } = result.appointments[0];
     expect(unchanged).toEqual(
       (({ start: _start, end: _end, slot: _slot, participant: _participant, meta: _meta, extension: _ext, ...rest }) =>
         rest)(existing)
@@ -115,14 +117,14 @@ describe('writeElevatedReschedule', () => {
     const duplicate = await medplum.updateResource({ ...DrRiveraSchedule, id: 'same-provider-another-schedule' });
     const result = await writeElevatedReschedule(medplum, existing, proposal([DrRiveraSchedule, duplicate]));
     expect(
-      result.appointment.participant.filter((p) => p.actor?.reference === DrRiveraSchedule.actor[0].reference)
+      result.appointments[0].participant.filter((p) => p.actor?.reference === DrRiveraSchedule.actor[0].reference)
     ).toHaveLength(1);
   });
 
   test('marks the first provider among the new schedules as primary, as $reschedule does', async () => {
     const result = await writeElevatedReschedule(medplum, existing, proposal([ExamRoomBSchedule, DrRiveraSchedule]));
-    expect(getPrimaryProvider(result.appointment)).toEqual(DrRiveraSchedule.actor[0]);
-    expect(result.appointment.participant.filter((p) => p.type?.length)).toHaveLength(1);
+    expect(getPrimaryProvider(result.appointments[0])).toEqual(DrRiveraSchedule.actor[0]);
+    expect(result.appointments[0].participant.filter((p) => p.type?.length)).toHaveLength(1);
   });
 
   test('writes capacity and buffers for each schedule while preserving pending status', async () => {
@@ -137,7 +139,7 @@ describe('writeElevatedReschedule', () => {
     await medplum.updateResource(buffered);
     const pending = await medplum.updateResource({ ...existing, status: 'pending' });
     const result = await writeElevatedReschedule(medplum, pending, proposal());
-    expect(result.appointment.status).toBe('pending');
+    expect(result.appointments[0].status).toBe('pending');
     expect(result.slots).toHaveLength(3);
     expect(
       result.slots.find(
@@ -153,7 +155,7 @@ describe('writeElevatedReschedule', () => {
   test('moves the stored appointment rather than a stale copy', async () => {
     await medplum.updateResource({ ...existing, comment: 'Edited elsewhere' });
     const result = await writeElevatedReschedule(medplum, existing, proposal());
-    expect(result.appointment.comment).toBe('Edited elsewhere');
+    expect(result.appointments[0].comment).toBe('Edited elsewhere');
   });
 
   test.each([undefined, '2026-01-01T00:00:00Z'])('refuses an invalid original interval (%s)', async (end) => {
@@ -241,7 +243,7 @@ describe('writeElevatedReschedule', () => {
       });
       const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const result = await writeElevatedReschedule(medplum, existing, proposal());
-      expect(result.appointment.start).toBe(START.toISOString());
+      expect(result.appointments[0].start).toBe(START.toISOString());
       await expect(medplum.readResource('Slot', refused.id, { cache: 'no-cache' })).resolves.toMatchObject({
         id: refused.id,
       });

@@ -166,7 +166,7 @@ export async function writeElevatedReschedule(
   }
 
   await deleteSlots(medplum, oldSlots);
-  return { appointment, slots: newSlots };
+  return { appointments: [appointment], appointment, slots: newSlots };
 }
 
 /**

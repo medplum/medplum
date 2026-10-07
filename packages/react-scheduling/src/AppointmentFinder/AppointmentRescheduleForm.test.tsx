@@ -165,7 +165,7 @@ describe('AppointmentRescheduleForm', () => {
       await setup(medplum, { canBypassSchedulingRules: true });
       await moveToAnotherTime();
       expect(lastRescheduleParameters(post)).toBeDefined();
-      expect(onRescheduled.mock.calls[0][0].appointment.extension ?? []).not.toContainEqual(
+      expect(onRescheduled.mock.calls[0][0].appointments[0].extension ?? []).not.toContainEqual(
         expect.objectContaining({ url: SchedulingUnvalidatedRescheduleURI })
       );
     });
@@ -183,7 +183,7 @@ describe('AppointmentRescheduleForm', () => {
       expect(lastRescheduleParameters(post)).toBeUndefined();
       expect(onRescheduled).toHaveBeenCalledTimes(1);
       const result = onRescheduled.mock.calls[0][0];
-      expect(result.appointment.id).toBe(APPOINTMENT.id);
+      expect(result.appointments[0].id).toBe(APPOINTMENT.id);
       expect(events.map(({ resourceType, operation, id }) => `${operation} ${resourceType}/${id}`).sort()).toEqual(
         [
           ...result.slots.map((slot: Slot) => `create Slot/${slot.id}`),
