@@ -4,6 +4,7 @@ import {
   Accordion,
   Alert,
   Box,
+  Divider,
   Group,
   SimpleGrid,
   Stack,
@@ -270,19 +271,25 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
                     <OfferingMenu service={service} onStopOffering={() => setStopping(service)} />
                   </Group>
                   <Accordion.Panel>
-                    <OfferingEditor
-                      service={service}
-                      value={fields.offerings[service.id]}
-                      initialParameters={startingOfferingFields(initial, service).parameters}
-                      onChange={(value) => updateOffering(service.id, value)}
-                      errors={errors}
-                      availabilityError={triedToSave ? availabilityError : undefined}
-                      timezone={
-                        timezone
-                          ? { zone: timezone, source: timezoneSource(fields.offerings[service.id], service, actorName) }
-                          : undefined
-                      }
-                    />
+                    <Stack gap="lg">
+                      <Divider />
+                      <OfferingEditor
+                        service={service}
+                        value={fields.offerings[service.id]}
+                        initialParameters={startingOfferingFields(initial, service).parameters}
+                        onChange={(value) => updateOffering(service.id, value)}
+                        errors={errors}
+                        availabilityError={triedToSave ? availabilityError : undefined}
+                        timezone={
+                          timezone
+                            ? {
+                                zone: timezone,
+                                source: timezoneSource(fields.offerings[service.id], service, actorName),
+                              }
+                            : undefined
+                        }
+                      />
+                    </Stack>
                   </Accordion.Panel>
                 </Accordion.Item>
               );
