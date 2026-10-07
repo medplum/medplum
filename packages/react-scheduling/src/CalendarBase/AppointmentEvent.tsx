@@ -10,6 +10,7 @@ import type { JSX } from 'react';
 import { useState } from 'react';
 import { getNonPatientActors } from '../actors';
 import { formatZonedTime } from '../AppointmentFinder/AppointmentFinder.times';
+import { AppointmentStatusBadge } from '../AppointmentStatusBadge';
 import { ServiceTypeDisplay } from '../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../serviceTypes';
 // Its own sheet: importing CalendarBase's here would load it ahead of FullCalendar's theme,
@@ -78,8 +79,8 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
 }
 
 /**
- * The card an appointment event opens: its patient, what it is for and when, and everyone
- * it is held on, marking the primary provider when the appointment marks one.
+ * The card an appointment event opens: its patient and status, what it is for and when, and
+ * everyone it is held on, marking the primary provider when the appointment marks one.
  * @param props - The React props.
  * @returns The card's content.
  */
@@ -92,7 +93,10 @@ function AppointmentCard(props: AppointmentEventProps): JSX.Element {
 
   return (
     <Stack gap={4}>
-      <Text fw={500}>{info.event.title}</Text>
+      <Group justify="space-between" gap="xs" wrap="nowrap">
+        <Text fw={500}>{info.event.title}</Text>
+        <AppointmentStatusBadge status={appointment.status} size="sm" />
+      </Group>
       <Divider />
       {(hasServiceType || times) && (
         <Text size="sm" c="dimmed">

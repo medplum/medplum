@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Badge, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
+import { Alert, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   formatCodeableConcept,
@@ -22,6 +22,7 @@ import { getNonPatientActors } from '../../actors';
 import { formatDayHeading, formatZonedTime } from '../../AppointmentFinder/AppointmentFinder.times';
 import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
+import { AppointmentStatusBadge } from '../../AppointmentStatusBadge';
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../../serviceTypes';
@@ -39,19 +40,6 @@ const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pendin
  * called off and what can be moved are separate questions to the server.
  */
 const RESCHEDULABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
-
-const STATUS_COLORS: Record<Appointment['status'], string> = {
-  proposed: 'yellow',
-  pending: 'yellow',
-  booked: 'blue',
-  arrived: 'blue',
-  fulfilled: 'blue',
-  cancelled: 'red',
-  noshow: 'red',
-  'entered-in-error': 'red',
-  'checked-in': 'blue',
-  waitlist: 'gray',
-};
 
 export interface AppointmentCancelFormProps {
   readonly appointment: WithId<Appointment>;
@@ -290,7 +278,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   // foot of either.
   return (
     <Stack gap="sm" className={classes.details}>
-      <Badge color={STATUS_COLORS[appointment.status]}>{appointment.status}</Badge>
+      <AppointmentStatusBadge status={appointment.status} />
       {!editing && patientLine}
       {whenLine}
       <Detail label="Repeats" value={formatSeries(appointment)} />

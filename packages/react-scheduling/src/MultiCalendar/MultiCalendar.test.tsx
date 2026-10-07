@@ -212,6 +212,8 @@ describe('MultiCalendar', () => {
 
     const primary = await screen.findByText('Primary');
     const card = within(primary.closest('.mantine-Popover-dropdown') as HTMLElement);
+    // Its status sits beside the patient it is titled by.
+    expect(card.getByText('John Doe').closest('.mantine-Group-root')).toHaveTextContent('booked');
     expect((await card.findByText('Ultrasound imaging')).parentElement).toHaveTextContent(
       /^Ultrasound imaging · 10:00\sAM – 10:30\sAM$/
     );
@@ -219,9 +221,9 @@ describe('MultiCalendar', () => {
     expect(primary.closest('.mantine-Group-root')).toHaveTextContent('Alice Smith');
     expect(await card.findByText('Ultrasound 1')).toBeInTheDocument();
     expect(await card.findByText('Exam Room A')).toBeInTheDocument();
-    // Each actor once, and nothing for the patients or the role no one fills.
+    // The title, then each actor once, and nothing for the patients or the role no one fills.
     const rows = primary.closest('.mantine-Stack-root')?.querySelectorAll(':scope > .mantine-Group-root');
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(4);
     expect(screen.queryByText(/^(Practitioner|Device|Location)\//)).not.toBeInTheDocument();
   });
 
