@@ -1047,12 +1047,15 @@ export const RiveraImagingAppointment: WithId<Appointment> = {
   end: '2020-05-05T17:30:00Z',
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
   slot: RiveraImagingHeldSlots.map(createReference),
-  participant: [
-    { status: 'accepted', actor: createReference(MilesCooperPatient) },
-    { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
-    { status: 'accepted', actor: createReference(Ultrasound1Device) },
-    { status: 'accepted', actor: createReference(ExamRoomA) },
-  ],
+  participant: setPrimaryProvider(
+    [
+      { status: 'accepted', actor: createReference(MilesCooperPatient) },
+      { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
+      { status: 'accepted', actor: createReference(Ultrasound1Device) },
+      { status: 'accepted', actor: createReference(ExamRoomA) },
+    ],
+    createReference(DrRiveraPractitioner)
+  ),
 };
 
 /**
@@ -1084,12 +1087,15 @@ export const OkaforImagingAppointment: WithId<Appointment> = {
   start: '2020-05-06T18:00:00Z',
   end: '2020-05-06T18:30:00Z',
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
-  participant: [
-    { status: 'accepted', actor: { reference: 'Patient/pt-alvarez', display: 'Renee Alvarez' } },
-    { status: 'accepted', actor: createReference(DrOkaforPractitioner) },
-    { status: 'accepted', actor: createReference(Ultrasound2Device) },
-    { status: 'accepted', actor: createReference(ExamRoomB) },
-  ],
+  participant: setPrimaryProvider(
+    [
+      { status: 'accepted', actor: { reference: 'Patient/pt-alvarez', display: 'Renee Alvarez' } },
+      { status: 'accepted', actor: createReference(DrOkaforPractitioner) },
+      { status: 'accepted', actor: createReference(Ultrasound2Device) },
+      { status: 'accepted', actor: createReference(ExamRoomB) },
+    ],
+    createReference(DrOkaforPractitioner)
+  ),
   slot: OkaforImagingHeldSlots.map(createReference),
 };
 
@@ -1177,10 +1183,13 @@ export const DrBrownAppointments: WithId<Appointment>[] = DrBrownSlots.map((slot
   end: slot.end,
   serviceType: toServiceTypeCodeableConcepts(TelehealthService),
   slot: [createReference(slot)],
-  participant: [
-    { status: 'accepted', actor: createReference(DrBrownPractitioner) },
-    { status: 'accepted', actor: patientRefs[idx] },
-  ],
+  participant: setPrimaryProvider(
+    [
+      { status: 'accepted', actor: createReference(DrBrownPractitioner) },
+      { status: 'accepted', actor: patientRefs[idx] },
+    ],
+    createReference(DrBrownPractitioner)
+  ),
 }));
 
 export const ChenInfusionHeldSlot: WithId<Slot> = {
@@ -1206,10 +1215,13 @@ export const ChenInfusionAppointment: WithId<Appointment> = {
   reasonCode: [{ coding: [DiagnosisCodes[0]] }],
   extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
   slot: [createReference(ChenInfusionHeldSlot)],
-  participant: [
-    { status: 'accepted', actor: createReference(ElderJordanPatient) },
-    { status: 'accepted', actor: createReference(DrChenPractitioner) },
-  ],
+  participant: setPrimaryProvider(
+    [
+      { status: 'accepted', actor: createReference(ElderJordanPatient) },
+      { status: 'accepted', actor: createReference(DrChenPractitioner) },
+    ],
+    createReference(DrChenPractitioner)
+  ),
 };
 
 // This represents an appointment that was made through the FHIR API

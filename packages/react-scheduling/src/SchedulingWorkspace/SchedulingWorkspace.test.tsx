@@ -405,7 +405,7 @@ describe('SchedulingWorkspace', () => {
       await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(1));
       const imaging = eventColor('Miles Cooper');
       await waitFor(() => expect(appointmentEvents('Miles Cooper')[0]).toHaveTextContent('Ultrasound Imaging'));
-      // Nothing marks Dr. Rivera primary, so the card names her without saying so.
+      // The card marks Dr. Rivera as the visit's primary provider.
       const title = within(appointmentEvents('Miles Cooper')[0] as HTMLElement).getByText('Miles Cooper');
       await userEvent.hover(title);
       const card = await waitFor(() => {
@@ -417,7 +417,7 @@ describe('SchedulingWorkspace', () => {
         return within(dropdown as HTMLElement);
       });
       expect(await card.findByText('Dr. Maya Rivera')).toBeInTheDocument();
-      expect(card.queryByText('Primary')).not.toBeInTheDocument();
+      expect(card.getByText('Primary').closest('.mantine-Group-root')).toHaveTextContent('Dr. Maya Rivera');
       // It names the visit as the event is titled.
       expect((await card.findByText('Ultrasound Imaging')).parentElement).toHaveTextContent(/^Ultrasound Imaging · /);
       await userEvent.unhover(title);
