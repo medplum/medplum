@@ -1172,7 +1172,7 @@ export const DrBrownSlots: WithId<Slot>[] = (
 export const DrBrownAppointments: WithId<Appointment>[] = DrBrownSlots.map((slot, idx) => ({
   resourceType: 'Appointment',
   id: `appointment-${slot.id}`,
-  status: 'booked',
+  status: idx === 2 ? 'pending' : 'booked',
   start: slot.start,
   end: slot.end,
   serviceType: toServiceTypeCodeableConcepts(TelehealthService),
