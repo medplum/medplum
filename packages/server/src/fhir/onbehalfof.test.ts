@@ -8,6 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
+import { getProjectSystemRepo } from './repo';
 
 describe('On Behalf Of', () => {
   const app = express();
@@ -404,12 +405,46 @@ describe('On Behalf Of', () => {
 
       const { client } = adminAccount;
       const basicAuth = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
-
       const res1 = await request(app)
         .post(`/fhir/R4/Patient`)
         .set('Authorization', basicAuth)
         .set('X-Medplum', 'extended')
         .set('X-Medplum-On-Behalf-Of', `ProjectMembership/${randomUUID()}`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'Patient' });
+      expect(res1).toHaveStatus(400);
+      expect(res1.body).toMatchObject<OperationOutcome>({
+        resourceType: 'OperationOutcome',
+        issue: [
+          expect.objectContaining<OperationOutcomeIssue>({
+            severity: 'error',
+            code: 'invalid',
+            details: { text: 'Authentication error' },
+            diagnostics: expect.stringContaining('Forbidden'),
+          }),
+        ],
+      });
+    }));
+
+  test('Forbidden for inactive ProjectMembership', () =>
+    withTestContext(async () => {
+      const adminAccount = await createTestProject({
+        withClient: true,
+        withAccessToken: true,
+        membership: { admin: true },
+      });
+
+      const { client, project } = adminAccount;
+      const { membership } = await addTestUser(project);
+
+      const repo = await getProjectSystemRepo(project);
+      await repo.patchResource('ProjectMembership', membership.id, [{ op: 'add', path: '/active', value: false }]);
+
+      const res1 = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'))
+        .set('X-Medplum', 'extended')
+        .set('X-Medplum-On-Behalf-Of', getReferenceString(membership))
         .set('Content-Type', ContentType.FHIR_JSON)
         .send({ resourceType: 'Patient' });
       expect(res1).toHaveStatus(400);

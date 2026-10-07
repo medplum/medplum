@@ -10,6 +10,17 @@ import packageJson from './package.json' with { type: 'json' };
 
 const serverDir = dirname(fileURLToPath(import.meta.url));
 
+// These files book Slots in SERIALIZABLE transactions, which abort with 40001 when another file
+// books at the same time. They run after everything else, one file at a time.
+const serialTestFiles = [
+  'src/fhir/operations/book.recurring.test.ts',
+  'src/fhir/operations/book.test.ts',
+  'src/fhir/operations/cancel.test.ts',
+  'src/fhir/operations/confirm.test.ts',
+  'src/fhir/operations/hold.test.ts',
+  'src/fhir/operations/reschedule.test.ts',
+];
+
 /**
  * Matches the Jest custom sequencer: run seed.test.ts first, then alphabetical order.
  * Vitest's default sequencer orders by failure history and file size, which breaks test isolation.
@@ -46,7 +57,7 @@ export default defineConfig({
     },
   },
   test: {
-    name: '@medplum/server',
+    maxWorkers: process.env.TEST_MAX_WORKERS ?? '50%',
     globals: true,
     environment: 'node',
     setupFiles: ['./src/test.setup.ts'],
@@ -61,7 +72,26 @@ export default defineConfig({
     sequence: {
       sequencer: CustomSequencer,
     },
-    include: ['src/**/*.test.ts'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: '@medplum/server',
+          include: ['src/**/*.test.ts'],
+          // seed.test.ts runs on its own first, via vite.seed.config.ts
+          exclude: ['src/seed.test.ts', ...serialTestFiles],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: '@medplum/server-serial',
+          include: serialTestFiles,
+          maxWorkers: 1,
+          sequence: { groupOrder: 1 },
+        },
+      },
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['json', 'text'],
