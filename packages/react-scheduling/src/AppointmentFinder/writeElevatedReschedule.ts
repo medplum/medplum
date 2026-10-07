@@ -183,28 +183,31 @@ function rescheduleParticipants(
   oldSchedules: readonly Schedule[],
   newSchedules: readonly Schedule[]
 ): AppointmentParticipant[] {
-  const replacedRefs = new Set(oldSchedules.flatMap((s) => s.actor.map((actor) => actor.reference)).filter(isDefined));
+  const oldRefs = new Set(oldSchedules.flatMap((schedule) => schedule.actor).map((actor) => actor.reference));
+  // Keyed by reference, so an actor two Schedules share is added once.
+  const incoming = new Map<string, Schedule['actor'][number]>();
+  for (const actor of newSchedules.flatMap((schedule) => schedule.actor)) {
+    if (actor.reference && !incoming.has(actor.reference)) {
+      incoming.set(actor.reference, actor);
+    }
+  }
+  const primary = [...incoming.values()].find((actor) => actor.reference?.startsWith('Practitioner/'));
 
-  // Two Schedules can name the same actor, so dedupe to avoid emitting it twice
-  const newActors = [
-    ...new Map(newSchedules.flatMap((schedule) => schedule.actor).map((actor) => [actor.reference, actor])).values(),
-  ];
-  const newRefs = new Set(newActors.map((actor) => actor.reference).filter(isDefined));
-
-  const kept = participants.filter(
-    (p) => !p.actor?.reference || !replacedRefs.has(p.actor.reference) || newRefs.has(p.actor.reference)
-  );
-  const keptRefs = new Set(kept.map((p) => p.actor?.reference).filter(isDefined));
-
-  return setPrimaryProvider(
-    [
-      ...kept,
-      ...newActors
-        .filter((actor) => actor.reference && !keptRefs.has(actor.reference))
-        .map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
-    ],
-    newActors.find((actor) => actor.reference?.startsWith('Practitioner/'))
-  );
+  const result: AppointmentParticipant[] = [];
+  for (const participant of participants) {
+    const ref = participant.actor?.reference;
+    if (ref && oldRefs.has(ref) && !incoming.has(ref)) {
+      continue;
+    }
+    result.push(participant);
+    if (ref) {
+      incoming.delete(ref);
+    }
+  }
+  for (const actor of incoming.values()) {
+    result.push({ actor, required: 'required', status: 'needs-action' });
+  }
+  return setPrimaryProvider(result, primary);
 }
 
 /**
