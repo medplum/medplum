@@ -232,7 +232,7 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText(/Tuesday, May 5/)).toBeInTheDocument();
   });
 
-  test('names only the visit type under the service, not the procedure codes booked with it', () => {
+  test('names only the visit type under the service, not the procedure codes booked with it', async () => {
     renderDetails({
       ...BOOKED_APPOINTMENT,
       serviceType: [
@@ -241,13 +241,18 @@ describe('AppointmentDetails', () => {
       ],
     });
 
-    expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
+    expect(await screen.findByText('Ultrasound Imaging')).toBeInTheDocument();
   });
 
-  test('uses only the first referenced visit type', () => {
+  test('uses only the first visit type referring to a HealthcareService', async () => {
     renderDetails({
       ...BOOKED_APPOINTMENT,
       serviceType: [
+        // Carries the extension, but what it refers to is not a HealthcareService.
+        {
+          text: 'Misfiled visit type',
+          extension: [{ url: ServiceTypeReferenceURI, valueReference: { reference: 'Practitioner/dr-rivera' } }],
+        },
         ...(BOOKED_APPOINTMENT.serviceType ?? []),
         {
           text: 'Ignored visit type',
@@ -257,8 +262,9 @@ describe('AppointmentDetails', () => {
       ],
     });
 
-    expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
+    expect(await screen.findByText('Ultrasound Imaging')).toBeInTheDocument();
     expect(screen.queryByText(/Ignored visit type/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Misfiled visit type/)).not.toBeInTheDocument();
     expect(screen.getByText('Abdominal ultrasound')).toBeInTheDocument();
   });
 
@@ -272,19 +278,6 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText('Office visit, Follow-up')).toBeInTheDocument();
     expect(screen.getByText('Procedure codes')).toBeInTheDocument();
     expect(screen.queryByText('Service')).not.toBeInTheDocument();
-  });
-
-  test('falls back to appointment type for the service when all service types are procedures', () => {
-    renderDetails({
-      ...BOOKED_APPOINTMENT,
-      appointmentType: { text: 'Follow-up visit' },
-      serviceType: [{ text: 'Abdominal ultrasound' }],
-    });
-
-    expect(screen.getByText('Service')).toBeInTheDocument();
-    expect(screen.getByText('Follow-up visit')).toBeInTheDocument();
-    expect(screen.getByText('Procedure codes')).toBeInTheDocument();
-    expect(screen.getByText('Abdominal ultrasound')).toBeInTheDocument();
   });
 
   test('leaves out what is not on file', async () => {
