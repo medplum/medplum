@@ -1,47 +1,55 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Box, Button, Group, Modal, Stack, Text } from '@mantine/core';
+import { Alert, Box, Button, Center, Group, Loader, Modal, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
-import type { HealthcareService } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
-import { IconCalendarEvent } from '@tabler/icons-react';
+import type { HealthcareService, Resource } from '@medplum/fhirtypes';
+import { IconCalculatorFilled, IconCalendarEvent, IconMapPinFilled } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
-import { searchConfigurableServices } from '../configSearch';
+import { useCallback, useState } from 'react';
+import type { BookableActorType } from '../actors';
+import { isBookableActorType } from '../actors';
+import { ActorPage } from './ActorPage/ActorPage';
 import { ConfigEmptyState } from './ConfigPage/ConfigEmptyState';
+import type { ConfigPanelSection } from './ConfigPanel/ConfigPanel';
 import { ConfigPanel } from './ConfigPanel/ConfigPanel';
 import classes from './SchedulingConfigWorkspace.module.css';
 import type { ConfigSelection } from './SchedulingConfigWorkspace.utils';
-import { buildServiceItems, isSameSelection, withStoredService } from './SchedulingConfigWorkspace.utils';
+import { buildActorItems, buildServiceItems, isSameSelection } from './SchedulingConfigWorkspace.utils';
+import { useConfigurableResources } from './useConfigurableResources';
 import { VisitTypePage } from './VisitTypePage/VisitTypePage';
 
 export interface SchedulingConfigWorkspaceProps {
   readonly className?: string;
 }
 
-interface LoadedServices {
-  readonly items: readonly WithId<HealthcareService>[];
-  readonly complete: boolean;
+interface ActorSectionConfig {
+  readonly resourceType: BookableActorType;
+  readonly title: string;
+  readonly noun: string;
+  readonly icon?: JSX.Element;
 }
 
+/** In the order `SchedulingWorkspace` lists them. */
+const ACTOR_SECTIONS: readonly ActorSectionConfig[] = [
+  { resourceType: 'Practitioner', title: 'Providers', noun: 'providers' },
+  { resourceType: 'Device', title: 'Devices', noun: 'devices', icon: <IconCalculatorFilled size={12} /> },
+  { resourceType: 'Location', title: 'Rooms', noun: 'rooms', icon: <IconMapPinFilled size={12} /> },
+];
+
 /**
- * Where an admin sets up scheduling: every visit type listed down the side, and the one picked edited in place
- * beside it. The configuration counterpart to `SchedulingWorkspace`, which books.
+ * Where an admin sets up scheduling: every visit type, provider, room, and device listed down the side, and the
+ * one picked edited in place beside it. The configuration counterpart to `SchedulingWorkspace`, which books.
  *
  * It fetches its own resources, including what booking hides: visit types that are turned off or have no
- * duration. Nothing is written until the page's Save, and switching away from unsaved changes asks first.
+ * duration, and actors that are turned off or have no Schedule yet. Nothing is written until the page's Save,
+ * and switching away from unsaved changes asks first.
  * @param props - Component props.
  * @returns The workspace.
  */
 export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps): JSX.Element {
-  const medplum = useMedplum();
-
-  // Held as state rather than derived from a search, so a saved visit type can be swapped in where it sits.
-  const [services, setServices] = useState<LoadedServices>({ items: [], complete: true });
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<unknown>();
+  const { services, actors, store } = useConfigurableResources();
 
   const [selection, setSelection] = useState<ConfigSelection>();
   const [filter, setFilter] = useState('');
@@ -50,32 +58,6 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
   // A selection waiting on the viewer to confirm that unsaved changes may be discarded.
   const [pending, setPending] = useState<ConfigSelection>();
   const [nextNewKey, setNextNewKey] = useState(1);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    searchConfigurableServices(medplum, { signal: controller.signal })
-      .then((result) => {
-        if (!controller.signal.aborted) {
-          // Anything saved while this search was in flight is newer than what it found.
-          setServices((current) => ({
-            items: current.items.reduce((items, stored) => withStoredService(items, stored), result.services),
-            complete: result.complete,
-          }));
-          setLoadError(undefined);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!controller.signal.aborted) {
-          setLoadError(err);
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      });
-    return () => controller.abort();
-  }, [medplum]);
 
   function select(next: ConfigSelection): void {
     if (isSameSelection(next, selection)) {
@@ -99,64 +81,122 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     setPending(undefined);
   }
 
-  const handleStored = useCallback((stored: WithId<HealthcareService>): void => {
-    setServices((current) => ({ ...current, items: withStoredService(current.items, stored) }));
-    setSelection({ kind: 'service', id: stored.id });
-    setDirty(false);
-  }, []);
+  const handleSynced = useCallback(
+    (stored: WithId<HealthcareService>): void => {
+      store([stored]);
+      setSelection({ kind: 'service', id: stored.id });
+      setDirty(false);
+    },
+    [store]
+  );
+
+  // Dirty is left to the page, which remounts on what it stored and reports itself clean. A save landing after
+  // the viewer moved on must not touch the page now shown.
+  const handleActorSynced = useCallback(
+    (syncedFor: ConfigSelection, resources: WithId<Resource>[], openServiceId: string | undefined): void => {
+      store(resources);
+      setSelection((current) =>
+        current?.kind === 'actor' && isSameSelection(current, syncedFor) ? { ...current, openServiceId } : current
+      );
+    },
+    [store]
+  );
 
   const handleDiscardNew = useCallback((): void => {
     setSelection(undefined);
     setDirty(false);
   }, []);
 
-  const selectedService =
-    selection?.kind === 'service' ? services.items.find((service) => service.id === selection.id) : undefined;
-
   let detail: JSX.Element;
   if (selection?.kind === 'new-service') {
     detail = (
       <VisitTypePage
         key={`new-${selection.key}`}
-        onStored={handleStored}
+        onSynced={handleSynced}
         onDiscardNew={handleDiscardNew}
         onDirtyChange={setDirty}
       />
     );
-  } else if (selectedService) {
-    detail = (
+  } else if (selection?.kind === 'service') {
+    const service = services.items.find((service) => service.id === selection.id);
+    detail = service ? (
       <VisitTypePage
         // The version is in the key, so a save or reload remounts the page on what was stored.
-        key={`${selectedService.id}-${selectedService.meta?.versionId}`}
-        service={selectedService}
-        onStored={handleStored}
+        key={`${service.id}-${service.meta?.versionId}`}
+        service={service}
+        onSynced={handleSynced}
         onDirtyChange={setDirty}
       />
+    ) : (
+      <ConfigEmptyState notFound />
     );
-  } else if (selection) {
-    detail = <ConfigEmptyState notFound />;
+  } else if (selection?.kind === 'actor') {
+    const list = actors[selection.resourceType];
+    const actor = list.items.find((item) => item.resource.id === selection.id);
+    if (list.loading || services.loading) {
+      detail = (
+        <Center py={96}>
+          <Loader aria-label="Loading" />
+        </Center>
+      );
+    } else if (actor) {
+      const [schedule] = actor.schedules;
+      detail = (
+        <ActorPage
+          // Every version the page reads is in the key, so a save or reload remounts it on what was stored.
+          key={`${selection.resourceType}/${actor.resource.id}-${actor.resource.meta?.versionId}-${schedule?.id}-${schedule?.meta?.versionId}`}
+          actor={actor}
+          services={services.items}
+          initialOpenServiceId={selection.openServiceId}
+          onSynced={(resources, openServiceId) => handleActorSynced(selection, resources, openServiceId)}
+          onDirtyChange={setDirty}
+        />
+      );
+    } else {
+      detail = <ConfigEmptyState notFound />;
+    }
   } else {
-    detail = <ConfigEmptyState onCreate={startNew} />;
+    detail = <ConfigEmptyState />;
   }
+
+  const sections: ConfigPanelSection[] = [
+    {
+      key: 'service',
+      title: 'Visit types',
+      noun: 'visit types',
+      items: buildServiceItems(services.items, selection, filter, showInactive),
+      loading: services.loading,
+      incomplete: !services.complete,
+      icon: <IconCalendarEvent size={12} />,
+      createLabel: 'New visit type',
+      onCreate: startNew,
+    },
+    ...ACTOR_SECTIONS.map(({ resourceType, ...section }): ConfigPanelSection => ({
+      key: resourceType,
+      ...section,
+      items: buildActorItems(actors[resourceType].items, selection, filter, showInactive),
+      loading: actors[resourceType].loading,
+      incomplete: !actors[resourceType].complete,
+    })),
+  ];
+
+  const loadErrors: [string, unknown][] = [
+    ['Visit types', services.error],
+    ...ACTOR_SECTIONS.map(({ resourceType, title }): [string, unknown] => [title, actors[resourceType].error]),
+  ];
 
   return (
     <Box className={cx(classes.root, props.className)}>
       <Box component="nav" className={classes.sidebar} aria-label="Scheduling configuration">
         <ConfigPanel
-          sections={[
-            {
-              key: 'service',
-              title: 'Visit types',
-              noun: 'visit types',
-              items: buildServiceItems(services.items, selection, filter, showInactive),
-              loading,
-              incomplete: !services.complete,
-              icon: <IconCalendarEvent size={12} />,
-              createLabel: 'New visit type',
-              onCreate: startNew,
-            },
-          ]}
-          onSelect={(_, id) => select({ kind: 'service', id })}
+          sections={sections}
+          onSelect={(sectionKey, id) =>
+            select(
+              isBookableActorType(sectionKey)
+                ? { kind: 'actor', resourceType: sectionKey, id }
+                : { kind: 'service', id }
+            )
+          }
           filter={filter}
           onFilterChange={setFilter}
           showInactive={showInactive}
@@ -166,7 +206,14 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
 
       <Box component="section" className={classes.detail} aria-label="Configuration details">
         <Stack gap="md">
-          {!!loadError && <Alert color="red">Visit types could not be loaded: {normalizeErrorString(loadError)}</Alert>}
+          {loadErrors.map(
+            ([title, error]) =>
+              !!error && (
+                <Alert key={title} color="red">
+                  {title} could not be loaded: {normalizeErrorString(error)}
+                </Alert>
+              )
+          )}
           {detail}
         </Stack>
       </Box>

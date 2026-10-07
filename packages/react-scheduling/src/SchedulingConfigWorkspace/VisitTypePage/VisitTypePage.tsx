@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Badge, Button, Group, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Badge, Group, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { deepClone, deepEquals, normalizeErrorString } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
@@ -29,17 +29,18 @@ import {
   validateSchedulingParameters,
 } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
 import { SchedulingParametersFields } from '../../SchedulingParametersEditor/SchedulingParametersFields';
-import { ConfigSection, SaveBar } from '../ConfigPage/ConfigPage';
+import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPage';
 import type { ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { ParameterWarnings } from '../ConfigPage/ParameterWarnings';
+import { StatusBadge } from '../StatusBadge';
 import { ServiceFacilitiesField } from './ServiceFacilitiesField';
 
 export interface VisitTypePageProps {
   /** The visit type as stored. Omitted to create one. */
   readonly service?: WithId<HealthcareService>;
   /** Called with the visit type as the server now holds it: after a save, or after reloading a newer version. */
-  readonly onStored: (service: WithId<HealthcareService>) => void;
+  readonly onSynced: (service: WithId<HealthcareService>) => void;
   /** Called when a visit type that was being created is discarded instead. */
   readonly onDiscardNew?: () => void;
   /** Called whenever the page starts or stops holding unsaved changes. */
@@ -122,7 +123,7 @@ function buildVisitType(
  * @returns The page.
  */
 export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
-  const { service, onStored, onDiscardNew, onDirtyChange } = props;
+  const { service, onSynced, onDiscardNew, onDirtyChange } = props;
   const medplum = useMedplum();
   const creating = !service;
   const [initial] = useState(() => fieldsOf(service));
@@ -188,7 +189,7 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
       const result = await saveConfigChanges(medplum, [{ stored: service, draft }]);
       const [stored] = result.saved;
       if (stored) {
-        onStored(stored.resource as WithId<HealthcareService>);
+        onSynced(stored.resource as WithId<HealthcareService>);
       } else {
         setFailure(result.failures[0]);
       }
@@ -213,7 +214,7 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
     }
     setReloading(true);
     try {
-      onStored(await medplum.readResource('HealthcareService', service.id, { cache: 'no-cache' }));
+      onSynced(await medplum.readResource('HealthcareService', service.id, { cache: 'no-cache' }));
     } catch (err) {
       setFailure({ conflict: false, message: `Could not reload it: ${normalizeErrorString(err)}` });
     } finally {
@@ -229,10 +230,12 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
         </Text>
         <Group gap="sm">
           <Title order={2}>{service?.name ?? (fields.name.trim() || 'Untitled visit type')}</Title>
-          {creating && (
+          {creating ? (
             <Badge variant="light" color="blue">
               Not saved yet
             </Badge>
+          ) : (
+            <StatusBadge status={fields.active ? 'active' : 'inactive'} />
           )}
         </Group>
       </Stack>
@@ -244,26 +247,19 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
         </Alert>
       )}
 
-      {failure?.conflict && (
-        <Alert color="orange" title={`${initial.name || 'This visit type'} changed since you opened it`}>
-          <Stack gap="sm" align="flex-start">
-            <Text size="sm">
-              A newer version was saved somewhere else, so nothing here was written over it. Reload to see the latest
-              version. Your changes on this page will be discarded.
-            </Text>
-            <Button size="xs" variant="light" color="orange" loading={reloading} onClick={handleReload}>
-              Reload
-            </Button>
-          </Stack>
-        </Alert>
-      )}
-      {failure && !failure.conflict && (
-        <Alert color="red" title="Not saved">
-          {failure.message}
-        </Alert>
-      )}
+      <SaveFailureAlert
+        failure={failure}
+        conflictTitle={`${initial.name || 'This visit type'} changed since you opened it`}
+        reloading={reloading}
+        onReload={handleReload}
+      />
 
       <ConfigSection title="General">
+        <Switch
+          label="Active"
+          checked={fields.active}
+          onChange={(event) => update({ active: event.currentTarget.checked })}
+        />
         <TextInput
           label="Name"
           required
@@ -272,16 +268,6 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
           error={triedToSave || initial.name ? nameError : undefined}
           placeholder="e.g. Initial Visit"
         />
-        <Stack gap={4}>
-          <Switch
-            label="Active"
-            checked={fields.active}
-            onChange={(event) => update({ active: event.currentTarget.checked })}
-          />
-          <Text size="xs" c="dimmed">
-            Turning this off stops new bookings. Existing appointments are untouched.
-          </Text>
-        </Stack>
         <ServiceFacilitiesField
           value={fields.location}
           onChange={(location) => update({ location })}

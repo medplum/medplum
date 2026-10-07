@@ -252,6 +252,40 @@ describe('SmartHealthLinkImport utils', () => {
     expect(importedDocumentReference.author?.[0].reference).toBe('Patient/local-patient');
   });
 
+  test('rewrites references to every source patient, including ones not in the bundle', () => {
+    const result = buildSmartHealthLinkImportBundle(
+      {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          { fullUrl: 'urn:uuid:patient-a', resource: { ...sharedPatient, id: 'source-a' } },
+          { fullUrl: 'urn:uuid:patient-b', resource: { ...sharedPatient, id: 'source-b' } },
+          { resource: { ...condition, subject: { reference: 'Patient/source-b' } } },
+          { resource: { ...observation, subject: { reference: 'https://ehr.example.com/fhir/Patient/source-c' } } },
+          {
+            resource: {
+              ...documentReference,
+              subject: { reference: 'urn:uuid:patient-b' },
+              author: [{ reference: 'Patient/unlisted/_history/2' }, { reference: 'Practitioner/doc-1' }],
+            },
+          },
+        ],
+      },
+      new Set(['Condition/condition-1', 'Observation/observation-1', `DocumentReference/${documentReference.id}`]),
+      { ...sharedPatient, id: 'source-a' },
+      { ...sharedPatient, id: 'local-patient' }
+    );
+
+    expect((findResource(result, 'Condition') as Condition).subject.reference).toBe('Patient/local-patient');
+    expect((findResource(result, 'Observation') as Observation).subject?.reference).toBe('Patient/local-patient');
+    const importedDocumentReference = findResource(result, 'DocumentReference') as DocumentReference;
+    expect(importedDocumentReference.subject?.reference).toBe('Patient/local-patient');
+    expect(importedDocumentReference.author?.map((a) => a.reference)).toEqual([
+      'Patient/local-patient',
+      'Practitioner/doc-1',
+    ]);
+  });
+
   test('selects id-less bundle entries by fullUrl', () => {
     const result = buildSmartHealthLinkImportBundle(
       {
@@ -275,7 +309,7 @@ describe('SmartHealthLinkImport utils', () => {
     });
 
     expect(findEntry(result, 'Condition').request?.ifNoneExist).toBe(
-      'subject=Patient/local-patient&code=http://snomed.info/sct|44054006&date=2026-06-01'
+      'subject=Patient/local-patient&code=http://snomed.info/sct|44054006&recorded-date=2026-06-01'
     );
     expect(findEntry(result, 'Observation').request?.ifNoneExist).toBe(
       'subject=Patient/local-patient&code=http://loinc.org|4548-4&date=2026-05-30'
@@ -306,7 +340,7 @@ describe('SmartHealthLinkImport utils', () => {
     );
 
     expect(findEntry(result, 'Condition').request?.ifNoneExist).toBe(
-      'identifier=http://issuer.example.com/conditions|cond-42'
+      'identifier=http://issuer.example.com/conditions|cond-42&subject=Patient/local-patient'
     );
   });
 
@@ -330,7 +364,9 @@ describe('SmartHealthLinkImport utils', () => {
       { ...sharedPatient, id: 'local-patient' }
     );
 
-    expect(findEntry(result, 'Condition').request?.ifNoneExist).toBe('identifier=cond-42');
+    expect(findEntry(result, 'Condition').request?.ifNoneExist).toBe(
+      'identifier=cond-42&subject=Patient/local-patient'
+    );
     // No usable identifier, so it falls back to patient + code + date.
     expect(findEntry(result, 'Observation').request?.ifNoneExist).toBe(
       'subject=Patient/local-patient&code=http://loinc.org|4548-4&date=2026-05-30'

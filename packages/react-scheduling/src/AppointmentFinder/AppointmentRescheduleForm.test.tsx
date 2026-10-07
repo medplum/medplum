@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { toServiceTypeCodeableConcepts } from '@medplum/core';
+import { createReference, setPrimaryProvider, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
@@ -9,6 +9,8 @@ import type { MockInstance } from 'vitest';
 import { installFindStub } from '../stories/mockFind';
 import { installRescheduleStub } from '../stories/mockReschedule';
 import {
+  DrOkaforPractitioner,
+  DrOkaforSchedule,
   DrRiveraSchedule,
   ExamRoomASchedule,
   RiveraImagingAppointment,
@@ -26,7 +28,7 @@ import {
   setupBookingClient,
 } from '../test-utils/bookingForm';
 import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
-import type { AppointmentRescheduleFormProps } from './AppointmentRescheduleForm';
+import type { AppointmentReschedule, AppointmentRescheduleFormProps } from './AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from './AppointmentRescheduleForm';
 
 installAutocompleteTimers();
@@ -283,6 +285,31 @@ describe('AppointmentRescheduleForm', () => {
   });
 
   describe('Moving the visit', () => {
+    test('Asks for the primary provider first, whatever order its slots are in', async () => {
+      // Held on Dr. Rivera's schedule first, but Dr. Okafor is the provider marked primary.
+      const okaforSlot: WithId<Slot> = {
+        ...HELD_SLOTS[0],
+        id: 'slot-okafor-imaging-tue',
+        schedule: createReference(DrOkaforSchedule),
+      };
+      await medplum.createResource(okaforSlot);
+      const appointment: WithId<Appointment> = {
+        ...APPOINTMENT,
+        slot: [...(APPOINTMENT.slot ?? []), createReference(okaforSlot)],
+        participant: setPrimaryProvider(
+          [...APPOINTMENT.participant, { status: 'accepted', actor: createReference(DrOkaforPractitioner) }],
+          createReference(DrOkaforPractitioner)
+        ),
+      };
+      await medplum.updateResource(appointment);
+      const post = vi.spyOn(medplum, 'post');
+      await setup(medplum, { appointment });
+
+      await moveToAnotherTime();
+
+      expect(parameterValues(lastRescheduleParameters(post), 'schedule')[0]).toBe('Schedule/schedule-dr-okafor');
+    });
+
     test('Moves it to the time chosen, on the schedules searched', async () => {
       const post = vi.spyOn(medplum, 'post');
       await setup(medplum);
@@ -290,8 +317,8 @@ describe('AppointmentRescheduleForm', () => {
       await moveToAnotherTime();
 
       const parameters = lastRescheduleParameters(post);
-      const [appointment] = onRescheduled.mock.calls[0] as [{ appointment: Appointment }];
-      expect(parameterValues(parameters, 'start')).toEqual([appointment.appointment.start]);
+      const [reschedule] = onRescheduled.mock.calls[0] as [AppointmentReschedule];
+      expect(parameterValues(parameters, 'start')).toEqual([reschedule.appointments[0].start]);
       expect(parameterValues(parameters, 'schedule')).toEqual(expect.arrayContaining(HELD_SCHEDULES));
 
       // The visit type is not sent: the operation reads the one the visit is on file for.
@@ -319,8 +346,8 @@ describe('AppointmentRescheduleForm', () => {
 
       await moveToAnotherTime();
 
-      const [reschedule] = onRescheduled.mock.calls[0] as [{ appointment: Appointment }];
-      expect(reschedule.appointment.serviceType).toStrictEqual(APPOINTMENT.serviceType);
+      const [reschedule] = onRescheduled.mock.calls[0] as [AppointmentReschedule];
+      expect(reschedule.appointments[0].serviceType).toStrictEqual(APPOINTMENT.serviceType);
     });
 
     test('Reports what the move wrote', async () => {
@@ -329,9 +356,9 @@ describe('AppointmentRescheduleForm', () => {
       await moveToAnotherTime();
 
       expect(onRescheduled).toHaveBeenCalledTimes(1);
-      const [reschedule] = onRescheduled.mock.calls[0] as [{ appointment: Appointment; slots: Slot[] }];
-      expect(reschedule.appointment.id).toBe(APPOINTMENT.id);
-      expect(reschedule.appointment.start).not.toBe(APPOINTMENT.start);
+      const [reschedule] = onRescheduled.mock.calls[0] as [AppointmentReschedule];
+      expect(reschedule.appointments[0].id).toBe(APPOINTMENT.id);
+      expect(reschedule.appointments[0].start).not.toBe(APPOINTMENT.start);
       expect(reschedule.slots.length).toBe(HELD_SCHEDULES.length);
     });
 

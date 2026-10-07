@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, MedplumRequestOptions } from '@medplum/core';
-import { badRequest, extractServiceTypeReferences, isDefined, OperationOutcomeError, resolveId } from '@medplum/core';
+import {
+  badRequest,
+  extractServiceTypeReferences,
+  isDefined,
+  OperationOutcomeError,
+  resolveId,
+  setPrimaryProvider,
+} from '@medplum/core';
 import type {
   Appointment,
   AppointmentParticipant,
@@ -146,10 +153,13 @@ function resolveParticipants(appointment: Appointment, schedules: readonly Sched
   });
   const keptReferences = new Set(kept.map((participant) => participant.actor?.reference).filter(isDefined));
 
-  return [
-    ...kept,
-    ...newActors
-      .filter((actor) => actor.reference && !keptReferences.has(actor.reference))
-      .map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
-  ];
+  return setPrimaryProvider(
+    [
+      ...kept,
+      ...newActors
+        .filter((actor) => actor.reference && !keptReferences.has(actor.reference))
+        .map((actor) => ({ actor, required: 'required', status: 'needs-action' }) as const),
+    ],
+    newActors.find((actor) => actor.reference?.startsWith('Practitioner/'))
+  );
 }

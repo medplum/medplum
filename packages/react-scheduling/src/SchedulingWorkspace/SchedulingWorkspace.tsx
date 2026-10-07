@@ -9,7 +9,7 @@ import {
   normalizeErrorString,
   SchedulingScheduleColorURI,
 } from '@medplum/core';
-import type { Appointment, Extension, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Extension, Location, Reference, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -56,9 +56,13 @@ export interface SchedulingWorkspaceProps {
   readonly procedureBinding?: string;
   /** The ValueSet the diagnosis code field binds to. Defaults to full ICD-10-CM valueset. */
   readonly diagnosisBinding?: string;
+  /** See {@link AppointmentProposalFormProps.mrnSystem}. */
+  readonly mrnSystem?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
   readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
+  /** Called with the appointment as written, after its patient or its visit type's codes are edited. */
+  readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
   /**
    * Overrides the value set the appointment detail view offers cancellation reasons
    * from, for a host coding them against its own terminology.
@@ -84,10 +88,16 @@ export interface SchedulingWorkspaceProps {
    * {@link AppointmentProposalFormProps.appointmentExtensions}.
    */
   readonly appointmentExtensions?: readonly Extension[];
+  /**
+   * The site the Location filter starts on, e.g. the facility the host launched
+   * scheduling from. The user can still change or clear it. Read once on mount; key
+   * the workspace to start it over on another site.
+   */
+  readonly defaultLocation?: Reference<Location> | WithId<Location>;
 }
 
 /**
- * A data-coordination component pairing {@link CalendarsPanel} with {@link MultiCalendar}.
+ * A data-coordination component pairing `CalendarsPanel` with {@link MultiCalendar}.
  *
  * - Picks a color for each Schedule so that it can render consistently across
  *   those components.
@@ -96,13 +106,15 @@ export interface SchedulingWorkspaceProps {
  *   The form writes the booking and announces what it wrote, which is what puts the
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
- * - Shows what is booked: clicking an appointment opens {@link AppointmentDetails} in the
+ * - Shows what is booked: clicking an appointment opens `AppointmentDetails` in the
  *   same pane the booking form uses, describing the visit and offering to cancel or
  *   reschedule it.
  * - Highlights the time last chosen, wherever it was chosen: the click that opened the
  *   pane, then whatever the form's time search settles on, and nothing while the form
  *   holds no time. The calendar is never moved to reach it — a highlight off the week
  *   on screen is kept, and is drawn again on paging back to it.
+ * - Can open on a site the host chooses: `defaultLocation` is where the Location filter,
+ *   and so the booking form, starts.
  *
  * @param props - Component props
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
@@ -111,10 +123,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const {
     procedureBinding,
     diagnosisBinding,
+    mrnSystem,
     onBooked,
     appointmentCancellationReasonValueSet,
     canBypassSchedulingRules,
     appointmentExtensions,
+    defaultLocation,
   } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
@@ -129,7 +143,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // Owned by `CalendarFilters`, which reports both whenever either changes. Held here
   // because the candidate search below is keyed on them.
-  const [filters, setFilters] = useState<CalendarFilterValues>(NO_FILTERS);
+  const initialFilters: CalendarFilterValues = defaultLocation ? { location: defaultLocation } : NO_FILTERS;
+  const [filters, setFilters] = useState<CalendarFilterValues>(initialFilters);
   const { service: selectedService, location: selectedLocation } = filters;
 
   const [range, setRange] = useState<DateTimeRange>();
@@ -319,7 +334,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           items={panelItems}
           candidatesLoading={candidatesLoading}
           onToggle={toggleCandidate}
-          filters={<CalendarFilters onChange={setFilters} />}
+          filters={<CalendarFilters defaultValue={initialFilters} onChange={setFilters} />}
         />
       </div>
       <div className={classes.calendar}>
@@ -355,6 +370,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             onCancelled={props.onCancelled}
             onRescheduled={props.onRescheduled}
             onToggleTimeFinder={setRescheduleFinderOpen}
+            onUpdated={props.onUpdated}
+            procedureBinding={procedureBinding}
+            diagnosisBinding={diagnosisBinding}
+            mrnSystem={mrnSystem}
           />
         </section>
       )}
@@ -369,8 +388,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             defaultStart={bookingSelection.start}
             procedureBinding={procedureBinding}
             diagnosisBinding={diagnosisBinding}
+            mrnSystem={mrnSystem}
             canBypassSchedulingRules={canBypassSchedulingRules}
             appointmentExtensions={appointmentExtensions}
+            allowRecurring
             onToggleTimeFinder={setTimeFinderOpen}
             onChangeTime={setHighlight}
             onBooked={finishBooking}

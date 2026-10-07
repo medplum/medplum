@@ -6,7 +6,8 @@ import type { Binary, DocumentReference, Observation, Patient, Project } from '@
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
-import type { ArrayColumnPaddingConfig, MedplumServerConfig } from '../../config/types';
+import type { ArrayColumnPaddingConfig } from '../../config/types';
+import type { ServerConfig } from '../../config/utils';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject, withTestContext } from '../../test.setup';
 import type { SystemRepository } from '../repo';
@@ -161,7 +162,7 @@ describe('Repository Row Builder', () => {
         },
         false,
       ],
-    ])('with %s', async (_desc, arrayColumnPadding: MedplumServerConfig['arrayColumnPadding'] | undefined, shouldPad) =>
+    ])('with %s', async (_desc, arrayColumnPadding: ServerConfig['arrayColumnPadding'] | undefined, shouldPad) =>
       withTestContext(async () => {
         const config = getConfig();
         if (arrayColumnPadding) {

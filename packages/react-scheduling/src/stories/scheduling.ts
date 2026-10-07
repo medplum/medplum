@@ -11,8 +11,10 @@ import {
   REQUIRES_DIAGNOSIS_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
+  SchedulingMedicalNecessityURI,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
+  setPrimaryProvider,
   setScheduleSchedulingParameter,
   SNOMED,
   TimezoneExtensionURI,
@@ -39,6 +41,7 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import { getBrowserTimezone } from '../AppointmentFinder/AppointmentFinder.times';
+import { setScheduleAvailability } from '../availability';
 import {
   getHealthcareServiceSchedulingParameterValues,
   setHealthcareServiceSchedulingParameterValues,
@@ -720,10 +723,84 @@ const CONFIGURED_SERVICES = new Map<string, Resource>([
   [UltrasoundImagingService.id, ConfiguredUltrasoundService],
 ]);
 
+export const DrNguyenPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-nguyen',
+  name: [{ given: ['Linh'], family: 'Nguyen', prefix: ['Dr.'] }],
+  extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
+};
+
+/**
+ * Offers two visit types, and overrides one of them: turnover after telehealth runs longer for this provider,
+ * who also sees telehealth only on Tuesday and Thursday mornings.
+ */
+export const DrNguyenSchedule = setScheduleAvailability(
+  setScheduleSchedulingParameter(
+    {
+      ...buildSchedule('schedule-dr-nguyen', 'Practitioner/dr-nguyen', 'Dr. Linh Nguyen'),
+      serviceType: [
+        ...toServiceTypeCodeableConcepts(UltrasoundImagingService),
+        ...toServiceTypeCodeableConcepts(TelehealthService),
+      ],
+    },
+    TelehealthService,
+    { url: 'bufferAfter', valueDuration: { value: 10, unit: 'min' } }
+  ),
+  TelehealthService,
+  [{ daysOfWeek: ['tue', 'thu'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
+) as WithId<Schedule>;
+
+/** A provider on leave: still active, with the Schedule switched off until they return. */
+export const DrReyesPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-reyes',
+  name: [{ given: ['Sofia'], family: 'Reyes', prefix: ['Dr.'] }],
+};
+
+export const DrReyesSchedule: WithId<Schedule> = {
+  ...buildSchedule('schedule-dr-reyes', 'Practitioner/dr-reyes', 'Dr. Sofia Reyes'),
+  active: false,
+};
+
+/** Retired, so it is hidden until inactive resources are shown. Its Schedule is switched off too. */
+export const Ultrasound3Device: WithId<Device> = {
+  resourceType: 'Device',
+  id: 'ultrasound-3',
+  deviceName: [{ name: 'Ultrasound 3 (Retired)', type: 'user-friendly-name' }],
+  status: 'inactive',
+};
+
+export const Ultrasound3Schedule: WithId<Schedule> = {
+  ...buildSchedule('schedule-ultrasound-3', 'Device/ultrasound-3', 'Ultrasound 3 (Retired)'),
+  active: false,
+};
+
+/** A room with no Schedule, so it offers nothing. */
+export const ExamRoomC: WithId<Location> = {
+  resourceType: 'Location',
+  id: 'exam-room-c',
+  name: 'Exam Room C',
+  physicalType: physicalType('ro'),
+  partOf: { reference: 'Location/main-clinic' },
+};
+
+/** Neither she nor Walk-in Clinic sets a time zone, so the hours she offers it in can't be read. */
+export const DrPatelPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-patel',
+  name: [{ given: ['Anika'], family: 'Patel', prefix: ['Dr.'] }],
+};
+
+export const DrPatelSchedule = buildSchedule('schedule-dr-patel', 'Practitioner/dr-patel', 'Dr. Anika Patel', {
+  id: 'walk-in',
+  name: 'Walk-in Clinic',
+});
+
 /**
  * The clinic as an administrator configuring it sees it: `SchedulingFixtures`, with its visit types filled out
  * the way a clinic would set them, more visit types covering service facilities, split hours, and group
- * capacity, and the ones booking hides because they have no duration or are turned off.
+ * capacity, and what booking hides. Visit types that have no duration or are turned off, a provider on leave
+ * whose Schedule is switched off, a retired device, a room with no Schedule, and a provider with no time zone.
  *
  * Kept out of `SchedulingFixtures`, whose tests read the whole list.
  */
@@ -733,6 +810,15 @@ export const ConfigFixtures = [
   GroupEducationService,
   UnconfiguredService,
   DiscontinuedService,
+  DrNguyenPractitioner,
+  DrNguyenSchedule,
+  DrReyesPractitioner,
+  DrReyesSchedule,
+  Ultrasound3Device,
+  Ultrasound3Schedule,
+  ExamRoomC,
+  DrPatelPractitioner,
+  DrPatelSchedule,
 ];
 
 /**
@@ -807,6 +893,7 @@ export function buildProposedAppointment(options: ProposedAppointmentOptions): A
   } = options;
 
   const end = new Date(new Date(start).getTime() + durationMinutes * 60 * 1000).toISOString();
+  const actors = actorReferences.map((actor) => (typeof actor === 'string' ? { reference: actor } : actor));
 
   return {
     resourceType: 'Appointment',
@@ -819,11 +906,10 @@ export function buildProposedAppointment(options: ProposedAppointmentOptions): A
         extension: [{ url: ServiceTypeReferenceURI, valueReference: { reference: `HealthcareService/${serviceId}` } }],
       },
     ],
-    participant: actorReferences.map((actor) => ({
-      actor: typeof actor === 'string' ? { reference: actor } : actor,
-      required: 'required',
-      status: 'needs-action',
-    })),
+    participant: setPrimaryProvider(
+      actors.map((actor) => ({ actor, required: 'required', status: 'needs-action' })),
+      actors.find((actor) => actor.reference?.startsWith('Practitioner/'))
+    ),
     contained: scheduleReferences.map((reference) => ({
       resourceType: 'Slot',
       status: 'busy',
@@ -907,6 +993,17 @@ export const UntypedMrnPatient = buildPatient('sam-whitfield', 'Sam', 'Whitfield
 
 export const PatientFixtures = [ElderJordanPatient, YoungerJordanPatient, UntypedMrnPatient];
 
+export const MilesCooperPatient = buildPatient('pt-cooper', 'Miles', 'Cooper', '1985-02-11');
+
+/** Who the calendar's appointments are for. Kept apart from {@link PatientFixtures}, the namesakes the patient search is tested against. */
+export const AppointmentPatientFixtures = [
+  MilesCooperPatient,
+  buildPatient('pt-alvarez', 'Renee', 'Alvarez', '1972-09-03'),
+  buildPatient('pt-jones', 'Liam', 'Jones', '2001-01-17'),
+  buildPatient('pt-garcia', 'Eliana', 'Garcia', '1990-07-22'),
+  buildPatient('pt-miller', 'Elijah', 'Miller', '1958-12-05'),
+];
+
 /**
  * Appointments and Slots for the calendar view, dated within the week of Monday,
  * May 4 2020 — the date `MockDateWrapper` freezes the clock to, so `timeGridWeek`
@@ -951,7 +1048,7 @@ export const RiveraImagingAppointment: WithId<Appointment> = {
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
   slot: RiveraImagingHeldSlots.map(createReference),
   participant: [
-    { status: 'accepted', actor: { reference: 'Patient/pt-cooper', display: 'Miles Cooper' } },
+    { status: 'accepted', actor: createReference(MilesCooperPatient) },
     { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
     { status: 'accepted', actor: createReference(Ultrasound1Device) },
     { status: 'accepted', actor: createReference(ExamRoomA) },
@@ -1086,6 +1183,35 @@ export const DrBrownAppointments: WithId<Appointment>[] = DrBrownSlots.map((slot
   ],
 }));
 
+export const ChenInfusionHeldSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-chen-infusion-thu',
+  status: 'busy',
+  start: '2020-05-07T14:00:00Z',
+  end: '2020-05-07T15:00:00Z',
+  schedule: createReference(DrChenInfusionSchedule),
+};
+
+/**
+ * An infusion on Dr. Chen's calendar, booked for a visit type asking for procedure and diagnosis
+ * codes and a medical necessity attestation, with all three given.
+ */
+export const ChenInfusionAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-chen-infusion-thu',
+  status: 'booked',
+  start: ChenInfusionHeldSlot.start,
+  end: ChenInfusionHeldSlot.end,
+  serviceType: [...toServiceTypeCodeableConcepts(InfusionService), { coding: [ProcedureCodes[0]] }],
+  reasonCode: [{ coding: [DiagnosisCodes[0]] }],
+  extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
+  slot: [createReference(ChenInfusionHeldSlot)],
+  participant: [
+    { status: 'accepted', actor: createReference(ElderJordanPatient) },
+    { status: 'accepted', actor: createReference(DrChenPractitioner) },
+  ],
+};
+
 export const CalendarWeekFixtures = [
   RiveraImagingAppointment,
   ...RiveraImagingHeldSlots,
@@ -1098,4 +1224,9 @@ export const CalendarWeekFixtures = [
   DrBrownSchedule,
   ...DrBrownSlots,
   ...DrBrownAppointments,
+  DrChenPractitioner,
+  InfusionService,
+  DrChenInfusionSchedule,
+  ChenInfusionHeldSlot,
+  ChenInfusionAppointment,
 ];
