@@ -18,17 +18,9 @@ import {
   SchedulingMedicalNecessityURI,
   toAppointmentSiteReference,
 } from '@medplum/core';
-import type {
-  Appointment,
-  Extension,
-  HealthcareService,
-  Location,
-  OperationOutcome,
-  Patient,
-  Reference,
-} from '@medplum/fhirtypes';
+import type { Appointment, Extension, HealthcareService, Location, Patient, Reference } from '@medplum/fhirtypes';
 import { CalendarDateInput, ResourceInput, ResourceName } from '@medplum/react';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle, IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -132,7 +124,7 @@ export interface AppointmentProposalFormProps {
    * the time it holds blocks every search that keeps any of the actors holding it, and
    * moving a visit to a different room at the same hour finds nothing.
    */
-  readonly ignoreAppointment?: Reference<Appointment> | WithId<Appointment>;
+  readonly ignoreAppointment?: WithId<Appointment>;
   /**
    * The day the time search opens on, and the day a typed time starts out on.
    * Defaults to today.
@@ -437,34 +429,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     [service, candidates]
   );
 
-  // Only a typed time uses the appointment's length and Slots.
-  const [ignoredReadOutcome, setIgnoredReadOutcome] = useState<OperationOutcome>();
-  const ignoredResource = useResource<Appointment>(
-    canBypassSchedulingRules ? ignoreAppointment : undefined,
-    setIgnoredReadOutcome
-  );
-  const ignoredReadFailed = ignoredResource === undefined && ignoredReadOutcome !== undefined;
-  const storedDurationMinutes = ignoredResource ? getRescheduleDurationMinutes(ignoredResource) : undefined;
-  const durationLoading = ignoreAppointment !== undefined && ignoredResource === undefined && !ignoredReadFailed;
-  let durationError: string | undefined;
-  if (mode === 'reschedule' && !durationLoading && storedDurationMinutes === undefined) {
-    durationError = ignoredReadFailed
-      ? `This appointment could not be read: ${normalizeErrorString(ignoredReadOutcome)}. Choose a time from the search.`
-      : 'This appointment has no valid length. Choose a time from the search.';
-  }
+  const storedDurationMinutes = ignoreAppointment ? getRescheduleDurationMinutes(ignoreAppointment) : undefined;
+  const durationError =
+    mode === 'reschedule' && storedDurationMinutes === undefined
+      ? 'This appointment has no valid length. Choose a time from the search.'
+      : undefined;
   // State holds the edit rather than the value, so a different visit type falls back to
   // its own default instead of keeping the last length typed.
   const effectiveDurationMinutes =
     mode === 'reschedule' ? storedDurationMinutes : (manualDurationMinutes ?? configuredDurationMinutes);
-
-  // Re-propose a typed time when the stored length changes, as when a referenced appointment loads.
-  const [proposedDurationMinutes, setProposedDurationMinutes] = useState(storedDurationMinutes);
-  if (storedDurationMinutes !== proposedDurationMinutes) {
-    setProposedDurationMinutes(storedDurationMinutes);
-    if (mode === 'reschedule' && manualDateTime && (!chosen || manual)) {
-      enterManualTime(manualDateTime, undefined);
-    }
-  }
 
   // Reconcile permission changes before rendering, so a revoked choice cannot be submitted.
   if (!canBypassSchedulingRules && manualChoice) {
@@ -530,7 +503,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       service,
       candidates,
       range,
-      ignoredSlotReferences: ignoredResource?.slot?.map(getReferenceString).filter(isDefined),
+      ignoredSlotReferences: ignoreAppointment?.slot?.map(getReferenceString).filter(isDefined),
     })
       .then((found) => {
         if (active) {
@@ -547,7 +520,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     return () => {
       active = false;
     };
-  }, [medplum, chosen, debouncedChoice, service, candidates, ignoredResource]);
+  }, [medplum, chosen, debouncedChoice, service, candidates, ignoreAppointment]);
 
   function choosePatient(next: WithId<Patient> | undefined): void {
     setPatient(next);

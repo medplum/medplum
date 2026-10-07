@@ -33,10 +33,8 @@ import {
   setupBookingClient,
 } from '../test-utils/bookingForm';
 import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
-import { AppointmentProposalForm } from './AppointmentProposalForm';
 import type { AppointmentReschedule, AppointmentRescheduleFormProps } from './AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from './AppointmentRescheduleForm';
-import { useRescheduleDefaults } from './useRescheduleDefaults';
 
 installAutocompleteTimers();
 
@@ -220,88 +218,6 @@ describe('AppointmentRescheduleForm', () => {
       await enterTime();
       expect(screen.getByText(/has no valid length/)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
-    });
-
-    function ProposalByReference(): JSX.Element | null {
-      const defaults = useRescheduleDefaults(APPOINTMENT);
-      if (defaults.loading) {
-        return null;
-      }
-      return (
-        <AppointmentProposalForm
-          mode="reschedule"
-          canBypassSchedulingRules
-          defaultService={defaults.service}
-          defaultSelections={defaults.selections}
-          defaultStart={new Date(APPOINTMENT.start as string)}
-          ignoreAppointment={createReference(APPOINTMENT)}
-          onSubmit={vi.fn()}
-        />
-      );
-    }
-
-    /**
-     * Holds back the read of the appointment being moved until released, or fails it.
-     * @param fail - Rejects the read instead of holding it.
-     * @returns Lets the read go ahead.
-     */
-    function holdAppointmentRead(fail?: Error): () => void {
-      medplum.invalidateAll();
-      let release: () => void = () => undefined;
-      const loaded = new Promise<void>((resolve) => {
-        release = resolve;
-      });
-      const readReference = medplum.readReference.bind(medplum);
-      vi.spyOn(medplum, 'readReference').mockImplementation(((reference, options) => {
-        if (reference.reference !== `Appointment/${APPOINTMENT.id}`) {
-          return readReference(reference, options);
-        }
-        return fail ? Promise.reject(fail) : loaded.then(() => readReference(reference, options));
-      }) as MockClient['readReference']);
-      return () => release();
-    }
-
-    test('reads a referenced appointment for its length and its own slots, keeping a time typed while it loads', async () => {
-      const release = holdAppointmentRead();
-      renderWithMedplum(<ProposalByReference />, medplum);
-      await settleAutocomplete();
-      await openTimeFinder();
-      // 11:00 in New York is 15:00Z, the time the appointment's own slots hold.
-      fireEvent.change(screen.getByLabelText('Date & time'), { target: { value: '2026-08-18T11:00' } });
-      await settleAutocomplete();
-      expect(screen.queryByText(/has no valid length/)).not.toBeInTheDocument();
-      await act(async () => release());
-      await settleAutocomplete();
-      expect(screen.getByLabelText('Minutes')).toHaveValue('30');
-      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeEnabled();
-      expect(screen.queryByText(/has no valid length/)).not.toBeInTheDocument();
-      expect(screen.queryByText(/Overlaps/)).not.toBeInTheDocument();
-    });
-
-    test('keeps a searched time chosen while the referenced appointment loads', async () => {
-      const release = holdAppointmentRead();
-      renderWithMedplum(<ProposalByReference />, medplum);
-      await settleAutocomplete();
-      await openTimeFinder();
-      fireEvent.change(screen.getByLabelText('Date & time'), { target: { value: '2026-08-18T11:00' } });
-      await settleAutocomplete();
-      await chooseFirstOfferedTime();
-      const chosenTime = (): string | undefined =>
-        screen.getAllByLabelText<HTMLInputElement>('Date & time').find((input) => input.hasAttribute('readonly'))
-          ?.value;
-      const searched = chosenTime();
-      expect(searched).not.toContain('11:00 AM');
-      await act(async () => release());
-      await settleAutocomplete();
-      expect(chosenTime()).toBe(searched);
-    });
-
-    test('says why a referenced appointment that cannot be read has no length', async () => {
-      holdAppointmentRead(new Error('Forbidden'));
-      renderWithMedplum(<ProposalByReference />, medplum);
-      await settleAutocomplete();
-      await openTimeFinder();
-      expect(screen.getByText(/could not be read: Forbidden/)).toBeInTheDocument();
     });
 
     test('clears a manual selection if permission is withdrawn', async () => {
