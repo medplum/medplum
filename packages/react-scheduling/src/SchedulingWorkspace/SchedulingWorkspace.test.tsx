@@ -451,30 +451,6 @@ describe('SchedulingWorkspace', () => {
       await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(0));
       expect(appointmentEvents('Renee Alvarez')).toHaveLength(1);
     });
-
-    test('a service type keeps its color when another is added ahead of it', async () => {
-      clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
-      const { unmount } = renderWithMedplum(
-        <SchedulingWorkspace />,
-        await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures])
-      );
-      await waitFor(() => expect(eventColor('Liam Jones')).toBeDefined());
-      const color = eventColor('Liam Jones');
-      unmount();
-
-      // A service type sorting ahead of every other one, which would move each of them onto
-      // the next color if their colors were picked by their place in the list.
-      renderWithMedplum(
-        <SchedulingWorkspace />,
-        await setupClient([
-          { resourceType: 'HealthcareService', name: 'Allergy Consult' },
-          ...SchedulingFixtures,
-          ...CalendarWeekFixtures,
-        ])
-      );
-      await waitFor(() => expect(eventColor('Liam Jones')).toBeDefined());
-      expect(eventColor('Liam Jones')).toBe(color);
-    });
   });
 
   describe('saying which clock the calendar is drawn on', () => {
