@@ -3,10 +3,12 @@
 import type { WithId } from '@medplum/core';
 import {
   createReference,
+  getExtension,
   getPrimaryProvider,
   getReferenceString,
   isDefined,
   isResource,
+  OccurrenceChangedExtensionURI,
   ServiceTypeReferenceURI,
   setPrimaryProvider,
   toServiceTypeCodeableConcepts,
@@ -31,6 +33,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { addTestUser, createTestProject } from '../../test.setup';
+import { weeklyRecurrenceTemplate } from './utils/recurrence';
 import type {
   SchedulingParametersExtension,
   SchedulingParametersExtensionExtension,
@@ -352,6 +355,9 @@ describe('Appointment/:id/$reschedule', () => {
     // The patient participant is preserved without the request having to resubmit it
     expect(appointment.participant).toContainEqual({ actor: createReference(patient), status: 'accepted' });
 
+    // Only an occurrence of a recurring series is marked as changed
+    expect(getExtension(appointment, OccurrenceChangedExtensionURI)).toBeUndefined();
+
     // The vacated time is bookable again
     const rebooked = await book(makeProposal({ start, end, schedules: [practitionerSchedule] }));
     expect(rebooked.id).not.toStrictEqual(booked.id);
@@ -444,6 +450,55 @@ describe('Appointment/:id/$reschedule', () => {
       start: '2026-01-27T18:30:00.000Z',
       end: newStart,
     });
+  });
+
+  test('marks an occurrence of a recurring series moved to a new time as changed', async () => {
+    const practitionerSchedule = await makeSchedule(practitioner);
+    const roomOneSchedule = await makeSchedule(roomOne);
+    const roomTwoSchedule = await makeSchedule(roomTwo);
+    const start = '2026-02-03T16:00:00.000Z'; // Tue 11am EST
+    const end = '2026-02-03T17:00:00.000Z';
+    const newStart = '2026-02-10T19:00:00.000Z'; // the second occurrence's Tue, at 2pm EST
+
+    const proposal = makeProposal({ start, end, schedules: [practitionerSchedule, roomOneSchedule] });
+    proposal.extension = [weeklyRecurrenceTemplate(new Date(start), 2, 'America/New_York')];
+    const bookResponse = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'appointment', resource: proposal }] });
+    expect(bookResponse).toHaveStatus(201);
+    const [first, second] = bundleResources(bookResponse.body).filter((r) =>
+      isResource<Appointment>(r, 'Appointment')
+    ) as WithId<Appointment>[];
+
+    const moveSecond = async (): Promise<Appointment> => {
+      const response = await reschedule(second.id, {
+        start: newStart,
+        schedules: [practitionerSchedule, roomOneSchedule],
+      });
+      expect(response).toHaveStatus(200);
+      return bundleResources(response.body).find((r) => isResource<Appointment>(r, 'Appointment')) as Appointment;
+    };
+    const rescheduled = [await moveSecond(), await moveSecond()];
+
+    // Marked once, however many times it is moved, and the rest of its extensions are kept
+    for (const appointment of rescheduled) {
+      expect(appointment.extension?.filter((ext) => ext.url === OccurrenceChangedExtensionURI)).toStrictEqual([
+        { url: OccurrenceChangedExtensionURI, valueBoolean: true },
+      ]);
+      expect(appointment.extension).toStrictEqual([...(second.extension ?? []), expect.anything()]);
+    }
+
+    // Reassigning an occurrence to another room at the same time keeps it on the series' pattern
+    const reassignResponse = await reschedule(first.id, {
+      start,
+      schedules: [practitionerSchedule, roomTwoSchedule],
+    });
+    expect(reassignResponse).toHaveStatus(200);
+    const reassigned = bundleResources(reassignResponse.body).find((r) =>
+      isResource<Appointment>(r, 'Appointment')
+    ) as Appointment;
+    expect(reassigned.extension).toStrictEqual(first.extension);
   });
 
   test('rejects an appointment that is not pending or booked', async () => {

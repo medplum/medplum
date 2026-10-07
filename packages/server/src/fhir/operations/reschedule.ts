@@ -7,9 +7,12 @@ import {
   badRequest,
   createReference,
   extractServiceTypeReferences,
+  getExtension,
   isDefined,
   isReference,
+  OccurrenceChangedExtensionURI,
   OperationOutcomeError,
+  RecurrenceIdExtensionURI,
   serviceTypeIncludesService,
   setPrimaryProvider,
 } from '@medplum/core';
@@ -61,7 +64,9 @@ type RescheduleParameters = {
  * from the results. The Slot resources are derived from the scheduling parameters rather than
  * submitted, and every attribute of the stored Appointment other than `start`, `end`,
  * `participant` and `slot` is left untouched — including `status`, since the appointment
- * lifecycle belongs to $hold, $confirm, and $cancel.
+ * lifecycle belongs to $hold, $confirm, and $cancel. An occurrence of a recurring series moved to
+ * a new time is also marked with R5's `occurrenceChanged`, since it no longer follows the series'
+ * pattern; reassigning it to new Schedules at the same time leaves it as it was.
  *
  * The service the move is measured against — the duration it runs for, the grid it aligns to,
  * the buffers around it — is read off the Appointment's own `serviceType`, which must name
@@ -190,12 +195,25 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
       for (const [i, slot] of slots.entries()) {
         createdSlots[i] = await txRepo.createResource<Slot>(slot);
       }
+      const timeChanged =
+        interval.start.valueOf() !== Date.parse(existingAppointment.start as string) ||
+        interval.end.valueOf() !== Date.parse(existingAppointment.end as string);
+
+      const nextExtension =
+        timeChanged && getExtension(existingAppointment, RecurrenceIdExtensionURI)
+          ? [
+              ...(existingAppointment.extension ?? []).filter((ext) => ext.url !== OccurrenceChangedExtensionURI),
+              { url: OccurrenceChangedExtensionURI, valueBoolean: true },
+            ]
+          : existingAppointment.extension;
+
       const updatedAppointment = await txRepo.updateResource<Appointment>({
         ...existingAppointment,
         start: interval.start.toISOString(),
         end: interval.end.toISOString(),
         participant,
         slot: createdSlots.map((slot) => createReference(slot)),
+        extension: nextExtension,
       });
 
       return [updatedAppointment, ...createdSlots];
