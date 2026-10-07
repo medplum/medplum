@@ -188,5 +188,8 @@
   },
   "v52": {
     "serverVersion": "5.2.2"
+  },
+  "v53": {
+    "serverVersion": "5.2.3"
   }
 }

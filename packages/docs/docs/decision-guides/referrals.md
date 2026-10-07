@@ -7,7 +7,9 @@ download_slug: referrals
 
 # Referrals Decision Guide
 
-_Companion to the [Referral Management](/docs/careplans/referrals) docs._
+_Companion to the [Referrals](/docs/careplans/referrals) docs._
+
+A referral needs more than a send button. Use this guide with your clinical and operations teams to decide who owns each step, what the receiving team needs, and how you will know the loop is closed.
 
 ## Section 1: Use Case & Participants
 
@@ -35,6 +37,8 @@ _Companion to the [Referral Management](/docs/careplans/referrals) docs._
 - Some combination
 
 *Why: drives how recipients are stored and selected (3.3), and which outbound channels you support (3.5).*
+
+For teams sharing one project, create receiving work against the shared ServiceRequest directly. Add transmission and identifier reconciliation when records cross systems. See [internal and external referrals](/docs/careplans/referrals#decide-whether-the-teams-share-a-project).
 
 **1.4 Is this a new build or replacing/extending something, and what other systems must it work with?**
 
@@ -86,7 +90,7 @@ Section 3 is grouped into four lanes:
 
 #### 3.1 Referral Semantics – Type, Coding, Intent, Priority
 
-Each referral is one `ServiceRequest`. Decide how you classify it, how urgency is expressed, whether you expose a staff-facing reference number, and whether drafts exist before send.
+Each independently managed requested service uses a `ServiceRequest`; requests authorized together can share a `requisition` identifier. Decide how you classify it, how urgency is expressed, whether you expose a staff-facing reference number, and whether drafts exist before send.
 
 **Questions:**
 
@@ -100,8 +104,8 @@ Each referral is one `ServiceRequest`. Decide how you classify it, how urgency i
 | Category and service type | Bind `category` / `code` to agreed ValueSets (SNOMED, custom, or mix); drives search and reporting. |
 | Priority | Set `ServiceRequest.priority`; keep labels aligned with clinical operations. |
 | Display referral number | `ServiceRequest.identifier` with your namespace; assign at create when needed for ops or correspondence. |
-| Default – signed at send | `intent = order` when the referral is transmitted or committed. |
-| Draft before release (less common) | `intent = proposal` until release, or hold draft state outside FHIR until create – align with compliance and audit needs. |
+| Released order | Set `intent = order` and `status = active` through the authorized release path. Sending is tracked separately from order status. |
+| Draft before release | Use `status = draft` with `intent = order` for an order being prepared. For a true proposal, retain it and create a separate authorized order with `basedOn` referencing the proposal. |
 
 ---
 
@@ -119,7 +123,7 @@ Decide how referral intake is structured in the UI – one flow vs several by sp
 
 | Situation | Approach |
 | :---- | :---- |
-| One form | One Questionnaire; Bot maps to one consistent `ServiceRequest` shape. |
+| One form | Use one Questionnaire and retain its QuestionnaireResponse. Choose one extraction strategy for the form: SDC template extraction or a Bot mapping to ServiceRequest. |
 | Specialty forms (e.g., variation based on specialty, service, etc.) or supplemental forms (specific extra information needed based on receiving clinic preferences) | Multiple Questionnaires; shared core fields \+ specialty-specific items (specialty forms) or additional Questionnaires specific to receiving clinics (supplemental forms); map each to `ServiceRequest`. |
 | Encounter required | Require `encounter` when referrals always start from a scheduled or in-progress visit. |
 | Encounter optional | Allow missing `encounter` when referrals can start outside a visit (e.g. intake); enforce `subject` and clinical reason instead. |
@@ -136,15 +140,15 @@ Decide who users may send a referral *to* (person vs site vs queue) and where yo
 
 - Can a referral go to a specific clinician, to a site, department, or queue, or either, depending on referral type?
 - Is your recipient directory edited and stored in Medplum, synced from another system, or mixed?
-- Should the recipient picker show or filter by in-network status for the patient's coverage – and where does that network status come from (synced payer provider directory, internal preferred-provider list, or a real-time eligibility query)?
+- Should the recipient picker show or filter by in-network status for the patient's coverage – and where does that network status come from (synced payer provider directory, internal preferred-provider list, or payer-specific eligibility evidence)?
 
 | Situation | Approach |
 | :---- | :---- |
-| Named individual | performer → Practitioner with display for UX. |
+| Named individual | Use `performer` → PractitionerRole when the practice/service context matters, or Practitioner for the individual alone. |
 | Pool or department | performer → Organization or HealthcareService when the referral is to a group or queue. |
-| Directory in Medplum | Maintain Practitioner / Organization / HealthcareService; forms use references or search-backed pickers. |
+| Directory in Medplum | Maintain Practitioner, PractitionerRole, Organization, and HealthcareService; use Location for physical sites and reference-based recipient pickers. |
 | External directory | Sync or resolve selections to FHIR references at submit time via Bot or integration. |
-| Network-aware picker | Filter or label recipients by in-network status. Approaches include: (1) internal preferred-provider list on Practitioner / Organization / HealthcareService, segmented per payer via OrganizationAffiliation; (2) per-patient CoverageEligibilityRequest at selection; (3) synced DaVinci PDEX Plan-Net  |
+| Network-aware picker | Use authoritative payer directory or contract data for the provider, service, location, and effective date. Record unknown/stale status explicitly. A preferred-provider list or eligibility response alone does not establish network participation. |
 
 ---
 
@@ -159,9 +163,9 @@ Decide what leaves with the referral, how much is automated versus curated at se
 
 | Situation | Approach |
 | :---- | :---- |
-| Receiver \+ patient messaging | `note` for receiving provider; `patientInstruction` for patient-facing instructions. |
-| Lean vs rich package | Minimal `reasonReference` \+ short `note` vs broader `supportingInfo` and `DocumentReference` attachments for labs, imaging, PDFs. |
-| Context at send | Auto-populate from chart where policy allows; let clinicians add or remove items before send. |
+| Receiver \+ patient messaging | Use `note` for shared clinical narrative and `patientInstruction` for patient-facing instructions. These fields do not enforce different audiences; keep internal notes in separately protected resources and exclude them from the package. |
+| Lean vs rich package | Link the clinical reason through `reasonReference` or `reasonCode`; use `supportingInfo` for selected evidence. Store files in Binary and link them through DocumentReference attachment URLs, without inline base64. |
+| Context at send | Let the sender review selected chart context. Retain the actual transmitted document or payload and its source versions so later chart edits do not change the send history. |
 
 ---
 
@@ -180,7 +184,7 @@ Decide how referrals leave your product – whether recipients get structured ex
 | Situation | Approach |
 | :---- | :---- |
 | FHIR-capable peer | Send or expose `ServiceRequest` and related resources via API; record transmission with `Communication` when useful for audit. |
-| No FHIR API (e.g., secure email, fax channels) | Bot-generated PDF or C-CDA; attach or link via `DocumentReference` / Binary; log outbound `Communication`. |
+| No FHIR API (e.g., secure email, fax channels) | Generate a reviewed PDF, or use a validated C-CDA generator matching the exchange contract. Store the result as DocumentReference/Binary and link the sent package from Communication. |
 | More than one channel | Keep one `ServiceRequest` as source of truth; run separate send paths per channel without divergent clinical content. |
 
 ---
@@ -201,10 +205,10 @@ Decide how inbound referrals get created, reviewed, and matched to patients.
 
 | Situation | Approach |
 | :---- | :---- |
-| Structured FHIR inbound | Validate and persist `ServiceRequest` (+ related resources); acknowledge per your protocol. |
+| Structured FHIR inbound | Validate ServiceRequest and related resources, resolve patient identity and local references, and preserve source identifiers. Track receiving review and acceptance with a Task. |
 | Structured documents or payloads you can parse (e.g. C-CDA XML, FHIR Bundles) | Bot or integration **parses** and **maps** fields → `ServiceRequest` (+ related resources); retain source as `DocumentReference` / `Binary`. Native structured interchange does **not** require OCR; image-only or bitmap PDF renditions may. |
-| Fax, scanned, or image-like documents | **OCR** (often plus layout/template rules) → abstract fields → map to `ServiceRequest` \+ source `DocumentReference`; human review when confidence is low. |
-| Patient identity | Match against existing `Patient` records using your identifiers and fallback workflow when match is unclear. |
+| Fax, scanned, or image-like documents | Retain the Binary and DocumentReference; extract fields with OCR and review uncertain identity or clinical content. Use a restricted intake Task until the patient is confirmed, then create or reconcile the ServiceRequest. |
+| Patient identity | Match trusted Patient identifiers with their namespaces and route ambiguity for review. Deduplicate referrals separately using the source referral identifier and conditional create. |
 
 ---
 
@@ -223,16 +227,20 @@ After a referral is created or accepted, decide how it gets to the right person,
 - Does the referral need to clear an authorization or coverage check before scheduling, and how do you track that authorization through to approval or denial?
 - When the referral becomes an actual visit (appointment, procedure, completed encounter), how do you tie that visit back to the originating referral?
 - Do you track aging or service-level expectations on open referrals (e.g. days since received, days pending an action), and how do staff find work that is overdue?
+- What happens after unsuccessful outreach, a patient decline, a no-show, or expiration? Who can stop attempts, and how is the referrer informed?
+- Which referral and authorization details must be available to billing, including effective dates and visit or unit limits?
 
 | Situation | Approach |
 | :---- | :---- |
-| Ownership and assignment | Task.owner (and Task.requester for the originator); pool ownership via Organization / HealthcareService; reassignments preserve audit. |
-| Check in-network status / covered benefits | CoverageEligibilityRequest with purpose: benefits; response returns network participation (X12 271 EB-12: Y/N/U/W) and benefit details. Same clearinghouse path as prior auth. Run at recipient selection (3.3) or as a pre-schedule gate. |
-| Check whether prior auth is required | CoverageEligibilityRequest with purpose: auth-requirements; response indicates authorizationRequired and any supporting documentation needed. |
-| Submit a prior auth request | Claim with use: preauthorization (distinct from claim for completed services); ClaimResponse carries the payer's decision. Bots typically convert FHIR ↔ X12 EDI for transmission via clearinghouses (Availity, Change Healthcare, Waystar, etc.). |
-| Gate scheduling on authorization | Hold the referral in an auth-pending Task.businessStatus until ClaimResponse returns approval; then transition to a scheduling-ready state. |
+| Ownership and assignment | Set `Task.for` to the patient and `focus` to the ServiceRequest. Use `owner` for the accountable person/group and `performerType` for required roles; claim and reassign with version checks. |
+| Check in-network status / covered benefits | Use CoverageEligibilityRequest with `purpose: benefits` where supported. Evaluate network participation against authoritative payer data for the selected provider/service; do not assume a universal eligibility or clearinghouse response. |
+| Check whether prior auth is required | Use CoverageEligibilityRequest with `purpose: auth-requirements` where supported. Interpret `authorizationRequired` in the response's insurance items and supporting requirements under the payer contract. |
+| Submit a prior auth request | Use Claim with `use: preauthorization` and interpret ClaimResponse under the chosen payer API, implementation guide, or EDI mapping. Configure that integration explicitly; transport success does not mean approval. |
+| Authorization gate | Keep the Task on hold with an authorization-pending business stage until the required approval evidence is present and valid for the service/date. `ClaimResponse.outcome: complete` alone does not prove approval. |
 | Scheduling the work | See the [Scheduling Decision Guide](/docs/decision-guides/scheduling). From the referral side, link the resulting Appointment and downstream Encounter back to the referral via basedOn → ServiceRequest. |
-| Aging and SLA | Search and dashboards over Task.lastModified / authoredOn; Subscriptions or scheduled Bots surface overdue items. |
+| Unsuccessful scheduling | Record outreach against the referral, assign retry/stop decisions, and close each work item according to its scope. Report the disposition to the referring team; see [unsuccessful scheduling](/docs/careplans/referrals/processing-and-coordination#follow-through-when-scheduling-does-not-succeed). |
+| Billing handoff | When required, use `Claim.referral` for the ServiceRequest and `Claim.insurance.preAuthRef` for the authorization number. Preserve payer-specific validity and service limits. |
+| Aging and SLA | Use Task history or explicit transitions for time in stage; `lastModified` may reflect unrelated edits. Follow the [Task planned-date convention](/docs/careplans/tasks#task-start--due-dates), range-aware search, and a defined pause policy. |
 
 ---
 
@@ -242,15 +250,15 @@ Decide how you track a referral from request through completion – or cancellat
 
 **Questions:**
 
-- Which milestones matter enough to show and operate on (e.g. sent, accepted, scheduled, completed, cancelled)?
+- Which milestones matter enough to show and operate on (e.g. sent, accepted, scheduled, declined, unable to schedule, completed, cancelled)? Which updates must reach the referrer?
 - How do you standardize labels for those milestones so reports, queues, and integrations all use the same meanings?
 - If a referral is cancelled or the recipient changes, do you revise the existing referral or create a new one?
 
 | Situation | Approach |
 | :---- | :---- |
-| Linear milestones | Few `businessStatus` codes; move `Task.status` with clear transitions. |
-| External signals | Bots or subscriptions update `businessStatus` when external systems report acceptance or completion. |
-| Cancel / reroute | Terminal or superseded `Task` with reason; consistent rule for updating `ServiceRequest.performer` vs new referral. |
+| Linear milestones | Use R4 `Task.status` for lifecycle and governed local `businessStatus` codes for workflow stages. Define the scope and completion evidence of each Task. |
+| External signals | Correlate and deduplicate callbacks before updating work. Delivery, receiving-team acceptance, service completion, and returned-result review are separate events. |
+| Cancel / reroute | For an unchanged clinical order, the authorized workflow can update `performer` and resolve old Tasks. For a replacement order, use a new ServiceRequest with `replaces` and end the old request appropriately. Preserve transmission history. |
 
 ---
 
@@ -268,6 +276,20 @@ Decide what should come back after the referral is acted on, how those items att
 | :---- | :---- |
 | Labs / imaging | `DiagnosticReport` with `basedOn` → `ServiceRequest`. |
 | Completed specialist visit | `Encounter` with `basedOn` → `ServiceRequest` when that models your workflow. |
-| Narrative / PDF reply | `DocumentReference` with context pointing at the referral. |
+| Narrative / PDF reply | Use `DocumentReference.context.related` → ServiceRequest and an attachment URL → Binary. `context.encounter` is for Encounter or EpisodeOfCare. |
 | Linking | Manual selection or automated match using identifiers you control – define when human confirmation is required. |
-| Closure | Terminal `businessStatus` or equivalent completion signal aligned with 3.8. |
+| Closure | End each Task with the appropriate `status` and disposition. Reconcile ServiceRequest completion from service evidence through the responsible authority. For closed-loop care, separately require returned-result review and assignment of follow-up. |
+
+## Implementation Guides
+
+Use the decisions above to choose the next implementation guide:
+
+- [Creating and Capturing Referrals](/docs/careplans/referrals/creation-and-capture)
+- [Recipients and Referral Packages](/docs/careplans/referrals/recipients-and-packages)
+- [Sending Referrals and Tracking Delivery](/docs/careplans/referrals/transmition-and-tracking)
+- [Receiving and Triaging Referrals](/docs/careplans/referrals/receiving-and-triage)
+- [Processing and Coordinating Referrals](/docs/careplans/referrals/processing-and-coordination)
+- [Results and Closing the Loop](/docs/careplans/referrals/results-and-closure)
+- [Worked Referral Example](/docs/careplans/referrals/fhir-resource-examples)
+
+For assignment, delegation, and longitudinal workflows shared across the practice, use the [Care Coordination Decision Guide](/docs/decision-guides/care-coordination).

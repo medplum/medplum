@@ -1,9 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { clearScheduleSchedulingParameter, deepClone, deepEquals } from '@medplum/core';
-import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
+import {
+  clearScheduleSchedulingParameter,
+  createReference,
+  deepClone,
+  deepEquals,
+  extractServiceTypeReferences,
+  resolveId,
+  SchedulingParametersURI,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
+import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { setScheduleAvailability } from '../../availability';
+import type { ConfigurableActorResource } from '../../configSearch';
 import type { SchedulingParameterValues } from '../../parameterValues';
 import {
   getScheduleSchedulingParameterValues,
@@ -15,8 +25,9 @@ import {
   fromWeeklyAvailability,
   hasAnyAvailableDay,
   initialAvailabilityFieldsValue,
+  toWeeklyAvailability,
 } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
-import { getOfferedServices } from '../SchedulingConfigWorkspace.utils';
+import { getOfferedServices, isActorInactive } from '../SchedulingConfigWorkspace.utils';
 
 /** What a Schedule sets for one visit type it offers. */
 export interface OfferingFields {
@@ -60,42 +71,127 @@ function offeringFieldsOf(service: WithId<HealthcareService>, schedule: Schedule
 }
 
 /**
+ * The fields for a visit type the actor has just started offering: no overrides, so the Schedule
+ * uses the visit type's own parameters and hours.
+ * @param service - The visit type.
+ * @returns The fields.
+ */
+export function newOfferingFields(service: WithId<HealthcareService>): OfferingFields {
+  return { parameters: {}, availability: { overriding: false, weekly: toWeeklyAvailability(service.availableTime) } };
+}
+
+/**
+ * What a visit type's fields are compared against to find its edits: as the page opened, or as first offered.
+ * @param initial - What the page opened with.
+ * @param service - The visit type.
+ * @returns The fields it started from.
+ */
+export function startingOfferingFields(initial: ScheduleFields, service: WithId<HealthcareService>): OfferingFields {
+  return initial.offerings[service.id] ?? newOfferingFields(service);
+}
+
+/**
  * Builds the Schedule to store from what the page holds. Only what was edited is rewritten, so saving one field
  * leaves the rest of the Schedule as another tool wrote it.
- * @param stored - The Schedule as stored.
+ *
+ * A Schedule is created only once a visit type is offered, never on its own.
+ * @param stored - The Schedule as stored, if the actor has one.
+ * @param actor - The actor as edited, which a new Schedule is held on alone, and active only while it is.
  * @param fields - What the page holds.
  * @param initial - What the page opened with.
  * @param servicesById - Every visit type loaded.
- * @returns The Schedule to store.
+ * @returns The Schedule to store, or undefined when there is none to create.
  */
 export function buildScheduleDraft(
-  stored: WithId<Schedule>,
+  stored: WithId<Schedule> | undefined,
+  actor: ConfigurableActorResource,
   fields: ScheduleFields,
   initial: ScheduleFields,
   servicesById: ReadonlyMap<string, WithId<HealthcareService>>
-): Schedule {
-  let draft: Schedule = deepClone(stored);
+): Schedule | undefined {
+  if (!stored && Object.keys(fields.offerings).length === 0) {
+    return undefined;
+  }
+  let draft: Schedule = stored
+    ? deepClone(stored)
+    : { resourceType: 'Schedule', active: !isActorInactive(actor), actor: [createReference(actor)] };
 
-  if (fields.active !== initial.active) {
+  if (stored && fields.active !== initial.active) {
     draft.active = fields.active;
+  }
+
+  for (const id of Object.keys(initial.offerings)) {
+    const service = servicesById.get(id);
+    if (service && !Object.hasOwn(fields.offerings, id)) {
+      draft = withoutService(draft, service);
+    }
   }
 
   for (const [id, current] of Object.entries(fields.offerings)) {
     const service = servicesById.get(id);
-    if (!service) {
-      continue;
+    if (service) {
+      draft = withOfferingEdits(draft, service, current, initial);
     }
-    const before = initial.offerings[id];
-    if (!deepEquals(current.parameters, before.parameters)) {
-      draft = setScheduleSchedulingParameterValues(draft, service, current.parameters);
+  }
+  return draft;
+}
+
+function withOfferingEdits(
+  schedule: Schedule,
+  service: WithId<HealthcareService>,
+  current: OfferingFields,
+  initial: ScheduleFields
+): Schedule {
+  let draft = schedule;
+  if (!Object.hasOwn(initial.offerings, service.id)) {
+    draft = withoutService(draft, service);
+    draft.serviceType = [...(draft.serviceType ?? []), ...toServiceTypeCodeableConcepts(service)];
+  }
+  const before = startingOfferingFields(initial, service);
+  if (!deepEquals(current.parameters, before.parameters)) {
+    draft = setScheduleSchedulingParameterValues(draft, service, current.parameters);
+  }
+  // An emptied week has no stored form. The page refuses to save it, so it is left as stored meanwhile.
+  const { overriding, weekly } = current.availability;
+  if (!deepEquals(current.availability, before.availability) && (!overriding || hasAnyAvailableDay(weekly))) {
+    draft = overriding
+      ? setScheduleAvailability(draft, service, fromWeeklyAvailability(weekly))
+      : clearScheduleSchedulingParameter(draft, service, 'availability');
+  }
+  return draft;
+}
+
+/**
+ * Stops a Schedule offering a visit type: drops it from `serviceType`, and drops every scheduling parameter
+ * entry scoped to it, including any this package doesn't edit. Left behind, they would come back if the visit
+ * type were offered again. An entry also scoped to other visit types keeps applying to them.
+ * @param schedule - The Schedule.
+ * @param service - The visit type to stop offering.
+ * @returns A copy of the Schedule without it.
+ */
+export function withoutService(schedule: Schedule, service: WithId<HealthcareService>): Schedule {
+  const draft = deepClone(schedule);
+  const serviceType = draft.serviceType?.filter(
+    (concept) => !extractServiceTypeReferences([concept]).some((reference) => resolveId(reference) === service.id)
+  );
+  if (serviceType?.length) {
+    draft.serviceType = serviceType;
+  } else {
+    delete draft.serviceType;
+  }
+  const isThisService = (sub: Extension): boolean =>
+    sub.url === 'service' && resolveId(sub.valueReference) === service.id;
+  const extension = draft.extension?.flatMap((entry) => {
+    if (entry.url !== SchedulingParametersURI || !entry.extension?.some(isThisService)) {
+      return [entry];
     }
-    // An emptied week has no stored form. The page refuses to save it, so it is left as stored meanwhile.
-    const { overriding, weekly } = current.availability;
-    if (!deepEquals(current.availability, before.availability) && (!overriding || hasAnyAvailableDay(weekly))) {
-      draft = overriding
-        ? setScheduleAvailability(draft, service, fromWeeklyAvailability(weekly))
-        : clearScheduleSchedulingParameter(draft, service, 'availability');
-    }
+    const rest = entry.extension.filter((sub) => !isThisService(sub));
+    return rest.some((sub) => sub.url === 'service') ? [{ ...entry, extension: rest }] : [];
+  });
+  if (extension?.length) {
+    draft.extension = extension;
+  } else {
+    delete draft.extension;
   }
   return draft;
 }

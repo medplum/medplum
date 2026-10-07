@@ -257,6 +257,21 @@ describe('SchedulingConfigWorkspace', () => {
     expect(search).not.toHaveBeenCalled();
   });
 
+  test("offering a room's first visit type creates its Schedule, and the room stays selected", async () => {
+    await setup();
+    await userEvent.click(row('Exam Room C'));
+
+    await userEvent.click(within(details()).getByRole('button', { name: 'Offer visit types' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search visit types' }), 'Telehealth');
+    await userEvent.click(screen.getByRole('option', { name: 'Telehealth Consult' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Offer 1 visit type' }));
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeInTheDocument());
+    expect(entry('Telehealth Consult')).not.toHaveTextContent('Unsaved');
+    expect(row('Exam Room C')).toHaveAttribute('aria-current', 'true');
+  });
+
   test('an empty project says each section has nothing yet, and still offers to create a visit type', async () => {
     const medplum = new MockClient({ seedDefaultData: false });
     renderWithMedplum(<SchedulingConfigWorkspace />, medplum);

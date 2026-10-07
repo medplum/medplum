@@ -15,8 +15,8 @@ import { createTestProject, withQueryInterceptor, withTestContext } from '../../
 import { queueRegistry } from '../../workers/utils';
 import type { MigrationActionResult } from '../types';
 import type { CustomPostDeployMigrationJobData } from './types';
-import type { BackfillOverrides, ProjectIdBackfillJobData } from './v52';
-import { AdaptiveConcurrency, computeRanges, callback as migrationFn, uuidPartition } from './v52';
+import type { BackfillOverrides, ProjectIdBackfillJobData } from './v53';
+import { AdaptiveConcurrency, computeRanges, callback as migrationFn, uuidPartition } from './v53';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 

@@ -33,7 +33,7 @@ export function ConfigRow(props: ConfigRowProps): JSX.Element {
             {icon}
           </ThemeIcon>
         ) : (
-          <Avatar src={item.imageUrl} name={item.label} color="initials" radius="xl" size={28} />
+          <Avatar src={item.imageUrl} name={item.label} color="gray" radius="xl" size={28} />
         )}
         <Stack gap={2} className={classes.label}>
           {/* Bold as well as tinted: the tint alone is hard to tell from hover in dark mode. */}
