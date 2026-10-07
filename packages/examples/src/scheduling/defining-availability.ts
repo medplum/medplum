@@ -335,11 +335,11 @@ const scheduleAllServiceTypes: Schedule =
   {
     resourceType: 'Schedule',
     id: 'dr-smith-schedule',
-    comment: "Dr. Smith's availability, for any visit type",
+    comment: "Dr. Smith's availability, for any service type",
     actor: [{ reference: 'Practitioner/dr-smith' }],
     serviceType: [
       {
-        text: 'All visit types',
+        text: 'All service types',
         coding: [{ system: 'https://medplum.com/fhir/CodeSystem/scheduling-service-type', code: 'all' }],
       },
     ],

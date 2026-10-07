@@ -838,7 +838,7 @@ describe('Appointment/:id/$reschedule', () => {
     });
   });
 
-  test('moves an appointment onto a schedule marked as offering all visit types', async () => {
+  test('moves an appointment onto a schedule marked as offering all service types', async () => {
     const roomOneSchedule = await makeSchedule(roomOne);
     const start = '2026-04-28T16:00:00.000Z'; // Tue 12pm EDT
     const end = '2026-04-28T17:00:00.000Z';
@@ -860,7 +860,7 @@ describe('Appointment/:id/$reschedule', () => {
     const resources = bundleResources(response.body);
     const slots = resources.filter((r) => isResource<Slot>(r, 'Slot'));
     expect(slots.map((slot) => slot.schedule.reference)).toStrictEqual([`Schedule/${anyVisitSchedule.id}`]);
-    // Keeps the visit type it was booked under, never the marker
+    // Keeps the service it was booked under, never the marker
     const appointment = resources.find((r) => isResource<Appointment>(r, 'Appointment'));
     expect(appointment?.serviceType).toStrictEqual(booked.serviceType);
   });

@@ -382,7 +382,7 @@ describe('serviceType CodeableConcepts', () => {
     ['an empty serviceType', []],
     ['the same code in another system', [{ coding: [{ system: 'http://example.com/service', code: 'all' }] }]],
     ['another code in the same system', [{ coding: [{ system: SCHEDULING_SERVICE_TYPE_SYSTEM, code: 'none' }] }]],
-    ['a concept with only matching text', [{ text: 'All visit types' }]],
+    ['a concept with only matching text', [{ text: 'All service types' }]],
   ])('%s is not the all-services marker', (_name, serviceType) => {
     expect(serviceTypeIncludesAllServices(serviceType)).toBe(false);
     expect(serviceTypeOffersService(serviceType, service)).toBe(false);

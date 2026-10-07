@@ -1057,7 +1057,7 @@ describe('Appointment/$find', () => {
     expect(response).toHaveStatus(400);
   });
 
-  test('finds times on a Schedule marked as offering all visit types', async () => {
+  test('finds times on a Schedule marked as offering all service types', async () => {
     const followUp = await systemRepo.createResource<HealthcareService>({
       resourceType: 'HealthcareService',
       meta: { project: project.id },
@@ -1091,7 +1091,7 @@ describe('Appointment/$find', () => {
     expect(proposals?.map((proposal) => [proposal.start, proposal.end])).toStrictEqual([
       ['2026-03-20T15:00:00.000Z', '2026-03-20T16:00:00.000Z'],
     ]);
-    // The proposal records the visit type being booked, never the marker
+    // The proposal records the service being booked, never the marker
     expect(proposals?.[0].serviceType).toStrictEqual(toServiceTypeCodeableConcepts(followUp));
   });
 

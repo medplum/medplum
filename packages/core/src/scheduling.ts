@@ -551,7 +551,7 @@ export function toServiceTypeCodeableConcepts(service: WithId<HealthcareService>
 export function toAllServiceTypesCodeableConcept(): CodeableConcept {
   return {
     coding: [{ system: SCHEDULING_SERVICE_TYPE_SYSTEM, code: ALL_SERVICE_TYPES_CODE }],
-    text: 'All visit types',
+    text: 'All service types',
   };
 }
 
