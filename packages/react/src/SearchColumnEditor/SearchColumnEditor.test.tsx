@@ -9,13 +9,13 @@ import { SearchColumnEditor } from './SearchColumnEditor';
 
 const medplum = new MockClient();
 
-interface Harness {
-  readonly onChange: ReturnType<typeof vi.fn>;
-  readonly rerender: (search: SearchRequest, defaultFields?: readonly string[]) => Promise<void>;
-  readonly unmount: () => void;
-}
-
-async function setup(search: SearchRequest, defaultFields?: readonly string[]): Promise<Harness> {
+async function setup(
+  search: SearchRequest,
+  defaultFields?: readonly string[]
+): Promise<{
+  onChange: ReturnType<typeof vi.fn>;
+  rerender: (search: SearchRequest, defaultFields?: readonly string[]) => Promise<void>;
+}> {
   const onChange = vi.fn();
   const tree = (next: SearchRequest, nextDefaults?: readonly string[]): JSX.Element => (
     <MedplumProvider medplum={medplum}>
@@ -25,10 +25,9 @@ async function setup(search: SearchRequest, defaultFields?: readonly string[]): 
   await act(async () => {
     await medplum.requestSchema(search.resourceType);
   });
-  const { rerender, unmount } = render(tree(search, defaultFields));
+  const { rerender } = render(tree(search, defaultFields));
   return {
     onChange,
-    unmount,
     rerender: async (next, nextDefaults = defaultFields) => {
       await act(async () => {
         await medplum.requestSchema(next.resourceType);
@@ -56,196 +55,123 @@ function lastFields(onChange: ReturnType<typeof vi.fn>): string[] | undefined {
 }
 
 describe('SearchColumnEditor', () => {
-  describe('Column list', () => {
-    test('Lists the visible columns checked first, then the rest of the universe unchecked', async () => {
-      await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
-      await openMenu();
-      expect(screen.getByText('2 shown')).toBeInTheDocument();
-      expect(screen.getByTestId('visible-name')).toBeInTheDocument();
-      expect(screen.getByTestId('visible-birthDate')).toBeInTheDocument();
-      expect(screen.getByTestId('column-gender')).toBeInTheDocument();
-      expect(screen.queryByTestId('visible-gender')).toBeNull();
-      expect(screen.getByTestId('column-_lastUpdated')).toBeInTheDocument();
-    });
-
-    test('Offers resource properties that have no search parameter', async () => {
-      await setup({ resourceType: 'Patient', fields: ['name'] });
-      await openMenu();
-      expect(screen.getByTestId('column-photo')).toBeInTheDocument();
-      expect(screen.getByTestId('column-maritalStatus')).toBeInTheDocument();
-      expect(screen.getByTestId('column-meta')).toBeInTheDocument();
-    });
-
-    test('Offers a column once when a property and a search parameter share a name', async () => {
-      await setup({ resourceType: 'Patient', fields: ['name'] });
-      await openMenu();
-      expect(screen.getByTestId('column-birthDate')).toBeInTheDocument();
-      expect(screen.queryByTestId('column-birthdate')).toBeNull();
-      expect(screen.getByTestId('column-id')).toBeInTheDocument();
-      expect(screen.queryByTestId('column-_id')).toBeNull();
-    });
-
-    test('Still offers search parameters that are not properties', async () => {
-      await setup({ resourceType: 'Patient', fields: ['name'] });
-      await openMenu();
-      expect(screen.getByTestId('column-phone')).toBeInTheDocument();
-      expect(screen.getByTestId('column-_lastUpdated')).toBeInTheDocument();
-    });
-
-    test('A visible _id column does not add a second ID row', async () => {
-      await setup({ resourceType: 'Patient', fields: ['_id', 'name'] });
-      await openMenu();
-      expect(screen.getByTestId('column-_id')).toHaveAttribute('aria-pressed', 'true');
-      expect(screen.queryByTestId('column-id')).toBeNull();
-    });
-
-    test('Search box filters the column list by label', async () => {
-      await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
-      await openMenu();
-      await act(async () => {
-        fireEvent.change(screen.getByLabelText('Search columns'), { target: { value: 'birth' } });
-      });
-      expect(screen.getByTestId('column-birthDate')).toBeInTheDocument();
-      expect(screen.queryByTestId('column-name')).toBeNull();
-    });
-
-    test('Rows are toggle buttons named by label with a pressed state', async () => {
-      await setup({ resourceType: 'Patient', fields: ['name'] });
-      await openMenu();
-      const name = screen.getByTestId('column-name');
-      expect(name.tagName).toBe('BUTTON');
-      expect(name).toHaveAccessibleName('Name');
-      expect(name).toHaveAttribute('aria-pressed', 'true');
-      expect(screen.getByTestId('column-gender')).toHaveAttribute('aria-pressed', 'false');
-    });
+  test('Lists visible columns as pressed toggle buttons, then the rest unpressed, each once', async () => {
+    await setup({ resourceType: 'Patient', fields: ['_id', 'name'] });
+    await openMenu();
+    expect(screen.getByText('2 shown')).toBeInTheDocument();
+    const name = screen.getByTestId('column-name');
+    expect(name.tagName).toBe('BUTTON');
+    expect(name).toHaveAccessibleName('Name');
+    expect(name).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('column-_id')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByTestId('column-id')).toBeNull();
+    expect(screen.getByTestId('column-gender')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('column-_lastUpdated')).toHaveAttribute('aria-pressed', 'false');
   });
 
-  describe('Toggling', () => {
-    test('Clicking a row shows or hides the column and hidden rows stay listed', async () => {
-      const { onChange, rerender } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
-      await openMenu();
+  test('Clicking rows shows and hides columns, never hides the last one, and keeps hidden rows listed', async () => {
+    const { onChange, rerender } = await setup({ resourceType: 'Patient', fields: [] });
+    await openMenu();
+    expect(screen.getByText('0 shown')).toBeInTheDocument();
 
-      await click(screen.getByTestId('column-gender'));
-      expect(lastFields(onChange)).toEqual(['name', 'birthDate', 'gender']);
-      await rerender({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
+    await click(screen.getByTestId('column-name'));
+    expect(lastFields(onChange)).toEqual(['name']);
+    await rerender({ resourceType: 'Patient', fields: ['name'] });
 
-      await click(screen.getByTestId('column-birthDate'));
-      expect(lastFields(onChange)).toEqual(['name', 'gender']);
-      await rerender({ resourceType: 'Patient', fields: ['name', 'gender'] });
+    await click(screen.getByTestId('column-name'));
+    expect(onChange).toHaveBeenCalledTimes(1);
 
-      expect(screen.getByTestId('column-birthDate')).toBeInTheDocument();
-      expect(screen.queryByTestId('visible-birthDate')).toBeNull();
-      expect(screen.getByText('2 shown')).toBeInTheDocument();
-    });
+    await click(screen.getByTestId('column-gender'));
+    expect(lastFields(onChange)).toEqual(['gender', 'name']);
+    await rerender({ resourceType: 'Patient', fields: ['gender', 'name'] });
 
-    test('The last visible column cannot be hidden', async () => {
-      const { onChange } = await setup({ resourceType: 'Patient', fields: ['name'] });
-      await openMenu();
-      await click(screen.getByTestId('column-name'));
-      expect(onChange).not.toHaveBeenCalled();
-      expect(screen.getByTestId('visible-name')).toBeInTheDocument();
-    });
-
-    test('Empty fields shows no checked column, matching the empty table', async () => {
-      const { onChange } = await setup({ resourceType: 'Patient', fields: [] });
-      await openMenu();
-      expect(screen.getByText('0 shown')).toBeInTheDocument();
-      expect(document.querySelector('[data-testid^="visible-"]')).toBeNull();
-
-      await click(screen.getByTestId('column-name'));
-      expect(lastFields(onChange)).toEqual(['name']);
-    });
+    await click(screen.getByTestId('column-name'));
+    expect(lastFields(onChange)).toEqual(['gender']);
+    await rerender({ resourceType: 'Patient', fields: ['gender'] });
+    expect(screen.getByTestId('column-name')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText('1 shown')).toBeInTheDocument();
   });
 
-  describe('Reset Default', () => {
-    test('Restores the given defaults, clears the search box and focuses it', async () => {
-      const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] }, ['id', 'name']);
-      await openMenu();
-      const searchBox = screen.getByLabelText('Search columns');
-      await act(async () => {
-        fireEvent.change(searchBox, { target: { value: 'birth' } });
-      });
-      expect(screen.queryByTestId('column-name')).toBeNull();
-
-      const resetButton = screen.getByText('Reset Default');
-      await act(async () => {
-        resetButton.closest('button')?.focus();
-        fireEvent.click(resetButton);
-      });
-      expect(lastFields(onChange)).toEqual(['id', 'name']);
-      expect(searchBox).toHaveValue('');
-      expect(searchBox).toHaveFocus();
-      expect(screen.getByTestId('column-name')).toBeInTheDocument();
+  test('Reset Default restores the given defaults, clears the search box and focuses it', async () => {
+    const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] }, ['id', 'name']);
+    await openMenu();
+    const searchBox = screen.getByLabelText('Search columns');
+    await act(async () => {
+      fireEvent.change(searchBox, { target: { value: 'birth' } });
     });
+    expect(screen.getByTestId('column-birthDate')).toBeInTheDocument();
+    expect(screen.queryByTestId('column-name')).toBeNull();
 
-    test('Falls back to the built-in defaults', async () => {
-      const { onChange } = await setup({ resourceType: 'Patient', fields: ['name'] });
-      await openMenu();
-      await click(screen.getByText('Reset Default'));
-      expect(lastFields(onChange)).toEqual(['id', '_lastUpdated']);
+    const resetButton = screen.getByText('Reset Default');
+    await act(async () => {
+      resetButton.closest('button')?.focus();
+      fireEvent.click(resetButton);
     });
-
-    test('Is disabled while the columns already match the defaults in order', async () => {
-      const { rerender } = await setup({ resourceType: 'Patient', fields: ['id', 'name'] }, ['id', 'name']);
-      await openMenu();
-      expect(screen.getByText('Reset Default').closest('button')).toBeDisabled();
-
-      await rerender({ resourceType: 'Patient', fields: ['name', 'id'] });
-      expect(screen.getByText('Reset Default').closest('button')).toBeEnabled();
-    });
+    expect(lastFields(onChange)).toEqual(['id', 'name']);
+    expect(searchBox).toHaveValue('');
+    expect(searchBox).toHaveFocus();
+    expect(screen.getByTestId('column-name')).toBeInTheDocument();
   });
 
-  describe('Drag reorder', () => {
-    test('Dragging reorders the columns, shows the drop guide, and leaves rows clickable', async () => {
-      const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
-      await openMenu();
+  test('Reset Default falls back to the built-in defaults and is disabled while they match in order', async () => {
+    const { onChange, rerender } = await setup({ resourceType: 'Patient', fields: ['id', '_lastUpdated'] });
+    await openMenu();
+    expect(screen.getByText('Reset Default').closest('button')).toBeDisabled();
 
-      await act(async () => {
-        fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
-        fireEvent.pointerMove(screen.getByTestId('column-name'));
-        fireEvent.pointerUp(screen.getByTestId('column-name'));
-      });
-      expect(lastFields(onChange)).toEqual(['gender', 'name', 'birthDate']);
+    await rerender({ resourceType: 'Patient', fields: ['_lastUpdated', 'id'] });
+    expect(screen.getByText('Reset Default').closest('button')).toBeEnabled();
 
-      const birthDate = screen.getByTestId('column-birthDate');
-      await act(async () => {
-        fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
-        fireEvent.pointerMove(birthDate);
-      });
-      expect(birthDate.className).toContain('dragOverBelow');
-      await act(async () => {
-        fireEvent.pointerUp(birthDate);
-      });
-      expect(lastFields(onChange)).toEqual(['name', 'birthDate', 'gender']);
-
-      const callsAfterDrag = onChange.mock.calls.length;
-      await click(birthDate);
-      expect(onChange.mock.calls.length).toBe(callsAfterDrag + 1);
-      expect(lastFields(onChange)).toEqual(['name', 'gender']);
-    });
+    await click(screen.getByText('Reset Default'));
+    expect(lastFields(onChange)).toEqual(['id', '_lastUpdated']);
   });
 
-  describe('Prop changes', () => {
-    test('Changing the resource type rebuilds the column list and reset default', async () => {
-      const { onChange, rerender } = await setup({ resourceType: 'Patient', fields: ['name'] });
-      await rerender({ resourceType: 'Observation', fields: ['code'] }, ['code', 'status']);
-      await openMenu();
-      expect(screen.getByTestId('column-code')).toBeInTheDocument();
-      expect(screen.queryByTestId('column-gender')).toBeNull();
+  test('Dragging reorders the columns, shows the drop guide, and leaves rows clickable', async () => {
+    const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
+    await openMenu();
 
-      await click(screen.getByText('Reset Default'));
-      expect(onChange).toHaveBeenLastCalledWith({ resourceType: 'Observation', fields: ['code', 'status'] });
+    await act(async () => {
+      fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
+      fireEvent.pointerMove(screen.getByTestId('column-name'));
+      fireEvent.pointerUp(screen.getByTestId('column-name'));
     });
+    expect(lastFields(onChange)).toEqual(['gender', 'name', 'birthDate']);
 
-    test('Reopening after the fields change externally keeps the new column order', async () => {
-      const { onChange, rerender } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
-      await openMenu();
-      await click(screen.getByText('Columns'));
-      await rerender({ resourceType: 'Patient', fields: ['birthDate', 'name'] });
-      await openMenu();
-
-      await click(screen.getByTestId('column-gender'));
-      expect(lastFields(onChange)).toEqual(['birthDate', 'name', 'gender']);
+    const birthDate = screen.getByTestId('column-birthDate');
+    await act(async () => {
+      fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
+      fireEvent.pointerMove(birthDate);
     });
+    expect(birthDate.className).toContain('dragOverBelow');
+    await act(async () => {
+      fireEvent.pointerUp(birthDate);
+    });
+    expect(lastFields(onChange)).toEqual(['name', 'birthDate', 'gender']);
+
+    const callsAfterDrag = onChange.mock.calls.length;
+    await click(birthDate);
+    expect(onChange.mock.calls.length).toBe(callsAfterDrag + 1);
+    expect(lastFields(onChange)).toEqual(['name', 'gender']);
+  });
+
+  test('Changing the resource type rebuilds the column list and reset default', async () => {
+    const { onChange, rerender } = await setup({ resourceType: 'Patient', fields: ['name'] });
+    await rerender({ resourceType: 'Observation', fields: ['code'] }, ['code', 'status']);
+    await openMenu();
+    expect(screen.getByTestId('column-code')).toBeInTheDocument();
+    expect(screen.queryByTestId('column-gender')).toBeNull();
+
+    await click(screen.getByText('Reset Default'));
+    expect(onChange).toHaveBeenLastCalledWith({ resourceType: 'Observation', fields: ['code', 'status'] });
+  });
+
+  test('Reopening after the fields change externally keeps the new column order', async () => {
+    const { onChange, rerender } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
+    await openMenu();
+    await click(screen.getByText('Columns'));
+    await rerender({ resourceType: 'Patient', fields: ['birthDate', 'name'] });
+    await openMenu();
+
+    await click(screen.getByTestId('column-gender'));
+    expect(lastFields(onChange)).toEqual(['birthDate', 'name', 'gender']);
   });
 });

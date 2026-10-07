@@ -627,6 +627,38 @@ describe('SearchControl', () => {
     expect(currSearch?.fields).toEqual(['name', 'gender']);
   });
 
+  async function openColumnOptions(): Promise<void> {
+    await setup({ search: { resourceType: 'Patient', fields: ['name'] }, onLoad: vi.fn() });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Columns'));
+    });
+    await screen.findByText('Reset Default');
+  }
+
+  function columnOption(name: string): HTMLElement | null {
+    return screen.queryByRole('button', { name, hidden: true });
+  }
+
+  test('Columns editor offers resource properties that have no search parameter', async () => {
+    await openColumnOptions();
+    expect(columnOption('Photo')).toBeInTheDocument();
+    expect(columnOption('Marital Status')).toBeInTheDocument();
+    expect(columnOption('Meta')).toBeInTheDocument();
+  });
+
+  test('Columns editor offers a property once, even when a search parameter shares its name', async () => {
+    await openColumnOptions();
+    expect(columnOption('Birth Date')).toBeInTheDocument();
+    expect(columnOption('Birthdate')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'ID', hidden: true })).toHaveLength(1);
+  });
+
+  test('Columns editor still offers search parameters that are not properties', async () => {
+    await openColumnOptions();
+    expect(columnOption('_lastUpdated')).toBeInTheDocument();
+    expect(columnOption('Phone')).toBeInTheDocument();
+  });
+
   test('Filter editor onOk', async () => {
     const props: SearchControlProps = {
       search: {
