@@ -4,6 +4,7 @@ import type {
   Address,
   CodeableConcept,
   Coding,
+  Extension,
   HumanName,
   Money,
   Observation,
@@ -537,13 +538,13 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
   const result = [];
 
   if (obs.valueQuantity) {
-    result.push(formatQuantity(obs.valueQuantity));
+    result.push(formatQuantity(obs.valueQuantity, getPreservedValuePrecision(obs.valueQuantity)));
   } else if (obs.valueCodeableConcept) {
     result.push(formatCodeableConcept(obs.valueCodeableConcept));
   } else {
     const valueString = ensureString(obs.valueString);
     if (valueString) {
-      result.push(valueString);
+      result.push(normalizeObxTemplateValue(valueString));
     }
   }
 
@@ -552,6 +553,104 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
   }
 
   return result.join(' / ').trim();
+}
+
+const OBX_TEMPLATE_TAG_RE = /<OBX\.[\d.]+>([\s\S]*?)<\/OBX\.[\d.]+>/g;
+
+/**
+ * Standard antimicrobial susceptibility interpretation codes (CLSI/HL7 convention). When a
+ * broken OBX-5 template's second value is one of these, it's an interpretation code riding
+ * along with the result, not part of the value - expand it instead of showing a bare letter.
+ */
+const SUSCEPTIBILITY_CODE_LABELS: Record<string, string> = {
+  S: 'Susceptible',
+  I: 'Intermediate',
+  R: 'Resistant',
+  NS: 'Not susceptible',
+  '*': 'Not tested',
+  NR: 'Not reported',
+  '**NN': 'See antimicrobic comments',
+};
+
+/**
+ * Some Health Gorilla results carry a broken OBX-5 template substitution: instead of
+ * resolving to the real value, the literal placeholder tags are left in place, HTML-entity
+ * escaped, wrapping the real value/interpretation, e.g. `&lt;OBX.5.1&gt;&gt;=32&lt;/OBX.5.1&gt;
+ * &lt;OBX.5.1&gt;R&lt;/OBX.5.1&gt;` for a MIC of ">=32" interpreted as "R". Recovers the
+ * intended value from that broken template, expanding a trailing susceptibility code (see
+ * SUSCEPTIBILITY_CODE_LABELS) into its full label so it doesn't render as a bare, unexplained
+ * letter; returns the input unchanged when it doesn't match this pattern.
+ * @param value - A raw Observation.valueString.
+ * @returns The normalized display value.
+ */
+function normalizeObxTemplateValue(value: string): string {
+  const decoded = value
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&amp;', '&');
+  const matches = [...decoded.matchAll(OBX_TEMPLATE_TAG_RE)];
+  if (matches.length === 0) {
+    return value;
+  }
+  if (matches.length === 2) {
+    const label = SUSCEPTIBILITY_CODE_LABELS[matches[1][1].trim()];
+    if (label) {
+      return `${matches[0][1]} (${label})`;
+    }
+  }
+  return matches.map((m) => m[1]).join(' / ');
+}
+
+const HEALTH_GORILLA_OBSERVATION_UNIT_EXTENSION_URL =
+  'https://www.healthgorilla.com/fhir/StructureDefinition/observation-unit';
+
+/**
+ * Health Gorilla carries an OBX-6 unit (e.g. "titer", "%") that doesn't fit valueQuantity -
+ * the value itself isn't numeric (e.g. "1:80") - in a proprietary extension instead of on the
+ * value. Quest's own reports always print this unit trailing the reference range (alone if
+ * there's no other range text, e.g. "titer", or appended to it, e.g. "See Note: titer") -
+ * never attached to the value - so callers should render it there, not in the value display.
+ * @param obs - A FHIR Observation resource or component.
+ * @returns The unit string, or undefined if the observation doesn't carry one.
+ */
+export function getHealthGorillaObservationUnit(obs: Observation | ObservationComponent): string | undefined {
+  const extension = obs.extension?.find((e) => e.url === HEALTH_GORILLA_OBSERVATION_UNIT_EXTENSION_URL);
+  return ensureString(extension?.valueString);
+}
+
+const QUANTITY_PRECISION_EXTENSION_URL = 'http://hl7.org/fhir/StructureDefinition/quantity-precision';
+
+/**
+ * A FHIR primitive value (here, `Quantity.value`, a `decimal`) can carry an `id`/`extension` via
+ * the standard JSON sibling convention: `"value": 1.3, "_value": { "extension": [...] }`. Medplum's
+ * generated `Quantity` type doesn't declare `_value` (a codegen gap, not a storage/validation
+ * restriction - Medplum's server accepts and round-trips it fine), so it's accessed here via a
+ * local type rather than widening the shared `Quantity` interface.
+ */
+interface QuantityWithValueExtension extends Quantity {
+  _value?: { extension?: Extension[] };
+}
+
+/**
+ * A lab value's trailing zeros carry real significant-figure meaning (e.g. "1.30" vs "1.3"), but
+ * JSON numbers can't distinguish them - `1.30` and `1.3` parse to the identical float, and that
+ * distinction is gone the moment anything parses the response body as JSON. When the original
+ * precision was captured before that happened (in `receive-from-health-gorilla`, using a custom
+ * JSON.parse reviver to read the raw source of the parsed number), it's carried in the standard
+ * HL7 `quantity-precision` extension on `valueQuantity`'s primitive sibling (`_value`), so the
+ * value can still be displayed with its original precision even though `quantity.value` itself is
+ * just the plain, precision-collapsed number.
+ * @param quantity - A FHIR Quantity, e.g. an Observation's valueQuantity.
+ * @returns The number of digits after the decimal point to display, or undefined if no precision
+ *   was preserved (quantity.value should then be displayed with its default precision).
+ */
+export function getPreservedValuePrecision(quantity: Quantity | undefined): number | undefined {
+  const extension = (quantity as QuantityWithValueExtension | undefined)?._value?.extension?.find(
+    (e) => e.url === QUANTITY_PRECISION_EXTENSION_URL
+  );
+  return extension?.valueInteger;
 }
 
 /**
