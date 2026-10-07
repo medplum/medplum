@@ -4,12 +4,13 @@ import { Button, Text, TextInput, UnstyledButton } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import { getSearchParameters, tryGetDataType } from '@medplum/core';
 import { IconCheck, IconColumns3, IconGripVertical, IconRotate2, IconSearch } from '@tabler/icons-react';
-import type { JSX, PointerEvent } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import type { JSX } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { DEFAULT_SEARCH_FIELDS } from '../SearchControl/SearchControlField';
 import { SearchToolbarPopover } from '../SearchControl/SearchToolbarPopover';
 import popoverClasses from '../SearchControl/SearchToolbarPopover.module.css';
 import { buildFieldNameString, buildSearchParamFieldLabel, partitionSearchParams } from '../SearchControl/SearchUtils';
+import { useDragReorder } from '../utils/useDragReorder';
 import classes from './SearchColumnEditor.module.css';
 
 /**
@@ -94,14 +95,8 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
     setOrder(buildColumnOrder(visibleFields, search.resourceType));
   }
 
-  const [dragIndex, setDragIndex] = useState<number | undefined>(undefined);
-  const [overIndex, setOverIndex] = useState<number | undefined>(undefined);
-  const dragIndexRef = useRef<number | undefined>(undefined);
-  const overIndexRef = useRef<number | undefined>(undefined);
-  const endDragRef = useRef<(() => void) | undefined>(undefined);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => () => endDragRef.current?.(), []);
+  const drag = useDragReorder(reorder);
 
   const visibleSet = useMemo(() => new Set(visibleFields), [visibleFields]);
   const lowerQuery = query.toLowerCase();
@@ -153,50 +148,6 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
     onChange({ ...search, fields: next });
   }
 
-  function clearDrag(): void {
-    setDragIndex(undefined);
-    setOverIndex(undefined);
-    dragIndexRef.current = undefined;
-    overIndexRef.current = undefined;
-  }
-
-  /**
-   * Starts a pointer drag from a row's grip. The drop target is tracked by the rows' pointermove
-   * handlers, and the drag ends on the next pointerup or pointercancel anywhere in the document.
-   * @param e - The pointerdown event on the grip.
-   * @param index - The index of the dragged row in `order`.
-   */
-  function startDrag(e: PointerEvent<HTMLElement>, index: number): void {
-    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-    endDragRef.current?.();
-    dragIndexRef.current = index;
-    overIndexRef.current = index;
-    setDragIndex(index);
-    const removeListeners = (): void => {
-      document.removeEventListener('pointerup', onPointerUp);
-      document.removeEventListener('pointercancel', onPointerCancel);
-      endDragRef.current = undefined;
-    };
-    const onPointerUp = (): void => {
-      const from = dragIndexRef.current;
-      const to = overIndexRef.current;
-      removeListeners();
-      if (from !== undefined && to !== undefined && from !== to) {
-        reorder(from, to);
-      }
-      clearDrag();
-    };
-    const onPointerCancel = (): void => {
-      removeListeners();
-      clearDrag();
-    };
-    document.addEventListener('pointerup', onPointerUp);
-    document.addEventListener('pointercancel', onPointerCancel);
-    endDragRef.current = removeListeners;
-  }
-
   return (
     <SearchToolbarPopover
       label="Columns"
@@ -236,12 +187,13 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
           onChange={(e) => setQuery(e.currentTarget.value)}
         />
       </div>
-      <div className={dragIndex !== undefined ? `${classes.body} ${classes.dragActive}` : classes.body}>
+      <div className={drag.dragIndex !== undefined ? `${classes.body} ${classes.dragActive}` : classes.body}>
         {order.map((name, index) => {
           if (!listed.includes(name)) {
             return null;
           }
           const visible = visibleSet.has(name);
+          const { dragIndex, overIndex } = drag;
           const rowClass = [
             classes.item,
             dragIndex === index ? classes.dragging : '',
@@ -257,18 +209,13 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
               aria-pressed={visible}
               data-testid={`column-${name}`}
               onClick={() => toggleColumn(name)}
-              onPointerMove={() => {
-                if (dragIndexRef.current !== undefined && overIndexRef.current !== index) {
-                  overIndexRef.current = index;
-                  setOverIndex(index);
-                }
-              }}
+              onPointerMove={() => drag.hover(index)}
             >
               <span
                 className={classes.grip}
                 aria-hidden="true"
                 data-testid={`column-grip-${name}`}
-                onPointerDown={(e) => startDrag(e, index)}
+                onPointerDown={(e) => drag.startDrag(e, index)}
                 onClick={(e) => e.stopPropagation()}
               >
                 <IconGripVertical size={16} stroke={1.5} />

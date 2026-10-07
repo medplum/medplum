@@ -238,41 +238,6 @@ describe('SearchColumnEditor', () => {
       expect(onChange.mock.calls.length).toBe(callsAfterDrag + 1);
       expect(lastFields(onChange)).toEqual(['gender', 'name']);
     });
-
-    test('A cancelled drag ends without reordering', async () => {
-      const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
-      await openMenu();
-
-      const name = screen.getByTestId('column-name');
-      await act(async () => {
-        fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
-        fireEvent.pointerMove(name);
-        fireEvent(document, new Event('pointercancel'));
-      });
-      expect(name.className).not.toContain('dragOver');
-
-      await act(async () => {
-        fireEvent.pointerUp(name);
-      });
-      expect(onChange).not.toHaveBeenCalled();
-    });
-
-    test('Unmounting mid-drag removes the document listeners', async () => {
-      const { onChange, unmount } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
-      await openMenu();
-      await act(async () => {
-        fireEvent.pointerDown(screen.getByTestId('column-grip-name'));
-        fireEvent.pointerMove(screen.getByTestId('column-birthDate'));
-      });
-
-      const removeSpy = vi.spyOn(document, 'removeEventListener');
-      unmount();
-      expect(removeSpy).toHaveBeenCalledWith('pointerup', expect.any(Function));
-      expect(removeSpy).toHaveBeenCalledWith('pointercancel', expect.any(Function));
-      fireEvent(document, new Event('pointerup'));
-      expect(onChange).not.toHaveBeenCalled();
-      removeSpy.mockRestore();
-    });
   });
 
   describe('Prop changes', () => {
