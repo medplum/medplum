@@ -11,6 +11,7 @@ const config: StorybookConfig = {
     '../src/stories/Introduction.mdx', // redundant, but ensure Intro goes first
     '../src/**/*.mdx',
     '../src/**/*.stories.@(ts|tsx)',
+    '../../react/src/**/*.mdx',
     '../../react/src/**/*.stories.@(ts|tsx)',
     // Without a storySort, the sidebar follows first appearance here. SchedulingConfigWorkspace is listed last so
     // it sits after SchedulingWorkspace, which its path would otherwise sort ahead of.
