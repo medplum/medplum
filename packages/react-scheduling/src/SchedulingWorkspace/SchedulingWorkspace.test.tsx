@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { DEFAULT_THEME } from '@mantine/core';
 import type { Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { SinonFakeTimers } from 'sinon';
@@ -82,6 +83,19 @@ function appointmentEvents(patient: string): Element[] {
  */
 function eventColor(patient: string): string | undefined {
   return (appointmentEvents(patient)[0] as HTMLElement | undefined)?.style.getPropertyValue('--fc-event-color');
+}
+
+/**
+ * The color a service type is keyed in, in the legend below the calendar.
+ *
+ * @param label - The service type's name.
+ * @returns The color its swatch shows, as FullCalendar is handed an event's color.
+ */
+async function serviceTypeColor(label: string): Promise<string | undefined> {
+  await userEvent.hover(screen.getByRole('button', { name: 'Legend' }));
+  const row = (await within(await screen.findByRole('dialog')).findByText(label)).closest('.mantine-Group-root');
+  const color = /--mantine-color-([a-z]+)-7/.exec(row?.innerHTML ?? '')?.[1];
+  return color && DEFAULT_THEME.colors[color][7];
 }
 
 describe('SchedulingWorkspace', () => {
@@ -406,6 +420,10 @@ describe('SchedulingWorkspace', () => {
       await userEvent.unhover(title);
       expect(eventColor('Renee Alvarez')).toBe(imaging);
       expect(eventColor('Liam Jones')).not.toBe(imaging);
+      // The legend keys those colors by service type.
+      expect(await serviceTypeColor('Ultrasound Imaging')).toBe(imaging);
+      expect(await serviceTypeColor('Telehealth Consult')).toBe(eventColor('Liam Jones'));
+      await userEvent.unhover(screen.getByRole('button', { name: 'Legend' }));
       // The Slots it holds are not drawn as blocked time either; the one block on show is
       // Exam Room A's maintenance.
       expect(screen.getAllByText('Blocked')).toHaveLength(1);

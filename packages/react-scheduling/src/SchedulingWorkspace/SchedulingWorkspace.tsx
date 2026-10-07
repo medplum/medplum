@@ -30,6 +30,8 @@ import type { DateTimeRange } from '../types';
 import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
 import type { CalendarFilterValues } from './CalendarFilters';
 import { CalendarFilters } from './CalendarFilters';
+import type { ServiceTypeLegendItem } from './CalendarLegend';
+import { CalendarLegend } from './CalendarLegend';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
@@ -104,6 +106,7 @@ export interface SchedulingWorkspaceProps {
  *   those components.
  * - Draws each appointment once, however many of the calendars on show it is held on,
  *   in the color of its service type, picked by hashing the HealthcareService's reference.
+ *   A legend below the calendar keys those colors.
  * - Books from the calendar: clicking open time opens {@link AppointmentBookingForm}
  *   in a pane on the right, with its time search opened on the day that was clicked.
  *   The form writes the booking and announces what it wrote, which is what puts the
@@ -232,7 +235,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     error: resourcesError,
   } = useSchedulingResources(schedules, range);
 
-  const sources = useMemo((): MultiCalendarSource[] => {
+  const { sources, serviceTypes } = useMemo(() => {
     const actorsOnShow = new Set(
       activeCandidates
         .flatMap((candidate) => candidate.schedule.actor.map((actor) => actor.reference))
@@ -258,17 +261,29 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         appointments: [],
       };
     });
-    const serviceSources = Array.from(
-      groupAppointmentsByService(visibleAppointments),
-      ([reference, group]): MultiCalendarSource => ({
-        // Picked by the service type's reference, so its color holds whichever week is on show,
-        // for everyone, and as other service types come and go.
-        color: reference ? resolveThemeColor(theme, undefined, fallbackColorIndex(reference)) : 'gray',
-        slots: [],
-        appointments: group,
-      })
-    );
-    return [...calendarSources, ...serviceSources];
+    const groups = Array.from(groupAppointmentsByService(visibleAppointments), ([reference, group]) => ({
+      reference,
+      group,
+      // Picked by the service type's reference, so its color holds whichever week is on show,
+      // for everyone, and as other service types come and go.
+      color: reference ? resolveThemeColor(theme, undefined, fallbackColorIndex(reference)) : 'gray',
+    }));
+    const serviceSources = groups.map(({ group, color }): MultiCalendarSource => ({
+      color,
+      slots: [],
+      appointments: group,
+    }));
+    const legend = groups
+      .map(({ reference, group, color }): ServiceTypeLegendItem => ({
+        id: reference ?? 'none',
+        // Named as its events are titled, by the HealthcareService its color is picked from.
+        appointment: group[0],
+        color,
+      }))
+      // By reference, so the order holds from week to week; the names load only as the legend
+      // shows them. The appointments naming no service type go last.
+      .sort((a, b) => Number(a.id === 'none') - Number(b.id === 'none') || a.id.localeCompare(b.id));
+    return { sources: [...calendarSources, ...serviceSources], serviceTypes: legend };
   }, [activeCandidates, slots, appointments, colorByScheduleId, theme]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
@@ -375,7 +390,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onSelectAppointment={selectAppointment}
           selection={highlight}
         />
-        <CalendarTimezoneNotice className={classes.timezoneNotice} timezones={timezones} anyUnknown={anyUnknown} />
+        <div className={classes.footer}>
+          <CalendarTimezoneNotice timezones={timezones} anyUnknown={anyUnknown} />
+          <CalendarLegend className={classes.legend} serviceTypes={serviceTypes} />
+        </div>
       </div>
       {openAppointment && (
         <section
