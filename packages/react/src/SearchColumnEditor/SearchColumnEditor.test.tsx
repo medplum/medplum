@@ -8,16 +8,28 @@ import { SearchColumnEditor } from './SearchColumnEditor';
 
 const medplum = new MockClient();
 
-async function setup(search: SearchRequest, onChange = vi.fn()): Promise<{ onChange: ReturnType<typeof vi.fn> }> {
+async function setup(
+  search: SearchRequest,
+  defaultFields?: readonly string[],
+  onChange = vi.fn()
+): Promise<{ onChange: ReturnType<typeof vi.fn>; rerender: (search: SearchRequest) => void }> {
   await act(async () => {
     await medplum.requestSchema(search.resourceType);
   });
-  render(
+  const { rerender } = render(
     <MedplumProvider medplum={medplum}>
-      <SearchColumnEditor search={search} onChange={onChange} />
+      <SearchColumnEditor search={search} defaultFields={defaultFields} onChange={onChange} />
     </MedplumProvider>
   );
-  return { onChange };
+  return {
+    onChange,
+    rerender: (next: SearchRequest) =>
+      rerender(
+        <MedplumProvider medplum={medplum}>
+          <SearchColumnEditor search={next} defaultFields={defaultFields} onChange={onChange} />
+        </MedplumProvider>
+      ),
+  };
 }
 
 async function openMenu(): Promise<void> {
@@ -101,17 +113,36 @@ describe('SearchColumnEditor', () => {
     expect(screen.getByText('1 shown')).toBeInTheDocument();
   });
 
-  test('Reset default restores the original fields', async () => {
-    const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
+  test('Reset default restores the given defaults', async () => {
+    const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] }, ['id', 'name']);
     await openMenu();
     await act(async () => {
-      fireEvent.click(screen.getByTestId('column-name'));
+      fireEvent.click(screen.getByTestId('column-gender'));
     });
     await act(async () => {
       fireEvent.click(screen.getByText('Reset Default'));
     });
     const last = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
-    expect(last.fields).toEqual(['name', 'birthDate']);
+    expect(last.fields).toEqual(['id', 'name']);
+  });
+
+  test('Reset default falls back to the built-in defaults', async () => {
+    const { onChange } = await setup({ resourceType: 'Patient', fields: ['name'] });
+    await openMenu();
+    await act(async () => {
+      fireEvent.click(screen.getByText('Reset Default'));
+    });
+    const last = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
+    expect(last.fields).toEqual(['id', '_lastUpdated']);
+  });
+
+  test('Reset default is disabled when the columns already match the defaults', async () => {
+    const { rerender } = await setup({ resourceType: 'Patient', fields: ['id', 'name'] }, ['id', 'name']);
+    await openMenu();
+    expect(screen.getByText('Reset Default').closest('button')).toBeDisabled();
+
+    rerender({ resourceType: 'Patient', fields: ['name', 'id'] });
+    expect(screen.getByText('Reset Default').closest('button')).toBeEnabled();
   });
 
   test('Reset default clears the search and focuses the search box', async () => {
@@ -307,7 +338,11 @@ describe('SearchColumnEditor', () => {
     );
     rerender(
       <MedplumProvider medplum={medplum}>
-        <SearchColumnEditor search={{ resourceType: 'Observation', fields: ['code'] }} onChange={onChange} />
+        <SearchColumnEditor
+          search={{ resourceType: 'Observation', fields: ['code'] }}
+          defaultFields={['code', 'status']}
+          onChange={onChange}
+        />
       </MedplumProvider>
     );
     await openMenu();
@@ -318,6 +353,41 @@ describe('SearchColumnEditor', () => {
       fireEvent.click(screen.getByText('Reset Default'));
     });
     const last = onChange.mock.calls.at(-1)?.[0] as SearchRequest;
-    expect(last).toMatchObject({ resourceType: 'Observation', fields: ['code'] });
+    expect(last).toMatchObject({ resourceType: 'Observation', fields: ['code', 'status'] });
+  });
+
+  test('Reopening after the fields change externally keeps the new column order', async () => {
+    const { onChange, rerender } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate'] });
+    await openMenu();
+    await act(async () => {
+      fireEvent.click(screen.getByText('Columns'));
+    });
+    rerender({ resourceType: 'Patient', fields: ['birthDate', 'name'] });
+    await openMenu();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('column-gender'));
+    });
+    expect(onChange).toHaveBeenCalledWith({ resourceType: 'Patient', fields: ['birthDate', 'name', 'gender'] });
+  });
+
+  test('A visible _id column does not add a second ID row', async () => {
+    await setup({ resourceType: 'Patient', fields: ['_id', 'name'] });
+    await openMenu();
+    expect(screen.getByTestId('column-_id')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByTestId('column-id')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'ID', hidden: true })).toBeNull();
+  });
+
+  test('Empty fields shows no checked column, matching the empty table', async () => {
+    const { onChange } = await setup({ resourceType: 'Patient', fields: [] });
+    await openMenu();
+    expect(screen.getByText('0 shown')).toBeInTheDocument();
+    expect(document.querySelector('[data-testid^="visible-"]')).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('column-name'));
+    });
+    expect(onChange).toHaveBeenCalledWith({ resourceType: 'Patient', fields: ['name'] });
   });
 });

@@ -101,6 +101,8 @@ export interface SearchControlProps {
   readonly hideToolbar?: boolean;
   /** Hides the per-column filter description row under the column headers. */
   readonly hideFilters?: boolean;
+  /** Columns the Columns popover's Reset Default restores; defaults to `id` and `_lastUpdated`. */
+  readonly defaultFields?: readonly string[];
   readonly onLoad?: (e: SearchLoadEvent) => void;
   readonly onChange?: (e: SearchChangeEvent) => void;
   readonly onClick?: (e: SearchClickEvent) => void;
@@ -335,7 +337,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       {!props.hideToolbar && (
         <Group justify="space-between" pb="md" className={classes.toolbar}>
           <Group gap="xs">
-            <SearchColumnEditor search={memoizedSearch} onChange={emitSearchChange} />
+            <SearchColumnEditor
+              search={memoizedSearch}
+              defaultFields={props.defaultFields}
+              onChange={emitSearchChange}
+            />
             <Button
               className={classes.toolbarButton}
               size="compact-md"

@@ -12,8 +12,13 @@ import popoverClasses from '../SearchControl/SearchToolbarPopover.module.css';
 import { buildFieldNameString, buildSearchParamFieldLabel, partitionSearchParams } from '../SearchControl/SearchUtils';
 import classes from './SearchColumnEditor.module.css';
 
+/**
+ * Props for {@link SearchColumnEditor}.
+ * `defaultFields` are the columns Reset Default restores; `DEFAULT_SEARCH_FIELDS` when omitted or empty.
+ */
 export interface SearchColumnEditorProps {
   readonly search: SearchRequest;
+  readonly defaultFields?: readonly string[];
   readonly onChange: (search: SearchRequest) => void;
 }
 
@@ -28,22 +33,25 @@ function arrayMove<T>(array: T[], from: number, to: number): T[] {
  * Builds the full ordered column universe: the currently-visible columns first (in their table
  * order), then every other column the resource exposes, fields then metadata, each sorted by label.
  * Like the former Fields modal, the universe is the union of the resource type's properties and its
- * search parameters; a search parameter is skipped when a property already claims its code or label
- * (e.g. `birthdate` vs `birthDate`, `_id` vs `id`), so each column is offered once.
+ * search parameters. A property is skipped when a visible field already claims its code or label, and
+ * a search parameter is skipped when a visible field or property does (e.g. `birthdate` vs `birthDate`,
+ * `_id` vs `id`), so each column is offered once.
  * @param visibleFields - The columns currently shown, in table order.
  * @param resourceType - The resource type whose columns are listed.
  * @returns The ordered list of all known column names.
  */
 function buildColumnOrder(visibleFields: readonly string[], resourceType: string): string[] {
   const keys = new Set(visibleFields.map((name) => name.toLowerCase()));
-  const names = new Set(visibleFields.map(buildFieldNameString));
+  const visibleNames = new Set(visibleFields.map(buildFieldNameString));
+  const names = new Set(visibleNames);
   const others: string[] = [];
 
   for (const key of Object.keys(tryGetDataType(resourceType)?.elements ?? {})) {
-    if (!keys.has(key.toLowerCase())) {
+    const name = buildFieldNameString(key);
+    if (!keys.has(key.toLowerCase()) && !visibleNames.has(name)) {
       others.push(key);
       keys.add(key.toLowerCase());
-      names.add(buildFieldNameString(key));
+      names.add(name);
     }
   }
 
@@ -65,27 +73,25 @@ function buildColumnOrder(visibleFields: readonly string[], resourceType: string
  * a drag handle (reorder) and a blue check (visible). Toggling a column shows/hides it in the table;
  * dragging a column up moves it left, dragging it down moves it right. Changes apply live. Hidden
  * columns are dropped from `SearchRequest.fields`, so they are remembered within a session but not
- * across a full reload.
+ * across a full reload. Reset Default restores `defaultFields`, or `DEFAULT_SEARCH_FIELDS` when none
+ * are given, and is disabled while the table already shows them in that order.
  * @param props - The column editor props.
  * @returns The column editor React node.
  */
 export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element {
   const { search, onChange } = props;
 
-  const visibleFields = useMemo(
-    () => (search.fields && search.fields.length > 0 ? search.fields : DEFAULT_SEARCH_FIELDS),
-    [search.fields]
-  );
+  const visibleFields = useMemo(() => search.fields ?? DEFAULT_SEARCH_FIELDS, [search.fields]);
+  const defaults = props.defaultFields?.length ? props.defaultFields : DEFAULT_SEARCH_FIELDS;
+  const atDefaults = visibleFields.length === defaults.length && visibleFields.every((f, i) => f === defaults[i]);
 
   const [opened, setOpened] = useState(false);
   const [query, setQuery] = useState('');
   const [order, setOrder] = useState<string[]>(() => buildColumnOrder(visibleFields, search.resourceType));
-  const [defaultFields, setDefaultFields] = useState<string[]>(() => [...visibleFields]);
   const [orderResourceType, setOrderResourceType] = useState(search.resourceType);
   if (orderResourceType !== search.resourceType) {
     setOrderResourceType(search.resourceType);
     setOrder(buildColumnOrder(visibleFields, search.resourceType));
-    setDefaultFields([...visibleFields]);
   }
 
   const [dragIndex, setDragIndex] = useState<number | undefined>(undefined);
@@ -117,13 +123,11 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
     if (!opened) {
       setQuery('');
       setOrder((prev) => {
-        const merged = [...prev];
-        for (const field of visibleFields) {
-          if (!merged.includes(field)) {
-            merged.push(field);
-          }
-        }
-        return merged;
+        const visibleNames = new Set(visibleFields.map(buildFieldNameString));
+        return [
+          ...visibleFields,
+          ...prev.filter((name) => !visibleSet.has(name) && !visibleNames.has(buildFieldNameString(name))),
+        ];
       });
     }
     setOpened((o) => !o);
@@ -175,7 +179,7 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
   }
 
   function resetDefault(): void {
-    const next = [...defaultFields];
+    const next = [...defaults];
     setQuery('');
     searchInputRef.current?.focus();
     setOrder(buildColumnOrder(next, search.resourceType));
@@ -243,6 +247,7 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
             color="gray"
             leftSection={<IconRotate2 size={16} />}
             fw={500}
+            disabled={atDefaults}
             onClick={resetDefault}
           >
             Reset Default

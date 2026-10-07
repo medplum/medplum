@@ -634,6 +634,27 @@ describe('SearchControl', () => {
     expect(currSearch?.fields).toEqual(['name']);
   });
 
+  test('Columns editor reset restores the default fields', async () => {
+    let currSearch: SearchRequest | undefined;
+    await setup({
+      search: { resourceType: 'Patient', fields: ['name'] },
+      defaultFields: ['name', 'gender'],
+      onLoad: vi.fn(),
+      onChange: (e) => {
+        currSearch = e.definition;
+      },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Columns'));
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByText('Reset Default'));
+    });
+
+    expect(currSearch?.fields).toEqual(['name', 'gender']);
+  });
+
   async function openColumnOptions(): Promise<void> {
     await setup({ search: { resourceType: 'Patient', fields: ['name'] }, onLoad: vi.fn() });
     await act(async () => {
