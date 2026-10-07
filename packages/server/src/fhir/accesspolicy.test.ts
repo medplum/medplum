@@ -1909,13 +1909,16 @@ describe('AccessPolicy', () => {
       });
       const broadened: AccessPolicy = { ...policy, resource: [{ resourceType: '*' }] };
 
+      await expect(repo.readResource('AccessPolicy', policy.id)).resolves.toBeDefined();
+      await expect(repo.searchResources<AccessPolicy>({ resourceType: 'AccessPolicy' })).resolves.toMatchObject([
+        { id: policy.id },
+      ]);
+
       if (admin) {
-        await expect(repo.readResource('AccessPolicy', policy.id)).resolves.toBeDefined();
         await expect(repo.updateResource(broadened)).resolves.toMatchObject({ resource: [{ resourceType: '*' }] });
         const created = await repo.createResource<AccessPolicy>({ resourceType: 'AccessPolicy' });
         await repo.deleteResource('AccessPolicy', created.id);
       } else {
-        await expect(repo.readResource('AccessPolicy', policy.id)).rejects.toThrow('Forbidden');
         await expect(repo.updateResource(broadened)).rejects.toThrow('Forbidden');
         await expect(
           repo.patchResource('AccessPolicy', policy.id, [
@@ -1928,6 +1931,28 @@ describe('AccessPolicy', () => {
       }
     })
   );
+
+  test('Non-admin policy reads preserve wildcard restrictions', () =>
+    withTestContext(async () => {
+      const { project, repo, accessPolicy } = await createTestProject({
+        withRepo: true,
+        membership: { admin: false },
+        accessPolicy: {
+          resource: [{ resourceType: '*', criteria: '*?name=Allowed', interaction: ['read', 'search', 'update'] }],
+        },
+      });
+      const projectRepo = await getProjectSystemRepo(project);
+      const allowed = await projectRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: project.id },
+        name: 'Allowed',
+      });
+      await expect(repo.readResource('AccessPolicy', allowed.id)).resolves.toMatchObject({ id: allowed.id });
+      await expect(repo.readResource('AccessPolicy', accessPolicy.id)).rejects.toThrow();
+      const results = await repo.searchResources<AccessPolicy>({ resourceType: 'AccessPolicy' });
+      expect(results.map((r) => r.id)).toEqual([allowed.id]);
+      await expect(repo.updateResource({ ...allowed, description: 'Changed' })).rejects.toThrow('Forbidden');
+    }));
 
   test('Project admin cannot delete project', () =>
     withTestContext(async () => {
