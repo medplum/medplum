@@ -9,7 +9,7 @@ import {
   SchedulingUnvalidatedRescheduleURI,
   setScheduleSchedulingParameter,
 } from '@medplum/core';
-import type { AccessPolicyResource, Appointment, Schedule } from '@medplum/fhirtypes';
+import type { Appointment, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
   DrRiveraSchedule,
@@ -130,20 +130,6 @@ describe('writeElevatedReschedule', () => {
       end: START.toISOString(),
       start: '2026-08-18T02:57:00.000Z',
     });
-  });
-
-  test.each<[string, AccessPolicyResource[]]>([
-    ['create or delete Slots', [{ resourceType: 'Slot', readonly: true }, { resourceType: 'Appointment' }]],
-    [
-      'delete Slots',
-      [{ resourceType: 'Slot', interaction: ['read', 'search', 'create', 'update'] }, { resourceType: 'Appointment' }],
-    ],
-    ['update Appointments', [{ resourceType: 'Slot' }, { resourceType: 'Appointment', readonly: true }]],
-  ])('refuses before writing when the access policy cannot %s', async (_cannot, resource) => {
-    vi.spyOn(medplum, 'getAccessPolicy').mockReturnValue({ resourceType: 'AccessPolicy', resource });
-    const create = vi.spyOn(medplum, 'createResource');
-    await expect(writeElevatedReschedule(medplum, existing, proposal())).rejects.toThrow('permission');
-    expect(create).not.toHaveBeenCalled();
   });
 
   test('moves the stored appointment rather than a stale copy', async () => {

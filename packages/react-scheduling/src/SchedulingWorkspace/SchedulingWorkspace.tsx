@@ -80,8 +80,8 @@ export interface SchedulingWorkspaceProps {
    * Such a booking is sent as a transaction, so the appointment and its Slots commit
    * together on projects with the `transaction-bundles` feature enabled. Without it they
    * are applied as a plain batch, where an appointment that failed to write would leave
-   * Slots holding no visit. Manual rescheduling writes Slot by Slot instead, and is not
-   * offered to users whose access policy cannot create and delete Slots and update Appointments.
+   * Slots holding no visit. Manual rescheduling writes Slot by Slot instead: old Slots the
+   * user cannot delete stay behind as blocked time after the move.
    * @see https://www.medplum.com/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions
    */
   readonly canBypassSchedulingRules?: boolean;

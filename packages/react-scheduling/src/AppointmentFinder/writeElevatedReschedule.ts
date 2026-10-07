@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
 import {
-  AccessPolicyInteraction,
-  accessPolicySupportsInteraction,
   createReference,
   extractServiceTypeReferences,
   getReferenceString,
@@ -26,24 +24,6 @@ import { buildElevatedBooking } from './buildElevatedBooking';
 export function getRescheduleDurationMinutes(appointment: Appointment): number | undefined {
   const duration = (Date.parse(appointment.end ?? '') - Date.parse(appointment.start ?? '')) / 60000;
   return Number.isFinite(duration) && duration > 0 ? duration : undefined;
-}
-
-/**
- * Whether the user's access policy allows every write a manual reschedule makes.
- *
- * A shallow check: a policy whose criteria exclude a particular Slot or Appointment can
- * still refuse it. Without a policy to read, the server is left to decide.
- * @param medplum - The client to check.
- * @returns True unless the policy rules out creating or deleting Slots, or updating Appointments.
- */
-export function canWriteManualReschedule(medplum: MedplumClient): boolean {
-  const accessPolicy = medplum.getAccessPolicy();
-  return (
-    !accessPolicy ||
-    (accessPolicySupportsInteraction(accessPolicy, AccessPolicyInteraction.CREATE, 'Slot') &&
-      accessPolicySupportsInteraction(accessPolicy, AccessPolicyInteraction.DELETE, 'Slot') &&
-      accessPolicySupportsInteraction(accessPolicy, AccessPolicyInteraction.UPDATE, 'Appointment'))
-  );
 }
 
 /**
@@ -79,9 +59,6 @@ export async function writeElevatedReschedule(
   moving: WithId<Appointment>,
   proposal: Appointment
 ): Promise<AppointmentWrite> {
-  if (!canWriteManualReschedule(medplum)) {
-    throw new Error('Scheduling rule overrides need permission to create and delete Slots and to update Appointments.');
-  }
   const scheduleRefs = getProposedSchedules(proposal);
   if (scheduleRefs.length === 0 || scheduleRefs.some((ref) => !/^Schedule\/[^/]+$/.test(ref))) {
     throw new Error('The chosen time must name valid schedules.');

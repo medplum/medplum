@@ -12,7 +12,7 @@ import { readAppointmentWrite } from './AppointmentFinder.writes';
 import type { AppointmentProposalFormProps, BookOptions } from './AppointmentProposalForm';
 import { AppointmentProposalForm } from './AppointmentProposalForm';
 import { useRescheduleDefaults } from './useRescheduleDefaults';
-import { canWriteManualReschedule, getProposedSchedules, writeElevatedReschedule } from './writeElevatedReschedule';
+import { getProposedSchedules, writeElevatedReschedule } from './writeElevatedReschedule';
 
 /** Joins names the way a sentence listing all of them would. */
 const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
@@ -75,7 +75,6 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
   const { appointment, onRescheduled, defaultStart, canBypassSchedulingRules, ...formProps } = props;
   const medplum = useMedplum();
   const defaults = useRescheduleDefaults(appointment);
-  const canOverride = canWriteManualReschedule(medplum);
 
   const reschedule = useCallback(
     async (proposal: Appointment, options: BookOptions): Promise<void> => {
@@ -174,16 +173,10 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
           if you continue: {droppedNames}
         </Alert>
       )}
-      {canBypassSchedulingRules && !canOverride && (
-        <Alert color="yellow" mb="sm">
-          Scheduling rule overrides need permission to create and delete Slots and to update Appointments. You can still
-          choose a time from the search.
-        </Alert>
-      )}
       <AppointmentProposalForm
         {...formProps}
         mode="reschedule"
-        canBypassSchedulingRules={canBypassSchedulingRules && canOverride}
+        canBypassSchedulingRules={canBypassSchedulingRules}
         defaultService={defaults.service}
         defaultSelections={defaults.selections}
         defaultStart={defaultStart ?? getOpeningDay(appointment)}

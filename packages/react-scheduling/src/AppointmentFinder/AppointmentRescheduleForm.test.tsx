@@ -199,20 +199,6 @@ describe('AppointmentRescheduleForm', () => {
       expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
     });
 
-    test('blocks manual overrides without permission to delete Slots and keeps searched moves', async () => {
-      vi.spyOn(medplum, 'getAccessPolicy').mockReturnValue({
-        resourceType: 'AccessPolicy',
-        resource: [{ resourceType: '*', interaction: ['read', 'search', 'create', 'update'] }],
-      });
-      await setup(medplum, { canBypassSchedulingRules: true });
-      await openTimeFinder();
-      expect(screen.getByText(/permission to create and delete Slots/)).toBeInTheDocument();
-      expect(screen.queryByText('Or enter a time')).not.toBeInTheDocument();
-      await chooseFirstOfferedTime();
-      await clickReschedule();
-      expect(onRescheduled).toHaveBeenCalledTimes(1);
-    });
-
     test('requires a valid original duration and never falls back to the configured duration', async () => {
       await setup(medplum, { appointment: { ...APPOINTMENT, end: undefined }, canBypassSchedulingRules: true });
       await enterTime();
