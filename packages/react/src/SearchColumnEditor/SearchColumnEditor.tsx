@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Text, TextInput, UnstyledButton, VisuallyHidden } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
-import { getSearchParameters } from '@medplum/core';
-import type { SearchParameter } from '@medplum/fhirtypes';
+import { getSearchParameters, tryGetDataType } from '@medplum/core';
 import { IconCheck, IconColumns3, IconGripVertical, IconRotate2, IconSearch } from '@tabler/icons-react';
 import type { JSX, KeyboardEvent, PointerEvent } from 'react';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_SEARCH_FIELDS } from '../SearchControl/SearchControlField';
 import { SearchToolbarPopover } from '../SearchControl/SearchToolbarPopover';
 import popoverClasses from '../SearchControl/SearchToolbarPopover.module.css';
-import { buildSearchParamFieldLabel, partitionSearchParams } from '../SearchControl/SearchUtils';
+import { buildFieldNameString, buildSearchParamFieldLabel, partitionSearchParams } from '../SearchControl/SearchUtils';
 import classes from './SearchColumnEditor.module.css';
 
 export interface SearchColumnEditorProps {
@@ -27,15 +26,37 @@ function arrayMove<T>(array: T[], from: number, to: number): T[] {
 
 /**
  * Builds the full ordered column universe: the currently-visible columns first (in their table
- * order), then every other search parameter the resource exposes, fields then metadata, each
- * sorted by label, so the menu offers the same set of fields and metadata as the filter editor.
+ * order), then every other column the resource exposes, fields then metadata, each sorted by label.
+ * Like the former Fields modal, the universe is the union of the resource type's properties and its
+ * search parameters; a search parameter is skipped when a property already claims its code or label
+ * (e.g. `birthdate` vs `birthDate`, `_id` vs `id`), so each column is offered once.
  * @param visibleFields - The columns currently shown, in table order.
- * @param searchParams - All search parameters for the resource type, keyed by code.
+ * @param resourceType - The resource type whose columns are listed.
  * @returns The ordered list of all known column names.
  */
-function buildColumnOrder(visibleFields: readonly string[], searchParams: Record<string, SearchParameter>): string[] {
-  const seen = new Set(visibleFields);
-  const { fields, metadata } = partitionSearchParams(Object.keys(searchParams).filter((code) => !seen.has(code)));
+function buildColumnOrder(visibleFields: readonly string[], resourceType: string): string[] {
+  const keys = new Set(visibleFields.map((name) => name.toLowerCase()));
+  const names = new Set(visibleFields.map(buildFieldNameString));
+  const others: string[] = [];
+
+  for (const key of Object.keys(tryGetDataType(resourceType)?.elements ?? {})) {
+    if (!keys.has(key.toLowerCase())) {
+      others.push(key);
+      keys.add(key.toLowerCase());
+      names.add(buildFieldNameString(key));
+    }
+  }
+
+  for (const code of Object.keys(getSearchParameters(resourceType) ?? {})) {
+    const name = buildFieldNameString(code);
+    if (!keys.has(code.toLowerCase()) && !names.has(name)) {
+      others.push(code);
+      keys.add(code.toLowerCase());
+      names.add(name);
+    }
+  }
+
+  const { fields, metadata } = partitionSearchParams(others);
   return [...visibleFields, ...fields, ...metadata];
 }
 
@@ -56,16 +77,14 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
     [search.fields]
   );
 
-  const searchParams = useMemo(() => getSearchParameters(search.resourceType) ?? {}, [search.resourceType]);
-
   const [opened, setOpened] = useState(false);
   const [query, setQuery] = useState('');
-  const [order, setOrder] = useState<string[]>(() => buildColumnOrder(visibleFields, searchParams));
+  const [order, setOrder] = useState<string[]>(() => buildColumnOrder(visibleFields, search.resourceType));
   const [defaultFields, setDefaultFields] = useState<string[]>(() => [...visibleFields]);
   const [orderResourceType, setOrderResourceType] = useState(search.resourceType);
   if (orderResourceType !== search.resourceType) {
     setOrderResourceType(search.resourceType);
-    setOrder(buildColumnOrder(visibleFields, searchParams));
+    setOrder(buildColumnOrder(visibleFields, search.resourceType));
     setDefaultFields([...visibleFields]);
   }
 
@@ -159,7 +178,7 @@ export function SearchColumnEditor(props: SearchColumnEditorProps): JSX.Element 
     const next = [...defaultFields];
     setQuery('');
     searchInputRef.current?.focus();
-    setOrder(buildColumnOrder(next, searchParams));
+    setOrder(buildColumnOrder(next, search.resourceType));
     onChange({ ...search, fields: next });
   }
 
