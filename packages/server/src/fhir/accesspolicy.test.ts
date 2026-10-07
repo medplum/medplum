@@ -1948,7 +1948,7 @@ describe('AccessPolicy', () => {
         name: 'Allowed',
       });
       await expect(repo.readResource('AccessPolicy', allowed.id)).resolves.toMatchObject({ id: allowed.id });
-      await expect(repo.readResource('AccessPolicy', accessPolicy.id)).rejects.toThrow();
+      await expect(repo.readResource('AccessPolicy', accessPolicy.id)).rejects.toThrow('Not found');
       const results = await repo.searchResources<AccessPolicy>({ resourceType: 'AccessPolicy' });
       expect(results.map((r) => r.id)).toEqual([allowed.id]);
       await expect(repo.updateResource({ ...allowed, description: 'Changed' })).rejects.toThrow('Forbidden');
