@@ -51,14 +51,6 @@ async function click(element: HTMLElement): Promise<void> {
   });
 }
 
-async function drag(column: string, target: string): Promise<void> {
-  await act(async () => {
-    fireEvent.pointerDown(screen.getByTestId(`column-grip-${column}`));
-    fireEvent.pointerMove(screen.getByTestId(`column-${target}`));
-    fireEvent.pointerUp(screen.getByTestId(`column-${target}`));
-  });
-}
-
 function lastFields(onChange: ReturnType<typeof vi.fn>): string[] | undefined {
   return (onChange.mock.calls.at(-1)?.[0] as SearchRequest | undefined)?.fields;
 }
@@ -204,39 +196,32 @@ describe('SearchColumnEditor', () => {
   });
 
   describe('Drag reorder', () => {
-    test('Dragging a column up moves it before the target', async () => {
+    test('Dragging reorders the columns, shows the drop guide, and leaves rows clickable', async () => {
       const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
       await openMenu();
-      await drag('gender', 'name');
+
+      await act(async () => {
+        fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
+        fireEvent.pointerMove(screen.getByTestId('column-name'));
+        fireEvent.pointerUp(screen.getByTestId('column-name'));
+      });
       expect(lastFields(onChange)).toEqual(['gender', 'name', 'birthDate']);
-    });
 
-    test('Dragging a column down moves it after the target and shows the guide below it', async () => {
-      const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
-      await openMenu();
-
-      const gender = screen.getByTestId('column-gender');
+      const birthDate = screen.getByTestId('column-birthDate');
       await act(async () => {
-        fireEvent.pointerDown(screen.getByTestId('column-grip-name'));
-        fireEvent.pointerMove(gender);
+        fireEvent.pointerDown(screen.getByTestId('column-grip-gender'));
+        fireEvent.pointerMove(birthDate);
       });
-      expect(gender.className).toContain('dragOverBelow');
-
+      expect(birthDate.className).toContain('dragOverBelow');
       await act(async () => {
-        fireEvent.pointerUp(gender);
+        fireEvent.pointerUp(birthDate);
       });
-      expect(lastFields(onChange)).toEqual(['birthDate', 'gender', 'name']);
-    });
+      expect(lastFields(onChange)).toEqual(['name', 'birthDate', 'gender']);
 
-    test('Toggling right after a reorder takes a single click', async () => {
-      const { onChange } = await setup({ resourceType: 'Patient', fields: ['name', 'birthDate', 'gender'] });
-      await openMenu();
-      await drag('gender', 'name');
       const callsAfterDrag = onChange.mock.calls.length;
-
-      await click(screen.getByTestId('column-birthDate'));
+      await click(birthDate);
       expect(onChange.mock.calls.length).toBe(callsAfterDrag + 1);
-      expect(lastFields(onChange)).toEqual(['gender', 'name']);
+      expect(lastFields(onChange)).toEqual(['name', 'gender']);
     });
   });
 
