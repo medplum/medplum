@@ -8,10 +8,10 @@ import type { JSX } from 'react';
 import { partitionServiceTypes } from './serviceTypes';
 
 export interface ServiceTypeDisplayProps extends TextProps {
-  appointment: Appointment;
+  readonly appointment: Appointment;
 }
 
-export function ServiceTypeDisplay(props: ServiceTypeDisplayProps): JSX.Element | null {
+export function ServiceTypeDisplay(props: Readonly<ServiceTypeDisplayProps>): JSX.Element | null {
   const { appointment, ...rest } = props;
   const { visitType } = partitionServiceTypes(appointment);
   const serviceRef = getExtensionValue(visitType, ServiceTypeReferenceURI);

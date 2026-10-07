@@ -27,7 +27,7 @@ export interface AppointmentStatusBadgeProps extends BadgeProps {
  * @param props - The React props.
  * @returns The badge.
  */
-export function AppointmentStatusBadge(props: AppointmentStatusBadgeProps): JSX.Element {
+export function AppointmentStatusBadge(props: Readonly<AppointmentStatusBadgeProps>): JSX.Element {
   const { status, ...rest } = props;
   return (
     <Badge color={STATUS_COLORS[status]} {...rest}>
