@@ -33,6 +33,7 @@ import {
   getUnsatisfiableRows,
   MAX_ACTOR_COMBINATIONS,
   searchScheduleCandidates,
+  toScheduleCandidate,
 } from './AppointmentFinder.schedules';
 import { getActorsKey } from './AppointmentFinder.times';
 
@@ -271,6 +272,15 @@ describe('searchScheduleCandidates', () => {
     });
 
     expect(await candidatesFor(medplum, UltrasoundImagingService, 'Practitioner')).toHaveLength(2);
+  });
+
+  test('Rejects schedules whose actor is inactive', async () => {
+    const medplum = await setupClient();
+    const drOkafor = await medplum.readResource('Practitioner', 'dr-okafor');
+    await medplum.updateResource({ ...drOkafor, active: false });
+
+    const candidates = await candidatesFor(medplum, UltrasoundImagingService, 'Practitioner');
+    expect(providersOf(candidates)).toStrictEqual(['Dr. Maya Rivera']);
   });
 
   test('Rejects a schedule held on a PractitionerRole', async () => {
@@ -913,3 +923,59 @@ describe('candidate fields', () => {
     expect(getCandidateDisplay({ ...bare, actorResource: nameless.actorResource })).toBe('Practitioner/dr-rivera');
   });
 });
+
+describe('toScheduleCandidate', () => {
+  test('returns undefined when actor resource is inactive', () => {
+    const practitionerSchedule: WithId<Schedule> = {
+      resourceType: 'Schedule',
+      id: 'sched-practitioner',
+      actor: [{ reference: 'Practitioner/practitioner-1' }],
+    };
+    const inactivePractitioner: WithId<Practitioner> = {
+      resourceType: 'Practitioner',
+      id: 'practitioner-1',
+      active: false,
+    };
+    const activePractitioner: WithId<Practitioner> = {
+      resourceType: 'Practitioner',
+      id: 'practitioner-1',
+      active: true,
+    };
+
+    expect(
+      toScheduleCandidate(practitionerSchedule, undefined, new Map([['Practitioner/practitioner-1', inactivePractitioner]]))
+    ).toBeUndefined();
+    expect(
+      toScheduleCandidate(practitionerSchedule, undefined, new Map([['Practitioner/practitioner-1', activePractitioner]]))
+    ).toBeDefined();
+
+    const locationSchedule: WithId<Schedule> = {
+      resourceType: 'Schedule',
+      id: 'sched-location',
+      actor: [{ reference: 'Location/location-1' }],
+    };
+    const inactiveLocation: WithId<Location> = {
+      resourceType: 'Location',
+      id: 'location-1',
+      status: 'inactive',
+    };
+    expect(
+      toScheduleCandidate(locationSchedule, undefined, new Map([['Location/location-1', inactiveLocation]]))
+    ).toBeUndefined();
+
+    const deviceSchedule: WithId<Schedule> = {
+      resourceType: 'Schedule',
+      id: 'sched-device',
+      actor: [{ reference: 'Device/device-1' }],
+    };
+    const inactiveDevice: WithId<Device> = {
+      resourceType: 'Device',
+      id: 'device-1',
+      status: 'inactive',
+    };
+    expect(
+      toScheduleCandidate(deviceSchedule, undefined, new Map([['Device/device-1', inactiveDevice]]))
+    ).toBeUndefined();
+  });
+});
+

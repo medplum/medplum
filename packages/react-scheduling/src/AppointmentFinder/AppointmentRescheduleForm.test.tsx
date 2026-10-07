@@ -12,6 +12,7 @@ import {
   DrOkaforPractitioner,
   DrOkaforSchedule,
   DrRiveraSchedule,
+  ExamRoomA,
   ExamRoomASchedule,
   RiveraImagingAppointment,
   RiveraImagingHeldSlots,
@@ -149,6 +150,26 @@ describe('AppointmentRescheduleForm', () => {
       // `$reschedule` drops the actors of the schedules it moves off. Refusing outright
       // would leave the visit stuck, so it is said out loud instead.
       await medplum.updateResource({ ...ExamRoomASchedule, active: false });
+      const post = vi.spyOn(medplum, 'post');
+
+      await setup(medplum);
+
+      expect(
+        screen.getByText(/will be removed from this appointment if you continue: Exam Room A/i)
+      ).toBeInTheDocument();
+      expect(hasPill(/Exam Room A/)).toBe(false);
+      expect(hasPill(/Rivera/)).toBe(true);
+
+      await moveToAnotherTime();
+
+      expect(parameterValues(lastRescheduleParameters(post), 'schedule')).not.toContain(
+        `Schedule/${ExamRoomASchedule.id}`
+      );
+      expect(onRescheduled).toHaveBeenCalledTimes(1);
+    });
+
+    test('Names an actor whose resource has since been deactivated, and still offers the move', async () => {
+      await medplum.updateResource({ ...ExamRoomA, status: 'inactive' });
       const post = vi.spyOn(medplum, 'post');
 
       await setup(medplum);

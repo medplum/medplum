@@ -5,6 +5,7 @@ import {
   assertNever,
   getDisplayString,
   getReferenceString,
+  isActorInactive,
   isDefined,
   lazy,
   serviceTypeIncludesService,
@@ -233,7 +234,12 @@ export function toScheduleCandidate(
     return undefined;
   }
 
-  return { schedule, actorResource: actors.get(referenceStr) };
+  const actorResource = actors.get(referenceStr);
+  if (actorResource && isActorInactive(actorResource)) {
+    return undefined;
+  }
+
+  return { schedule, actorResource };
 }
 
 /** How far up a `partOf` chain of Locations to look. */
