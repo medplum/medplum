@@ -6,19 +6,19 @@ import {
   formatCodeableConcept,
   getExtension,
   getExtensionValue,
-  isDefined,
   normalizeErrorString,
   RecurrenceIdExtensionURI,
   RecurrenceTemplateExtensionURI,
   resolveId,
   SchedulingMedicalNecessityURI,
 } from '@medplum/core';
-import type { Appointment, CodeableConcept, Parameters, Reference } from '@medplum/fhirtypes';
+import type { Appointment, CodeableConcept, Parameters } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconArrowLeft, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { Fragment, useCallback, useState } from 'react';
+import { getNonPatientActors } from '../../actors';
 import { formatDayHeading, formatZonedTime } from '../../AppointmentFinder/AppointmentFinder.times';
 import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
@@ -207,7 +207,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     mrnSystem,
   } = props;
   const patient = getPatientParticipant(appointment)?.actor;
-  const otherActors = getOtherActors(appointment);
+  const otherActors = getNonPatientActors(appointment);
   const [editing, setEditing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
@@ -392,19 +392,6 @@ function Detail(props: DetailProps): JSX.Element | null {
       <Text size="sm">{props.value}</Text>
     </Stack>
   );
-}
-
-/**
- * Everyone and everything the visit is held on besides the patient.
- * @param appointment - The appointment being described.
- * @returns Their references, in the order the appointment lists them.
- */
-function getOtherActors(appointment: Appointment): Reference[] {
-  const patient = getPatientParticipant(appointment);
-  return appointment.participant
-    .filter((participant) => participant !== patient)
-    .map((participant) => participant.actor)
-    .filter(isDefined);
 }
 
 /**

@@ -1,9 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { EventDisplayInfo } from '@fullcalendar/react';
+import { Badge, Divider, Group, HoverCard, Stack, Text } from '@mantine/core';
+import { getPrimaryProvider } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
+import { ResourceName } from '@medplum/react';
 import cx from 'clsx';
 import type { JSX } from 'react';
+import { getNonPatientActors } from '../actors';
+import { formatZonedTime } from '../AppointmentFinder/AppointmentFinder.times';
 import { ServiceTypeDisplay } from '../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../serviceTypes';
 // Its own sheet: importing CalendarBase's here would load it ahead of FullCalendar's theme,
@@ -17,7 +22,10 @@ export interface AppointmentEventProps {
 }
 
 /**
- * An appointment event, titled by its service type over its patient.
+ * An appointment event, titled by its service type over its patient, with a card naming
+ * everyone it is held on while it is hovered.
+ *
+ * The event is drawn on one calendar only, so the card is where the rest of them are named.
  *
  * @param props - The React props.
  * @returns The event's content.
@@ -30,20 +38,66 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
   const inTimeGrid = info.view.type.startsWith('timeGrid');
 
   return (
-    <div className={classes.eventContent} data-time-grid={inTimeGrid || undefined}>
-      {inTimeGrid ? (
-        <div className={info.timeClass}>{info.event.title}</div>
-      ) : (
-        info.timeText && <div className={cx(info.timeClass, classes.time)}>{info.timeText}</div>
+    <HoverCard shadow="md" position="right-start">
+      <HoverCard.Target>
+        <div className={classes.eventContent} data-time-grid={inTimeGrid || undefined}>
+          {inTimeGrid ? (
+            <div className={info.timeClass}>{info.event.title}</div>
+          ) : (
+            info.timeText && <div className={cx(info.timeClass, classes.time)}>{info.timeText}</div>
+          )}
+          <div className={cx(info.titleClass, classes.title)}>
+            {/* With no service type, a placeholder holds the title's place, so the patient stays under it. */}
+            {hasServiceType ? (
+              <ServiceTypeDisplay appointment={appointment} inherit />
+            ) : (
+              <span className={classes.untyped}>Appointment (no service type)</span>
+            )}
+          </div>
+        </div>
+      </HoverCard.Target>
+      {/* A floor on the width so most cards come out the same size. */}
+      <HoverCard.Dropdown miw={260}>
+        <AppointmentCard appointment={appointment} info={info} />
+      </HoverCard.Dropdown>
+    </HoverCard>
+  );
+}
+
+/**
+ * The card an appointment event opens: its patient, what it is for and when, and everyone
+ * it is held on, marking the primary provider when the appointment marks one.
+ * @param props - The React props.
+ * @returns The card's content.
+ */
+function AppointmentCard(props: AppointmentEventProps): JSX.Element {
+  const { appointment, info } = props;
+  const primary = getPrimaryProvider(appointment);
+  const { start, end } = info.event;
+  const hasServiceType = !!partitionServiceTypes(appointment).visitType;
+  const times = start && end && `${formatZonedTime(start)} – ${formatZonedTime(end)}`;
+
+  return (
+    <Stack gap={4}>
+      <Text fw={500}>{info.event.title}</Text>
+      <Divider />
+      {(hasServiceType || times) && (
+        <Text size="sm" c="dimmed">
+          {hasServiceType && <ServiceTypeDisplay appointment={appointment} inherit />}
+          {hasServiceType && times && ' · '}
+          {times}
+        </Text>
       )}
-      <div className={cx(info.titleClass, classes.title)}>
-        {/* With no service type, a placeholder holds the title's place, so the patient stays under it. */}
-        {hasServiceType ? (
-          <ServiceTypeDisplay appointment={appointment} inherit />
-        ) : (
-          <span className={classes.untyped}>Appointment (no service type)</span>
-        )}
-      </div>
-    </div>
+      {getNonPatientActors(appointment).map((actor, index) => (
+        <Group key={actor.reference ?? `actor-${index}`} gap="xs" wrap="nowrap">
+          <ResourceName value={actor} link={false} size="sm" />
+          {primary?.reference && actor.reference === primary.reference && (
+            <Badge size="xs" variant="light">
+              Primary
+            </Badge>
+          )}
+        </Group>
+      ))}
+    </Stack>
   );
 }

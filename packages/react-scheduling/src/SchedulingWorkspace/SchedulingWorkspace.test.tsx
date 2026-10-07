@@ -391,6 +391,19 @@ describe('SchedulingWorkspace', () => {
       await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(1));
       const imaging = eventColor('Miles Cooper');
       await waitFor(() => expect(appointmentEvents('Miles Cooper')[0]).toHaveTextContent('Ultrasound Imaging'));
+      // Nothing marks Dr. Rivera primary, so the card names her without saying so.
+      const title = within(appointmentEvents('Miles Cooper')[0] as HTMLElement).getByText('Miles Cooper');
+      await userEvent.hover(title);
+      const card = await waitFor(() => {
+        const dropdown = document.querySelector<HTMLElement>('.mantine-HoverCard-dropdown');
+        expect(dropdown).not.toBeNull();
+        return within(dropdown as HTMLElement);
+      });
+      expect(await card.findByText('Dr. Maya Rivera')).toBeInTheDocument();
+      expect(card.queryByText('Primary')).not.toBeInTheDocument();
+      // It names the visit as the event is titled.
+      expect((await card.findByText('Ultrasound Imaging')).parentElement).toHaveTextContent(/^Ultrasound Imaging · /);
+      await userEvent.unhover(title);
       expect(eventColor('Renee Alvarez')).toBe(imaging);
       expect(eventColor('Liam Jones')).not.toBe(imaging);
       // The Slots it holds are not drawn as blocked time either; the one block on show is

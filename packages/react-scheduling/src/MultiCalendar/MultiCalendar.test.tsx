@@ -7,6 +7,7 @@ import {
   getReferenceString,
   SchedulingScheduleColorURI,
   ServiceTypeReferenceURI,
+  setPrimaryProvider,
 } from '@medplum/core';
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, MockClient } from '@medplum/mock';
@@ -162,6 +163,66 @@ describe('MultiCalendar', () => {
     expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
     expect(screen.getByText('Appointment (no service type)')).toBeInTheDocument();
     expect(screen.queryByText('Jane Roe')).not.toBeInTheDocument();
+  });
+
+  test('hovering an appointment names its service and everyone it is held on, marking the primary provider', async () => {
+    const service = await medplum.createResource({ resourceType: 'HealthcareService', name: 'Ultrasound imaging' });
+    // Held by bare reference, so every name has to be looked up rather than read off it.
+    const device = await medplum.createResource({
+      resourceType: 'Device',
+      deviceName: [{ name: 'Ultrasound 1', type: 'user-friendly-name' }],
+    });
+    const room = await medplum.createResource({ resourceType: 'Location', name: 'Exam Room A' });
+    const practitioner = { reference: getReferenceString(DrAliceSmith) };
+    const appointment: Appointment = {
+      resourceType: 'Appointment',
+      id: 'test-appointment-1',
+      status: 'booked',
+      start: new Date(baseDate.getTime()).toISOString(),
+      end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+      serviceType: [
+        {
+          // Stale: the event names the service type as its HealthcareService is named now.
+          text: 'Imaging',
+          extension: [{ url: ServiceTypeReferenceURI, valueReference: { reference: getReferenceString(service) } }],
+        },
+        // A procedure code, which is not what the visit is for.
+        { text: 'Abdominal ultrasound' },
+      ],
+      participant: setPrimaryProvider(
+        [
+          { actor: { reference: 'Patient/123', display: 'John Doe' }, status: 'accepted' },
+          { actor: practitioner, status: 'accepted' },
+          { actor: { reference: getReferenceString(device) }, status: 'accepted' },
+          { actor: { reference: getReferenceString(room) }, status: 'accepted' },
+          // A second patient, the provider again in another role, and a role no one fills yet.
+          { actor: { reference: 'Patient/456', display: 'Jane Roe' }, status: 'accepted' },
+          { actor: practitioner, type: [{ text: 'Attender' }], status: 'accepted' },
+          { type: [{ text: 'Interpreter' }], status: 'needs-action' },
+        ],
+        practitioner
+      ),
+    };
+    renderWithMedplum(<MultiCalendar sources={[{ appointments: [appointment], slots: [] }]} />, medplum);
+
+    // Who the visit is held on waits for the card.
+    expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument();
+
+    await userEvent.hover(screen.getByText('John Doe'));
+
+    const primary = await screen.findByText('Primary');
+    const card = within(primary.closest('.mantine-HoverCard-dropdown') as HTMLElement);
+    expect((await card.findByText('Ultrasound imaging')).parentElement).toHaveTextContent(
+      /^Ultrasound imaging · 10:00\sAM – 10:30\sAM$/
+    );
+    expect(screen.getAllByText('Primary')).toHaveLength(1);
+    expect(primary.closest('.mantine-Group-root')).toHaveTextContent('Alice Smith');
+    expect(await card.findByText('Ultrasound 1')).toBeInTheDocument();
+    expect(await card.findByText('Exam Room A')).toBeInTheDocument();
+    // Each actor once, and nothing for the patients or the role no one fills.
+    const rows = primary.closest('.mantine-Stack-root')?.querySelectorAll(':scope > .mantine-Group-root');
+    expect(rows).toHaveLength(3);
+    expect(screen.queryByText(/^(Practitioner|Device|Location)\//)).not.toBeInTheDocument();
   });
 
   describe('source color', () => {
