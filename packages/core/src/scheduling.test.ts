@@ -3,6 +3,7 @@
 import type {
   Appointment,
   Coding,
+  Device,
   Extension,
   HealthcareService,
   Location,
@@ -24,6 +25,7 @@ import {
   getSchedulingRequirements,
   getSchedulingTimezone,
   hasSchedulingParameters,
+  isActorInactive,
   minutesToSchedulingDuration,
   PARTICIPATION_TYPE_SYSTEM,
   PRIMARY_PERFORMER_CODE,
@@ -724,5 +726,31 @@ describe('minutesToSchedulingDuration', () => {
 
   test.each([0, 1, 30, 60, 1440])('round trips %i through schedulingDurationToMinutes', (minutes) => {
     expect(schedulingDurationToMinutes(minutesToSchedulingDuration(minutes))).toBe(minutes);
+  });
+});
+
+describe('isActorInactive', () => {
+  test('evaluates Practitioner active field', () => {
+    expect(isActorInactive({ resourceType: 'Practitioner', active: false })).toBe(true);
+    expect(isActorInactive({ resourceType: 'Practitioner', active: true })).toBe(false);
+    expect(isActorInactive({ resourceType: 'Practitioner' })).toBe(false);
+  });
+
+  test('evaluates Location status field', () => {
+    expect(isActorInactive({ resourceType: 'Location', status: 'inactive' })).toBe(true);
+    expect(isActorInactive({ resourceType: 'Location', status: 'active' })).toBe(false);
+    expect(isActorInactive({ resourceType: 'Location', status: 'suspended' })).toBe(false);
+    expect(isActorInactive({ resourceType: 'Location' })).toBe(false);
+  });
+
+  test('evaluates Device status field', () => {
+    expect(isActorInactive({ resourceType: 'Device', status: 'inactive' })).toBe(true);
+    expect(isActorInactive({ resourceType: 'Device', status: 'active' })).toBe(false);
+    expect(isActorInactive({ resourceType: 'Device' })).toBe(false);
+  });
+
+  test('reports false for other resource types', () => {
+    expect(isActorInactive({ resourceType: 'Patient', active: false })).toBe(false);
+    expect(isActorInactive({ resourceType: 'HealthcareService', active: false })).toBe(false);
   });
 });

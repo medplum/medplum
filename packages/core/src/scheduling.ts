@@ -686,3 +686,20 @@ export function schedulingDurationToMinutes(duration: Duration | undefined): num
 export function minutesToSchedulingDuration(minutes: number): Duration {
   return { value: minutes, unit: 'min' };
 }
+
+/**
+ * Reports whether a scheduling actor resource is inactive.
+ * - Practitioner: `active === false`
+ * - Location or Device: `status === 'inactive'`
+ * @param actor - The actor resource to inspect.
+ * @returns True if the actor is inactive.
+ */
+export function isActorInactive(actor: Resource): boolean {
+  if (actor.resourceType === 'Practitioner') {
+    return actor.active === false;
+  }
+  if (actor.resourceType === 'Location' || actor.resourceType === 'Device') {
+    return actor.status === 'inactive';
+  }
+  return false;
+}
