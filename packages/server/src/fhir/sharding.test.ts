@@ -4,13 +4,16 @@
 import { getStatus, OperationOutcomeError } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { Mock } from 'vitest';
-import { loadTestConfig } from '../config/loader';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { getLogger } from '../logger';
 import { TEST_SHARD_ID } from '../test.setup';
 import {
+  getAllShards,
   getDefaultShardId,
+  getShardConfig,
   GLOBAL_SHARD_ID,
   isConfiguredShardId,
+  isShardingEnabled,
   normalizeShardId,
   PLACEHOLDER_SHARD_ID,
   resetStrictShardingEnforcement,
@@ -165,36 +168,90 @@ describe('resolveShardId', () => {
   });
 });
 
-describe('getDefaultShardId', () => {
-  test('Returns the global shard when no shards are configured', async () => {
+describe('Without shards configured', () => {
+  beforeAll(async () => {
     await loadTestConfig();
+  });
+
+  test('Sharding is disabled', () => {
+    expect(isShardingEnabled()).toBe(false);
+  });
+
+  test('New projects default to the global shard', () => {
     expect(getDefaultShardId()).toStrictEqual(GLOBAL_SHARD_ID);
   });
 
-  test('Returns the shard that sets isDefaultShard', async () => {
-    await loadTestConfig({ sharded: true });
-    expect(getDefaultShardId()).toStrictEqual(TEST_SHARD_ID);
-  });
-
-  test('Returns the global shard when no configured shard sets isDefaultShard', async () => {
-    const config = await loadTestConfig({ sharded: true });
-    for (const shardConfig of Object.values(config.shards ?? {})) {
-      shardConfig.isDefaultShard = false;
-    }
-    expect(getDefaultShardId()).toStrictEqual(GLOBAL_SHARD_ID);
+  test.each<[boolean, string[]]>([
+    [false, [GLOBAL_SHARD_ID]],
+    [true, []],
+  ])('getAllShards(excludeGlobal=%s) yields %j', (excludeGlobal, expected) => {
+    expect(Array.from(getAllShards(excludeGlobal), (shard) => shard.id)).toStrictEqual(expected);
   });
 });
 
-describe('isConfiguredShardId', () => {
+describe('With shards configured', () => {
   beforeAll(async () => {
     await loadTestConfig({ sharded: true });
   });
 
-  test.each([GLOBAL_SHARD_ID, TEST_SHARD_ID])('Accepts %s', (shardId) => {
-    expect(isConfiguredShardId(shardId)).toBe(true);
+  test('Sharding is enabled', () => {
+    expect(isShardingEnabled()).toBe(true);
   });
 
-  test.each(['unknown-shard', '', PLACEHOLDER_SHARD_ID, TODO_SHARD_ID, 'toString'])('Rejects "%s"', (shardId) => {
-    expect(isConfiguredShardId(shardId)).toBe(false);
+  describe('getDefaultShardId', () => {
+    test('Returns the shard that sets isDefaultShard', () => {
+      expect(getDefaultShardId()).toStrictEqual(TEST_SHARD_ID);
+    });
+
+    test('Returns the global shard when no configured shard sets isDefaultShard', () => {
+      const shardConfig = getShardConfig(TEST_SHARD_ID);
+      shardConfig.isDefaultShard = false;
+      try {
+        expect(getDefaultShardId()).toStrictEqual(GLOBAL_SHARD_ID);
+      } finally {
+        shardConfig.isDefaultShard = true;
+      }
+    });
+  });
+
+  describe('isConfiguredShardId', () => {
+    test.each([GLOBAL_SHARD_ID, TEST_SHARD_ID])('Accepts %s', (shardId) => {
+      expect(isConfiguredShardId(shardId)).toBe(true);
+    });
+
+    test.each(['unknown-shard', '', PLACEHOLDER_SHARD_ID, TODO_SHARD_ID, 'toString'])('Rejects "%s"', (shardId) => {
+      expect(isConfiguredShardId(shardId)).toBe(false);
+    });
+  });
+
+  describe('getShardConfig', () => {
+    test('Returns the main database settings for the global shard', () => {
+      const config = getConfig();
+      expect(getShardConfig(GLOBAL_SHARD_ID)).toStrictEqual({
+        id: GLOBAL_SHARD_ID,
+        database: config.database,
+        readonlyDatabase: config.readonlyDatabase,
+      });
+    });
+
+    test('Returns a configured shard with its own database', () => {
+      const shardConfig = getShardConfig(TEST_SHARD_ID);
+      expect(shardConfig.id).toStrictEqual(TEST_SHARD_ID);
+      expect(shardConfig.database.dbname).toStrictEqual('medplum_test_shard_1');
+    });
+
+    test.each(['unknown-shard', PLACEHOLDER_SHARD_ID, 'toString'])('Throws for "%s"', (shardId) => {
+      expect(() => getShardConfig(shardId)).toThrow(`Shard config not found for shard ID: ${shardId}`);
+    });
+  });
+
+  describe('getAllShards', () => {
+    test('Yields the global shard first, then configured shards', () => {
+      expect(Array.from(getAllShards(), (shard) => shard.id)).toStrictEqual([GLOBAL_SHARD_ID, TEST_SHARD_ID]);
+    });
+
+    test('Omits the global shard when excludeGlobal is set', () => {
+      expect(Array.from(getAllShards(true), (shard) => shard.id)).toStrictEqual([TEST_SHARD_ID]);
+    });
   });
 });
