@@ -11,7 +11,7 @@ import {
   getSearchParameterDetails,
   getSearchParameters,
 } from '@medplum/core';
-import type { ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { SearchParameter } from '@medplum/fhirtypes';
 import { IconFilter2Plus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
@@ -85,7 +85,7 @@ export function SearchFilterPopover(props: SearchFilterPopoverProps): JSX.Elemen
     <SearchToolbarPopover
       label="Filters"
       icon={<IconFilter2Plus size={16} />}
-      width={720}
+      width={860}
       opened={opened}
       onToggle={toggle}
       onChange={setOpenedFlushing}
@@ -138,8 +138,7 @@ interface FilterConditionRowProps {
 }
 
 /**
- * One filter condition. Reference fields with several target types render a two-part value input,
- * so that row wraps the value onto its own line beneath the field and operator.
+ * One filter condition on a single line: conjunction, field, operator, value and remove button.
  * @param props - The condition row props.
  * @returns The condition row React node.
  */
@@ -147,12 +146,11 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
   const { value, searchParams, resourceType, index } = props;
   const searchParam = value.code ? searchParams[value.code] : undefined;
   const operators = searchParam && getSearchOperators(searchParam);
-  const multiInput = !!value.operator && searchParam?.type === 'reference' && searchParam.target?.length !== 1;
 
   function changeField(code: string | null): void {
     const nextParam = code ? searchParams[code] : undefined;
     const keepOperator = !!value.operator && !!nextParam && !!getSearchOperators(nextParam)?.includes(value.operator);
-    const keepValue = !!searchParam && !!nextParam && canKeepValue(resourceType, searchParam, nextParam, value.value);
+    const keepValue = !!searchParam && !!nextParam && canKeepValue(resourceType, searchParam, nextParam);
     props.onChange({
       code: code ?? undefined,
       operator: keepOperator ? value.operator : Operator.EQUALS,
@@ -195,7 +193,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
   );
 
   return (
-    <div className={multiInput ? `${classes.row} ${classes.rowMulti}` : classes.row}>
+    <div className={classes.row}>
       <Text className={classes.conjunction}>{index === 0 ? 'Where' : 'and'}</Text>
       <Select
         comboboxProps={{ withinPortal: false }}
@@ -217,45 +215,24 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
         value={value.operator ?? null}
         onChange={changeOperator}
       />
-      {multiInput ? (
-        <>
-          {deleteButton}
-          <div className={classes.secondLine}>{valueInput}</div>
-        </>
-      ) : (
-        <>
-          {valueInput}
-          {deleteButton}
-        </>
-      )}
+      {valueInput}
+      {deleteButton}
     </div>
   );
 }
 
 /**
  * Whether a condition's value still fits after its field changes: the new field must take the same
- * kind of input, and a reference must point at a resource type the new field can target.
+ * kind of input. References never carry over, since their value is picked from a search of the
+ * field's target types rather than typed.
  * @param resourceType - The searched resource type.
  * @param prevParam - The search parameter the value was entered for.
  * @param nextParam - The newly selected search parameter.
- * @param value - The current condition value.
  * @returns True if the value can be carried over to the new field.
  */
-function canKeepValue(
-  resourceType: string,
-  prevParam: SearchParameter,
-  nextParam: SearchParameter,
-  value: string | undefined
-): boolean {
+function canKeepValue(resourceType: string, prevParam: SearchParameter, nextParam: SearchParameter): boolean {
   const type = getSearchParameterDetails(resourceType, nextParam).type;
-  if (type !== getSearchParameterDetails(resourceType, prevParam).type) {
-    return false;
-  }
-  if (type !== SearchParameterType.REFERENCE) {
-    return true;
-  }
-  const targetType = value?.split('/')[0];
-  return !!targetType && !!nextParam.target?.includes(targetType as ResourceType);
+  return type !== SearchParameterType.REFERENCE && type === getSearchParameterDetails(resourceType, prevParam).type;
 }
 
 function getInitialFilters(search: SearchRequest): Partial<Filter>[] {

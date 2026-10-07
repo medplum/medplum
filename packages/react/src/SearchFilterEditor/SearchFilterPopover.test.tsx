@@ -245,25 +245,7 @@ describe('SearchFilterPopover', () => {
     expect(screen.getByTestId('filter-0-value')).toHaveValue('');
   });
 
-  test('Changing to a reference field that cannot target the value clears it', async () => {
-    const { onChange } = await setup({
-      resourceType: 'Patient',
-      filters: [{ code: 'general-practitioner', operator: Operator.EQUALS, value: 'Practitioner/123' }],
-    });
-    await openPopover();
-
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText('Filter 1 field', { selector: 'input' }));
-    });
-    await act(async () => {
-      fireEvent.click(await findFieldOption('organization'));
-    });
-
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ filters: [] }));
-  });
-
-  test('Changing to a reference field that can target the value keeps it', async () => {
+  test('Changing between reference fields clears the value', async () => {
     const { onChange } = await setup({
       resourceType: 'Observation',
       filters: [{ code: 'subject', operator: Operator.EQUALS, value: 'Patient/123' }],
@@ -278,9 +260,7 @@ describe('SearchFilterPopover', () => {
     });
 
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ filters: [{ code: 'patient', operator: Operator.EQUALS, value: 'Patient/123' }] })
-    );
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ filters: [] }));
   });
 
   test('Deleting a row keeps the next row showing its own value', async () => {
