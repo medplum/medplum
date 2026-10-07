@@ -15,4 +15,9 @@ export const APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM =
  * Excludes what a room is rather than admitting what a site is: `physicalType` is
  * optional, so `physical-type=si,bu` would hide a Location that never declared one.
  */
-export const LOCATION_SEARCH_CRITERIA = { _count: '25', _sort: 'name', 'physical-type:not': 'ro,bd' };
+export const LOCATION_SEARCH_CRITERIA = {
+  _count: '25',
+  _sort: 'name',
+  'physical-type:not': 'ro,bd',
+  'status:not': 'inactive',
+};

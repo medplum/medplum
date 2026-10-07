@@ -5,6 +5,7 @@ import {
   extractServiceTypeReferences,
   getDisplayString,
   getReferenceString,
+  isActorInactive,
   isDefined,
   resolveId,
 } from '@medplum/core';
@@ -107,12 +108,9 @@ export function withStoredService(
 
 /**
  * Whether an actor is turned off: a provider marked inactive, or a room or device whose status is `inactive`.
- * @param resource - The provider, room, or device.
- * @returns True when it is inactive.
+ * Re-exported from `@medplum/core`.
  */
-export function isActorInactive(resource: ConfigurableActorResource): boolean {
-  return resource.resourceType === 'Practitioner' ? resource.active === false : resource.status === 'inactive';
-}
+export { isActorInactive };
 
 /**
  * Whether an actor can be booked as far as its own status and its Schedule's go. The actor's own status wins:

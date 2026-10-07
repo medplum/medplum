@@ -11,6 +11,7 @@ import {
   buildServiceItems,
   getActorNotices,
   getOfferedServices,
+  isActorInactive,
   isSameSelection,
   matchesFilter,
   withStoredActorResource,
@@ -240,3 +241,15 @@ describe('withStoredService', () => {
     ]);
   });
 });
+
+describe('isActorInactive', () => {
+  test('evaluates practitioner, location, and device status', () => {
+    expect(isActorInactive({ resourceType: 'Practitioner', id: 'p1', active: false })).toBe(true);
+    expect(isActorInactive({ resourceType: 'Practitioner', id: 'p1', active: true })).toBe(false);
+    expect(isActorInactive({ resourceType: 'Location', id: 'l1', status: 'inactive' })).toBe(true);
+    expect(isActorInactive({ resourceType: 'Location', id: 'l1', status: 'active' })).toBe(false);
+    expect(isActorInactive({ resourceType: 'Device', id: 'd1', status: 'inactive' })).toBe(true);
+    expect(isActorInactive({ resourceType: 'Device', id: 'd1', status: 'active' })).toBe(false);
+  });
+});
+
