@@ -81,7 +81,7 @@ curl -G 'https://api.medplum.com/fhir/R4/Appointment/$find' \
 - The search window cannot exceed **31 days**, or **7 days** with `occurrence-count`
 - At least one schedule must be provided
 - Each schedule must have exactly **one actor** reference
-- Each schedule's `serviceType` field must match the requested HealthcareService.type
+- Each schedule's `serviceType` field must reference the requested HealthcareService, or mark the schedule as [offering all service types](/docs/scheduling/defining-availability#offering-all-service-types)
 - Each schedule's actor (Practitioner, Location, or Device) must have a timezone defined via the `http://hl7.org/fhir/StructureDefinition/timezone` extension
 - `ignore-appointment`, if provided, must reference an Appointment that exists and is readable by the caller
 - `ignore-appointment` cannot be combined with `occurrence-count`
@@ -335,7 +335,9 @@ Returned when `occurrence-count` is provided and the search window is longer tha
 }
 ```
 
-### `Schedule.serviceType` does not match `HealthcareService.type`
+### `Schedule.serviceType` does not offer the requested HealthcareService
+
+Returned when a schedule's `serviceType` neither references the requested HealthcareService nor marks the schedule as [offering all service types](/docs/scheduling/defining-availability#offering-all-service-types).
 
 ```json
 {
