@@ -15,7 +15,14 @@ import {
   VisuallyHidden,
 } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { capitalize, deepEquals, getDisplayString, getSchedulingTimezone, normalizeErrorString } from '@medplum/core';
+import {
+  capitalize,
+  deepEquals,
+  getDisplayString,
+  getReferenceString,
+  getSchedulingTimezone,
+  normalizeErrorString,
+} from '@medplum/core';
 import type { HealthcareService, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -167,7 +174,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     try {
       const changes: ConfigChange[] = [{ stored: resource, draft: actorDraft }];
       if (draft) {
-        changes.push({ stored: schedule, draft });
+        // Conditional, so two pages offering this actor's first visit type at once can't each create a Schedule.
+        changes.push({ stored: schedule, draft, ifNoneExist: `actor=${getReferenceString(resource)}` });
       }
       const result = await saveConfigChanges(medplum, changes);
       if (result.failures.length > 0) {
@@ -197,11 +205,13 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   async function handleReload(): Promise<void> {
     setReloading(true);
     try {
-      const reloaded: WithId<Resource>[] = await Promise.all([
+      const [actor, reloadedSchedule] = await Promise.all([
         medplum.readResource(resource.resourceType, resource.id, { cache: 'no-cache' }),
-        ...(schedule ? [medplum.readResource('Schedule', schedule.id, { cache: 'no-cache' })] : []),
+        schedule
+          ? medplum.readResource('Schedule', schedule.id, { cache: 'no-cache' })
+          : medplum.searchOne('Schedule', { actor: getReferenceString(resource) }, { cache: 'no-cache' }),
       ]);
-      onSynced(reloaded, open ?? undefined);
+      onSynced(reloadedSchedule ? [actor, reloadedSchedule] : [actor], open ?? undefined);
     } catch (err) {
       setFailure({ conflict: false, message: `Could not reload it: ${normalizeErrorString(err)}` });
     } finally {

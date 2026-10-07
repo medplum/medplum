@@ -378,7 +378,11 @@ describe('ActorPage', () => {
     await save();
 
     await waitFor(() => expect(onSynced).toHaveBeenCalled());
-    expect(sentBundle(medplum).entry?.[0].request).toEqual({ method: 'POST', url: 'Schedule' });
+    expect(sentBundle(medplum).entry?.[0].request).toEqual({
+      method: 'POST',
+      url: 'Schedule',
+      ifNoneExist: `actor=Location/${room3.id}`,
+    });
     expect(serviceTypeIncludesService(syncedSchedule(onSynced).serviceType, initialVisit)).toBe(true);
   });
 
@@ -555,5 +559,22 @@ describe('ActorPage', () => {
 
     await waitFor(() => expect(onSynced).toHaveBeenCalled());
     expect(syncedSchedule(onSynced).comment).toBe('Changed elsewhere');
+  });
+
+  test('a Schedule created elsewhere for an actor that had none is not duplicated, and reload hands it back', async () => {
+    const { medplum, onSynced } = await setup(room3);
+    await offer('Initial Visit');
+    const elsewhere = await medplum.createResource(makeSchedule('Location/room-3', [followUp]));
+
+    await save();
+
+    expect(await screen.findByText('The Schedule for Room 3 changed since you opened it')).toBeInTheDocument();
+    expect(await medplum.searchResources('Schedule', { actor: 'Location/room-3' }, { cache: 'no-cache' })).toHaveLength(
+      1
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Reload' }));
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(syncedSchedule(onSynced).id).toBe(elsewhere.id);
   });
 });
