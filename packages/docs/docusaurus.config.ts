@@ -5,18 +5,22 @@ import type { Config } from '@docusaurus/types';
 import { themes as prismThemes } from 'prism-react-renderer';
 
 /**
- * Algolia DocSearch credentials for docs search + Ask AI side panel.
+ * Algolia DocSearch credentials for the navbar search and /search page. AI chat is served by Kapa.
  *
- * Search appId / apiKey / indexName are public (search-only key; safe to commit).
- * askAiAssistantId comes from Algolia Dashboard → DocSearch → Ask AI.
+ * appId / apiKey / indexName are public (search-only key; safe to commit).
  */
 const ALGOLIA = {
   appId: '6A1DXS603N',
   // Public search-only API key (safe to commit)
   apiKey: '06bafd15f5a637275ed20297927355f9',
   indexName: 'medplum',
-  askAiAssistantId: 'c8e02cae-c0cf-4dd1-bba6-344a75826944',
 } as const;
+
+/**
+ * Width of the docked Kapa chat panel. The widget bundle and our own layout CSS both need this
+ * value, so it is published as a custom property rather than duplicated in custom.css.
+ */
+const KAPA_SIDEBAR_WIDTH = '400px';
 
 const config: Config = {
   title: 'Medplum',
@@ -190,6 +194,19 @@ const config: Config = {
         href: '/manifest.json',
       },
     },
+    {
+      tagName: 'style',
+      attributes: {},
+      innerHTML: `:root { --kapa-sidebar-width: ${KAPA_SIDEBAR_WIDTH}; }`,
+    },
+    // Queues Kapa JS API calls made before the (async) widget bundle finishes loading. Docusaurus
+    // emits `headTags` before `scripts`, so this always wins the race. See src/theme/Root.tsx for
+    // the handlers that depend on it.
+    {
+      tagName: 'script',
+      attributes: {},
+      innerHTML: `(function(){if(window.Kapa)return;var i=function(){i.c(arguments)};i.q=[];i.c=function(a){i.q.push(a)};window.Kapa=i})();`,
+    },
   ],
 
   themeConfig: {
@@ -340,14 +357,6 @@ const config: Config = {
       contextualSearch: true,
       searchParameters: {},
       searchPagePath: 'search',
-      // Enables the Ask AI side panel when an assistant ID is configured
-      ...(ALGOLIA.askAiAssistantId
-        ? {
-            askAi: {
-              assistantId: ALGOLIA.askAiAssistantId,
-            },
-          }
-        : {}),
     },
   } satisfies Preset.ThemeConfig,
   markdown: {
@@ -363,6 +372,35 @@ const config: Config = {
     },
     {
       src: 'https://ddwl4m2hdecbv.cloudfront.net/b/LNKLDHEYLZOJ/LNKLDHEYLZOJ.js.gz',
+      async: true,
+    },
+    {
+      src: 'https://widget.kapa.ai/kapa-widget.bundle.js',
+      'data-website-id': '5cda65f5-5f1d-4b8c-846d-1fe83121c171',
+      'data-project-name': 'Medplum',
+      // Open Color grape-8 / grape-5, matching --ifm-color-primary in custom.css.
+      'data-project-color': '#9c36b5',
+      'data-project-color-dark': '#cc5de8',
+      'data-project-logo': '/img/logo.svg',
+      // The mark is the same grape as the launcher, so it vanishes on the button.
+      // Keep the colored logo in the panel header and use a white one here.
+      'data-launcher-button-image': '/img/logo-white.svg',
+      'data-launcher-button-image-height': '28',
+      'data-launcher-button-image-width': '28',
+      // Kapa fixes the launcher at 4.5rem wide, which clips anything longer than "Ask AI".
+      'data-launcher-button-width': 'auto',
+      'data-launcher-button-padding-x': '14px',
+      'data-launcher-button-label-font-size': '14px',
+      'data-launcher-button-border': 'none',
+      'data-launcher-button-border-radius': '16px',
+      'data-launcher-button-hover-background-color': '#862e9c',
+      'data-launcher-button-text': 'Ask Us',
+      'data-modal-title': 'Ask Medplum AI',
+      'data-font-family': "'Poppins', sans-serif",
+      'data-color-scheme-selector': "[data-theme='dark']",
+      // Docked right-hand panel instead of a centered modal.
+      'data-view-mode': 'sidebar',
+      'data-modal-size': KAPA_SIDEBAR_WIDTH,
       async: true,
     },
   ],

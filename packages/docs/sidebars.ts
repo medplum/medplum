@@ -98,8 +98,13 @@ const sidebars: SidebarsConfig = {
       link: { type: 'doc', id: 'careplans/index' },
       items: [
         { type: 'doc', id: 'careplans/tasks/tasks' },
+        { type: 'doc', id: 'careplans/teams-and-delegation' },
+        { type: 'doc', id: 'careplans/handoffs-and-escalation' },
         { type: 'doc', id: 'careplans/longitudinal-patient-case-tracking' },
+        { type: 'doc', id: 'careplans/care-plans-and-goals' },
+        { type: 'doc', id: 'careplans/automating-workflows' },
         { type: 'doc', id: 'careplans/clinical-decision-support' },
+        { type: 'doc', id: 'careplans/operational-reporting' },
         { type: 'html', value: '<strong class="menu__link">Referrals</strong>' },
         { type: 'doc', id: 'careplans/referrals/index' },
         { type: 'doc', id: 'careplans/referrals/creation-and-capture' },
@@ -270,6 +275,7 @@ const sidebars: SidebarsConfig = {
       items: [
         { type: 'html', value: '<strong class="menu__link">Identity Providers</strong>' },
         { type: 'doc', id: 'auth/medplum-as-idp' },
+        { type: 'doc', id: 'auth/embedded-login' },
         { type: 'doc', id: 'auth/external-identity-providers' },
         { type: 'doc', id: 'auth/google-auth' },
         { type: 'doc', id: 'auth/domain-level-identity-providers' },

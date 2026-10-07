@@ -222,6 +222,13 @@ export default function AboutPage(): JSX.Element {
               linkedInUrl="https://www.linkedin.com/in/philip-knott"
               githubUrl="https://github.com/Filupnot"
             />
+            <ProfileCard
+              name="Aanish Sachdev"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/aanish.webp"
+              linkedInUrl="https://www.linkedin.com/in/aanishsachdev/"
+              githubUrl="https://github.com/aanishs"
+            />
           </CardContainer>
         </Section>
       </Container>

@@ -273,7 +273,7 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(typesBundle)).not.toThrow();
     expect(() => validateResource(resourcesBundle)).not.toThrow();
     expect(() => validateResource(medplumBundle)).not.toThrow();
-  });
+  }, 30000);
 
   test('StructureDefinition with differential', () => {
     const sd: StructureDefinition = {

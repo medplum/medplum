@@ -1,6 +1,6 @@
 {
   "name": "@medplum/e2e",
-  "version": "5.2.1",
+  "version": "5.2.2",
   "description": "End-to-end tests for Medplum",
   "keywords": [
     "e2e",
@@ -27,8 +27,8 @@
     "test:smoke": "npx playwright test smoke/medplum.smoke.test.ts --reporter=list,html"
   },
   "devDependencies": {
-    "@medplum/core": "5.2.1",
-    "@medplum/fhirtypes": "5.2.1",
+    "@medplum/core": "5.2.2",
+    "@medplum/fhirtypes": "5.2.2",
     "@playwright/test": "1.63.0"
   },
   "engines": {
