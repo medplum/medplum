@@ -292,7 +292,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     () =>
       candidates
         .map((candidate) => getReferenceString(candidate.schedule))
-        .sort()
+        .sort((a, b) => a.localeCompare(b))
         .join(','),
     [candidates]
   );
