@@ -39,6 +39,7 @@ import { SubmitButton } from '../Form/SubmitButton';
 import { FormSection } from '../FormSection/FormSection';
 import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
 import { SmartLogo } from '../SmartLogo/SmartLogo';
+import classes from './PatientExportForm.module.css';
 import { CARD_LAYOUT, getCardHeight, renderSmartHealthLinkCard } from './SmartHealthLinkCard';
 
 export interface PatientExportFormRenderProps {
@@ -254,7 +255,7 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
     <Stack gap={0}>
       <Tabs
         variant="unstyled"
-        className="pill-tabs"
+        classNames={{ root: classes.tabs, list: classes.tabsList, tab: classes.tab }}
         value={format}
         onChange={(value) => setFormat((value as PatientExportFormat | null) ?? 'everything')}
       >
