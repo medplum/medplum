@@ -47,6 +47,7 @@ import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  AuditEvent,
   AuditEventEntityDetail,
   Binary,
   Bundle,
@@ -145,7 +146,14 @@ import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { lookupTables } from './searchparameter';
 import type { ShardRouting } from './sharding';
-import { GLOBAL_SHARD_ID, normalizeShardId, resolveShardId, shardRoutingError, TODO_SHARD_ID } from './sharding';
+import {
+  getResourceTypeShardId,
+  GLOBAL_SHARD_ID,
+  normalizeShardId,
+  resolveShardId,
+  shardRoutingError,
+  TODO_SHARD_ID,
+} from './sharding';
 import type { Expression, PgQueryable } from './sql';
 import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
 
@@ -273,8 +281,9 @@ export class Repository extends FhirRepository implements Disposable {
    * 16. 06/30/26 - Added search param: Provenance-activity (https://github.com/medplum/medplum/pull/9709)
    * 17. 08/27/26 - Added search param: PractitionerRole-davinci-pdex-network
    * 18. 09/23/26 - Added search param: Login-project (https://github.com/medplum/medplum/issues/10634)
+   * 19. 10/06/26 - Added search param: CoverageEligibilityRequest-coverage (https://github.com/medplum/medplum/issues/10814)
    */
-  static readonly VERSION: number = 18;
+  static readonly VERSION: number = 19;
 
   /**
    * Constructs a new Repository instance.
@@ -2400,6 +2409,10 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
+      const profile = this.currentProject()?.defaultProfile?.find((o) => o.resourceType === 'AuditEvent')?.profile;
+      if (profile?.length) {
+        auditEvent.meta = { ...auditEvent.meta, profile };
+      }
       // Clone the repository to obtain a separate RepositoryConnection for two reasons:
       // 1. the un-awaited save must outlive the current repo's connection scope, which is marked 'ended'
       // and closed/unusable as soon as post-commit callbacks returns (before the un-awaited save completes).
@@ -2407,11 +2420,21 @@ export class Repository extends FhirRepository implements Disposable {
       // mainline transactions started on the current Repository and cause one of them to fail.
       // To reduce AuditEvent overhead, we could consider further decoupling AuditEvent saves from request processing
       // by pushing them onto an in-process queue (or BullMQ) and drain/write them to the DB on an interval.
-      const saveRepo = this.clone({ skipBackgroundJobs: true });
-      saveRepo
-        .updateResourceImpl(auditEvent, true)
+      const accountsRepo = this.clone();
+      const saveRepo = this.clone({ skipBackgroundJobs: true }).getSystemRepo();
+      accountsRepo
+        .getAccounts(undefined, auditEvent as WithId<AuditEvent>)
+        .then((accounts) => {
+          if (accounts) {
+            auditEvent.meta = { ...auditEvent.meta, account: accounts[0], accounts };
+          }
+          return saveRepo.updateResourceImpl(auditEvent, true);
+        })
         .catch((err) => getLogger().error('Failed to save AuditEvent', err))
-        .finally(() => saveRepo[Symbol.dispose]());
+        .finally(() => {
+          accountsRepo[Symbol.dispose]();
+          saveRepo[Symbol.dispose]();
+        });
     }
   }
 
@@ -2533,7 +2556,8 @@ export class Repository extends FhirRepository implements Disposable {
       return undefined;
     }
     this.recordCacheAccess('read', resourceType, 'repo.getCacheEntry');
-    return getResourceCacheEntry<T>(resourceType, id);
+    const entry = await getResourceCacheEntry<T>(resourceType, id);
+    return this.cacheEntryOnShard(entry);
   }
 
   /**
@@ -2548,7 +2572,24 @@ export class Repository extends FhirRepository implements Disposable {
     }
 
     this.recordCacheAccess('read', getResourceTypesFromReferences(references), 'repo.getCacheEntries');
-    return getResourceCacheEntries(references);
+    const entries = await getResourceCacheEntries(references);
+    for (let i = 0; i < entries.length; i++) {
+      entries[i] = this.cacheEntryOnShard(entries[i]);
+    }
+    return entries;
+  }
+
+  /**
+   * An entry cached by a repository on another shard is a copy this repository's database may not hold,
+   * so reads treat it as a miss.
+   * @param entry - The cache entry.
+   * @returns The entry if it was cached from the shard this repository reads its resource type from.
+   */
+  private cacheEntryOnShard<T extends Resource>(entry: CacheEntry<T> | undefined): CacheEntry<T> | undefined {
+    if (entry) {
+      return entry.shardId === getResourceTypeShardId(this.shardId, entry.resource.resourceType) ? entry : undefined;
+    }
+    return undefined;
   }
 
   /**
@@ -2568,7 +2609,7 @@ export class Repository extends FhirRepository implements Disposable {
     }
 
     this.recordCacheAccess('write', resource.resourceType, 'repo.setCacheEntry');
-    await setResourceCacheEntry(resource, options);
+    await setResourceCacheEntry(resource, getResourceTypeShardId(this.shardId, resource.resourceType), options);
   }
 
   /**

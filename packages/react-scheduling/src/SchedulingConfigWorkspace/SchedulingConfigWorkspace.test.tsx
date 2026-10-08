@@ -26,6 +26,23 @@ function row(label: string): HTMLElement {
   return within(sidebar()).getByText(label).closest('button') as HTMLElement;
 }
 
+function section(title: string): HTMLElement {
+  return within(sidebar()).getByText(title, { selector: 'p' }).closest('.mantine-Stack-root') as HTMLElement;
+}
+
+function sectionCount(title: string): string | null {
+  return within(section(title)).getByTestId('section-count').textContent;
+}
+
+async function showInactive(): Promise<void> {
+  await userEvent.click(within(sidebar()).getByRole('button', { name: 'Filters' }));
+  await userEvent.click(screen.getByLabelText('Show inactive'));
+}
+
+function entry(name: string): HTMLElement {
+  return within(details()).getByRole('button', { name: new RegExp(`^${name}`) });
+}
+
 function details(): HTMLElement {
   return screen.getByRole('region', { name: 'Configuration details' });
 }
@@ -53,10 +70,10 @@ describe('SchedulingConfigWorkspace', () => {
     expect(row('Discontinued Consult')).toHaveTextContent('Inactive');
   });
 
-  test('nothing is selected until something is picked, and the empty pane offers to start one', async () => {
+  test('nothing is selected until something is picked', async () => {
     await setup();
 
-    expect(within(details()).getByText('No visit type selected')).toBeInTheDocument();
+    expect(within(details()).getByText('Nothing selected')).toBeInTheDocument();
     expect(
       within(sidebar())
         .queryAllByRole('button')
@@ -125,14 +142,6 @@ describe('SchedulingConfigWorkspace', () => {
     expect(nameField()).toHaveValue('Ultrasound Imaging');
   });
 
-  test('the empty pane starts a new visit type', async () => {
-    await setup();
-
-    await userEvent.click(within(details()).getByRole('button', { name: 'New visit type' }));
-
-    expect(within(details()).getByText('Not saved yet')).toBeInTheDocument();
-  });
-
   test('clicking the row already open does not ask, and leaves the unsaved-changes guard in place', async () => {
     await setup();
     await userEvent.click(row('Telehealth Consult'));
@@ -190,6 +199,87 @@ describe('SchedulingConfigWorkspace', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(nameField()).toHaveValue('Ultrasound Imaging');
+  });
+
+  test('lists each provider, room, and device once, whether or not it has a Schedule, and no Schedule as a row', async () => {
+    await setup();
+
+    expect(within(section('Providers')).getAllByText('Dr. Maya Rivera')).toHaveLength(1);
+    expect(within(section('Providers')).getAllByText('Dr. Anika Patel')).toHaveLength(1);
+    expect(within(section('Devices')).getByText('Ultrasound 1 (Main Campus)')).toBeInTheDocument();
+    expect(within(section('Rooms')).getByText('Exam Room C')).toBeInTheDocument();
+    expect(within(sidebar()).queryByText(/availability$/)).not.toBeInTheDocument();
+  });
+
+  test('the text filter narrows every section, and the counts follow it', async () => {
+    await setup();
+    const providers = Number(sectionCount('Providers')?.replace(/\D/g, ''));
+    expect(providers).toBeGreaterThan(3);
+
+    await userEvent.type(within(sidebar()).getByRole('textbox', { name: 'Filter' }), 'NGUYEN');
+
+    expect(sectionCount('Providers')).toBe('1 listed');
+    expect(row('Dr. Linh Nguyen')).toBeInTheDocument();
+    expect(within(section('Rooms')).getByText('No matching rooms')).toBeInTheDocument();
+    expect(within(section('Devices')).getByText('No matching devices')).toBeInTheDocument();
+  });
+
+  test('hides inactive providers and devices until asked, then marks them', async () => {
+    await setup([
+      ...ConfigFixtures,
+      { resourceType: 'Practitioner', name: [{ given: ['Hana'], family: 'Lee', prefix: ['Dr.'] }], active: false },
+    ]);
+
+    expect(within(sidebar()).queryByText('Ultrasound 3 (Retired)')).not.toBeInTheDocument();
+    expect(within(sidebar()).queryByText('Dr. Hana Lee')).not.toBeInTheDocument();
+
+    await showInactive();
+
+    expect(row('Ultrasound 3 (Retired)')).toHaveTextContent('Inactive');
+    expect(row('Dr. Hana Lee')).toHaveTextContent('Inactive');
+  });
+
+  test('a saved Schedule replaces the one listed, so its row and page follow at once', async () => {
+    const medplum = await setup();
+    const search = vi.spyOn(medplum, 'searchResourcePages');
+    await userEvent.click(row('Dr. Maya Rivera'));
+    // Every entry starts closed, so opening one shows the save keeps what the viewer had open.
+    await userEvent.click(entry('Ultrasound Imaging'));
+
+    await userEvent.click(within(details()).getByRole('switch', { name: 'Schedule status' }));
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Dr. Maya Rivera')).toHaveTextContent('Schedule inactive'));
+    expect(row('Dr. Maya Rivera')).toHaveAttribute('aria-current', 'true');
+    expect(within(details()).getByRole('switch', { name: 'Schedule status' })).not.toBeChecked();
+    expect(entry('Ultrasound Imaging')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.queryByRole('region', { name: 'Unsaved changes' })).not.toBeInTheDocument();
+    expect(search).not.toHaveBeenCalled();
+  });
+
+  test("offering a room's first visit type creates its Schedule, and the room stays selected", async () => {
+    await setup();
+    await userEvent.click(row('Exam Room C'));
+
+    await userEvent.click(within(details()).getByRole('button', { name: 'Offer visit types' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search visit types' }), 'Telehealth');
+    await userEvent.click(screen.getByRole('option', { name: 'Telehealth Consult' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Offer 1 visit type' }));
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeInTheDocument());
+    expect(entry('Telehealth Consult')).not.toHaveTextContent('Unsaved');
+    expect(row('Exam Room C')).toHaveAttribute('aria-current', 'true');
+  });
+
+  test('an empty project says each section has nothing yet, and still offers to create a visit type', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
+    renderWithMedplum(<SchedulingConfigWorkspace />, medplum);
+
+    for (const noun of ['visit types', 'providers', 'rooms', 'devices']) {
+      expect(await within(sidebar()).findByText(`No ${noun} yet`)).toBeInTheDocument();
+    }
+    expect(within(sidebar()).getByRole('button', { name: 'New visit type' })).toBeInTheDocument();
   });
 
   test('says when the visit types could not be loaded', async () => {

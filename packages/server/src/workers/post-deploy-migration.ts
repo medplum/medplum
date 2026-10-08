@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
 import { capitalize, getReferenceString, normalizeErrorString, PropertyType, toTypedValue } from '@medplum/core';
-import type { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import type { Job, JobsOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import type { PoolClient } from 'pg';
@@ -12,7 +11,6 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import type { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
-import { TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type {
   CustomPostDeployMigrationJobData,
@@ -20,6 +18,7 @@ import type {
   PostDeployJobData,
   PostDeployJobRunResult,
   PostDeployMigration,
+  PrepareJobDataContext,
 } from '../migrations/data/types';
 import { executeMigrationActions } from '../migrations/migrate';
 import {
@@ -268,29 +267,29 @@ function getAsyncJobOutputFromMigrationActionResults(results: MigrationActionRes
   };
 }
 
-export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): CustomPostDeployMigrationJobData {
-  const ctx = tryGetRequestContext();
+export function prepareCustomMigrationJobData(ctx: PrepareJobDataContext): CustomPostDeployMigrationJobData {
+  const requestCtx = tryGetRequestContext();
   return {
-    target: { kind: 'shard', shardId: TODO_SHARD_ID },
-    tracking: getAsyncJobTracking(asyncJob),
+    target: { kind: 'shard', shardId: ctx.shardId },
+    tracking: getAsyncJobTracking(ctx.asyncJob),
     type: 'custom',
-    requestId: ctx?.requestId,
-    traceId: ctx?.traceId,
+    requestId: requestCtx?.requestId,
+    traceId: requestCtx?.traceId,
   };
 }
 
 export function prepareDynamicMigrationJobData(
-  asyncJob: WithId<AsyncJob>,
+  ctx: PrepareJobDataContext,
   migrationActions: PhasalMigration
 ): DynamicPostDeployJobData {
-  const ctx = tryGetRequestContext();
+  const requestCtx = tryGetRequestContext();
   return {
-    target: { kind: 'shard', shardId: TODO_SHARD_ID },
-    tracking: getAsyncJobTracking(asyncJob),
+    target: { kind: 'shard', shardId: ctx.shardId },
+    tracking: getAsyncJobTracking(ctx.asyncJob),
     type: 'dynamic',
     migrationActions,
-    requestId: ctx?.requestId,
-    traceId: ctx?.traceId,
+    requestId: requestCtx?.requestId,
+    traceId: requestCtx?.traceId,
   };
 }
 

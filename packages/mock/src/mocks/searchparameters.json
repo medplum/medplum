@@ -195,25 +195,7 @@
     "code": "actor",
     "base": ["Schedule"],
     "type": "reference",
-    "expression": "Schedule.actor",
-    "target": [
-      "Practitioner",
-      "Device",
-      "Patient",
-      "HealthcareService",
-      "PractitionerRole",
-      "RelatedPerson",
-      "Location"
-    ]
-  },
-  {
-    "resourceType": "SearchParameter",
-    "id": "Schedule-service-type",
-    "name": "service-type",
-    "code": "service-type",
-    "base": ["Schedule"],
-    "type": "token",
-    "expression": "Schedule.serviceType"
+    "expression": "Schedule.actor"
   },
   {
     "resourceType": "SearchParameter",
@@ -223,6 +205,15 @@
     "base": ["Schedule"],
     "type": "token",
     "expression": "Schedule.identifier"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Schedule-service-type",
+    "name": "service-type",
+    "code": "service-type",
+    "base": ["Schedule"],
+    "type": "token",
+    "expression": "Schedule.serviceType"
   },
   {
     "resourceType": "SearchParameter",

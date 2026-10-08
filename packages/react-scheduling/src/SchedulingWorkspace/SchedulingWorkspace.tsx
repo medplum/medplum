@@ -9,7 +9,7 @@ import {
   normalizeErrorString,
   SchedulingScheduleColorURI,
 } from '@medplum/core';
-import type { Appointment, Extension, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Extension, Location, Reference, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -21,7 +21,8 @@ import { AppointmentBookingForm } from '../AppointmentFinder/AppointmentBookingF
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
-import { resolveThemeColor } from '../colors';
+import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
+import { fallbackColorIndex, resolveThemeColor } from '../colors';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
@@ -29,11 +30,13 @@ import type { DateTimeRange } from '../types';
 import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
 import type { CalendarFilterValues } from './CalendarFilters';
 import { CalendarFilters } from './CalendarFilters';
+import type { ServiceTypeLegendItem } from './CalendarLegend';
+import { CalendarLegend } from './CalendarLegend';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
-import { getCalendarTimezones } from './SchedulingWorkspace.utils';
+import { getCalendarTimezones, groupAppointmentsByService } from './SchedulingWorkspace.utils';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
@@ -56,16 +59,20 @@ export interface SchedulingWorkspaceProps {
   readonly procedureBinding?: string;
   /** The ValueSet the diagnosis code field binds to. Defaults to full ICD-10-CM valueset. */
   readonly diagnosisBinding?: string;
+  /** See {@link AppointmentProposalFormProps.mrnSystem}. */
+  readonly mrnSystem?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
   readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
+  /** Called with the appointment as written, after its patient or its visit type's codes are edited. */
+  readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
   /**
    * Overrides the value set the appointment detail view offers cancellation reasons
    * from, for a host coding them against its own terminology.
    */
   readonly appointmentCancellationReasonValueSet?: string;
   /**
-   * Lets the booking form take a typed time and length, placing a visit the scheduling
+   * Lets booking and rescheduling take a typed time and length, placing a visit the scheduling
    * rules would refuse: over occupied or blocked time, past the configured capacity,
    * or at a time or length the visit type does not offer.
    *
@@ -75,7 +82,8 @@ export interface SchedulingWorkspaceProps {
    * Such a booking is sent as a transaction, so the appointment and its Slots commit
    * together on projects with the `transaction-bundles` feature enabled. Without it they
    * are applied as a plain batch, where an appointment that failed to write would leave
-   * Slots holding no visit.
+   * Slots holding no visit. Manual rescheduling writes Slot by Slot instead: old Slots the
+   * user cannot delete stay behind as blocked time after the move.
    * @see https://www.medplum.com/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions
    */
   readonly canBypassSchedulingRules?: boolean;
@@ -84,25 +92,36 @@ export interface SchedulingWorkspaceProps {
    * {@link AppointmentProposalFormProps.appointmentExtensions}.
    */
   readonly appointmentExtensions?: readonly Extension[];
+  /**
+   * The site the Location filter starts on, e.g. the facility the host launched
+   * scheduling from. The user can still change or clear it. Read once on mount; key
+   * the workspace to start it over on another site.
+   */
+  readonly defaultLocation?: Reference<Location> | WithId<Location>;
 }
 
 /**
- * A data-coordination component pairing {@link CalendarsPanel} with {@link MultiCalendar}.
+ * A data-coordination component pairing `CalendarsPanel` with {@link MultiCalendar}.
  *
  * - Picks a color for each Schedule so that it can render consistently across
  *   those components.
+ * - Draws each appointment once, however many of the calendars on show it is held on,
+ *   in the color of its service type, picked by hashing the HealthcareService's reference.
+ *   A legend below the calendar keys those colors.
  * - Books from the calendar: clicking open time opens {@link AppointmentBookingForm}
  *   in a pane on the right, with its time search opened on the day that was clicked.
  *   The form writes the booking and announces what it wrote, which is what puts the
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
- * - Shows what is booked: clicking an appointment opens {@link AppointmentDetails} in the
+ * - Shows what is booked: clicking an appointment opens `AppointmentDetails` in the
  *   same pane the booking form uses, describing the visit and offering to cancel or
  *   reschedule it.
  * - Highlights the time last chosen, wherever it was chosen: the click that opened the
  *   pane, then whatever the form's time search settles on, and nothing while the form
  *   holds no time. The calendar is never moved to reach it — a highlight off the week
  *   on screen is kept, and is drawn again on paging back to it.
+ * - Can open on a site the host chooses: `defaultLocation` is where the Location filter,
+ *   and so the booking form, starts.
  *
  * @param props - Component props
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
@@ -111,10 +130,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const {
     procedureBinding,
     diagnosisBinding,
+    mrnSystem,
     onBooked,
     appointmentCancellationReasonValueSet,
     canBypassSchedulingRules,
     appointmentExtensions,
+    defaultLocation,
   } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
@@ -129,7 +150,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // Owned by `CalendarFilters`, which reports both whenever either changes. Held here
   // because the candidate search below is keyed on them.
-  const [filters, setFilters] = useState<CalendarFilterValues>(NO_FILTERS);
+  const initialFilters: CalendarFilterValues = defaultLocation ? { location: defaultLocation } : NO_FILTERS;
+  const [filters, setFilters] = useState<CalendarFilterValues>(initialFilters);
   const { service: selectedService, location: selectedLocation } = filters;
 
   const [range, setRange] = useState<DateTimeRange>();
@@ -214,24 +236,56 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     error: resourcesError,
   } = useSchedulingResources(schedules, range);
 
-  const sources = useMemo((): MultiCalendarSource[] => {
-    return activeCandidates.map((candidate) => {
+  const { sources, serviceTypes } = useMemo(() => {
+    const actorsOnShow = new Set(
+      activeCandidates
+        .flatMap((candidate) => candidate.schedule.actor.map((actor) => actor.reference))
+        .filter(isDefined)
+    );
+    const visibleAppointments = (appointments ?? []).filter(
+      (appointment) =>
+        appointment.status !== 'cancelled' &&
+        appointment.participant.some(
+          (participant) => participant.actor?.reference && actorsOnShow.has(participant.actor.reference)
+        )
+    );
+    // Appointments are drawn by service type rather than on the calendars they are held on,
+    // so the Slots they hold have to be cleared here: a source only clears the ones behind
+    // its own appointments.
+    const openSlots = filterBookedSlots(slots ?? [], visibleAppointments);
+    const calendarSources = activeCandidates.map((candidate): MultiCalendarSource => {
       const scheduleReference = getReferenceString(candidate.schedule);
-      const actorReferences = new Set(candidate.schedule.actor.map((actor) => actor.reference).filter(isDefined));
       return {
         schedule: candidate.schedule,
         color: colorByScheduleId.get(candidate.schedule.id),
-        slots: (slots ?? []).filter((slot: Slot) => slot.schedule?.reference === scheduleReference),
-        appointments: (appointments ?? []).filter(
-          (appointment: Appointment) =>
-            appointment.status !== 'cancelled' &&
-            (appointment.participant ?? []).some(
-              (participant) => participant.actor?.reference && actorReferences.has(participant.actor.reference)
-            )
-        ),
+        slots: openSlots.filter((slot: Slot) => slot.schedule?.reference === scheduleReference),
+        appointments: [],
       };
     });
-  }, [activeCandidates, slots, appointments, colorByScheduleId]);
+    const groups = Array.from(groupAppointmentsByService(visibleAppointments), ([reference, group]) => ({
+      reference,
+      group,
+      // Picked by the service type's reference, so its color holds whichever week is on show,
+      // for everyone, and as other service types come and go.
+      color: reference ? resolveThemeColor(theme, undefined, fallbackColorIndex(reference)) : 'gray',
+    }));
+    const serviceSources = groups.map(({ group, color }): MultiCalendarSource => ({
+      color,
+      slots: [],
+      appointments: group,
+    }));
+    const legend = groups
+      .map(({ reference, group, color }): ServiceTypeLegendItem => ({
+        id: reference ?? 'none',
+        // Named as its events are titled, by the HealthcareService its color is picked from.
+        appointment: group[0],
+        color,
+      }))
+      // By reference, so the order holds from week to week; the names load only as the legend
+      // shows them. The appointments naming no service type go last.
+      .sort((a, b) => Number(a.id === 'none') - Number(b.id === 'none') || a.id.localeCompare(b.id));
+    return { sources: [...calendarSources, ...serviceSources], serviceTypes: legend };
+  }, [activeCandidates, slots, appointments, colorByScheduleId, theme]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
@@ -319,7 +373,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           items={panelItems}
           candidatesLoading={candidatesLoading}
           onToggle={toggleCandidate}
-          filters={<CalendarFilters onChange={setFilters} />}
+          filters={<CalendarFilters defaultValue={initialFilters} onChange={setFilters} />}
         />
       </div>
       <div className={classes.calendar}>
@@ -337,7 +391,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onSelectAppointment={selectAppointment}
           selection={highlight}
         />
-        <CalendarTimezoneNotice className={classes.timezoneNotice} timezones={timezones} anyUnknown={anyUnknown} />
+        <div className={classes.footer}>
+          <CalendarTimezoneNotice timezones={timezones} anyUnknown={anyUnknown} />
+          <CalendarLegend className={classes.legend} serviceTypes={serviceTypes} />
+        </div>
       </div>
       {openAppointment && (
         <section
@@ -351,10 +408,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           </Group>
           <AppointmentDetails
             appointment={openAppointment}
+            canBypassSchedulingRules={canBypassSchedulingRules}
             cancellationReasonValueSet={appointmentCancellationReasonValueSet}
             onCancelled={props.onCancelled}
             onRescheduled={props.onRescheduled}
             onToggleTimeFinder={setRescheduleFinderOpen}
+            onUpdated={props.onUpdated}
+            procedureBinding={procedureBinding}
+            diagnosisBinding={diagnosisBinding}
+            mrnSystem={mrnSystem}
           />
         </section>
       )}
@@ -369,8 +431,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             defaultStart={bookingSelection.start}
             procedureBinding={procedureBinding}
             diagnosisBinding={diagnosisBinding}
+            mrnSystem={mrnSystem}
             canBypassSchedulingRules={canBypassSchedulingRules}
             appointmentExtensions={appointmentExtensions}
+            allowRecurring
             onToggleTimeFinder={setTimeFinderOpen}
             onChangeTime={setHighlight}
             onBooked={finishBooking}

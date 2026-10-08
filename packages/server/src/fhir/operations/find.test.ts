@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  allServiceTypesCodeableConcept,
   ContentType,
   createReference,
+  PARTICIPATION_TYPE_SYSTEM,
+  PRIMARY_PERFORMER_CODE,
   SchedulingSlotCapacityURI,
   ServiceTypeReferenceURI,
   toServiceTypeCodeableConcepts,
@@ -331,6 +334,13 @@ describe('Appointment/$find', () => {
               actor: { reference: `Practitioner/${practitioner.id}` },
               required: 'required',
               status: 'needs-action',
+              type: [
+                {
+                  coding: [
+                    { system: PARTICIPATION_TYPE_SYSTEM, code: PRIMARY_PERFORMER_CODE, display: 'primary performer' },
+                  ],
+                },
+              ],
             },
             {
               actor: { reference: `Location/${location.id}` },
@@ -1047,6 +1057,44 @@ describe('Appointment/$find', () => {
     expect(response).toHaveStatus(400);
   });
 
+  test('finds times on a Schedule marked as offering all service types', async () => {
+    const followUp = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      meta: { project: project.id },
+      name: 'Follow-up',
+      availableTime: [{ daysOfWeek: ['fri'], availableStartTime: '10:30:00', availableEndTime: '12:30:00' }],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [{ url: 'duration', valueDuration: { value: 60, unit: 'min' } }],
+        },
+      ],
+    });
+    // Only the marker: no service reference and no SchedulingParameters of its own
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.id },
+      actor: [createReference(practitioner)],
+      serviceType: [allServiceTypesCodeableConcept()],
+    });
+
+    const response = await makeRequest({
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${followUp.id}`,
+      schedule: `Schedule/${schedule.id}`,
+    });
+
+    expect(response).toHaveStatus(200);
+    const proposals = (response.body as Bundle<Appointment>).entry?.map((entry) => entry.resource as Appointment);
+    // Fri 10:30am-12:30pm EDT holds one hour-aligned 60 minute visit
+    expect(proposals?.map((proposal) => [proposal.start, proposal.end])).toStrictEqual([
+      ['2026-03-20T15:00:00.000Z', '2026-03-20T16:00:00.000Z'],
+    ]);
+    // The proposal records the service being booked, never the marker
+    expect(proposals?.[0].serviceType).toStrictEqual(toServiceTypeCodeableConcepts(followUp));
+  });
+
   test('errors on a schedule with multiple actors', async () => {
     const schedule = await systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
@@ -1692,6 +1740,113 @@ describe('Appointment/$find', () => {
     expect(response).toHaveStatus(200);
     expect(response.body).toHaveProperty('entry');
     expect(response.body.entry).toHaveLength(4);
+  });
+
+  describe('when HealthcareService.type has multiple codes', () => {
+    const initialConsult = { coding: [{ system: 'http://example.com/visit-type', code: 'initial-consult' }] };
+    const telehealth = { coding: [{ system: 'http://example.com/modality', code: 'telehealth' }] };
+    let multiCodeService: WithId<HealthcareService>;
+
+    const window = (): Record<string, string> => ({
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-17T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${multiCodeService.id}`,
+    });
+
+    beforeAll(async () => {
+      multiCodeService = await systemRepo.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
+        meta: { project: project.id },
+        name: 'Initial Telehealth Consult',
+        type: [initialConsult, telehealth],
+      });
+    });
+
+    test('proposes appointments carrying every code with the service reference', async () => {
+      const schedule = await makeSchedule([
+        { service: multiCodeService, duration: 60, availability: monTueAvailability },
+      ]);
+      expect(schedule.serviceType).toHaveLength(2);
+
+      const response = await makeRequest({ ...window(), schedule: `Schedule/${schedule.id}` });
+      expect(response).toHaveStatus(200);
+
+      const appointments = ((response.body as Bundle<Appointment>).entry ?? []).map((entry) => entry.resource);
+      expect(appointments).toHaveLength(8);
+      const serviceReference = { url: ServiceTypeReferenceURI, valueReference: createReference(multiCodeService) };
+      for (const appointment of appointments) {
+        expect(appointment?.serviceType).toEqual([
+          { ...initialConsult, extension: [serviceReference] },
+          { ...telehealth, extension: [serviceReference] },
+        ]);
+      }
+    });
+
+    test('a service-scoped busy Slot blocks time when it matches any of the codes', async () => {
+      const schedule = await makeSchedule([
+        { service: multiCodeService, duration: 60, availability: monTueAvailability },
+      ]);
+
+      const busySlot = (start: string, end: string, serviceType: Slot['serviceType']): Promise<Slot> =>
+        systemRepo.createResource<Slot>({
+          resourceType: 'Slot',
+          meta: { project: project.id },
+          schedule: createReference(schedule),
+          status: 'busy',
+          start: new Date(start).toISOString(),
+          end: new Date(end).toISOString(),
+          serviceType,
+        });
+
+      // Matches only the service's second code
+      await busySlot('2026-03-16T10:00:00-04:00', '2026-03-16T11:00:00-04:00', [telehealth]);
+      // Same code as the second code, but from a different system
+      await busySlot('2026-03-16T11:00:00-04:00', '2026-03-16T12:00:00-04:00', [
+        { coding: [{ system: 'http://example.com/other', code: 'telehealth' }] },
+      ]);
+      // Unrelated to the service
+      await busySlot('2026-03-16T12:00:00-04:00', '2026-03-16T13:00:00-04:00', [
+        { coding: [{ system: 'http://example.com/visit-type', code: 'follow-up' }] },
+      ]);
+
+      const response = await makeRequest({ ...window(), schedule: `Schedule/${schedule.id}` });
+      expect(response).toHaveStatus(200);
+
+      const starts = ((response.body as Bundle<Appointment>).entry ?? []).map((entry) => entry.resource?.start);
+      expect(starts).not.toContain(new Date('2026-03-16T10:00:00-04:00').toISOString());
+      expect(starts).toContain(new Date('2026-03-16T11:00:00-04:00').toISOString());
+      expect(starts).toContain(new Date('2026-03-16T12:00:00-04:00').toISOString());
+    });
+
+    test('a service-scoped free Slot adds availability when it matches any of the codes', async () => {
+      const schedule = await makeSchedule([
+        { service: multiCodeService, duration: 60, availability: monTueAvailability },
+      ]);
+
+      const freeSlot = (start: string, end: string, serviceType: Slot['serviceType']): Promise<Slot> =>
+        systemRepo.createResource<Slot>({
+          resourceType: 'Slot',
+          meta: { project: project.id },
+          schedule: createReference(schedule),
+          status: 'free',
+          start: new Date(start).toISOString(),
+          end: new Date(end).toISOString(),
+          serviceType,
+        });
+
+      // Before regular 9am availability: one matches the second code, one is unrelated
+      await freeSlot('2026-03-16T07:00:00-04:00', '2026-03-16T08:00:00-04:00', [telehealth]);
+      await freeSlot('2026-03-16T08:00:00-04:00', '2026-03-16T09:00:00-04:00', [
+        { coding: [{ system: 'http://example.com/visit-type', code: 'follow-up' }] },
+      ]);
+
+      const response = await makeRequest({ ...window(), schedule: `Schedule/${schedule.id}` });
+      expect(response).toHaveStatus(200);
+
+      const starts = ((response.body as Bundle<Appointment>).entry ?? []).map((entry) => entry.resource?.start);
+      expect(starts).toContain(new Date('2026-03-16T07:00:00-04:00').toISOString());
+      expect(starts).not.toContain(new Date('2026-03-16T08:00:00-04:00').toISOString());
+    });
   });
 
   describe('when the caller cannot read Schedule.actor', () => {

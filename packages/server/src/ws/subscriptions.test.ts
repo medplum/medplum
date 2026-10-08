@@ -23,7 +23,7 @@ import request from 'superwstest';
 import type { Mock } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import type * as Constants from '../constants';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import type { Repository, SystemRepository } from '../fhir/repo';
@@ -89,7 +89,7 @@ vi.mock('../oauth/utils', async (importOriginal) => {
 });
 
 describe('WebSocket Subscription', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let server: Server;
   let project: WithId<Project>;
   let repo: Repository;
@@ -1972,7 +1972,7 @@ describe('WebSocket Subscription', () => {
 
 describe('Subscription Heartbeat', () => {
   let app: Express;
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let server: Server;
   let project: WithId<Project>;
   let repo: Repository;

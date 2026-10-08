@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Text } from '@mantine/core';
+import { Box, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
-import { Document } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
@@ -46,13 +45,13 @@ function StoredVisitType(props: { readonly outdate?: boolean }): JSX.Element {
     return <Text c="dimmed">Loading…</Text>;
   }
   return (
-    <Document>
+    <Box p="md">
       <VisitTypePage
         key={stored?.meta?.versionId ?? service.meta?.versionId}
         service={stored ?? service}
-        onStored={setStored}
+        onSynced={setStored}
       />
-    </Document>
+    </Box>
   );
 }
 
@@ -72,9 +71,9 @@ export const Existing = (): JSX.Element => <StoredVisitType />;
  * @returns The story.
  */
 export const Create = (): JSX.Element => (
-  <Document>
-    <VisitTypePage onStored={() => undefined} onDiscardNew={() => undefined} />
-  </Document>
+  <Box p="md">
+    <VisitTypePage onSynced={() => undefined} onDiscardNew={() => undefined} />
+  </Box>
 );
 
 /**

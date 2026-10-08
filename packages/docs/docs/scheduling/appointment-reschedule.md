@@ -106,7 +106,7 @@ Unlike [`$book`](/docs/scheduling/appointment-book) and [`$hold`](/docs/scheduli
 - All `Slot` resources referenced by `Appointment.slot` must exist and be readable by the caller.
 - `start` must fall on the schedule's alignment grid.
 - The Appointment's `serviceType` must record exactly one HealthcareService, and that service must be readable by the caller.
-- Each Schedule's `serviceType` must include that HealthcareService.
+- Each Schedule's `serviceType` must reference that HealthcareService, or mark the Schedule as [offering all service types](/docs/scheduling/defining-availability#offering-all-service-types).
 - Each Schedule must have exactly **one actor**, and that actor must have a timezone defined via the `http://hl7.org/fhir/StructureDefinition/timezone` extension.
 - Every Schedule in the request must agree on `duration` and the alignment parameters.
 - The new time must be available on every requested Schedule, ignoring the Slots this appointment currently holds.

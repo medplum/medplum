@@ -5,7 +5,7 @@ import type { OperationOutcome } from '@medplum/fhirtypes';
 import type { Handler, Request, Response } from 'express';
 import type { RateLimiterRes } from 'rate-limiter-flexible';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
 import { getRateLimitRedis } from './redis';
 import { getNormalizedPath } from './util/url';
@@ -24,7 +24,7 @@ import { getNormalizedPath } from './util/url';
 
 interface RateLimitCategoryConfig {
   readonly name: string;
-  readonly serverConfigKey: keyof MedplumServerConfig;
+  readonly serverConfigKey: keyof ServerConfig;
   readonly systemSettingName: string;
   readonly defaultLimitPerMinute: number;
   readonly matchesUrl: (url: string) => boolean;
@@ -68,9 +68,9 @@ type InMemoryBlock = {
 const blockedUsers = new LRUCache<InMemoryBlock>(1000);
 
 let handler: Handler | undefined;
-export function rateLimitHandler(config: MedplumServerConfig): Handler {
+export function rateLimitHandler(config: ServerConfig): Handler {
   if (!handler) {
-    if (config.rateLimitsEnabled === false || config.defaultRateLimit === -1) {
+    if (!config.rateLimitsEnabled || config.defaultRateLimit === -1) {
       handler = (_req, _res, next) => next(); // Disable rate limiter
     } else {
       handler = async function rateLimiter(req, res, next) {
@@ -112,7 +112,7 @@ function blockRequest(res: Response, result: RateLimiterRes, limiter: RateLimite
   res.status(429).json(outcome).end();
 }
 
-export function getRateLimiter(req: Request, config?: MedplumServerConfig): RateLimiterRedis {
+export function getRateLimiter(req: Request, config?: ServerConfig): RateLimiterRedis {
   const client = getRateLimitRedis();
   return new RateLimiterRedis({
     keyPrefix: 'medplum:rl:',
@@ -137,7 +137,7 @@ export function closeRateLimiter(): void {
   handler = undefined;
 }
 
-function getRateLimitForRequest(req: Request, config?: MedplumServerConfig): number {
+function getRateLimitForRequest(req: Request, config?: ServerConfig): number {
   const category = getRateLimitCategory(req);
   let limit: number = category.defaultLimitPerMinute;
 

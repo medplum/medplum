@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Dereference, WithId } from '@medplum/core';
-import { assertNever, isResource, parseReference } from '@medplum/core';
-import type { Schedule } from '@medplum/fhirtypes';
+import { assertNever, isDefined, isResource, parseReference } from '@medplum/core';
+import type { Appointment, Reference, Schedule } from '@medplum/fhirtypes';
 
 /**
  * A reference to something a Schedule belongs to. The same union an Appointment
@@ -98,4 +98,26 @@ export const REQUIRED_ACTOR_TYPES: ReadonlySet<SchedulingActorType> = new Set(['
  */
 export function isActorTypeRequired(actorType: SchedulingActorType): boolean {
   return REQUIRED_ACTOR_TYPES.has(actorType);
+}
+
+/**
+ * Everyone and everything the visit is held on besides its patients.
+ * @param appointment - The appointment being described.
+ * @returns Their references, once each, in the order the appointment lists them.
+ */
+export function getNonPatientActors(appointment: Appointment): Reference[] {
+  const seen = new Set<string>();
+  return appointment.participant
+    .map((participant) => participant.actor)
+    .filter(isDefined)
+    .filter((actor) => {
+      if (!actor.reference) {
+        return true;
+      }
+      if (actor.reference.startsWith('Patient/') || seen.has(actor.reference)) {
+        return false;
+      }
+      seen.add(actor.reference);
+      return true;
+    });
 }

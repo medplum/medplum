@@ -172,7 +172,6 @@ export async function createProject(
           strictMode: true,
           features: config.defaultProjectFeatures,
           systemSetting: config.defaultProjectSystemSetting,
-          defaultPatientAccessPolicy: createReference(patientAccessPolicy),
           defaultAccessPolicies: [
             { profileType: 'Patient', accessPolicy: createReference(patientAccessPolicy) },
             { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },

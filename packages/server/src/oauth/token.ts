@@ -37,7 +37,8 @@ import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
-import { getProjectScopedUrl, safeFetch } from '../util/url';
+import { getLogger } from '../logger';
+import { getProjectIdFromUrl, getProjectScopedUrl, safeFetch } from '../util/url';
 import { validateClientCert } from './cert';
 import type { MedplumRefreshTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
@@ -56,6 +57,13 @@ import {
 
 type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
 type FhircastProps = { 'hub.topic': string; 'hub.url': string };
+
+/**
+ * How long after a rotation the previous refresh token is still accepted from the same IP address,
+ * so that a retry after a lost response, or a concurrent refresh with the same token, does not
+ * revoke the login.
+ */
+const REFRESH_GRACE_PERIOD_MS = 30_000;
 
 /**
  * Handles the OAuth/OpenID Token Endpoint.
@@ -143,7 +151,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const membership = await getClientApplicationMembership(systemRepo, client);
+  const membership = await getClientApplicationMembership(systemRepo, client, getProjectIdFromUrl(req.originalUrl));
   if (!membership) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
@@ -323,13 +331,6 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     }
   }
 
-  // Use a timing-safe-equal here so that we don't expose timing information which could be
-  // used to infer the secret value
-  if (!timingSafeEqualStr(login.refreshSecret, claims.refresh_secret)) {
-    sendTokenError(res, 'invalid_request', 'Invalid token');
-    return;
-  }
-
   let client: ClientApplication | undefined;
   if (login.client) {
     const clientId = resolveId(login.client) ?? '';
@@ -363,18 +364,77 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     }
   }
 
-  // Refresh token rotation
-  // Generate a new refresh secret and update the login
-  const updatedLogin = await rotateLoginRefreshSecret(login, {
-    remoteAddress: req.ip,
-    userAgent: req.get('User-Agent'),
-  });
+  // Use a timing-safe-equal here so that we don't expose timing information which could be
+  // used to infer the secret value. A mismatch skips the rotation and goes straight to the
+  // grace period and reuse checks below.
+  const updatedLogin = timingSafeEqualStr(login.refreshSecret, claims.refresh_secret)
+    ? await rotateLoginRefreshSecret(login, claims.refresh_secret, {
+        remoteAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+      })
+    : undefined;
 
-  await sendTokenResponse(req, res, updatedLogin, client);
+  if (updatedLogin) {
+    await sendTokenResponse(req, res, updatedLogin, client);
+    return;
+  }
+
+  // Re-read, because `login` is stale if this request lost a race with a concurrent refresh.
+  const currentLogin = await systemRepo.readResource<Login>('Login', login.id);
+  if (isWithinRefreshGracePeriod(currentLogin, claims.refresh_secret, req.ip)) {
+    // The secret was rotated moments ago from the same IP, so this is most likely a retry after a
+    // lost response or a concurrent refresh. Issue tokens for the current secret without rotating.
+    await sendTokenResponse(req, res, currentLogin, client);
+    return;
+  }
+
+  // `verifyJwt` proved this server minted the token for this login, so a stale secret outside the
+  // grace period is treated as reuse. See the OAuth 2.0 Security BCP, 4.14.2.
+  //
+  // Patched rather than `revokeLogin`, which writes back the caller's snapshot and could restore a
+  // superseded secret along with `revoked`.
+  await systemRepo.patchResource<Login>('Login', login.id, [{ op: 'add', path: '/revoked', value: true }]);
+  getLogger().warn('Refresh token reuse detected, login revoked', {
+    login: login.id,
+    remoteAddress: req.ip,
+  });
+  sendTokenError(res, 'invalid_grant', 'Token revoked');
 }
 
 /**
- * Rotates a login's refresh secret as part of refresh-token rotation.
+ * Returns true if the presented secret is the one replaced by the most recent rotation, and that
+ * rotation happened within the grace period, from the same IP address as this request.
+ * @param login - The current login, read after the rotation attempt failed.
+ * @param presentedSecret - The refresh secret presented by the caller.
+ * @param remoteAddress - The IP address of this request.
+ * @returns True if the refresh should succeed with the current secret.
+ */
+function isWithinRefreshGracePeriod(login: Login, presentedSecret: string, remoteAddress: string | undefined): boolean {
+  if (login.revoked || !login.refreshSecret || !login.previousRefreshSecret || !login.refreshSecretRotatedAt) {
+    return false;
+  }
+  // The rotation records the IP it came from, so a replay from anywhere else is treated as reuse
+  if (!remoteAddress || remoteAddress !== login.remoteAddress) {
+    return false;
+  }
+  if (!timingSafeEqualStr(login.previousRefreshSecret, presentedSecret)) {
+    return false;
+  }
+  const elapsed = Date.now() - new Date(login.refreshSecretRotatedAt).getTime();
+  return elapsed >= 0 && elapsed < REFRESH_GRACE_PERIOD_MS;
+}
+
+/**
+ * Consumes a login's refresh secret and rotates it, as one atomic step.
+ *
+ * The `test` operation makes this a compare-and-swap: `patchResource` reads the login from the
+ * database inside its own transaction, so the test runs against the committed secret and the whole
+ * patch is rejected if it has moved on. A concurrent caller writing the same row raises a
+ * serialization failure, which `withTransaction` retries by re-running the callback; the retry
+ * re-reads, fails the test, and so takes the same path as any other replay.
+ *
+ * The replaced secret and the rotation time are recorded so that a retry with the previous token
+ * can be recognized within the grace period.
  *
  * The rotation is applied via `patchResource` rather than a full
  * `updateResource` of a `{ ...login }` snapshot. `patchResource` re-reads the
@@ -386,24 +446,45 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
  * submission fail with a spurious "Invalid token" while enrolling in email MFA.
  *
  * @param login - The login to rotate; only its `id` is authoritative.
+ * @param expectedSecret - The refresh secret presented by the caller.
  * @param details - Request metadata to record on the login.
  * @param details.remoteAddress - The client IP address to record, if any.
  * @param details.userAgent - The client user agent to record, if any.
- * @returns The updated login with a freshly rotated refresh secret.
+ * @returns The updated login, or undefined if the presented secret was not the current one.
  */
 export async function rotateLoginRefreshSecret(
   login: WithId<Login>,
+  expectedSecret: string,
   details?: { remoteAddress?: string; userAgent?: string }
-): Promise<WithId<Login>> {
+): Promise<WithId<Login> | undefined> {
   const systemRepo = getGlobalSystemRepo();
-  const patch: Operation[] = [{ op: 'add', path: '/refreshSecret', value: generateSecret(32) }];
+  const patch: Operation[] = [
+    { op: 'test', path: '/refreshSecret', value: expectedSecret },
+    { op: 'replace', path: '/refreshSecret', value: generateSecret(32) },
+    { op: 'add', path: '/previousRefreshSecret', value: expectedSecret },
+    { op: 'add', path: '/refreshSecretRotatedAt', value: new Date().toISOString() },
+  ];
   if (details?.remoteAddress !== undefined) {
     patch.push({ op: 'add', path: '/remoteAddress', value: details.remoteAddress });
   }
   if (details?.userAgent !== undefined) {
     patch.push({ op: 'add', path: '/userAgent', value: details.userAgent });
   }
-  return systemRepo.patchResource<Login>('Login', login.id, patch);
+
+  try {
+    return await systemRepo.patchResource<Login>('Login', login.id, patch);
+  } catch (err) {
+    // A 400 means the test operation failed, unless the presented secret is still current, in which
+    // case the patch was rejected for some other reason. That, like a connection loss or an
+    // exhausted retry, says nothing about reuse.
+    if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 400) {
+      const current = await systemRepo.readResource<Login>('Login', login.id);
+      if (!timingSafeEqualStr(current.refreshSecret, expectedSecret)) {
+        return undefined;
+      }
+    }
+    throw err;
+  }
 }
 
 /**
