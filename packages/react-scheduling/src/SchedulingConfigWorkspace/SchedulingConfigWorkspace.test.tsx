@@ -267,7 +267,7 @@ describe('SchedulingConfigWorkspace', () => {
     expect(search).not.toHaveBeenCalled();
   });
 
-  test("offering a room's first visit type creates its Schedule, and the room stays selected", async () => {
+  test("offering a room's first visit type creates its Schedule, and the room stays selected and in place", async () => {
     await setup();
     await userEvent.click(row('Exam Room C'));
 
@@ -275,11 +275,13 @@ describe('SchedulingConfigWorkspace', () => {
     await userEvent.type(screen.getByRole('textbox', { name: 'Search visit types' }), 'Telehealth');
     await userEvent.click(screen.getByRole('option', { name: 'Telehealth Consult' }));
     await userEvent.click(screen.getByRole('button', { name: 'Offer 1 visit type' }));
+    details().scrollTop = 300;
     await userEvent.click(saveButton());
 
     await waitFor(() => expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeInTheDocument());
     expect(entry('Telehealth Consult')).not.toHaveTextContent('Unsaved');
     expect(row('Exam Room C')).toHaveAttribute('aria-current', 'true');
+    expect(details().scrollTop).toBe(300);
   });
 
   test('Schedules offering this visit type marks the ones that customize it', async () => {
@@ -325,13 +327,15 @@ describe('SchedulingConfigWorkspace', () => {
     expect(within(offeringSchedules()).queryByText('Ultrasound 3 (Retired)')).not.toBeInTheDocument();
   });
 
-  test("selecting a Schedule offering a visit type opens its actor's page with that visit type's entry open", async () => {
+  test("selecting a Schedule offering a visit type opens its actor's page from the top, with that visit type's entry open", async () => {
     await setup();
     await userEvent.click(row('Telehealth Consult'));
 
+    details().scrollTop = 400;
     await userEvent.click(within(offeringSchedules()).getByText('Dr. Linh Nguyen'));
 
     expect(within(details()).getByRole('heading', { name: 'Dr. Linh Nguyen' })).toBeInTheDocument();
+    expect(details().scrollTop).toBe(0);
     expect(entry('Telehealth Consult')).toHaveAttribute('aria-expanded', 'true');
     expect(entry('Ultrasound Imaging')).toHaveAttribute('aria-expanded', 'false');
     expect(row('Dr. Linh Nguyen')).toHaveAttribute('aria-current', 'true');

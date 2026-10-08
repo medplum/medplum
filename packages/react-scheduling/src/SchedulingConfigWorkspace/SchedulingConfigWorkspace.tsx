@@ -7,7 +7,7 @@ import type { HealthcareService, Resource } from '@medplum/fhirtypes';
 import { IconCalculatorFilled, IconCalendarEvent, IconMapPinFilled } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { isBookableActorType } from '../actors';
 import { ActorPage } from './ActorPage/ActorPage';
@@ -59,6 +59,16 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
   // A selection waiting on the viewer to confirm that unsaved changes may be discarded.
   const [pending, setPending] = useState<ConfigSelection>();
   const [nextNewKey, setNextNewKey] = useState(1);
+
+  // A different page opens at its top. The same page remounting, as after a save, keeps its place.
+  const detailRef = useRef<HTMLElement>(null);
+  const shownRef = useRef<ConfigSelection | undefined>(undefined);
+  useLayoutEffect(() => {
+    if (detailRef.current && !(selection && shownRef.current && isSameSelection(selection, shownRef.current))) {
+      detailRef.current.scrollTop = 0;
+    }
+    shownRef.current = selection;
+  }, [selection]);
 
   function select(next: ConfigSelection): void {
     if (isSameSelection(next, selection)) {
@@ -220,7 +230,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
 
       <Divider orientation="vertical" />
 
-      <Box component="section" className={classes.detail} aria-label="Configuration details">
+      <Box component="section" ref={detailRef} className={classes.detail} aria-label="Configuration details">
         <Stack gap="md">
           {loadErrors.map(
             ([title, error]) =>
