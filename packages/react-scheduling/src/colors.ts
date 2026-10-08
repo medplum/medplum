@@ -4,7 +4,10 @@ import type { MantineTheme, MantineThemeColors } from '@mantine/core';
 import { getExtensionValue, SchedulingColorURI } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 
-/** A cycling palette used when nothing more specific names a color. */
+/**
+ * A cycling palette used when nothing more specific names a color, and the palette a visit type's color is
+ * chosen from.
+ */
 export const FALLBACK_COLORS = [
   'indigo',
   'teal',
