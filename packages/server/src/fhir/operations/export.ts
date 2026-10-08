@@ -19,6 +19,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { queueBulkExport } from '../../workers/bulk-export';
 import { getPatientCompartmentParams, getPatientResourceTypes } from '../patient';
 import type { Repository } from '../repo';
 import { getSelectQueryForSearch } from '../search';
@@ -81,7 +82,7 @@ export async function patientExportHandler(req: FhirRequest): Promise<FhirRespon
   return startExport(req, 'Patient');
 }
 
-async function startExport(req: FhirRequest, exportType: string): Promise<FhirResponse> {
+async function startExport(req: FhirRequest, exportType: 'System' | 'Patient'): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const { since, types, typeFilters } = parseExportParameters(req);
@@ -90,9 +91,7 @@ async function startExport(req: FhirRequest, exportType: string): Promise<FhirRe
   const exporter = new BulkExporter(ctx.repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
 
-  exportResources(exporter, ctx.project, types, exportType, since, typeFilterSearches)
-    .then(() => ctx.logger.info('Export completed', { exportType, id: ctx.project.id }))
-    .catch((err) => ctx.logger.error('Export failure', { exportType, id: ctx.project.id, error: err }));
+  await queueBulkExport(bulkDataExport, { exportLevel: exportType, types, since, typeFilters: typeFilterSearches });
 
   return [accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`)];
 }

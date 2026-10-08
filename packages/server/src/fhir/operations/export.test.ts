@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
+import { assert, ContentType } from '@medplum/core';
 import type { FhirRequest } from '@medplum/fhir-router';
 import type {
+  AsyncJob,
   Binary,
   BulkDataExportOutput,
   CodeableConcept,
@@ -10,6 +11,7 @@ import type {
   Observation,
   Patient,
 } from '@medplum/fhirtypes';
+import type { Job } from 'bullmq';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -25,9 +27,11 @@ import {
   waitForAsyncJob,
   withTestContext,
 } from '../../test.setup';
+import { execBulkExportJob } from '../../workers/bulk-export';
+import { queueRegistry } from '../../workers/utils';
 import { getTestProjectSystemRepo } from '../repository/test-utils';
 import type { ExportParameters } from './export';
-import { exportResourceType, exportResources, parseExportParameters } from './export';
+import { exportResources, exportResourceType, parseExportParameters } from './export';
 import { BulkExporter } from './utils/bulkexporter';
 
 describe('Export', () => {
@@ -37,10 +41,33 @@ describe('Export', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    vi.mocked(queueRegistry.get('BulkExportQueue')?.add)?.mockImplementation(async (name, data) => {
+      const job = { name, data, queueName: 'BulkExportQueue' } as Job;
+      await execBulkExportJob(job);
+      return job;
+    });
   });
 
   afterAll(async () => {
     await shutdownApp();
+  });
+
+  test('Kickoff queues the export without running it', async () => {
+    const { accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
+    const queue = queueRegistry.get('BulkExportQueue');
+    assert(queue);
+    vi.mocked(queue.add).mockImplementationOnce(async (name, data) => ({ name, data }) as Job);
+    const res = await request(app)
+      .get('/fhir/R4/$export?_type=Patient')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(202);
+    const id = res.headers['content-location'].split('/').pop() as string;
+    expect((await repo.readResource<AsyncJob>('AsyncJob', id)).status).toBe('active');
+    expect(queue.add).toHaveBeenLastCalledWith(
+      'BulkExport',
+      expect.objectContaining({ exportLevel: 'System', types: ['Patient'] }),
+      { jobId: id }
+    );
   });
 
   test('Success', async () => {
