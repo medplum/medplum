@@ -245,6 +245,12 @@ export interface ConfigOffering {
   readonly schedule: WithId<Schedule>;
 }
 
+/** The actors of one type whose Schedules offer a visit type, under the title the sidebar lists that type by. */
+export interface ConfigOfferingGroup {
+  readonly title: string;
+  readonly offerings: readonly ConfigOffering[];
+}
+
 /**
  * Finds every actor whose Schedule offers a visit type. Only the Schedule the workspace edits counts, since
  * that is the one its page opens.

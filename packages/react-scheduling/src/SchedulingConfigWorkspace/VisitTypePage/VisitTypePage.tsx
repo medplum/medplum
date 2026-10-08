@@ -33,7 +33,7 @@ import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPa
 import type { ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { ParameterWarnings } from '../ConfigPage/ParameterWarnings';
-import type { ConfigOffering } from '../SchedulingConfigWorkspace.utils';
+import type { ConfigOffering, ConfigOfferingGroup } from '../SchedulingConfigWorkspace.utils';
 import { StatusBadge } from '../StatusBadge';
 import { OfferedBySection } from './OfferedBySection';
 import { ServiceFacilitiesField } from './ServiceFacilitiesField';
@@ -47,8 +47,8 @@ export interface VisitTypePageProps {
   readonly onDiscardNew?: () => void;
   /** Called whenever the page starts or stops holding unsaved changes. */
   readonly onDirtyChange?: (dirty: boolean) => void;
-  /** Every provider, room, and device whose Schedule offers the visit type. */
-  readonly offerings?: readonly ConfigOffering[];
+  /** Every provider, room, and device whose Schedule offers the visit type, by type. */
+  readonly offeringGroups?: readonly ConfigOfferingGroup[];
   /** What offers the visit type is still being read. */
   readonly offeringsLoading?: boolean;
   /** Opens the page of an actor offering the visit type. */
@@ -131,7 +131,15 @@ function buildVisitType(
  * @returns The page.
  */
 export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
-  const { service, onSynced, onDiscardNew, onDirtyChange, offerings = [], offeringsLoading, onOpenOffering } = props;
+  const {
+    service,
+    onSynced,
+    onDiscardNew,
+    onDirtyChange,
+    offeringGroups = [],
+    offeringsLoading,
+    onOpenOffering,
+  } = props;
   const medplum = useMedplum();
   const creating = !service;
   const [initial] = useState(() => fieldsOf(service));
@@ -326,7 +334,7 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
         <OfferedBySection
           service={service}
           serviceName={serviceName}
-          offerings={offerings}
+          groups={offeringGroups}
           loading={offeringsLoading}
           onOpen={onOpenOffering}
         />

@@ -113,7 +113,6 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     select({ kind: 'actor', resourceType: resource.resourceType, id: resource.id, openServiceId: serviceId });
   }
 
-  const allActors = ACTOR_SECTIONS.flatMap(({ resourceType }) => actors[resourceType].items);
   const actorsLoading = ACTOR_SECTIONS.some(({ resourceType }) => actors[resourceType].loading);
 
   let detail: JSX.Element;
@@ -135,7 +134,10 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         service={service}
         onSynced={handleSynced}
         onDirtyChange={setDirty}
-        offerings={getOfferings(allActors, service)}
+        offeringGroups={ACTOR_SECTIONS.map(({ title, resourceType }) => ({
+          title,
+          offerings: getOfferings(actors[resourceType].items, service),
+        }))}
         offeringsLoading={actorsLoading}
         onOpenOffering={(offering) => openOffering(offering, service.id)}
       />

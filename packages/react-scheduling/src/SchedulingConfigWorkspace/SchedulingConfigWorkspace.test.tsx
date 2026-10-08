@@ -47,6 +47,16 @@ function details(): HTMLElement {
   return screen.getByRole('region', { name: 'Configuration details' });
 }
 
+function offeredBy(): HTMLElement {
+  return within(details()).getByRole('region', { name: 'Offered by' });
+}
+
+function groupTitles(region: HTMLElement): (string | undefined)[] {
+  return within(region)
+    .getAllByRole('group')
+    .map((group) => group.firstElementChild?.textContent);
+}
+
 function nameField(): HTMLElement {
   return within(details()).getByLabelText(/Name/);
 }
@@ -288,6 +298,22 @@ describe('SchedulingConfigWorkspace', () => {
     expect(within(okafor).getByText('Customized')).toBeInTheDocument();
     const nguyen = within(ultrasound).getByText('Dr. Linh Nguyen').closest('button') as HTMLElement;
     expect(within(nguyen).queryByText('Customized')).not.toBeInTheDocument();
+  });
+
+  test('Offered by groups actors by type, as the sidebar does, leaving out a type with none', async () => {
+    await setup();
+
+    await userEvent.click(row('Ultrasound Imaging'));
+    await within(offeredBy()).findByText('Dr. Maya Rivera');
+    expect(groupTitles(offeredBy())).toEqual(['Providers', 'Devices', 'Rooms']);
+    const devices = within(offeredBy()).getByRole('group', { name: 'Devices' });
+    expect(within(devices).getByText('Ultrasound 1 (Main Campus)')).toBeInTheDocument();
+    const rooms = within(offeredBy()).getByRole('group', { name: 'Rooms' });
+    expect(within(rooms).getByText('Exam Room A')).toBeInTheDocument();
+
+    await userEvent.click(row('Telehealth Consult'));
+    await within(offeredBy()).findByText('Dr. Linh Nguyen');
+    expect(groupTitles(offeredBy())).toEqual(['Providers']);
   });
 
   test("selecting an actor in Offered by opens its page with that visit type's entry open", async () => {
