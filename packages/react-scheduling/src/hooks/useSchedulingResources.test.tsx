@@ -153,6 +153,16 @@ describe('useSchedulingSlots', () => {
       );
     });
 
+    test('searches only the given slot statuses', async () => {
+      const searches = configureSearch({ slotsBySchedule: { 'Schedule/schedule-a': [slotA] } });
+
+      setup(useSchedulingSlots, [SCHEDULE_A], RANGE, { slotStatuses: ['busy', 'busy-unavailable'] });
+
+      await waitFor(() => expect(searches['Slot']).toHaveLength(1));
+      expect(searches['Slot']?.[0].get('status')).toBe('busy,busy-unavailable');
+      expect(searches['Slot']?.[0].has('status:not')).toBe(false);
+    });
+
     test('emits one Slot query per schedule and merges the results', async () => {
       const searches = configureSearch({
         slotsBySchedule: { 'Schedule/schedule-a': [slotA], 'Schedule/schedule-b': [slotB] },
@@ -353,6 +363,32 @@ describe('useSchedulingSlots', () => {
       });
 
       expect(result.current.slots).toEqual([updated]);
+    });
+
+    test('keeps to the given slot statuses', async () => {
+      const busySlot: WithId<Slot> = { ...slotA, status: 'busy' };
+      configureSearch({ slotsBySchedule: { 'Schedule/schedule-a': [busySlot] } });
+      const { result } = setup(useSchedulingSlots, [SCHEDULE_A], RANGE, { slotStatuses: ['busy'] });
+      await waitFor(() => expect(result.current.slots).toEqual([busySlot]));
+
+      // A created Slot outside the statuses is left out, as a refetch would leave it out.
+      const freeSlot: WithId<Slot> = { ...slotA, id: 'slot-free', status: 'free' };
+      act(() => {
+        medplum.notifyResourceModified({
+          resourceType: 'Slot',
+          operation: 'create',
+          id: freeSlot.id,
+          resource: freeSlot,
+        });
+      });
+      expect(result.current.slots).toEqual([busySlot]);
+
+      // A loaded Slot updated out of the statuses is dropped.
+      const freed: WithId<Slot> = { ...busySlot, status: 'free' };
+      act(() => {
+        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'update', id: freed.id, resource: freed });
+      });
+      expect(result.current.slots).toEqual([]);
     });
 
     test('removes a deleted Slot by id', async () => {

@@ -374,7 +374,7 @@ describe('SchedulingWorkspace', () => {
       clock = undefined;
     });
 
-    test(`shows the fixtures' booked appointments and free/blocked slots on the pinned "today"`, async () => {
+    test(`shows the fixtures' booked appointments and blocked slots on the pinned "today"`, async () => {
       // The same frozen "today" Storybook's `MockDateWrapper` uses, so `timeGridWeek`
       // renders the same Sun May 3 – Sat May 9 2020 week the fixtures are dated within.
       clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
@@ -391,8 +391,9 @@ describe('SchedulingWorkspace', () => {
       // rather than asserting on a single match.
       await waitFor(() => expect(screen.getAllByText('Miles Cooper').length).toBeGreaterThan(0));
       expect(screen.getAllByText('Renee Alvarez').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Available').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Blocked').length).toBeGreaterThan(0);
+      // Dr. Rivera's free Slot is not drawn: it would read as the only time open for booking.
+      expect(screen.queryByText('Available')).not.toBeInTheDocument();
     });
 
     test("an appointment is drawn once, in its service type's color, while any of its calendars is on show", async () => {

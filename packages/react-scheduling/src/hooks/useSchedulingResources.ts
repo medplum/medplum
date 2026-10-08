@@ -41,6 +41,8 @@ export interface UseSchedulingAppointmentsResult {
 export interface UseSchedulingResourcesOptions {
   /** Called when a fetch fails. */
   readonly onError?: (error: OperationOutcome) => void;
+  /** The Slot statuses to load. Defaults to every status but `entered-in-error`. */
+  readonly slotStatuses?: readonly Slot['status'][];
 }
 
 /**
@@ -86,8 +88,12 @@ export function useSchedulingSlots(
   // Stable keys so the searches below only re-run when the set of predicates actually
   // changes, rather than on every render when the parent passes a new array instance.
   const scheduleRefsKey = scheduleRefs.join(',');
+  const slotStatusesKey = options?.slotStatuses?.join(',');
   const rangeStart = range?.start?.toISOString();
   const rangeEnd = range?.end?.toISOString();
+
+  const matchesStatus = (slot: Slot): boolean =>
+    slotStatusesKey ? slotStatusesKey.split(',').includes(slot.status) : slot.status !== 'entered-in-error';
 
   // Keep the calendar's slots in sync with any Slot this client modifies, e.g. the
   // slots created when booking a visit from the FindPane or soft-deleted when cancelling
@@ -107,6 +113,11 @@ export function useSchedulingSlots(
     }
     // Ignore slots that belong to a schedule other than the ones shown here.
     if (!slot.schedule.reference || !scheduleRefs.includes(slot.schedule.reference)) {
+      return;
+    }
+    // A refetch wouldn't return a slot outside the loaded statuses, so drop it if it moved out.
+    if (!matchesStatus(slot)) {
+      setSlots((state) => state?.filter((existing) => existing.id !== slot.id));
       return;
     }
 
@@ -143,7 +154,7 @@ export function useSchedulingSlots(
           ['schedule', scheduleRef],
           ['start', `ge${rangeStart}`],
           ['start', `le${rangeEnd}`],
-          ['status:not', 'entered-in-error'],
+          slotStatusesKey ? ['status', slotStatusesKey] : ['status:not', 'entered-in-error'],
         ])
       )
     )
@@ -164,7 +175,7 @@ export function useSchedulingSlots(
       active = false;
       setLoading(false);
     };
-  }, [medplum, scheduleRefsKey, rangeStart, rangeEnd, handleError]);
+  }, [medplum, scheduleRefsKey, slotStatusesKey, rangeStart, rangeEnd, handleError]);
 
   return {
     slots,

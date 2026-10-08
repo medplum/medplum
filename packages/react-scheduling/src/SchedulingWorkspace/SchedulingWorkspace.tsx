@@ -53,6 +53,10 @@ const NONE_DESELECTED: DeselectedIdsByActorType = {
   Device: new Set(),
 };
 
+// "free" Slots are left out: they are easy to misinterpret as being the _only_
+// bookable times. "entered-in-error" status slots are also not shown here.
+const SLOT_OPTIONS = { slotStatuses: ['busy', 'busy-unavailable', 'busy-tentative'] } as const;
+
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
   /** The ValueSet the procedure code field binds to. Defaults to full CPT valueset. */
@@ -234,7 +238,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     appointments,
     loading: resourcesLoading,
     error: resourcesError,
-  } = useSchedulingResources(schedules, range);
+  } = useSchedulingResources(schedules, range, SLOT_OPTIONS);
 
   const { sources, serviceTypes } = useMemo(() => {
     const actorsOnShow = new Set(
