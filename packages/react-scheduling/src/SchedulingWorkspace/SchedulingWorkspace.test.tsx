@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { DEFAULT_THEME } from '@mantine/core';
+import { SchedulingColorURI } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { SinonFakeTimers } from 'sinon';
 import { useFakeTimers } from 'sinon';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
-import { CalendarWeekFixtures, SatelliteClinic, SchedulingFixtures } from '../stories/scheduling';
+import { CalendarWeekFixtures, SatelliteClinic, SchedulingFixtures, TelehealthService } from '../stories/scheduling';
 import { pillRemoveButton } from '../test-utils/asyncAutocomplete';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
@@ -379,7 +380,18 @@ describe('SchedulingWorkspace', () => {
     test("an appointment is drawn once, in its service type's color, while any of its calendars is on show", async () => {
       clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
 
-      renderWithMedplum(<SchedulingWorkspace />, await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]));
+      // Telehealth names its color; imaging is left to the one picked for it.
+      const telehealth = {
+        ...TelehealthService,
+        extension: [...(TelehealthService.extension ?? []), { url: SchedulingColorURI, valueString: 'grape' }],
+      };
+      const fixtures = SchedulingFixtures.map((resource) => (resource === TelehealthService ? telehealth : resource));
+      renderWithMedplum(<SchedulingWorkspace />, await setupClient([...fixtures, ...CalendarWeekFixtures]));
+
+      // Liam Jones's telehealth visit is drawn in grape from the first, never in the color
+      // Telehealth would otherwise be given.
+      await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(1));
+      expect(eventColor('Liam Jones')).toBe(DEFAULT_THEME.colors.grape[7]);
 
       // Miles Cooper's visit is held on Dr. Rivera, Ultrasound 1 and Exam Room A, and is
       // still one event, titled and colored by its imaging service type.
@@ -403,7 +415,7 @@ describe('SchedulingWorkspace', () => {
       expect((await card.findByText('Ultrasound Imaging')).parentElement).toHaveTextContent(/^Ultrasound Imaging · /);
       await userEvent.unhover(title);
       expect(eventColor('Renee Alvarez')).toBe(imaging);
-      expect(eventColor('Liam Jones')).not.toBe(imaging);
+      expect(imaging).not.toBe(DEFAULT_THEME.colors.grape[7]);
       // The legend keys those colors by service type.
       expect(await serviceTypeColor('Ultrasound Imaging')).toBe(imaging);
       expect(await serviceTypeColor('Telehealth Consult')).toBe(eventColor('Liam Jones'));
@@ -429,6 +441,35 @@ describe('SchedulingWorkspace', () => {
       }
       await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(0));
       expect(appointmentEvents('Renee Alvarez')).toHaveLength(1);
+    });
+
+    test('a service type still being read holds back only its own appointments, whose time shows as blocked', async () => {
+      clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
+
+      const medplum = await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]);
+      medplum.invalidateAll();
+      // Telehealth's read waits until the test lets it through.
+      let releaseTelehealth = (): void => undefined;
+      const readResource = medplum.readResource.bind(medplum);
+      vi.spyOn(medplum, 'readResource').mockImplementation(((resourceType, id, options) => {
+        if (resourceType === 'HealthcareService' && id === TelehealthService.id) {
+          return new Promise((resolve) => {
+            releaseTelehealth = () => resolve(readResource(resourceType, id, options));
+          });
+        }
+        return readResource(resourceType, id, options);
+      }) as typeof medplum.readResource);
+      renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+      // Imaging is drawn without waiting on Telehealth.
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(1));
+      expect(appointmentEvents('Liam Jones')).toHaveLength(0);
+      // Dr. Brown's three telehealth Slots show as blocked beside the two blocks always on show.
+      await waitFor(() => expect(screen.getAllByText('Blocked')).toHaveLength(5));
+
+      releaseTelehealth();
+      await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(1));
+      expect(screen.getAllByText('Blocked')).toHaveLength(2);
     });
   });
 
