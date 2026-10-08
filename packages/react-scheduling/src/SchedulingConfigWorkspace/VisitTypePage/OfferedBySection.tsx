@@ -9,12 +9,11 @@ import type { JSX, ReactNode } from 'react';
 import { useId } from 'react';
 import { scheduleHasOverrides } from '../ActorPage/scheduleDraft';
 import classes from '../ConfigPanel/ConfigRow.module.css';
-import { summarizeOffering } from '../offeringSummary';
 import { OverridesBadge } from '../OverridesBadge';
 import type { ConfigOffering, ConfigOfferingGroup } from '../SchedulingConfigWorkspace.utils';
 
 export interface OfferedBySectionProps {
-  /** The visit type as stored, whose settings the summaries show. Absent for one not created yet. */
+  /** The visit type as stored, which Customized compares each Schedule against. Absent for one not created yet. */
   readonly service?: WithId<HealthcareService>;
   readonly serviceName: string;
   /** What offers the visit type, by actor type, in the order the sidebar lists them. */
@@ -85,17 +84,12 @@ function OfferingRow(props: {
   return (
     <UnstyledButton className={classes.row} onClick={() => onOpen?.(offering)}>
       <Group gap="sm" wrap="nowrap">
-        <Stack gap={2} className={classes.label}>
-          <Group gap="xs" wrap="nowrap">
-            <Text fw={500} truncate>
-              {getDisplayString(resource)}
-            </Text>
-            {scheduleHasOverrides(service, offering.schedule) && <OverridesBadge serviceName={serviceName} />}
-          </Group>
-          <Text size="sm" c="dimmed" truncate>
-            {summarizeOffering(service, offering.schedule)}
+        <Group gap="xs" wrap="nowrap" className={classes.label}>
+          <Text fw={500} truncate>
+            {getDisplayString(resource)}
           </Text>
-        </Stack>
+          {scheduleHasOverrides(service, offering.schedule) && <OverridesBadge serviceName={serviceName} />}
+        </Group>
         <IconChevronRight size={16} />
       </Group>
     </UnstyledButton>

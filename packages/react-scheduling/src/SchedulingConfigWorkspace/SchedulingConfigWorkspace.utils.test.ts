@@ -241,6 +241,21 @@ describe('getOfferings', () => {
       getOfferings([{ resource: drSmith, schedules: [everything] }], configured).map((item) => item.schedule.id)
     ).toEqual(['s']);
   });
+
+  test('leaves out an actor that is turned off, or whose Schedule is, as booking skips both', () => {
+    const left = makeSchedule('s', 'Practitioner/dr-left', [configured]);
+    const paused = makeSchedule('t', 'Practitioner/dr-smith', [configured], { active: false });
+
+    expect(
+      getOfferings(
+        [
+          { resource: drLeft, schedules: [left] },
+          { resource: drSmith, schedules: [paused] },
+        ],
+        configured
+      )
+    ).toEqual([]);
+  });
 });
 
 describe('withStoredService', () => {

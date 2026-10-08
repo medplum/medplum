@@ -252,8 +252,8 @@ export interface ConfigOfferingGroup {
 }
 
 /**
- * Finds every actor whose Schedule offers a visit type. Only the Schedule the workspace edits counts, since
- * that is the one its page opens.
+ * Finds every actor whose Schedule offers a visit type and booking can use: one that is turned off, or whose
+ * Schedule is, is left out. Only the Schedule the workspace edits counts, since that is the one its page opens.
  * @param actors - Every provider, room, and device loaded.
  * @param service - The visit type.
  * @returns The offerings, in the order the actors were given.
@@ -264,7 +264,7 @@ export function getOfferings(
 ): ConfigOffering[] {
   return actors.flatMap((actor) => {
     const [schedule] = actor.schedules;
-    if (!schedule) {
+    if (!schedule || getStoredActorStatus(actor) !== 'active') {
       return [];
     }
     const offered =

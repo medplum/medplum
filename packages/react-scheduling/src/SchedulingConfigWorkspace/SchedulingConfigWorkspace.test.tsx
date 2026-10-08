@@ -316,6 +316,15 @@ describe('SchedulingConfigWorkspace', () => {
     expect(groupTitles(offeredBy())).toEqual(['Providers']);
   });
 
+  test('Offered by leaves out an actor booking skips: one that is turned off, or whose Schedule is', async () => {
+    await setup();
+
+    await userEvent.click(row('Ultrasound Imaging'));
+    await within(offeredBy()).findByText('Dr. Maya Rivera');
+    expect(within(offeredBy()).queryByText('Dr. Sofia Reyes')).not.toBeInTheDocument();
+    expect(within(offeredBy()).queryByText('Ultrasound 3 (Retired)')).not.toBeInTheDocument();
+  });
+
   test("selecting an actor in Offered by opens its page with that visit type's entry open", async () => {
     await setup();
     await userEvent.click(row('Telehealth Consult'));
