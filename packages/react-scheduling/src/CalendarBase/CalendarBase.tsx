@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { CalendarRef, EventApi, EventClickInfo, EventInput, EventSourceInput } from '@fullcalendar/react';
+import type {
+  CalendarRef,
+  EventApi,
+  EventClickInfo,
+  EventDisplayInfo,
+  EventInput,
+  EventSourceInput,
+} from '@fullcalendar/react';
 import FullCalendar, { useCalendarController } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/react/daygrid';
 import interactionPlugin from '@fullcalendar/react/interaction';
@@ -18,8 +25,10 @@ import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { getPatientParticipant } from '../actors';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import type { DateTimeRange } from '../types';
+import { AppointmentPatientName } from './AppointmentPatientName';
 import classes from './CalendarBase.module.css';
 import { availableTimeToBusinessHoursEntry, filterBookedSlots } from './CalendarBase.utils';
 
@@ -50,9 +59,7 @@ function appointmentsToEvents(
   return appointments
     .filter((appointment) => appointment.start && appointment.end)
     .map((appointment) => {
-      // Find the patient among the participants to use as title
-      const patientParticipant = appointment.participant.find((p) => p.actor?.reference?.startsWith('Patient/'));
-      const name = patientParticipant?.actor?.display ?? 'No Patient';
+      const name = getPatientParticipant(appointment)?.actor?.display ?? 'No Patient';
 
       return {
         id: appointment.id,
@@ -64,6 +71,26 @@ function appointmentsToEvents(
         ...extra,
       };
     });
+}
+
+/**
+ * Draws an appointment as FullCalendar would, but names its patient from the patient's record.
+ * @param info - What FullCalendar hands its event content.
+ * @returns The appointment's content, or `true` to keep FullCalendar's own for everything else.
+ */
+function renderEventContent(info: EventDisplayInfo): JSX.Element | true {
+  const ext = info.event.extendedProps as ExtendedEvent;
+  if (ext.type !== 'appointment') {
+    return true;
+  }
+  return (
+    <>
+      {info.timeText && <div className={info.timeClass}>{info.timeText}</div>}
+      <div className={info.titleClass}>
+        <AppointmentPatientName appointment={ext.appointment} />
+      </div>
+    </>
+  );
 }
 
 function slotTitle(slot: Slot): string {
@@ -316,6 +343,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
           }
           onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end });
         }}
+        eventContent={renderEventContent}
         {...fullCalendarProps}
         ref={calendarRef}
         eventSources={eventSources}

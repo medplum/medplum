@@ -18,7 +18,7 @@ import { useMedplum } from '@medplum/react-hooks';
 import { IconArrowLeft, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { Fragment, useCallback, useState } from 'react';
-import { getNonPatientActors } from '../../actors';
+import { getNonPatientActors, getPatientParticipant } from '../../actors';
 import { formatDayHeading, formatZonedTime } from '../../AppointmentFinder/AppointmentFinder.times';
 import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
@@ -27,7 +27,6 @@ import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../../serviceTypes';
 import classes from './AppointmentDetails.module.css';
-import { getPatientParticipant } from './AppointmentDetails.utils';
 import { AppointmentDetailsForm } from './AppointmentDetailsForm';
 
 /** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
