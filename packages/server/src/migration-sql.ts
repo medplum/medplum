@@ -63,3 +63,18 @@ export const markPostDeployMigrationCompleted = async (
 
   return results.rows[0]?.dataVersion;
 };
+
+export const setPreDeployVersion = async (
+  client: PgQueryable,
+  version: number,
+  options?: {
+    rowId?: number;
+  }
+): Promise<number | undefined> => {
+  assert(Number.isInteger(version));
+  const results = await client.query<{ id: number; version: number; dataVersion: number }>(
+    'UPDATE "DatabaseMigration" SET "version" = $1::integer WHERE "id" = $2 RETURNING *',
+    [version, options?.rowId ?? 1]
+  );
+  return results.rows[0]?.version;
+};

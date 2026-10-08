@@ -59,18 +59,24 @@ const medplumWrapper = ({ children }: { children: ReactNode }): JSX.Element => (
 interface HarnessProps {
   readonly combinations: readonly ActorCombination[];
   readonly service?: Reference<HealthcareService> | WithId<HealthcareService>;
+  readonly ignoreAppointment?: Reference<Appointment>;
+  readonly range?: DateRange;
+  readonly occurrenceCount?: number;
 }
 
 function Harness(props: HarnessProps): JSX.Element {
-  const { appointments, requestCount, loading, error } = useProposedAppointments({
+  const { appointments, requestCount, loading, error, windowError } = useProposedAppointments({
     service: props.service ?? UltrasoundImagingService,
     combinations: props.combinations,
-    range: RANGE,
+    range: props.range ?? RANGE,
+    ignoreAppointment: props.ignoreAppointment,
+    occurrenceCount: props.occurrenceCount,
   });
   return (
     <div>
       <div data-testid="loading">{loading ? 'loading' : 'idle'}</div>
       <div data-testid="error">{error?.message ?? ''}</div>
+      <div data-testid="window-error">{windowError ?? ''}</div>
       <div data-testid="requests">{requestCount}</div>
       <div data-testid="times">{appointments.map((appointment) => appointment.start).join(',')}</div>
       <div data-testid="actors">
@@ -80,8 +86,15 @@ function Harness(props: HarnessProps): JSX.Element {
   );
 }
 
-function setup(combinations: readonly ActorCombination[], service?: HarnessProps['service']): void {
-  render(<Harness combinations={combinations} service={service} />, medplumWrapper);
+function setup(
+  combinations: readonly ActorCombination[],
+  service?: HarnessProps['service'],
+  ignoreAppointment?: HarnessProps['ignoreAppointment']
+): void {
+  render(
+    <Harness combinations={combinations} service={service} ignoreAppointment={ignoreAppointment} />,
+    medplumWrapper
+  );
 }
 
 async function settle(): Promise<void> {
@@ -123,6 +136,58 @@ describe('useProposedAppointments', () => {
     expect(url.searchParams.getAll('schedule')).toStrictEqual(['Schedule/dr-rivera']);
     expect(url.searchParams.get('service-type-reference')).toBe(`HealthcareService/${UltrasoundImagingService.id}`);
     expect(url.searchParams.get('start')).toBe(RANGE.start?.toISOString());
+  });
+
+  test('Discounts the times one appointment is holding, when asked to', async () => {
+    // For a search run on behalf of an appointment being moved: the hour it occupies is
+    // the hour it is being moved off, and left standing it blocks its own move.
+    const get = respond({ 'Schedule/dr-rivera': offered(WITH_RIVERA, '2026-08-10T15:00:00.000Z') });
+
+    setup([WITH_RIVERA], undefined, { reference: 'Appointment/appt-being-moved' });
+    await settle();
+
+    const url = new URL(get.mock.calls[0][0].toString());
+    expect(url.searchParams.get('ignore-appointment')).toBe('Appointment/appt-being-moved');
+  });
+
+  test('Discounts nothing by default', async () => {
+    const get = respond({ 'Schedule/dr-rivera': offered(WITH_RIVERA, '2026-08-10T15:00:00.000Z') });
+
+    setup([WITH_RIVERA]);
+    await settle();
+
+    expect(new URL(get.mock.calls[0][0].toString()).searchParams.has('ignore-appointment')).toBe(false);
+  });
+
+  test('Searches for a weekly series when asked for more than one occurrence', async () => {
+    const get = respond({ 'Schedule/dr-rivera': offered(WITH_RIVERA, '2026-08-10T15:00:00.000Z') });
+
+    render(<Harness combinations={[WITH_RIVERA]} occurrenceCount={3} />, medplumWrapper);
+    await settle();
+
+    expect(new URL(get.mock.calls[0][0].toString()).searchParams.get('occurrence-count')).toBe('3');
+  });
+
+  test('Searches for a single time when asked for one occurrence', async () => {
+    const get = respond({ 'Schedule/dr-rivera': offered(WITH_RIVERA, '2026-08-10T15:00:00.000Z') });
+
+    render(<Harness combinations={[WITH_RIVERA]} occurrenceCount={1} />, medplumWrapper);
+    await settle();
+
+    expect(new URL(get.mock.calls[0][0].toString()).searchParams.has('occurrence-count')).toBe(false);
+  });
+
+  test('Refuses to search more than a week for a series', async () => {
+    const get = vi.spyOn(medplum, 'get');
+    const eightDays = { start: new Date('2026-08-10T00:00:00Z'), end: new Date('2026-08-18T00:00:00Z') };
+
+    render(<Harness combinations={[WITH_RIVERA]} range={eightDays} occurrenceCount={2} />, medplumWrapper);
+    await settle();
+
+    expect(get).not.toHaveBeenCalled();
+    expect(screen.getByTestId('window-error')).toHaveTextContent(
+      'Choose at most 7 days at a time for a recurring appointment.'
+    );
   });
 
   test('Names a service given only as a reference, without reading it', async () => {

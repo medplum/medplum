@@ -6,7 +6,8 @@ import type { Binary, DocumentReference, Observation, Patient, Project } from '@
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
-import type { ArrayColumnPaddingConfig, MedplumServerConfig } from '../../config/types';
+import type { ArrayColumnPaddingConfig } from '../../config/types';
+import type { ServerConfig } from '../../config/utils';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject, withTestContext } from '../../test.setup';
 import type { SystemRepository } from '../repo';
@@ -15,8 +16,10 @@ import type { ColumnValue } from './row-builder';
 import {
   buildDeletedResourceRow,
   buildDeleteHistoryContent,
+  buildExpungedHistoryContent,
   buildResourceRow,
   compareColumnValues,
+  ExpungedHistoryTag,
   parseHistoryContent,
 } from './row-builder';
 
@@ -159,7 +162,7 @@ describe('Repository Row Builder', () => {
         },
         false,
       ],
-    ])('with %s', async (_desc, arrayColumnPadding: MedplumServerConfig['arrayColumnPadding'] | undefined, shouldPad) =>
+    ])('with %s', async (_desc, arrayColumnPadding: ServerConfig['arrayColumnPadding'] | undefined, shouldPad) =>
       withTestContext(async () => {
         const config = getConfig();
         if (arrayColumnPadding) {
@@ -445,6 +448,41 @@ describe('compareColumnValues', () => {
         deleted: true,
       },
     });
+  });
+
+  test('buildExpungedHistoryContent stores a minimal lifecycle tombstone', () => {
+    const id = randomUUID();
+    const versionId = randomUUID();
+    const lastUpdated = new Date('2025-06-25T12:00:00.000Z');
+    const author = { reference: 'Practitioner/author' };
+    const projectId = randomUUID();
+
+    const tombstone = JSON.parse(buildExpungedHistoryContent('Patient', id, versionId, lastUpdated, author, projectId));
+
+    expect(tombstone).toStrictEqual({
+      resourceType: 'Patient',
+      id,
+      meta: {
+        versionId,
+        lastUpdated: lastUpdated.toISOString(),
+        author,
+        project: projectId,
+        deleted: true,
+        tag: [ExpungedHistoryTag],
+      },
+    });
+  });
+
+  test('buildExpungedHistoryContent falls back to the system author', () => {
+    const id = randomUUID();
+    const versionId = randomUUID();
+    const lastUpdated = new Date('2025-06-25T12:00:00.000Z');
+
+    const tombstone = JSON.parse(buildExpungedHistoryContent('Patient', id, versionId, lastUpdated));
+
+    expect(tombstone.meta.author).toStrictEqual({ reference: 'system' });
+    expect(tombstone.meta.deleted).toBe(true);
+    expect(tombstone.meta.project).toBeUndefined();
   });
 
   test('parseHistoryContent', () => {

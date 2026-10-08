@@ -49,7 +49,8 @@ export type ReadHistoryOptions = {
   limit?: number;
 };
 
-type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
+/** One or more resource types, as a single type, an array, or a set. */
+export type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
 
 export interface TransactionOptions {
   readonly resourceTypes: ResourceTypeInput;
@@ -761,6 +762,20 @@ export class MemoryRepository extends FhirRepository {
       throw new OperationOutcomeError(notFound);
     }
     this.resources.get(resourceType)?.delete(id);
+  }
+
+  async expungeResource(resourceType: string, id: string): Promise<void> {
+    await this.expungeResources(resourceType, [id]);
+  }
+
+  async expungeResources(resourceType: string, ids: string[]): Promise<void> {
+    // Intentionally skips the history tombstone the server Repository writes.
+    const resources = this.resources.get(resourceType);
+    const resourceHistory = this.history.get(resourceType);
+    for (const id of ids) {
+      resources?.delete(id);
+      resourceHistory?.delete(id);
+    }
   }
 
   withTransaction<TResult>(callback: (repo: this) => Promise<TResult>): Promise<TResult> {

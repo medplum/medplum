@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString, isDefined } from '@medplum/core';
+import { getExtension, getReferenceString, isDefined, RecurrenceTemplateExtensionURI } from '@medplum/core';
 import type { Appointment, Reference } from '@medplum/fhirtypes';
 import type { SchedulingActorResource, SchedulingActorValue } from '../actors';
 
@@ -10,7 +10,17 @@ import type { SchedulingActorResource, SchedulingActorValue } from '../actors';
  */
 export const MAX_FIND_WINDOW_DAYS = 31;
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+/** The longest window `Appointment/$find` accepts when searching for a recurring series. */
+export const MAX_RECURRING_FIND_WINDOW_DAYS = 7;
+
+/** 1 extra hour allows selecting the week spanning a DST change (in most timezones). */
+const DST_FUDGE_HOURS = 1;
+
+const MS_PER_HOUR = 60 * 60 * 1000;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
+
+const MAX_FIND_WINDOW_MS = MAX_FIND_WINDOW_DAYS * MS_PER_DAY;
+const MAX_RECURRING_FIND_WINDOW_MS = MAX_RECURRING_FIND_WINDOW_DAYS * MS_PER_DAY + DST_FUDGE_HOURS * MS_PER_HOUR;
 
 /**
  * The most days one listing will name. A search that grows a few days at a time can
@@ -207,6 +217,60 @@ export function parseZonedTime(day: Date, time: string, timezone?: string): Date
   const guess = getTimezoneOffsetMs(new Date(wallClock), timezone);
   const offset = getTimezoneOffsetMs(new Date(wallClock - guess), timezone);
   return new Date(wallClock - offset);
+}
+
+/**
+ * When the occurrences after the first of a weekly series start, as `Appointment/$book` will write them.
+ *
+ * Each keeps the first one's time on the clock of the series' timezone, so a week across a
+ * change of clocks moves the instant rather than the time.
+ *
+ * @param appointment - A proposal, which is the series' first occurrence when it carries a `recurrenceTemplate`.
+ * @param timezone - The zone to keep the time in when the template names none. Defaults to the browser's.
+ * @returns The later starts, in order. Empty for a visit that does not repeat.
+ */
+export function getLaterOccurrenceStarts(appointment: Appointment, timezone?: string): Date[] {
+  const count = getExtension(appointment, RecurrenceTemplateExtensionURI, 'occurrenceCount')?.valuePositiveInt ?? 1;
+  if (!appointment.start || count <= 1) {
+    return [];
+  }
+  const zone =
+    getExtension(appointment, RecurrenceTemplateExtensionURI, 'timezone')?.valueCodeableConcept?.coding?.[0]?.code ??
+    timezone;
+  const { year, month, day, hour, minute } = getZonedParts(new Date(appointment.start), zone);
+  const time = `${hour}:${String(minute).padStart(2, '0')}`;
+  return Array.from({ length: count - 1 }, (_, index) =>
+    parseZonedTime(new Date(year, month - 1, day + 7 * (index + 1)), time, zone)
+  ).filter(isDefined);
+}
+
+/**
+ * Reads a native datetime input's value as an instant in a timezone.
+ * @param value - A `YYYY-MM-DDTHH:MM` value, as the input reports it.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns The instant, or undefined while the value is not a complete date and time.
+ */
+export function parseZonedDateTimeInput(value: string, timezone?: string): Date | undefined {
+  const [day, time] = value.split('T');
+  if (!day || !time || !/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+    return undefined;
+  }
+  const [hour, minute] = time.split(':');
+  if (!hour || !minute) {
+    return undefined;
+  }
+  return parseZonedTime(parseDayKey(day), `${hour}:${minute}`, timezone);
+}
+
+/**
+ * Writes an instant as a native datetime input's value, the inverse of {@link parseZonedDateTimeInput}.
+ * @param date - The instant to write.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns A `YYYY-MM-DDTHH:MM` value, read in that timezone.
+ */
+export function formatZonedDateTimeInput(date: Date, timezone?: string): string {
+  const { year, month, day, hour, minute } = getZonedParts(date, timezone);
+  return `${year}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}`;
 }
 
 /**
@@ -414,14 +478,14 @@ function pad(value: number): string {
 /**
  * Returns the input type to use for a date or time field.
  *
- * JSDOM does not fire change events for `<input type="date">` or
- * `<input type="time">`, so tests get a plain text field, matching what
+ * JSDOM does not fire change events for `<input type="date">`, `<input type="time">`
+ * or `<input type="datetime-local">`, so tests get a plain text field, matching what
  * `DateTimeInput` does.
  *
  * @param type - The native input type to use outside of tests.
  * @returns The input type for the current environment.
  */
-export function getNativeInputType(type: 'date' | 'time'): string {
+export function getNativeInputType(type: 'date' | 'time' | 'datetime-local'): string {
   return import.meta.env.NODE_ENV === 'test' ? 'text' : type;
 }
 
@@ -518,16 +582,26 @@ export function enumerateDateRange(range: DateRange, limit = MAX_FIND_WINDOW_DAY
  * Reports a window `$find` will not answer, before a request is made for it.
  *
  * @param range - The days asked for.
+ * @param occurrenceCount - How many weekly occurrences the search is for. Above 1, the window is narrower.
  * @returns The message to show, or undefined when the range can be searched.
  */
-export function getFindWindowError(range: DateRange): string | undefined {
+export function getFindWindowError(range: DateRange, occurrenceCount = 1): string | undefined {
   const { start, end } = range;
   if (!start || !end) {
     return undefined;
   }
-  return getDayCount(start, end) > MAX_FIND_WINDOW_DAYS
-    ? `Choose at most ${MAX_FIND_WINDOW_DAYS} days at a time.`
-    : undefined;
+
+  const durationMs = end.getTime() - start.getTime();
+  const allowedMs = occurrenceCount > 1 ? MAX_RECURRING_FIND_WINDOW_MS : MAX_FIND_WINDOW_MS;
+
+  if (durationMs <= allowedMs) {
+    return undefined;
+  }
+
+  if (occurrenceCount > 1) {
+    return `Choose at most ${MAX_RECURRING_FIND_WINDOW_DAYS} days at a time for a recurring appointment.`;
+  }
+  return `Choose at most ${MAX_FIND_WINDOW_DAYS} days at a time.`;
 }
 
 /**

@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { PatchOperation } from '@medplum/core';
 import { getIdentifier, normalizeErrorString } from '@medplum/core';
-import type { Address, ContactPoint, Identifier, Organization, Parameters, Practitioner } from '@medplum/fhirtypes';
+import type {
+  Address,
+  ContactPoint,
+  HumanName,
+  Identifier,
+  Organization,
+  Parameters,
+  Practitioner,
+} from '@medplum/fhirtypes';
 import {
   CANDID_BILLING_ORGANIZATION_PROFILE,
   CANDID_ELIGIBILITY_PAYER_ID_SYSTEM,
@@ -19,6 +27,11 @@ import {
   CHC_PAYER_ID_SYSTEM,
 } from './candid';
 
+/** The `resourceId` on the billing settings Organizations tab that opens the modal for a new billing organization. */
+export const NEW_BILLING_ORGANIZATION_ID = 'new';
+/** The `resourceId` on the Organizations tab that opens the picker for bringing an existing organization into billing. */
+export const EXISTING_BILLING_ORGANIZATION_ID = 'existing';
+
 export const NPI_SYSTEM = 'http://hl7.org/fhir/sid/us-npi';
 export const EIN_SYSTEM = 'http://hl7.org/fhir/sid/us-ein';
 export const ORGANIZATION_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/organization-type';
@@ -31,7 +44,42 @@ export const PROVIDER_ORGANIZATION_TYPE = 'prov';
  */
 export const MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM = 'https://www.medplum.com/provider';
 export const BILLING_ORGANIZATION_IDENTIFIER_VALUE = 'billing-organization';
+/** `system|value` token selecting billing organizations in a FHIR identifier search. */
+export const BILLING_ORGANIZATION_IDENTIFIER = `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`;
 export const BILLING_PRACTITIONER_IDENTIFIER_VALUE = 'billing-practitioner';
+
+/**
+ * Whether an Organization already carries the billing organization marker, i.e. it was saved through Candid
+ * Billing Setup. An Organization created elsewhere in the project lacks it until it is set up for billing.
+ * @param organization - The Organization to check.
+ * @returns True when the Organization is a billing organization.
+ */
+export function isBillingOrganization(organization: Organization): boolean {
+  return getIdentifier(organization, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM) === BILLING_ORGANIZATION_IDENTIFIER_VALUE;
+}
+
+/**
+ * Names the billing fields an Organization does not have yet, in form order, so the form can say what it
+ * needs before the organization can bill: NPI, Tax ID, phone and a complete address.
+ * @param organization - The Organization being set up for billing.
+ * @returns The labels of the missing fields, empty when the Organization has them all.
+ */
+export function getMissingBillingOrganizationFields(organization: Organization): string[] {
+  const missing: string[] = [];
+  if (!getIdentifier(organization, NPI_SYSTEM)) {
+    missing.push('NPI');
+  }
+  if (!getIdentifier(organization, EIN_SYSTEM)) {
+    missing.push('Tax ID');
+  }
+  if (!organization.telecom?.some((t) => t.system === 'phone' && t.value)) {
+    missing.push('phone');
+  }
+  if (!isCompleteBillingAddress(organization.address?.[0])) {
+    missing.push('address');
+  }
+  return missing;
+}
 
 // The payer Organization fields the candid-get-payers bot owns; refresh syncs exactly these,
 // leaving identifiers and extensions from other systems untouched.
@@ -303,14 +351,16 @@ export function withCandidProviderExtensions(organization: Organization): Organi
  * bills individually; otherwise the billing organization on their role supplies both.
  */
 export interface BillingPractitionerFormValues {
+  name?: HumanName;
   npi: string;
   ein: string;
   address?: Address;
 }
 
 /**
- * Returns a copy of the Practitioner with the NPI, tax ID and address Candid needs, claiming the practitioner
- * profile and stamping the provider-app marker identifier. Qualifications (taxonomy) are left untouched.
+ * Returns a copy of the Practitioner with the name, NPI, tax ID and address Candid needs, claiming the
+ * practitioner profile and stamping the provider-app marker identifier. Only the first name and address are
+ * edited; further entries and qualifications (taxonomy) are left untouched.
  * @param practitioner - The practitioner being edited.
  * @param fields - The billing fields from the form.
  * @returns The updated Practitioner, ready to store.
@@ -336,6 +386,7 @@ export function buildUpdatedPractitioner(
       MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM,
       BILLING_PRACTITIONER_IDENTIFIER_VALUE
     ),
+    name: fields.name ? [fields.name, ...(practitioner.name?.slice(1) ?? [])] : practitioner.name,
     address: fields.address ? [fields.address, ...(practitioner.address?.slice(1) ?? [])] : practitioner.address,
   };
 }

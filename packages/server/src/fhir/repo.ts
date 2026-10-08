@@ -47,6 +47,7 @@ import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  AuditEvent,
   AuditEventEntityDetail,
   Binary,
   Bundle,
@@ -133,6 +134,7 @@ import {
 import {
   buildDeletedResourceRow,
   buildDeleteHistoryContent,
+  buildExpungedHistoryContent,
   buildResourceRow,
   parseHistoryContent,
 } from './repository/row-builder';
@@ -144,7 +146,14 @@ import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { lookupTables } from './searchparameter';
 import type { ShardRouting } from './sharding';
-import { GLOBAL_SHARD_ID, normalizeShardId, resolveShardId, shardRoutingError, TODO_SHARD_ID } from './sharding';
+import {
+  getResourceTypeShardId,
+  GLOBAL_SHARD_ID,
+  normalizeShardId,
+  resolveShardId,
+  shardRoutingError,
+  TODO_SHARD_ID,
+} from './sharding';
 import type { Expression, PgQueryable } from './sql';
 import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
 
@@ -271,8 +280,10 @@ export class Repository extends FhirRepository implements Disposable {
    *                Project.link (https://github.com/medplum/medplum/pull/9159)
    * 16. 06/30/26 - Added search param: Provenance-activity (https://github.com/medplum/medplum/pull/9709)
    * 17. 08/27/26 - Added search param: PractitionerRole-davinci-pdex-network
+   * 18. 09/23/26 - Added search param: Login-project (https://github.com/medplum/medplum/issues/10634)
+   * 19. 10/06/26 - Added search param: CoverageEligibilityRequest-coverage (https://github.com/medplum/medplum/issues/10814)
    */
-  static readonly VERSION: number = 17;
+  static readonly VERSION: number = 19;
 
   /**
    * Constructs a new Repository instance.
@@ -663,7 +674,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (!this.inOwnTransaction()) {
       // Only set cache entry if not in a transaction
-      await this.setCacheEntry(resource);
+      await this.setCacheEntry(resource, { force: true });
     }
 
     return this.authorizeBinarySecurityContext(resource);
@@ -1151,7 +1162,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     // Skip writing AuditEvents to cache, since they are written in high volume but are seldom read by ID
     if (resource.resourceType !== 'AuditEvent') {
-      await this.setCacheEntry(resource);
+      await this.setCacheEntry(resource, { force: this.isCacheOnly(resource) });
     } else if (!create) {
       // Explicitly remove old AuditEvents from cache on update, to prevent stale reads from cache
       await this.deleteCacheEntry(resource.resourceType, resource.id);
@@ -1546,11 +1557,11 @@ export class Repository extends FhirRepository implements Disposable {
     const projectId = this.isSuperAdmin() ? undefined : this.currentProject()?.id;
     const deletedIds = await this.withTransaction<string[]>(
       async (txRepo) => {
-        const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id');
+        const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id').returning('projectId');
         if (projectId) {
           deleteQuery.where('projectId', '=', projectId);
         }
-        const deleteResult = await txRepo.sqlWrite<{ id: string }>(deleteQuery, resourceType, {
+        const deleteResult = await txRepo.sqlWrite<{ id: string; projectId: string }>(deleteQuery, resourceType, {
           source: 'repo.expungeResources.resource',
         });
         if (deleteResult.length === 0) {
@@ -1575,6 +1586,31 @@ export class Repository extends FhirRepository implements Disposable {
           historyDelete.returning('id').returning('versionId');
         }
         const historyResult = await txRepo.sqlWrite<{ id: string; versionId?: string }>(historyDelete, resourceType);
+
+        const lastUpdated = new Date();
+        await txRepo.sqlWrite(
+          new InsertQuery(
+            resourceType + '_History',
+            deleteResult.map((res) => {
+              const versionId = txRepo.generateId();
+              return {
+                id: res.id,
+                versionId,
+                lastUpdated,
+                content: buildExpungedHistoryContent(
+                  resourceType,
+                  res.id,
+                  versionId,
+                  lastUpdated,
+                  txRepo.getAuthor(),
+                  res.projectId
+                ),
+              };
+            })
+          ),
+          resourceType,
+          { source: 'repo.expungeResources.tombstone' }
+        );
 
         await txRepo.postCommit(() => txRepo.deleteCacheEntries(resourceType, deletedIds));
 
@@ -1719,11 +1755,21 @@ export class Repository extends FhirRepository implements Disposable {
    * @param interaction - The FHIR interaction being performed.
    */
   addSecurityFilters(builder: SelectQuery, resourceType: string, interaction: AccessPolicyInteraction): void {
-    // No compartment restrictions for admins.
-    if (!this.isSuperAdmin()) {
-      this.addProjectFilters(builder, resourceType);
-    }
+    this.addProjectFilters(builder, resourceType);
     this.addAccessPolicyFilters(builder, resourceType, interaction);
+  }
+
+  /**
+   * Returns the project IDs that searches for the given resource type are restricted to.
+   * @param resourceType - The resource type being searched.
+   * @returns The project IDs, or undefined if searches are not restricted by project.
+   */
+  getSearchProjectIds(resourceType: string): string[] | undefined {
+    // No compartment restrictions for admins.
+    if (this.isSuperAdmin()) {
+      return undefined;
+    }
+    return this.getPermittedProjectIds(resourceType);
   }
 
   /**
@@ -1741,7 +1787,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param resourceType - The resource type being searched.
    */
   private addProjectFilters(builder: SelectQuery, resourceType: string): void {
-    const projectIds = this.getPermittedProjectIds(resourceType);
+    const projectIds = this.getSearchProjectIds(resourceType);
     if (projectIds) {
       builder.where('projectId', 'IN', projectIds);
     }
@@ -2363,6 +2409,10 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
+      const profile = this.currentProject()?.defaultProfile?.find((o) => o.resourceType === 'AuditEvent')?.profile;
+      if (profile?.length) {
+        auditEvent.meta = { ...auditEvent.meta, profile };
+      }
       // Clone the repository to obtain a separate RepositoryConnection for two reasons:
       // 1. the un-awaited save must outlive the current repo's connection scope, which is marked 'ended'
       // and closed/unusable as soon as post-commit callbacks returns (before the un-awaited save completes).
@@ -2370,11 +2420,21 @@ export class Repository extends FhirRepository implements Disposable {
       // mainline transactions started on the current Repository and cause one of them to fail.
       // To reduce AuditEvent overhead, we could consider further decoupling AuditEvent saves from request processing
       // by pushing them onto an in-process queue (or BullMQ) and drain/write them to the DB on an interval.
-      const saveRepo = this.clone({ skipBackgroundJobs: true });
-      saveRepo
-        .updateResourceImpl(auditEvent, true)
+      const accountsRepo = this.clone();
+      const saveRepo = this.clone({ skipBackgroundJobs: true }).getSystemRepo();
+      accountsRepo
+        .getAccounts(undefined, auditEvent as WithId<AuditEvent>)
+        .then((accounts) => {
+          if (accounts) {
+            auditEvent.meta = { ...auditEvent.meta, account: accounts[0], accounts };
+          }
+          return saveRepo.updateResourceImpl(auditEvent, true);
+        })
         .catch((err) => getLogger().error('Failed to save AuditEvent', err))
-        .finally(() => saveRepo[Symbol.dispose]());
+        .finally(() => {
+          accountsRepo[Symbol.dispose]();
+          saveRepo[Symbol.dispose]();
+        });
     }
   }
 
@@ -2496,7 +2556,8 @@ export class Repository extends FhirRepository implements Disposable {
       return undefined;
     }
     this.recordCacheAccess('read', resourceType, 'repo.getCacheEntry');
-    return getResourceCacheEntry<T>(resourceType, id);
+    const entry = await getResourceCacheEntry<T>(resourceType, id);
+    return this.cacheEntryOnShard(entry);
   }
 
   /**
@@ -2511,25 +2572,44 @@ export class Repository extends FhirRepository implements Disposable {
     }
 
     this.recordCacheAccess('read', getResourceTypesFromReferences(references), 'repo.getCacheEntries');
-    return getResourceCacheEntries(references);
+    const entries = await getResourceCacheEntries(references);
+    for (let i = 0; i < entries.length; i++) {
+      entries[i] = this.cacheEntryOnShard(entries[i]);
+    }
+    return entries;
+  }
+
+  /**
+   * An entry cached by a repository on another shard is a copy this repository's database may not hold,
+   * so reads treat it as a miss.
+   * @param entry - The cache entry.
+   * @returns The entry if it was cached from the shard this repository reads its resource type from.
+   */
+  private cacheEntryOnShard<T extends Resource>(entry: CacheEntry<T> | undefined): CacheEntry<T> | undefined {
+    if (entry) {
+      return entry.shardId === getResourceTypeShardId(this.shardId, entry.resource.resourceType) ? entry : undefined;
+    }
+    return undefined;
   }
 
   /**
    * Writes a cache entry to Redis.
    * @param resource - The resource to cache.
+   * @param options - Optional write options.
+   * @param options.force - Create the entry even if it does not already exist.
    */
-  private async setCacheEntry(resource: WithId<Resource>): Promise<void> {
+  private async setCacheEntry(resource: WithId<Resource>, options?: { force?: boolean }): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.inOwnTransaction()) {
       const cachedResource = deepClone(resource);
       await this.postCommit(() => {
-        return this.setCacheEntry(cachedResource);
+        return this.setCacheEntry(cachedResource, options);
       });
       return;
     }
 
     this.recordCacheAccess('write', resource.resourceType, 'repo.setCacheEntry');
-    await setResourceCacheEntry(resource);
+    await setResourceCacheEntry(resource, getResourceTypeShardId(this.shardId, resource.resourceType), options);
   }
 
   /**

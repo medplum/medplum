@@ -1,47 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getExtension, Operator } from '@medplum/core';
-import type { AsyncJob, Parameters, ProjectMembership, Reference, Subscription } from '@medplum/fhirtypes';
+import { getExtension } from '@medplum/core';
+import type { AsyncJob, Parameters, Subscription } from '@medplum/fhirtypes';
 import type { ConnectionOptions, Job, Processor, Queue, QueueOptions, Worker, WorkerOptions } from 'bullmq';
 import { DelayedError } from 'bullmq';
 import * as semver from 'semver';
-import type { MedplumBullmqConfig, MedplumServerConfig, WorkerName } from '../config/types';
+import type { MedplumBullmqConfig, WorkerName } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import type { Repository } from '../fhir/repo';
-import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { addToUpDownCounter, BASE_METRIC_OPTIONS, getQueueMetricName, incrementCounter } from '../otel/otel';
 import { reconnectOnError } from '../redis';
 import { getServerVersion } from '../util/version';
-
-/**
- *
- * @param projectId - The ID of the project to search in.
- * @param profile - The profile to find a project membership for.
- * @throws An error whenever there are multiple project memberships for the given user.
- * @returns A promise that resolves to a `ProjectMembership` or `undefined` if no `ProjectMembership` found.
- */
-export function findProjectMembership(
-  projectId: string,
-  profile: Reference
-): Promise<WithId<ProjectMembership> | undefined> {
-  const systemRepo = getGlobalSystemRepo();
-  return systemRepo.searchOne<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [
-      {
-        code: 'project',
-        operator: Operator.EQUALS,
-        value: `Project/${projectId}`,
-      },
-      {
-        code: 'profile',
-        operator: Operator.EQUALS,
-        value: profile.reference as string,
-      },
-    ],
-  });
-}
 
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
   const successCodes = getExtension(
@@ -124,7 +95,7 @@ export interface WorkerInitializerOptions {
 }
 
 export type WorkerInitializer = (
-  config: MedplumServerConfig,
+  config: ServerConfig,
   options?: WorkerInitializerOptions
 ) => { queue: Queue | undefined; worker: Worker | undefined; name: string };
 
@@ -349,7 +320,7 @@ export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<n
  * @returns The merged BullMQ config for the worker.
  */
 export function getMedplumBullmqConfig(
-  config: MedplumServerConfig,
+  config: ServerConfig,
   workerName: WorkerName,
   workerDefaults?: Partial<MedplumBullmqConfig>
 ): Partial<MedplumBullmqConfig> {
@@ -371,7 +342,7 @@ export function getMedplumBullmqConfig(
  * @returns The merged `Worker` options for the worker.
  */
 export function getWorkerBullmqConfig(
-  config: MedplumServerConfig,
+  config: ServerConfig,
   workerName: WorkerName,
   queueOptions: QueueOptions,
   workerDefaults?: Partial<MedplumBullmqConfig>
@@ -382,11 +353,11 @@ export function getWorkerBullmqConfig(
   return { ...queueOptions, ...getMedplumBullmqConfig(config, workerName, workerDefaults) };
 }
 
-export function getBullmqRedisConnectionOptions(config: MedplumServerConfig): ConnectionOptions {
+export function getBullmqRedisConnectionOptions(config: ServerConfig): ConnectionOptions {
   return { ...(config.backgroundJobsRedis ?? config.redis), reconnectOnError };
 }
 
-export function defaultQueueOptions(config: MedplumServerConfig): QueueOptions {
+export function defaultQueueOptions(config: ServerConfig): QueueOptions {
   return {
     connection: getBullmqRedisConnectionOptions(config),
     defaultJobOptions: {

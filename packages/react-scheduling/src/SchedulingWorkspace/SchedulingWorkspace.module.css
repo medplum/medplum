@@ -23,19 +23,31 @@
   overflow-x: auto;
 }
 
-/* Shrink to fit, so the calendar's own 100% height does not push the notice out of view. */
+/* Shrink to fit, so the calendar's own 100% height does not push the footer out of view. */
 .multiCalendar {
   flex: 1;
   min-height: 0;
 }
 
-.timezoneNotice {
+.footer {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-md);
   margin-top: var(--mantine-spacing-xs);
 }
 
-/* The booking form, only present while a day is being booked. */
-.bookingPane {
+/* At the right, whether or not the timezone notice is on show at the left. */
+.legend {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/*
+ * The pane beside the calendar, holding either the booking form or the details of
+ * the appointment that is open. Never both — one takes the other's place.
+ */
+.pane {
   flex-shrink: 0;
   width: 320px;
   display: flex;
@@ -43,7 +55,7 @@
   overflow-y: auto;
 }
 
-.bookingPaneWide {
+.paneWide {
   width: 760px;
 }
 

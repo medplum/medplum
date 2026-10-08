@@ -11,6 +11,7 @@ import {
   isString,
   OperationOutcomeError,
   projectAdminResourceTypes,
+  readInteractions,
   resolveId,
 } from '@medplum/core';
 import type {
@@ -347,6 +348,10 @@ function applyProjectAdminAccessPolicy(
     // Project admins can edit their own project
     accessPolicy.resource.push(
       {
+        resourceType: 'AccessPolicy',
+        criteria: `AccessPolicy?_project=${resolveId(membership.project)}`,
+      },
+      {
         // Project admins have full access to their own project, except for a few sensitive fields
         resourceType: 'Project',
         criteria: `Project?_id=${resolveId(membership.project)}`,
@@ -394,8 +399,18 @@ function applyProjectAdminAccessPolicy(
       }
     );
   } else {
-    // Remove any references to project admin resource types
-    accessPolicy.resource = accessPolicy.resource?.filter((r) => !projectAdminResourceTypes.includes(r.resourceType));
+    // Preserve policy reads, including wildcard grants, but never grant non-admins policy writes.
+    const policyReadRules = accessPolicy.resource
+      .filter((r) => r.resourceType === 'AccessPolicy' || r.resourceType === '*')
+      .map((r) => ({
+        ...r,
+        resourceType: 'AccessPolicy',
+        criteria: r.criteria?.replace(/^\*\?/, 'AccessPolicy?'),
+        interaction: r.interaction?.filter((i) => readInteractions.includes(i)) ?? [...readInteractions],
+      }));
+
+    accessPolicy.resource = accessPolicy.resource.filter((r) => !projectAdminResourceTypes.includes(r.resourceType));
+    accessPolicy.resource.push(...policyReadRules);
   }
 
   return accessPolicy;

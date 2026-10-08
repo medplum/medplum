@@ -10,7 +10,10 @@ import {
   IconBracketsContain,
   IconBucket,
   IconBucketOff,
-  IconCalendar,
+  IconCalendarDue,
+  IconCalendarMonth,
+  IconCalendarTime,
+  IconCheck,
   IconEqual,
   IconEqualNot,
   IconMathGreater,
@@ -20,7 +23,9 @@ import {
   IconSortDescending,
   IconX,
 } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { Fragment } from 'react';
+import classes from '../SearchControl/SearchControl.module.css';
 import {
   addLastMonthFilter,
   addMissingFilter,
@@ -43,6 +48,16 @@ export interface SearchPopupMenuProps {
   readonly onChange: (definition: SearchRequest) => void;
 }
 
+const ICON_SIZE = 16;
+const ICON_COLOR = 'var(--mantine-color-dimmed)';
+const CHECK = <IconCheck size={ICON_SIZE} color="var(--mantine-color-blue-6)" />;
+
+/**
+ * Column header dropdown: sort directions, filter prompts, relative date shortcuts (for dates),
+ * missing / not missing, and clear filters for the column's search parameter.
+ * @param props - The popup menu props.
+ * @returns The menu dropdown, or null when the column is not backed by a search parameter.
+ */
 export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null {
   if (!props.searchParams) {
     return null;
@@ -64,7 +79,6 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
     props.onChange(definition);
   }
 
-  // If there is only one search parameter, then show it directly
   if (props.searchParams.length === 1) {
     return (
       <SearchParameterSubMenu
@@ -78,9 +92,8 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
     );
   }
 
-  // Otherwise, show a menu, with each search parameter as a sub menu
   return (
-    <Menu.Dropdown>
+    <Menu.Dropdown className={classes.menuDropdown}>
       {props.searchParams.map((searchParam) => (
         <Menu.Item key={searchParam.code}>{buildFieldNameString(searchParam.code)}</Menu.Item>
       ))}
@@ -117,97 +130,159 @@ function SearchParameterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   }
 }
 
+interface MenuEntryProps {
+  readonly icon: ReactNode;
+  readonly checked?: boolean;
+  readonly onClick: () => void;
+  readonly children: ReactNode;
+}
+
+function MenuEntry(props: MenuEntryProps): JSX.Element {
+  return (
+    <Menu.Item leftSection={props.icon} rightSection={props.checked ? CHECK : null} onClick={props.onClick}>
+      {props.children}
+    </Menu.Item>
+  );
+}
+
+interface SortItemsProps extends SearchPopupSubMenuProps {
+  readonly ascLabel: string;
+  readonly descLabel: string;
+}
+
+function SortItems(props: SortItemsProps): JSX.Element {
+  const { searchParam } = props;
+  const isSelected = (descending: boolean): boolean =>
+    !!props.search.sortRules?.some((rule) => rule.code === searchParam.code && !!rule.descending === descending);
+  return (
+    <>
+      <MenuEntry
+        icon={<IconSortAscending size={ICON_SIZE} color={ICON_COLOR} />}
+        checked={isSelected(false)}
+        onClick={() => props.onSort(searchParam, false)}
+      >
+        {props.ascLabel}
+      </MenuEntry>
+      <MenuEntry
+        icon={<IconSortDescending size={ICON_SIZE} color={ICON_COLOR} />}
+        checked={isSelected(true)}
+        onClick={() => props.onSort(searchParam, true)}
+      >
+        {props.descLabel}
+      </MenuEntry>
+      <Menu.Divider />
+    </>
+  );
+}
+
+interface EqualityItemsProps extends SearchPopupSubMenuProps {
+  readonly notOperator: Operator;
+}
+
+function EqualityItems(props: EqualityItemsProps): JSX.Element {
+  const { searchParam } = props;
+  return (
+    <>
+      <MenuEntry
+        icon={<IconEqual size={ICON_SIZE} color={ICON_COLOR} />}
+        onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}
+      >
+        Equals...
+      </MenuEntry>
+      <MenuEntry
+        icon={<IconEqualNot size={ICON_SIZE} color={ICON_COLOR} />}
+        onClick={() => props.onPrompt(searchParam, props.notOperator)}
+      >
+        Does not equal...
+      </MenuEntry>
+    </>
+  );
+}
+
+type RelativeDateOption = {
+  readonly label: string;
+  readonly Icon: typeof IconCalendarDue;
+  readonly apply: (search: SearchRequest, code: string) => SearchRequest;
+  /** The end is "now" at the time it was picked, so only the start is compared. */
+  readonly openEnded?: boolean;
+};
+
+const RELATIVE_DATE_GROUPS: RelativeDateOption[][] = [
+  [
+    { label: 'Tomorrow', Icon: IconCalendarDue, apply: addTomorrowFilter },
+    { label: 'Today', Icon: IconCalendarDue, apply: addTodayFilter },
+    { label: 'Yesterday', Icon: IconCalendarDue, apply: addYesterdayFilter },
+    { label: 'Next 24 Hours', Icon: IconCalendarTime, apply: addNext24HoursFilter },
+  ],
+  [
+    { label: 'Next Month', Icon: IconCalendarMonth, apply: addNextMonthFilter },
+    { label: 'This Month', Icon: IconCalendarMonth, apply: addThisMonthFilter },
+    { label: 'Last Month', Icon: IconCalendarMonth, apply: addLastMonthFilter },
+  ],
+  [{ label: 'Year to date', Icon: IconCalendarTime, apply: addYearToDateFilter, openEnded: true }],
+];
+
+/**
+ * Returns true when the column's filters are exactly the start/end pair this relative date
+ * produces today.
+ * @param option - The relative date option.
+ * @param search - The current search.
+ * @param code - The column's search parameter code.
+ * @returns True if the option is the column's current filter.
+ */
+function isRelativeDateSelected(option: RelativeDateOption, search: SearchRequest, code: string): boolean {
+  const actual = (search.filters ?? []).filter((filter) => filter.code === code);
+  const expected = option.apply({ resourceType: search.resourceType }, code).filters ?? [];
+  if (actual.length !== expected.length) {
+    return false;
+  }
+  return expected.every((filter, i) => {
+    const matchesValue = option.openEnded && i > 0 ? true : actual[i].value === filter.value;
+    return actual[i].operator === filter.operator && matchesValue;
+  });
+}
+
 function DateFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   const { searchParam } = props;
   const code = searchParam.code;
   return (
-    <Menu.Dropdown>
-      <Menu.Item leftSection={<IconSortAscending size={14} />} onClick={() => props.onSort(searchParam, false)}>
-        Sort Oldest to Newest
-      </Menu.Item>
-      <Menu.Item leftSection={<IconSortDescending size={14} />} onClick={() => props.onSort(searchParam, true)}>
-        Sort Newest to Oldest
-      </Menu.Item>
+    <Menu.Dropdown className={classes.menuDropdown}>
+      <SortItems {...props} ascLabel="Sort Oldest to Newest" descLabel="Sort Newest to Oldest" />
+      <EqualityItems {...props} notOperator={Operator.NOT_EQUALS} />
       <Menu.Divider />
-      <Menu.Item leftSection={<IconEqual size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
-        Equals...
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconEqualNot size={14} />}
-        onClick={() => props.onPrompt(searchParam, Operator.NOT_EQUALS)}
-      >
-        Does not equal...
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item
-        leftSection={<IconMathLower size={14} />}
+      <MenuEntry
+        icon={<IconMathLower size={ICON_SIZE} color={ICON_COLOR} />}
         onClick={() => props.onPrompt(searchParam, Operator.ENDS_BEFORE)}
       >
         Before...
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconMathGreater size={14} />}
+      </MenuEntry>
+      <MenuEntry
+        icon={<IconMathGreater size={ICON_SIZE} color={ICON_COLOR} />}
         onClick={() => props.onPrompt(searchParam, Operator.STARTS_AFTER)}
       >
         After...
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconBracketsContain size={14} />}
+      </MenuEntry>
+      <MenuEntry
+        icon={<IconBracketsContain size={ICON_SIZE} color={ICON_COLOR} />}
         onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}
       >
         Between...
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item
-        leftSection={<IconCalendar size={14} />}
-        onClick={() => props.onChange(addTomorrowFilter(props.search, code))}
-      >
-        Tomorrow
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconCalendar size={14} />}
-        onClick={() => props.onChange(addTodayFilter(props.search, code))}
-      >
-        Today
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconCalendar size={14} />}
-        onClick={() => props.onChange(addYesterdayFilter(props.search, code))}
-      >
-        Yesterday
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconCalendar size={14} />}
-        onClick={() => props.onChange(addNext24HoursFilter(props.search, code))}
-      >
-        Next 24 Hours
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item
-        leftSection={<IconCalendar size={14} />}
-        onClick={() => props.onChange(addNextMonthFilter(props.search, code))}
-      >
-        Next Month
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconCalendar size={14} />}
-        onClick={() => props.onChange(addThisMonthFilter(props.search, code))}
-      >
-        This Month
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconCalendar size={14} />}
-        onClick={() => props.onChange(addLastMonthFilter(props.search, code))}
-      >
-        Last Month
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item
-        leftSection={<IconCalendar size={14} />}
-        onClick={() => props.onChange(addYearToDateFilter(props.search, code))}
-      >
-        Year to date
-      </Menu.Item>
+      </MenuEntry>
+      {RELATIVE_DATE_GROUPS.map((group) => (
+        <Fragment key={group[0].label}>
+          <Menu.Divider />
+          {group.map((option) => (
+            <MenuEntry
+              key={option.label}
+              icon={<option.Icon size={ICON_SIZE} color={ICON_COLOR} />}
+              checked={isRelativeDateSelected(option, props.search, code)}
+              onClick={() => props.onChange(option.apply(props.search, code))}
+            >
+              {option.label}
+            </MenuEntry>
+          ))}
+        </Fragment>
+      ))}
       <CommonMenuItems {...props} />
     </Menu.Dropdown>
   );
@@ -216,63 +291,43 @@ function DateFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
 function NumericFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   const { searchParam } = props;
   return (
-    <Menu.Dropdown>
-      <Menu.Item leftSection={<IconSortAscending size={14} />} onClick={() => props.onSort(searchParam, false)}>
-        Sort Smallest to Largest
-      </Menu.Item>
-      <Menu.Item leftSection={<IconSortDescending size={14} />} onClick={() => props.onSort(searchParam, true)}>
-        Sort Largest to Smallest
-      </Menu.Item>
+    <Menu.Dropdown className={classes.menuDropdown}>
+      <SortItems {...props} ascLabel="Sort Smallest to Largest" descLabel="Sort Largest to Smallest" />
+      <EqualityItems {...props} notOperator={Operator.NOT_EQUALS} />
       <Menu.Divider />
-      <Menu.Item leftSection={<IconEqual size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
-        Equals...
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconEqualNot size={14} />}
-        onClick={() => props.onPrompt(searchParam, Operator.NOT_EQUALS)}
-      >
-        Does not equal...
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item
-        leftSection={<IconMathGreater size={14} />}
+      <MenuEntry
+        icon={<IconMathGreater size={ICON_SIZE} color={ICON_COLOR} />}
         onClick={() => props.onPrompt(searchParam, Operator.GREATER_THAN)}
       >
         Greater than...
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconSettings size={14} />}
+      </MenuEntry>
+      <MenuEntry
+        icon={<IconSettings size={ICON_SIZE} color={ICON_COLOR} />}
         onClick={() => props.onPrompt(searchParam, Operator.GREATER_THAN_OR_EQUALS)}
       >
         Greater than or equal to...
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconMathLower size={14} />}
+      </MenuEntry>
+      <MenuEntry
+        icon={<IconMathLower size={ICON_SIZE} color={ICON_COLOR} />}
         onClick={() => props.onPrompt(searchParam, Operator.LESS_THAN)}
       >
         Less than...
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconSettings size={14} />}
+      </MenuEntry>
+      <MenuEntry
+        icon={<IconSettings size={ICON_SIZE} color={ICON_COLOR} />}
         onClick={() => props.onPrompt(searchParam, Operator.LESS_THAN_OR_EQUALS)}
       >
         Less than or equal to...
-      </Menu.Item>
+      </MenuEntry>
       <CommonMenuItems {...props} />
     </Menu.Dropdown>
   );
 }
 
 function ReferenceFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
-  const { searchParam } = props;
   return (
-    <Menu.Dropdown>
-      <Menu.Item leftSection={<IconEqual size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
-        Equals...
-      </Menu.Item>
-      <Menu.Item leftSection={<IconEqualNot size={14} />} onClick={() => props.onPrompt(searchParam, Operator.NOT)}>
-        Does not equal...
-      </Menu.Item>
+    <Menu.Dropdown className={classes.menuDropdown}>
+      <EqualityItems {...props} notOperator={Operator.NOT} />
       <CommonMenuItems {...props} />
     </Menu.Dropdown>
   );
@@ -281,27 +336,22 @@ function ReferenceFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
 function TextFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   const { searchParam } = props;
   return (
-    <Menu.Dropdown>
-      <Menu.Item leftSection={<IconSortAscending size={14} />} onClick={() => props.onSort(searchParam, false)}>
-        Sort A to Z
-      </Menu.Item>
-      <Menu.Item leftSection={<IconSortDescending size={14} />} onClick={() => props.onSort(searchParam, true)}>
-        Sort Z to A
-      </Menu.Item>
+    <Menu.Dropdown className={classes.menuDropdown}>
+      <SortItems {...props} ascLabel="Sort A to Z" descLabel="Sort Z to A" />
+      <EqualityItems {...props} notOperator={Operator.NOT} />
       <Menu.Divider />
-      <Menu.Item leftSection={<IconEqual size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
-        Equals...
-      </Menu.Item>
-      <Menu.Item leftSection={<IconEqualNot size={14} />} onClick={() => props.onPrompt(searchParam, Operator.NOT)}>
-        Does not equal...
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item leftSection={<IconBucket size={14} />} onClick={() => props.onPrompt(searchParam, Operator.CONTAINS)}>
+      <MenuEntry
+        icon={<IconBucket size={ICON_SIZE} color={ICON_COLOR} />}
+        onClick={() => props.onPrompt(searchParam, Operator.CONTAINS)}
+      >
         Contains...
-      </Menu.Item>
-      <Menu.Item leftSection={<IconBucketOff size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
+      </MenuEntry>
+      <MenuEntry
+        icon={<IconBucketOff size={ICON_SIZE} color={ICON_COLOR} />}
+        onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}
+      >
         Does not contain...
-      </Menu.Item>
+      </MenuEntry>
       <CommonMenuItems {...props} />
     </Menu.Dropdown>
   );
@@ -310,32 +360,24 @@ function TextFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
 function TokenFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   const { searchParam } = props;
   return (
-    <Menu.Dropdown>
-      <Menu.Item leftSection={<IconEqual size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
-        Equals...
-      </Menu.Item>
-      <Menu.Item leftSection={<IconEqualNot size={14} />} onClick={() => props.onPrompt(searchParam, Operator.NOT)}>
-        Does not equal...
-      </Menu.Item>
+    <Menu.Dropdown className={classes.menuDropdown}>
+      <EqualityItems {...props} notOperator={Operator.NOT} />
       <Menu.Divider />
-      <Menu.Item leftSection={<IconEqual size={14} />} onClick={() => props.onPrompt(searchParam, Operator.TEXT)}>
+      <MenuEntry
+        icon={<IconEqual size={ICON_SIZE} color={ICON_COLOR} />}
+        onClick={() => props.onPrompt(searchParam, Operator.TEXT)}
+      >
         Text contains...
-      </Menu.Item>
+      </MenuEntry>
       <CommonMenuItems {...props} />
     </Menu.Dropdown>
   );
 }
 
 function UriFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
-  const { searchParam } = props;
   return (
-    <Menu.Dropdown>
-      <Menu.Item leftSection={<IconEqual size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
-        Equals...
-      </Menu.Item>
-      <Menu.Item leftSection={<IconEqualNot size={14} />} onClick={() => props.onPrompt(searchParam, Operator.NOT)}>
-        Does not equal...
-      </Menu.Item>
+    <Menu.Dropdown className={classes.menuDropdown}>
+      <EqualityItems {...props} notOperator={Operator.NOT} />
       <CommonMenuItems {...props} />
     </Menu.Dropdown>
   );
@@ -347,22 +389,22 @@ function CommonMenuItems(props: SearchPopupSubMenuProps): JSX.Element {
   return (
     <>
       <Menu.Divider />
-      <Menu.Item
-        leftSection={<IconBleach size={14} />}
+      <MenuEntry
+        icon={<IconBleach size={ICON_SIZE} color={ICON_COLOR} />}
         onClick={() => props.onChange(addMissingFilter(props.search, code))}
       >
         Missing
-      </Menu.Item>
-      <Menu.Item
-        leftSection={<IconBleachOff size={14} />}
+      </MenuEntry>
+      <MenuEntry
+        icon={<IconBleachOff size={ICON_SIZE} color={ICON_COLOR} />}
         onClick={() => props.onChange(addMissingFilter(props.search, code, false))}
       >
         Not missing
-      </Menu.Item>
+      </MenuEntry>
       <Menu.Divider />
-      <Menu.Item leftSection={<IconX size={14} />} onClick={() => props.onClear(searchParam)}>
+      <MenuEntry icon={<IconX size={ICON_SIZE} color={ICON_COLOR} />} onClick={() => props.onClear(searchParam)}>
         Clear filters
-      </Menu.Item>
+      </MenuEntry>
     </>
   );
 }

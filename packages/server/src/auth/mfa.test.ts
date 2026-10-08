@@ -14,12 +14,13 @@ import { authenticator } from 'otplib';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { MFA_LOGIN_EXPIRATION_MS, MFA_USER_ATTEMPT_LIMIT } from '../constants';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { rotateLoginRefreshSecret } from '../oauth/token';
 import { withTestContext } from '../test.setup';
 import { verifyConnectedFactor } from './mfa';
 import { registerNew } from './register';
-import { getEnrolledMfaMethods } from './utils';
+import { clearMfaEmailCode, getEnrolledMfaMethods, sendMfaEmailCode } from './utils';
 
 const app = express();
 
@@ -111,6 +112,22 @@ async function enrollEmailMfa(accessToken: string): Promise<void> {
   if (res.status !== 200) {
     throw new Error('Failed to enroll in email MFA: ' + JSON.stringify(res.body));
   }
+}
+
+/**
+ * Enrolls the authenticated user in TOTP MFA.
+ * @param accessToken - The user's access token.
+ * @returns The TOTP secret.
+ */
+async function enrollTotpMfa(accessToken: string): Promise<string> {
+  const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+  const secret = new URL(status.body.enrollUri).searchParams.get('secret') as string;
+  await request(app)
+    .post('/auth/mfa/enroll')
+    .set('Authorization', `Bearer ${accessToken}`)
+    .send({ token: authenticator.generate(secret) })
+    .expect(200);
+  return secret;
 }
 
 describe('MFA', () => {
@@ -260,6 +277,80 @@ describe('MFA', () => {
     expect(res13).toHaveStatus(200);
     expect(res13.body.login).toBeDefined();
     expect(res13.body.code).toBeDefined();
+  });
+
+  test('Rejects an expired MFA login', async () => {
+    const email = `expired-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const { accessToken } = await withTestContext(() =>
+      registerNew({ firstName: 'Expired', lastName: 'MFA', projectName: `Expired ${randomUUID()}`, email, password })
+    );
+    const secret = await enrollTotpMfa(accessToken);
+
+    const loginRes = await request(app).post('/auth/login').send({ email, password, scope: 'openid' });
+    await withTestContext(async () => {
+      const systemRepo = getGlobalSystemRepo();
+      const login = await systemRepo.readResource<Login>('Login', loginRes.body.login);
+      await systemRepo.updateResource<Login>({
+        ...login,
+        authTime: new Date(Date.now() - MFA_LOGIN_EXPIRATION_MS).toISOString(),
+      });
+    });
+
+    const verifyRes = await request(app)
+      .post('/auth/mfa/verify')
+      .send({ login: loginRes.body.login, token: authenticator.generate(secret) });
+    expect(verifyRes).toHaveStatus(400);
+    expect(verifyRes.body).toMatchObject(badRequest('Login expired'));
+  });
+
+  test('Revokes a login after five failed MFA attempts', async () => {
+    const email = `limited-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const { accessToken } = await withTestContext(() =>
+      registerNew({ firstName: 'Limited', lastName: 'MFA', projectName: `Limited ${randomUUID()}`, email, password })
+    );
+    await enrollTotpMfa(accessToken);
+    const loginRes = await request(app).post('/auth/login').send({ email, password, scope: 'openid' });
+
+    for (let i = 0; i < 5; i++) {
+      const res = await request(app)
+        .post('/auth/mfa/verify')
+        .send({ login: loginRes.body.login, token: 'INVALID_TOKEN' });
+      expect(res).toHaveStatus(400);
+    }
+
+    const login = await getGlobalSystemRepo().readResource<Login>('Login', loginRes.body.login);
+    expect(login.revoked).toBe(true);
+  });
+
+  test("Limits MFA failures across a user's logins", async () => {
+    const email = `user-limited-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'User Limited',
+        lastName: 'MFA',
+        projectName: `User Limited ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+    await enrollTotpMfa(accessToken);
+
+    for (let i = 0; i < MFA_USER_ATTEMPT_LIMIT; i++) {
+      const loginRes = await request(app).post('/auth/login').send({ email, password, scope: 'openid' });
+      const res = await request(app)
+        .post('/auth/mfa/verify')
+        .send({ login: loginRes.body.login, token: 'INVALID_TOKEN' });
+      expect(res).toHaveStatus(400);
+    }
+
+    const loginRes = await request(app).post('/auth/login').send({ email, password, scope: 'openid' });
+    const blocked = await request(app)
+      .post('/auth/mfa/verify')
+      .send({ login: loginRes.body.login, token: 'INVALID_TOKEN' });
+    expect(blocked).toHaveStatus(429);
   });
 
   test('Disable end-to-end', async () => {
@@ -572,11 +663,14 @@ describe('MFA', () => {
     // ...meanwhile the access token refreshes, rotating the refresh secret from
     // the stale snapshot. The rotation must not clobber the freshly-set code.
     const rotated = await withTestContext(() =>
-      rotateLoginRefreshSecret(staleLogin, { remoteAddress: '5.5.5.5', userAgent: 'vitest' })
+      rotateLoginRefreshSecret(staleLogin, staleLogin.refreshSecret as string, {
+        remoteAddress: '5.5.5.5',
+        userAgent: 'vitest',
+      })
     );
-    expect(rotated.refreshSecret).toBeDefined();
-    expect(rotated.refreshSecret).not.toBe(staleLogin.refreshSecret);
-    expect(rotated.emailMfa).toBeDefined();
+    expect(rotated?.refreshSecret).toBeDefined();
+    expect(rotated?.refreshSecret).not.toBe(staleLogin.refreshSecret);
+    expect(rotated?.emailMfa).toBeDefined();
 
     // The user submits the emailed code and enrollment completes.
     const enrollRes = await request(app)
@@ -586,6 +680,42 @@ describe('MFA', () => {
       .send({ method: 'email', token: code });
     expect(enrollRes).toHaveStatus(200);
     expect(enrollRes.body).toMatchObject(allOk);
+  });
+
+  // The reverse of the test above: the email-MFA writes must not write back a
+  // stale login either, which would restore a superseded refresh secret and
+  // make the client's next refresh look like token reuse.
+  test('Email MFA writes do not revert a concurrent refresh-secret rotation', async () => {
+    const { user, project, login } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Email',
+        lastName: 'Stale',
+        projectName: `Email Stale Project ${randomUUID()}`,
+        email: `email-stale${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const systemRepo = getGlobalSystemRepo();
+
+    // Sending a code from a snapshot that predates a rotation keeps the rotated secret
+    const rotated = await withTestContext(() => rotateLoginRefreshSecret(login, login.refreshSecret as string));
+    expect(rotated?.refreshSecret).toBeDefined();
+    await withTestContext(() => sendMfaEmailCode(login, user, project));
+
+    const afterSend = await systemRepo.readResource<Login>('Login', login.id);
+    expect(afterSend.emailMfa).toBeDefined();
+    expect(afterSend.refreshSecret).toStrictEqual(rotated?.refreshSecret);
+
+    // Clearing the code from a snapshot that predates a rotation keeps the rotated secret
+    const rotatedAgain = await withTestContext(() =>
+      rotateLoginRefreshSecret(afterSend, afterSend.refreshSecret as string)
+    );
+    await withTestContext(() => clearMfaEmailCode(afterSend));
+
+    const afterClear = await systemRepo.readResource<Login>('Login', login.id);
+    expect(afterClear.emailMfa).toBeUndefined();
+    expect(afterClear.refreshSecret).toStrictEqual(rotatedAgain?.refreshSecret);
+    expect(afterClear.previousRefreshSecret).toStrictEqual(rotated?.refreshSecret);
   });
 
   test('Verifying email code marks the user emailVerified', async () => {

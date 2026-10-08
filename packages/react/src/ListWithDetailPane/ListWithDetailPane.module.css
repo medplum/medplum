@@ -1,0 +1,141 @@
+.container {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--mantine-color-body);
+  /* Clips the list while its width animates between open and collapsed. */
+  overflow: hidden;
+  transition:
+    width 200ms ease,
+    opacity 200ms ease;
+}
+
+.shell,
+.detailBorder {
+  border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+/* Collapsed sidebar (`listVisible` false). `visibility` flips only after the
+   width/opacity animation ends (via its 200ms transition delay), which also
+   drops the hidden list's links and buttons out of the tab order. On expand the
+   base `.shell` transition applies, so visibility returns immediately. */
+.shellHidden {
+  opacity: 0;
+  visibility: hidden;
+  border-right: none;
+  transition:
+    width 200ms ease,
+    opacity 200ms ease,
+    visibility 0s 200ms;
+}
+
+/* Inset the rows from the sidebar edges. Each item's rounded hover/selected
+   highlight (`.item`) would otherwise bleed to the pane border and lose its
+   corners; this padding gives the highlight breathing room on all sides. */
+.list {
+  padding: var(--mantine-spacing-xs);
+}
+
+/* Per-item chrome wrapper. The list renders this `<div>` around each item's
+   content (from `renderItem`), so it owns the hover/selected backgrounds. It
+   deliberately has no padding: the item's content provides its own padding so a
+   navigational item (a link) can fill this wrapper and keep the whole row clickable. */
+.item {
+  transition: background 0.2s;
+  cursor: pointer;
+  border-radius: 0.5rem;
+}
+
+/* Normalize the line-height of every text child so a mix of `<Text size="md">`
+   (e.g. the bold first line) and `<Text size="sm">` (secondary/tertiary lines)
+   share the same vertical rhythm. Without this, default Mantine line-heights
+   (1.55 vs 1.45) cause uneven gaps between lines in a list item. */
+.item :global(.mantine-Text-root) {
+  line-height: var(--mantine-line-height-sm);
+}
+
+.item:hover {
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+.item.selected {
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-inline: var(--mantine-spacing-md);
+  padding-block: 15px;
+}
+
+/* Header text style for headers that show a plain title (no pill tabs). Reads as
+   the section title of the list, so it is a step larger and heavier than the row
+   text below it.
+
+   `padding-inline-start` lines the title up with the text of the rows: the header
+   bar has `p="md"`, while a row's text sits at `.list` padding (xs) plus the
+   item's own 0.5rem content padding. */
+.headerText {
+  font-size: var(--mantine-font-size-md);
+  font-weight: 600;
+  color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
+  line-height: 1.2;
+  padding-inline-start: calc(var(--mantine-spacing-xs) + 0.5rem - var(--mantine-spacing-md));
+}
+
+/* Pill-style Tabs used in list headers. CSS-module-scoped — the `:global()`
+   wrappers keep Mantine's `.mantine-Tabs-*` class names global so the
+   descendant selectors continue to target them. */
+.pillTabs :global(.mantine-Tabs-list) {
+  display: flex;
+  gap: 2px;
+}
+
+.pillTabs :global(.mantine-Tabs-tab) {
+  height: 32px;
+  padding-inline: calc(0.875rem * var(--mantine-scale));
+  padding-block: 0;
+  border-radius: var(--mantine-radius-xl);
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 450;
+  background-color: transparent;
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.pillTabs :global(.mantine-Tabs-tab):hover {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+.pillTabs :global(.mantine-Tabs-tab[data-active]) {
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
+}
+
+.pillTabs :global(.mantine-Tabs-tab[data-active]):hover {
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
+}
+
+.tabLink {
+  color: inherit;
+  line-height: 1;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: none;
+  }
+}

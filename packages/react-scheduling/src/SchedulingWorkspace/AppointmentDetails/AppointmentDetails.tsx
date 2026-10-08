@@ -1,62 +1,94 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Badge, Button, Divider, Stack, Text } from '@mantine/core';
+import { Alert, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { formatCodeableConcept, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
-import type { Appointment, AppointmentParticipant, CodeableConcept, Parameters, Reference } from '@medplum/fhirtypes';
-import { CodeableConceptInput, ReferenceDisplay } from '@medplum/react';
+import {
+  formatCodeableConcept,
+  getExtension,
+  getExtensionValue,
+  normalizeErrorString,
+  RecurrenceIdExtensionURI,
+  RecurrenceTemplateExtensionURI,
+  resolveId,
+  SchedulingMedicalNecessityURI,
+} from '@medplum/core';
+import type { Appointment, CodeableConcept, Parameters } from '@medplum/fhirtypes';
+import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
+import { IconArrowLeft, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { Fragment, useCallback, useState } from 'react';
+import { getNonPatientActors } from '../../actors';
 import { formatDayHeading, formatZonedTime } from '../../AppointmentFinder/AppointmentFinder.times';
+import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentRescheduleForm';
+import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
+import { AppointmentStatusBadge } from '../../AppointmentStatusBadge';
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
+import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
+import { partitionServiceTypes } from '../../serviceTypes';
+import classes from './AppointmentDetails.module.css';
+import { getPatientParticipant } from './AppointmentDetails.utils';
+import { AppointmentDetailsForm } from './AppointmentDetailsForm';
 
 /** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
 const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
 
-const STATUS_COLORS: Record<Appointment['status'], string> = {
-  proposed: 'yellow',
-  pending: 'yellow',
-  booked: 'blue',
-  arrived: 'blue',
-  fulfilled: 'blue',
-  cancelled: 'red',
-  noshow: 'red',
-  'entered-in-error': 'red',
-  'checked-in': 'blue',
-  waitlist: 'gray',
-};
+/**
+ * The statuses `Appointment/:id/$reschedule` accepts. It refuses any other with a 400.
+ *
+ * The same statuses a cancellation accepts today, but a guard of its own: what can be
+ * called off and what can be moved are separate questions to the server.
+ */
+const RESCHEDULABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
 
-export interface AppointmentDetailsProps {
+export interface AppointmentCancelFormProps {
   readonly appointment: WithId<Appointment>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
   /** Overrides the value set the cancellation reason is coded against. */
   readonly cancellationReasonValueSet?: string;
 }
 
-/**
- * Shows a detail view of a single appointment
- *
- * Cancelling posts `Appointment/:id/$cancel`, which sets the appointment status
- * and releases every time it was holding, then announces both so views reading
- * them refresh.
- *
- * A reason has to be chosen before anything can be cancelled. The operation takes one
- * optionally; asking for it while the appointment is in front of whoever is calling it
- * off is the only moment it is known.
- *
- * @param props - The React props
- * @param props.appointment - The Appointment resource to detail
- * @param props.onCancelled - A callback that can be invoked after a successful $cancel
- * @param props.cancellationReasonValueSet - The value set to offer cancellation reasons from,
- * in place of the default binding
- * @returns The details component
- */
-export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element {
+export interface AppointmentDetailsProps {
+  /**
+   * Allows users to override scheduling rules when rescheduling or reassigning
+   * an appointment, including its length. The host controls access.
+   */
+  readonly canBypassSchedulingRules?: boolean;
+  readonly appointment: WithId<Appointment>;
+  readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
+  /**
+   * Called with what a move wrote, after the view has gone back to the details.
+   *
+   * The appointment shown is the one the host handed over, so a host keeping this
+   * mounted hands over the moved one — from its own data, or from this callback.
+   */
+  readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
+  /**
+   * Called when the reschedule form's time search opens or closes.
+   *
+   * The times render beside that form rather than under it, so a host showing this in a
+   * drawer or a panel has to widen it to fit them — under the width they need they wrap,
+   * and the times land below the form instead.
+   *
+   * Leaving the reschedule view reports the search closed whether or not it was open:
+   * the form goes with the view, and so does the room it asked for.
+   */
+  readonly onToggleTimeFinder?: (open: boolean) => void;
+  /** Overrides the value set the cancellation reason is coded against. */
+  readonly cancellationReasonValueSet?: string;
+  /** The ValueSet the procedure code field binds to. Defaults to the full CPT value set. */
+  readonly procedureBinding?: string;
+  /** The ValueSet the diagnosis code field binds to. Defaults to the full ICD-10-CM value set. */
+  readonly diagnosisBinding?: string;
+  /** See {@link AppointmentProposalFormProps.mrnSystem}. */
+  readonly mrnSystem?: string;
+  /** Called with the appointment as written, after the patient or the visit type's codes are saved. */
+  readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
+}
+
+export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.Element {
   const { appointment, onCancelled, cancellationReasonValueSet } = props;
   const medplum = useMedplum();
-  const patient = getPatientParticipant(appointment)?.actor;
-  const otherActors = getOtherActors(appointment);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<unknown>();
   const [reason, setReason] = useState<CodeableConcept>();
@@ -111,11 +143,152 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   }, [appointment, medplum, onCancelled, reason]);
 
   return (
-    <Stack gap="sm">
-      <Badge color={STATUS_COLORS[appointment.status]}>{appointment.status}</Badge>
-      <Detail label="Patient" value={patient && <ReferenceDisplay link={false} value={patient} />} />
-      <Detail label="When" value={formatWhen(appointment)} />
-      <Detail label="Service" value={formatService(appointment)} />
+    <>
+      <Title order={5}>Cancel this appointment</Title>
+      {cancelError !== undefined && (
+        <Alert color="red" title="Could not cancel this appointment">
+          {normalizeErrorString(cancelError)}
+        </Alert>
+      )}
+      <CodeableConceptInput
+        name="cancelationReason"
+        path="Appointment.cancelationReason"
+        binding={cancellationReasonValueSet ?? APPOINTMENT_CANCELLATION_REASON_VALUE_SET}
+        label="Cancellation reason"
+        placeholder="Search reasons"
+        maxValues={1}
+        creatable={true}
+        withHelpText={false}
+        required
+        onChange={setReason}
+      />
+      <Button color="red" loading={cancelling} disabled={!reason} onClick={cancel}>
+        Confirm Cancellation
+      </Button>
+    </>
+  );
+}
+
+/**
+ * Shows a detail view of a single appointment
+ *
+ * Has sub-views for rescheduling and cancelling the appointment.
+ *
+ * @param props - The React props
+ * @param props.appointment - The Appointment resource to detail
+ * @param props.cancellationReasonValueSet - The value set to offer cancellation reasons from,
+ * in place of the default binding
+ * @param props.onCancelled - A callback that can be invoked after a successful $cancel
+ * @param props.onRescheduled - A callback that can be invoked after a successful $reschedule
+ * @param props.onUpdated - A callback that can be invoked after the editable details are saved
+ * @param props.procedureBinding - The value set the procedure code field binds to
+ * @param props.diagnosisBinding - The value set the diagnosis code field binds to
+ * @param props.mrnSystem - The system a project issues medical record numbers under
+ * @param props.onToggleTimeFinder - A callback told when the reschedule form's time search
+ * opens or closes, for a host that has to widen to fit it
+ * @returns The details component
+ */
+export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element {
+  const {
+    appointment,
+    onCancelled,
+    onToggleTimeFinder,
+    onRescheduled,
+    onUpdated,
+    procedureBinding,
+    diagnosisBinding,
+    mrnSystem,
+  } = props;
+  const patient = getPatientParticipant(appointment)?.actor;
+  const otherActors = getNonPatientActors(appointment);
+  const [editing, setEditing] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
+
+  const patientLine = (
+    <Detail label="Patient" value={patient && <ResourceName value={patient} link={false} inherit />} />
+  );
+  const whenLine = <Detail label="When" value={formatWhen(appointment)} />;
+
+  const innerOnCancelled = useCallback(
+    (appointment: WithId<Appointment>) => {
+      setCancelling(false);
+      return onCancelled?.(appointment);
+    },
+    [setCancelling, onCancelled]
+  );
+
+  function stopRescheduling(): void {
+    setRescheduling(false);
+    // The form is going, and with it any times it had open beside itself.
+    onToggleTimeFinder?.(false);
+  }
+
+  function finishRescheduling(reschedule: AppointmentReschedule): void | Promise<void> {
+    // Back to the details, which are read off the appointment the host hands over: the
+    // one just written, once whatever is watching the appointment has caught up.
+    stopRescheduling();
+    return onRescheduled?.(reschedule);
+  }
+
+  if (cancelling) {
+    return (
+      <Stack gap="sm" className={classes.details}>
+        {patientLine}
+        {whenLine}
+        <AppointmentCancelForm
+          appointment={appointment}
+          onCancelled={innerOnCancelled}
+          cancellationReasonValueSet={props.cancellationReasonValueSet}
+        />
+        <Stack gap="sm" className={classes.actions}>
+          <Button onClick={() => setCancelling(false)} variant="outline">
+            Back to Appointment Details
+          </Button>
+        </Stack>
+      </Stack>
+    );
+  }
+
+  if (rescheduling) {
+    return (
+      <Stack gap="sm" className={classes.details}>
+        <Group justify="space-between" wrap="nowrap">
+          {/* Its own heading: a host showing this in a panel titled for the details has
+              no way of knowing the view underneath it changed. */}
+          <Title order={5}>Reschedule appointment</Title>
+          <Button
+            variant="subtle"
+            size="compact-sm"
+            leftSection={<IconArrowLeft size={14} stroke={1.8} />}
+            onClick={stopRescheduling}
+          >
+            Back
+          </Button>
+        </Group>
+        <AppointmentRescheduleForm
+          appointment={appointment}
+          onToggleTimeFinder={onToggleTimeFinder}
+          onRescheduled={finishRescheduling}
+          canBypassSchedulingRules={props.canBypassSchedulingRules}
+        />
+      </Stack>
+    );
+  }
+
+  const cancelable = CANCELABLE_STATUSES.has(appointment.status);
+  const { visitType, procedures } = partitionServiceTypes(appointment);
+  const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
+
+  // Both pages fill the pane the same way, so what can be done to the visit sits at the
+  // foot of either.
+  return (
+    <Stack gap="sm" className={classes.details}>
+      <AppointmentStatusBadge status={appointment.status} />
+      {!editing && patientLine}
+      {whenLine}
+      <Detail label="Repeats" value={formatSeries(appointment)} />
+      <Detail label="Service" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
       <Detail
         label="With"
         value={
@@ -123,44 +296,68 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
             ? otherActors.map((actor, index) => (
                 <Fragment key={actor.reference ?? `actor-${index}`}>
                   {index > 0 && ', '}
-                  <ReferenceDisplay value={actor} link={false} />
+                  <ResourceName value={actor} link={false} inherit />
                 </Fragment>
               ))
             : undefined
         }
       />
       <Detail label="Notes" value={appointment.comment ?? appointment.description} />
-      <Divider />
       <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
-      {cancelError !== undefined && (
-        <Alert color="red" title="Could not cancel this appointment">
-          {normalizeErrorString(cancelError)}
-        </Alert>
-      )}
-      {CANCELABLE_STATUSES.has(appointment.status) ? (
+      {editing ? (
+        <AppointmentDetailsForm
+          appointment={appointment}
+          procedureBinding={procedureBinding}
+          diagnosisBinding={diagnosisBinding}
+          mrnSystem={mrnSystem}
+          onUpdated={(updated) => {
+            setEditing(false);
+            return onUpdated?.(updated);
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      ) : (
         <>
-          <CodeableConceptInput
-            name="cancelationReason"
-            path="Appointment.cancelationReason"
-            binding={cancellationReasonValueSet ?? APPOINTMENT_CANCELLATION_REASON_VALUE_SET}
-            label="Cancellation reason"
-            placeholder="Search reasons"
-            maxValues={1}
-            creatable={false}
-            withHelpText={false}
-            required
-            onChange={setReason}
+          <Detail
+            label="Procedure codes"
+            value={procedures.map((concept) => formatCodeableConcept(concept)).join(', ')}
           />
-          <Button color="red" variant="light" loading={cancelling} disabled={!reason} onClick={cancel}>
+          <Detail
+            label="Diagnosis codes"
+            value={appointment.reasonCode?.map((concept) => formatCodeableConcept(concept)).join(', ')}
+          />
+          <Detail
+            label="Medical necessity"
+            value={typeof medicalNecessity === 'boolean' && (medicalNecessity ? 'Confirmed' : 'Not confirmed')}
+          />
+        </>
+      )}
+      {!editing && (
+        <Stack gap="sm" className={classes.actions}>
+          <Divider />
+          <Button variant="outline" onClick={() => setEditing(true)}>
+            Edit
+          </Button>
+          {RESCHEDULABLE_STATUSES.has(appointment.status) && (
+            <Button
+              variant="outline"
+              leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
+              onClick={() => setRescheduling(true)}
+            >
+              Reschedule
+            </Button>
+          )}
+          <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
             Cancel Appointment
           </Button>
-        </>
-      ) : (
-        <Text size="sm" c="dimmed">
-          {appointment.status === 'cancelled'
-            ? 'This appointment is cancelled.'
-            : `An appointment in '${appointment.status}' status cannot be cancelled.`}
-        </Text>
+          {!cancelable && (
+            <Text size="sm" c="dimmed">
+              {appointment.status === 'cancelled'
+                ? 'This appointment is cancelled.'
+                : `An appointment in '${appointment.status}' status cannot be cancelled.`}
+            </Text>
+          )}
+        </Stack>
       )}
     </Stack>
   );
@@ -191,23 +388,6 @@ function Detail(props: DetailProps): JSX.Element | null {
   );
 }
 
-function getPatientParticipant(appointment: Appointment): AppointmentParticipant | undefined {
-  return appointment.participant.find((participant) => participant.actor?.reference?.startsWith('Patient/'));
-}
-
-/**
- * Everyone and everything the visit is held on besides the patient.
- * @param appointment - The appointment being described.
- * @returns Their references, in the order the appointment lists them.
- */
-function getOtherActors(appointment: Appointment): Reference[] {
-  const patient = getPatientParticipant(appointment);
-  return appointment.participant
-    .filter((participant) => participant !== patient)
-    .map((participant) => participant.actor)
-    .filter(isDefined);
-}
-
 /**
  * Says when the visit is, as far as it is known.
  * @param appointment - The appointment being described.
@@ -225,11 +405,16 @@ function formatWhen(appointment: Appointment): string | undefined {
 }
 
 /**
- * Names what the visit is for, preferring the service over the kind of visit.
+ * Says where the visit falls in a recurring series, for one `$book` wrote as part of one.
  * @param appointment - The appointment being described.
- * @returns The service or appointment type, or undefined when neither is on file.
+ * @returns Its place in the series, or undefined for a visit that does not repeat.
  */
-function formatService(appointment: Appointment): string | undefined {
-  const service = (appointment.serviceType ?? []).map(formatCodeableConcept).filter(Boolean).join(', ');
-  return service || formatCodeableConcept(appointment.appointmentType) || undefined;
+function formatSeries(appointment: Appointment): string | undefined {
+  const position = getExtension(appointment, RecurrenceIdExtensionURI)?.valuePositiveInt;
+  if (position === undefined) {
+    return undefined;
+  }
+  // Only the first occurrence keeps the template, so only it says how many there are.
+  const count = getExtension(appointment, RecurrenceTemplateExtensionURI, 'occurrenceCount')?.valuePositiveInt;
+  return count ? `Weekly · visit ${position} of ${count}` : `Weekly · visit ${position}`;
 }

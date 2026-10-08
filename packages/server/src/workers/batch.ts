@@ -12,22 +12,19 @@ import {
 } from '@medplum/core';
 import type { BatchEvent, BatchInitialState, FhirRequest } from '@medplum/fhir-router';
 import { BatchProcessor, buildBatchResponseBundle, FhirRouter } from '@medplum/fhir-router';
-import type { AsyncJob, Binary, Bundle, BundleEntry, Parameters, UserConfiguration } from '@medplum/fhirtypes';
+import type { AsyncJob, Binary, Bundle, BundleEntry, Parameters } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError, Queue, Worker } from 'bullmq';
-import { getUserConfiguration } from '../auth/me';
 import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
-import { getRepoForLogin } from '../fhir/accesspolicy';
 import { addBatchTelemetryListeners } from '../fhir/batch-telemetry';
 import { BatchCheckpointStore } from '../fhir/batch/checkpoint-store';
 import { uploadBinaryData } from '../fhir/binary';
-import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { Repository, SystemRepository } from '../fhir/repo';
-import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { BASE_METRIC_OPTIONS, incrementCounter } from '../otel/otel';
+import type { AsyncJobTracking } from './base';
+import { getAsyncJobTracking, getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -69,19 +66,11 @@ import {
  * the checkpoint thresholds shrinks the window at the cost of more object-storage writes.
  */
 
-interface BaseBatchJobData {
+export interface BatchJobData {
+  readonly tracking: AsyncJobTracking;
   readonly authState: Readonly<AuthState>;
   readonly requestId?: string;
   readonly traceId?: string;
-}
-
-export interface LegacyBatchJobData extends BaseBatchJobData {
-  readonly asyncJob: WithId<AsyncJob>;
-  readonly bundle: Bundle;
-}
-
-export interface ReentrantBatchJobData extends BaseBatchJobData {
-  readonly asyncJobId: string;
   /**
    * Index into the preprocessed ordering of the next entry to process. `undefined` on the initial
    * enqueue (before the bundle has been preprocessed). Updated via `job.updateData` at each
@@ -98,8 +87,6 @@ export interface ReentrantBatchJobData extends BaseBatchJobData {
   /** Max milliseconds elapsed between checkpoints. Defaults to {@link defaultCheckpointIntervalMs}. */
   readonly checkpointIntervalMs?: number;
 }
-
-export type BatchJobData = LegacyBatchJobData | ReentrantBatchJobData;
 
 const queueName = 'BatchQueue';
 const jobName = 'BatchJobData';
@@ -130,13 +117,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       trackJobMetrics('batch', (job) => {
         const { authState, requestId, traceId } = job.data;
         return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => {
-          if ('asyncJob' in job.data) {
-            return execLegacyBatchJob(job as Job<LegacyBatchJobData>);
-          } else if ('asyncJobId' in job.data) {
-            return execBatchJob(job as Job<ReentrantBatchJobData>);
-          } else {
-            throw new TypeError('Unrecognized BatchJobData', { cause: job.data });
-          }
+          return execBatchJob(job);
         });
       }),
       getWorkerBullmqConfig(config, 'batch', queueOptions, { concurrency: 15 })
@@ -156,35 +137,24 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       // more than maxStalledCount times). Mark the AsyncJob failed if it is still in progress and
       // clean up any durable checkpoint state.
 
-      if ('asyncJob' in job.data && job.data.asyncJob) {
-        job.data satisfies LegacyBatchJobData;
-        const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
-        const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
-        await exec.failJob();
-        return;
-      } else if (!('asyncJobId' in job.data) || !job.data.asyncJobId) {
-        getLogger().error('Unrecognized BatchJobData', { jobData: job.data });
-        return;
-      }
-
-      job.data satisfies ReentrantBatchJobData;
       try {
-        const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
-        const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
-        if (isJobActive(asyncJob)) {
-          await new AsyncJobExecutor(systemRepo, asyncJob).failJob(failedErr ?? undefined);
+        const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
+        if (isJobActive(exec.getAsyncJob())) {
+          await exec.failJob(failedErr ?? undefined);
         }
       } finally {
-        const logger = getBatchLogger(job.data.asyncJobId, job.id);
-        const store = new BatchCheckpointStore(job.data.asyncJobId, logger);
+        const asyncJobId = job.data.tracking.asyncJobId;
+        const logger = getBatchLogger(asyncJobId, job.id);
+        const store = new BatchCheckpointStore(asyncJobId, logger);
         await store.cleanup(job.data.chunkSeq ?? 0);
       }
     });
     addVerboseQueueLogging<BatchJobData>(queue, worker, (job) => {
-      const asyncJobRef = 'asyncJob' in job.data ? job.data.asyncJob : { id: job.data.asyncJobId };
+      const asyncJobId = job.data.tracking.asyncJobId;
+
       return {
         subsystem: BATCH_LOGGER_SUBSYSTEM,
-        asyncJob: getReferenceString(asyncJobRef),
+        asyncJob: 'AsyncJob/' + asyncJobId,
         project: getReferenceString(job.data.authState.project),
         profile: job.data.authState.profile && getReferenceString(job.data.authState.profile),
         membership: getReferenceString(job.data.authState.membership),
@@ -226,35 +196,7 @@ export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<Asyn
   // in the BullMQ job data (see https://github.com/medplum/medplum/issues/9124). The worker loads
   // it on the first run to preprocess.
   await new BatchCheckpointStore(asyncJob.id, getBatchLogger(asyncJob.id)).saveInputBundle(bundle);
-  return addBatchJobData({ asyncJobId: asyncJob.id, authState, requestId, traceId });
-}
-
-/**
- * Enqueues a batch for the legacy single-shot worker. Only reachable when a project opts out of
- * re-entrant processing via the `reentrantAsyncBatch` system setting. TODO{v5.2}
- * @deprecated Can be removed in v5.2+ along with {@link execLegacyBatchJob}.
- * @param bundle - The batch bundle to process.
- * @param asyncJob - The AsyncJob tracking this batch.
- * @returns The enqueued job.
- */
-export async function queueLegacyBatchProcessing(
-  bundle: Bundle,
-  asyncJob: WithId<AsyncJob>
-): Promise<Job<BatchJobData>> {
-  const { authState, requestId, traceId } = getAuthenticatedContext();
-  const jobData: LegacyBatchJobData = { asyncJob, bundle, authState, requestId, traceId };
-  return addBatchJobData(jobData);
-}
-
-/**
- * Builds the submitting user's repository for processing batch entries.
- * @param authState - The auth state captured when the batch was submitted.
- * @param userConfig - The user's configuration.
- * @returns The user's repository.
- */
-async function getBatchUserRepo(authState: Readonly<AuthState>, userConfig: UserConfiguration): Promise<Repository> {
-  const { login, project, membership, smartAppLaunch } = authState;
-  return getRepoForLogin({ login, project, membership, smartAppLaunch, userConfig }, true);
+  return addBatchJobData({ tracking: getAsyncJobTracking(asyncJob), authState, requestId, traceId });
 }
 
 /**
@@ -270,12 +212,13 @@ async function getBatchUserRepo(authState: Readonly<AuthState>, userConfig: User
  * state cleaned up) and swallowed so the job is not blindly re-executed from the beginning.
  * @param job - The batch job details.
  */
-export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<void> {
-  const { authState } = job.data;
-  const logger = getBatchLogger(job.data.asyncJobId, job.id);
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
-  const store = new BatchCheckpointStore(job.data.asyncJobId, logger);
-  let asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
+export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
+  const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
+  let asyncJob = exec.getAsyncJob();
+  const asyncJobSystemRepo = exec.repo.getSystemRepo();
+  const logger = getBatchLogger(asyncJob.id, job.id);
+
+  const store = new BatchCheckpointStore(asyncJob.id, logger);
   let chunkSeq = job.data.chunkSeq ?? 0;
   // Chunks below this sequence were persisted by previous runs of this job and exist only in
   // durable storage. Results checkpointed during this run are additionally kept in memory
@@ -286,22 +229,17 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
 
   const router = new FhirRouter();
   addBatchTelemetryListeners(router);
+  const userRepo = getAuthenticatedContext().repo;
 
   if (!isJobActive(asyncJob)) {
-    await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun, router);
+    await finalizeInterrupted(logger, userRepo, asyncJobSystemRepo, store, asyncJob, chunkSeq, resultsThisRun, router);
     return;
   }
 
-  const exec = new AsyncJobExecutor(systemRepo, asyncJob);
-  let userConfig: UserConfiguration | undefined;
-  let userRepo: Repository | undefined;
   let initialState: BatchInitialState | undefined;
   let completedDispatched = false;
 
   try {
-    userConfig = await getUserConfiguration(systemRepo, authState.project, authState.membership);
-    userRepo = await getBatchUserRepo(authState, userConfig);
-
     const req: FhirRequest = {
       method: 'POST',
       url: '/',
@@ -367,9 +305,18 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
       if (sinceCheckpoint >= checkpointEntries || Date.now() - lastCheckpointTime >= checkpointIntervalMs) {
         await checkpoint();
 
-        asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
+        asyncJob = await exec.refresh();
         if (!isJobActive(asyncJob)) {
-          await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun, router);
+          await finalizeInterrupted(
+            logger,
+            userRepo,
+            asyncJobSystemRepo,
+            store,
+            asyncJob,
+            chunkSeq,
+            resultsThisRun,
+            router
+          );
           return;
         }
       }
@@ -465,21 +412,21 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
  * then cleans up durable state. Best-effort: an interrupted job's status was set by another party,
  * so a conflicting update is ignored.
  * @param logger - The logger instance.
- * @param systemRepo - The system repository.
+ * @param userRepo - The repository used to interact with the bundle and related resources
+ * @param asyncJobSystemRepo - The system repository used to interact with the AsyncJob.
  * @param store - The checkpoint store.
  * @param asyncJob - The (refreshed) AsyncJob, in a terminal/cancelled state.
  * @param chunkSeq - The number of result chunks written so far.
- * @param authState - The auth state captured when the batch was submitted.
  * @param inMemoryResults - Result entries produced during this run, i.e. checkpointed during this run.
  * @param router - The router to dispatch the terminal batch event on.
  */
 async function finalizeInterrupted(
   logger: ILogger,
-  systemRepo: SystemRepository,
+  userRepo: Repository,
+  asyncJobSystemRepo: SystemRepository,
   store: BatchCheckpointStore,
   asyncJob: WithId<AsyncJob>,
   chunkSeq: number,
-  authState: Readonly<AuthState>,
   inMemoryResults: Record<number, BundleEntry>,
   router: FhirRouter
 ): Promise<void> {
@@ -488,9 +435,7 @@ async function finalizeInterrupted(
       status: asyncJob.status,
     });
     const initialState = await store.loadInitialState();
-    const userConfig = await getUserConfiguration(systemRepo, authState.project, authState.membership);
-    const repo = await getBatchUserRepo(authState, userConfig);
-    const { binary, bundle } = await assembleResultBundle(repo, store, initialState, chunkSeq, inMemoryResults);
+    const { binary, bundle } = await assembleResultBundle(userRepo, store, initialState, chunkSeq, inMemoryResults);
     // Cancellation is terminal, so close out the pre-event dispatched when the bundle was
     // preprocessed, possibly by an earlier run of this job.
     dispatchBatchCompleted(router, initialState.bundle.type, countBundleErrors(bundle));
@@ -502,7 +447,7 @@ async function finalizeInterrupted(
       ],
     };
     // Best-effort: another party set this job's status, so a conflicting update is ignored.
-    await updateAsyncJobOutput(systemRepo, asyncJob, output).catch(() => {});
+    await updateAsyncJobOutput(asyncJobSystemRepo, asyncJob, output).catch(() => {});
   } catch (err) {
     logger.warn('Could not assemble partial results for interrupted async batch', {
       error: normalizeErrorString(err),
@@ -567,79 +512,6 @@ function countBundleErrors(bundle: Bundle): number {
     }
   }
   return errors;
-}
-
-/**
- * @deprecated Processes legacy jobs. Can be removed in v5.2+
- * @param job - The BullMQ job instance.
- */
-export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<void> {
-  const bundle = job.data.bundle;
-  const { login, project, membership, smartAppLaunch } = job.data.authState;
-  const logger = getBatchLogger(job.data.asyncJob.id, job.id);
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
-
-  // Prepare the original submitting user's repo
-  const userConfig = await getUserConfiguration(systemRepo, project, membership);
-  const repo = await getRepoForLogin({ login, project, membership, smartAppLaunch, userConfig }, true);
-  // This path runs the whole bundle through `processBatch`, which dispatches both telemetry events
-  // itself; it only needed listeners subscribed. See the TODO in `execBatchJob` about the routes a
-  // bare FhirRouter exposes.
-  const router = new FhirRouter();
-  addBatchTelemetryListeners(router);
-  const req: FhirRequest = {
-    method: 'POST',
-    url: '/',
-    pathname: '',
-    params: Object.create(null),
-    query: Object.create(null),
-    body: bundle,
-  };
-
-  const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
-
-  // Intentionally swallow all errors thrown during or after execution of the batch request, since we do NOT want to
-  // execute part or all of the batch more than once.
-  // If this function does not throw an error, the job will be considered "successful" and not requeued
-  try {
-    const [outcome, result] = await router.handleRequest(req, repo);
-
-    // Update the async job with system repo
-    if (isOk(outcome)) {
-      // Upload resulting Bundle JSON as Binary for async retrieval
-      const binary = await uploadBinaryData(repo, JSON.stringify(result), { contentType: ContentType.FHIR_JSON });
-
-      const bundle = result as Bundle;
-      if (!bundle.entry) {
-        return;
-      }
-      incrementCounter(PROCESSED_ENTRIES_METRIC, BASE_METRIC_OPTIONS, bundle.entry.length);
-
-      let errors = 0;
-      for (const entry of bundle.entry) {
-        if (!entry.response?.outcome || !isOk(entry.response.outcome)) {
-          errors++;
-        }
-      }
-
-      logger.info('Completed async batch request', {
-        results: getReferenceString(binary),
-        entries: bundle.entry.length,
-        errors,
-      });
-      await exec.completeJob({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'results', valueReference: createReference(binary) }],
-      });
-    } else {
-      logger.warn('Async batch request failed', { outcome });
-      await exec.failJob(new OperationOutcomeError(outcome));
-    }
-  } catch (err: any) {
-    logger.error(`Async batch unhandled exception`, err);
-    // Try to mark AsyncJob as failed, best effort
-    await exec.failJob(new OperationOutcomeError(serverError(err))).catch(() => {});
-  }
 }
 
 const BATCH_LOGGER_SUBSYSTEM = 'async-batch';

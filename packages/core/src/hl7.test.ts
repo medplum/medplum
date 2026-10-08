@@ -1451,94 +1451,50 @@ describe('Hl7Message parse/toString caching', () => {
     });
   });
 
-  test('subsequent toString() calls are at least 10x faster than the first after mutation', () => {
-    const text = buildSampleMessage(500);
-
-    // Warm up the parser, JIT, and lazy-parse paths so the measurement isn't
-    // dominated by one-off compilation cost.
-    for (let i = 0; i < 3; i++) {
-      const warm = Hl7Message.parse(text);
-      warm.getSegment('PID')?.setField(5, 'WARMUP');
-      warm.toString();
-      warm.toString();
-    }
-
+  test('toString() after mutation rebuilds once, then serves the cached string', () => {
+    const text = buildSampleMessage(2);
     const msg = Hl7Message.parse(text);
-    // toString before mutation must round-trip the original input.
-    expect(msg.toString()).toBe(text);
+    const pid = msg.getSegment('PID');
+    expect(pid).toBeDefined();
+    pid?.setField(5, 'CHANGED');
 
-    msg.getSegment('PID')?.setField(5, 'CHANGED');
+    const segmentToString = vi.spyOn(Hl7Segment.prototype, 'toString');
+    try {
+      const expected = text.replace('DOE^JOHN^A', 'CHANGED');
+      expect(msg.toString()).toBe(expected);
+      expect(segmentToString).toHaveBeenCalledTimes(1);
 
-    // First toString() after mutation has to rebuild the message string.
-    const firstStart = process.hrtime.bigint();
-    const firstResult = msg.toString();
-    const firstNs = Number(process.hrtime.bigint() - firstStart);
-
-    // The rebuilt string must match the expected mutated form, not just be cached.
-    const expected = text.replace('DOE^JOHN^A', 'CHANGED');
-    expect(firstResult).toBe(expected);
-
-    // Subsequent calls should hit the cached string.
-    const repeats = 1000;
-    const subsequentStart = process.hrtime.bigint();
-    for (let i = 0; i < repeats; i++) {
-      msg.toString();
+      segmentToString.mockClear();
+      expect(msg.toString()).toBe(expected);
+      expect(msg.toString()).toBe(expected);
+      expect(segmentToString).not.toHaveBeenCalled();
+    } finally {
+      segmentToString.mockRestore();
     }
-    const subsequentNs = Number(process.hrtime.bigint() - subsequentStart) / repeats;
-
-    // Sanity: the cached value matches the rebuilt one and the expected mutation.
-    expect(msg.toString()).toBe(firstResult);
-    expect(msg.toString()).toBe(expected);
-
-    // Ratio assertion. Subsequent calls should be returning a cached string,
-    // which is dramatically faster than re-joining hundreds of segments.
-    const ratio = firstNs / Math.max(subsequentNs, 1);
-    expect(ratio).toBeGreaterThanOrEqual(10);
   });
 
-  test('subsequent toString() calls on a manually constructed message are at least 10x faster than the first', () => {
-    // A manually constructed message has no cachedString seeded by parse, so
-    // the first toString() does the join work; subsequent calls hit the cache.
+  test('toString() on a manually constructed message rebuilds once, then serves the cached string', () => {
     const context = new Hl7Context();
-    const segmentLines: string[] = ['MSH|^~\\&|APP|FAC'];
-    const buildSegments = (): Hl7Segment[] => {
-      const result: Hl7Segment[] = [new Hl7Segment(['MSH', '^~\\&', 'APP', 'FAC'], context)];
-      for (let i = 1; i <= 500; i++) {
-        result.push(new Hl7Segment(['OBX', String(i), 'NM', `${2000 + i}^Component ${i}^99LAB`, '1', '42.0'], context));
-      }
-      return result;
-    };
-    for (let i = 1; i <= 500; i++) {
-      segmentLines.push(`OBX|${i}|NM|${2000 + i}^Component ${i}^99LAB|1|42.0`);
+    const msg = new Hl7Message(
+      [
+        new Hl7Segment(['MSH', '^~\\&', 'APP', 'FAC'], context),
+        new Hl7Segment(['OBX', '1', 'NM', '2001^Component 1^99LAB', '1', '42.0'], context),
+      ],
+      context
+    );
+    const expected = 'MSH|^~\\&|APP|FAC\rOBX|1|NM|2001^Component 1^99LAB|1|42.0';
+
+    const segmentToString = vi.spyOn(Hl7Segment.prototype, 'toString');
+    try {
+      expect(msg.toString()).toBe(expected);
+      expect(segmentToString).toHaveBeenCalledTimes(2);
+
+      segmentToString.mockClear();
+      expect(msg.toString()).toBe(expected);
+      expect(msg.toString()).toBe(expected);
+      expect(segmentToString).not.toHaveBeenCalled();
+    } finally {
+      segmentToString.mockRestore();
     }
-    const expected = segmentLines.join('\r');
-
-    // Warm up
-    for (let i = 0; i < 3; i++) {
-      new Hl7Message(buildSegments(), context).toString();
-    }
-
-    const msg = new Hl7Message(buildSegments(), context);
-
-    const firstStart = process.hrtime.bigint();
-    const firstResult = msg.toString();
-    const firstNs = Number(process.hrtime.bigint() - firstStart);
-
-    // The first toString must produce the canonical joined form.
-    expect(firstResult).toBe(expected);
-
-    const repeats = 1000;
-    const subsequentStart = process.hrtime.bigint();
-    for (let i = 0; i < repeats; i++) {
-      msg.toString();
-    }
-    const subsequentNs = Number(process.hrtime.bigint() - subsequentStart) / repeats;
-
-    // Cached values match the canonical form on every call.
-    expect(msg.toString()).toBe(firstResult);
-    expect(msg.toString()).toBe(expected);
-
-    const ratio = firstNs / Math.max(subsequentNs, 1);
-    expect(ratio).toBeGreaterThanOrEqual(10);
   });
 });
