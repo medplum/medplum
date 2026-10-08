@@ -43,6 +43,8 @@ export interface UseSchedulingResourcesOptions {
   readonly onError?: (error: OperationOutcome) => void;
   /** The Slot statuses to load. Defaults to every status but `entered-in-error`. */
   readonly slotStatuses?: readonly Slot['status'][];
+  /** The Appointment statuses to load. Defaults to every status. */
+  readonly appointmentStatuses?: readonly Appointment['status'][];
 }
 
 /**
@@ -232,6 +234,10 @@ export function useSchedulingAppointments(
   // Stable keys so the searches below only re-run when the set of predicates actually
   // changes, rather than on every render when the parent passes a new array instance.
   const actorRefsKey = actorRefs.join(',');
+  const appointmentStatusesKey = options?.appointmentStatuses?.join(',');
+
+  const matchesStatus = (appointment: Appointment): boolean =>
+    !appointmentStatusesKey || appointmentStatusesKey.split(',').includes(appointment.status);
 
   // Keep the calendar's appointments in sync with any Appointment this client
   // modifies.
@@ -252,6 +258,12 @@ export function useSchedulingAppointments(
       // No actor on the appointment matches our actors; remove it from our
       // state. (This catches `$reschedule` operations or similar that remove a
       // participant from an existing appointment).
+      setAppointments((state) => state?.filter((existing) => existing.id !== appointment.id));
+      return;
+    }
+    // A refetch wouldn't return an appointment outside the loaded statuses, so drop it if it
+    // moved out (e.g. one cancelled through `$cancel`).
+    if (!matchesStatus(appointment)) {
       setAppointments((state) => state?.filter((existing) => existing.id !== appointment.id));
       return;
     }
@@ -288,6 +300,7 @@ export function useSchedulingAppointments(
           ['actor', actorRef],
           ['date', `ge${rangeStart}`],
           ['date', `le${rangeEnd}`],
+          ...(appointmentStatusesKey ? [['status', appointmentStatusesKey]] : []),
         ])
       )
     )
@@ -316,7 +329,7 @@ export function useSchedulingAppointments(
       active = false;
       setLoading(false);
     };
-  }, [medplum, actorRefsKey, rangeStart, rangeEnd, handleError]);
+  }, [medplum, actorRefsKey, appointmentStatusesKey, rangeStart, rangeEnd, handleError]);
 
   return {
     appointments,

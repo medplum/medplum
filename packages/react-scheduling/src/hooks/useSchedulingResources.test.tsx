@@ -447,6 +447,15 @@ describe('useSchedulingAppointments', () => {
       );
     });
 
+    test('searches only the given appointment statuses', async () => {
+      const searches = configureSearch({ appointmentsByActor: { 'Practitioner/pract-a': [apptA] } });
+
+      setup(useSchedulingAppointments, [SCHEDULE_A], RANGE, { appointmentStatuses: ['booked', 'arrived'] });
+
+      await waitFor(() => expect(searches['Appointment']).toHaveLength(1));
+      expect(searches['Appointment']?.[0].get('status')).toBe('booked,arrived');
+    });
+
     test('emits one Appointment query per schedule actor and merges the results', async () => {
       const searches = configureSearch({
         appointmentsByActor: { 'Practitioner/pract-a': [apptA], 'Practitioner/pract-b': [apptB] },
@@ -691,6 +700,41 @@ describe('useSchedulingAppointments', () => {
       });
 
       expect(result.current.appointments).toEqual([updated]);
+    });
+
+    test('keeps to the given appointment statuses', async () => {
+      configureSearch({ appointmentsByActor: { 'Practitioner/pract-a': [apptA] } });
+      const { result } = setup(useSchedulingAppointments, [SCHEDULE_A], RANGE, { appointmentStatuses: ['booked'] });
+      await waitFor(() => expect(result.current.appointments).toEqual([apptA]));
+
+      // A created Appointment outside the statuses is left out, as a refetch would leave it out.
+      const proposed: WithId<Appointment> = {
+        ...apptA,
+        id: 'appt-proposed',
+        status: 'proposed',
+        start: '2024-01-15T10:00:00.000Z',
+      };
+      act(() => {
+        medplum.notifyResourceModified({
+          resourceType: 'Appointment',
+          operation: 'create',
+          id: proposed.id,
+          resource: proposed,
+        });
+      });
+      expect(result.current.appointments).toEqual([apptA]);
+
+      // A loaded Appointment updated out of the statuses is dropped.
+      const cancelled: WithId<Appointment> = { ...apptA, status: 'cancelled' };
+      act(() => {
+        medplum.notifyResourceModified({
+          resourceType: 'Appointment',
+          operation: 'update',
+          id: cancelled.id,
+          resource: cancelled,
+        });
+      });
+      expect(result.current.appointments).toEqual([]);
     });
 
     test('removes a deleted Appointment by id', async () => {
