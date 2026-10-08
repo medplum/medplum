@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ServiceTypeReferenceURI, toServiceTypeCodeableConcepts } from '@medplum/core';
+import { allServiceTypesCodeableConcept, ServiceTypeReferenceURI, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { HealthcareService, Location, Practitioner, Schedule } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import type { ConfigurableActor } from '../configSearch';
@@ -229,6 +229,17 @@ describe('getOfferings', () => {
 
     expect(getOfferings([{ resource: drSmith, schedules: [versioned] }], configured)).toHaveLength(1);
     expect(getOfferedServices(versioned, new Map([[configured.id, configured]]))).toEqual([configured]);
+  });
+
+  test('lists an actor whose Schedule offers every visit type', () => {
+    const everything = {
+      ...makeSchedule('s', 'Practitioner/dr-smith', []),
+      serviceType: [allServiceTypesCodeableConcept()],
+    };
+
+    expect(
+      getOfferings([{ resource: drSmith, schedules: [everything] }], configured).map((item) => item.schedule.id)
+    ).toEqual(['s']);
   });
 });
 

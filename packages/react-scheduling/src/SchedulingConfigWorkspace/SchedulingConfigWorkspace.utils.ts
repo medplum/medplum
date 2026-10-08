@@ -7,6 +7,7 @@ import {
   getReferenceString,
   isDefined,
   resolveId,
+  serviceTypeIncludesAllServices,
 } from '@medplum/core';
 import type { HealthcareService, Resource, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType } from '../actors';
@@ -260,9 +261,9 @@ export function getOfferings(
     if (!schedule) {
       return [];
     }
-    const offered = extractServiceTypeReferences(schedule.serviceType).some(
-      (reference) => resolveId(reference) === service.id
-    );
+    const offered =
+      serviceTypeIncludesAllServices(schedule.serviceType) ||
+      extractServiceTypeReferences(schedule.serviceType).some((reference) => resolveId(reference) === service.id);
     return offered ? [{ actor, schedule }] : [];
   });
 }
