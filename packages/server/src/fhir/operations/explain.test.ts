@@ -98,7 +98,10 @@ describe('$explain', () => {
   });
 
   test('Respects On-Behalf-Of', async () => {
-    const { project: linkedProject } = await createTestProject({ withClient: true });
+    const { project: linkedProject } = await createTestProject({
+      withClient: true,
+      project: { exportedResourceType: ['Patient'] },
+    });
     const { membership, project } = await createTestProject({
       withClient: true,
       project: { link: [{ project: createReference(linkedProject) }] },

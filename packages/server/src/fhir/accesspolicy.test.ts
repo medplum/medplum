@@ -2545,7 +2545,11 @@ describe('AccessPolicy', () => {
 
   test('Project admin check references', () =>
     withTestContext(async () => {
-      const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
+      const project1 = await systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'Test1',
+        exportedResourceType: ['Patient'],
+      });
       const repo1 = getRepository({
         projects: [project1],
         projectAdmin: true,
@@ -2639,7 +2643,11 @@ describe('AccessPolicy', () => {
         resourceType: 'Patient',
       };
 
-      const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
+      const project1 = await systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'Test1',
+        exportedResourceType: ['Patient'],
+      });
       const repo1 = getRepository({
         projects: [project1],
         projectAdmin: true,
