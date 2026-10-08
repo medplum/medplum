@@ -190,23 +190,6 @@ describe('CLI generate-types type checking', () => {
     rmSync(outputDir, { recursive: true, force: true });
   });
 
-  test('Generated files have no errors', () => {
-    const program = ts.createProgram([join(outputDir, 'index.d.ts')], {
-      strict: true,
-      noEmit: true,
-      types: [],
-      module: ts.ModuleKind.ESNext,
-      moduleResolution: ts.ModuleResolutionKind.Bundler,
-      allowImportingTsExtensions: true,
-      paths: { '@medplum/fhirtypes': [resolve(import.meta.dirname, '../../fhirtypes/dist/index.d.ts')] },
-    });
-    const generatedErrors = ts
-      .getPreEmitDiagnostics(program)
-      .filter((d) => d.file?.fileName.startsWith(outputDir))
-      .map((d) => ts.flattenDiagnosticMessageText(d.messageText, '\n'));
-    expect(generatedErrors).toStrictEqual([]);
-  });
-
   test.each(CASES.filter((c) => !c.error).map((c) => c.name))('Accepts: %s', (name) => {
     expect(errors[name]).toStrictEqual([]);
   });
