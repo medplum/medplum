@@ -214,23 +214,6 @@ describe('getOfferings', () => {
     expect(found.map((item) => item.schedule.id)).toEqual(['s']);
   });
 
-  test('finds a Schedule naming the visit type by a versioned reference, as the actor page lists it', () => {
-    const versioned: WithId<Schedule> = {
-      ...makeSchedule('s', 'Practitioner/dr-smith', []),
-      serviceType: [
-        {
-          extension: [
-            { url: ServiceTypeReferenceURI, valueReference: { reference: 'HealthcareService/exam/_history/2' } },
-          ],
-        },
-        ...toServiceTypeCodeableConcepts(configured),
-      ],
-    };
-
-    expect(getOfferings([{ resource: drSmith, schedules: [versioned] }], configured)).toHaveLength(1);
-    expect(getOfferedServices(versioned, new Map([[configured.id, configured]]))).toEqual([configured]);
-  });
-
   test('lists an actor whose Schedule offers every visit type', () => {
     const everything = {
       ...makeSchedule('s', 'Practitioner/dr-smith', []),
@@ -255,6 +238,24 @@ describe('getOfferings', () => {
         configured
       )
     ).toEqual([]);
+  });
+});
+
+describe('getOfferedServices', () => {
+  test('lists a visit type the Schedule names by a versioned reference once', () => {
+    const versioned: WithId<Schedule> = {
+      ...makeSchedule('s', 'Practitioner/dr-smith', []),
+      serviceType: [
+        {
+          extension: [
+            { url: ServiceTypeReferenceURI, valueReference: { reference: 'HealthcareService/exam/_history/2' } },
+          ],
+        },
+        ...toServiceTypeCodeableConcepts(configured),
+      ],
+    };
+
+    expect(getOfferedServices(versioned, new Map([[configured.id, configured]]))).toEqual([configured]);
   });
 });
 

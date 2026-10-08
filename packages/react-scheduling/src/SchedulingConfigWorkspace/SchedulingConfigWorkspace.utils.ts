@@ -7,9 +7,9 @@ import {
   getReferenceString,
   isDefined,
   resolveId,
-  serviceTypeIncludesAllServices,
+  serviceTypeOffersService,
 } from '@medplum/core';
-import type { CodeableConcept, HealthcareService, Resource, Schedule } from '@medplum/fhirtypes';
+import type { HealthcareService, Resource, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType } from '../actors';
 import { isBookableActorType } from '../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../configSearch';
@@ -132,20 +132,6 @@ export function getActorStatus(resource: ConfigurableActorResource, scheduleActi
 function getStoredActorStatus(actor: ConfigurableActor): ConfigStatus {
   const [schedule] = actor.schedules;
   return getActorStatus(actor.resource, schedule && schedule.active !== false);
-}
-
-/**
- * Whether serviceType concepts name a visit type. Compares ids rather than whole references, as
- * `getOfferedServices` does, since a stored reference may carry a version.
- * @param serviceType - The concepts, such as a Schedule's `serviceType`.
- * @param service - The visit type.
- * @returns True when any concept names it.
- */
-export function serviceTypeNames(
-  serviceType: CodeableConcept[] | undefined,
-  service: WithId<HealthcareService>
-): boolean {
-  return extractServiceTypeReferences(serviceType).some((reference) => resolveId(reference) === service.id);
 }
 
 /**
@@ -281,8 +267,6 @@ export function getOfferings(
     if (!schedule || isActorTurnedOff(actor)) {
       return [];
     }
-    const offered =
-      serviceTypeIncludesAllServices(schedule.serviceType) || serviceTypeNames(schedule.serviceType, service);
-    return offered ? [{ actor, schedule }] : [];
+    return serviceTypeOffersService(schedule.serviceType, service) ? [{ actor, schedule }] : [];
   });
 }
