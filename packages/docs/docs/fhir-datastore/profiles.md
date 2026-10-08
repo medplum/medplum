@@ -325,19 +325,7 @@ Generated types enforce the constraints that can be expressed in TypeScript: req
 
 ### Keeping Types in Sync with Profiles
 
-Your editor only needs the generated `.d.ts` files, which are typically committed to your repository. The `StructureDefinition` resources are only needed when generating types. The main risk is the generated types drifting from the profiles that the server validates against. To avoid this, choose a single source of truth for your profiles, generate types from it, and check in CI that the generated types are up to date.
-
-**Repository as the source of truth (recommended).** Keep your profiles in your repository, for example as [FSH](#fhir-shorthand-fsh) source or as `StructureDefinition` JSON from an implementation guide. Upload them to Medplum as part of your deployment, and generate types from the same files. Profile changes are then code reviewed along with the code that depends on them, and the server, types, and code are always updated together.
-
-```bash
-medplum generate-types fsh-generated/resources/StructureDefinition-*.json --output-dir src/types/profiles
-```
-
-**Medplum server as the source of truth.** If your profiles are managed directly in Medplum, or shared across multiple applications, generate types from the server with `--profile-url`, which fetches each `StructureDefinition` using your CLI credentials. Since each profile version has its own `url` (see [Updating Profiles](#updating-profiles)), generating types from the same URLs always uses the same profile versions, and upgrading a profile is an explicit change to the URL. Run the same command in a scheduled or pre-release CI job to detect profile changes on the server.
-
-**Published implementation guides.** Profiles from published implementation guides, such as US Core, don't change within a version. Pin the version you use, and regenerate types when you upgrade to a new version.
-
-Whichever source of truth you choose, a CI step that regenerates the types and fails on any difference catches profiles and types that are out of sync:
+Generated `.d.ts` files are typically committed to your repository, so the main risk is that they drift from the profiles the server validates against. Pick a single source of truth for your profiles: your repository (e.g. [FSH](#fhir-shorthand-fsh) source uploaded to Medplum on deploy), the Medplum server (with `--profile-url`; each profile version has its own `url`), or a pinned version of a published implementation guide. Then add a CI step that regenerates the types and fails on any difference:
 
 ```bash
 medplum generate-types <files or --profile-url options> --output-dir src/types/profiles
