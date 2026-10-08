@@ -250,11 +250,13 @@ export function clearBotAccessTokenCache(): void {
 
 export async function getBotAccessToken(runAs: WithId<ProjectMembership>): Promise<string> {
   // Keying on versionId ensures any change to the membership results in a fresh token
-  const cacheKey = `${runAs.id}:${runAs.meta?.versionId}`;
-  const cached = botAccessTokenCache.get(cacheKey);
   const systemRepo = getGlobalSystemRepo();
-  if (cached && Date.now() < cached.expiresAt && (await isLoginValid(systemRepo, cached.loginId))) {
-    return cached.accessToken;
+  const cacheKey = `${runAs.id}:${runAs.meta?.versionId}`;
+  if (runAs.id && runAs.meta?.versionId) {
+    const cached = botAccessTokenCache.get(cacheKey);
+    if (cached && Date.now() < cached.expiresAt && (await isLoginValid(systemRepo, cached.loginId))) {
+      return cached.accessToken;
+    }
   }
 
   // Create the Login resource
