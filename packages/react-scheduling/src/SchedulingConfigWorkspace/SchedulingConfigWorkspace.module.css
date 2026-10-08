@@ -15,6 +15,7 @@
   position: relative;
   flex-shrink: 0;
   width: 300px;
+  padding-block: var(--mantine-spacing-md);
   overflow-y: auto;
 }
 
@@ -23,7 +24,7 @@
   position: relative;
   flex: 1;
   min-width: 0;
-  padding-left: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-md) 0 var(--mantine-spacing-md) var(--mantine-spacing-md);
   overflow-y: auto;
   scrollbar-gutter: stable;
 }
