@@ -153,3 +153,15 @@ thomas:
   title: Co-Founder and CEO, Awell
   url: https://www.linkedin.com/in/thomasvdc/
   image_url: /img/people/thomas-vande-casteele.jpg
+
+pauliusmui:
+  name: Paulius Mui, MD
+  title: CEO, Distillemr
+  url: https://www.linkedin.com/in/pauliusmui/
+  image_url: https://distillemr.com/images/paulius.png
+
+misham:
+  name: Misha Manulis
+  title: CTO, Distillemr
+  url: https://www.linkedin.com/in/mishamanulis
+  image_url: https://distillemr.com/images/misha.png
