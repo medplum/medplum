@@ -47,6 +47,24 @@ async function setupClient(resources: readonly Resource[] = SchedulingFixtures):
 }
 
 /**
+ * A calendar's row in the sidebar, picked out from the slots on the calendar, which name whose
+ * time they hold too.
+ *
+ * @param label - The calendar's row label.
+ * @returns The row's button.
+ */
+function calendarRow(label: string): HTMLElement {
+  const row = screen
+    .getAllByText(label)
+    .map((element) => element.closest('button'))
+    .find(Boolean);
+  if (!row) {
+    throw new Error(`No sidebar row for ${label}`);
+  }
+  return row;
+}
+
+/**
  * The Mantine color a calendar's row is drawn in, read off the swatch Mantine styles inline.
  *
  * No fixture Schedule names a color, so every row is on the cycled fallback palette — which
@@ -437,16 +455,14 @@ describe('SchedulingWorkspace', () => {
       expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
 
       // Hiding the provider leaves it too: it is still held on the device and the room.
-      await userEvent.click(screen.getByText('Dr. Maya Rivera').closest('button') as HTMLElement);
-      await waitFor(() =>
-        expect(screen.getByText('Dr. Maya Rivera').closest('button')).toHaveAttribute('aria-pressed', 'false')
-      );
+      await userEvent.click(calendarRow('Dr. Maya Rivera'));
+      await waitFor(() => expect(calendarRow('Dr. Maya Rivera')).toHaveAttribute('aria-pressed', 'false'));
       expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
       expect(eventColor('Miles Cooper')).toBe(imaging);
 
       // Hiding the rest takes it off the calendar.
       for (const label of ['Ultrasound 1 (Main Campus)', 'Exam Room A']) {
-        await userEvent.click(screen.getByText(label).closest('button') as HTMLElement);
+        await userEvent.click(calendarRow(label));
       }
       await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(0));
       expect(appointmentEvents('Renee Alvarez')).toHaveLength(1);
