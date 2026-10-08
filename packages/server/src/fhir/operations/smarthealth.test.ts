@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, ContentType } from '@medplum/core';
+import { badRequest, ContentType, generateId } from '@medplum/core';
 import type { Binary, Bundle, Parameters, Patient, SmartHealthLink } from '@medplum/fhirtypes';
 import express from 'express';
 import { base64url, CompactEncrypt, CompactSign, exportJWK, generateKeyPair } from 'jose';
@@ -10,16 +10,18 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { KeyLike } from '../../oauth/keys';
-import { createTestProject, initTestAuth } from '../../test.setup';
+import { createTestProject } from '../../test.setup';
+import type { Repository } from '../repo';
 
 const app = express();
 let accessToken: string;
+let repo: Repository;
 
 describe('SMART Health operations', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    ({ repo, accessToken } = await createTestProject({ withAccessToken: true, withRepo: true }));
   });
 
   afterAll(async () => {
@@ -431,7 +433,7 @@ describe('SMART Health operations', () => {
     );
     expect(fetchCall?.[1]).toEqual(
       expect.objectContaining({
-        redirect: 'error',
+        redirect: 'follow',
         signal: expect.any(AbortSignal),
       })
     );
@@ -476,12 +478,49 @@ describe('SMART Health operations', () => {
     fetchSpy.mockRestore();
   });
 
+  test.each([ContentType.JSON, 'application/fhir+json;fhirVersion=4.0.1'])(
+    'Accepts external SMART Health Link payloads with %s content type',
+    async (contentType) => {
+      const key = base64url.encode(Buffer.alloc(32, 4));
+      const encrypted = await encryptSmartHealthLinkTestFile(
+        { resourceType: 'Bundle', type: 'collection' },
+        key,
+        contentType as 'application/fhir+json'
+      );
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => encrypted,
+      } as Response);
+
+      const resolveResponse = await request(app)
+        .post('/fhir/R4/$resolve-smart-health-link')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON)
+        .send({
+          shlink: encodeShlinkPayload({
+            url: 'https://issuer.example.com/smart-link/payload',
+            key,
+            flag: 'U',
+            v: 1,
+          }),
+          recipient: 'Test Recipient',
+        });
+      expect(resolveResponse).toHaveStatus(200);
+      expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(true);
+      const fhirResources = JSON.parse(getStringParameter(resolveResponse.body, 'fhirResources')) as Bundle[];
+      expect(fhirResources[0]).toMatchObject({ resourceType: 'Bundle', type: 'collection' });
+
+      fetchSpy.mockRestore();
+    }
+  );
+
   test('Rejects invalid external SMART Health Link payload responses', async () => {
     const key = base64url.encode(Buffer.alloc(32, 3));
     const unsupportedContentType = await encryptSmartHealthLinkTestFile(
       { resourceType: 'Bundle', type: 'collection' },
       key,
-      ContentType.JSON as unknown as 'application/fhir+json'
+      ContentType.TEXT as unknown as 'application/fhir+json'
     );
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
@@ -531,6 +570,58 @@ describe('SMART Health operations', () => {
     expect(getStringParameter(unsupportedContentTypeResponse.body, 'error')).toContain(
       'Unsupported SMART Health Link content type'
     );
+
+    const notFhir = await encryptSmartHealthLinkTestFile(
+      { foo: 'bar' } as unknown as Bundle,
+      key,
+      ContentType.JSON as unknown as 'application/fhir+json'
+    );
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: async () => notFhir,
+    } as Response);
+    const notFhirResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        shlink: encodeShlinkPayload({
+          url: 'https://issuer.example.com/smart-link/payload',
+          key,
+          flag: 'U',
+          v: 1,
+        }),
+        recipient: 'Test Recipient',
+      });
+    expect(notFhirResponse).toHaveStatus(200);
+    expect(getBooleanParameter(notFhirResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(notFhirResponse.body, 'error')).toContain('not a FHIR resource');
+
+    const invalidJson = await new CompactEncrypt(Buffer.from('not json'))
+      .setProtectedHeader({ alg: 'dir', enc: 'A256GCM', cty: ContentType.FHIR_JSON })
+      .encrypt(base64url.decode(key));
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: async () => invalidJson,
+    } as Response);
+    const invalidJsonResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        shlink: encodeShlinkPayload({
+          url: 'https://issuer.example.com/smart-link/payload',
+          key,
+          flag: 'U',
+          v: 1,
+        }),
+        recipient: 'Test Recipient',
+      });
+    expect(invalidJsonResponse).toHaveStatus(200);
+    expect(getBooleanParameter(invalidJsonResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(invalidJsonResponse.body, 'error')).toBe('SMART Health Link payload is not valid JSON');
 
     fetchSpy.mockResolvedValueOnce({
       ok: true,
@@ -639,8 +730,7 @@ describe('SMART Health operations', () => {
     const directUrl = new URL(getStringParameter(generateResponse.body, 'url'));
     const smartHealthLink = await readGeneratedSmartHealthLink(directUrl.pathname);
     const binaryId = getBinaryId(smartHealthLink);
-    const { getGlobalSystemRepo } = await import('../repo');
-    await getGlobalSystemRepo().deleteResource('Binary', binaryId);
+    await repo.deleteResource('Binary', binaryId);
 
     const payloadResponse = await request(app).get(directUrl.pathname).query({ recipient: 'Test Recipient' });
     expect(payloadResponse).toHaveStatus(404);
@@ -718,21 +808,17 @@ async function createPatient(): Promise<Patient> {
 async function readGeneratedSmartHealthLink(pathname: string): Promise<SmartHealthLink> {
   const id = pathname.match(/^\/shl\/([^/]+)\//)?.[1];
   expect(id).toBeDefined();
-  const { getGlobalSystemRepo } = await import('../repo');
-  return getGlobalSystemRepo().readResource<SmartHealthLink>('SmartHealthLink', id as string);
+  return repo.readResource<SmartHealthLink>('SmartHealthLink', id as string);
 }
 
 async function updateGeneratedSmartHealthLink(smartHealthLink: SmartHealthLink): Promise<void> {
-  const { getGlobalSystemRepo } = await import('../repo');
-  await getGlobalSystemRepo().updateResource(smartHealthLink);
+  await repo.updateResource(smartHealthLink);
 }
 
 async function createBinaryInAnotherProject(): Promise<Binary> {
-  const { project } = await createTestProject();
-  const { getGlobalSystemRepo } = await import('../repo');
-  return getGlobalSystemRepo().createResource<Binary>({
+  return repo.getSystemRepo().createResource<Binary>({
     resourceType: 'Binary',
-    meta: { project: project.id },
+    meta: { project: generateId() },
     contentType: ContentType.JOSE,
   });
 }

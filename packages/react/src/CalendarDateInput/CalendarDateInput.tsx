@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group } from '@mantine/core';
 import cx from 'clsx';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import classes from './CalendarDateInput.module.css';
 import {
@@ -23,7 +23,7 @@ export interface CalendarDateInputProps {
   /** Called with the day picked. */
   readonly onClick: (date: Date) => void;
   readonly month?: Date;
-  /** The day chosen. Ignored while a range is given. */
+  /** An extra day to mark as picked, alongside any `range`. Ignored while a drag is under way. */
   readonly selected?: Date;
   readonly allowUnavailableDates?: boolean;
   readonly earliestDate?: Date;
@@ -41,6 +41,11 @@ export interface CalendarDateInputProps {
    * which may begin in a month that has been paged away from.
    */
   readonly onSelectRange?: (start: Date, end: Date) => void;
+  /**
+   * Shown in place of the month and year above the grid, such as a button for jumping to a month.
+   * Rendered inside a `<p>`, so it must be inline content.
+   */
+  readonly monthLabel?: ReactNode;
 }
 
 interface CalendarCell {
@@ -77,14 +82,15 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
   // blinks down to the day pressed on the way to every click.
   const dragging = drag.range && !isSameDay(drag.range.start, drag.range.end) ? drag.range : undefined;
   const range = toDays(dragging ?? props.range);
-  const selected = range ? undefined : props.selected;
+  // Suppressed only while actively dragging, so a static range still shows its picked day.
+  const selected = dragging ? undefined : props.selected;
 
   const grid = useMemo(() => buildGrid(month, props.availableDates), [month, props.availableDates]);
 
   return (
     <div>
       <Group justify="space-between" gap="xs" grow wrap="nowrap">
-        <p style={{ flex: 1 }}>{getMonthString(month)}</p>
+        <p style={{ flex: 1 }}>{props.monthLabel ?? getMonthString(month)}</p>
         <Group justify="flex-end" gap="xs">
           <Button
             variant="outline"
@@ -133,7 +139,7 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
                       variant="light"
                       className={cx(
                         day.available && classes.available,
-                        isRangeEnd(day.date, range, selected) && classes.selected
+                        isAnchor(day.date, range, selected) && classes.selected
                       )}
                       aria-pressed={selected || range ? isChosen(day.date, range, selected) : undefined}
                       disabled={isDayDisabled(day)}
@@ -192,25 +198,25 @@ function toDays(range: DayRange): DayRange {
 }
 
 /**
- * Returns whether a day is one of the two a range is anchored on.
+ * Returns whether a day is one the calendar is anchored on, and so marked as picked.
  * @param date - Local midnight of the day in question.
- * @param range - The stretch of days asked for, if there is one.
+ * @param range - The stretch of days on show, if there is one.
  * @param selected - The single day chosen, if there is one.
- * @returns True when the day is an end of the range, or the day chosen.
+ * @returns True when the day is an end of the range on show, or the day named as picked.
  */
-function isRangeEnd(date: Date, range: DayRange, selected: Date | undefined): boolean {
+function isAnchor(date: Date, range: DayRange, selected: Date | undefined): boolean {
   return isSameDay(date, selected) || (!!range && (isSameDay(date, range.start) || isSameDay(date, range.end)));
 }
 
 /**
  * Returns whether a day is part of what has been chosen.
  * @param date - Local midnight of the day in question.
- * @param range - The stretch of days asked for, if there is one.
+ * @param range - The stretch of days on show, if there is one.
  * @param selected - The single day chosen, if there is one.
  * @returns True when the day falls within what is chosen.
  */
 function isChosen(date: Date, range: DayRange, selected: Date | undefined): boolean {
-  return isRangeEnd(date, range, selected) || (!!range && date > range.start && date < range.end);
+  return isAnchor(date, range, selected) || (!!range && date > range.start && date < range.end);
 }
 
 /**

@@ -165,4 +165,39 @@ describe('UploadDocumentModal', () => {
     });
     expect(createResource).not.toHaveBeenCalled();
   });
+
+  test('shows an error and keeps the modal open when the attachment upload fails', async () => {
+    const user = userEvent.setup();
+    const onCreated = vi.fn();
+    const failure = new Error('Storage unavailable');
+    vi.spyOn(medplum, 'createAttachment').mockRejectedValue(failure);
+    const createResource = vi.spyOn(medplum, 'createResource');
+
+    setup({ onCreated });
+    selectFile(new File(['data'], 'report.pdf', { type: 'application/pdf' }));
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() => expect(showErrorNotification).toHaveBeenCalledWith(failure));
+    expect(createResource).not.toHaveBeenCalled();
+    expect(onCreated).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Upload' })).toBeEnabled();
+  });
+
+  test('highlights the dropzone while dragging and accepts a dropped file', () => {
+    setup();
+    const dropzone = screen
+      .getByText('Drag a file here or click to browse')
+      .closest('div[class*="dropzone"]') as Element;
+
+    fireEvent.dragOver(dropzone);
+    expect(dropzone.className).toMatch(/dropzoneDragging/);
+    fireEvent.dragLeave(dropzone);
+    expect(dropzone.className).not.toMatch(/dropzoneDragging/);
+
+    fireEvent.dragOver(dropzone);
+    fireEvent.drop(dropzone, { dataTransfer: { files: [new File(['data'], 'scan.png', { type: 'image/png' })] } });
+    expect(screen.getByText('scan.png')).toBeInTheDocument();
+    expect(dropzone.className).not.toMatch(/dropzoneDragging/);
+    expect(screen.getByRole('button', { name: 'Upload' })).toBeEnabled();
+  });
 });

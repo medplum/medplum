@@ -1,24 +1,33 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
-import type { Appointment, Slot } from '@medplum/fhirtypes';
+import { SchedulingUnvalidatedBookingURI } from '@medplum/core';
+import type { Appointment, Bundle, Extension } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
 import type { MockInstance } from 'vitest';
 import { installBookStub } from '../stories/mockBook';
 import { installFindStub } from '../stories/mockFind';
+import { ElderJordanPatient } from '../stories/scheduling';
 import { installAutocompleteTimers } from '../test-utils/asyncAutocomplete';
 import {
   bookButton,
+  chooseActor,
+  chooseFirstOfferedTime,
+  chooseImagingService,
+  choosePatient,
+  chooseRepeat,
   chosenTimeField,
   clickBook,
   field,
   fillBooking,
   MONDAY_MORNING,
+  openTimeFinder,
+  patientDetail,
   setupBookingClient,
 } from '../test-utils/bookingForm';
-import { renderWithMedplum, screen } from '../test-utils/render';
-import type { AppointmentBookingFormProps } from './AppointmentBookingForm';
+import { fireEvent, renderWithMedplum, screen } from '../test-utils/render';
+import type { AppointmentBooking, AppointmentBookingFormProps } from './AppointmentBookingForm';
 import { AppointmentBookingForm } from './AppointmentBookingForm';
 
 installAutocompleteTimers();
@@ -35,8 +44,8 @@ function setup(medplum: MockClient, props?: Partial<AppointmentBookingFormProps>
  * What the booking reported writing.
  * @returns The booking `onBooked` was handed.
  */
-function reportedBooking(): { appointment: Appointment; slots: Slot[] } {
-  const [booking] = onBooked.mock.calls[0] as [{ appointment: Appointment; slots: Slot[] }];
+function reportedBooking(): AppointmentBooking {
+  const [booking] = onBooked.mock.calls[0] as [AppointmentBooking];
   return booking;
 }
 
@@ -51,6 +60,22 @@ function reportedBooking(): { appointment: Appointment; slots: Slot[] } {
  */
 function bookCount(post: MockInstance<MedplumClient['post']>): number {
   return post.mock.calls.filter(([url]) => String(url).includes('$book')).length;
+}
+
+/** Two weeks of a series, as `$book` would write them. */
+const TWO_WEEKS = ['week-1', 'week-2'].map((id): Appointment => ({
+  resourceType: 'Appointment',
+  id,
+  status: 'booked',
+  participant: [],
+}));
+
+function bookedBundle(appointments: Appointment[]): Bundle {
+  return {
+    resourceType: 'Bundle',
+    type: 'transaction-response',
+    entry: appointments.map((resource) => ({ resource })),
+  };
 }
 
 describe('AppointmentBookingForm', () => {
@@ -84,8 +109,10 @@ describe('AppointmentBookingForm', () => {
 
       expect(onBooked).toHaveBeenCalledTimes(1);
       const booking = reportedBooking();
-      expect(booking.appointment.id).toBeDefined();
-      expect(booking.appointment.status).toBe('booked');
+      expect(booking.appointments[0].id).toBeDefined();
+      expect(booking.appointments[0].status).toBe('booked');
+      // Still reported for hosts written before series, until they have moved off it.
+      expect(booking.appointment).toBe(booking.appointments[0]);
       expect(booking.slots.length).toBeGreaterThan(0);
     });
   });
@@ -99,7 +126,7 @@ describe('AppointmentBookingForm', () => {
 
       expect(String(post.mock.calls[0][0])).toContain('Appointment/$book');
       const booking = reportedBooking();
-      expect(booking.appointment.resourceType).toBe('Appointment');
+      expect(booking.appointments[0].resourceType).toBe('Appointment');
       expect(booking.slots.every((slot) => slot.resourceType === 'Slot')).toBe(true);
     });
 
@@ -114,6 +141,39 @@ describe('AppointmentBookingForm', () => {
       const announced = notify.mock.calls.map(([event]) => event.resourceType);
       expect(announced).toContain('Appointment');
       expect(announced).toContain('Slot');
+    });
+
+    test('Reports and announces every appointment of a booked series', async () => {
+      // `$book` answers a recurring series with one appointment per occurrence.
+      vi.spyOn(medplum, 'post').mockResolvedValue(bookedBundle(TWO_WEEKS));
+      const notify = vi.spyOn(medplum, 'notifyResourceModified');
+      setup(medplum, { allowRecurring: true });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Once a week for 2 weeks');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await clickBook();
+
+      expect(onBooked).toHaveBeenCalledWith(expect.objectContaining({ appointments: TWO_WEEKS }));
+      expect(notify.mock.calls.map(([event]) => event.id)).toStrictEqual(['week-1', 'week-2']);
+      expect(screen.queryByText(/\$book returned/)).not.toBeInTheDocument();
+    });
+
+    test('Books a series a week apart through the story stub', async () => {
+      // The stories book through this stub, so a series has to come back whole from it.
+      setup(medplum, { allowRecurring: true });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseRepeat('Once a week for 2 weeks');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await clickBook();
+
+      const [first, second] = reportedBooking().appointments;
+      expect(Date.parse(second.start as string) - Date.parse(first.start as string)).toBe(7 * 24 * 60 * 60 * 1000);
     });
 
     test('Reports a booking the host callback threw over as written', async () => {
@@ -157,6 +217,131 @@ describe('AppointmentBookingForm', () => {
       expect(chosenTimeField()?.value).toBe(time);
       expect(screen.getByText('Jordan Reyes')).toBeInTheDocument();
       expect(onBooked).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * Answers everything but the time, then opens the finder, which is where a time is
+   * chosen by either means: picked from what is offered, or typed above them.
+   */
+  async function fillWithoutTime(): Promise<void> {
+    await chooseImagingService();
+    await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+    await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+    await openTimeFinder();
+  }
+
+  function typeTime(dateTime: string, minutes: string): void {
+    fireEvent.change(screen.getByLabelText('Date & time'), { target: { value: dateTime } });
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: minutes } });
+  }
+
+  describe('When the host permits a typed time', () => {
+    test('Offers nothing to type without the prop', async () => {
+      setup(medplum);
+      await fillWithoutTime();
+
+      // The times on offer are there; the way past them is not.
+      expect(screen.queryByText('Or enter a time')).not.toBeInTheDocument();
+    });
+
+    test('Offers the fields above the times on offer', async () => {
+      setup(medplum, { canBypassSchedulingRules: true });
+      await fillWithoutTime();
+      expect(screen.getByText('Or enter a time')).toBeInTheDocument();
+    });
+
+    test('Writes a typed time directly, never through $book', async () => {
+      const executeBatch = vi
+        .spyOn(medplum, 'executeBatch')
+        .mockResolvedValue({ resourceType: 'Bundle', type: 'transaction-response', entry: [] });
+      const post = vi.spyOn(medplum, 'post');
+      setup(medplum, { canBypassSchedulingRules: true });
+      await fillWithoutTime();
+      typeTime('2026-08-17T14:07', '45');
+      await clickBook();
+
+      // `$book` would refuse this: nothing checked the time, and 14:07 for 45 minutes
+      // fits neither the alignment grid nor the configured length.
+      expect(bookCount(post)).toBe(0);
+      expect(executeBatch).toHaveBeenCalledTimes(1);
+    });
+
+    test('Still books a searched time through $book', async () => {
+      const executeBatch = vi.spyOn(medplum, 'executeBatch');
+      const post = vi.spyOn(medplum, 'post');
+      setup(medplum, { canBypassSchedulingRules: true });
+      await fillBooking();
+      await clickBook();
+
+      // Permission to type a time is not a reason to stop checking the ones offered:
+      // `$book` validates, stamps capacity, and is safe against a concurrent booking.
+      expect(bookCount(post)).toBe(1);
+      expect(executeBatch).not.toHaveBeenCalled();
+    });
+
+    test('Cannot book while the typed time is incomplete', async () => {
+      setup(medplum, { canBypassSchedulingRules: true });
+      await fillWithoutTime();
+      typeTime('', '45');
+
+      expect(bookButton()).toBeDisabled();
+    });
+  });
+
+  describe('When the host supplies its own extensions', () => {
+    const HOST_USER: Extension = {
+      url: 'https://example.org/fhir/StructureDefinition/BookedByUser',
+      valueString: 'host-user-9f2',
+    };
+
+    /**
+     * The appointment as it was sent to `$book`.
+     * @param post - The spy standing in front of the client's `post`.
+     * @returns The appointment in the `$book` parameters.
+     */
+    function postedAppointment(post: MockInstance<MedplumClient['post']>): Appointment {
+      const call = post.mock.calls.find(([url]) => String(url).includes('$book'));
+      const parameters = call?.[1] as { parameter: { resource: Appointment }[] };
+      return parameters.parameter[0].resource;
+    }
+
+    test('Carries them onto a booking made through $book', async () => {
+      const post = vi.spyOn(medplum, 'post');
+      setup(medplum, { appointmentExtensions: [HOST_USER] });
+      await fillBooking();
+      await clickBook();
+
+      // `Meta.author` records the machine credential, which a host shares across all of
+      // its users. This is how it says which of its people booked the visit.
+      expect(postedAppointment(post).extension).toContainEqual(HOST_USER);
+    });
+
+    test('Carries them onto a typed booking too, beside the unvalidated marker', async () => {
+      const executeBatch = vi
+        .spyOn(medplum, 'executeBatch')
+        .mockResolvedValue({ resourceType: 'Bundle', type: 'transaction-response', entry: [] });
+      setup(medplum, { canBypassSchedulingRules: true, appointmentExtensions: [HOST_USER] });
+      await fillWithoutTime();
+      typeTime('2026-08-17T14:07', '45');
+      await clickBook();
+
+      const bundle = executeBatch.mock.calls[0][0];
+      const appointment = bundle.entry?.[1]?.resource as Appointment;
+      expect(appointment.extension).toContainEqual(HOST_USER);
+      expect(appointment.extension).toContainEqual({ url: SchedulingUnvalidatedBookingURI, valueBoolean: true });
+      expect(Date.parse(appointment.created as string)).toBeGreaterThanOrEqual(MONDAY_MORNING.getTime());
+    });
+
+    test('Stamps when the appointment was created', async () => {
+      const post = vi.spyOn(medplum, 'post');
+      setup(medplum);
+      await fillBooking();
+      await clickBook();
+
+      // Nothing else sets it: `$book` passes the appointment through apart from its
+      // status and slots, and a booking written directly is seen by no operation.
+      expect(Date.parse(postedAppointment(post).created as string)).toBeGreaterThanOrEqual(MONDAY_MORNING.getTime());
     });
   });
 });

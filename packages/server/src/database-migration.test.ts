@@ -13,7 +13,8 @@ import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { SystemRepository } from './fhir/repo';
-import { getGlobalSystemRepo } from './fhir/repo';
+import { getShardSystemRepo } from './fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import type { PgQueryable } from './fhir/sql';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
@@ -34,7 +35,7 @@ import * as migrationVersions from './migrations/migration-versions';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import type { MigrationAction } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
-import { createTestProject, withTestContext } from './test.setup';
+import { getSuperAdminTestProject, withTestContext } from './test.setup';
 import * as version from './util/version';
 import * as workers from './workers';
 import type * as PostDeployMigration from './workers/post-deploy-migration';
@@ -175,7 +176,7 @@ describe('Database migrations', () => {
       restoreWorkerQueueMocks();
     });
 
-    systemRepo = getGlobalSystemRepo();
+    systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
     await loadTestConfig();
     // We want a clean history of post-deploy migration AsyncJob. init and shutdown the app
     // to facilitate expunging all relevant AsyncJob
@@ -251,7 +252,8 @@ describe('Database migrations', () => {
           expect(queueAddSpy).toHaveBeenCalledTimes(1);
           const jobData = queueAddSpy.mock.calls[0][1];
 
-          const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+          const asyncJobId = jobData.tracking.asyncJobId;
+          const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJobId);
 
           expect(jobData).toEqual(
             expect.objectContaining<CustomPostDeployMigrationJobData>({
@@ -333,6 +335,7 @@ describe('Database migrations', () => {
         const expectedJobData = prepareCustomMigrationJobData(asyncJob);
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         expect(queueAddSpy.mock.lastCall?.[1]).toEqual(expectedJobData);
+        expect(queueAddSpy.mock.lastCall?.[2]).toEqual({ deduplication: { id: 'v1' } });
       }));
 
     test('No pending data migration', () =>
@@ -503,8 +506,8 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob.id);
-        const result = await new ReindexJob(systemRepo).execute(undefined, jobData);
+        const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob);
+        const result = await (await ReindexJob.create(jobData)).execute(undefined);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
         expect(asyncJob.status).toStrictEqual('accepted');
@@ -535,8 +538,8 @@ describe('Database migrations', () => {
 
         expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(0);
 
-        const jobData = prepareReindexJobData(['MedicinalProductContraindication'], asyncJob.id);
-        await new ReindexJob(systemRepo).execute(undefined, jobData);
+        const jobData = prepareReindexJobData(['MedicinalProductContraindication'], asyncJob);
+        await (await ReindexJob.create(jobData)).execute(undefined);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
         expect(asyncJob.status).toStrictEqual('completed');
@@ -579,14 +582,14 @@ describe('Database migrations', () => {
 
       let jobData: ReindexJobData = {} as unknown as ReindexJobData;
       await withTestContext(async () => {
-        jobData = prepareReindexJobData(['ValueSet'], asyncJob.id);
+        jobData = prepareReindexJobData(['ValueSet'], asyncJob);
       });
 
-      const reindexJob = new ReindexJob(systemRepo);
+      const reindexJob = await ReindexJob.create(jobData);
       const processIterationSpy = vi
         .spyOn(reindexJob, 'processIteration')
         .mockResolvedValueOnce({ count: 0, durationMs: 0 });
-      await expect(reindexJob.execute(undefined, jobData)).resolves.toBe('finished');
+      await expect(reindexJob.execute(undefined)).resolves.toBe('finished');
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       if (firstBootMode && dataVersion) {
@@ -624,7 +627,7 @@ describe('Database migrations', () => {
       await initApp(app, config);
       await expungePostDeployMigrationAsyncJob(systemRepo);
 
-      ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
+      ({ project } = await getSuperAdminTestProject());
 
       const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 
@@ -790,6 +793,59 @@ describe('Database migrations', () => {
       });
     });
 
+    describe('Set schema version', () => {
+      let setPreDeployVersionSpy: MockInstance<typeof migrationSql.setPreDeployVersion>;
+
+      beforeEach(() => {
+        setPreDeployVersionSpy = vi
+          .spyOn(migrationSql, 'setPreDeployVersion')
+          .mockImplementation(async (_client, version) => version);
+        vi.spyOn(migrationVersions, 'getPreDeployMigrationVersions').mockReturnValue([1, 2, 3]);
+      });
+
+      test.each([0, 2, 3])('Set schema version -- valid schemaVersion - %s', async (schemaVersion) => {
+        const res1 = await request(app)
+          .post('/admin/super/setschemaversion')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .type('json')
+          .send({ schemaVersion });
+
+        expect(res1).toHaveStatus(200);
+        expect(res1.body).toMatchObject(allOk);
+        expect(setPreDeployVersionSpy).toHaveBeenCalledTimes(1);
+        expect(setPreDeployVersionSpy).toHaveBeenCalledWith(expect.anything(), schemaVersion);
+      });
+
+      test.each([undefined, 'v1', '3.3.0', 1.5, -1])(
+        'Set schema version -- invalid schemaVersion - %s',
+        async (schemaVersion) => {
+          const res1 = await request(app)
+            .post('/admin/super/setschemaversion')
+            .set('Authorization', 'Bearer ' + adminAccessToken)
+            .type('json')
+            .send({ schemaVersion });
+
+          expect(res1).toHaveStatus(400);
+          expect(res1.body).toMatchObject(badRequest('schemaVersion must be a non-negative integer'));
+          expect(setPreDeployVersionSpy).not.toHaveBeenCalled();
+        }
+      );
+
+      test('Set schema version -- greater than latest schema migration', async () => {
+        const res1 = await request(app)
+          .post('/admin/super/setschemaversion')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .type('json')
+          .send({ schemaVersion: 4 });
+
+        expect(res1).toHaveStatus(400);
+        expect(res1.body).toMatchObject(
+          badRequest('schemaVersion must not be greater than the latest schema migration v3')
+        );
+        expect(setPreDeployVersionSpy).not.toHaveBeenCalled();
+      });
+    });
+
     describe('Reconcile schema drift', () => {
       let generateMigrationActionsSpy: MockInstance<typeof migrateModule.generateMigrationActions>;
 
@@ -842,19 +898,20 @@ describe('Database migrations', () => {
             postDeploy: [],
           },
         });
+        expect(queueAddSpy.mock.calls[0][2]).toBeUndefined();
 
         expect(res1).toHaveStatus(202);
         expect(res1.headers['content-location']).toBeDefined();
       });
     });
 
-    describe('Reindex database', () => {
+    describe('Rebuild index', () => {
       test('Queues one or more concurrent reindex actions', async () => {
         const targets = [{ index: 'Patient_name_idx' }, { table: 'Observation' }];
         const queueAddSpy = getQueueAddSpy();
 
         const res = await request(app)
-          .post('/admin/super/reindex-database')
+          .post('/admin/super/rebuild-index')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
@@ -863,7 +920,8 @@ describe('Database migrations', () => {
         expect(res).toHaveStatus(202);
         expect(res.headers['content-location']).toBeDefined();
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
-        expect(queueAddSpy.mock.calls[0][1]).toMatchObject({
+        const jobData = queueAddSpy.mock.calls[0][1];
+        expect(jobData).toMatchObject({
           type: 'dynamic',
           migrationActions: {
             preDeploy: [],
@@ -873,6 +931,10 @@ describe('Database migrations', () => {
             ],
           },
         });
+        const asyncJobId = jobData.tracking.asyncJobId;
+        const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJobId);
+        expect(asyncJob.request).toBe('/admin/super/rebuild-index?index=Patient_name_idx&table=Observation');
+        expect(asyncJob.meta?.project).toBeUndefined();
       });
 
       test.each([
@@ -892,7 +954,7 @@ describe('Database migrations', () => {
         const queueAddSpy = getQueueAddSpy();
 
         const res = await request(app)
-          .post('/admin/super/reindex-database')
+          .post('/admin/super/rebuild-index')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
@@ -906,11 +968,85 @@ describe('Database migrations', () => {
         const queueAddSpy = getQueueAddSpy();
 
         const res = await request(app)
-          .post('/admin/super/reindex-database')
+          .post('/admin/super/rebuild-index')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
           .send({ targets: [{ index: 'Patient_name_idx' }], otherSql: 'DROP TABLE Patient' });
+
+        expect(res).toHaveStatus(400);
+        expect(queueAddSpy).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Drop invalid indexes', () => {
+      test('Queues explicitly selected invalid index cleanup actions', async () => {
+        const targets = [
+          { schema: 'public', index: 'AuditEvent_References_pkey_ccnew' },
+          { schema: 'pg_toast', index: 'pg_toast_2539493_index_ccnew' },
+        ];
+        const queueAddSpy = getQueueAddSpy();
+
+        const res = await request(app)
+          .post('/admin/super/drop-invalid-indexes')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({ targets });
+
+        expect(res).toHaveStatus(202);
+        expect(res.headers['content-location']).toBeDefined();
+        expect(queueAddSpy).toHaveBeenCalledTimes(1);
+        const jobData = queueAddSpy.mock.calls[0][1];
+        expect(jobData).toMatchObject({
+          type: 'dynamic',
+          migrationActions: {
+            preDeploy: [],
+            postDeploy: [
+              {
+                type: 'DROP_INVALID_INDEX',
+                schemaName: 'public',
+                indexName: 'AuditEvent_References_pkey_ccnew',
+              },
+              {
+                type: 'DROP_INVALID_INDEX',
+                schemaName: 'pg_toast',
+                indexName: 'pg_toast_2539493_index_ccnew',
+              },
+            ],
+          },
+        });
+        const asyncJobId = jobData.tracking.asyncJobId;
+        const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJobId);
+        expect(asyncJob.request).toBe(
+          '/admin/super/drop-invalid-indexes?index=public.AuditEvent_References_pkey_ccnew&index=pg_toast.pg_toast_2539493_index_ccnew'
+        );
+        expect(asyncJob.meta?.project).toBeUndefined();
+      });
+
+      test.each([
+        {},
+        { targets: [] },
+        { targets: Array.from({ length: 11 }, (_, index) => ({ schema: 'public', index: `Index${index}` })) },
+        { targets: 'AuditEvent_References_pkey_ccnew' },
+        { targets: [123] },
+        { targets: [{}] },
+        { targets: [{ schema: 'public' }] },
+        { targets: [{ index: 'AuditEvent_References_pkey_ccnew' }] },
+        { targets: [{ schema: 'public', index: 'AuditEvent_References_pkey_ccnew', extra: true }] },
+        { targets: [{ schema: 123, index: 'AuditEvent_References_pkey_ccnew' }] },
+        { targets: [{ schema: 'schema; DROP SCHEMA public', index: 'AuditEvent_References_pkey_ccnew' }] },
+        { targets: [{ schema: 'public', index: 123 }] },
+        { targets: [{ schema: 'public', index: 'index; DROP TABLE Patient' }] },
+      ])('Rejects invalid input: %j', async (body) => {
+        const queueAddSpy = getQueueAddSpy();
+
+        const res = await request(app)
+          .post('/admin/super/drop-invalid-indexes')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send(body);
 
         expect(res).toHaveStatus(400);
         expect(queueAddSpy).not.toHaveBeenCalled();

@@ -146,6 +146,10 @@ export interface MultiResourceInputProps<T extends Resource = Resource> {
   readonly error?: AsyncAutocompleteProps<T>['error'];
   /** Maximum number of resources that can be selected. Defaults to uncapped. */
   readonly maxValues?: number;
+  /** Render the options dropdown inside the DOM tree (not a portal); defaults to portalled. */
+  readonly withinPortal?: boolean;
+  /** Whether to show a button that clears the whole selection. Defaults to true. */
+  readonly clearable?: boolean;
 }
 
 export function MultiResourceInput<T extends Resource = Resource>(
@@ -239,7 +243,8 @@ export function MultiResourceInput<T extends Resource = Resource>(
       toOption={toOption}
       loadOptions={loadValues}
       onChange={handleChange}
-      clearable
+      withinPortal={props.withinPortal}
+      clearable={props.clearable ?? true}
     />
   );
 }

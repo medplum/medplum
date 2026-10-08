@@ -1,23 +1,34 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { buildProposedAppointment } from '../stories/scheduling';
+import { RecurrenceTemplateExtensionURI } from '@medplum/core';
+import type { Appointment } from '@medplum/fhirtypes';
+import { buildProposedAppointment, DrRiveraPractitioner, ExamRoomA, indexByReference } from '../stories/scheduling';
 import {
-  MAX_FIND_WINDOW_DAYS,
   endOfMonth,
   enumerateDateRange,
   filterByTimeOfDay,
-  formatDateRange,
+  formatTimezoneLabel,
   formatZonedTime,
   getActorGroupKey,
+  getAppointmentActors,
   getAppointmentKey,
   getDurationMinutes,
   getFindWindowError,
+  getLaterOccurrenceStarts,
+  getZonedDayRange,
   groupAppointmentsByDay,
+  isViewerTimezone,
+  MAX_FIND_WINDOW_DAYS,
   parseDayKey,
   parseZonedTime,
 } from './AppointmentFinder.times';
 
 const EASTERN = 'America/New_York';
+const PACIFIC = 'America/Los_Angeles';
+const ARIZONA = 'America/Phoenix';
+
+/** The resources a caller had already read, keyed as a proposal names them. */
+const RESOURCES = indexByReference([DrRiveraPractitioner, ExamRoomA]);
 
 describe('filterByTimeOfDay', () => {
   const morning = buildProposedAppointment({ start: '2026-07-27T13:00:00.000Z' }); // 9:00 Eastern
@@ -91,6 +102,67 @@ describe('groupAppointmentsByDay', () => {
     expect(day.date.getMonth()).toBe(6);
     expect(day.date.getDate()).toBe(27);
   });
+
+  test('Lists every day searched, including the ones offering nothing', () => {
+    const days = groupAppointmentsByDay([buildProposedAppointment({ start: '2026-07-27T13:00:00.000Z' })], EASTERN, {
+      start: new Date(2026, 6, 27),
+      end: new Date(2026, 6, 29, 23, 59, 59, 999),
+    });
+
+    expect(days.map((day) => day.key)).toStrictEqual(['2026-07-27', '2026-07-28', '2026-07-29']);
+    expect(days[0].groups).toHaveLength(1);
+    expect(days[1].groups).toStrictEqual([]);
+    expect(days[2].groups).toStrictEqual([]);
+  });
+
+  test('Keeps a day that offered times outside the days searched', () => {
+    // The search window is local days, but times are read in the site's own timezone,
+    // so a result can land a day off the searched edge.
+    const days = groupAppointmentsByDay([buildProposedAppointment({ start: '2026-07-26T13:00:00.000Z' })], EASTERN, {
+      start: new Date(2026, 6, 27),
+      end: new Date(2026, 6, 27, 23, 59, 59, 999),
+    });
+
+    expect(days.map((day) => day.key)).toStrictEqual(['2026-07-26', '2026-07-27']);
+  });
+
+  test('Heads a group with the actors themselves where it was given them', () => {
+    const appointment = buildProposedAppointment({
+      start: '2026-07-27T13:00:00.000Z',
+      actorReferences: [{ reference: 'Practitioner/dr-rivera' }, { reference: 'Location/exam-room-a' }],
+    });
+
+    const [day] = groupAppointmentsByDay([appointment], EASTERN, undefined, RESOURCES);
+
+    expect(day.groups[0].actors).toStrictEqual([DrRiveraPractitioner, ExamRoomA]);
+    // Keyed off the proposal's own references, so supplying resources cannot
+    // regroup the times or break a React key across a refetch.
+    expect(day.groups[0].key).toBe(groupAppointmentsByDay([appointment], EASTERN)[0].groups[0].key);
+  });
+});
+
+describe('getAppointmentActors', () => {
+  test('Swaps in each actor resource the caller had already read', () => {
+    const appointment = buildProposedAppointment({
+      start: '2026-07-27T13:00:00.000Z',
+      actorReferences: [{ reference: 'Practitioner/dr-rivera', display: 'Maya Rivera' }],
+    });
+
+    // The resource wins over the name `$find` copied off the Schedule.
+    expect(getAppointmentActors(appointment, RESOURCES)).toStrictEqual([DrRiveraPractitioner]);
+  });
+
+  test('Leaves an actor it was given no resource for as the proposal named it', () => {
+    const actor = { reference: 'Device/ultrasound-1', display: 'Ultrasound 1' };
+    const appointment = buildProposedAppointment({ start: '2026-07-27T13:00:00.000Z', actorReferences: [actor] });
+
+    expect(getAppointmentActors(appointment, RESOURCES)).toStrictEqual([actor]);
+    expect(getAppointmentActors(appointment)).toStrictEqual([actor]);
+  });
+
+  test('Reads nothing off nothing', () => {
+    expect(getAppointmentActors(undefined, RESOURCES)).toStrictEqual([]);
+  });
 });
 
 describe('keys and durations', () => {
@@ -123,6 +195,61 @@ describe('keys and durations', () => {
     ).toBe(20);
     expect(getDurationMinutes(undefined)).toBe(0);
     expect(getDurationMinutes({ resourceType: 'Appointment', status: 'proposed', participant: [] })).toBe(0);
+  });
+});
+
+describe('getLaterOccurrenceStarts', () => {
+  /**
+   * A proposed first occurrence of a weekly series.
+   * @param start - When it starts.
+   * @param occurrenceCount - How many occurrences the series has.
+   * @param timezone - The zone the template names, if any.
+   * @returns The proposal.
+   */
+  function seriesOf(start: string, occurrenceCount: number, timezone?: string): Appointment {
+    return {
+      resourceType: 'Appointment',
+      status: 'proposed',
+      participant: [],
+      start,
+      extension: [
+        {
+          url: RecurrenceTemplateExtensionURI,
+          extension: [
+            ...(timezone ? [{ url: 'timezone', valueCodeableConcept: { coding: [{ code: timezone }] } }] : []),
+            { url: 'occurrenceCount', valuePositiveInt: occurrenceCount },
+          ],
+        },
+      ],
+    };
+  }
+
+  test('Counts a week on from the first for each occurrence after it', () => {
+    const starts = getLaterOccurrenceStarts(seriesOf('2026-08-10T14:00:00.000Z', 3), EASTERN);
+
+    expect(starts.map((start) => start.toISOString())).toStrictEqual([
+      '2026-08-17T14:00:00.000Z',
+      '2026-08-24T14:00:00.000Z',
+    ]);
+  });
+
+  test('Keeps the time on the clock of the zone the template names across a change of clocks', () => {
+    // 10am Eastern on 26 October 2026 is 14:00Z; clocks fall back on 1 November, so the
+    // next week's 10am is 15:00Z. The zone handed in is not the one the series keeps.
+    const starts = getLaterOccurrenceStarts(seriesOf('2026-10-26T14:00:00.000Z', 2, EASTERN), 'Etc/UTC');
+
+    expect(starts.map((start) => start.toISOString())).toStrictEqual(['2026-11-02T15:00:00.000Z']);
+  });
+
+  test('Finds nothing more for a visit that does not repeat', () => {
+    expect(
+      getLaterOccurrenceStarts({
+        resourceType: 'Appointment',
+        status: 'proposed',
+        participant: [],
+        start: '2026-08-10T14:00:00.000Z',
+      })
+    ).toStrictEqual([]);
   });
 });
 
@@ -209,21 +336,6 @@ describe('enumerateDateRange', () => {
   });
 });
 
-describe('formatDateRange', () => {
-  test('Says which days are being searched', () => {
-    expect(formatDateRange({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 27) })).toBe('Monday, July 27');
-    expect(formatDateRange({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 30) })).toBe(
-      'Monday, July 27 – Thursday, July 30'
-    );
-    expect(formatDateRange({ start: new Date(2026, 6, 27) })).toBe('From Monday, July 27');
-    expect(formatDateRange({ end: new Date(2026, 6, 30) })).toBe('Through Thursday, July 30');
-  });
-
-  test('Says nothing when neither end was asked for', () => {
-    expect(formatDateRange({})).toBeUndefined();
-  });
-});
-
 describe('getFindWindowError', () => {
   test('A range inside the window can be searched', () => {
     expect(getFindWindowError({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 27, 23, 59) })).toBeUndefined();
@@ -238,9 +350,114 @@ describe('getFindWindowError', () => {
     expect(getFindWindowError({ start: new Date(2026, 6, 27), end: tooFar })).toBe('Choose at most 31 days at a time.');
   });
 
+  test('A series is searched a week at a time', () => {
+    const start = new Date('2026-08-10T04:00:00Z');
+    const weekEnd = new Date('2026-08-17T03:59:59.999Z');
+    expect(getFindWindowError({ start, end: weekEnd }, 2)).toBeUndefined();
+    expect(getFindWindowError({ start, end: new Date('2026-08-18T03:59:59.999Z') }, 2)).toBe(
+      'Choose at most 7 days at a time for a recurring appointment.'
+    );
+  });
+
+  test('A series week that falls back from daylight time runs an hour long and can still be searched', () => {
+    // Monday midnight EDT to the close of Sunday EST in New York: 7 days and an hour.
+    const start = new Date('2026-10-26T04:00:00Z');
+    expect(getFindWindowError({ start, end: new Date('2026-11-02T04:59:59.999Z') }, 2)).toBeUndefined();
+    expect(getFindWindowError({ start, end: new Date('2026-11-02T05:00:00.001Z') }, 2)).toBe(
+      'Choose at most 7 days at a time for a recurring appointment.'
+    );
+  });
+
   test('An open range says nothing, because there is no width to judge', () => {
     expect(getFindWindowError({})).toBeUndefined();
     expect(getFindWindowError({ start: new Date(2026, 6, 27) })).toBeUndefined();
     expect(getFindWindowError({ end: new Date(2026, 6, 27) })).toBeUndefined();
+  });
+});
+
+describe('formatZonedTime', () => {
+  const summer = new Date('2026-07-27T13:30:00.000Z');
+  const winter = new Date('2026-01-27T14:30:00.000Z');
+
+  test('Names the zone only when asked to', () => {
+    expect(formatZonedTime(summer, EASTERN)).toBe('9:30 AM');
+    expect(formatZonedTime(summer, EASTERN, { withTimezone: true })).toBe('9:30 AM ET');
+  });
+
+  test('Names the zone the same way on either side of a daylight saving change', () => {
+    // The generic name spares the reader "EDT" in July and "EST" in January for what they
+    // think of as one zone.
+    expect(formatZonedTime(winter, EASTERN, { withTimezone: true })).toBe('9:30 AM ET');
+  });
+});
+
+describe('formatTimezoneLabel', () => {
+  test('Writes the zone the short way', () => {
+    expect(formatTimezoneLabel(EASTERN)).toBe('ET');
+    expect(formatTimezoneLabel(PACIFIC)).toBe('PT');
+  });
+
+  test('Uses the standard abbreviation for a zone that never changes', () => {
+    // Arizona keeps standard time all year, so there is nothing for a generic name to
+    // generalise over and the abbreviation stands on its own.
+    expect(formatTimezoneLabel(ARIZONA)).toBe('MST');
+  });
+});
+
+describe('isViewerTimezone', () => {
+  test('Answers against the viewer it is given', () => {
+    expect(isViewerTimezone(EASTERN, EASTERN)).toBe(true);
+    expect(isViewerTimezone(EASTERN, PACIFIC)).toBe(false);
+  });
+
+  test('Judges by identifier, not by the clock the zones happen to share', () => {
+    // Arizona keeps standard time all year, so it reads the same as Pacific for half of it.
+    // Naming the zone regardless keeps the rule one a reader can state.
+    expect(isViewerTimezone(ARIZONA, PACIFIC)).toBe(false);
+  });
+
+  test("An unresolved zone is the viewer's own, since that is what gets displayed", () => {
+    expect(isViewerTimezone(undefined, PACIFIC)).toBe(true);
+  });
+});
+
+describe('getZonedDayRange', () => {
+  // Well clear of the runner's clock, so nothing here is floored at now.
+  const AUGUST_17 = new Date(2099, 7, 17);
+
+  test('Bounds the day at the site, not at the viewer', () => {
+    const range = getZonedDayRange(AUGUST_17, EASTERN);
+
+    // Midnight Eastern on the 17th through midnight on the 18th, so an 11pm–12am
+    // slot still satisfies `$find`'s `end <= range.end`.
+    expect(range.start.toISOString()).toBe('2099-08-17T04:00:00.000Z');
+    expect(range.end.toISOString()).toBe('2099-08-18T04:00:00.000Z');
+  });
+
+  test('Covers a day that daylight saving made short or long', () => {
+    const hours = (day: Date, timezone: string): number => {
+      const range = getZonedDayRange(day, timezone);
+      return (range.end.getTime() - range.start.getTime()) / 3_600_000;
+    };
+
+    // Assuming an ordinary 24 hours would lose an hour of one and overrun the other.
+    expect(hours(new Date(2099, 2, 8), EASTERN)).toBe(23);
+    expect(hours(new Date(2099, 10, 1), EASTERN)).toBe(25);
+  });
+
+  test('Never starts in the past, and a day gone by is read as today', () => {
+    const now = new Date();
+    const range = getZonedDayRange(new Date(2020, 0, 1), EASTERN);
+
+    expect(range.start.getTime()).toBeGreaterThanOrEqual(now.getTime());
+    // Today at the site ends the range, rather than a day five years gone.
+    expect(range.end.getTime()).toBeGreaterThan(range.start.getTime());
+  });
+
+  test("Without a zone it bounds the day on the viewer's own clock", () => {
+    const range = getZonedDayRange(AUGUST_17);
+
+    expect(range.start).toStrictEqual(new Date(2099, 7, 17, 0, 0, 0, 0));
+    expect(range.end).toStrictEqual(new Date(2099, 7, 18, 0, 0, 0, 0));
   });
 });

@@ -60,7 +60,8 @@ function createValue(input: string): ValueSetExpansionContains {
  */
 export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Element {
   const medplum = useMedplum();
-  const { binding, creatable, clearable, expandParams, withHelpText, error, description, ...rest } = props;
+  const { binding, creatable, clearable, expandParams, withHelpText, itemComponent, error, description, ...rest } =
+    props;
   const isCreatable = creatable ?? true;
   const isUnavailable = useValueSetAvailability(binding) === false;
   const [searchError, setSearchError] = useState<string>();
@@ -113,13 +114,13 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
     if (isCreatable) {
       // The field is still usable, so show a non-error helper note (in the description slot)
       const unavailableNote = (
-        <UnavailableNote text="Suggestions unavailable" color="yellow.9" message={unavailableMessage} />
+        <UnavailableNote text="Suggestions unavailable" severity="warning" message={unavailableMessage} />
       );
       inputDescription = combineNodes(description, unavailableNote);
     } else {
       // The field is unusable: disable it and explain why alongside any consumer validation error
       const unavailableNote = (
-        <UnavailableNote text="This field is unavailable." color="red" message={unavailableMessage} />
+        <UnavailableNote text="This field is unavailable." severity="error" message={unavailableMessage} />
       );
       inputError = combineNodes(error, unavailableNote);
       inputDisabled = true;
@@ -140,7 +141,8 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
       toOption={toOption}
       loadOptions={loadValues}
       onCreate={createValue}
-      itemComponent={withHelpText ? ItemComponent : undefined}
+      // A caller's own row wins: `withHelpText` is the built-in one, not the only one allowed.
+      itemComponent={itemComponent ?? (withHelpText ? ItemComponent : undefined)}
     />
   );
 }

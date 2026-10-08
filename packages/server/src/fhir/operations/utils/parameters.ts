@@ -46,8 +46,8 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
   const inputParameters = operation.parameter.filter((p) => p.use === 'in');
 
   // If the request is a GET request, use the query parameters
-  // Otherwise, use the body
-  const input = req.method === 'GET' ? parseQueryString(req.query, inputParameters) : req.body;
+  // Otherwise, use the body, which a batch entry without a resource leaves undefined
+  const input = req.method === 'GET' ? parseQueryString(req.query, inputParameters) : (req.body ?? {});
 
   if (isResourceInputParam(inputParameters, input)) {
     const param = inputParameters[0];

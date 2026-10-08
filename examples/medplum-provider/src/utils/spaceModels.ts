@@ -15,11 +15,35 @@ export interface SpaceModelOption {
  */
 export const AI_MODELS_SETTING = 'aiModels';
 
+export type ReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh';
+
+export interface ReasoningEffortOption {
+  value: ReasoningEffort;
+  label: string;
+}
+
+/**
+ * Reasoning effort levels selectable next to the model.
+ * The value is passed to the AI bots as the `reasoning_effort` input parameter.
+ */
+export const REASONING_EFFORTS: ReasoningEffortOption[] = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'xhigh', label: 'Extra high' },
+];
+
+/** Reasoning effort preselected for a new conversation. */
+export const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'high';
+
 /** Built-in fallback used when the project has not configured `aiModels`. */
 export const DEFAULT_MODELS: SpaceModelOption[] = [
+  { value: 'gpt-6-astra', label: 'GPT-6 Astra' },
   { value: 'gpt-5.5', label: 'GPT-5.5' },
-  { value: 'gpt-5.4', label: 'GPT-5.4' },
-  { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+  { value: 'gpt-5.5-pro', label: 'GPT-5.5 Pro' },
+  { value: 'gpt-5.6-luna', label: 'GPT-5.6 Luna' },
+  { value: 'gpt-5.6-sol', label: 'GPT-5.6 Sol' },
+  { value: 'gpt-5.6-terra', label: 'GPT-5.6 Terra' },
 ];
 
 /**

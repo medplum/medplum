@@ -7,12 +7,14 @@
  */
 
 import {
+  badRequest,
   ContentType,
   deepClone,
   EMPTY,
   OAuthGrantType,
   OAuthSigningAlgorithm,
   OAuthTokenAuthMethod,
+  OperationOutcomeError,
   readInteractions,
   splitN,
 } from '@medplum/core';
@@ -25,6 +27,8 @@ import { getProjectScopedUrl } from '../util/url';
 import type { PopulatedAccessPolicy } from './accesspolicy';
 
 const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(read|write|c?r?u?d?s?|\*)$/;
+
+const missingPatientContext = 'Missing patient context for patient/ scope';
 
 export interface SmartScope {
   readonly permissionType: 'patient' | 'user' | 'system';
@@ -194,15 +198,30 @@ export function applySmartScopes(accessPolicy: PopulatedAccessPolicy, authState:
     // No SMART scopes, so no changes to the access policy
     return accessPolicy;
   }
-  let context: Reference<Patient> | undefined;
-  if (authState.smartAppLaunch?.patient) {
-    context = authState.smartAppLaunch?.patient;
-  } else if (authState.membership.profile.reference?.startsWith('Patient/')) {
-    context = authState.membership.profile as Reference<Patient>;
+  const context = getPatientContext(authState);
+  if (!context && smartScopes.some((scope) => scope.permissionType === 'patient')) {
+    // `patient/` scopes are scoped to a single patient compartment, which cannot be resolved without a context
+    throw new OperationOutcomeError(badRequest(missingPatientContext));
   }
 
   // Build an access policy that is the intersection of the existing access policy and the SMART scopes
   return intersectSmartScopes(accessPolicy, smartScopes, context);
+}
+
+/**
+ * Resolves the Patient context for the login, from the SMART App Launch context or the user's own profile.
+ * @param authState - The user's authentication state.
+ * @returns The Patient context reference, if a valid one is available.
+ */
+function getPatientContext(authState: AuthState): Reference<Patient> | undefined {
+  const membership = authState.onBehalfOfMembership ?? authState.membership;
+  for (const candidate of [authState.smartAppLaunch?.patient, membership.profile]) {
+    const [resourceType, id] = splitN(candidate?.reference ?? '', '/', 2);
+    if (resourceType === 'Patient' && id) {
+      return candidate as Reference<Patient>;
+    }
+  }
+  return undefined;
 }
 
 function intersectSmartScopes(
@@ -214,9 +233,10 @@ function intersectSmartScopes(
   for (const policy of accessPolicy.resource ?? EMPTY) {
     if (policy.resourceType === '*') {
       for (const scope of smartScope) {
-        const merged = mergeAccessPolicyWithScope(policy, scope, context);
+        // Expand the wildcard policy before merging, so that any criteria added by the scope
+        // is prefixed with the resource type the policy will be applied to
+        const merged = mergeAccessPolicyWithScope({ ...policy, resourceType: scope.resourceType }, scope, context);
         if (merged) {
-          merged.resourceType = scope.resourceType;
           result.resource.push(merged);
         }
       }
@@ -254,9 +274,11 @@ function mergeAccessPolicyWithScope(
     appendCriteria(result, scope.criteria);
   }
   if (scope.permissionType === 'patient') {
-    if (context) {
-      appendCriteria(result, `_compartment=${context.reference}`);
+    if (!context?.reference) {
+      // Should be unreachable: applySmartScopes rejects `patient/` scopes without a context
+      throw new OperationOutcomeError(badRequest(missingPatientContext));
     }
+    appendCriteria(result, `_compartment=${context.reference}`);
   }
   return result;
 }

@@ -1,7 +1,7 @@
 ---
 title: Referrals Decision Guide
 sidebar_label: Referrals
-sidebar_position: 2
+sidebar_position: 5
 download_slug: referrals
 ---
 
@@ -214,7 +214,7 @@ Decide how inbound referrals get created, reviewed, and matched to patients.
 
 After a referral is created or accepted, decide how it gets to the right person, what authorization and coverage steps gate the work, and how it turns into an actual visit or service that ties back to the referral.
 
-*Note: Scheduling is covered in depth in its own Medplum discovery guide. This section stays at the level needed to align scheduling and authorization steps with the referral lifecycle.*
+*Note: Scheduling is covered in the [Scheduling Decision Guide](/docs/decision-guides/scheduling). This section stays at the level needed to align scheduling and authorization steps with the referral lifecycle.*
 
 **Questions:**
 
@@ -231,7 +231,7 @@ After a referral is created or accepted, decide how it gets to the right person,
 | Check whether prior auth is required | CoverageEligibilityRequest with purpose: auth-requirements; response indicates authorizationRequired and any supporting documentation needed. |
 | Submit a prior auth request | Claim with use: preauthorization (distinct from claim for completed services); ClaimResponse carries the payer's decision. Bots typically convert FHIR ↔ X12 EDI for transmission via clearinghouses (Availity, Change Healthcare, Waystar, etc.). |
 | Gate scheduling on authorization | Hold the referral in an auth-pending Task.businessStatus until ClaimResponse returns approval; then transition to a scheduling-ready state. |
-| Scheduling the work | Covered in the Scheduling discovery guide. From the referral side, link the resulting Appointment and downstream Encounter back to the referral via basedOn → ServiceRequest. |
+| Scheduling the work | See the [Scheduling Decision Guide](/docs/decision-guides/scheduling). From the referral side, link the resulting Appointment and downstream Encounter back to the referral via basedOn → ServiceRequest. |
 | Aging and SLA | Search and dashboards over Task.lastModified / authoredOn; Subscriptions or scheduled Bots surface overdue items. |
 
 ---
@@ -271,4 +271,3 @@ Decide what should come back after the referral is acted on, how those items att
 | Narrative / PDF reply | `DocumentReference` with context pointing at the referral. |
 | Linking | Manual selection or automated match using identifiers you control – define when human confirmation is required. |
 | Closure | Terminal `businessStatus` or equivalent completion signal aligned with 3.8. |
-

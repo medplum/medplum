@@ -71,16 +71,20 @@ curl -G 'https://api.medplum.com/fhir/R4/Appointment/$find' \
 | `end`                    | `dateTime`                       | End of the search window (inclusive)                                                         | Yes      |
 | `service-type-reference` | `reference(HealthcareService)`   | The HealthcareService describing the type of appointment to be scheduled.                    | Yes      |
 | `schedule`               | `reference(Schedule)`            | A schedule to check for availability. May be passed multiple times with different schedules. | Yes      |
+| `ignore-appointment`     | `reference(Appointment)`         | Compute availability as if this Appointment did not exist. See [Reassigning an existing appointment](#reassigning-an-existing-appointment). | No       |
+| `occurrence-count`       | `positiveInt`                    | Find a weekly series of this many occurrences (2 to 6). See [Finding a recurring series](#finding-a-recurring-series). | No       |
 | `_count`                 | `integer`                        | Maximum number of Appointment resources to return. Defaults to 20. Maximum is 1000.          | No       |
 
 ### Constraints
 
 - `start` must be before `end`
-- The search window cannot exceed **31 days**
+- The search window cannot exceed **31 days**, or **7 days** with `occurrence-count`
 - At least one schedule must be provided
 - Each schedule must have exactly **one actor** reference
 - Each schedule's `serviceType` field must match the requested HealthcareService.type
 - Each schedule's actor (Practitioner, Location, or Device) must have a timezone defined via the `http://hl7.org/fhir/StructureDefinition/timezone` extension
+- `ignore-appointment`, if provided, must reference an Appointment that exists and is readable by the caller
+- `ignore-appointment` cannot be combined with `occurrence-count`
 
 ## Output
 
@@ -180,16 +184,105 @@ The Appointments are virtual — they are not persisted in the FHIR store. Each 
 ```
 
 
+## Reassigning an existing appointment
+
+When an appointment is moved to a different Schedule — say an 11am visit with Dr. Smith moves from
+room one to room two — the appointment being moved is itself blocking the time you want to search
+for. Dr. Smith's schedule is busy at 11am, but only because of the very appointment being
+reassigned. A plain `$find` for Dr. Smith and room two would therefore not offer 11am.
+
+Passing `ignore-appointment` computes availability as if that Appointment did not exist:
+
+```
+[base]/R4/Appointment/$find?...&schedule=Schedule/dr-smith-schedule&schedule=Schedule/room-two-schedule&ignore-appointment=Appointment/my-appointment-id
+```
+
+Every Slot referenced by `Appointment.slot` is discarded before availability is computed, including
+the `busy-unavailable` buffer Slots created alongside the appointment. Slots belonging to *other*
+appointments still block, even at the same time on the same Schedule — the parameter frees only the
+time held by the one appointment it names.
+
+:::caution
+
+A time found with `ignore-appointment` cannot be committed with [`$book`](/docs/scheduling/appointment-book)
+or [`$hold`](/docs/scheduling/appointment-hold). Those operations validate availability with the
+original appointment's Slots still in place and will reject the request with
+`Requested time slot is not available`. Use
+[`$reschedule`](/docs/scheduling/appointment-reschedule) instead, which releases those Slots and
+moves the appointment in a single transaction.
+
+:::
+
+## Finding a recurring series
+
+Passing `occurrence-count` searches for a weekly series: times that are bookable at the same local
+time for that many weeks in a row.
+
+```
+[base]/R4/Appointment/$find?start=2026-03-09T00:00:00-04:00&end=2026-03-16T00:00:00-04:00&service-type-reference=HealthcareService/my-service-id&schedule=Schedule/my-schedule-id&occurrence-count=6
+```
+
+- The search window covers the first occurrence only, and cannot exceed **7 days**. One local week
+  is accepted even when it runs an hour longer across a DST transition.
+- Each later occurrence starts at the same local time in the schedules' timezone, whole weeks
+  later, so a series keeps its local time across DST transitions. A time that doesn't exist in some
+  week, because of a DST transition, can't start a series.
+- Every schedule must share one timezone.
+- `_count` limits the number of series returned, earliest first.
+
+Each entry in the response is the **first occurrence** of one available series, in the same shape
+as any other `$find` result. It also carries R5's
+[`recurrenceTemplate`](https://hl7.org/fhir/R5/appointment-definitions.html#Appointment.recurrenceTemplate),
+as the R4 cross-version extension, to describe how the series recurs:
+
+```json
+{
+  "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceTemplate",
+  "extension": [
+    {
+      "url": "timezone",
+      "valueCodeableConcept": { "coding": [{ "system": "https://www.iana.org/time-zones", "code": "America/New_York" }] }
+    },
+    {
+      "url": "recurrenceType",
+      "valueCodeableConcept": { "coding": [{ "system": "http://unitsofmeasure.org", "code": "wk", "display": "week" }] }
+    },
+    { "url": "occurrenceCount", "valuePositiveInt": 6 },
+    {
+      "url": "weeklyTemplate",
+      "extension": [
+        { "url": "monday", "valueBoolean": true },
+        { "url": "weekInterval", "valuePositiveInt": 1 }
+      ]
+    }
+  ]
+}
+```
+
+:::tip
+
+Pass a series entry to [`$book`](/docs/scheduling/appointment-book#booking-a-recurring-series)
+or [`$hold`](/docs/scheduling/appointment-hold#holding-a-recurring-series) unchanged to book or
+hold every occurrence, all or none.
+
+:::
+
 ## Availability Logic
 
 `$find` calculates available windows by:
 
 1. Reading each Schedule's `SchedulingParameters` extension to determine recurring availability windows, slot duration, buffer times, and alignment constraints
 2. Fetching existing Slot resources for each Schedule in the requested range (busy, busy-tentative, busy-unavailable, and free slots)
-3. Adding time for existing Slot resources with status `free`
-4. Subtracting occupied time for existing Slot resources with status `busy`, `busy-tentative`, or `busy-unavailable`.
-5. Applying alignment intervals and offsets to produce valid start times
-6. Returning Appointments up to `_count`
+3. Discarding the Slots held by `ignore-appointment`, if it was provided
+4. Adding time for existing Slot resources with status `free`
+5. Removing occupied time: `busy`, `busy-tentative`, and `busy-unavailable` slots block a time when the bookings covering it reach the strictest applicable limit — the requested `slotCapacity` or the tolerance of any booking already there (see [Overbooking](/docs/scheduling/defining-availability#overbooking)).
+   :::note
+
+   Under the default `slotCapacity` of 1, a single `busy` Slot is blocking. A capacity-1 booking is never offered for overbooking.
+
+   :::
+6. Applying alignment intervals and offsets to produce valid start times
+7. Returning Appointments up to `_count`
 
 See [Defining Availability](/docs/scheduling/defining-availability) for full details on how `SchedulingParameters` are configured.
 
@@ -210,6 +303,17 @@ See [Defining Availability](/docs/scheduling/defining-availability) for full det
 {
   "resourceType": "OperationOutcome",
   "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Search range cannot exceed 31 days" } }]
+}
+```
+
+### Range Exceeds 7 Days
+
+Returned when `occurrence-count` is provided and the search window is longer than one week.
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Search range cannot exceed 7 days" } }]
 }
 ```
 
@@ -240,6 +344,15 @@ See [Defining Availability](/docs/scheduling/defining-availability) for full det
 }
 ```
 
+### HealthcareService is inactive
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "HealthcareService is inactive" } }]
+}
+```
+
 ## Beta Status
 
 The Scheduling API is under active development. This [beta](/docs/compliance/alpha-beta) release of the scheduling API is expected to gain additional capabilities.
@@ -250,6 +363,7 @@ The Scheduling API is under active development. This [beta](/docs/compliance/alp
 
 - [Appointment `$book`](/docs/scheduling/appointment-book) - Book one of the returned Appointments
 - [Appointment `$hold`](/docs/scheduling/appointment-hold) - Reserve one of the returned Appointments
+- [Appointment `$reschedule`](/docs/scheduling/appointment-reschedule) - Move an existing Appointment to one of the returned times
 - [Defining Availability](/docs/scheduling/defining-availability) - How to configure `SchedulingParameters` on a Schedule
 - [Scheduling Overview](/docs/scheduling) - High-level scheduling concepts
 - [`Schedule` resource](/docs/api/fhir/resources/schedule)

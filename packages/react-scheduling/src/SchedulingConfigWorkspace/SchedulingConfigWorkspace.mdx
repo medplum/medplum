@@ -1,0 +1,71 @@
+import { Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as SchedulingConfigWorkspaceStories from './SchedulingConfigWorkspace.stories';
+
+<Meta of={SchedulingConfigWorkspaceStories} />
+
+# SchedulingConfigWorkspace
+
+Where an admin sets up scheduling. Every visit type (`HealthcareService`), provider (`Practitioner`), room
+(`Location`), and device (`Device`) is listed down the side; pick one and its page opens beside it, showing how it
+is configured and editing it in place. It is the configuration counterpart to `SchedulingWorkspace`, which books.
+For the data model underneath it, see
+[Defining Availability](https://www.medplum.com/docs/scheduling/defining-availability).
+
+```tsx
+<SchedulingConfigWorkspace />
+```
+
+It takes no required props and fetches its own resources. Which users see it is the host application's decision:
+the workspace writes through the signed-in user's access policy and shows the server's reason when a write is
+refused.
+
+<Canvas of={SchedulingConfigWorkspaceStories.Basic} />
+
+## What it lists
+
+The sidebar lists what booking leaves out, since that is often what an admin is looking for: visit types with
+no duration in effect, which booking never offers, visit types and actors that are turned off, and providers,
+rooms, and devices with no Schedule yet. Turned-off ones are hidden until **Show inactive** is ticked under the
+filters button. For a provider, room, or device that means either it or its Schedule is off, as booking skips
+both. Once listed, a turned-off one is marked **Inactive**, or **Schedule inactive** when only its Schedule is off.
+
+Schedules are not rows of their own: each actor's Schedule is part of its page. Rooms are the
+Locations typed as a room or a bed, and any Location with a Schedule, which booking lists as a room whatever its
+type.
+
+Each section reads one page of up to 1000, and says so when there are more. A section that can't be read is
+named above the page, and the others still list. The **+** beside Visit types starts a new visit type, which is
+listed once it is saved.
+
+## A visit type's page
+
+- **General:** whether it is active, its name, and the service facilities it is offered at
+  (`HealthcareService.location`). With none, it is offered at every service facility, so adding a first one or
+  removing the last asks first.
+- **Scheduling parameters:** duration, buffers, start interval, and capacity, with the same validation and
+  warnings as `SchedulingParametersEditor`.
+- **Default availability:** the weekly hours every calendar offering it follows unless it sets its own, edited
+  with the same fields as `ScheduleAvailabilityEditor`.
+
+## A provider's, room's, or device's page
+
+- **General:** a switch each for its own status and its Schedule's, then its name. Its own status applies
+  everywhere, not only in scheduling. Switching it off switches its Schedule off too, and the Schedule can't be
+  switched back on while it stays off. Switching the Schedule off on its own pauses booking without losing
+  anything. A note says when it can't be booked: because it is inactive, or because its Schedule is switched off.
+- **Visit types offered:** what its Schedule offers. Each visit type offered is an entry showing its duration in
+  effect and where its hours come from; opening one shows the Schedule's own scheduling parameters and hours for
+  it, each empty field showing what it inherits. At most one entry is open at a time, and an entry with unsaved
+  edits is marked. Every entry starts closed.
+
+## Saving
+
+Nothing is written as it is typed. A save bar appears while the page differs from what is stored, and Save sends
+only what changed, as one transaction bundle, each update conditional on the version the page opened. When
+another user or system saved the same resource in the meantime, nothing is written over it: the page says so and
+offers to reload it. A field the editor would reject blocks Save, with the reason; a value already stored out of
+range does not, unless it is edited.
+
+Switching to another row with unsaved changes asks before discarding them. Nothing in the workspace deletes a
+resource: a visit type or a Schedule is taken out of use by turning it off, which leaves its existing appointments
+untouched.

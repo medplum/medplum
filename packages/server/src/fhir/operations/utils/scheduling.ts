@@ -7,13 +7,17 @@ import {
   DEFAULT_MAX_SEARCH_COUNT,
   EMPTY,
   extractServiceTypeReferences,
+  getExtension,
   getExtensionValue,
   getReferenceString,
   isDefined,
   isResource,
+  MEDPLUM_VERSION,
   OperationOutcomeError,
   Operator,
   resolveId,
+  SchedulingBookedByOperationURI,
+  SchedulingSlotCapacityURI,
   TimezoneExtensionURI,
 } from '@medplum/core';
 import type {
@@ -29,7 +33,7 @@ import type {
 import assert from 'node:assert';
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
-import { areIntervalsOverlapping, clamp, earliest, latest } from '../../../util/date';
+import { addMinutes, areIntervalsOverlapping, clamp, earliest, latest } from '../../../util/date';
 import type { LayeredDict } from '../../../util/layereddict';
 import type { WithPath } from '../../../util/withpath';
 import { copyPaths, filterWithPaths, getPath, withPath } from '../../../util/withpath';
@@ -86,15 +90,15 @@ export function isAlignedToGrid(date: Date, alignment: AlignmentOptions): boolea
   return mod(minutesSinceMidnight(date, alignment.timezone) - alignment.offset, alignment.interval) === 0;
 }
 
+// The first instant of each local day the interval touches. That's usually midnight, but not on a
+// day whose midnight a DST transition skips, and the next day starts at its own midnight again.
 export function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.ZonedDateTime[] {
-  let t = Temporal.Instant.fromEpochMilliseconds(interval.start.valueOf())
-    .toZonedDateTimeISO(timeZone)
-    .withPlainTime({ hour: 0, minute: 0, second: 0, millisecond: 0 });
+  let t = Temporal.Instant.fromEpochMilliseconds(interval.start.valueOf()).toZonedDateTimeISO(timeZone).startOfDay();
 
   const results: Temporal.ZonedDateTime[] = [];
   while (t.epochMilliseconds < interval.end.valueOf()) {
     results.push(t);
-    t = t.add({ days: 1 });
+    t = t.add({ days: 1 }).startOfDay();
   }
   return results;
 }
@@ -313,6 +317,132 @@ export function removeAvailability(availableIntervals: Interval[], blockedInterv
   return result;
 }
 
+type CapacityEvent = { time: number; capacity: number; entering: boolean };
+
+function occupiesTime(status: Slot['status']): boolean {
+  return !(status === 'free' || status === 'entered-in-error');
+}
+
+function slotToInterval(slot: Slot, path?: string): Interval {
+  const start = new Date(slot.start);
+  const end = new Date(slot.end);
+  // Proposed slots are not persisted yet and have no id; identify those by path instead.
+  const label = slot.id ? `Slot/${slot.id}` : 'Slot';
+  // FHIR dateTime type allows leap seconds like "2016-12-31T23:59:60"; In JS this
+  // is read as an invalid date whose value is `NaN`. For now we are disallowing
+  // using such times as boundaries in scheduling to keep things simple.
+  if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf())) {
+    throw new OperationOutcomeError(badRequest(`${label} has invalid start or end time`, path));
+  }
+  if (end < start) {
+    throw new OperationOutcomeError(badRequest(`${label} has end time before start time`, path));
+  }
+  return { start, end };
+}
+
+// Performance optimization: a faster implementation of `intervalsExceedingCapacity`
+// for the common case of "slotCapacity=1" (i.e.  no overbooking allowed).
+function intervalsExceedingCapacityOne(slots: Slot[]): Interval[] {
+  const result: Interval[] = [];
+  for (const slot of slots) {
+    if (occupiesTime(slot.status)) {
+      result.push(slotToInterval(slot));
+    }
+  }
+  return normalizeIntervals(result);
+}
+
+// Builds the sorted start/end events for a sweep over `slots`' booked (non-free, non-error) time.
+function buildCapacityEvents(slots: Slot[]): CapacityEvent[] {
+  const events: CapacityEvent[] = [];
+  for (const slot of slots) {
+    if (!occupiesTime(slot.status)) {
+      continue;
+    }
+    const { start, end } = slotToInterval(slot);
+    const capacity = getSlotCapacity(slot);
+    events.push(
+      { time: start.valueOf(), capacity, entering: true },
+      { time: end.valueOf(), capacity, entering: false }
+    );
+  }
+  return events.sort((a, b) => a.time - b.time);
+}
+
+/**
+ * Returns the sub-intervals where a prospective booking of capacity `candidateCapacity`
+ * cannot be placed among `slots`. A time `t` is excluded if the number of slots covering it
+ * is at least as large as the capacity on any of those slots or the `candidateCapacity`.
+ *
+ * Intervals are half-open `[start, end)`; all deltas at a shared instant apply together, so
+ * adjacent bookings yield continuous coverage and a coinciding start/end nets out.
+ *
+ * @param slots - Existing slots, which may be stamped with a SlotCapacity extension
+ * @param candidateCapacity - Capacity (>= 1) of the prospective booking
+ * @returns A normalized (sorted, non-overlapping) list of intervals the candidate is barred from
+ */
+export function intervalsExceedingCapacity(slots: Slot[], candidateCapacity: number): Interval[] {
+  if (candidateCapacity < 1) {
+    throw new Error(`Invalid capacity; must be at least 1, got ${candidateCapacity}`);
+  }
+
+  if (candidateCapacity === 1) {
+    return intervalsExceedingCapacityOne(slots);
+  }
+
+  // Sweep the booking start/end instants in time order. `open` holds the capacities
+  // of the slots covering the current segment — pushed as each booking starts,
+  // removed as it ends.
+  const events = buildCapacityEvents(slots);
+  const open: number[] = [];
+
+  const result: Interval[] = [];
+  let blockedStart: number | undefined;
+  let i = 0;
+  while (i < events.length) {
+    // Apply every event at this instant before evaluating the segment [time, next):
+    // a booking ending here leaves before one starting here is admitted, so
+    // adjacent bookings net out at a shared boundary.
+    const time = events[i].time;
+    while (i < events.length && events[i].time === time) {
+      const event = events[i++];
+      if (event.entering) {
+        open.push(event.capacity);
+      } else {
+        const idx = open.indexOf(event.capacity);
+        assert(idx >= 0);
+        open.splice(idx, 1);
+      }
+    }
+
+    // Blocked when the concurrent count has reached the strictest applicable limit:
+    // the candidate's own capacity and every covering booking's capacity.
+    const limit = Math.min(candidateCapacity, ...open);
+    const blocked = open.length >= limit;
+    if (blocked && blockedStart === undefined) {
+      blockedStart = time;
+    } else if (!blocked && blockedStart !== undefined) {
+      // `open` empties at the final instant, so every opened region closes here.
+      result.push({ start: new Date(blockedStart), end: new Date(time) });
+      blockedStart = undefined;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * The overlap capacity a booked Slot was created under (its stamped `slotCapacity`).
+ * Absent or malformed ⇒ 1, so an unstamped busy slot blocks fully (fail closed).
+ *
+ * @param slot - The Slot to read
+ * @returns The capacity (>= 1)
+ */
+export function getSlotCapacity(slot: Slot): number {
+  const value = getExtension(slot, SchedulingSlotCapacityURI)?.valuePositiveInt;
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 ? value : 1;
+}
+
 /**
  * Applies overrides from existing Slots to an availability window
  *
@@ -320,7 +450,9 @@ export function removeAvailability(availableIntervals: Interval[], blockedInterv
  * @param params.availability - Ranges of available time
  * @param params.slots - Slot resources to consider
  * @param params.range - Interval of time to restrict availability to
- * @param params.serviceType - Service type to check for "free" slots
+ * @param params.serviceType - Service type used to filter service-scoped Slots; Slots without a serviceType apply to all services
+ * @param params.capacity - How many bookings may concurrently occupy a time before it is
+ *   unavailable (the resolved `slotCapacity`). Defaults to 1 (no overbooking).
  * @returns Updated availability information
  */
 export function applyExistingSlots(params: {
@@ -328,22 +460,108 @@ export function applyExistingSlots(params: {
   slots: Slot[];
   range: Interval;
   serviceType?: readonly CodeableConcept[];
+  capacity?: number;
 }): Interval[] {
+  const capacity = params.capacity ?? 1;
+
   const freeSlotIntervals = params.slots
     .filter((slot) => slot.status === 'free')
     .filter((slot) => hasMatchingServiceType(slot, params.serviceType ?? EMPTY))
-    .map((slot) => intersectIntervals({ start: new Date(slot.start), end: new Date(slot.end) }, params.range))
+    .map((slot) => intersectIntervals(slotToInterval(slot), params.range))
     .filter(isDefined);
 
-  const busySlotIntervals = normalizeIntervals(
-    params.slots
-      .filter(
-        (slot) => slot.status === 'busy' || slot.status === 'busy-unavailable' || slot.status === 'busy-tentative'
-      )
-      .map((slot) => ({ start: new Date(slot.start), end: new Date(slot.end) }))
-  );
+  const busySlots = params.slots
+    .filter((slot) => occupiesTime(slot.status))
+    .filter((slot) => hasMatchingServiceType(slot, params.serviceType ?? EMPTY));
+
+  const blockedIntervals = intervalsExceedingCapacity(busySlots, capacity);
   const allAvailability = normalizeIntervals(params.availability.concat(freeSlotIntervals));
-  return removeAvailability(allAvailability, busySlotIntervals);
+  return removeAvailability(allAvailability, blockedIntervals);
+}
+
+/**
+ * Applies the overlap capacity a Slot is created under — the resolved `slotCapacity` for its
+ * schedule — so later bookings of other services respect this booking's limit. Buffer
+ * (`busy-unavailable`) Slots are left unstamped: buffer time is exclusive, matching the capacity
+ * `validateAvailability` admitted them at. Capacity 1 (the default) is left unstamped, keeping
+ * ordinary bookings minimal. Any stamp already on the slot is replaced.
+ *
+ * @param slot - The slot to stamp (mutated in place)
+ * @param capacity - The resolved `slotCapacity` for the slot's schedule, if it is known
+ */
+function stampSlotCapacity(slot: Slot, capacity: number | undefined): void {
+  const extension = (slot.extension ?? []).filter((ext) => ext.url !== SchedulingSlotCapacityURI);
+  if (capacity !== undefined && capacity > 1 && slot.status !== 'busy-unavailable') {
+    extension.push({ url: SchedulingSlotCapacityURI, valuePositiveInt: capacity });
+  }
+  if (extension.length > 0) {
+    slot.extension = extension;
+  } else {
+    delete slot.extension;
+  }
+}
+
+/**
+ * Builds the Slot resources that an appointment on `schedule` over `interval` must hold: one
+ * `busy` Slot for the appointment itself, plus a `busy-unavailable` Slot for each configured
+ * buffer. The set is fully determined by the scheduling parameters, so this is the single
+ * definition shared by $find (which proposes them) and the write operations (which persist them).
+ *
+ * @param params - input object
+ * @param params.schedule - The Schedule the slots belong to
+ * @param params.parameters - Scheduling parameters supplying bufferBefore/bufferAfter
+ * @param params.interval - The appointment's own start and end, excluding buffers
+ * @returns The Slot resources for this schedule, unpersisted
+ */
+export function buildAppointmentSlots(params: {
+  schedule: WithId<Schedule>;
+  parameters: LayeredDict<SchedulingParameters>;
+  interval: Interval;
+}): Slot[] {
+  const { schedule, parameters, interval } = params;
+  const start = interval.start.toISOString();
+  const end = interval.end.toISOString();
+
+  const busySlot: Slot = {
+    resourceType: 'Slot',
+    start,
+    end,
+    schedule: createReference(schedule),
+    status: 'busy',
+  };
+
+  const slots: Slot[] = [busySlot];
+
+  const bufferBefore = parameters.get('bufferBefore');
+  if (bufferBefore) {
+    slots.push({
+      resourceType: 'Slot',
+      start: addMinutes(interval.start, -1 * bufferBefore).toISOString(),
+      end: start,
+      schedule: createReference(schedule),
+      status: 'busy-unavailable',
+      comment: 'buffer before appointment',
+    });
+  }
+
+  const bufferAfter = parameters.get('bufferAfter');
+  if (bufferAfter) {
+    slots.push({
+      resourceType: 'Slot',
+      start: end,
+      end: addMinutes(interval.end, bufferAfter).toISOString(),
+      schedule: createReference(schedule),
+      status: 'busy-unavailable',
+      comment: 'buffer after appointment',
+    });
+  }
+
+  const capacity = parameters.get('slotCapacity');
+  for (const slot of slots) {
+    stampSlotCapacity(slot, capacity);
+  }
+
+  return slots;
 }
 
 export function assertAllLoaded<T extends Resource>(
@@ -364,7 +582,14 @@ export async function getSchedulingParametersGroup(
   schedules: WithPath<WithId<Schedule>>[],
   healthcareService: WithPath<WithId<HealthcareService>>
 ): Promise<Map<WithPath<WithId<Schedule>>, LayeredDict<SchedulingParameters & { timezone: string }>>> {
+  if (healthcareService.active === false) {
+    throw new OperationOutcomeError(badRequest('HealthcareService is inactive', getPath(healthcareService)));
+  }
+
   schedules.forEach((schedule) => {
+    if (schedule.active === false) {
+      throw new OperationOutcomeError(badRequest('Schedule is inactive', getPath(schedule)));
+    }
     if (schedule.actor.length !== 1) {
       throw new OperationOutcomeError(
         badRequest('Scheduling only supported on schedules with exactly one actor', getPath(schedule))
@@ -375,17 +600,17 @@ export async function getSchedulingParametersGroup(
   const actors = await repo
     .readReferences(schedules.map((schedule) => schedule.actor[0]))
     .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
-  assertAllLoaded(actors, 'Loading schedule.actor failed');
 
   const serviceParams = getHealthcareServiceSchedulingParameters(healthcareService);
 
   return new Map<WithPath<WithId<Schedule>>, LayeredDict<SchedulingParameters & { timezone: string }>>(
     schedules.map((schedule, idx) => {
       const actor = actors[idx];
+      const actorLoaded = isResource(actor);
 
       let parameters = getScheduleSchedulingParameters(schedule, healthcareService, serviceParams);
 
-      const timezone = getTimeZone(actor);
+      const timezone = actorLoaded ? getTimeZone(actor) : undefined;
       if (timezone) {
         // Tricky: `timezone` is defined to prefer scheduling-parameter
         // definitions coming from HealthcareService or Schedule extensions
@@ -398,7 +623,12 @@ export async function getSchedulingParametersGroup(
         schedule,
         parameters.refine((p): asserts p is SchedulingParameters & { timezone: string } => {
           if (p.timezone === undefined) {
-            throw new OperationOutcomeError(badRequest('No timezone specified', getPath(actor)));
+            throw new OperationOutcomeError(
+              badRequest(
+                actorLoaded ? 'No timezone specified' : 'No timezone specified and schedule.actor could not be read',
+                getPath(actor)
+              )
+            );
           }
         }),
       ];
@@ -431,10 +661,9 @@ export function assertAllMatch<T extends object>(
 export async function slotsOverlappingInterval(
   repo: Repository,
   schedules: (WithId<Schedule> | (Reference<Schedule> & { reference: string }))[],
-  interval: Interval
-): Promise<Slot[]> {
-  const searchStart = interval.start.toISOString();
-  const searchEnd = interval.end.toISOString();
+  interval: Interval,
+  tooManyMessage = 'Too many slots found in range; try searching with smaller bounds'
+): Promise<WithId<Slot>[]> {
   const results = await repo.searchResources<Slot>({
     resourceType: 'Slot',
     count: DEFAULT_MAX_SEARCH_COUNT,
@@ -449,24 +678,37 @@ export async function slotsOverlappingInterval(
         operator: Operator.EQUALS,
         value: 'busy,busy-tentative,busy-unavailable,free',
       },
-      {
-        code: '_filter',
-        operator: Operator.EQUALS,
-        value: `((start ge "${searchStart}" and start le "${searchEnd}") or (end ge "${searchStart}" and end le "${searchEnd}") or (start lt "${searchStart}" and end gt "${searchEnd}"))`,
-      },
+      { code: 'start', operator: Operator.LESS_THAN, value: interval.end.toISOString() },
+      { code: 'end', operator: Operator.GREATER_THAN, value: interval.start.toISOString() },
     ],
   });
 
   // If we filled a full search page of slots, then there may be slots we
   // didn't fetch that would impact availability. Fail loudly here.
   if (results.length === DEFAULT_MAX_SEARCH_COUNT) {
-    throw new OperationOutcomeError(badRequest('Too many slots found in range; try searching with smaller bounds'));
+    throw new OperationOutcomeError(badRequest(tooManyMessage));
   }
   return results;
 }
 
 // Ensures that the input slots match our scheduling parameter constraints
 function validateSlots(slots: WithPath<Slot>[], parameters: SchedulingParameters): void {
+  // A proposal only ever describes the booking itself ('busy') and its buffers
+  // ('busy-unavailable'); the checks below only reason about those two, so reject anything
+  // else rather than passing it through unexamined. Zero-length slots are rejected for the
+  // same reason: they escape the duration checks below but still land in availability.
+  for (const slot of slots) {
+    if (slot.status !== 'busy' && slot.status !== 'busy-unavailable') {
+      throw new OperationOutcomeError(
+        badRequest(`Slot status must be 'busy' or 'busy-unavailable', got '${slot.status}'`, getPath(slot))
+      );
+    }
+    const { start, end } = slotToInterval(slot, getPath(slot));
+    if (end <= start) {
+      throw new OperationOutcomeError(badRequest('Slot must cover a positive duration', getPath(slot)));
+    }
+  }
+
   // Expect exactly one 'busy' slot with duration matching parameters.duration
   const busySlots = slots.filter((slot) => slot.status === 'busy');
   if (busySlots.length !== 1) {
@@ -553,27 +795,85 @@ function validateSlots(slots: WithPath<Slot>[], parameters: SchedulingParameters
   }
 }
 
+/**
+ * Validates that every proposed slot can be placed on `schedule`.
+ *
+ * Each slot is validated at its own capacity: the booking may overlap existing bookings
+ * up to the resolved `slotCapacity`, while the buffer around it (`busy-unavailable`) is
+ * exclusive and so is validated at capacity 1.
+ *
+ * @param repo - Repository used to load existing slots
+ * @param healthcareService - The service being booked
+ * @param schedule - The schedule being booked against
+ * @param parameters - Resolved scheduling parameters for `schedule`
+ * @param slots - The proposed slots to test, all belonging to `schedule`
+ */
 async function validateAvailability(
   repo: Repository,
   healthcareService: HealthcareService,
   schedule: WithId<Schedule>,
   parameters: LayeredDict<SchedulingParameters & { timezone: string }>,
-  interval: Interval
+  slots: WithPath<Slot>[]
 ): Promise<void> {
-  const existingSlots = await slotsOverlappingInterval(repo, [schedule], interval);
-  let availability = resolveAvailability(parameters, interval, parameters.get('timezone'));
-  availability = applyExistingSlots({
-    availability,
-    slots: existingSlots,
-    range: interval,
-    serviceType: healthcareService.type,
+  const intervals = slots.map((slot) => slotToInterval(slot, getPath(slot)));
+  const start = earliest(intervals.map((interval) => interval.start));
+  const end = latest(intervals.map((interval) => interval.end));
+  assert(start && end);
+  const fullInterval = { start, end };
+
+  if (schedule.planningHorizon?.start) {
+    const horizonStart = new Date(schedule.planningHorizon.start);
+    if (fullInterval.start < horizonStart) {
+      throw new OperationOutcomeError(
+        badRequest('Appointment falls outside schedule planning horizon', getPath(schedule))
+      );
+    }
+  }
+  if (schedule.planningHorizon?.end) {
+    const horizonEnd = new Date(schedule.planningHorizon.end);
+    if (fullInterval.end > horizonEnd) {
+      throw new OperationOutcomeError(
+        badRequest('Appointment falls outside schedule planning horizon', getPath(schedule))
+      );
+    }
+  }
+
+  const existingSlots = await slotsOverlappingInterval(repo, [schedule], fullInterval);
+  const resolvedAvailability = resolveAvailability(parameters, fullInterval, parameters.get('timezone'));
+
+  // Availability only varies by the capacity it is resolved at, and there are at most
+  // two distinct capacities in play (the booking's and the buffers'), so cache it
+  // rather than re-sweeping every existing slot once per proposed slot.
+  const availabilityByCapacity = new Map<number, Interval[]>();
+  const availabilityAtCapacity = (capacity: number): Interval[] => {
+    let availability = availabilityByCapacity.get(capacity);
+    if (!availability) {
+      availability = applyExistingSlots({
+        availability: resolvedAvailability,
+        slots: existingSlots,
+        range: fullInterval,
+        serviceType: healthcareService.type,
+        capacity,
+      });
+      availabilityByCapacity.set(capacity, availability);
+    }
+    return availability;
+  };
+
+  const hasAvailability = slots.every((slot, idx) => {
+    const interval = intervals[idx];
+    // bufferBefore/bufferAfter slots have status "busy-unavailable" and are always
+    // treated as having capacity=1.
+    const capacity = slot.status === 'busy-unavailable' ? 1 : parameters.get('slotCapacity');
+    const availability = availabilityAtCapacity(capacity);
+    return availability.some((avail) => avail.start <= interval.start && avail.end >= interval.end);
   });
-  const hasAvailability = availability.some((avail) => avail.start <= interval.start && avail.end >= interval.end);
+
   if (!hasAvailability) {
     // Include structured JSON in diagnostics so automated tooling can
     // programmatically inspect which slots are blocking the request.
     const blockingSlots = existingSlots
-      .filter((slot) => slot.status === 'busy' || slot.status === 'busy-unavailable')
+      .filter((slot) => occupiesTime(slot.status))
       .map((slot) => ({
         reference: `Slot/${slot.id}`,
         start: slot.start,
@@ -683,29 +983,8 @@ export async function validateAllAvailability(
     const slots = groupedSlots[refstr];
     delete groupedSlots[refstr];
     assert(slots);
-    const start = earliest(slots.map((slot) => new Date(slot.start)));
-    const end = latest(slots.map((slot) => new Date(slot.end)));
-    assert(start && end);
-    const interval = { start, end };
 
-    if (schedule.planningHorizon?.start) {
-      const horizonStart = new Date(schedule.planningHorizon.start);
-      if (interval.start < horizonStart) {
-        throw new OperationOutcomeError(
-          badRequest('Appointment falls outside schedule planning horizon', getPath(schedule))
-        );
-      }
-    }
-    if (schedule.planningHorizon?.end) {
-      const horizonEnd = new Date(schedule.planningHorizon.end);
-      if (interval.end > horizonEnd) {
-        throw new OperationOutcomeError(
-          badRequest('Appointment falls outside schedule planning horizon', getPath(schedule))
-        );
-      }
-    }
-
-    await validateAvailability(repo, healthcareService, schedule, parameters, interval);
+    await validateAvailability(repo, healthcareService, schedule, parameters, slots);
   }
 
   // Any unprocessed slots represent some kind of error
@@ -720,34 +999,84 @@ export async function validateAllAvailability(
   }
 }
 
-export async function createProposedAppointment(
-  repo: Repository,
-  proposedAppointment: WithPath<Appointment>,
-  customizer: (appointment: Appointment, slots: Slot[]) => void
-): Promise<Bundle<Appointment | Slot>> {
-  const [appointment, slots, healthcareService, schedulingParametersGroup] = await validateProposedAppointment(
-    repo,
-    proposedAppointment
-  );
-
-  // We will write this attribute later, check that we aren't clobbering something that was submitted
-  if (appointment.slot) {
-    throw new OperationOutcomeError(
-      badRequest('Proposed appointment must not have Slot references', `${getPath(proposedAppointment)}.slot`)
-    );
+/**
+ * Stamps client-supplied booking Slots with the capacity of the schedule each one names. The
+ * rule itself lives in `stampSlotCapacity`; this resolves the capacity to hand it.
+ *
+ * @param slots - The proposed slots (mutated in place)
+ * @param schedulingParameterGroup - Resolved parameters per schedule
+ */
+function stampBookingCapacity(
+  slots: Slot[],
+  schedulingParameterGroup: Map<WithPath<WithId<Schedule>>, LayeredDict<SchedulingParameters & { timezone: string }>>
+): void {
+  const capacityBySchedule = new Map<string, number>();
+  for (const [schedule, parameters] of schedulingParameterGroup) {
+    capacityBySchedule.set(getReferenceString(schedule), parameters.get('slotCapacity'));
   }
 
-  customizer(appointment, slots);
+  for (const slot of slots) {
+    stampSlotCapacity(slot, slot.schedule.reference ? capacityBySchedule.get(slot.schedule.reference) : undefined);
+  }
+}
+
+/**
+ * Books proposed Appointments all or none, each validated on its own, in one serializable
+ * transaction.
+ *
+ * @param repo - The Repository to operate with.
+ * @param proposedAppointments - The proposed Appointments to book, in order.
+ * @param customizer - Called with each validated Appointment and its Slots before they are created.
+ * @returns A transaction-response Bundle containing every created Appointment, each followed by its Slots.
+ */
+export async function createProposedAppointments(
+  repo: Repository,
+  proposedAppointments: WithPath<Appointment>[],
+  customizer: (appointment: Appointment, slots: Slot[]) => void
+): Promise<Bundle<Appointment | Slot>> {
+  const validated = await Promise.all(
+    proposedAppointments.map(async (proposedAppointment) => {
+      const [appointment, slots, healthcareService, schedulingParametersGroup] = await validateProposedAppointment(
+        repo,
+        proposedAppointment
+      );
+
+      // We will write this attribute later, check that we aren't clobbering something that was submitted
+      if (appointment.slot) {
+        throw new OperationOutcomeError(
+          badRequest('Proposed appointment must not have Slot references', `${getPath(proposedAppointment)}.slot`)
+        );
+      }
+
+      appointment.extension = [
+        ...(appointment.extension ?? []).filter((ext) => ext.url !== SchedulingBookedByOperationURI),
+        { url: SchedulingBookedByOperationURI, valueString: MEDPLUM_VERSION },
+      ];
+
+      stampBookingCapacity(slots, schedulingParametersGroup);
+      customizer(appointment, slots);
+      return { appointment, slots, healthcareService, schedulingParametersGroup };
+    })
+  );
 
   const createdResources = await repo.withTransaction(
     async (txRepo) => {
-      await validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup);
-      const createdSlots = await Promise.all(slots.map((slot) => txRepo.createResource<Slot>(slot)));
-      const createdAppointment = await txRepo.createResource<Appointment>({
-        ...appointment,
-        slot: createdSlots.map((slot) => createReference(slot)),
-      });
-      return [createdAppointment, ...createdSlots];
+      // Sequential: a transaction is pinned to one database connection, and each Appointment's
+      // availability is checked against the ones created before it.
+      const results: (Appointment | Slot)[] = [];
+      for (const { appointment, slots, healthcareService, schedulingParametersGroup } of validated) {
+        await validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup);
+        const createdSlots = new Array<WithId<Slot>>(slots.length);
+        for (const [i, slot] of slots.entries()) {
+          createdSlots[i] = await txRepo.createResource<Slot>(slot);
+        }
+        const createdAppointment = await txRepo.createResource<Appointment>({
+          ...appointment,
+          slot: createdSlots.map((slot) => createReference(slot)),
+        });
+        results.push(createdAppointment, ...createdSlots);
+      }
+      return results;
     },
     { serializable: true, resourceTypes: ['Appointment', 'Slot'], source: 'createProposedAppointment' }
   );

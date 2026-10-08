@@ -11,7 +11,7 @@ The `$hold` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
-The `$hold` operation places a hold on one or more schedules by atomically creating an [`Appointment`](/docs/api/fhir/resources/appointment) and [`Slot`](/docs/api/fhir/resources/slot) resources. The operation validates that the requested time is genuinely available before committing.
+The `$hold` operation places a hold on one or more schedules by atomically creating an [`Appointment`](/docs/api/fhir/resources/appointment) and [`Slot`](/docs/api/fhir/resources/slot) resources. The operation validates that the requested time is genuinely available before committing. It can also hold every occurrence of a [weekly recurring series](#holding-a-recurring-series) in the same transaction.
 
 ## Booking Lifecycle
 
@@ -96,9 +96,9 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$hold' \
 
 ## Parameters
 
-| Name          | Type           | Description                                                                                                                                                    | Required |
-| --------------| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------| -------- |
-| `appointment` | `Appointment`  | An `Appointment` resource describing the desired appointment time. Must include `start`, `end`, and `serviceType`. Must have `Slot` resources in `contained`.  | Yes      |
+| Name          | Type           | Description                                                                                                                                                                                                                                                                            | Required |
+| --------------| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `appointment` | `Appointment`  | An `Appointment` resource describing the desired appointment time. Must include `start`, `end`, and `serviceType`. Must have `Slot` resources in `contained`. May carry a `recurrenceTemplate` to hold a weekly series; see [Holding a recurring series](#holding-a-recurring-series). | Yes      |
 
 
 ### Constraints
@@ -221,8 +221,10 @@ Pass multiple virtual Slot resources in `Appointment.contained` to hold time acr
 
 Returns `201 Created` with a response body containing a `Bundle` of all persisted resources:
 
-- One [`Appointment`](/docs/api/fhir/resources/appointment) with `status: "pending"`
+- One [`Appointment`](/docs/api/fhir/resources/appointment) with `status: "pending"`, or one per occurrence for a recurring series
 - One `Slot` per contained slot parameter. Slots with status `"busy"` will be saved with status `"busy-tentative"`.
+
+When holding a [recurring series](#holding-a-recurring-series), the Bundle holds one pending Appointment per occurrence, in order, each followed by its own Slots.
 
 ### Example Response
 
@@ -289,6 +291,18 @@ Returns `201 Created` with a response body containing a `Bundle` of all persiste
 }
 ```
 
+## Holding a recurring series
+
+Passing a [recurring series](/docs/scheduling/appointment-find#finding-a-recurring-series) entry
+from `$find` holds **every occurrence** of the series, all or none. Pass the entry unchanged: its
+`recurrenceTemplate` extension tells `$hold` how the series recurs.
+
+`$hold` expands the series exactly as [`$book`](/docs/scheduling/appointment-book#booking-a-recurring-series)
+does: it reads the template under the same
+[template requirements](/docs/scheduling/appointment-book#template-requirements), and tags every
+occurrence with the same [series identifier and `recurrenceId`](/docs/scheduling/appointment-book#identifying-the-series).
+Each occurrence is created `pending`, with its own `busy-tentative` Slot.
+
 ## Hold Logic
 
 `$hold` performs the following steps atomically inside a database transaction, ensuring safety when concurrent scheduling requests are received.
@@ -299,6 +313,8 @@ Returns `201 Created` with a response body containing a `Bundle` of all persiste
 4. Verifies the requested time falls within the Schedule's defined availability windows or existing slots with status `free`
 5. Creates the `Appointment`, busy-tentative `Slot`(s), and any buffer `Slot`(s)
 6. Returns all created resources in the response Bundle
+
+When holding a [recurring series](#holding-a-recurring-series), steps 1–5 run for each occurrence in turn, in the same transaction, so each occurrence is checked against the ones held before it. If any occurrence is unavailable, the whole transaction rolls back and nothing is held.
 
 ## Error Responses
 
@@ -341,6 +357,19 @@ Returned when the requested time overlaps an existing busy Slot or falls outside
   "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "No timezone specified" } }]
 }
 ```
+
+### HealthcareService is inactive
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "HealthcareService is inactive" } }]
+}
+```
+
+### Unsupported Recurrence Template
+
+Returned when a `recurrenceTemplate` doesn't meet the [template requirements](/docs/scheduling/appointment-book#template-requirements). See [`$book`'s error](/docs/scheduling/appointment-book#unsupported-recurrence-template) for its shape.
 
 ## Related
 

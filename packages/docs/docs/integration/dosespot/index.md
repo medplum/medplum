@@ -6,15 +6,13 @@ The [E-Prescribe Decision Guide](/docs/decision-guides/e-prescribe) walks throug
 
 Medplum has partnered with [DoseSpot](https://www.dosespot.com/), a leader in e-prescription (eRx) technology, to offer prescription ordering services for the [Medplum EHR](/solutions/medplum-ehr). Medplum's e-prescribe functionality is exclusively available to providers directly engaged in patient care as part of [Medplum EHR](/solutions/medplum-ehr).
 
-This collaboration enables healthcare professionals to seamlessly place medication orders using DoseSpot's eRx interface, which Medplum integrates through an embedded iFrame. This approach ensures a secure, safe, and efficient, experience for clinicians, and offers functionality such as:
+The integration offers functionality such as:
 
-- Clinician identity proofing
-- Drug-drug interactions
-- Drug-allergy interactions
-- Patient coverage benefits checks
-- Electronic Prescriptions for Controlled Substances (EPCS)
-- [Clinic favorite medications](/docs/integration/dosespot/clinic-favorite-medications) for streamlined prescribing to reduce the number of clicks required for clinicians to prescribe common medications
 - [Prescriber Enrollment](/docs/integration/dosespot/enroll-user) for automatically setting up your Users in DoseSpot
+- [Supervising prescribers](/docs/integration/dosespot/supervising-prescribers) for assigning a Prescribing Clinician to a Prescribing Agent Clinician after enrollment
+- [Syncing prescriptions and medication history](/docs/integration/dosespot/getting-started) between DoseSpot and Medplum
+
+Detailed prescribing workflow documentation is available to customers with the DoseSpot integration enabled. Contact [Medplum support](mailto:support@medplum.com) for access.
 
 ## DoseSpot FAQ
 
@@ -49,16 +47,6 @@ When prescribing controlled substances, additional requirements include:
 - A diagnosis is required for EPCS prescriptions
 - Enhanced security measures and identity verification are enforced
 
-### How do "Refill" and "Reorder" differ within Medplum?
-
-A "Refill" refers to authorizing additional quantities of a medication under an existing prescription, is initiated by the pharmacy.
-
-A "Reorder" involves creating a new prescription order for a medication previously prescribed, and is initiated by the prescriber.
-
-### How does one initiate an Electronic Prior Authorization (ePA) with Medplum's eRx service?
-
-When formulary data indicates a need for ePA based on insurance, the clinician can start the process within the eRx interface. This option becomes available after a prescription is marked as pending, accessible through the medication's action menu. Note that this process is independent of the patient's coverage details, which are auto-populated from external sources when available.
-
 ### Does Medplum support prescription submissions to pharmacies across all 50 states?
 
 Yes. Medplum Medplum's integration with DoseSpot allows ordering prescriptions to any pharmacy across 50 states.
@@ -72,13 +60,3 @@ It's important to note that insurance information stored directly in Medplum **d
 ### What constitutes a transmission error in Medplum's eRx service?
 
 A transmission error occurs when there's a failure in sending a prescription from Medplum's eRx system to a pharmacy, due to issues like incorrect pharmacy details, network problems, or data mismatches.
-
-### Does Medplum offer drug references or educational materials for patients?
-
-The DoseSpot eRx interface, provides access to drug monographs when a prescription is placed. These monographs can be accessed by clicking on the drug name when viewing pending prescriptions.
-
-### Can custom instructions be added to prescription notes in Medplum?
-
-Drop-down fields within the Medplum eRx interface cannot be customized. However, prescribers can use the free text instructions field for adding notes.
-
-Similarly, the patient notes field can not be auto-populated at this time.

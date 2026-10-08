@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { resolveId } from '@medplum/core';
 import type { Identifier, Organization, Reference } from '@medplum/fhirtypes';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import { useStabilizedCallback } from '../useStabilizedCallback/useStabilizedCallback';
 
 export interface MedicationIFrameOptions {
   readonly patientId?: string;
@@ -35,19 +36,13 @@ export function useMedicationIFrame(
   options: MedicationIFrameOptions
 ): string | undefined {
   const medplum = useMedplum();
-  const { patientId, organization, onPatientSyncSuccess, onIframeSuccess, onError } = options;
+  const { patientId, organization } = options;
   const organizationId = resolveId(organization);
   const [iframeUrl, setIframeUrl] = useState<string | undefined>(undefined);
 
-  const onPatientSyncSuccessRef = useRef(onPatientSyncSuccess);
-  const onIframeSuccessRef = useRef(onIframeSuccess);
-  const onErrorRef = useRef(onError);
-
-  useEffect(() => {
-    onPatientSyncSuccessRef.current = onPatientSyncSuccess;
-    onIframeSuccessRef.current = onIframeSuccess;
-    onErrorRef.current = onError;
-  }, [onPatientSyncSuccess, onIframeSuccess, onError]);
+  const onPatientSyncSuccess = useStabilizedCallback(options.onPatientSyncSuccess);
+  const onIframeSuccess = useStabilizedCallback(options.onIframeSuccess);
+  const onError = useStabilizedCallback(options.onError);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,7 +54,7 @@ export function useMedicationIFrame(
           if (cancelled) {
             return;
           }
-          onPatientSyncSuccessRef.current?.();
+          onPatientSyncSuccess();
         }
         const result = await medplum.executeBot(iframeBotIdentifier, { patientId, organizationId });
         if (cancelled) {
@@ -67,23 +62,32 @@ export function useMedicationIFrame(
         }
         if (result.url) {
           setIframeUrl(result.url);
-          onIframeSuccessRef.current?.(result.url);
+          onIframeSuccess(result.url);
         }
       } catch (err: unknown) {
         if (!cancelled) {
-          onErrorRef.current?.(err);
+          onError(err);
         }
       }
     };
 
     run().catch(() => {
-      // Handled via onErrorRef when !cancelled
+      // Already reported via onError when !cancelled
     });
 
     return (): void => {
       cancelled = true;
     };
-  }, [medplum, syncBotIdentifier, iframeBotIdentifier, patientId, organizationId]);
+  }, [
+    medplum,
+    syncBotIdentifier,
+    iframeBotIdentifier,
+    patientId,
+    organizationId,
+    onPatientSyncSuccess,
+    onIframeSuccess,
+    onError,
+  ]);
 
   return iframeUrl;
 }

@@ -25,18 +25,8 @@
   display: none;
 }
 
-
-/* Make it clearer that events are clickable */
-.interactiveEvent {
+.clickable {
   cursor: pointer;
-}
-
-.selectableDay {
-  cursor: pointer;
-}
-
-.selectableDay:hover {
-  background-color: light-dark(#0000000a, #ffffff14);
 }
 
 .selectedRange {

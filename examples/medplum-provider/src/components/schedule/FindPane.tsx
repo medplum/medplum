@@ -82,7 +82,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   }, [medplum, schedule]);
 
   const scheduleableServices = useMemo(
-    () => healthcareServices?.filter((service) => hasSchedulingParameters(service)),
+    () => healthcareServices?.filter((service) => service.active !== false && hasSchedulingParameters(service)),
     [healthcareServices]
   );
 
@@ -166,6 +166,10 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
     },
     [onSuccess, onSelectHealthcareService, navigate]
   );
+
+  if (schedule.active === false) {
+    return null;
+  }
 
   if (!scheduleableServices?.length) {
     return null;

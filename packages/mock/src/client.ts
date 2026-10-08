@@ -134,7 +134,8 @@ export type MockFetchOverrideOptions = {
   repo: MemoryRepository;
 };
 
-interface MockClientTestMethods {
+/** Test-only helpers exposed on `MockClient.mock`. */
+export interface MockClientTestMethods {
   withSeeding: <T>(fn: () => T | Promise<T>) => Promise<T>;
   setProfile: (profile: ProfileResource | undefined) => void;
   setProject: (project: Project | undefined) => void;
@@ -473,7 +474,8 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
   }
 }
 
-interface MockFetchClientOptions {
+/** Options for constructing a `MockFetchClient`. */
+export interface MockFetchClientOptions {
   debug?: boolean;
   seedDefaultData?: boolean;
 }

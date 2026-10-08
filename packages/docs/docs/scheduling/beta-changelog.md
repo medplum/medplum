@@ -17,6 +17,42 @@ needed to adopt them.
 
 :::
 
+## Scheduling APIs disallow using inactive Schedule resources
+
+**Target release:** September 24, 2026 &nbsp;·&nbsp; **Issues:** [#10536](https://github.com/medplum/medplum/issues/10536)
+
+### What changed
+
+Scheduling APIs will check that they are scheduling against Schedule resources that have not been explicitly marked as `active: false`.
+
+The `$cancel` operation is still allowed for Appointments whose Slots reference inactive Schedule resources. The `$reschedule` operation allows removing an inactive schedule from an existing appointment.
+
+### Who is affected
+
+Users of `$find` / `$book` / `$hold` / `$confirm` / `$reschedule` with Schedule resources that have the `active` property set exactly to `false`.
+
+### Migration
+
+We believe this matches the expectations of users of these APIs, and do not offer a programmatic migration. Users impacted may consider removing the `active: false` attribute from Schedule resources that are in use.
+
+## Scheduling APIs disallow using inactive HealthcareService resources
+
+**Target release:** September 15, 2026 &nbsp;·&nbsp; **Issues:** [#10509](https://github.com/medplum/medplum/pull/10509)
+
+### What changed
+
+Scheduling APIs will check that they are scheduling against a HealthcareService that has not been explicitly marked as `active: false`.
+
+The `$cancel` operation is still allowed for Appointments that exist referencing inactive HealthcareService resources.
+
+### Who is affected
+
+Users of `$find` / `$book` / `$hold` with HealthcareService resources that have the `active` property set exactly to `false`.
+
+### Migration
+
+We believe this matches the expectations of users of these APIs, and do not offer a programmatic migration. Users impacted may consider removing the `active: false` attribute from HealthcareService resources that are in use, or creating new HealthcareService rows for scheduling that do not have this attribute.
+
 ## `Slot.serviceType` is now respected on busy Slots
 
 **Target release:** September 1, 2026 &nbsp;·&nbsp; **Issues:** [#9995](https://github.com/medplum/medplum/issues/9995), [#9998](https://github.com/medplum/medplum/pull/9998)

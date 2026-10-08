@@ -286,7 +286,7 @@ describe('ScheduleSettingsPage', () => {
 
   test('renders the "Schedule Settings" heading', async () => {
     await act(async () => setup());
-    expect(screen.getByRole('heading', { name: 'Schedule Settings - Dr. Alice Smith' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Schedule Settings - Alice Smith' })).toBeInTheDocument();
   });
 
   test('renders the ScheduleSettings form once the schedule has loaded', async () => {

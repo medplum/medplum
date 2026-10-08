@@ -35,7 +35,8 @@ import { PromptComposer } from '../../pages/spaces/PromptComposer';
 import type { Message } from '../../types/spaces';
 import { showErrorNotification } from '../../utils/notifications';
 import { processMessage } from '../../utils/spaceMessaging';
-import { getDefaultModel, getProjectModels } from '../../utils/spaceModels';
+import type { ReasoningEffort } from '../../utils/spaceModels';
+import { DEFAULT_REASONING_EFFORT, getDefaultModel, getProjectModels } from '../../utils/spaceModels';
 import { loadConversationMessages } from '../../utils/spacePersistence';
 import { ComponentPreview } from './ComponentPreview';
 import { HistoryList } from './HistoryList';
@@ -60,6 +61,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState(() => getDefaultModel(models));
+  const [selectedReasoningEffort, setSelectedReasoningEffort] = useState<ReasoningEffort>(DEFAULT_REASONING_EFFORT);
   const [hasStarted, setHasStarted] = useState(false);
   const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
   const [currentTopicId, setCurrentTopicId] = useState(topic?.id);
@@ -240,6 +242,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         currentMessages,
         currentTopicId,
         selectedModel,
+        selectedReasoningEffort,
         isFirstMessage,
         setCurrentTopicId,
         setRefreshKey,
@@ -620,6 +623,8 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
               models={models}
               selectedModel={selectedModel}
               onModelChange={setSelectedModel}
+              selectedReasoningEffort={selectedReasoningEffort}
+              onReasoningEffortChange={setSelectedReasoningEffort}
               selectedPatients={selectedPatients}
               setSelectedPatients={setSelectedPatients}
             />

@@ -6,7 +6,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth } from '../../test.setup';
+import { getSuperAdminAccessToken } from '../../test.setup';
 
 const app = express();
 const system = 'http://terminology.hl7.org/CodeSystem/v3-RoleCode';
@@ -18,7 +18,7 @@ describe('CodeSystem subsumes', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    accessToken = await initTestAuth({ superAdmin: true });
+    accessToken = await getSuperAdminAccessToken();
     expect(accessToken).toBeDefined();
   });
 

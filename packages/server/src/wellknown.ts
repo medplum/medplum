@@ -3,6 +3,7 @@
 import { OAuthGrantType, OAuthSigningAlgorithm, OAuthTokenAuthMethod } from '@medplum/core';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
+import { apiCatalogHandler } from './api-catalog';
 import { getConfig } from './config/loader';
 import { smartConfigurationHandler, smartStylingHandler } from './fhir/smart';
 import { getJwks } from './oauth/keys';
@@ -72,6 +73,10 @@ function handleOauthProtectedResource(req: Request, res: Response): void {
     introspection_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.introspectUrl),
   });
 }
+
+// RFC 9727 API catalog
+// Express routes HEAD requests to the GET handler, which is how HEAD support is provided.
+wellKnownRouter.get('/api-catalog', apiCatalogHandler);
 
 wellKnownRouter.get('/oauth-authorization-server', handleOAuthConfig);
 wellKnownRouter.get('/openid-configuration', handleOAuthConfig);

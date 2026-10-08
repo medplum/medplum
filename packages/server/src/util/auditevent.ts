@@ -1,12 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource } from '@medplum/core';
-import { append, createReference, flatMapFilter, isResource, isResourceWithId, resolveId } from '@medplum/core';
+import type { ProfileResource, WithId } from '@medplum/core';
+import {
+  append,
+  createReference,
+  flatMapFilter,
+  getReferenceString,
+  isResource,
+  isResourceWithId,
+  resolveId,
+} from '@medplum/core';
 import type {
   AuditEvent,
   AuditEventAgent,
   AuditEventAgentNetwork,
   AuditEventEntity,
+  AuditEventEntityDetail,
   Bot,
   ClientApplication,
   Coding,
@@ -168,6 +177,10 @@ const AuditEventActionLookup: Record<AuditEventSubtype['code'], AuditEventAction
   110123: undefined,
 };
 
+export function isReadOnlyAction(subtype: AuditEventSubtype): boolean {
+  return AuditEventActionLookup[subtype.code] === 'R';
+}
+
 /**
  * AuditEvent outcome code.
  * See: https://www.hl7.org/fhir/valueset-audit-event-outcome.html
@@ -191,6 +204,7 @@ export function createAuditEvent(
     description?: string;
     resource?: Resource | Reference;
     searchQuery?: string;
+    entityDetail?: AuditEventEntityDetail[];
     durationMs?: number;
     /**
      * The authenticating ClientApplication, recorded as an additional non-requestor
@@ -209,6 +223,9 @@ export function createAuditEvent(
     entity = [{ what: applyOptionalRedaction(what) }];
   } else if (options?.searchQuery) {
     entity = [{ query: options.searchQuery }];
+  }
+  if (entity && options?.entityDetail) {
+    entity[0].detail = options.entityDetail;
   }
 
   let network: AuditEventAgentNetwork | undefined = undefined;
@@ -307,7 +324,7 @@ export async function createBotAuditEvent(
   outcome: AuditEventOutcome,
   outcomeDesc: string
 ): Promise<void> {
-  const { bot, runAs, requester, input, subscription, agent, device } = request;
+  const { bot, runAs, requester, input, subscription, cron, agent, device } = request;
   const trigger = bot.auditEventTrigger ?? 'always';
   if (
     trigger === 'never' ||
@@ -322,12 +339,17 @@ export async function createBotAuditEvent(
   if (tracingExt) {
     extension = append(extension, tracingExt);
   }
+  // The record lands in the project the run assumed, so its compartments have to belong to that
+  // project. A Cron always does -- its project is the one onBehalfOf's membership belongs to -- so
+  // when one triggered the run it defines them; the bot only does when it lives there too.
+  const auditProject = resolveId(runAs.project) as string;
+  const compartmentSource = cron ?? (bot.meta?.project === auditProject ? bot : undefined);
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
-      project: resolveId(runAs.project) as string,
-      account: bot.meta?.account,
-      accounts: bot.meta?.accounts,
+      project: auditProject,
+      account: compartmentSource?.meta?.account,
+      accounts: compartmentSource?.meta?.accounts,
     },
     period: {
       start: startTime,
@@ -471,4 +493,10 @@ export function getAuditEventEntityRole(resource: Resource): Coding {
     default:
       return { code: '4', display: 'Domain' };
   }
+}
+
+export function searchResultsDetail<T extends Resource>(
+  results: WithId<T>[] | undefined
+): AuditEventEntityDetail[] | undefined {
+  return results?.map((resource) => ({ type: 'result', valueString: getReferenceString(resource) }));
 }

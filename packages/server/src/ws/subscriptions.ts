@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, createReference, EMPTY, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
+import {
+  badRequest,
+  createReference,
+  deepClone,
+  EMPTY,
+  forbidden,
+  normalizeErrorString,
+  OperationOutcomeError,
+} from '@medplum/core';
 import type { Bundle, Project, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
 import type { JWTPayload } from 'jose';
@@ -30,6 +38,7 @@ import {
   setActiveSubscription,
 } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
+import { getProjectIdFromUrl } from '../util/url';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -55,11 +64,8 @@ export interface WebSocketSubMetadata {
 
 export type WebSocketSubToken = MedplumAccessTokenClaims & AdditionalWsBindingClaims;
 
-export type V1SubEventEntry = [WithId<Resource>, string, SubEventsOptions];
-export type V1SubEventPayload = V1SubEventEntry[];
-
-export type V2SubEventEntry = [string, SubEventsOptions];
-export type V2SubEventPayload = { resource: WithId<Resource>; events: V2SubEventEntry[] };
+export type SubEventEntry = [string, SubEventsOptions];
+export type SubEventPayload = { resource: WithId<Resource>; events: SubEventEntry[] };
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
@@ -118,26 +124,18 @@ async function setupSubscriptionHandler(): Promise<void> {
   });
   subscriber.on('message', async (channel: string, events: string) => {
     globalLogger.debug('[WS] redis subscription events', { channel, events });
-    let subEventPayload: V1SubEventPayload | V2SubEventPayload;
+    let subEventPayload: SubEventPayload;
     try {
-      subEventPayload = JSON.parse(events) as V1SubEventPayload | V2SubEventPayload;
+      subEventPayload = JSON.parse(events) as SubEventPayload;
     } catch (err) {
       globalLogger.error(`[WS]: Failed to parse subscription event payload: ${normalizeErrorString(err)}`, { channel });
       return;
     }
-    let resource: WithId<Resource>;
-    let subEventArgsArr: [string, SubEventsOptions][];
 
-    // TODO: v5.2.0+ - Deprecate v1
-    if (isV1SubEventPayload(subEventPayload)) {
-      resource = subEventPayload[0][0];
-      subEventArgsArr = subEventPayload.map((entry) => [entry[1], entry[2]]);
-    } else {
-      resource = subEventPayload.resource;
-      subEventArgsArr = subEventPayload.events;
-    }
-
-    const deadSubscriptionIds = await sendSubscriptionEventNotifications(resource, subEventArgsArr);
+    const deadSubscriptionIds = await sendSubscriptionEventNotifications(
+      subEventPayload.resource,
+      subEventPayload.events
+    );
     await handleDeadSubscriptions(deadSubscriptionIds);
   });
   await subscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
@@ -145,11 +143,10 @@ async function setupSubscriptionHandler(): Promise<void> {
 
 async function sendSubscriptionEventNotifications(
   resource: WithId<Resource>,
-  subEventArgsArr: [string, SubEventsOptions][]
+  subEventArgsArr: SubEventEntry[]
 ): Promise<string[]> {
   const deadSubscriptionIds: string[] = [];
   for (const [subscriptionId, options] of subEventArgsArr) {
-    const bundle = createSubEventNotification(resource, subscriptionId, options);
     for (const socket of subToWsLookup.get(subscriptionId) ?? EMPTY) {
       // Get the repo for this socket in the context of the subscription
       const subMetadataMap = wsToSubLookup.get(socket);
@@ -173,9 +170,13 @@ async function sendSubscriptionEventNotifications(
           deadSubscriptionIds.push(subscriptionId);
           continue;
         }
+        // removeHiddenFields mutates its input, and one published resource is shared by every
+        // socket on this event, so each subscriber filters its own copy.
+        const visible = repo.removeHiddenFields(deepClone(resource));
+        const bundle = createSubEventNotification(visible, subscriptionId, options);
         rewrittenBundle = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, bundle);
       } catch (err) {
-        globalLogger.error('[WS] Error occurred while rewriting attachments', { err });
+        globalLogger.error('[WS] Error occurred while preparing subscription notification', { err });
         continue;
       }
 
@@ -232,10 +233,6 @@ async function handleDeadSubscriptions(deadSubscriptionIds: string[]): Promise<v
   } catch (err) {
     globalLogger.error('[WS] Error marking dead subscriptions inactive', { err });
   }
-}
-
-function isV1SubEventPayload(candidate: unknown): candidate is V1SubEventPayload {
-  return Array.isArray(candidate) && candidate.length !== 0;
 }
 
 function ensureHeartbeatHandler(): void {
@@ -402,6 +399,21 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
       return;
     }
     const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
+
+    // When the socket was opened on a project-scoped URL, the project in the URL must match the
+    // subscription's project. This mirrors the check that authenticateRequest applies to HTTP
+    // requests, so that a project-scoped WebSocket URL means the same thing as a project-scoped
+    // HTTP URL rather than being decorative.
+    const urlProjectId = getProjectIdFromUrl(request.url ?? '');
+    if (urlProjectId && urlProjectId !== cacheEntry.projectId) {
+      globalLogger.warn('[WS] Subscription project does not match the project-scoped URL', {
+        socketId,
+        subscriptionId: verifiedToken.subscription_id,
+        urlProjectId,
+      });
+      socket.send(JSON.stringify(forbidden));
+      return;
+    }
 
     // We can cast here because these criteria are proven to be valid when calling $get-ws-binding-token
     const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0] as ResourceType;
@@ -727,7 +739,7 @@ export async function checkWebSocketSubscriptionLimit(project: WithId<Project>, 
   const maxUserWsSubs: number =
     project.systemSetting?.find((setting) => setting.name === 'maxUserWebSocketSubscriptions')?.valueInteger ??
     // We know this is defined in defaults so this is safe to cast
-    (getConfig().defaultMaxUserWebSocketSubscriptions as number);
+    getConfig().defaultMaxUserWebSocketSubscriptions;
   const userSubCount = await getUserActiveWebSocketSubscriptionCount(authorRef);
   if (userSubCount >= maxUserWsSubs) {
     throw new OperationOutcomeError(

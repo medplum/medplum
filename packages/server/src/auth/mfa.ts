@@ -13,9 +13,11 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
+import { assertMfaLoginActive } from './mfalimit';
 import type { MfaMethod } from './utils';
 import {
   buildTotpEnrollment,
+  clearMfaEmailCode,
   getAllowedMfaMethods,
   getEnrolledMfaMethods,
   getLoginProject,
@@ -118,12 +120,14 @@ mfaRouter.post(
 
     const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
-    const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
+    const user = await systemRepo.readReference<User>(login.user as Reference<User>);
     if (user.mfaEnrolled) {
       sendOutcome(res, badRequest('Already enrolled'));
       return;
     }
+
+    assertMfaLoginActive(login);
 
     const method = parseMfaMethod(req.body.method);
 
@@ -203,9 +207,7 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
       emailVerified: true,
     });
     // Consume the emailed code so it cannot be reused.
-    if (ctx.login.emailMfa) {
-      await systemRepo.updateResource<Login>({ ...ctx.login, emailMfa: undefined });
-    }
+    await clearMfaEmailCode(ctx.login as WithId<Login>);
     sendOutcome(res, allOk);
     return;
   }
@@ -265,19 +267,7 @@ mfaRouter.post(
 
     const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
-
-    if (login.revoked) {
-      sendOutcome(res, badRequest('Login revoked'));
-      return;
-    }
-    if (login.granted) {
-      sendOutcome(res, badRequest('Login granted'));
-      return;
-    }
-    if (login.mfaVerified) {
-      sendOutcome(res, badRequest('Login already verified'));
-      return;
-    }
+    assertMfaLoginActive(login);
 
     const user = await systemRepo.readReference<User>(login.user as Reference<User>);
     if (!user.mfaEnrolled || !getEnrolledMfaMethods(user).includes('email')) {
@@ -389,9 +379,7 @@ mfaRouter.post(
     });
 
     // Consume any emailed verification code so it cannot be reused.
-    if (ctx.login.emailMfa) {
-      await ctx.systemRepo.updateResource<Login>({ ...ctx.login, emailMfa: undefined });
-    }
+    await clearMfaEmailCode(ctx.login as WithId<Login>);
 
     sendOutcome(res, allOk);
   }

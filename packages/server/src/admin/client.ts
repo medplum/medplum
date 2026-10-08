@@ -37,17 +37,18 @@ export interface CreateClientRequest extends Partial<ClientApplication> {
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<WithId<ClientApplication>> {
-  const { project, accessPolicy, ...rest } = request;
+  const { project, accessPolicy, meta, ...rest } = request;
 
   const systemRepo = repo.getSystemRepo();
   const client = await systemRepo.createResource<ClientApplication>({
+    ...rest,
     meta: {
+      ...meta,
       project: project.id,
       author: repo.getConfig().author,
     },
     resourceType: 'ClientApplication',
-    secret: generateSecret(32),
-    ...rest,
+    secret: rest.secret ?? generateSecret(32),
   });
 
   await systemRepo.createResource<ProjectMembership>({

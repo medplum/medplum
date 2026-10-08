@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Divider, Stack, Stepper } from '@mantine/core';
+import { Alert, Button, Divider, List, ScrollArea, Stack, Stepper, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { ContentType, deepClone, normalizeErrorString } from '@medplum/core';
+import { ContentType, deepClone, formatHumanName, normalizeErrorString } from '@medplum/core';
 import type { Bundle, Parameters, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCheck } from '@tabler/icons-react';
@@ -12,6 +12,7 @@ import classes from './SmartHealthLinkImport.module.css';
 import type { SmartHealthLinkPatientMatch } from './SmartHealthLinkImport.utils';
 import {
   buildSmartHealthLinkImportBundle,
+  getFailedImportMessages,
   getImportButtonLabel,
   getMatchGrade,
   getSmartHealthCardFile,
@@ -46,6 +47,12 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
   const [loading, setLoading] = useState<string>();
   const [error, setError] = useState<string>();
   const [warning, setWarning] = useState<string[]>([]);
+  /** Set when the server saved some records and rejected others. */
+  const [partialImport, setPartialImport] = useState<{
+    patient: WithId<Patient>;
+    failures: string[];
+    total: number;
+  }>();
   const [bundle, setBundle] = useState<Bundle>();
   const [sharedPatient, setSharedPatient] = useState<Patient>();
   const [matches, setMatches] = useState<SmartHealthLinkPatientMatch[]>([]);
@@ -93,6 +100,7 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
     setSelectedPatient(undefined);
     setCreateNewPatient(false);
     setSelectedKeys(new Set());
+    setPartialImport(undefined);
   }
 
   async function resolveLink(shlink: string, options?: { fromScan?: boolean }): Promise<void> {
@@ -250,6 +258,7 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
 
     setLoading('import');
     setError(undefined);
+    setPartialImport(undefined);
     try {
       const targetPatient = createNewPatient
         ? await medplum.createResource(preparePatientForCreate(sharedPatient))
@@ -262,7 +271,16 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
       if (transaction.entry?.length) {
         // Externalize inline base64 attachments to Binary resources so documents (e.g. PDFs) display.
         await uploadInlineAttachments(medplum, transaction);
-        await medplum.executeBatch(transaction);
+        const response = await medplum.executeBatch(transaction);
+        const failures = getFailedImportMessages(transaction, response);
+        if (failures.length > 0) {
+          // The patient and successful records are already saved. Retry against that patient;
+          // conditional creates skip the saved records.
+          setCreateNewPatient(false);
+          setSelectedPatient(targetPatient);
+          setPartialImport({ patient: targetPatient, failures, total: transaction.entry.length });
+          return;
+        }
       }
       setSelectedPatient(targetPatient);
       onImported?.(targetPatient);
@@ -389,11 +407,40 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
           />
         )}
 
-        {((error && activeStep !== STEP_INPUT) || warning.length > 0) && (
+        {((error && activeStep !== STEP_INPUT) || partialImport || warning.length > 0) && (
           <Stack gap="md" mt="lg">
             {error && activeStep !== STEP_INPUT && (
               <Alert color="red" variant="light">
                 {error}
+              </Alert>
+            )}
+            {partialImport && (
+              <Alert
+                color="red"
+                variant="light"
+                title={`${partialImport.failures.length} of ${partialImport.total} records could not be imported`}
+              >
+                <Stack gap="sm">
+                  <Text size="sm">
+                    Saved {formatRecordCount(partialImport.total - partialImport.failures.length)} to{' '}
+                    {formatHumanName(partialImport.patient.name?.[0])}.
+                  </Text>
+                  <ScrollArea.Autosize mah={200}>
+                    <List size="sm" spacing={4}>
+                      {partialImport.failures.map((failure, index) => (
+                        <List.Item key={index}>{failure}</List.Item>
+                      ))}
+                    </List>
+                  </ScrollArea.Autosize>
+                  <Button
+                    variant="light"
+                    color="red"
+                    onClick={() => onImported?.(partialImport.patient)}
+                    style={{ alignSelf: 'flex-start' }}
+                  >
+                    Ignore {formatRecordCount(partialImport.failures.length)} and finish
+                  </Button>
+                </Stack>
               </Alert>
             )}
             {warning.map((message) => (
@@ -423,4 +470,8 @@ function preparePatientForCreate(patient: Patient): Patient {
   delete result.id;
   delete result.meta;
   return result;
+}
+
+function formatRecordCount(count: number): string {
+  return count === 1 ? '1 record' : `${count} records`;
 }

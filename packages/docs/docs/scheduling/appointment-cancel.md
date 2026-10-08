@@ -6,7 +6,7 @@ The `$cancel` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
-The `$cancel` operation cancels an [`Appointment`](/docs/api/fhir/resources/appointment) by atomically setting its status to `cancelled` and deleting all [`Slot`](/docs/api/fhir/resources/slot) resources it references in a single FHIR transaction.
+The `$cancel` operation cancels an [`Appointment`](/docs/api/fhir/resources/appointment) by atomically setting its status to `cancelled` and deleting all [`Slot`](/docs/api/fhir/resources/slot) resources it references in a single FHIR transaction. An optional `cancelationReason` records why the Appointment was canceled.
 
 ## Use Cases
 
@@ -28,12 +28,34 @@ import TabItem from '@theme/TabItem';
 
 ```typescript
 import { MedplumClient } from '@medplum/core';
-import type { Appointment } from '@medplum/fhirtypes';
+import type { Appointment, Parameters } from '@medplum/fhirtypes';
 
 const medplum = new MedplumClient();
 
 const appointment = await medplum.post<Appointment>(
   medplum.fhirUrl('Appointment', 'my-appointment-id', '$cancel')
+);
+
+// Optionally, record why the Appointment was canceled
+const appointmentWithReason = await medplum.post<Appointment>(
+  medplum.fhirUrl('Appointment', 'my-appointment-id', '$cancel'),
+  {
+    resourceType: 'Parameters',
+    parameter: [
+      {
+        name: 'cancelationReason',
+        valueCodeableConcept: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/appointment-cancellation-reason',
+              code: 'pat-cpp',
+              display: 'Patient: Canceled via Patient Portal',
+            },
+          ],
+        },
+      },
+    ],
+  } satisfies Parameters
 );
 ```
 
@@ -45,12 +67,73 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/my-appointment-id/$can
   -H "Authorization: Bearer MY_ACCESS_TOKEN"
 ```
 
+Optionally, record why the Appointment was canceled:
+
+```bash
+curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/my-appointment-id/$cancel' \
+  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
+  -H "Content-Type: application/fhir+json" \
+  -d '{
+    "resourceType": "Parameters",
+    "parameter": [
+      {
+        "name": "cancelationReason",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/appointment-cancellation-reason",
+              "code": "pat-cpp",
+              "display": "Patient: Canceled via Patient Portal"
+            }
+          ]
+        }
+      }
+    ]
+  }'
+```
+
 </TabItem>
 </Tabs>
 
 ## Parameters
 
-This operation takes no input parameters. The appointment to cancel is identified by the `id` in the URL.
+The appointment to cancel is identified by the `id` in the URL.
+
+| Name                | Type              | Description                                                                               | Required |
+| ------------------- | ----------------- | ----------------------------------------------------------------------------------------- | -------- |
+| `cancelationReason` | `CodeableConcept` | The coded reason the Appointment was canceled. Stored on `Appointment.cancelationReason`. | No       |
+
+### Cancelation Reason
+
+When `cancelationReason` is provided, it is written to [`Appointment.cancelationReason`](/docs/api/fhir/resources/appointment) on the canceled Appointment. When it is omitted, the field is left untouched.
+
+:::note
+
+FHIR R4 spells this element `cancelationReason`, with a single `l`. The operation parameter uses the same spelling as the resource element.
+
+:::
+
+FHIR recommends coding this with the [appointment-cancellation-reason](http://terminology.hl7.org/CodeSystem/appointment-cancellation-reason) CodeSystem, but any `CodeableConcept` is accepted.
+
+```json
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {
+      "name": "cancelationReason",
+      "valueCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/appointment-cancellation-reason",
+            "code": "pat-cpp",
+            "display": "Patient: Canceled via Patient Portal"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
 
 ### Constraints
 
@@ -61,7 +144,7 @@ This operation takes no input parameters. The appointment to cancel is identifie
 
 Returns `200 OK` with the updated [`Appointment`](/docs/api/fhir/resources/appointment) resource directly:
 
-- One [`Appointment`](/docs/api/fhir/resources/appointment) with `status: cancelled`
+- One [`Appointment`](/docs/api/fhir/resources/appointment) with `status: cancelled`, and `cancelationReason` set if it was provided
 
 All `Slot` resources that were referenced by the Appointment are deleted and do not appear in the response.
 
@@ -72,6 +155,15 @@ All `Slot` resources that were referenced by the Appointment are deleted and do 
   "resourceType": "Appointment",
   "id": "my-appointment-id",
   "status": "cancelled",
+  "cancelationReason": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/appointment-cancellation-reason",
+        "code": "pat-cpp",
+        "display": "Patient: Canceled via Patient Portal"
+      }
+    ]
+  },
   "start": "2026-03-10T09:00:00.000Z",
   "end": "2026-03-10T10:00:00.000Z",
   "participant": [
@@ -88,7 +180,7 @@ All `Slot` resources that were referenced by the Appointment are deleted and do 
 1. Reads the Appointment identified by the URL `id`
 2. Loads all `Slot` resources listed in `Appointment.slot`
 3. Validates that the Appointment's `status` is `booked` or `pending`
-4. Sets the Appointment's `status` to `cancelled` and saves it
+4. Sets the Appointment's `status` to `cancelled`, along with `cancelationReason` if one was provided, and saves it
 5. Deletes all referenced Slots
 6. Returns the updated Appointment
 

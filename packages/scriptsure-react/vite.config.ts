@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { defineConfig } from 'vitest/config';
-import { medplumAliases } from '../../vitest.config';
+import { medplumAliases } from '../../aliases.mjs';
 
 export default defineConfig({
   resolve: {

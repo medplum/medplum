@@ -21,6 +21,7 @@ import {
   HEALTH_GORILLA_AUTHORIZED_BY_EXT,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_PHYSICIAN_AN,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
 } from './constants';
 import type {
@@ -47,6 +48,11 @@ export type LabOrderInputs = {
    * `Project.secret` is used.
    */
   performingLabAccountNumber?: string;
+  /**
+   * (optional) Physician-level account number for the performing lab, overriding whichever account
+   * number is otherwise resolved from the requesting `Practitioner`'s stored identifiers.
+   */
+  performingLabPhysicianAccountNumber?: string;
   /** The list of tests ordered within the given order. */
   selectedTests: TestCoding[];
   /** An object mapping the `Coding.code` of each selected test to an `LabOrderTestMetadata` object.  */
@@ -219,6 +225,7 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
     requestingLocation,
     performingLab,
     performingLabAccountNumber,
+    performingLabPhysicianAccountNumber,
     selectedTests,
     testMetadata,
     diagnoses,
@@ -304,6 +311,13 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
     labOrderExtension.push({
       url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
       valueString: performingLabAccountNumber,
+    });
+  }
+
+  if (performingLabPhysicianAccountNumber) {
+    labOrderExtension.push({
+      url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_PHYSICIAN_AN,
+      valueString: performingLabPhysicianAccountNumber,
     });
   }
 
