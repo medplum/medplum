@@ -96,7 +96,7 @@ export function generateTypeScriptDefinition(
 
   const getImportPath = options.getImportPath ?? ((typeName: string) => './' + typeName + '.d.ts');
   const importsByPath = new Map<string, string[]>();
-  for (const referencedType of Array.from(referencedTypes).sort()) {
+  for (const referencedType of Array.from(referencedTypes).sort((a, b) => a.localeCompare(b))) {
     if (!includedTypes.has(referencedType)) {
       const importPath = getImportPath(referencedType);
       importsByPath.set(importPath, [...(importsByPath.get(importPath) ?? []), referencedType]);
