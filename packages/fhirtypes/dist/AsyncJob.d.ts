@@ -118,9 +118,8 @@ export interface AsyncJob {
   request: string;
 
   /**
-   * The profile that requested the job. Assigned by the server when the
-   * job is created and preserved through subsequent updates. Absent for
-   * system-initiated jobs without a requesting profile.
+   * The profile that requested the job. Assigned by the server when it
+   * creates a bulk export job.
    */
   requester?: Reference<Resource>;
 

@@ -63481,7 +63481,7 @@
           "$ref": "#/definitions/uri"
         },
         "requester": {
-          "description": "The profile that requested the job. Assigned by the server when the job is created and preserved through subsequent updates. Absent for system-initiated jobs without a requesting profile.",
+          "description": "The profile that requested the job. Assigned by the server when it creates a bulk export job.",
           "$ref": "#/definitions/Reference"
         },
         "output": {

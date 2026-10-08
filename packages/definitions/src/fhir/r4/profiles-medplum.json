@@ -6613,7 +6613,7 @@
           {
             "id" : "AsyncJob.requester",
             "path" : "AsyncJob.requester",
-            "definition" : "The profile that requested the job. Assigned by the server when the job is created and preserved through subsequent updates. Absent for system-initiated jobs without a requesting profile.",
+            "definition" : "The profile that requested the job. Assigned by the server when it creates a bulk export job.",
             "min" : 0,
             "max" : "1",
             "type" : [{

@@ -238,7 +238,6 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
   }
 
   addDefaultResourceTypes(resourcePolicies);
-  protectAsyncJobRequester(resourcePolicies);
 
   return {
     resourceType: 'AccessPolicy',
@@ -320,33 +319,6 @@ function addDefaultResourceTypes(resourcePolicies: AccessPolicyResource[]): void
       });
     }
   }
-}
-
-/**
- * Marks `AsyncJob.requester` readonly, which blanks it on create and restores the stored value
- * on update. The server assigns it when it creates the job, using the system repository, which
- * has no access policy; users must not be able to write it, because access policies scope jobs
- * to the profile that requested them (e.g. "AsyncJob?requester=%profile").
- *
- * Readonly fields apply to every resource type a policy matches, and other types have their own
- * `requester` field, so a wildcard policy gets an AsyncJob copy inserted ahead of it instead.
- * @param resourcePolicies - The existing set of resource policies, updated in place.
- */
-function protectAsyncJobRequester(resourcePolicies: AccessPolicyResource[]): void {
-  const protectedPolicies = resourcePolicies.flatMap((policy) => {
-    if (policy.resourceType === '*') {
-      return [withReadonlyRequester({ ...policy, resourceType: 'AsyncJob' }), policy];
-    }
-    return [policy.resourceType === 'AsyncJob' ? withReadonlyRequester(policy) : policy];
-  });
-  resourcePolicies.splice(0, resourcePolicies.length, ...protectedPolicies);
-}
-
-function withReadonlyRequester(policy: AccessPolicyResource): AccessPolicyResource {
-  if (!policy.readonlyFields?.includes('requester')) {
-    policy.readonlyFields = [...(policy.readonlyFields ?? EMPTY), 'requester'];
-  }
-  return policy;
 }
 
 /**
