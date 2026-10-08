@@ -25,7 +25,7 @@ const NONE_CHOSEN: CandidatesByActorType = { Practitioner: [], Location: [], Dev
 export interface BlockTimeFormProps {
   /** The calendars that can be blocked, by actor type. */
   readonly candidatesByActorType: CandidatesByActorType;
-  /** The time the form opens on. */
+  /** The time the form opens on. A new one resets the times but keeps the calendars and comment. */
   readonly defaultRange: DateTimeRange;
   /** Called when the time typed changes, with undefined while it is not a whole range. */
   readonly onChangeTime?: (range: DateTimeRange | undefined) => void;
@@ -55,6 +55,13 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
   const [comment, setComment] = useState('');
   const [writing, setWriting] = useState(false);
   const [writeError, setWriteError] = useState<unknown>();
+
+  const [shownRange, setShownRange] = useState(defaultRange);
+  if (shownRange !== defaultRange) {
+    setShownRange(defaultRange);
+    setStartValue(formatZonedDateTimeInput(defaultRange.start));
+    setEndValue(formatZonedDateTimeInput(defaultRange.end));
+  }
 
   const start = parseZonedDateTimeInput(startValue);
   const end = parseZonedDateTimeInput(endValue);
