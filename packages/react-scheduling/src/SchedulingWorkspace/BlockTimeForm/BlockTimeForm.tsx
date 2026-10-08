@@ -54,6 +54,7 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
   const [chosen, setChosen] = useState<CandidatesByActorType>(NONE_CHOSEN);
   const [comment, setComment] = useState('');
   const [writing, setWriting] = useState(false);
+  const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>();
 
   const [shownRange, setShownRange] = useState(defaultRange);
@@ -61,6 +62,7 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
     setShownRange(defaultRange);
     setStartValue(formatZonedDateTimeInput(defaultRange.start));
     setEndValue(formatZonedDateTimeInput(defaultRange.end));
+    setWritten(false);
   }
 
   const start = parseZonedDateTimeInput(startValue);
@@ -85,6 +87,7 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
 
   function choose(actorType: BookableActorType, candidates: readonly ScheduleCandidate[]): void {
     setChosen((previous) => ({ ...previous, [actorType]: candidates }));
+    setWritten(false);
   }
 
   async function handleSubmit(): Promise<void> {
@@ -95,10 +98,19 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
     setWriteError(undefined);
     try {
       const slots = await writeBlockSlots(medplum, { schedules, ...range, comment: comment.trim() || undefined });
+      setWritten(true);
 
       // executeBatch doesn't notify the client what it changed.
       for (const slot of slots) {
         medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'create', id: slot.id, resource: slot });
+      }
+
+      // Without `transaction-bundles` the bundle runs as a batch and can land partly.
+      // Stays disabled: a retry would block the calendars that took it twice.
+      if (slots.length < schedules.length) {
+        throw new Error(
+          `Blocked ${slots.length} of ${schedules.length} calendars. Check the calendar for which ones are missing.`
+        );
       }
 
       try {
@@ -120,7 +132,10 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
         type={getNativeInputType('datetime-local')}
         required
         value={startValue}
-        onChange={(event) => setStartValue(event.currentTarget.value)}
+        onChange={(event) => {
+          setStartValue(event.currentTarget.value);
+          setWritten(false);
+        }}
       />
       <TextInput
         label="End"
@@ -128,7 +143,10 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
         required
         value={endValue}
         error={endsBeforeStart ? 'End must be after start.' : undefined}
-        onChange={(event) => setEndValue(event.currentTarget.value)}
+        onChange={(event) => {
+          setEndValue(event.currentTarget.value);
+          setWritten(false);
+        }}
       />
 
       {BOOKABLE_ACTOR_TYPES.map((actorType) => (
@@ -147,7 +165,10 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
         autosize
         minRows={2}
         value={comment}
-        onChange={(event) => setComment(event.currentTarget.value)}
+        onChange={(event) => {
+          setComment(event.currentTarget.value);
+          setWritten(false);
+        }}
       />
 
       {writeError !== undefined && (
@@ -155,7 +176,7 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
           {normalizeErrorString(writeError)}
         </Alert>
       )}
-      <Button fullWidth disabled={!range || schedules.length === 0} loading={writing} onClick={handleSubmit}>
+      <Button fullWidth disabled={!range || schedules.length === 0 || written} loading={writing} onClick={handleSubmit}>
         Block time
       </Button>
     </Stack>

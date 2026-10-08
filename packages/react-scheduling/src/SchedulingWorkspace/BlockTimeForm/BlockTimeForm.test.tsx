@@ -112,9 +112,11 @@ describe('BlockTimeForm', () => {
         expect.objectContaining({ resourceType: 'Slot', operation: 'create', id: slot.id })
       );
     }
+    // And not offered again until something changes.
+    expect(blockButton()).toBeDisabled();
   });
 
-  test('Refuses a time that ends before it starts, and says so when a write fails', async () => {
+  test('Refuses a time that ends before it starts, and says so when a write fails in whole or in part', async () => {
     await chooseActor(/Provider/, 'riv', 'Dr. Maya Rivera');
 
     await type('End', '2026-08-18T11:00');
@@ -130,5 +132,28 @@ describe('BlockTimeForm', () => {
     expect(onBlocked).not.toHaveBeenCalled();
     expect(screen.getByLabelText(/^End/)).toHaveValue('2026-08-18T13:00');
     expect(blockButton()).toBeEnabled();
+
+    // A batch that lands only some Slots: what landed is drawn, and the shortfall is said.
+    await chooseActor(/Room/, 'exam', 'Exam Room A');
+    const riveraOnly = await medplum.createResource<Slot>({
+      resourceType: 'Slot',
+      schedule: { reference: getReferenceString(DrRiveraSchedule) },
+      status: 'busy',
+      start: RANGE.start.toISOString(),
+      end: RANGE.end.toISOString(),
+    });
+    vi.mocked(medplum.executeBatch).mockResolvedValueOnce({
+      resourceType: 'Bundle',
+      type: 'transaction-response',
+      entry: [{ resource: riveraOnly, response: { status: '201' } }, { response: { status: '400' } }],
+    });
+    await clickBlock();
+
+    expect(screen.getByText(/Blocked 1 of 2 calendars/)).toBeInTheDocument();
+    expect(medplum.notifyResourceModified).toHaveBeenCalledWith(
+      expect.objectContaining({ resourceType: 'Slot', operation: 'create', id: riveraOnly.id })
+    );
+    expect(onBlocked).not.toHaveBeenCalled();
+    expect(blockButton()).toBeDisabled();
   });
 });
