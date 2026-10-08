@@ -3,7 +3,7 @@
 import type { MantineThemeColors } from '@mantine/core';
 import { useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { getExtensionValue, SchedulingScheduleColorURI } from '@medplum/core';
+import { getExtensionValue, SchedulingColorURI } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from '@medplum/fhirtypes';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -58,7 +58,7 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
       let colorName = source.color && Object.hasOwn(theme.colors, source.color) ? source.color : undefined;
 
       if (!colorName) {
-        const extColor = getExtensionValue(source.schedule, SchedulingScheduleColorURI);
+        const extColor = getExtensionValue(source.schedule, SchedulingColorURI);
         if (typeof extColor === 'string') {
           colorName = extColor;
         }
