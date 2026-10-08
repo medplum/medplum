@@ -85,9 +85,11 @@ async function startExport(req: FhirRequest, exportType: string): Promise<FhirRe
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const { since, types, typeFilters } = parseExportParameters(req);
-  const typeFilterSearches = parseTypeFilters(ctx.repo, typeFilters);
+  // Bulk exports contain only the current project's data, even when linked projects are readable.
+  const repo = ctx.repo.clone({ projects: [ctx.project], superAdmin: false });
+  const typeFilterSearches = parseTypeFilters(repo, typeFilters);
 
-  const exporter = new BulkExporter(ctx.repo);
+  const exporter = new BulkExporter(repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
 
   exportResources(exporter, ctx.project, types, exportType, since, typeFilterSearches)
@@ -184,9 +186,6 @@ export async function exportResourceType<T extends Resource>(
   onResource?: (resource: WithId<T>) => void
 ): Promise<void> {
   const repo = exporter.repo;
-  const projectId = repo.currentProject()?.id;
-  // Bulk exports contain only the current project's data, even when linked projects are readable.
-  const projectFilters = projectId ? [{ code: '_project', operator: Operator.EQUALS, value: projectId }] : [];
   const sinceFilters = since ? [{ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since }] : [];
   // Multiple _typeFilter values for a type are ORed: each runs its own paginated search, and dedupe holds
   // every exported ID of the type in memory until closeWriter. A single search yields each resource once,
@@ -196,7 +195,7 @@ export async function exportResourceType<T extends Resource>(
     const searchRequest: SearchRequest<T> = {
       resourceType,
       count,
-      filters: [...projectFilters, ...sinceFilters, ...(typeFilter?.filters ?? [])],
+      filters: [...sinceFilters, ...(typeFilter?.filters ?? [])],
       sortRules: [{ code: '_lastUpdated', descending: false }],
     };
     await repo.processAllResources(searchRequest, async (resource) => {

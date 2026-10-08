@@ -2745,6 +2745,48 @@ describe('AccessPolicy', () => {
       expect(cleared.requester).toStrictEqual(profile);
     }));
 
+  test('AsyncJob requester is readonly under a wildcard policy', async () =>
+    withTestContext(async () => {
+      const profile = { reference: `Practitioner/${randomUUID()}` };
+      const accessPolicy = await buildAccessPolicy({
+        resourceType: 'ProjectMembership',
+        project: createReference(testProject),
+        user: { reference: 'User/123' },
+        profile,
+        access: [],
+      });
+      const wildcardIndex = accessPolicy.resource?.findIndex((r) => r.resourceType === '*') ?? -1;
+      expect(accessPolicy.resource?.[wildcardIndex - 1]).toStrictEqual({
+        resourceType: 'AsyncJob',
+        readonlyFields: ['requester'],
+      });
+      expect(accessPolicy.resource?.[wildcardIndex]).toStrictEqual({ resourceType: '*' });
+
+      const repo = new Repository({
+        author: profile,
+        projects: [testProject],
+        accessPolicy,
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+      });
+      const job = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        request: 'https://example.com/job',
+        requestTime: new Date().toISOString(),
+        requester: profile,
+      });
+      expect(job.requester).toBeUndefined();
+
+      // Other resource types keep their own requester field
+      const task = await repo.createResource<Task>({
+        resourceType: 'Task',
+        status: 'requested',
+        intent: 'order',
+        requester: profile,
+      });
+      expect(task.requester).toStrictEqual(profile);
+    }));
+
   test('AccessPolicy for Subscriptions with author in criteria', async () =>
     withTestContext(async () => {
       const { project, login, membership } = await registerNew({
