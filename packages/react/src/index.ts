@@ -152,6 +152,7 @@ export * from './SearchFilterEditor/SearchFilterEditor';
 export * from './ServiceRequestTimeline/ServiceRequestTimeline';
 export * from './SignatureInput/SignatureInput';
 export * from './SmartAppLaunchLink/SmartAppLaunchLink';
+export * from './SmartLogo/SmartLogo';
 export * from './StatusBadge/StatusBadge';
 export * from './Timeline/Timeline';
 export * from './TimingInput/TimingInput';

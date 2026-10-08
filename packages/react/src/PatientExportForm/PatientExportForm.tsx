@@ -1,30 +1,70 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Checkbox, Group, SegmentedControl, Stack } from '@mantine/core';
+import {
+  Alert,
+  Button,
+  Center,
+  CopyButton,
+  Divider,
+  Group,
+  NativeSelect,
+  Paper,
+  PasswordInput,
+  SegmentedControl,
+  SimpleGrid,
+  Skeleton,
+  Stack,
+  Tabs,
+  Text,
+  TextInput,
+} from '@mantine/core';
+import { useTimeout } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { ContentType, normalizeErrorString, resolveId } from '@medplum/core';
-import type { Patient, Reference } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
-import { IconCheck, IconX } from '@tabler/icons-react';
-import type { JSX } from 'react';
-import { useCallback, useState } from 'react';
-import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
-import { convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
+import type { SmartHealthLinkMode, SmartHealthLinkPayload } from '@medplum/core';
+import {
+  ContentType,
+  createReference,
+  formatDateTime,
+  formatHumanName,
+  normalizeErrorString,
+  parseSmartHealthLink,
+  resolveId,
+} from '@medplum/core';
+import type { Parameters, Patient, Reference } from '@medplum/fhirtypes';
+import { useMedplum, useMedplumProfile, useResource } from '@medplum/react-hooks';
+import { IconCheck, IconCopy, IconDownload, IconX } from '@tabler/icons-react';
+import type { JSX, ReactNode } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { FormSection } from '../FormSection/FormSection';
 import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
+import { SmartLogo } from '../SmartLogo/SmartLogo';
+import { CARD_LAYOUT, getCardHeight, renderSmartHealthLinkCard } from './SmartHealthLinkCard';
+
+export interface PatientExportFormRenderProps {
+  readonly body: ReactNode;
+  readonly actions: ReactNode;
+  readonly onSubmit: (formData: Record<string, string>) => Promise<void>;
+  readonly format: PatientExportFormat;
+  readonly setFormat: (format: PatientExportFormat) => void;
+}
+
+export type PatientExportFormat = 'everything' | 'summary' | 'ccda' | 'smart';
 
 export interface PatientExportFormProps {
   readonly patient: Patient | Reference<Patient>;
+  readonly children?: (props: PatientExportFormRenderProps) => ReactNode;
+  readonly defaultFormat?: PatientExportFormat;
 }
 
 const NOTIFICATION_ID = 'patient-export';
+const TOGGLE_PROPS = { fullWidth: true, radius: 'xl', styles: { indicator: { boxShadow: 'none' } } } as const;
+const AUTHOR_TYPES: string[] = ['Organization', 'Practitioner', 'PractitionerRole'];
 const NOTIFICATION_TITLE = 'Patient Export';
 
 interface FormatDefinition {
   operation: string;
-  type?: string;
   extension: string;
   contentType: string;
 }
@@ -45,24 +85,24 @@ const formats: Record<string, FormatDefinition> = {
     extension: 'xml',
     contentType: ContentType.CDA_XML,
   },
-  ccdaReferral: {
-    operation: '$ccda-export',
-    type: 'referral',
-    extension: 'xml',
-    contentType: ContentType.CDA_XML,
-  },
 };
 
 export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
   const medplum = useMedplum();
-  const { patient } = props;
-  const [format, setFormat] = useState('everything');
+  const { patient, children } = props;
+  const resolvedPatient = useResource(patient);
+  const patientName = resolvedPatient ? formatHumanName(resolvedPatient.name?.[0]) : '';
+  const [format, setFormat] = useState<PatientExportFormat>(props.defaultFormat ?? 'everything');
   const [inlineAttachments, setInlineAttachments] = useState(false);
+  const [ccdaType, setCcdaType] = useState<'summary' | 'referral'>('summary');
+  const smart = useSmartHealthLinkExport(patient, patientName);
+  const profile = useMedplumProfile();
+  const defaultAuthor = profile && AUTHOR_TYPES.includes(profile.resourceType) ? createReference(profile) : undefined;
 
-  const handleSubmit = useCallback(
+  const handleExport = useCallback(
     async (data: Record<string, string>) => {
       const patientId = resolveId(patient) as string;
-      const { operation, type, contentType, extension } = formats[format];
+      const { operation, contentType, extension } = formats[format];
       const url = medplum.fhirUrl('Patient', patientId, operation);
       const params = {} as Record<string, unknown>;
 
@@ -70,8 +110,8 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
         url.searchParams.set('_inlineAttachments', 'true');
       }
 
-      if (type) {
-        params.type = type;
+      if (format === 'ccda' && ccdaType === 'referral') {
+        params.type = 'referral';
       }
 
       if (data.author) {
@@ -79,15 +119,15 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
       }
 
       if (data.authoredOn) {
-        params.authoredOn = convertLocalToIso(data.authoredOn);
+        params.authoredOn = data.authoredOn === today() ? new Date().toISOString() : startOfLocalDay(data.authoredOn);
       }
 
       if (data.startDate) {
-        params.start = data.startDate;
+        params.start = startOfLocalDay(data.startDate);
       }
 
       if (data.endDate) {
-        params.end = data.endDate;
+        params.end = startOfLocalDay(data.endDate, 1);
       }
 
       notifications.show({
@@ -132,71 +172,397 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
         });
       }
     },
-    [medplum, patient, format, inlineAttachments]
+    [medplum, patient, format, ccdaType, inlineAttachments]
   );
 
-  return (
-    <Form onSubmit={handleSubmit}>
-      <Stack>
-        <FormSection title="Export Format" description="Required" withAsterisk>
-          <SegmentedControl
-            name="format"
-            value={format}
-            onChange={setFormat}
-            data={[
-              { label: 'FHIR Everything', value: 'everything' },
-              { label: 'Patient Summary', value: 'summary' },
-              { label: 'C-CDA', value: 'ccda' },
-              { label: 'C-CDA Referral', value: 'ccdaReferral' },
-            ]}
-            fullWidth
-          />
-        </FormSection>
-        <FormSection title="Author" description="Optional author for composition. Default value is current user.">
-          <ReferenceInput
-            name="author"
-            placeholder="Author"
-            targetTypes={['Organization', 'Practitioner', 'PractitionerRole']}
-          />
-        </FormSection>
-        <FormSection
-          title="Authored On"
-          description="Optional date for composition authored on. Default value is current date."
-        >
-          <DateTimeInput name="authoredOn" placeholder="Authored on" />
-        </FormSection>
-        <FormSection
-          title="Start Date"
-          description="The start date of care. If no start date is provided, all records prior to the end date are in scope."
-        >
-          <DateTimeInput name="startDate" placeholder="Start date" />
-        </FormSection>
-        <FormSection
-          title="End Date"
-          description="The end date of care. If no end date is provided, all records subsequent to the start date are in scope."
-        >
-          <DateTimeInput name="endDate" placeholder="End date" />
-        </FormSection>
-        {format === 'everything' && (
-          <FormSection
-            title="Inline Attachments"
-            description="Embed DocumentReference file attachments as base64-encoded data instead of storage URLs."
-          >
-            <Stack gap="xs">
-              <Checkbox
-                label="Inline attachments"
-                checked={inlineAttachments}
-                onChange={(e) => setInlineAttachments(e.currentTarget.checked)}
+  const isSmart = format === 'smart';
+
+  const body = (
+    <Stack gap={0}>
+      <Tabs
+        variant="unstyled"
+        className="pill-tabs"
+        value={format}
+        onChange={(value) => setFormat((value as PatientExportFormat | null) ?? 'everything')}
+      >
+        <Tabs.List>
+          <Tabs.Tab value="everything">FHIR Everything</Tabs.Tab>
+          <Tabs.Tab value="summary">Patient Summary</Tabs.Tab>
+          <Tabs.Tab value="ccda">C-CDA</Tabs.Tab>
+          <Tabs.Tab value="smart">SMART Health Card/Link</Tabs.Tab>
+        </Tabs.List>
+      </Tabs>
+      <Divider my="lg" />
+      {isSmart ? (
+        smart.content
+      ) : (
+        <Stack>
+          {format === 'ccda' && (
+            <FormSection
+              title="Type"
+              description={'Choose "Summarization of Episode Note" or "Referral Note" LOINC format'}
+            >
+              <SegmentedControl
+                value={ccdaType}
+                onChange={(value) => setCcdaType(value as 'summary' | 'referral')}
+                data={[
+                  { value: 'summary', label: 'Standard Summary' },
+                  { value: 'referral', label: 'Referral Note' },
+                ]}
+                {...TOGGLE_PROPS}
               />
-            </Stack>
+            </FormSection>
+          )}
+          <FormSection title="Author" description="Author shown on the exported document (usually you).">
+            <ReferenceInput
+              name="author"
+              placeholder="Author"
+              targetTypes={AUTHOR_TYPES}
+              defaultValue={defaultAuthor}
+            />
           </FormSection>
-        )}
-        <Group justify="right">
-          <SubmitButton>Request Export</SubmitButton>
-        </Group>
+          <FormSection title="Authored On" description="Date shown on the exported document (usually today).">
+            <TextInput type="date" name="authoredOn" placeholder="Authored on" defaultValue={today()} max={today()} />
+          </FormSection>
+          <FormSection
+            title="Start Date"
+            description="The start date of care. If no start date is provided, all records prior to the end date are in scope."
+          >
+            <TextInput type="date" name="startDate" placeholder="Start date" />
+          </FormSection>
+          <FormSection
+            title="End Date"
+            description="The end date of care. If no end date is provided, all records subsequent to the start date are in scope."
+          >
+            <TextInput type="date" name="endDate" placeholder="End date" />
+          </FormSection>
+          {format === 'everything' && (
+            <FormSection
+              title="Attachments"
+              description="Choose whether the export includes the patient’s document files or links to them."
+            >
+              <SegmentedControl
+                value={inlineAttachments ? 'include' : 'link'}
+                onChange={(value) => setInlineAttachments(value === 'include')}
+                data={[
+                  { value: 'link', label: 'Link to Files Only' },
+                  { value: 'include', label: 'Include Files in Export' },
+                ]}
+                {...TOGGLE_PROPS}
+              />
+            </FormSection>
+          )}
+        </Stack>
+      )}
+    </Stack>
+  );
+
+  const actions = isSmart ? (
+    smart.actions
+  ) : (
+    <SubmitButton leftSection={<IconDownload size={16} />}>
+      {patientName ? `Export ${toPossessive(patientName)} Records` : 'Export Records'}
+    </SubmitButton>
+  );
+
+  const onSubmit = isSmart ? smart.generate : handleExport;
+
+  if (children) {
+    return <>{children({ body, actions, onSubmit, format, setFormat })}</>;
+  }
+
+  return (
+    <Form onSubmit={onSubmit}>
+      <Stack>
+        {body}
+        <Group justify="right">{actions}</Group>
       </Stack>
     </Form>
   );
+}
+
+const SUCCESS_TIMEOUT_MS = 2000;
+
+const NO_PRESS_EFFECT = { transform: 'none' };
+
+const CARD_PREVIEW_STYLE = {
+  border: '1px solid light-dark(var(--mantine-color-gray-3), transparent)',
+  borderRadius: 'var(--mantine-radius-sm)',
+  boxShadow: 'var(--mantine-shadow-xs)',
+  transform: 'rotate(-2deg)',
+  transition: 'opacity 200ms ease',
+};
+
+const CARD_PREVIEW_HIDDEN = { position: 'absolute', opacity: 0 } as const;
+
+const CARD_PREVIEW_WIDTH = Math.round((148 * CARD_LAYOUT.width) / getCardHeight(2));
+
+const EXPIRES_FORMAT: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+};
+
+const SMART_HEALTH_LINK_EXPIRATIONS = [
+  { value: String(15 * 60), label: '15 min' },
+  { value: String(60 * 60), label: '1 hour' },
+  { value: String(24 * 60 * 60), label: '24 hours' },
+  { value: String(48 * 60 * 60), label: '48 hours' },
+  { value: String(7 * 24 * 60 * 60), label: '7 days' },
+  { value: String(30 * 24 * 60 * 60), label: '30 days' },
+];
+
+interface GeneratedSmartHealthLink {
+  label: string;
+  shlink: string;
+  qrCodeDataUrl?: string;
+  payload: SmartHealthLinkPayload;
+}
+
+interface SmartHealthLinkExport {
+  readonly content: ReactNode;
+  readonly actions: ReactNode;
+  readonly generate: () => Promise<void>;
+}
+
+function useSmartHealthLinkExport(patient: Patient | Reference<Patient>, patientName: string): SmartHealthLinkExport {
+  const medplum = useMedplum();
+  const [label, setLabel] = useState<string>();
+  const [passcode, setPasscode] = useState('');
+  const [expiresInSeconds, setExpiresInSeconds] = useState(String(60 * 60));
+  const [generated, setGenerated] = useState<GeneratedSmartHealthLink>();
+  const [error, setError] = useState<string>();
+  const [downloaded, setDownloaded] = useState(false);
+  const { start: startDownloadedTimer, clear: clearDownloadedTimer } = useTimeout(
+    () => setDownloaded(false),
+    SUCCESS_TIMEOUT_MS
+  );
+  const labelValue = label ?? (patientName ? `${toPossessive(patientName)} Health Records` : 'Patient Health Records');
+
+  const generate = useCallback(async (): Promise<void> => {
+    const patientId = resolveId(patient);
+    if (!patientId) {
+      return;
+    }
+    setError(undefined);
+    try {
+      const exp = Math.floor(Date.now() / 1000) + Number(expiresInSeconds);
+      const mode: SmartHealthLinkMode = passcode ? 'manifest' : 'direct';
+      const response = await medplum.post<Parameters>(
+        medplum.fhirUrl('Patient', patientId, '$generate-smart-health-link'),
+        {
+          mode,
+          exp,
+          label: labelValue,
+          passcode: passcode || undefined,
+          includeQrCode: true,
+        },
+        ContentType.JSON
+      );
+      const shlink = getParameterValue(response, 'shlink');
+      if (!shlink) {
+        throw new Error('Expected shlink parameter');
+      }
+      setGenerated({
+        label: labelValue,
+        shlink,
+        qrCodeDataUrl: getParameterValue(response, 'qrCodeDataUrl'),
+        payload: parseSmartHealthLink(shlink),
+      });
+    } catch (err) {
+      setError(normalizeErrorString(err));
+    }
+  }, [medplum, patient, labelValue, passcode, expiresInSeconds]);
+
+  const expiresText = generated?.payload.exp
+    ? `Expires ${formatDateTime(new Date(generated.payload.exp * 1000).toISOString(), undefined, EXPIRES_FORMAT)}`
+    : undefined;
+
+  const [card, setCard] = useState<{ url?: string }>();
+  const [cardShown, setCardShown] = useState(false);
+  useEffect(() => {
+    if (!generated?.qrCodeDataUrl) {
+      return undefined;
+    }
+    let url: string | undefined;
+    let cancelled = false;
+    renderSmartHealthLinkCard({
+      label: generated.label,
+      expires: expiresText,
+      qrCodeDataUrl: generated.qrCodeDataUrl,
+      logoUrl: import.meta.env.MEDPLUM_LOGO_URL,
+      fontFamily: getComputedStyle(document.body).fontFamily,
+    })
+      .then((blob) => {
+        if (!cancelled) {
+          url = blob && window.URL.createObjectURL(blob);
+          setCard({ url });
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!cancelled) {
+          setCard({});
+        }
+      });
+    return () => {
+      cancelled = true;
+      if (url) {
+        window.URL.revokeObjectURL(url);
+      }
+      setCard(undefined);
+      setCardShown(false);
+    };
+  }, [generated, expiresText]);
+
+  const showDownloaded = useCallback((): void => {
+    setDownloaded(true);
+    clearDownloadedTimer();
+    startDownloadedTimer();
+  }, [clearDownloadedTimer, startDownloadedTimer]);
+
+  const downloadCard = useCallback((): void => {
+    const url = card?.url ?? generated?.qrCodeDataUrl;
+    if (generated && url) {
+      triggerDownload(url, `${generated.label}.png`);
+      showDownloaded();
+    }
+  }, [generated, card, showDownloaded]);
+
+  const form = (
+    <Stack>
+      <TextInput label="Label" value={labelValue} onChange={(e) => setLabel(e.currentTarget.value)} />
+      <PasswordInput
+        label="Passcode (Optional)"
+        description="Adding a passcode makes this a manifest link, which recipients open with the passcode. Without one, it’s a direct link anyone with the link can open until it expires."
+        value={passcode}
+        onChange={(e) => setPasscode(e.currentTarget.value)}
+      />
+      <NativeSelect
+        label="Expires"
+        description="The link stops working after this time."
+        data={SMART_HEALTH_LINK_EXPIRATIONS}
+        value={expiresInSeconds}
+        onChange={(e) => setExpiresInSeconds(e.currentTarget.value)}
+      />
+      {error && (
+        <Alert color="red" variant="light">
+          {error}
+        </Alert>
+      )}
+    </Stack>
+  );
+
+  const content = generated ? (
+    <Paper bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" radius="md" p="md" shadow="none">
+      <Stack gap="md">
+        <div>
+          <Text fw={800}>{generated.label}</Text>
+          {expiresText && (
+            <Text size="sm" c="dimmed">
+              {expiresText}
+            </Text>
+          )}
+        </div>
+        <SimpleGrid cols={generated.qrCodeDataUrl ? 2 : 1} spacing="md">
+          <Paper radius="sm" p="md" shadow="none">
+            <Stack gap="md" justify="space-between" h="100%">
+              <Text ff="monospace" fz={11} lh="17.05px" style={{ wordBreak: 'break-all' }}>
+                {generated.shlink}
+              </Text>
+              <Stack gap="md">
+                <Divider />
+                <CopyButton value={generated.shlink} timeout={SUCCESS_TIMEOUT_MS}>
+                  {({ copied, copy }) => (
+                    <Button
+                      variant="transparent"
+                      size="compact-sm"
+                      leftSection={copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                      onClick={copy}
+                      style={NO_PRESS_EFFECT}
+                    >
+                      {copied ? 'Copied!' : 'Copy Link'}
+                    </Button>
+                  )}
+                </CopyButton>
+              </Stack>
+            </Stack>
+          </Paper>
+          {generated.qrCodeDataUrl && (
+            <Paper radius="sm" p="md" shadow="none">
+              <Stack gap="md" align="center" justify="space-between" h="100%">
+                <Center h={162} pos="relative">
+                  {card && !card.url ? (
+                    <img src={generated.qrCodeDataUrl} alt="SMART Health Link QR code" height={148} />
+                  ) : (
+                    <>
+                      {!cardShown && (
+                        <Skeleton w={CARD_PREVIEW_WIDTH} h={148} radius="sm" style={{ transform: 'rotate(-2deg)' }} />
+                      )}
+                      {card?.url && (
+                        <img
+                          src={card.url}
+                          alt="SMART Health Card"
+                          height={148}
+                          onLoad={() => setCardShown(true)}
+                          style={{ ...CARD_PREVIEW_STYLE, ...(cardShown ? undefined : CARD_PREVIEW_HIDDEN) }}
+                        />
+                      )}
+                    </>
+                  )}
+                </Center>
+                <Stack gap="md" w="100%">
+                  <Divider />
+                  <Button
+                    onClick={downloadCard}
+                    variant="transparent"
+                    size="compact-sm"
+                    leftSection={downloaded ? <IconCheck size={16} /> : <IconDownload size={16} />}
+                    style={NO_PRESS_EFFECT}
+                  >
+                    {downloaded ? 'Download Started' : 'Download Card'}
+                  </Button>
+                </Stack>
+              </Stack>
+            </Paper>
+          )}
+        </SimpleGrid>
+      </Stack>
+    </Paper>
+  ) : (
+    form
+  );
+
+  const actions = generated ? (
+    <Button
+      variant="default"
+      leftSection={<SmartLogo size={16} />}
+      onClick={() => {
+        setGenerated(undefined);
+        setDownloaded(false);
+        clearDownloadedTimer();
+      }}
+    >
+      New SMART Health Card/Link
+    </Button>
+  ) : (
+    <SubmitButton leftSection={<SmartLogo size={16} />}>
+      {patientName ? `Generate ${toPossessive(patientName)} SMART Health Link` : 'Generate SMART Health Link'}
+    </SubmitButton>
+  );
+
+  return { content, actions, generate };
+}
+
+function toPossessive(name: string): string {
+  return /s$/i.test(name) ? `${name}’` : `${name}’s`;
+}
+
+function getParameterValue(parameters: Parameters, name: string): string | undefined {
+  const parameter = parameters.parameter?.find((p) => p.name === name);
+  return parameter?.valueString ?? parameter?.valueId ?? parameter?.valueUri;
 }
 
 /**
@@ -215,11 +581,27 @@ function saveData(data: unknown, fileName: string, contentType: string): void {
   const content = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
   const blob = new Blob([content], { type: contentType });
   const url = window.URL.createObjectURL(blob);
+  triggerDownload(url, fileName);
+  window.URL.revokeObjectURL(url);
+}
+
+function today(): string {
+  const now = new Date();
+  return [now.getFullYear(), now.getMonth() + 1, now.getDate()].map((n) => String(n).padStart(2, '0')).join('-');
+}
+
+function startOfLocalDay(date: string, offsetDays = 0): string {
+  const day = new Date(`${date}T00:00`);
+  day.setDate(day.getDate() + offsetDays);
+  return day.toISOString();
+}
+
+function triggerDownload(url: string, fileName: string): void {
   const a = document.createElement('a');
   document.body.appendChild(a);
   a.style.display = 'none';
   a.href = url;
   a.download = fileName;
   a.click();
-  window.URL.revokeObjectURL(url);
+  a.remove();
 }
