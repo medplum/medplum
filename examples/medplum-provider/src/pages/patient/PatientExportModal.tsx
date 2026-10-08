@@ -25,6 +25,7 @@ export function PatientExportModal(props: PatientExportModalProps): JSX.Element 
           onClose={onClose}
           onExitTransitionEnd={() => {
             measurement.current = { tallest: 0, done: false };
+            setBodyHeight(undefined);
             setResetKey((key) => key + 1);
           }}
           size="lg"

@@ -239,7 +239,7 @@ describe('PatientExportForm', () => {
   test('Shows the SMART Health Card/Link tab', async () => {
     await setup({ patient: HomerSimpson });
     await click('tab', 'SMART Health Card/Link');
-    expect(await screen.findByRole('button', { name: /SMART Health Link/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /^Generate .*SMART Health Card\/Link$/ })).toBeInTheDocument();
   });
 
   test('Generates a SMART Health Link and card', async () => {
@@ -266,8 +266,9 @@ describe('PatientExportForm', () => {
     expect(exp - Math.floor(Date.now() / 1000)).toBeLessThanOrEqual(60 * 60);
 
     expect(await screen.findByText(shlink)).toBeInTheDocument();
-    expect(screen.getByText('Homer Simpson’s Health Records')).toBeInTheDocument();
-    expect(screen.getByText(/^Expires /)).toBeInTheDocument();
+    expect(screen.getByText('SMART Health Card')).toBeInTheDocument();
+    expect(screen.getByText('SMART Health Link')).toBeInTheDocument();
+    expect(screen.getByText(/^This SMART Health Card\/Link expires on .+ at .+$/)).toBeInTheDocument();
     const cardImage = screen.getByAltText('SMART Health Card');
     expect(cardImage).toHaveAttribute('src', 'blob:card');
     expect(cardImage).toHaveStyle({ opacity: '0' });
@@ -280,7 +281,7 @@ describe('PatientExportForm', () => {
     expect(renderSmartHealthLinkCard).toHaveBeenCalledWith(
       expect.objectContaining({
         label: 'Homer Simpson’s Health Records',
-        expires: expect.stringMatching(/^Expires /),
+        expires: expect.stringMatching(/^This SMART Health Card expires on .+ at .+$/),
         qrCodeDataUrl: QR_CODE,
       })
     );
@@ -364,7 +365,7 @@ describe('PatientExportForm', () => {
     expect(await screen.findByRole('button', { name: 'Export Frodo Baggins’ Records' })).toBeInTheDocument();
 
     await click('tab', 'SMART Health Card/Link');
-    expect(screen.getByRole('button', { name: 'Generate Frodo Baggins’ SMART Health Link' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Generate Frodo Baggins’ SMART Health Card/Link' })).toBeInTheDocument();
     expect(screen.getByLabelText('Label')).toHaveValue('Frodo Baggins’ Health Records');
   });
 });

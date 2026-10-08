@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { CARD_LAYOUT, renderSmartHealthLinkCard } from './SmartHealthLinkCard';
 
-const { paddingTop, lineHeight, qrGap, qrSize, logoGap, logoSize, paddingBottom } = CARD_LAYOUT;
+const { paddingTop, logoSize, logoGap, lineHeight, qrGap, qrSize, expiresGap, paddingBottom } = CARD_LAYOUT;
+const labelTop = paddingTop + logoSize + logoGap;
 
 interface FakeImage {
   src: string;
@@ -60,24 +61,28 @@ describe('renderSmartHealthLinkCard', () => {
     vi.unstubAllGlobals();
   });
 
-  test('Draws the label, expiration, QR code, and Medplum logo', async () => {
+  test('Draws the logo, label, QR code, and wrapped expiration', async () => {
     const blob = await renderSmartHealthLinkCard({
       label: 'Frodo Baggins’ Health Records',
-      expires: 'Expires 10/6/2026, 3:32 PM',
+      expires: 'This SMART Health Card expires on 10/6/2026 at 3:32 PM',
       qrCodeDataUrl: 'data:image/png;base64,qr',
     });
 
     expect(blob?.type).toBe('image/png');
-    expect(ctx.fillText).toHaveBeenCalledWith('Frodo Baggins’ Health Records', 150, 34);
-    expect(ctx.fillText).toHaveBeenCalledWith('Expires 10/6/2026, 3:32 PM', 150, 54);
+    expect(ctx.translate).toHaveBeenCalledWith(134, paddingTop);
+    expect(ctx.fill).toHaveBeenCalledTimes(1);
+    expect(ctx.fillText).toHaveBeenCalledWith('Frodo Baggins’ Health Records', 150, labelTop + lineHeight / 2);
+    const qrTop = labelTop + lineHeight + qrGap;
     expect(ctx.drawImage).toHaveBeenCalledWith(
       expect.objectContaining({ src: 'data:image/png;base64,qr' }),
       12,
-      paddingTop + 2 * lineHeight + qrGap,
+      qrTop,
       qrSize,
       qrSize
     );
-    expect(ctx.fill).toHaveBeenCalledTimes(1);
+    const expiresTop = qrTop + qrSize + expiresGap;
+    expect(ctx.fillText).toHaveBeenCalledWith('This SMART Health Card expires on', 150, expiresTop + lineHeight / 2);
+    expect(ctx.fillText).toHaveBeenCalledWith('10/6/2026 at 3:32 PM', 150, expiresTop + lineHeight * 1.5);
   });
 
   test('Wraps a long label and grows the card', async () => {
@@ -90,9 +95,19 @@ describe('renderSmartHealthLinkCard', () => {
     });
 
     expect(ctx.fillText).toHaveBeenCalledTimes(2);
-    const qrTop = paddingTop + 2 * lineHeight + qrGap;
+    const qrTop = labelTop + 2 * lineHeight + qrGap;
     expect(ctx.drawImage).toHaveBeenCalledWith(expect.anything(), 12, qrTop, qrSize, qrSize);
-    expect(canvas.height).toBe((qrTop + qrSize + logoGap + logoSize + paddingBottom) * 3);
+    expect(canvas.height).toBe((qrTop + qrSize + paddingBottom) * 3);
+  });
+
+  test('Balances a wrapped label instead of leaving a single word on the last line', async () => {
+    await renderSmartHealthLinkCard({
+      label: 'Meriadoc Brandybuck of Buckland’s Health Records',
+      qrCodeDataUrl: 'data:image/png;base64,qr',
+    });
+
+    expect(ctx.fillText).toHaveBeenCalledWith('Meriadoc Brandybuck of', 150, labelTop + lineHeight / 2);
+    expect(ctx.fillText).toHaveBeenCalledWith('Buckland’s Health Records', 150, labelTop + lineHeight * 1.5);
   });
 
   test('Draws a custom logo, fitted to the logo slot', async () => {
@@ -105,7 +120,7 @@ describe('renderSmartHealthLinkCard', () => {
     expect(ctx.drawImage).toHaveBeenCalledWith(
       expect.objectContaining({ src: 'https://example.com/logo.png' }),
       134,
-      paddingTop + lineHeight + qrGap + qrSize + logoGap + 8,
+      paddingTop + 8,
       32,
       16
     );

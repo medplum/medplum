@@ -24,7 +24,6 @@ import type { SmartHealthLinkMode, SmartHealthLinkPayload } from '@medplum/core'
 import {
   ContentType,
   createReference,
-  formatDateTime,
   formatHumanName,
   normalizeErrorString,
   parseSmartHealthLink,
@@ -196,7 +195,7 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
       {isSmart ? (
         smart.content
       ) : (
-        <Stack>
+        <Stack gap="lg">
           {format === 'ccda' && (
             <FormSection
               title="Type"
@@ -286,24 +285,18 @@ const SUCCESS_TIMEOUT_MS = 2000;
 const NO_PRESS_EFFECT = { transform: 'none' };
 
 const CARD_PREVIEW_STYLE = {
-  border: '1px solid light-dark(var(--mantine-color-gray-3), transparent)',
+  border: '1px solid light-dark(rgba(0, 0, 0, 0.1), transparent)',
   borderRadius: 'var(--mantine-radius-sm)',
-  boxShadow: 'var(--mantine-shadow-xs)',
-  transform: 'rotate(-2deg)',
+  boxShadow: '0 2px 3px rgba(0, 0, 0, 0.1)',
+  transform: 'rotate(-1.5deg)',
   transition: 'opacity 200ms ease',
 };
 
 const CARD_PREVIEW_HIDDEN = { position: 'absolute', opacity: 0 } as const;
 
-const CARD_PREVIEW_WIDTH = Math.round((148 * CARD_LAYOUT.width) / getCardHeight(2));
+const CARD_PREVIEW_HEIGHT = 190;
 
-const EXPIRES_FORMAT: Intl.DateTimeFormatOptions = {
-  year: 'numeric',
-  month: 'numeric',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-};
+const CARD_PREVIEW_WIDTH = Math.round((CARD_PREVIEW_HEIGHT * CARD_LAYOUT.width) / getCardHeight(1, 2));
 
 const SMART_HEALTH_LINK_EXPIRATIONS = [
   { value: String(15 * 60), label: '15 min' },
@@ -376,9 +369,7 @@ function useSmartHealthLinkExport(patient: Patient | Reference<Patient>, patient
     }
   }, [medplum, patient, labelValue, passcode, expiresInSeconds]);
 
-  const expiresText = generated?.payload.exp
-    ? `Expires ${formatDateTime(new Date(generated.payload.exp * 1000).toISOString(), undefined, EXPIRES_FORMAT)}`
-    : undefined;
+  const expiresOn = generated?.payload.exp ? formatExpiresOn(new Date(generated.payload.exp * 1000)) : undefined;
 
   const [card, setCard] = useState<{ url?: string }>();
   const [cardShown, setCardShown] = useState(false);
@@ -390,7 +381,7 @@ function useSmartHealthLinkExport(patient: Patient | Reference<Patient>, patient
     let cancelled = false;
     renderSmartHealthLinkCard({
       label: generated.label,
-      expires: expiresText,
+      expires: expiresOn && `This SMART Health Card expires on ${expiresOn}`,
       qrCodeDataUrl: generated.qrCodeDataUrl,
       logoUrl: import.meta.env.MEDPLUM_LOGO_URL,
       fontFamily: getComputedStyle(document.body).fontFamily,
@@ -415,7 +406,7 @@ function useSmartHealthLinkExport(patient: Patient | Reference<Patient>, patient
       setCard(undefined);
       setCardShown(false);
     };
-  }, [generated, expiresText]);
+  }, [generated, expiresOn]);
 
   const showDownloaded = useCallback((): void => {
     setDownloaded(true);
@@ -432,7 +423,7 @@ function useSmartHealthLinkExport(patient: Patient | Reference<Patient>, patient
   }, [generated, card, showDownloaded]);
 
   const form = (
-    <Stack>
+    <Stack gap="lg">
       <TextInput label="Label" value={labelValue} onChange={(e) => setLabel(e.currentTarget.value)} />
       <PasswordInput
         label="Passcode (Optional)"
@@ -456,56 +447,33 @@ function useSmartHealthLinkExport(patient: Patient | Reference<Patient>, patient
   );
 
   const content = generated ? (
-    <Paper bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" radius="md" p="md" shadow="none">
-      <Stack gap="md">
-        <div>
-          <Text fw={800}>{generated.label}</Text>
-          {expiresText && (
-            <Text size="sm" c="dimmed">
-              {expiresText}
+    <Stack gap="lg">
+      <SimpleGrid cols={generated.qrCodeDataUrl ? 2 : 1} spacing="md">
+        {generated.qrCodeDataUrl && (
+          <Stack gap="xs">
+            <Text size="sm" fw={800}>
+              SMART Health Card
             </Text>
-          )}
-        </div>
-        <SimpleGrid cols={generated.qrCodeDataUrl ? 2 : 1} spacing="md">
-          <Paper radius="sm" p="md" shadow="none">
-            <Stack gap="md" justify="space-between" h="100%">
-              <Text ff="monospace" fz={11} lh="17.05px" style={{ wordBreak: 'break-all' }}>
-                {generated.shlink}
-              </Text>
-              <Stack gap="md">
-                <Divider />
-                <CopyButton value={generated.shlink} timeout={SUCCESS_TIMEOUT_MS}>
-                  {({ copied, copy }) => (
-                    <Button
-                      variant="transparent"
-                      size="compact-sm"
-                      leftSection={copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                      onClick={copy}
-                      style={NO_PRESS_EFFECT}
-                    >
-                      {copied ? 'Copied!' : 'Copy Link'}
-                    </Button>
-                  )}
-                </CopyButton>
-              </Stack>
-            </Stack>
-          </Paper>
-          {generated.qrCodeDataUrl && (
-            <Paper radius="sm" p="md" shadow="none">
+            <Paper withBorder radius="md" p="md" shadow="none" flex={1}>
               <Stack gap="md" align="center" justify="space-between" h="100%">
-                <Center h={162} pos="relative">
+                <Center h={218} pos="relative">
                   {card && !card.url ? (
-                    <img src={generated.qrCodeDataUrl} alt="SMART Health Link QR code" height={148} />
+                    <img src={generated.qrCodeDataUrl} alt="SMART Health Link QR code" height={CARD_PREVIEW_HEIGHT} />
                   ) : (
                     <>
                       {!cardShown && (
-                        <Skeleton w={CARD_PREVIEW_WIDTH} h={148} radius="sm" style={{ transform: 'rotate(-2deg)' }} />
+                        <Skeleton
+                          w={CARD_PREVIEW_WIDTH}
+                          h={CARD_PREVIEW_HEIGHT}
+                          radius="sm"
+                          style={{ transform: CARD_PREVIEW_STYLE.transform }}
+                        />
                       )}
                       {card?.url && (
                         <img
                           src={card.url}
                           alt="SMART Health Card"
-                          height={148}
+                          height={CARD_PREVIEW_HEIGHT}
                           onLoad={() => setCardShown(true)}
                           style={{ ...CARD_PREVIEW_STYLE, ...(cardShown ? undefined : CARD_PREVIEW_HIDDEN) }}
                         />
@@ -513,24 +481,51 @@ function useSmartHealthLinkExport(patient: Patient | Reference<Patient>, patient
                     </>
                   )}
                 </Center>
-                <Stack gap="md" w="100%">
-                  <Divider />
-                  <Button
-                    onClick={downloadCard}
-                    variant="transparent"
-                    size="compact-sm"
-                    leftSection={downloaded ? <IconCheck size={16} /> : <IconDownload size={16} />}
-                    style={NO_PRESS_EFFECT}
-                  >
-                    {downloaded ? 'Download Started' : 'Download Card'}
-                  </Button>
-                </Stack>
+                <Button
+                  onClick={downloadCard}
+                  variant="outline"
+                  fullWidth
+                  leftSection={downloaded ? <IconCheck size={16} /> : <IconDownload size={16} />}
+                  style={NO_PRESS_EFFECT}
+                >
+                  {downloaded ? 'Download Started' : 'Download Card'}
+                </Button>
               </Stack>
             </Paper>
-          )}
-        </SimpleGrid>
-      </Stack>
-    </Paper>
+          </Stack>
+        )}
+        <Stack gap="xs">
+          <Text size="sm" fw={800}>
+            SMART Health Link
+          </Text>
+          <Paper withBorder radius="md" p="md" shadow="none" flex={1}>
+            <Stack gap="md" justify="space-between" h="100%">
+              <Text ff="monospace" fz={11} lh="17.05px" style={{ wordBreak: 'break-all' }}>
+                {generated.shlink}
+              </Text>
+              <CopyButton value={generated.shlink} timeout={SUCCESS_TIMEOUT_MS}>
+                {({ copied, copy }) => (
+                  <Button
+                    variant="outline"
+                    fullWidth
+                    leftSection={copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                    onClick={copy}
+                    style={NO_PRESS_EFFECT}
+                  >
+                    {copied ? 'Copied!' : 'Copy Link'}
+                  </Button>
+                )}
+              </CopyButton>
+            </Stack>
+          </Paper>
+        </Stack>
+      </SimpleGrid>
+      {expiresOn && (
+        <Text size="sm" c="dimmed" ta="center">
+          This SMART Health Card/Link expires on {expiresOn}
+        </Text>
+      )}
+    </Stack>
   ) : (
     form
   );
@@ -549,7 +544,7 @@ function useSmartHealthLinkExport(patient: Patient | Reference<Patient>, patient
     </Button>
   ) : (
     <SubmitButton leftSection={<SmartLogo size={16} />}>
-      {patientName ? `Generate ${toPossessive(patientName)} SMART Health Link` : 'Generate SMART Health Link'}
+      {patientName ? `Generate ${toPossessive(patientName)} SMART Health Card/Link` : 'Generate SMART Health Card/Link'}
     </SubmitButton>
   );
 
@@ -583,6 +578,12 @@ function saveData(data: unknown, fileName: string, contentType: string): void {
   const url = window.URL.createObjectURL(blob);
   triggerDownload(url, fileName);
   window.URL.revokeObjectURL(url);
+}
+
+function formatExpiresOn(date: Date): string {
+  const day = date.toLocaleDateString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric' });
+  const time = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return `${day} at ${time}`;
 }
 
 function today(): string {
