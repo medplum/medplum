@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  allServiceTypesCodeableConcept,
   createReference,
   getPrimaryProvider,
   getReferenceString,
@@ -835,6 +836,33 @@ describe('Appointment/:id/$reschedule', () => {
     expect(response.body).toMatchObject({
       issue: [{ details: { text: 'Schedule is not schedulable for requested service type' } }],
     });
+  });
+
+  test('moves an appointment onto a schedule marked as offering all service types', async () => {
+    const roomOneSchedule = await makeSchedule(roomOne);
+    const start = '2026-04-28T16:00:00.000Z'; // Tue 12pm EDT
+    const end = '2026-04-28T17:00:00.000Z';
+
+    const booked = await book(makeProposal({ start, end, schedules: [roomOneSchedule] }));
+
+    // Only the marker; the office visit isn't listed by reference
+    const anyVisitSchedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(roomTwo)],
+      serviceType: [allServiceTypesCodeableConcept()],
+      extension: [makeSchedulingExtension()],
+    });
+
+    const response = await reschedule(booked.id as string, { start, schedules: [anyVisitSchedule] });
+
+    expect(response).toHaveStatus(200);
+    const resources = bundleResources(response.body);
+    const slots = resources.filter((r) => isResource<Slot>(r, 'Slot'));
+    expect(slots.map((slot) => slot.schedule.reference)).toStrictEqual([`Schedule/${anyVisitSchedule.id}`]);
+    // Keeps the service it was booked under, never the marker
+    const appointment = resources.find((r) => isResource<Appointment>(r, 'Appointment'));
+    expect(appointment?.serviceType).toStrictEqual(booked.serviceType);
   });
 
   test('rejects rescheduling onto an inactive schedule', async () => {

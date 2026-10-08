@@ -1,6 +1,6 @@
 {
   "name": "medplum-valueset-selector",
-  "version": "5.2.2",
+  "version": "5.2.3",
   "private": true,
   "type": "module",
   "scripts": {
@@ -20,10 +20,10 @@
     "@mantine/hooks": "8.3.18",
     "@mantine/notifications": "8.3.18",
     "@mantine/spotlight": "8.3.18",
-    "@medplum/core": "5.2.2",
-    "@medplum/eslint-config": "5.2.2",
-    "@medplum/fhirtypes": "5.2.2",
-    "@medplum/react": "5.2.2",
+    "@medplum/core": "5.2.3",
+    "@medplum/eslint-config": "5.2.3",
+    "@medplum/fhirtypes": "5.2.3",
+    "@medplum/react": "5.2.3",
     "@tabler/icons-react": "3.48.0",
     "@types/node": "22.20.5",
     "@types/react": "19.3.0",

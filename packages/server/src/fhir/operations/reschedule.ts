@@ -10,7 +10,7 @@ import {
   isDefined,
   isReference,
   OperationOutcomeError,
-  serviceTypeIncludesService,
+  serviceTypeOffersService,
   setPrimaryProvider,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
@@ -136,7 +136,7 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
       const parameterGroup = await getSchedulingParametersGroup(txRepo, schedules, healthcareService);
 
       schedules.forEach((schedule) => {
-        if (!serviceTypeIncludesService(schedule.serviceType, healthcareService)) {
+        if (!serviceTypeOffersService(schedule.serviceType, healthcareService)) {
           throw new OperationOutcomeError(
             badRequest('Schedule is not schedulable for requested service type', getPath(schedule))
           );

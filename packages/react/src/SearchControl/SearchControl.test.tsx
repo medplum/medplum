@@ -659,7 +659,8 @@ describe('SearchControl', () => {
     expect(columnOption('Phone')).toBeInTheDocument();
   });
 
-  test('Filter editor onOk', async () => {
+  test('Filter popover applies a removed filter to the search', async () => {
+    const onChange = vi.fn();
     const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
@@ -672,51 +673,27 @@ describe('SearchControl', () => {
         ],
       },
       onLoad: vi.fn(),
+      onChange,
     };
 
     await setup(props);
 
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filters' })).toHaveAccessibleDescription('1 Filter Applied');
 
     await act(async () => {
       fireEvent.click(screen.getByText('Filters'));
     });
 
-    expect(await screen.findByText('OK')).toBeInTheDocument();
+    expect(await screen.findByText('Add Filter')).toBeInTheDocument();
+    expect(screen.getByLabelText('Filter 1 field', { selector: 'input' })).toHaveValue('Name');
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
-    });
-  });
-
-  test('Filter editor onCancel', async () => {
-    const props: SearchControlProps = {
-      search: {
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
-      },
-      onLoad: vi.fn(),
-    };
-
-    await setup(props);
-
-    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Filters'));
+      fireEvent.click(screen.getByLabelText('Remove filter 1'));
     });
 
-    expect(await screen.findByLabelText('Close')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText('Close'));
-    });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][0].definition.filters).toEqual([]);
   });
 
   test('Popup menu and prompt', async () => {
