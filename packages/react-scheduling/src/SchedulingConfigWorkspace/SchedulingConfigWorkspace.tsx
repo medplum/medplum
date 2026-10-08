@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Box, Center, Loader, Stack } from '@mantine/core';
+import { Alert, Box, Center, Divider, Loader, Stack } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { HealthcareService, Resource } from '@medplum/fhirtypes';
@@ -217,6 +217,8 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
           onShowInactiveChange={setShowInactive}
         />
       </Box>
+
+      <Divider orientation="vertical" />
 
       <Box component="section" className={classes.detail} aria-label="Configuration details">
         <Stack gap="md">
