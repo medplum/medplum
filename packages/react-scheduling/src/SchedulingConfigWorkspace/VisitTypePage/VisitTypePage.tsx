@@ -35,7 +35,7 @@ import { saveConfigChanges } from '../ConfigPage/configSave';
 import { ParameterWarnings } from '../ConfigPage/ParameterWarnings';
 import type { ConfigOffering, ConfigOfferingGroup } from '../SchedulingConfigWorkspace.utils';
 import { StatusBadge } from '../StatusBadge';
-import { OfferedBySection } from './OfferedBySection';
+import { OfferingSchedulesSection } from './OfferingSchedulesSection';
 import { ServiceFacilitiesField } from './ServiceFacilitiesField';
 
 export interface VisitTypePageProps {
@@ -330,8 +330,8 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
         )}
       </ConfigSection>
 
-      <ConfigSection title="Offered by">
-        <OfferedBySection
+      <ConfigSection title="Schedules offering this visit type">
+        <OfferingSchedulesSection
           service={service}
           serviceName={serviceName}
           groups={offeringGroups}

@@ -12,7 +12,7 @@ import classes from '../ConfigPanel/ConfigRow.module.css';
 import { OverridesBadge } from '../OverridesBadge';
 import type { ConfigOffering, ConfigOfferingGroup } from '../SchedulingConfigWorkspace.utils';
 
-export interface OfferedBySectionProps {
+export interface OfferingSchedulesSectionProps {
   /** The visit type as stored, which Customized compares each Schedule against. Absent for one not created yet. */
   readonly service?: WithId<HealthcareService>;
   readonly serviceName: string;
@@ -28,7 +28,7 @@ export interface OfferedBySectionProps {
  * @param props - The visit type, what offers it, and what to do when one is picked.
  * @returns The list.
  */
-export function OfferedBySection(props: OfferedBySectionProps): JSX.Element {
+export function OfferingSchedulesSection(props: OfferingSchedulesSectionProps): JSX.Element {
   const { service, serviceName, groups, loading, onOpen } = props;
   if (loading) {
     return <Loader size="sm" aria-label="Loading what offers this visit type" />;

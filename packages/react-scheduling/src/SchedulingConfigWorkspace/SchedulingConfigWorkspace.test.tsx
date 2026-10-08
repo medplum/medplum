@@ -47,8 +47,8 @@ function details(): HTMLElement {
   return screen.getByRole('region', { name: 'Configuration details' });
 }
 
-function offeredBy(): HTMLElement {
-  return within(details()).getByRole('region', { name: 'Offered by' });
+function offeringSchedules(): HTMLElement {
+  return within(details()).getByRole('region', { name: 'Schedules offering this visit type' });
 }
 
 function groupTitles(region: HTMLElement): (string | undefined)[] {
@@ -282,55 +282,54 @@ describe('SchedulingConfigWorkspace', () => {
     expect(row('Exam Room C')).toHaveAttribute('aria-current', 'true');
   });
 
-  test('Offered by marks the actors whose Schedules customize the visit type', async () => {
+  test('Schedules offering this visit type marks the ones that customize it', async () => {
     await setup();
 
     await userEvent.click(row('Telehealth Consult'));
-    const telehealth = within(details()).getByRole('region', { name: 'Offered by' });
+    const telehealth = offeringSchedules();
     expect(await within(telehealth).findByText('Customized')).toHaveTextContent(
       'Parameter values defined here override those on the Telehealth Consult visit type.'
     );
     expect(within(telehealth).getAllByText('Customized')).toHaveLength(1);
 
     await userEvent.click(row('Ultrasound Imaging'));
-    const ultrasound = within(details()).getByRole('region', { name: 'Offered by' });
+    const ultrasound = offeringSchedules();
     const okafor = (await within(ultrasound).findByText('Dr. Tunde Okafor')).closest('button') as HTMLElement;
     expect(within(okafor).getByText('Customized')).toBeInTheDocument();
     const nguyen = within(ultrasound).getByText('Dr. Linh Nguyen').closest('button') as HTMLElement;
     expect(within(nguyen).queryByText('Customized')).not.toBeInTheDocument();
   });
 
-  test('Offered by groups actors by type, as the sidebar does, leaving out a type with none', async () => {
+  test('Schedules offering this visit type groups them by actor type, as the sidebar does, leaving out a type with none', async () => {
     await setup();
 
     await userEvent.click(row('Ultrasound Imaging'));
-    await within(offeredBy()).findByText('Dr. Maya Rivera');
-    expect(groupTitles(offeredBy())).toEqual(['Providers', 'Devices', 'Rooms']);
-    const devices = within(offeredBy()).getByRole('group', { name: 'Devices' });
+    await within(offeringSchedules()).findByText('Dr. Maya Rivera');
+    expect(groupTitles(offeringSchedules())).toEqual(['Providers', 'Devices', 'Rooms']);
+    const devices = within(offeringSchedules()).getByRole('group', { name: 'Devices' });
     expect(within(devices).getByText('Ultrasound 1 (Main Campus)')).toBeInTheDocument();
-    const rooms = within(offeredBy()).getByRole('group', { name: 'Rooms' });
+    const rooms = within(offeringSchedules()).getByRole('group', { name: 'Rooms' });
     expect(within(rooms).getByText('Exam Room A')).toBeInTheDocument();
 
     await userEvent.click(row('Telehealth Consult'));
-    await within(offeredBy()).findByText('Dr. Linh Nguyen');
-    expect(groupTitles(offeredBy())).toEqual(['Providers']);
+    await within(offeringSchedules()).findByText('Dr. Linh Nguyen');
+    expect(groupTitles(offeringSchedules())).toEqual(['Providers']);
   });
 
-  test('Offered by leaves out an actor booking skips: one that is turned off, or whose Schedule is', async () => {
+  test('Schedules offering this visit type leaves out an actor booking skips: one that is turned off, or whose Schedule is', async () => {
     await setup();
 
     await userEvent.click(row('Ultrasound Imaging'));
-    await within(offeredBy()).findByText('Dr. Maya Rivera');
-    expect(within(offeredBy()).queryByText('Dr. Sofia Reyes')).not.toBeInTheDocument();
-    expect(within(offeredBy()).queryByText('Ultrasound 3 (Retired)')).not.toBeInTheDocument();
+    await within(offeringSchedules()).findByText('Dr. Maya Rivera');
+    expect(within(offeringSchedules()).queryByText('Dr. Sofia Reyes')).not.toBeInTheDocument();
+    expect(within(offeringSchedules()).queryByText('Ultrasound 3 (Retired)')).not.toBeInTheDocument();
   });
 
-  test("selecting an actor in Offered by opens its page with that visit type's entry open", async () => {
+  test("selecting a Schedule offering a visit type opens its actor's page with that visit type's entry open", async () => {
     await setup();
     await userEvent.click(row('Telehealth Consult'));
 
-    const offeredBy = within(details()).getByRole('region', { name: 'Offered by' });
-    await userEvent.click(within(offeredBy).getByText('Dr. Linh Nguyen'));
+    await userEvent.click(within(offeringSchedules()).getByText('Dr. Linh Nguyen'));
 
     expect(within(details()).getByRole('heading', { name: 'Dr. Linh Nguyen' })).toBeInTheDocument();
     expect(entry('Telehealth Consult')).toHaveAttribute('aria-expanded', 'true');
@@ -338,7 +337,7 @@ describe('SchedulingConfigWorkspace', () => {
     expect(row('Dr. Linh Nguyen')).toHaveAttribute('aria-current', 'true');
   });
 
-  test('Offered by says when nothing offers the visit type, and where visit types are offered from', async () => {
+  test('Schedules offering this visit type says when there are none, and where visit types are offered from', async () => {
     await setup();
 
     await userEvent.click(row('Unconfigured Visit'));
