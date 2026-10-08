@@ -236,6 +236,23 @@ describe('PatientExportForm', () => {
     expect(screen.getByTestId('custom-actions')).toHaveTextContent('Export Homer Simpson’s Records');
   });
 
+  test('Keeps hidden, inert copies of the other tabs so switching tabs does not change the height', async () => {
+    await setup({ patient: HomerSimpson });
+
+    const hidden = Array.from(document.querySelectorAll<HTMLElement>('[aria-hidden="true"][inert]'));
+    expect(hidden).toHaveLength(3);
+    expect(hidden.map((panel) => panel.style.visibility)).toEqual(['hidden', 'hidden', 'hidden']);
+    expect(hidden.some((panel) => panel.textContent?.includes('Referral Note'))).toBe(true);
+    expect(hidden.some((panel) => panel.textContent?.includes('Passcode (Optional)'))).toBe(true);
+    const submittedNames = ['author', 'authoredOn', 'startDate', 'endDate'].map((name) => `[name="${name}"]`).join(',');
+    expect(hidden.flatMap((panel) => Array.from(panel.querySelectorAll(submittedNames)))).toHaveLength(0);
+
+    await click('tab', 'C-CDA');
+    const visible = document.querySelector('[style*="grid-area"]:not([aria-hidden])');
+    expect(visible).toHaveTextContent('Referral Note');
+    expect(document.querySelectorAll('[aria-hidden="true"][inert]')).toHaveLength(3);
+  });
+
   test('Shows the SMART Health Card/Link tab', async () => {
     await setup({ patient: HomerSimpson });
     await click('tab', 'SMART Health Card/Link');

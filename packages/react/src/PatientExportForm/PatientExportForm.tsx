@@ -45,17 +45,16 @@ export interface PatientExportFormRenderProps {
   readonly body: ReactNode;
   readonly actions: ReactNode;
   readonly onSubmit: (formData: Record<string, string>) => Promise<void>;
-  readonly format: PatientExportFormat;
-  readonly setFormat: (format: PatientExportFormat) => void;
 }
-
-export type PatientExportFormat = 'everything' | 'summary' | 'ccda' | 'smart';
 
 export interface PatientExportFormProps {
   readonly patient: Patient | Reference<Patient>;
   readonly children?: (props: PatientExportFormRenderProps) => ReactNode;
-  readonly defaultFormat?: PatientExportFormat;
 }
+
+type PatientExportFormat = 'everything' | 'summary' | 'ccda' | 'smart';
+
+const EXPORT_FORMATS: PatientExportFormat[] = ['everything', 'summary', 'ccda', 'smart'];
 
 const NOTIFICATION_ID = 'patient-export';
 const TOGGLE_PROPS = { fullWidth: true, radius: 'xl', styles: { indicator: { boxShadow: 'none' } } } as const;
@@ -91,7 +90,7 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
   const { patient, children } = props;
   const resolvedPatient = useResource(patient);
   const patientName = resolvedPatient ? formatHumanName(resolvedPatient.name?.[0]) : '';
-  const [format, setFormat] = useState<PatientExportFormat>(props.defaultFormat ?? 'everything');
+  const [format, setFormat] = useState<PatientExportFormat>('everything');
   const [inlineAttachments, setInlineAttachments] = useState(false);
   const [ccdaType, setCcdaType] = useState<'summary' | 'referral'>('summary');
   const smart = useSmartHealthLinkExport(patient, patientName);
@@ -176,6 +175,81 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
 
   const isSmart = format === 'smart';
 
+  const renderPanel = (panelFormat: PatientExportFormat, sizer: boolean): ReactNode => {
+    if (panelFormat === 'smart') {
+      return sizer ? smart.form : smart.content;
+    }
+    return (
+      <Stack gap="lg">
+        {panelFormat === 'ccda' && (
+          <FormSection
+            title="Type"
+            description={'Choose "Summarization of Episode Note" or "Referral Note" LOINC format'}
+          >
+            <SegmentedControl
+              value={ccdaType}
+              onChange={(value) => setCcdaType(value as 'summary' | 'referral')}
+              data={[
+                { value: 'summary', label: 'Standard Summary' },
+                { value: 'referral', label: 'Referral Note' },
+              ]}
+              {...TOGGLE_PROPS}
+            />
+          </FormSection>
+        )}
+        <FormSection title="Author" description="Author shown on the exported document (usually you).">
+          <ReferenceInput
+            name={sizer ? '' : 'author'}
+            placeholder={sizer ? undefined : 'Author'}
+            targetTypes={AUTHOR_TYPES}
+            defaultValue={defaultAuthor}
+          />
+        </FormSection>
+        <FormSection title="Authored On" description="Date shown on the exported document (usually today).">
+          <TextInput
+            type="date"
+            name={sizer ? undefined : 'authoredOn'}
+            placeholder={sizer ? undefined : 'Authored on'}
+            defaultValue={today()}
+            max={today()}
+          />
+        </FormSection>
+        <FormSection
+          title="Start Date"
+          description="The start date of care. If no start date is provided, all records prior to the end date are in scope."
+        >
+          <TextInput
+            type="date"
+            name={sizer ? undefined : 'startDate'}
+            placeholder={sizer ? undefined : 'Start date'}
+          />
+        </FormSection>
+        <FormSection
+          title="End Date"
+          description="The end date of care. If no end date is provided, all records subsequent to the start date are in scope."
+        >
+          <TextInput type="date" name={sizer ? undefined : 'endDate'} placeholder={sizer ? undefined : 'End date'} />
+        </FormSection>
+        {panelFormat === 'everything' && (
+          <FormSection
+            title="Attachments"
+            description="Choose whether the export includes the patient’s document files or links to them."
+          >
+            <SegmentedControl
+              value={inlineAttachments ? 'include' : 'link'}
+              onChange={(value) => setInlineAttachments(value === 'include')}
+              data={[
+                { value: 'link', label: 'Link to Files Only' },
+                { value: 'include', label: 'Include Files in Export' },
+              ]}
+              {...TOGGLE_PROPS}
+            />
+          </FormSection>
+        )}
+      </Stack>
+    );
+  };
+
   const body = (
     <Stack gap={0}>
       <Tabs
@@ -192,67 +266,16 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
         </Tabs.List>
       </Tabs>
       <Divider my="lg" />
-      {isSmart ? (
-        smart.content
-      ) : (
-        <Stack gap="lg">
-          {format === 'ccda' && (
-            <FormSection
-              title="Type"
-              description={'Choose "Summarization of Episode Note" or "Referral Note" LOINC format'}
-            >
-              <SegmentedControl
-                value={ccdaType}
-                onChange={(value) => setCcdaType(value as 'summary' | 'referral')}
-                data={[
-                  { value: 'summary', label: 'Standard Summary' },
-                  { value: 'referral', label: 'Referral Note' },
-                ]}
-                {...TOGGLE_PROPS}
-              />
-            </FormSection>
-          )}
-          <FormSection title="Author" description="Author shown on the exported document (usually you).">
-            <ReferenceInput
-              name="author"
-              placeholder="Author"
-              targetTypes={AUTHOR_TYPES}
-              defaultValue={defaultAuthor}
-            />
-          </FormSection>
-          <FormSection title="Authored On" description="Date shown on the exported document (usually today).">
-            <TextInput type="date" name="authoredOn" placeholder="Authored on" defaultValue={today()} max={today()} />
-          </FormSection>
-          <FormSection
-            title="Start Date"
-            description="The start date of care. If no start date is provided, all records prior to the end date are in scope."
-          >
-            <TextInput type="date" name="startDate" placeholder="Start date" />
-          </FormSection>
-          <FormSection
-            title="End Date"
-            description="The end date of care. If no end date is provided, all records subsequent to the start date are in scope."
-          >
-            <TextInput type="date" name="endDate" placeholder="End date" />
-          </FormSection>
-          {format === 'everything' && (
-            <FormSection
-              title="Attachments"
-              description="Choose whether the export includes the patient’s document files or links to them."
-            >
-              <SegmentedControl
-                value={inlineAttachments ? 'include' : 'link'}
-                onChange={(value) => setInlineAttachments(value === 'include')}
-                data={[
-                  { value: 'link', label: 'Link to Files Only' },
-                  { value: 'include', label: 'Include Files in Export' },
-                ]}
-                {...TOGGLE_PROPS}
-              />
-            </FormSection>
-          )}
-        </Stack>
-      )}
+      <div style={PANELS_STYLE}>
+        <div key="active" style={PANEL_STYLE}>
+          {renderPanel(format, false)}
+        </div>
+        {EXPORT_FORMATS.filter((f) => f !== format).map((f) => (
+          <div key={f} style={SIZER_STYLE} aria-hidden inert>
+            {renderPanel(f, true)}
+          </div>
+        ))}
+      </div>
     </Stack>
   );
 
@@ -267,7 +290,7 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
   const onSubmit = isSmart ? smart.generate : handleExport;
 
   if (children) {
-    return <>{children({ body, actions, onSubmit, format, setFormat })}</>;
+    return <>{children({ body, actions, onSubmit })}</>;
   }
 
   return (
@@ -281,6 +304,12 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
 }
 
 const SUCCESS_TIMEOUT_MS = 2000;
+
+const PANELS_STYLE = { display: 'grid' };
+
+const PANEL_STYLE = { gridArea: '1 / 1', minWidth: 0 };
+
+const SIZER_STYLE = { ...PANEL_STYLE, visibility: 'hidden' } as const;
 
 const NO_PRESS_EFFECT = { transform: 'none' };
 
@@ -315,6 +344,7 @@ interface GeneratedSmartHealthLink {
 }
 
 interface SmartHealthLinkExport {
+  readonly form: ReactNode;
   readonly content: ReactNode;
   readonly actions: ReactNode;
   readonly generate: () => Promise<void>;
@@ -548,7 +578,7 @@ function useSmartHealthLinkExport(patient: Patient | Reference<Patient>, patient
     </SubmitButton>
   );
 
-  return { content, actions, generate };
+  return { form, content, actions, generate };
 }
 
 function toPossessive(name: string): string {
