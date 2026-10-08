@@ -6,7 +6,6 @@ import {
   createReference,
   deepClone,
   deepEquals,
-  extractServiceTypeReferences,
   resolveId,
   SchedulingParametersURI,
   toServiceTypeCodeableConcepts,
@@ -27,7 +26,7 @@ import {
   initialAvailabilityFieldsValue,
   toWeeklyAvailability,
 } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
-import { getOfferedServices, isActorInactive } from '../SchedulingConfigWorkspace.utils';
+import { getOfferedServices, isActorInactive, serviceTypeNames } from '../SchedulingConfigWorkspace.utils';
 
 /** What a Schedule sets for one visit type it offers. */
 export interface OfferingFields {
@@ -171,9 +170,7 @@ function withOfferingEdits(
  */
 export function withoutService(schedule: Schedule, service: WithId<HealthcareService>): Schedule {
   const draft = deepClone(schedule);
-  const serviceType = draft.serviceType?.filter(
-    (concept) => !extractServiceTypeReferences([concept]).some((reference) => resolveId(reference) === service.id)
-  );
+  const serviceType = draft.serviceType?.filter((concept) => !serviceTypeNames([concept], service));
   if (serviceType?.length) {
     draft.serviceType = serviceType;
   } else {

@@ -7,7 +7,7 @@ import type { HealthcareService, Resource } from '@medplum/fhirtypes';
 import { IconCalculatorFilled, IconCalendarEvent, IconMapPinFilled } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { isBookableActorType } from '../actors';
 import { ActorPage } from './ActorPage/ActorPage';
@@ -16,7 +16,7 @@ import type { ConfigPanelSection } from './ConfigPanel/ConfigPanel';
 import { ConfigPanel } from './ConfigPanel/ConfigPanel';
 import { ConfirmModal } from './ConfirmModal';
 import classes from './SchedulingConfigWorkspace.module.css';
-import type { ConfigOffering, ConfigSelection } from './SchedulingConfigWorkspace.utils';
+import type { ConfigSelection } from './SchedulingConfigWorkspace.utils';
 import { buildActorItems, buildServiceItems, getOfferings, isSameSelection } from './SchedulingConfigWorkspace.utils';
 import { useConfigurableResources } from './useConfigurableResources';
 import { VisitTypePage } from './VisitTypePage/VisitTypePage';
@@ -60,15 +60,15 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
   const [pending, setPending] = useState<ConfigSelection>();
   const [nextNewKey, setNextNewKey] = useState(1);
 
-  // A different page opens at its top. The same page remounting, as after a save, keeps its place.
   const detailRef = useRef<HTMLElement>(null);
-  const shownRef = useRef<ConfigSelection | undefined>(undefined);
-  useLayoutEffect(() => {
-    if (detailRef.current && !(selection && shownRef.current && isSameSelection(selection, shownRef.current))) {
+
+  // A different page opens at its top. The same page remounting, as after a save, keeps its place.
+  function open(next: ConfigSelection | undefined): void {
+    setSelection(next);
+    if (detailRef.current) {
       detailRef.current.scrollTop = 0;
     }
-    shownRef.current = selection;
-  }, [selection]);
+  }
 
   function select(next: ConfigSelection): void {
     if (isSameSelection(next, selection)) {
@@ -78,7 +78,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       setPending(next);
       return;
     }
-    setSelection(next);
+    open(next);
   }
 
   function startNew(): void {
@@ -88,7 +88,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
 
   function confirmDiscard(): void {
     setDirty(false);
-    setSelection(pending);
+    open(pending);
     setPending(undefined);
   }
 
@@ -118,13 +118,6 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     setDirty(false);
   }, []);
 
-  function openOffering(offering: ConfigOffering, serviceId: string): void {
-    const { resource } = offering.actor;
-    select({ kind: 'actor', resourceType: resource.resourceType, id: resource.id, openServiceId: serviceId });
-  }
-
-  const actorsLoading = ACTOR_SECTIONS.some(({ resourceType }) => actors[resourceType].loading);
-
   let detail: JSX.Element;
   if (selection?.kind === 'new-service') {
     detail = (
@@ -148,8 +141,10 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
           title,
           offerings: getOfferings(actors[resourceType].items, service),
         }))}
-        offeringsLoading={actorsLoading}
-        onOpenOffering={(offering) => openOffering(offering, service.id)}
+        offeringsLoading={ACTOR_SECTIONS.some(({ resourceType }) => actors[resourceType].loading)}
+        onOpenOffering={({ actor: { resource } }) =>
+          select({ kind: 'actor', resourceType: resource.resourceType, id: resource.id, openServiceId: service.id })
+        }
       />
     ) : (
       <ConfigEmptyState notFound />

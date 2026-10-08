@@ -302,7 +302,7 @@ describe('SchedulingConfigWorkspace', () => {
     expect(within(nguyen).queryByText('Customized')).not.toBeInTheDocument();
   });
 
-  test('Schedules offering this visit type groups them by actor type, as the sidebar does, leaving out a type with none', async () => {
+  test('Schedules offering this visit type groups them as the sidebar does, and leaves out actors booking skips', async () => {
     await setup();
 
     await userEvent.click(row('Ultrasound Imaging'));
@@ -312,19 +312,13 @@ describe('SchedulingConfigWorkspace', () => {
     expect(within(devices).getByText('Ultrasound 1 (Main Campus)')).toBeInTheDocument();
     const rooms = within(offeringSchedules()).getByRole('group', { name: 'Rooms' });
     expect(within(rooms).getByText('Exam Room A')).toBeInTheDocument();
+    // Dr. Reyes is on leave with her Schedule switched off, and Ultrasound 3 is retired.
+    expect(within(offeringSchedules()).queryByText('Dr. Sofia Reyes')).not.toBeInTheDocument();
+    expect(within(offeringSchedules()).queryByText('Ultrasound 3 (Retired)')).not.toBeInTheDocument();
 
     await userEvent.click(row('Telehealth Consult'));
     await within(offeringSchedules()).findByText('Dr. Linh Nguyen');
     expect(groupTitles(offeringSchedules())).toEqual(['Providers']);
-  });
-
-  test('Schedules offering this visit type leaves out an actor booking skips: one that is turned off, or whose Schedule is', async () => {
-    await setup();
-
-    await userEvent.click(row('Ultrasound Imaging'));
-    await within(offeringSchedules()).findByText('Dr. Maya Rivera');
-    expect(within(offeringSchedules()).queryByText('Dr. Sofia Reyes')).not.toBeInTheDocument();
-    expect(within(offeringSchedules()).queryByText('Ultrasound 3 (Retired)')).not.toBeInTheDocument();
   });
 
   test("selecting a Schedule offering a visit type opens its actor's page from the top, with that visit type's entry open", async () => {
