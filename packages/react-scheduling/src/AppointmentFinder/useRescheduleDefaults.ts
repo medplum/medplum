@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { extractServiceTypeReferences, getDisplayString, getPrimaryProvider, isDefined } from '@medplum/core';
+import {
+  extractServiceTypeReferences,
+  getDisplayString,
+  getPrimaryProvider,
+  getReferenceString,
+  isDefined,
+} from '@medplum/core';
 import type { Appointment, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
@@ -21,6 +27,8 @@ const NO_SELECTIONS: ActorSelections = {};
 
 const NO_ACTORS: readonly SchedulingActor[] = [];
 
+const NO_SCHEDULES: readonly string[] = [];
+
 export interface RescheduleDefaults {
   /** The visit type the appointment is on file under, where it records one. */
   readonly service: WithId<HealthcareService> | undefined;
@@ -35,6 +43,8 @@ export interface RescheduleDefaults {
    * the actors it is given, so these are about to be dropped off the visit.
    */
   readonly droppedActors: readonly SchedulingActor[];
+  /** References to every Schedule the visit is held on now, including those behind `droppedActors`. */
+  readonly heldSchedules: readonly string[];
   /**
    * Set when the visit type, or a Slot or Schedule the visit is held on, could not be read.
    *
@@ -90,7 +100,14 @@ export function useRescheduleDefaults(appointment: WithId<Appointment>): Resched
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
-          setLoaded({ key, service: undefined, selections: NO_SELECTIONS, droppedActors: NO_ACTORS, error });
+          setLoaded({
+            key,
+            service: undefined,
+            selections: NO_SELECTIONS,
+            droppedActors: NO_ACTORS,
+            heldSchedules: NO_SCHEDULES,
+            error,
+          });
         }
       });
 
@@ -103,6 +120,7 @@ export function useRescheduleDefaults(appointment: WithId<Appointment>): Resched
     service: stale ? undefined : loaded.service,
     selections: stale ? NO_SELECTIONS : loaded.selections,
     droppedActors: stale ? NO_ACTORS : loaded.droppedActors,
+    heldSchedules: stale ? NO_SCHEDULES : loaded.heldSchedules,
     error: stale ? undefined : loaded.error,
     loading: stale,
   };
@@ -114,6 +132,7 @@ interface LoadedDefaults {
   readonly service: WithId<HealthcareService> | undefined;
   readonly selections: ActorSelections;
   readonly droppedActors: readonly SchedulingActor[];
+  readonly heldSchedules: readonly string[];
   readonly error: unknown;
 }
 
@@ -126,6 +145,7 @@ const NOTHING_LOADED: LoadedDefaults = {
   service: undefined,
   selections: NO_SELECTIONS,
   droppedActors: NO_ACTORS,
+  heldSchedules: NO_SCHEDULES,
   error: undefined,
 };
 
@@ -163,6 +183,7 @@ async function loadDefaults(
     service,
     selections: toActorSelections(candidates),
     droppedActors: getDroppedActors(schedules, candidates, actors),
+    heldSchedules: schedules.map(getReferenceString).filter(isDefined),
   };
 }
 

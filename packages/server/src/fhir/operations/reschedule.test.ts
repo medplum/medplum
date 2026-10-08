@@ -8,6 +8,8 @@ import {
   getReferenceString,
   isDefined,
   isResource,
+  MEDPLUM_VERSION,
+  SchedulingBookedByOperationURI,
   ServiceTypeReferenceURI,
   setPrimaryProvider,
   toServiceTypeCodeableConcepts,
@@ -32,6 +34,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { addTestUser, createTestProject } from '../../test.setup';
+import { SchedulingRescheduledByOperationURI, SchedulingUnvalidatedRescheduleURI } from './reschedule';
 import type {
   SchedulingParametersExtension,
   SchedulingParametersExtensionExtension,
@@ -356,6 +359,30 @@ describe('Appointment/:id/$reschedule', () => {
     // The vacated time is bookable again
     const rebooked = await book(makeProposal({ start, end, schedules: [practitionerSchedule] }));
     expect(rebooked.id).not.toStrictEqual(booked.id);
+  });
+
+  test('stamps the move as made by $reschedule, replacing an earlier manual move marker', async () => {
+    const practitionerSchedule = await makeSchedule(practitioner);
+    const booked = await book(
+      makeProposal({
+        start: '2026-01-14T16:00:00.000Z',
+        end: '2026-01-14T17:00:00.000Z',
+        schedules: [practitionerSchedule],
+      }),
+      { extension: [{ url: SchedulingUnvalidatedRescheduleURI, valueBoolean: true }] }
+    );
+
+    const response = await reschedule(booked.id as string, {
+      start: '2026-01-14T19:00:00.000Z',
+      schedules: [practitionerSchedule],
+    });
+
+    expect(response).toHaveStatus(200);
+    const appointment = bundleResources(response.body).find((r) => isResource<Appointment>(r, 'Appointment'));
+    expect(appointment?.extension).toStrictEqual([
+      { url: SchedulingBookedByOperationURI, valueString: MEDPLUM_VERSION },
+      { url: SchedulingRescheduledByOperationURI, valueString: MEDPLUM_VERSION },
+    ]);
   });
 
   test('keeps the original slots when the new time is unavailable', async () => {

@@ -72,7 +72,7 @@ export interface SchedulingWorkspaceProps {
    */
   readonly appointmentCancellationReasonValueSet?: string;
   /**
-   * Lets the booking form take a typed time and length, placing a visit the scheduling
+   * Lets booking and rescheduling take a typed time and length, placing a visit the scheduling
    * rules would refuse: over occupied or blocked time, past the configured capacity,
    * or at a time or length the visit type does not offer.
    *
@@ -82,7 +82,8 @@ export interface SchedulingWorkspaceProps {
    * Such a booking is sent as a transaction, so the appointment and its Slots commit
    * together on projects with the `transaction-bundles` feature enabled. Without it they
    * are applied as a plain batch, where an appointment that failed to write would leave
-   * Slots holding no visit.
+   * Slots holding no visit. Manual rescheduling writes Slot by Slot instead: old Slots the
+   * user cannot delete stay behind as blocked time after the move.
    * @see https://www.medplum.com/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions
    */
   readonly canBypassSchedulingRules?: boolean;
@@ -407,6 +408,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           </Group>
           <AppointmentDetails
             appointment={openAppointment}
+            canBypassSchedulingRules={canBypassSchedulingRules}
             cancellationReasonValueSet={appointmentCancellationReasonValueSet}
             onCancelled={props.onCancelled}
             onRescheduled={props.onRescheduled}

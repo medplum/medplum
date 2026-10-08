@@ -9,18 +9,17 @@ import type { JSX } from 'react';
 import { useCallback } from 'react';
 import type { AppointmentWrite } from './AppointmentFinder.writes';
 import { readAppointmentWrite } from './AppointmentFinder.writes';
-import type { AppointmentProposalFormProps } from './AppointmentProposalForm';
+import type { AppointmentProposalFormProps, BookOptions } from './AppointmentProposalForm';
 import { AppointmentProposalForm } from './AppointmentProposalForm';
 import { useRescheduleDefaults } from './useRescheduleDefaults';
+import { getProposedSchedules, writeElevatedReschedule } from './writeElevatedReschedule';
 
 /** Joins names the way a sentence listing all of them would. */
 const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
 
-/** What a reschedule wrote, as `Appointment/[id]/$reschedule` returned it. */
+/** The updated appointment and the slots reserved by a reschedule. */
 export type AppointmentReschedule = AppointmentWrite;
 
-// Coming soon: support for `canBypassSchedulingRules`.
-// https://github.com/medplum/medplum/issues/10597
 export interface AppointmentRescheduleFormProps extends Omit<
   AppointmentProposalFormProps,
   | 'onSubmit'
@@ -29,10 +28,10 @@ export interface AppointmentRescheduleFormProps extends Omit<
   | 'defaultSelections'
   | 'defaultPatient'
   | 'ignoreAppointment'
+  | 'ignoreAppointmentSchedules'
   | 'mrnSystem'
   | 'procedureBinding'
   | 'diagnosisBinding'
-  | 'canBypassSchedulingRules'
   | 'appointmentExtensions'
   | 'allowRecurring'
 > {
@@ -57,9 +56,11 @@ export interface AppointmentRescheduleFormProps extends Omit<
  * moved off, so `$find` is told to ignore it, which is what lets the same hour in a
  * different room be found.
  *
- * Posts `Appointment/[id]/$reschedule`, announces the appointment, the times it gave up
- * and the times it took, so views reading them refresh, then reports what was written
- * through `onRescheduled`.
+ * Searched times use `Appointment/[id]/$reschedule`, keeping the configured length. Manually
+ * entered times and lengths create the new Slots, move the appointment onto them, then delete
+ * the old Slots.
+ * Announces the appointment, the times it gave up and the times it took, so views reading
+ * them refresh, then reports what was written through `onRescheduled`.
  *
  * Only the time and the actors are asked for. Everything else on the appointment — who
  * it is for, its status, its visit type, whatever clinical detail it carries — is left
@@ -73,16 +74,15 @@ export interface AppointmentRescheduleFormProps extends Omit<
  * @returns The form.
  */
 export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps): JSX.Element {
-  const { appointment, onRescheduled, defaultStart, ...formProps } = props;
+  const { appointment, onRescheduled, defaultStart, canBypassSchedulingRules, ...formProps } = props;
   const medplum = useMedplum();
   const defaults = useRescheduleDefaults(appointment);
 
   const reschedule = useCallback(
-    async (proposal: Appointment): Promise<void> => {
+    async (proposal: Appointment, options: BookOptions): Promise<void> => {
       const schedules = getProposedSchedules(proposal);
 
-      // Assert that the shape we received matches what we need for `$reschedule`;
-      // these fields are always present if we got the results from `$find`.
+      // Always present, whether the time came from `$find` or was typed.
       if (!proposal.start) {
         throw new Error('The chosen time does not say when it is');
       }
@@ -90,38 +90,44 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
         throw new Error('The chosen time does not say which schedules to hold it on');
       }
 
-      // Read before the request: the operation deletes these, and the appointment comes
-      // back pointing at the times it took instead.
-      const releasedSlotIds = (appointment.slot ?? []).map(resolveId).filter(isDefined);
+      let result: AppointmentReschedule;
+      if (options.manual) {
+        // Written through CRUD methods, which announce their own changes.
+        result = await writeElevatedReschedule(medplum, appointment, proposal);
+      } else {
+        // Read before the request: the operation deletes these, and the appointment comes
+        // back pointing at the times it took instead.
+        const releasedSlotIds = (appointment.slot ?? []).map(resolveId).filter(isDefined);
+        result = readAppointmentWrite(
+          await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
+            medplum.fhirUrl('Appointment', appointment.id, '$reschedule'),
+            {
+              resourceType: 'Parameters',
+              parameter: [
+                { name: 'start', valueDateTime: proposal.start },
+                ...schedules.map((reference) => ({ name: 'schedule', valueReference: { reference } })),
+              ],
+            } satisfies Parameters
+          ),
+          '$reschedule'
+        );
 
-      const written = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
-        medplum.fhirUrl('Appointment', appointment.id, '$reschedule'),
-        {
-          resourceType: 'Parameters',
-          parameter: [
-            { name: 'start', valueDateTime: proposal.start },
-            ...schedules.map((reference) => ({ name: 'schedule', valueReference: { reference } })),
-          ],
-        } satisfies Parameters
-      );
-      const result = readAppointmentWrite(written, '$reschedule');
-
-      // `$reschedule` is a custom operation, so the client cannot tell what it changed.
-      // It deletes the existing slots, creates new ones, and updates `appointment.slot`
-      // with the fresh references.
-      for (const moved of result.appointments) {
-        medplum.notifyResourceModified({
-          resourceType: 'Appointment',
-          operation: 'update',
-          id: moved.id,
-          resource: moved,
-        });
-      }
-      for (const id of releasedSlotIds) {
-        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'delete', id });
-      }
-      for (const slot of result.slots) {
-        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'create', id: slot.id, resource: slot });
+        // `$reschedule` is a custom operation, so the client cannot tell what it changed: the
+        // old slots were deleted, new ones created, and `appointment.slot` repointed.
+        for (const moved of result.appointments) {
+          medplum.notifyResourceModified({
+            resourceType: 'Appointment',
+            operation: 'update',
+            id: moved.id,
+            resource: moved,
+          });
+        }
+        for (const id of releasedSlotIds) {
+          medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'delete', id });
+        }
+        for (const slot of result.slots) {
+          medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'create', id: slot.id, resource: slot });
+        }
       }
 
       try {
@@ -172,10 +178,12 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
       <AppointmentProposalForm
         {...formProps}
         mode="reschedule"
+        canBypassSchedulingRules={canBypassSchedulingRules}
         defaultService={defaults.service}
         defaultSelections={defaults.selections}
         defaultStart={defaultStart ?? getOpeningDay(appointment)}
         ignoreAppointment={appointment}
+        ignoreAppointmentSchedules={defaults.heldSchedules}
         onSubmit={reschedule}
       />
     </>
@@ -195,19 +203,4 @@ function getOpeningDay(appointment: Appointment): Date {
   const now = new Date();
   const start = appointment.start ? new Date(appointment.start) : undefined;
   return start && start > now ? start : now;
-}
-
-/**
- * The Schedules a proposed time would be held on.
- *
- * Read off the proposal's contained Slots rather than off the answers that found it:
- * the proposal is what is being written, and its Slots are what `$find` laid out.
- *
- * @param proposal - A time as `$find` offered it.
- * @returns The schedule references, deduped — a schedule holds a buffer Slot either
- * side of the visit as well as the visit's own.
- */
-function getProposedSchedules(proposal: Appointment): string[] {
-  const slots = (proposal.contained ?? []).filter((resource) => resource.resourceType === 'Slot');
-  return [...new Set(slots.map((slot) => slot.schedule.reference).filter(isDefined))];
 }

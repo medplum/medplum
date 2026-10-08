@@ -20,6 +20,8 @@ import {
   MilesCooperPatient,
   PROCEDURE_VALUE_SET,
   ProcedureCodes,
+  RiveraImagingAppointment,
+  RiveraImagingHeldSlots,
   SatelliteClinic,
 } from '../stories/scheduling';
 import { installAutocompleteTimers, removePill, settleAutocomplete } from '../test-utils/asyncAutocomplete';
@@ -226,6 +228,28 @@ describe('SchedulingWorkspace booking', () => {
       medplum
     );
   }
+
+  test.each([false, true])(
+    'forwards manual rescheduling permission through appointment details (%s)',
+    async (canBypassSchedulingRules) => {
+      for (const slot of RiveraImagingHeldSlots) {
+        await medplum.updateResource(slot);
+      }
+      const appointment = await medplum.updateResource({
+        ...RiveraImagingAppointment,
+        start: BOOKED_VISIT.start,
+        end: BOOKED_VISIT.end,
+      });
+      renderWithMedplum(<SchedulingWorkspace canBypassSchedulingRules={canBypassSchedulingRules} />, medplum);
+      await settleAutocomplete();
+      // The visit is on several calendars, so the stand-in grid draws it once per calendar.
+      fireEvent.click(screen.getAllByRole('button', { name: `click appointment ${appointment.id}` })[0]);
+      fireEvent.click(screen.getByRole('button', { name: 'Reschedule' }));
+      await settleAutocomplete();
+      await openTimeFinder();
+      expect(screen.queryByText('Or enter a time') !== null).toBe(canBypassSchedulingRules);
+    }
+  );
 
   test('Offers no booking form until the calendar is clicked', () => {
     setup();

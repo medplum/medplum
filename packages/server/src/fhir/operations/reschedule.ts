@@ -9,6 +9,7 @@ import {
   extractServiceTypeReferences,
   isDefined,
   isReference,
+  MEDPLUM_VERSION,
   OperationOutcomeError,
   serviceTypeOffersService,
   setPrimaryProvider,
@@ -31,6 +32,20 @@ import {
 } from './utils/scheduling';
 import { extractCommonParameters } from './utils/scheduling-parameters';
 import { uniqueOn } from './utils/terminology';
+
+/**
+ * Marks an `Appointment` whose latest move was made by `$reschedule`, valued with the server
+ * version that handled it.
+ */
+export const SchedulingRescheduledByOperationURI =
+  'https://medplum.com/fhir/StructureDefinition/SchedulingRescheduledByOperation';
+
+/**
+ * Marks an `Appointment` whose latest move skipped the scheduling rules, as written by the
+ * manual reschedule in `@medplum/react-scheduling`. Both URIs are duplicated there.
+ */
+export const SchedulingUnvalidatedRescheduleURI =
+  'https://medplum.com/fhir/StructureDefinition/SchedulingUnvalidatedReschedule';
 
 const rescheduleOperation = makeOperationDefinition(
   { scope: 'instance', resource: 'Appointment' },
@@ -61,7 +76,9 @@ type RescheduleParameters = {
  * from the results. The Slot resources are derived from the scheduling parameters rather than
  * submitted, and every attribute of the stored Appointment other than `start`, `end`,
  * `participant` and `slot` is left untouched — including `status`, since the appointment
- * lifecycle belongs to $hold, $confirm, and $cancel.
+ * lifecycle belongs to $hold, $confirm, and $cancel. The one exception is the reschedule
+ * marker: the move is stamped with `SchedulingRescheduledByOperation`, replacing any
+ * marker an earlier move left.
  *
  * The service the move is measured against — the duration it runs for, the grid it aligns to,
  * the buffers around it — is read off the Appointment's own `serviceType`, which must name
@@ -192,6 +209,12 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
       }
       const updatedAppointment = await txRepo.updateResource<Appointment>({
         ...existingAppointment,
+        extension: [
+          ...(existingAppointment.extension ?? []).filter(
+            (ext) => ext.url !== SchedulingRescheduledByOperationURI && ext.url !== SchedulingUnvalidatedRescheduleURI
+          ),
+          { url: SchedulingRescheduledByOperationURI, valueString: MEDPLUM_VERSION },
+        ],
         start: interval.start.toISOString(),
         end: interval.end.toISOString(),
         participant,
