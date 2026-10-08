@@ -40,10 +40,12 @@ import { saveConfigChanges } from '../ConfigPage/configSave';
 import { ConfirmModal } from '../ConfirmModal';
 import { summarizeOffering } from '../offeringSummary';
 import { getActorStatus, isActorInactive } from '../SchedulingConfigWorkspace.utils';
-import { describeNoSharedFacility, isHeldEverywhere, sharesServiceFacility } from '../serviceFacilities';
+import type { ActorFacilities } from '../serviceFacilities';
+import { describeHeldOnlyAt, isHeldEverywhere, sharesServiceFacility } from '../serviceFacilities';
 import type { ConfigStatus } from '../StatusBadge';
 import { StatusBadge } from '../StatusBadge';
 import { useActorFacilities } from '../useActorFacilities';
+import { useLocationNames } from '../useLocationNames';
 import { OfferingEditor, OfferingMenu, OfferingSummary } from './OfferingEditor';
 import { OfferPicker } from './OfferPicker';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
@@ -100,6 +102,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [reloading, setReloading] = useState(false);
 
   const facilities = useActorFacilities([resource])?.get(getReferenceString(resource));
+  const facilityNames = useLocationNames(services.flatMap((service) => service.location ?? []));
 
   const draft = buildScheduleDraft(schedule, actorDraft, fields, initial, servicesById);
   const actorDirty = !deepEquals(actorDraft, resource);
@@ -153,8 +156,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   }
 
   function notBookableReason(service: WithId<HealthcareService>): string | undefined {
-    return facilities && !sharesServiceFacility(service, facilities)
-      ? describeNoSharedFacility(service.name ?? 'This visit type', facilities)
+    return facilities && facilityNames && !sharesServiceFacility(service, facilities)
+      ? describeHeldOnlyAt(service, facilityNames)
       : undefined;
   }
 
@@ -257,6 +260,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       <ConfigSection title="General">
         <ActorGeneral
           resource={actorDraft}
+          facilities={facilities}
           onActiveChange={handleActorActiveChange}
           scheduleActive={scheduleActive}
           onScheduleActiveChange={(active) => setFields((current) => ({ ...current, active }))}
@@ -323,7 +327,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
         <OfferPicker
           services={offerable}
-          checking={(service) => !facilities && !isHeldEverywhere(service.location)}
+          checking={(service) => !isHeldEverywhere(service.location) && (!facilities || !facilityNames)}
           disabledReason={notBookableReason}
           onOffer={offer}
         />
@@ -369,12 +373,14 @@ function getBookingAlert(resource: ConfigurableActorResource, status: ConfigStat
 function ActorGeneral(props: {
   /** The provider, room, or device, as edited. */
   readonly resource: ConfigurableActorResource;
+  /** Where the actor is, or undefined while that is still being read. */
+  readonly facilities: ActorFacilities | undefined;
   readonly onActiveChange: (active: boolean) => void;
   /** Whether the actor's Schedule is active, as edited, or undefined when it has none. */
   readonly scheduleActive: boolean | undefined;
   readonly onScheduleActiveChange: (active: boolean) => void;
 }): JSX.Element {
-  const { resource, onActiveChange, scheduleActive, onScheduleActiveChange } = props;
+  const { resource, facilities, onActiveChange, scheduleActive, onScheduleActiveChange } = props;
   const typeLabel = getActorTypeLabel(resource.resourceType);
   const active = !isActorInactive(resource);
   // Only turning off is allowed while the actor is inactive, so a Schedule stored on can still be switched off.
@@ -401,6 +407,15 @@ function ActorGeneral(props: {
         )}
       </SimpleGrid>
       <ReadOnlyField label="Name" value={getDisplayString(resource)} />
+      <ReadOnlyField
+        label={resource.resourceType === 'Practitioner' ? 'Service facilities' : 'Service facility'}
+        value={facilities ? describeWhereActorIs(resource, facilities) : 'Loading…'}
+        description={
+          facilities?.incomplete
+            ? "Part of where it is couldn't be read, so it can be booked at every service facility."
+            : undefined
+        }
+      />
     </>
   );
 }
@@ -452,15 +467,38 @@ function withActorActive(resource: ConfigurableActorResource, active: boolean): 
   return { ...resource, status: active ? 'active' : 'inactive' };
 }
 
-function ReadOnlyField(props: { readonly label: string; readonly value: string }): JSX.Element {
+function ReadOnlyField(props: {
+  readonly label: string;
+  readonly value: string;
+  readonly description?: string;
+}): JSX.Element {
   return (
     <Stack gap={2}>
       <Text size="sm" fw={500}>
         {props.label}
       </Text>
       <Text size="sm">{props.value}</Text>
+      {props.description && (
+        <Text size="xs" c="dimmed">
+          {props.description}
+        </Text>
+      )}
     </Stack>
   );
+}
+
+// A room or device reads outermost first, as an address does. A provider's roles are alternatives.
+function describeWhereActorIs(resource: ConfigurableActorResource, facilities: ActorFacilities): string {
+  const where =
+    resource.resourceType === 'Practitioner'
+      ? facilities.names.join(', ')
+      : [...(facilities.chain ?? [])].reverse().join(' › ');
+  if (where) {
+    return where;
+  }
+  return facilities.references.length === 0
+    ? 'None recorded, so it can be booked at every service facility'
+    : 'None recorded';
 }
 
 function timezoneSource(offering: OfferingFields, service: WithId<HealthcareService>, actorName: string): string {

@@ -23,6 +23,8 @@ export interface ActorFacilities {
   readonly incomplete?: boolean;
   /** The service facilities to name when saying where the actor is, the nearest first. */
   readonly names: readonly string[];
+  /** For a room or device, the Locations it sits within, the nearest first. */
+  readonly chain?: readonly string[];
 }
 
 /** An actor nothing places, so booking offers it everywhere. */
@@ -105,6 +107,48 @@ export function describeNoSharedFacility(serviceName: string, facilities: ActorF
   return `${serviceName} isn't held at ${where}`;
 }
 
+/**
+ * Says where a visit type is held, for one an actor shares no service facility with.
+ * @param service - The visit type.
+ * @param names - Service facility names, keyed by reference, from `resolveLocationNames`.
+ * @returns The reason, such as `Held only at Downtown Clinic and Northside`.
+ */
+export function describeHeldOnlyAt(
+  service: Pick<HealthcareService, 'location'>,
+  names: ReadonlyMap<string, string>
+): string {
+  const held = (service.location ?? []).map((location) => {
+    const reference = normalizeReference(location.reference);
+    return (reference && names.get(reference)) ?? location.display ?? location.reference ?? 'an unnamed location';
+  });
+  const where = held.length < 2 ? held[0] : `${held.slice(0, -1).join(', ')} and ${held.at(-1)}`;
+  return `Held only at ${where}`;
+}
+
+/**
+ * Names Locations by the resources themselves, rather than by what a reference displays.
+ * @param medplum - The Medplum client.
+ * @param locations - The Locations to name.
+ * @param signal - Aborts the reads.
+ * @returns Each readable Location's name, keyed by its reference.
+ */
+export async function resolveLocationNames(
+  medplum: MedplumClient,
+  locations: readonly Reference<Location>[],
+  signal?: AbortSignal
+): Promise<Map<string, string>> {
+  const references = [...new Set(locations.map((location) => normalizeReference(location.reference)))].filter(
+    (reference) => reference !== undefined
+  );
+  const entries = await Promise.all(
+    references.map(async (reference): Promise<[string, string] | undefined> => {
+      const location = await readLocation(medplum, reference, signal);
+      return location ? [reference, getDisplayString(location)] : undefined;
+    })
+  );
+  return new Map(entries.filter((entry) => entry !== undefined));
+}
+
 async function searchActiveRoles(
   medplum: MedplumClient,
   practitioners: readonly ConfigurableActorResource[],
@@ -176,7 +220,12 @@ async function walkUp(
   // A remaining reference means a read failed or the depth limit stopped the walk, as in booking.
   // Rooms match themselves too, but explanations still name their nearest parent when present.
   const nameIndex = room?.partOf?.reference ? 1 : 0;
-  return { references, names: names.slice(nameIndex, nameIndex + 1), ...(current && { incomplete: true }) };
+  return {
+    references,
+    names: names.slice(nameIndex, nameIndex + 1),
+    chain: room ? names.slice(1) : names,
+    ...(current && { incomplete: true }),
+  };
 }
 
 async function nameOf(

@@ -125,7 +125,7 @@ export function OfferingEditor(props: OfferingEditorProps): JSX.Element {
     <Stack gap="lg">
       {notBookableReason && (
         <Alert color="orange" variant="light" icon={<IconAlertTriangle size={16} />}>
-          Can't be booked here: {notBookableReason}.
+          Can't be booked here. {notBookableReason}.
         </Alert>
       )}
 

@@ -7,7 +7,15 @@ import {
   TimezoneExtensionURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
-import type { Bundle, HealthcareService, Location, Practitioner, Resource, Schedule } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  HealthcareService,
+  Location,
+  Practitioner,
+  PractitionerRole,
+  Resource,
+  Schedule,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { ReactNode } from 'react';
 import { describe, expect, test, vi } from 'vitest';
@@ -414,7 +422,33 @@ describe('ActorPage', () => {
     expect(screen.getByRole('option', { name: 'Initial Visit' })).toHaveAttribute('aria-disabled', 'false');
     const held = screen.getByRole('option', { name: /^Cystoscopy/ });
     expect(held).toHaveAttribute('aria-disabled', 'true');
-    expect(held).toHaveTextContent("Cystoscopy isn't held at Downtown Clinic");
+    expect(held).toHaveTextContent('Held only at Northside');
+  });
+
+  const floor2: WithId<Location> = {
+    resourceType: 'Location',
+    id: 'floor-2',
+    name: 'Second Floor',
+    partOf: { reference: 'Location/downtown' },
+  };
+  const northsideRole: PractitionerRole = {
+    resourceType: 'PractitionerRole',
+    practitioner: { reference: 'Practitioner/dr-smith' },
+    location: [{ reference: 'Location/northside' }],
+  };
+  test.each<[string, ConfigurableActorResource, Resource[], string]>([
+    [
+      'a room, outermost first',
+      { ...room3, partOf: { reference: 'Location/floor-2' } },
+      [floor2],
+      'Downtown Clinic › Second Floor',
+    ],
+    ["a provider, by their roles' locations", drSmith, [northsideRole], 'Northside'],
+    ['an actor nothing places', drSmith, [], 'None recorded, so it can be booked at every service facility'],
+  ])('shows where %s is', async (_, actor, extra, where) => {
+    await setup(actor, [], extra);
+
+    expect(await screen.findByText(where)).toBeInTheDocument();
   });
 
   test('the offer button is ready at once, and only visit types held somewhere wait on where the actor is', async () => {
@@ -464,16 +498,14 @@ describe('ActorPage', () => {
     );
     const { rerender } = renderWithMedplum(page(atNorthside), medplum);
     await openOfferPicker();
-    expect(screen.getByRole('option', { name: /^Ultrasound/ })).toHaveTextContent("isn't held at Northside");
+    expect(screen.getByRole('option', { name: /^Ultrasound/ })).toHaveTextContent('Held only at Downtown Clinic');
     await userEvent.keyboard('{Escape}');
     expect(entry('Cystoscopy')).not.toHaveTextContent("Can't be booked");
 
     rerender(page({ ...atNorthside, partOf: { reference: 'Location/downtown' } }));
 
     await waitFor(() => expect(entry('Cystoscopy')).toHaveTextContent("Can't be booked"));
-    expect(
-      within(panel('Cystoscopy')).getByText("Can't be booked here: Cystoscopy isn't held at Downtown Clinic.")
-    ).toBeVisible();
+    expect(within(panel('Cystoscopy')).getByText("Can't be booked here. Held only at Northside.")).toBeVisible();
   });
 
   test('offers several visit types at once, closed, and then says none are left to offer', async () => {

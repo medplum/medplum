@@ -7,8 +7,10 @@ import { describe, expect, test, vi } from 'vitest';
 import { filterCandidatesByLocation } from '../AppointmentFinder/AppointmentFinder.schedules';
 import type { ActorFacilities } from './serviceFacilities';
 import {
+  describeHeldOnlyAt,
   describeNoSharedFacility,
   resolveActorFacilities,
+  resolveLocationNames,
   sharesServiceFacility,
   UNRESTRICTED,
 } from './serviceFacilities';
@@ -67,6 +69,7 @@ describe('resolveActorFacilities', () => {
     expect(placed.get('Location/room-3')).toEqual({
       references: ['Location/room-3', 'Location/floor-2', 'Location/downtown'],
       names: ['Second Floor'],
+      chain: ['Second Floor', 'Downtown Clinic'],
     });
   });
 
@@ -75,7 +78,11 @@ describe('resolveActorFacilities', () => {
 
     const placed = await resolveActorFacilities(medplum, [doppler]);
 
-    expect(placed.get('Device/doppler')).toEqual({ references: ['Location/northside'], names: ['Northside'] });
+    expect(placed.get('Device/doppler')).toEqual({
+      references: ['Location/northside'],
+      names: ['Northside'],
+      chain: ['Northside'],
+    });
   });
 
   test('a provider is at every location of their active roles, and nowhere their inactive ones name', async () => {
@@ -121,7 +128,7 @@ describe('resolveActorFacilities', () => {
 
     const placed = await resolveActorFacilities(medplum, [unplacedRoom, drSmith]);
 
-    expect(placed.get('Location/room-9')).toEqual({ references: ['Location/room-9'], names: ['Room 9'] });
+    expect(placed.get('Location/room-9')).toEqual({ references: ['Location/room-9'], names: ['Room 9'], chain: [] });
     expect(placed.get('Practitioner/dr-smith')).toEqual(UNRESTRICTED);
   });
 });
@@ -157,6 +164,22 @@ describe('describeNoSharedFacility', () => {
         names: ['Downtown Clinic', 'Northside', 'East'],
       })
     ).toBe("Cystoscopy isn't held at Downtown Clinic, Northside or East");
+  });
+});
+
+describe('describeHeldOnlyAt', () => {
+  test("names where the visit type is held by each Location's own name, falling back to the reference", async () => {
+    const medplum = await setup([downtown, northside]);
+    const location = [
+      { reference: 'Location/downtown/_history/1', display: 'Old name' },
+      { reference: 'Location/northside' },
+      { reference: 'Location/missing', display: 'Closed site' },
+    ];
+
+    const names = await resolveLocationNames(medplum, location);
+
+    expect(describeHeldOnlyAt({ location: location.slice(1, 2) }, names)).toBe('Held only at Northside');
+    expect(describeHeldOnlyAt({ location }, names)).toBe('Held only at Downtown Clinic, Northside and Closed site');
   });
 });
 
