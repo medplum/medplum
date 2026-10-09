@@ -103,7 +103,7 @@ export function EncountersPage(): JSX.Element {
           <EncounterChart
             encounter={{ reference: `Encounter/${encounter.id}` }}
             task={taskId ? { reference: `Task/${taskId}` } : undefined}
-            onEncounterChange={() => ctx.refresh().catch(showErrorNotification)}
+            onEncounterChange={() => ctx.refresh?.().catch(showErrorNotification)}
           />
         </Box>
       )}
