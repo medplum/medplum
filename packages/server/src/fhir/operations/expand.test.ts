@@ -35,6 +35,143 @@ describe('Expand', () => {
     await shutdownApp();
   });
 
+  test('Complete snapshots paginate beyond 1000 and validate without CodeSystems', async () => {
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'https://example.org/snapshot/' + randomUUID(),
+      expansion: {
+        timestamp: '2026-01-01T00:00:00Z',
+        total: 1002,
+        contains: Array.from({ length: 1002 }, (_, i) => ({
+          system: 'https://example.org/synthetic-snapshot-only',
+          version: '1',
+          code: `SYNTHETIC-${i}`,
+          display: `Synthetic ${i}`,
+          designation: [{ language: 'es', value: `Sintetico ${i}` }],
+        })),
+      },
+    };
+    const created = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(valueSet);
+    expect(created).toHaveStatus(201);
+    const expand = (query: string): request.Test =>
+      request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&${query}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+    const page = await expand('offset=1000&count=2&includeDesignations=true');
+    expect(page).toHaveStatus(200);
+    expect(page.body.expansion).toMatchObject({ total: 1002, offset: 1000 });
+    expect(page.body.expansion.contains).toEqual(valueSet.expansion?.contains?.slice(1000));
+    const filtered = await expand('filter=Synthetic%20100&offset=1&count=2');
+    expect(filtered.body.expansion).toMatchObject({ total: 3, offset: 1 });
+    expect(filtered.body.expansion.contains.map((e: ValueSetExpansionContains) => e.code)).toEqual([
+      'SYNTHETIC-1000',
+      'SYNTHETIC-1001',
+    ]);
+    const nested = await request(app)
+      .post('/fhir/R4/ValueSet/$expand')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'count', valueInteger: 1 },
+          {
+            name: 'valueSet',
+            resource: {
+              resourceType: 'ValueSet',
+              status: 'active',
+              compose: { include: [{ valueSet: [valueSet.url] }] },
+            },
+          },
+        ],
+      });
+    expect(nested).toHaveStatus(200);
+    expect(nested.body.expansion.contains).toHaveLength(1);
+    expect(nested.body.expansion.total).toBe(1);
+    const zero = await expand('count=0');
+    expect(zero.body.expansion.total).toBe(1002);
+    expect(zero.body.expansion.contains ?? []).toEqual([]);
+    const end = await expand('offset=1002');
+    expect(end.body.expansion.total).toBe(1002);
+    expect(end.body.expansion.contains ?? []).toEqual([]);
+    for (const [code, display, expected] of [
+      ['SYNTHETIC-1001', 'Synthetic 1001', true],
+      ['SYNTHETIC-1001', 'Sintetico 1001', true],
+      ['SYNTHETIC-1001', 'Wrong', false],
+      ['NOT-A-MEMBER', undefined, false],
+    ] as const) {
+      const result = await request(app)
+        .post('/fhir/R4/ValueSet/$validate-code')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'url', valueUri: valueSet.url },
+            { name: 'coding', valueCoding: { system: 'https://example.org/synthetic-snapshot-only', code, display } },
+          ],
+        });
+      expect(result).toHaveStatus(200);
+      expect(result.body.parameter.find((p: { name: string }) => p.name === 'result').valueBoolean).toBe(expected);
+      if (display === 'Wrong') {
+        expect(result.body.parameter.find((p: { name: string }) => p.name === 'message').valueString).toContain(
+          'display'
+        );
+      }
+    }
+  });
+
+  test('Linked consumers can expand and validate snapshots but cannot overwrite them', async () => {
+    const reference = await createTestProject({
+      withAccessToken: true,
+      project: { exportedResourceType: ['ValueSet'] },
+    });
+    const consumer = await createTestProject({
+      withAccessToken: true,
+      project: { link: [{ project: createReference(reference.project) }] },
+    });
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'https://example.org/shared-snapshot/' + randomUUID(),
+      expansion: {
+        timestamp: '2026-01-01T00:00:00Z',
+        total: 1,
+        contains: [{ system: 'https://example.org/synthetic-shared', code: 'SYNTHETIC', display: 'Synthetic' }],
+      },
+    };
+    const created = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + reference.accessToken)
+      .send(valueSet);
+    expect(created).toHaveStatus(201);
+    const expanded = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
+      .set('Authorization', 'Bearer ' + consumer.accessToken);
+    expect(expanded).toHaveStatus(200);
+    expect(expanded.body.expansion.contains).toEqual(valueSet.expansion?.contains);
+    const validated = await request(app)
+      .post('/fhir/R4/ValueSet/$validate-code')
+      .set('Authorization', 'Bearer ' + consumer.accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: valueSet.url },
+          { name: 'system', valueUri: 'https://example.org/synthetic-shared' },
+          { name: 'code', valueCode: 'SYNTHETIC' },
+        ],
+      });
+    expect(validated).toHaveStatus(200);
+    expect(validated.body.parameter.find((p: { name: string }) => p.name === 'result').valueBoolean).toBe(true);
+    const denied = await request(app)
+      .put(`/fhir/R4/ValueSet/${created.body.id}`)
+      .set('Authorization', 'Bearer ' + consumer.accessToken)
+      .send({ ...created.body, description: 'Should not be writable' });
+    expect(denied).toHaveStatus(403);
+  });
+
   test('No ValueSet URL', async () => {
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand`)
@@ -81,6 +218,36 @@ describe('Expand', () => {
     expect(res.body.expansion.contains.length).toBe(10);
     expect(res.body.expansion.contains[0].system).toBe(LOINC);
   });
+
+  test.each(['', '&filter=rate'])(
+    'Compose count zero calculates a total without returning concepts (%s)',
+    async (filter) => {
+      const url = encodeURIComponent('http://hl7.org/fhir/ValueSet/observation-codes');
+      const expand = (count: number): request.Test =>
+        request(app)
+          .get(`/fhir/R4/ValueSet/$expand?url=${url}${filter}&count=${count}`)
+          .set('Authorization', 'Bearer ' + accessToken);
+      const normal = await expand(1000);
+      const zero = await expand(0);
+      expect(normal).toHaveStatus(200);
+      expect(zero).toHaveStatus(200);
+      expect(normal.body.expansion.total).toBeGreaterThan(0);
+      expect(zero.body.expansion.total).toBe(normal.body.expansion.total);
+      expect(zero.body.expansion.contains ?? []).toEqual([]);
+    }
+  );
+
+  test.each(['offset=-1', 'offset=0.5', 'count=-1', 'count=0.5'])(
+    'Compose rejects invalid pagination %s',
+    async (query) => {
+      const res = await request(app)
+        .get(
+          `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/observation-codes')}&${query}`
+        )
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(400);
+    }
+  );
 
   test('Multiple filters', async () => {
     const res = await request(app)

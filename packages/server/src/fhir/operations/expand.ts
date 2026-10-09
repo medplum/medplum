@@ -44,6 +44,7 @@ import {
   findTerminologyResource,
   getParentProperty,
 } from './utils/terminology';
+import { getValueSetSnapshot } from './utils/valueset-snapshot';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
 const MAX_FILTER_TOKENS = 10;
@@ -74,6 +75,13 @@ export async function expandOperator(
   _router: FhirRouter,
   options?: FhirRouteOptions
 ): Promise<FhirResponse> {
+  // The shared parameter parser accepts numeric prefixes; reject fractional pagination before coercion.
+  for (const name of ['offset', 'count']) {
+    const value = req.query?.[name];
+    if (value !== undefined && (typeof value !== 'string' || !/^\d+$/.test(value))) {
+      return [badRequest('Invalid expansion offset or count')];
+    }
+  }
   const params = parseInputParameters<ValueSetExpandParameters>(operation, req);
   const filter = params.filter;
   if (filter !== undefined && typeof filter !== 'string') {
@@ -106,7 +114,7 @@ export async function expandOperator(
     valueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
   }
 
-  if (params.filter && !params.count) {
+  if (params.filter && params.count === undefined) {
     params.count = 10; // Default to small page size for typeahead queries
   }
   const result = await expandValueSet(repo, valueSet, params);
@@ -156,21 +164,71 @@ export async function expandValueSet(
   valueSet: ValueSet,
   params: ValueSetExpandParameters
 ): Promise<ValueSet> {
-  const expandedSet = await computeExpansion(repo, valueSet, params);
-  if (expandedSet.length >= MAX_EXPANSION_SIZE) {
-    valueSet.expansion = {
-      total: MAX_EXPANSION_SIZE + 1,
-      timestamp: new Date().toISOString(),
-      contains: expandedSet.slice(0, MAX_EXPANSION_SIZE),
-    };
-  } else {
-    valueSet.expansion = {
-      total: expandedSet.length,
-      timestamp: new Date().toISOString(),
-      contains: expandedSet.slice(0, params.count),
+  const offset = params.offset ?? 0;
+  const requestedCount = params.count ?? MAX_EXPANSION_SIZE;
+  // Validate at the shared entry point, including direct callers and compose-based sets.
+  if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(requestedCount) || requestedCount < 0) {
+    throw new OperationOutcomeError(badRequest('Invalid expansion offset or count'));
+  }
+  const snapshot = getValueSetSnapshot(valueSet);
+  if (snapshot) {
+    const count = Math.min(requestedCount, MAX_EXPANSION_SIZE);
+    const entries = filterSnapshot(snapshot, params);
+    const parameter = [
+      ...(params.filter ? [{ name: 'filter', valueString: params.filter }] : []),
+      ...(params.displayLanguage ? [{ name: 'displayLanguage', valueCode: params.displayLanguage }] : []),
+      ...(params.excludeNotForUI ? [{ name: 'excludeNotForUI', valueBoolean: true }] : []),
+    ];
+    return {
+      ...valueSet,
+      expansion: {
+        // This is a new expansion result; source identifiers and paging extensions do not apply.
+        timestamp: new Date().toISOString(),
+        ...(parameter.length ? { parameter } : {}),
+        total: entries.length,
+        offset,
+        contains: entries.slice(offset, offset + count),
+      },
     };
   }
-  return valueSet;
+  // A zero-sized page still needs a normal expansion to determine its total. Compose-based
+  // results retain the existing capped-total convention for sets of 1,000 or more concepts.
+  const expandedSet = await computeExpansion(
+    repo,
+    valueSet,
+    params.count === 0 ? { ...params, count: MAX_EXPANSION_SIZE } : params
+  );
+  return {
+    ...valueSet,
+    expansion: {
+      total: expandedSet.length >= MAX_EXPANSION_SIZE ? MAX_EXPANSION_SIZE + 1 : expandedSet.length,
+      timestamp: new Date().toISOString(),
+      contains: expandedSet.slice(0, Math.min(requestedCount, MAX_EXPANSION_SIZE)),
+    },
+  };
+}
+
+function filterSnapshot(
+  entries: ValueSetExpansionContains[],
+  params: ValueSetExpandParameters
+): ValueSetExpansionContains[] {
+  const filter = normalizeTextFilter(params.filter);
+  const result: ValueSetExpansionContains[] = [];
+  for (const entry of entries) {
+    if (params.excludeNotForUI && entry.abstract) {
+      continue;
+    }
+    const display = getDisplayText(entry, params.displayLanguage);
+    if (params.displayLanguage && !display) {
+      continue;
+    }
+    if (filter && !matchesTextFilter(display, filter)) {
+      continue;
+    }
+    const { designation, ...rest } = entry;
+    result.push({ ...rest, display, ...(params.includeDesignations && designation ? { designation } : {}) });
+  }
+  return result;
 }
 
 async function computeExpansion(
@@ -179,18 +237,9 @@ async function computeExpansion(
   params: ValueSetExpandParameters,
   terminologyResources: Record<string, WithId<CodeSystem> | WithId<ValueSet>> = Object.create(null)
 ): Promise<ValueSetExpansionContains[]> {
-  const preExpansion = valueSet.expansion;
-  if (
-    preExpansion?.contains?.length &&
-    !preExpansion.parameter &&
-    (!preExpansion.total || preExpansion.total === preExpansion.contains.length)
-  ) {
-    // Full expansion is already available, use that
-    return flattenConcepts(preExpansion.contains, {
-      filter: normalizeTextFilter(params.filter),
-      displayLanguage: params.displayLanguage,
-      dropUntranslated: true,
-    });
+  const snapshot = getValueSetSnapshot(valueSet);
+  if (snapshot) {
+    return filterSnapshot(snapshot, params).slice(0, params.count ?? MAX_EXPANSION_SIZE);
   }
 
   if (!valueSet.compose?.include.length) {
