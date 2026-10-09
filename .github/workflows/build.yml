@@ -15,30 +15,6 @@ permissions:
   contents: read
 
 jobs:
-  # TEMPORARY: diagnose Docker Hub login failure for service containers. Remove before merge.
-  docker-login-debug:
-    name: Docker login debug
-    runs-on: medplum-build-16core
-    timeout-minutes: 5
-    steps:
-      - name: Probe Docker Hub token endpoint
-        env:
-          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
-          DH_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-        run: |
-          url="https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/postgres:pull"
-          probe() {
-            local label="$1"; shift
-            out=$(curl -s -o "$RUNNER_TEMP/body" --max-time 30 -w '%{http_code} %{time_total}s ip=%{remote_ip}' "$@" 2>&1) || true
-            echo "$label: $out body=$(head -c 200 "$RUNNER_TEMP/body" 2>/dev/null | sed -E 's/"(token|access_token)":"[^"]*"/"\1":"<redacted>"/g')"
-          }
-          for i in 1 2; do
-            probe "anon ipv4" -4 "$url"
-            probe "anon ipv6" -6 "$url"
-            probe "auth ipv4" -4 -u "$DH_USER:$DH_TOKEN" "$url&account=$DH_USER"
-            probe "auth ipv6" -6 -u "$DH_USER:$DH_TOKEN" "$url&account=$DH_USER"
-          done
-
   build:
     name: Build
     runs-on: medplum-build-16core
