@@ -13,11 +13,8 @@ import {
 } from '@medplum/core';
 import type { Appointment, AppointmentParticipant, Patient, Reference } from '@medplum/fhirtypes';
 import type { BookingRequirementValues } from '../../AppointmentFinder/AppointmentFinder.requirements';
+import { getPatientParticipant } from '../../actors';
 import { partitionServiceTypes } from '../../serviceTypes';
-
-export function getPatientParticipant(appointment: Appointment): AppointmentParticipant | undefined {
-  return appointment.participant.find((participant) => participant.actor?.reference?.startsWith('Patient/'));
-}
 
 /**
  * Reads back what the booking form recorded for the visit type's requirements.

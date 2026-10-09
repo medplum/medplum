@@ -12,6 +12,7 @@ import type { Appointment, Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
+import { getPatientParticipant } from '../../actors';
 import type { BookingRequirementValues } from '../../AppointmentFinder/AppointmentFinder.requirements';
 import {
   DEFAULT_DIAGNOSIS_VALUE_SET,
@@ -20,12 +21,7 @@ import {
 } from '../../AppointmentFinder/AppointmentFinder.requirements';
 import { AppointmentPatientInput } from '../../AppointmentFinder/AppointmentPatientInput';
 import { BookingRequirementFields } from '../../AppointmentFinder/BookingRequirementFields';
-import {
-  buildAppointmentUpdate,
-  getPatientParticipant,
-  isEdited,
-  readRequirementValues,
-} from './AppointmentDetails.utils';
+import { buildAppointmentUpdate, isEdited, readRequirementValues } from './AppointmentDetails.utils';
 
 export interface AppointmentDetailsFormProps {
   readonly appointment: WithId<Appointment>;

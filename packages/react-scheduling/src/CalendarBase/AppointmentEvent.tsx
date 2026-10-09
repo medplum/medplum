@@ -16,6 +16,7 @@ import { partitionServiceTypes } from '../serviceTypes';
 // Its own sheet: importing CalendarBase's here would load it ahead of FullCalendar's theme,
 // which its rules are written to override.
 import classes from './AppointmentEvent.module.css';
+import { AppointmentPatientName } from './AppointmentPatientName';
 
 export interface AppointmentEventProps {
   readonly appointment: Appointment;
@@ -50,7 +51,9 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
       onMouseLeave={() => setOpened(false)}
     >
       {inTimeGrid ? (
-        <div className={info.timeClass}>{info.event.title}</div>
+        <div className={info.timeClass}>
+          <AppointmentPatientName appointment={appointment} />
+        </div>
       ) : (
         info.timeText && <div className={cx(info.timeClass, classes.time)}>{info.timeText}</div>
       )}
@@ -94,7 +97,9 @@ function AppointmentCard(props: AppointmentEventProps): JSX.Element {
   return (
     <Stack gap={4}>
       <Group justify="space-between" gap="xs" wrap="nowrap">
-        <Text fw={500}>{info.event.title}</Text>
+        <Text fw={500}>
+          <AppointmentPatientName appointment={appointment} />
+        </Text>
         <AppointmentStatusBadge status={appointment.status} size="sm" />
       </Group>
       <Divider />
