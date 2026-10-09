@@ -19,6 +19,11 @@ function isWithinRange(instant: string | undefined, range: DateTimeRange | undef
   return time >= range.start.getTime() && time <= range.end.getTime();
 }
 
+// Returned when an empty status list is given: `status` is required, so no resource can
+// match, and a stable instance keeps memos downstream from recomputing on every render.
+const NO_SLOTS: WithId<Slot>[] = [];
+const NO_APPOINTMENTS: WithId<Appointment>[] = [];
+
 export interface UseSchedulingResourcesResult {
   appointments: WithId<Appointment>[] | undefined;
   slots: WithId<Slot>[] | undefined;
@@ -95,7 +100,9 @@ export function useSchedulingSlots(
   const rangeEnd = range?.end?.toISOString();
 
   const matchesStatus = (slot: Slot): boolean =>
-    slotStatusesKey ? slotStatusesKey.split(',').includes(slot.status) : slot.status !== 'entered-in-error';
+    slotStatusesKey === undefined
+      ? slot.status !== 'entered-in-error'
+      : slotStatusesKey.split(',').includes(slot.status);
 
   // Keep the calendar's slots in sync with any Slot this client modifies, e.g. the
   // slots created when booking a visit from the FindPane or soft-deleted when cancelling
@@ -138,7 +145,7 @@ export function useSchedulingSlots(
   });
 
   useEffect(() => {
-    if (scheduleRefsKey.length === 0 || !rangeStart || !rangeEnd) {
+    if (scheduleRefsKey.length === 0 || slotStatusesKey === '' || !rangeStart || !rangeEnd) {
       return () => {};
     }
     let active = true;
@@ -156,7 +163,7 @@ export function useSchedulingSlots(
           ['schedule', scheduleRef],
           ['start', `ge${rangeStart}`],
           ['start', `le${rangeEnd}`],
-          slotStatusesKey ? ['status', slotStatusesKey] : ['status:not', 'entered-in-error'],
+          slotStatusesKey === undefined ? ['status:not', 'entered-in-error'] : ['status', slotStatusesKey],
         ])
       )
     )
@@ -180,7 +187,7 @@ export function useSchedulingSlots(
   }, [medplum, scheduleRefsKey, slotStatusesKey, rangeStart, rangeEnd, handleError]);
 
   return {
-    slots,
+    slots: slotStatusesKey === '' ? NO_SLOTS : slots,
     loading,
     error,
   };
@@ -237,7 +244,7 @@ export function useSchedulingAppointments(
   const appointmentStatusesKey = options?.appointmentStatuses?.join(',');
 
   const matchesStatus = (appointment: Appointment): boolean =>
-    !appointmentStatusesKey || appointmentStatusesKey.split(',').includes(appointment.status);
+    appointmentStatusesKey === undefined || appointmentStatusesKey.split(',').includes(appointment.status);
 
   // Keep the calendar's appointments in sync with any Appointment this client
   // modifies.
@@ -282,7 +289,7 @@ export function useSchedulingAppointments(
 
   // Find appointments visible in the current range
   useEffect(() => {
-    if (actorRefsKey.length === 0 || !rangeStart || !rangeEnd) {
+    if (actorRefsKey.length === 0 || appointmentStatusesKey === '' || !rangeStart || !rangeEnd) {
       return () => {};
     }
     let active = true;
@@ -300,7 +307,7 @@ export function useSchedulingAppointments(
           ['actor', actorRef],
           ['date', `ge${rangeStart}`],
           ['date', `le${rangeEnd}`],
-          ...(appointmentStatusesKey ? [['status', appointmentStatusesKey]] : []),
+          ...(appointmentStatusesKey === undefined ? [] : [['status', appointmentStatusesKey]]),
         ])
       )
     )
@@ -332,7 +339,7 @@ export function useSchedulingAppointments(
   }, [medplum, actorRefsKey, appointmentStatusesKey, rangeStart, rangeEnd, handleError]);
 
   return {
-    appointments,
+    appointments: appointmentStatusesKey === '' ? NO_APPOINTMENTS : appointments,
     loading,
     error,
   };

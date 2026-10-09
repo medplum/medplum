@@ -391,6 +391,22 @@ describe('useSchedulingSlots', () => {
       expect(result.current.slots).toEqual([]);
     });
 
+    test('loads no slots for an empty status list', () => {
+      medplum.searchResources = vi.fn();
+      const { result } = setup(useSchedulingSlots, [SCHEDULE_A], RANGE, { slotStatuses: [] });
+
+      // Every Slot has a status, so none can match: no search runs, and there are no slots.
+      expect(medplum.searchResources).not.toHaveBeenCalled();
+      expect(result.current.slots).toEqual([]);
+      expect(result.current.loading).toBe(false);
+
+      // A created Slot is left out too.
+      act(() => {
+        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'create', id: slotA.id, resource: slotA });
+      });
+      expect(result.current.slots).toEqual([]);
+    });
+
     test('removes a deleted Slot by id', async () => {
       configureSearch({ slotsBySchedule: { 'Schedule/schedule-a': [slotA] } });
       const { result } = setup(useSchedulingSlots, [SCHEDULE_A], RANGE);
@@ -732,6 +748,29 @@ describe('useSchedulingAppointments', () => {
           operation: 'update',
           id: cancelled.id,
           resource: cancelled,
+        });
+      });
+      expect(result.current.appointments).toEqual([]);
+    });
+
+    test('loads no appointments for an empty status list', () => {
+      medplum.searchResources = vi.fn();
+      const { result } = setup(useSchedulingAppointments, [SCHEDULE_A], RANGE, { appointmentStatuses: [] });
+
+      // Every Appointment has a status, so none can match: no search runs, and there are no
+      // appointments.
+      expect(medplum.searchResources).not.toHaveBeenCalled();
+      expect(result.current.appointments).toEqual([]);
+      expect(result.current.loading).toBe(false);
+
+      // A created Appointment is left out too.
+      const created: WithId<Appointment> = { ...apptA, start: '2024-01-15T10:00:00.000Z' };
+      act(() => {
+        medplum.notifyResourceModified({
+          resourceType: 'Appointment',
+          operation: 'create',
+          id: created.id,
+          resource: created,
         });
       });
       expect(result.current.appointments).toEqual([]);
