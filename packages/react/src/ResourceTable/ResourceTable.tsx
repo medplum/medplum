@@ -51,7 +51,7 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
           if (profile) {
             setSchemaLoaded(true);
           } else {
-            console.error(`Schema not found for ${profileUrl}`);
+            onError(new Error(`Schema not found for ${profileUrl}`), { source: 'ResourceTable' });
           }
         })
         .catch((reason: unknown) => {

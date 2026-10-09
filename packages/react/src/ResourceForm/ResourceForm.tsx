@@ -57,7 +57,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
               const modifiedDefaultValue = applyDefaultValuesToResource(defaultValue, profile);
               setValue(modifiedDefaultValue);
             } else {
-              console.error(`Schema not found for ${profileUrl}`);
+              onError(new Error(`Schema not found for ${profileUrl}`), { source: 'ResourceForm' });
             }
           })
           .catch((reason: unknown) => {
