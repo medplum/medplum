@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { DocumentReference, Observation, ServiceRequest } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react';
+import type { Mock } from 'vitest';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   fetchLabOrderRequisitionDocuments,
@@ -11,9 +13,11 @@ import {
 
 describe('documentReference utils', () => {
   let medplum: MockClient;
+  let onError: Mock<MedplumErrorHandler>;
 
   beforeEach(() => {
     medplum = new MockClient();
+    onError = vi.fn();
   });
 
   describe('getHealthGorillaRequisitionId', () => {
@@ -106,7 +110,7 @@ describe('documentReference utils', () => {
 
   describe('resolveDerivedFromAttachments', () => {
     test('returns empty array when no result references given', async () => {
-      const result = await resolveDerivedFromAttachments(medplum, undefined);
+      const result = await resolveDerivedFromAttachments(medplum, undefined, onError);
       expect(result).toEqual([]);
     });
 
@@ -125,7 +129,11 @@ describe('documentReference utils', () => {
         derivedFrom: [{ reference: `DocumentReference/${docRef.id}`, display: 'Lab.pdf' }],
       });
 
-      const result = await resolveDerivedFromAttachments(medplum, [{ reference: `Observation/${observation.id}` }]);
+      const result = await resolveDerivedFromAttachments(
+        medplum,
+        [{ reference: `Observation/${observation.id}` }],
+        onError
+      );
 
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({ url: 'https://example.com/lab.pdf', title: 'Lab.pdf' });
@@ -150,7 +158,7 @@ describe('documentReference utils', () => {
         hasMember: [{ reference: `Observation/${child.id}` }],
       });
 
-      const result = await resolveDerivedFromAttachments(medplum, [{ reference: `Observation/${parent.id}` }]);
+      const result = await resolveDerivedFromAttachments(medplum, [{ reference: `Observation/${parent.id}` }], onError);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({ url: 'https://example.com/child.pdf' });
@@ -164,7 +172,11 @@ describe('documentReference utils', () => {
         derivedFrom: [{ reference: 'Observation/some-other-observation' }],
       });
 
-      const result = await resolveDerivedFromAttachments(medplum, [{ reference: `Observation/${observation.id}` }]);
+      const result = await resolveDerivedFromAttachments(
+        medplum,
+        [{ reference: `Observation/${observation.id}` }],
+        onError
+      );
 
       expect(result).toEqual([]);
     });
@@ -179,9 +191,36 @@ describe('documentReference utils', () => {
 
       const readSpy = vi.spyOn(medplum, 'readReference');
 
-      await resolveDerivedFromAttachments(medplum, [ref, ref]);
+      await resolveDerivedFromAttachments(medplum, [ref, ref], onError);
 
       expect(readSpy).toHaveBeenCalledTimes(1);
+    });
+
+    test('reports Observations it cannot read and resolves the rest', async () => {
+      const docRef = await medplum.createResource<DocumentReference>({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        content: [{ attachment: { contentType: 'application/pdf', url: 'https://example.com/lab.pdf' } }],
+      });
+      const observation = await medplum.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'Clinical PDF Report' },
+        derivedFrom: [{ reference: `DocumentReference/${docRef.id}` }],
+      });
+
+      const result = await resolveDerivedFromAttachments(
+        medplum,
+        [{ reference: 'Observation/missing' }, { reference: `Observation/${observation.id}` }],
+        onError
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({ url: 'https://example.com/lab.pdf' });
+      expect(onError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        source: 'resolveDerivedFromAttachments',
+        message: 'Error resolving Observation for derivedFrom attachment',
+      });
     });
   });
 });

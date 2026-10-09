@@ -35,8 +35,8 @@ export function LabReportContent(props: LabReportContentProps): JSX.Element {
     let cancelled = false;
 
     Promise.allSettled([
-      resolveDerivedFromAttachments(medplum, report.result),
-      resolvePresentedFormAttachments(medplum, report.presentedForm),
+      resolveDerivedFromAttachments(medplum, report.result, onError),
+      resolvePresentedFormAttachments(medplum, report.presentedForm, onError),
     ])
       .then(([derivedFromResult, presentedFormResult]) => {
         if (cancelled) {
