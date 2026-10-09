@@ -3,13 +3,14 @@
 import { Accordion, Alert, Badge, Divider, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
+  createReference,
   deepEquals,
   getDisplayString,
   getReferenceString,
   getSchedulingTimezone,
   normalizeErrorString,
 } from '@medplum/core';
-import type { HealthcareService, Resource } from '@medplum/fhirtypes';
+import type { HealthcareService, Location, PractitionerRole, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
@@ -33,8 +34,11 @@ import { actorGeneralFieldsOf, buildActorResource, newActorResource } from './ac
 import { ActorGeneral } from './ActorGeneral';
 import { OfferingEditor, OfferingMenu, OfferingSummary } from './OfferingEditor';
 import { OfferPicker } from './OfferPicker';
+import { ProviderFacilitiesFields } from './ProviderFacilitiesFields';
+import { buildRoleChanges, normalizeReference, providerFacilitiesOf } from './roleDraft';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
 import { buildScheduleDraft, newOfferingFields, scheduleFieldsOf, startingOfferingFields } from './scheduleDraft';
+import { useProviderRoles } from './useProviderRoles';
 
 export interface ActorPageProps {
   /**
@@ -99,7 +103,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [stopping, setStopping] = useState<WithId<HealthcareService>>();
   const [saving, setSaving] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
-  const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'>>();
+  const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'> & { change?: ConfigChange }>();
   const [reloading, setReloading] = useState(false);
   // Bumped by Discard to remount the General fields, whose location input holds its own selection.
   const [discards, setDiscards] = useState(0);
@@ -114,11 +118,33 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const noun = typeLabel.toLowerCase();
   const actorName = stored ? getDisplayString(stored) : general.name.trim() || `this ${noun}`;
 
+  // A provider's service facilities are the locations of their roles, edited here and saved with the rest.
+  const providerRoles = useProviderRoles(stored);
+  const storedRoles = providerRoles?.value;
+  const [facilityEdits, setFacilityEdits] = useState<Reference<Location>[]>();
+  const storedFacilities = storedRoles && providerFacilitiesOf(storedRoles.roles);
+  const isLinked = (facility: Reference<Location>): boolean =>
+    !!storedFacilities?.locked.has(normalizeReference(facility.reference) ?? '');
+  const editableFacilities = facilityEdits ?? storedFacilities?.facilities.filter((facility) => !isLinked(facility));
+  const named = (facility: Reference<Location>): Reference<Location> => ({
+    ...facility,
+    display:
+      storedRoles?.names.get(normalizeReference(facility.reference) ?? '') ?? facility.display ?? facility.reference,
+  });
+  const linkedFacilities = (storedFacilities?.facilities.filter(isLinked) ?? []).map(named);
+  const roleChanges: ConfigChange<PractitionerRole>[] =
+    stored?.resourceType === 'Practitioner' && storedRoles && editableFacilities
+      ? buildRoleChanges(storedRoles.roles, createReference(stored), [
+          ...linkedFacilities,
+          ...editableFacilities.map(named),
+        ])
+      : [];
+
   const draft = resource && buildScheduleDraft(schedule, resource, fields, initial, servicesById);
   const actorDirty = !deepEquals(general, initialGeneral);
   // Compares the fields rather than the draft, so edits the draft can't store yet, like an emptied week, still
   // count and the save bar can say why it refuses.
-  const dirty = creating || actorDirty || !deepEquals(fields, initial);
+  const dirty = creating || actorDirty || !deepEquals(fields, initial) || roleChanges.length > 0;
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const offered = Object.keys(fields.offerings).flatMap((id) => servicesById.get(id) ?? []);
@@ -195,7 +221,16 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         // Conditional, so two pages offering this actor's first visit type at once can't each create a Schedule.
         changes.push({ stored: schedule, draft, ifNoneExist: `actor=${getReferenceString(resource)}` });
       }
+      changes.push(...roleChanges);
       const result = await saveConfigChanges(medplum, changes);
+      // Stored roles are laid over the page's, since a save changing only roles remounts nothing.
+      const savedRoles = result.saved.flatMap(({ resource: saved }) =>
+        saved.resourceType === 'PractitionerRole' ? [saved] : []
+      );
+      if (savedRoles.length > 0) {
+        providerRoles?.store(savedRoles);
+        setFacilityEdits(undefined);
+      }
       if (result.failures.length > 0) {
         setFailure(result.failures[0]);
       } else if (result.saved.length === 0) {
@@ -219,6 +254,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     }
     setGeneral(initialGeneral);
     setDiscards((count) => count + 1);
+    setFacilityEdits(undefined);
     setFields(initial);
     setOpen((current) => (current && Object.hasOwn(initial.offerings, current) ? current : null));
     setTriedToSave(false);
@@ -237,7 +273,10 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           ? medplum.readResource('Schedule', schedule.id, { cache: 'no-cache' })
           : medplum.searchOne('Schedule', { actor: getReferenceString(stored) }, { cache: 'no-cache' }),
       ]);
+      await providerRoles?.reload();
       onSynced(reloadedSchedule ? [reloadedActor, reloadedSchedule] : [reloadedActor], open ?? undefined);
+      // When only a role changed, no version the page is keyed on did, so nothing remounts it.
+      handleDiscard();
     } catch (err) {
       setFailure({ conflict: false, message: `Could not reload it: ${normalizeErrorString(err)}` });
     } finally {
@@ -245,7 +284,10 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     }
   }
 
-  const conflictSubject = actorDirty ? `${actorName} or its Schedule` : `The Schedule for ${actorName}`;
+  let conflictSubject = actorDirty ? `${actorName} or its Schedule` : `The Schedule for ${actorName}`;
+  if (failure?.change?.draft.resourceType === 'PractitionerRole') {
+    conflictSubject = `The service facilities for ${actorName}`;
+  }
   const offerable = useMemo(
     () => services.filter((service) => service.active !== false && !Object.hasOwn(fields.offerings, service.id)),
     [services, fields.offerings]
@@ -293,6 +335,15 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           onScheduleActiveChange={(active) => setFields((current) => ({ ...current, active }))}
           nameError={triedToSave || initialGeneral.name ? nameError : undefined}
         />
+        {providerRoles && (
+          <ProviderFacilitiesFields
+            actorName={actorName}
+            value={editableFacilities}
+            linked={linkedFacilities}
+            error={providerRoles.error}
+            onChange={setFacilityEdits}
+          />
+        )}
         {alert && (
           <Alert color="blue" variant="light">
             {alert}

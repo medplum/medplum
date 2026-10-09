@@ -34,9 +34,9 @@ import type { ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { ParameterWarnings } from '../ConfigPage/ParameterWarnings';
 import type { ConfigOffering, ConfigOfferingGroup } from '../SchedulingConfigWorkspace.utils';
+import { ServiceFacilitiesField } from '../ServiceFacilitiesField';
 import { StatusBadge } from '../StatusBadge';
 import { OfferingSchedulesSection } from './OfferingSchedulesSection';
-import { ServiceFacilitiesField } from './ServiceFacilitiesField';
 
 export interface VisitTypePageProps {
   /** The visit type as stored. Omitted to create one. */
@@ -287,7 +287,8 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
         <ServiceFacilitiesField
           value={fields.location}
           onChange={(location) => update({ location })}
-          serviceName={serviceName}
+          name={serviceName}
+          description="Booking filtered to a service facility offers this visit type only if it's listed here, or if none are."
         />
       </ConfigSection>
 

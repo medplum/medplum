@@ -801,6 +801,35 @@ export const DrPatelSchedule = buildSchedule('schedule-dr-patel', 'Practitioner/
   name: 'Walk-in Clinic',
 });
 
+/** Works at both clinics: the main clinic as another system linked her, the satellite as the workspace did. */
+export const DrBrooksPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-brooks',
+  name: [{ given: ['Elena'], family: 'Brooks', prefix: ['Dr.'] }],
+  extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
+};
+
+/** Carries an identifier, which marks it as another system's, so the workspace won't change it. */
+export const DrBrooksLinkedRole: WithId<PractitionerRole> = {
+  resourceType: 'PractitionerRole',
+  id: 'role-dr-brooks-main-clinic',
+  identifier: [{ system: 'http://example.org/provider-location-link', value: 'dr-brooks|main-clinic' }],
+  practitioner: { reference: 'Practitioner/dr-brooks' },
+  location: [{ reference: 'Location/main-clinic' }],
+  active: true,
+};
+
+/** Holds only what the workspace writes, so the satellite can be removed from her page. */
+export const DrBrooksRole: WithId<PractitionerRole> = {
+  resourceType: 'PractitionerRole',
+  id: 'role-dr-brooks-satellite',
+  practitioner: { reference: 'Practitioner/dr-brooks' },
+  location: [{ reference: 'Location/satellite-clinic' }],
+  active: true,
+};
+
+export const DrBrooksSchedule = buildSchedule('schedule-dr-brooks', 'Practitioner/dr-brooks', 'Dr. Elena Brooks');
+
 /**
  * Visit types nobody offers, so the config workspace has enough to page through and search when offering from an
  * actor's page.
@@ -857,6 +886,10 @@ export const ConfigFixtures = [
   ExamRoomC,
   DrPatelPractitioner,
   DrPatelSchedule,
+  DrBrooksPractitioner,
+  DrBrooksLinkedRole,
+  DrBrooksRole,
+  DrBrooksSchedule,
 ];
 
 /**

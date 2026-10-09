@@ -57,8 +57,8 @@ one, which is listed once it is saved. Providers can't be created here.
   the Schedule can't be switched back on while it stays off. Switching the Schedule off on its own pauses booking
   without losing anything. A note says when it can't be booked: because it is inactive, or because its Schedule
   is switched off. A provider's name and NPIs (`Practitioner.identifier` with the `us-npi` system) are read-only,
-  since they are kept by the system providers come from, and where a provider works is recorded on their roles
-  rather than here. A room's or device's name is edited, and so is its service facility (`Location.partOf`, or
+  since they are kept by the system providers come from. Where a provider works is edited as their service
+  facilities (below). A room's or device's name is edited, and so is its service facility (`Location.partOf`, or
   `Device.location`), picked from the same Locations booking filters by. The time zone (the `timezone`
   extension) is the one hours are read in for any visit type that sets none of its own. A provider without one is
   warned that it is recommended, without blocking Save.
@@ -71,6 +71,15 @@ one, which is listed once it is saved. Providers can't be created here.
 **Offer visit types** opens a searchable list of every active visit type not offered yet. Tick any number to offer
 them together. Offering an actor's first visit type creates its Schedule when the page is saved, and not before.
 **Stop offering** asks first, then removes the settings the Schedule holds for that visit type with it.
+
+A provider's General also has **Service facilities**, the same field a visit type has, filled from the service
+facility Locations the provider's active `PractitionerRole`s name. With none, booking filtered to a service
+facility offers the provider at every one, so adding a first one or removing the last asks first. Adding a
+service facility turns an inactive role for it back on, or creates a role holding only `practitioner`, that
+`location`, and `active`. Removing one turns off the role naming only it, or takes it off a role naming others.
+A role carrying an `identifier` was written by another system and is never changed, so a service facility it
+links is listed apart, under **Linked by another system**, and can't be removed. When there is one, the provider
+is already limited to it, so neither edit asks.
 
 A new room is typed as a room (`physicalType` `ro`), so the service facility pickers never offer it as a service
 facility. A new room or device starts active, unless switched off before Create, and can offer visit types once it

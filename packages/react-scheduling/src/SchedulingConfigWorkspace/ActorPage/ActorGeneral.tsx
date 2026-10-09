@@ -25,8 +25,8 @@ export interface ActorGeneralProps {
 }
 
 /**
- * The General section of an actor's page. A provider's name and NPIs are read-only, since the system providers
- * come from keeps them, and where a provider works is recorded on their roles rather than here.
+ * The General section's own fields. A provider's name and NPIs are read-only, since the system providers come
+ * from keeps them; where a provider works is edited below these, through their roles.
  * @param props - The actor, its fields, and the change handlers.
  * @returns The section's fields.
  */
