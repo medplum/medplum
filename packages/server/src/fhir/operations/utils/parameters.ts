@@ -21,6 +21,7 @@ import type {
   ResourceType,
 } from '@medplum/fhirtypes';
 import type { Request } from 'express';
+import { GLOBAL_SHARD_ID, isConfiguredShardId, isShardingEnabled } from '../../sharding';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
@@ -343,4 +344,17 @@ export function makeOperationDefinitionParameter(
     max,
     part,
   };
+}
+
+export function getShardIdParam(params: { shardId?: string }): string {
+  if (!params.shardId) {
+    if (isShardingEnabled()) {
+      throw new OperationOutcomeError(badRequest('shardId is required when sharding is enabled'));
+    }
+    return GLOBAL_SHARD_ID;
+  }
+  if (!isConfiguredShardId(params.shardId)) {
+    throw new OperationOutcomeError(badRequest(`Unknown shardId: ${params.shardId}`));
+  }
+  return params.shardId;
 }
