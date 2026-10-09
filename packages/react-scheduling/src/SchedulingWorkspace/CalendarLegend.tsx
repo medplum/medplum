@@ -33,6 +33,9 @@ function fill(color: keyof MantineThemeColors): string {
   return `var(--mantine-color-${color}-7)`;
 }
 
+/** The gray MultiCalendar fills slots with, which here are all blocked time. */
+const BLOCKED_FILL = 'light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-4))';
+
 /**
  * The key to the calendar's colors, opened from a small trigger.
  *
@@ -96,9 +99,10 @@ export function CalendarLegend(props: CalendarLegendProps): JSX.Element {
               <Divider />
             </>
           )}
-          <Text size="xs" c="dimmed">
-            Shaded time is a calendar&apos;s availability, in its sidebar color.
-          </Text>
+          <Group gap="xs" wrap="nowrap">
+            <ColorSwatch color={BLOCKED_FILL} size={14} radius="sm" withShadow={false} />
+            <Text size="sm">Blocked time</Text>
+          </Group>
         </Stack>
       </Popover.Dropdown>
     </Popover>
