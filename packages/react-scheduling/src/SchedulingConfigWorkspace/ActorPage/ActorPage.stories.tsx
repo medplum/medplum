@@ -11,7 +11,13 @@ import type { BookableActorType } from '../../actors';
 import type { ConfigurableActor } from '../../configSearch';
 import { searchConfigurableActors, searchConfigurableServices } from '../../configSearch';
 import { withFixtures } from '../../stories/decorators';
-import { ConfigFixtures, DrNguyenPractitioner, DrReyesPractitioner, ExamRoomC } from '../../stories/scheduling';
+import {
+  ConfigFixtures,
+  DrNguyenPractitioner,
+  DrPatelPractitioner,
+  DrReyesPractitioner,
+  ExamRoomC,
+} from '../../stories/scheduling';
 import { ActorPage } from './ActorPage';
 
 export default {
@@ -91,3 +97,15 @@ export const ProviderOnLeave = (): JSX.Element => (
  * @returns The story.
  */
 export const RoomWithNoSchedule = (): JSX.Element => <StoredActor resourceType="Location" id={ExamRoomC.id} />;
+
+/**
+ * Dr. Anika Patel offers Walk-in Clinic, and neither she nor the visit type sets a time zone. Her name is kept by
+ * the system she comes from and is read-only; her status and time zone are edited here.
+ *
+ * Pick a Time zone under General and the entry's custom hours are read in it at once. Save writes the time zone
+ * to her `Practitioner` and nothing else.
+ * @returns The story.
+ */
+export const ProviderTimeZone = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrPatelPractitioner.id} />
+);

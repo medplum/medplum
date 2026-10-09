@@ -13,6 +13,7 @@ import type { HealthcareService, Resource, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType } from '../actors';
 import { isBookableActorType } from '../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../configSearch';
+import type { ActorResource } from './ActorPage/actorDraft';
 import type { ConfigPanelItem } from './ConfigPanel/ConfigPanel';
 import type { ConfigStatus } from './StatusBadge';
 
@@ -111,7 +112,7 @@ export function withStoredService(
  * @param resource - The provider, room, or device.
  * @returns True when it is inactive.
  */
-export function isActorInactive(resource: ConfigurableActorResource): boolean {
+export function isActorInactive(resource: ActorResource): boolean {
   return resource.resourceType === 'Practitioner' ? resource.active === false : resource.status === 'inactive';
 }
 
