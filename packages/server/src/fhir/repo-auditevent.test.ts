@@ -9,6 +9,7 @@ import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getLogger } from '../logger';
+import * as otelModule from '../otel/otel';
 import { createTestProject, waitFor, withTestContext } from '../test.setup';
 import { Repository } from './repo';
 
@@ -164,6 +165,53 @@ describe('Saved AuditEvents', () => {
         expect(errorSpy).not.toHaveBeenCalledWith('Failed to save AuditEvent', expect.anything());
       } finally {
         errorSpy.mockRestore();
+      }
+    }));
+  test('Counts saved AuditEvents as system creates', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      await waitForAuditEvent(repo, patient);
+
+      const counterSpy = vi.spyOn(otelModule, 'incrementCounter');
+      try {
+        await repo.patchResource<Patient>('Patient', patient.id, [{ op: 'add', path: '/active', value: true }]);
+        await waitFor(async () =>
+          expect(counterSpy).toHaveBeenCalledWith('medplum.fhir.interaction.create.count', {
+            attributes: { system: true, resourceType: 'AuditEvent', result: 'success' },
+          })
+        );
+      } finally {
+        counterSpy.mockRestore();
+      }
+    }));
+
+  test('Counts failed AuditEvent saves as failed system creates', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      await waitForAuditEvent(repo, patient);
+
+      const original = (Repository.prototype as any).updateResourceImpl;
+      const updateSpy = vi
+        .spyOn(Repository.prototype as any, 'updateResourceImpl')
+        .mockImplementation(function (this: Repository, ...args: any[]) {
+          if ((args[0] as Resource).resourceType === 'AuditEvent') {
+            return Promise.reject(new Error('Simulated AuditEvent save failure'));
+          }
+          return original.apply(this, args);
+        });
+      const counterSpy = vi.spyOn(otelModule, 'incrementCounter');
+      try {
+        await repo.patchResource<Patient>('Patient', patient.id, [{ op: 'add', path: '/active', value: true }]);
+        await waitFor(async () =>
+          expect(counterSpy).toHaveBeenCalledWith('medplum.fhir.interaction.create.count', {
+            attributes: { system: true, resourceType: 'AuditEvent', result: 'failure' },
+          })
+        );
+      } finally {
+        counterSpy.mockRestore();
+        updateSpy.mockRestore();
       }
     }));
 });

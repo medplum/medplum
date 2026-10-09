@@ -2422,6 +2422,7 @@ export class Repository extends FhirRepository implements Disposable {
       // by pushing them onto an in-process queue (or BullMQ) and drain/write them to the DB on an interval.
       const accountsRepo = this.clone();
       const saveRepo = this.clone({ skipBackgroundJobs: true }).getSystemRepo();
+      const startTime = Date.now();
       accountsRepo
         .getAccounts(undefined, auditEvent as WithId<AuditEvent>)
         .then((accounts) => {
@@ -2430,7 +2431,20 @@ export class Repository extends FhirRepository implements Disposable {
           }
           return saveRepo.updateResourceImpl(auditEvent, true);
         })
-        .catch((err) => getLogger().error('Failed to save AuditEvent', err))
+        .then((result) => {
+          // Record the write in interaction metrics; logEvent skips the AuditEvent for a system AuditEvent create
+          saveRepo.logEvent(CreateInteraction, AuditEventOutcome.Success, undefined, {
+            resource: result,
+            durationMs: Date.now() - startTime,
+          });
+        })
+        .catch((err) => {
+          saveRepo.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, {
+            resource: auditEvent,
+            durationMs: Date.now() - startTime,
+          });
+          getLogger().error('Failed to save AuditEvent', err);
+        })
         .finally(() => {
           accountsRepo[Symbol.dispose]();
           saveRepo[Symbol.dispose]();
