@@ -4,6 +4,7 @@
 // See: https://mantine.dev/guides/jest/
 import { MantineProvider } from '@mantine/core';
 import type { MedplumClient } from '@medplum/core';
+import type { MedplumErrorHandler } from '@medplum/react-hooks';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { RenderResult } from '@testing-library/react';
 import { render as testingLibraryRender } from '@testing-library/react';
@@ -28,8 +29,13 @@ export function render(ui: ReactNode, wrapper?: ({ children }: { children: React
  * Renders against a Medplum client, for components that search the server.
  * @param ui - What to render.
  * @param medplum - The client to render it against.
+ * @param onError - Optional MedplumProvider error handler.
  * @returns The render result.
  */
-export function renderWithMedplum(ui: ReactNode, medplum: MedplumClient): RenderResult {
-  return render(ui, ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
+export function renderWithMedplum(ui: ReactNode, medplum: MedplumClient, onError?: MedplumErrorHandler): RenderResult {
+  return render(ui, ({ children }) => (
+    <MedplumProvider medplum={medplum} onError={onError}>
+      {children}
+    </MedplumProvider>
+  ));
 }

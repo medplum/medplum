@@ -4,7 +4,7 @@ import { Alert, Loader } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { extractServiceTypeReferences, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
 import type { Appointment, Bundle, Parameters, Slot } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
 import type { AppointmentWrite } from './AppointmentFinder.writes';
@@ -42,8 +42,8 @@ export interface AppointmentRescheduleFormProps extends Omit<
    *
    * The answers stay on screen and the form stops offering to move until one of them
    * changes, so a host can keep this mounted without it writing twice. A failure here
-   * is logged rather than shown as a refusal: the appointment has already moved by the
-   * time it runs.
+   * is reported to the MedplumProvider error handler rather than shown as a refusal: the
+   * appointment has already moved by the time it runs.
    */
   readonly onRescheduled: (reschedule: AppointmentReschedule) => void | Promise<void>;
 }
@@ -76,6 +76,7 @@ export interface AppointmentRescheduleFormProps extends Omit<
 export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps): JSX.Element {
   const { appointment, onRescheduled, defaultStart, canBypassSchedulingRules, ...formProps } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const defaults = useRescheduleDefaults(appointment);
 
   const reschedule = useCallback(
@@ -133,10 +134,10 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
       try {
         await onRescheduled(result);
       } catch (error) {
-        console.error(error);
+        onError(error, { source: 'AppointmentRescheduleForm' });
       }
     },
-    [appointment, medplum, onRescheduled]
+    [appointment, medplum, onRescheduled, onError]
   );
 
   const serviceRefs = extractServiceTypeReferences(appointment.serviceType);

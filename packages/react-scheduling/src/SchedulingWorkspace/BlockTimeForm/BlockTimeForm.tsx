@@ -4,7 +4,7 @@ import { Alert, Button, Stack, Textarea, TextInput } from '@mantine/core';
 import type { MedplumClient, WithId } from '@medplum/core';
 import { createReference, isDefined, normalizeErrorString } from '@medplum/core';
 import type { Bundle, Schedule, Slot } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import type { BookableActorType } from '../../actors';
@@ -30,8 +30,8 @@ export interface BlockTimeFormProps {
   /** Called when the time typed changes, with undefined while it is not a whole range. */
   readonly onChangeTime?: (range: DateTimeRange | undefined) => void;
   /**
-   * Called with the Slots written. A failure here is logged rather than shown: the
-   * time is blocked by the time it runs.
+   * Called with the Slots written. A failure here is reported to the MedplumProvider error
+   * handler rather than shown: the time is blocked by the time it runs.
    */
   readonly onBlocked?: (slots: WithId<Slot>[]) => void | Promise<void>;
 }
@@ -49,6 +49,7 @@ export interface BlockTimeFormProps {
 export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
   const { candidatesByActorType, defaultRange, onChangeTime, onBlocked } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
 
   const [startValue, setStartValue] = useState(() => formatZonedDateTimeInput(defaultRange.start));
   const [endValue, setEndValue] = useState(() => formatZonedDateTimeInput(defaultRange.end));
@@ -117,7 +118,7 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
       try {
         await onBlocked?.(slots);
       } catch (error) {
-        console.error(error);
+        onError(error, { source: 'BlockTimeForm' });
       }
     } catch (error) {
       setWriteError(error);

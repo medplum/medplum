@@ -4,6 +4,7 @@ import { Button, Group, Paper, Stack, Text, Tooltip, VisuallyHidden } from '@man
 import type { WithId } from '@medplum/core';
 import { clearScheduleSchedulingParameter } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
+import { useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useId, useState } from 'react';
 import { setScheduleAvailability } from '../availability';
@@ -72,6 +73,7 @@ export type ScheduleAvailabilityEditorProps = ScheduleOverrideEditorProps | Serv
  */
 export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProps): JSX.Element {
   const { schedule, service, timezone, onCancel } = props;
+  const onError = useMedplumErrorHandler();
   // Without a Schedule, the service's own hours are what is being edited, so
   // there is no default to inherit from and no override to switch on.
   const editingDefault = schedule === undefined;
@@ -102,7 +104,7 @@ export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProp
       // The caller owns the write, and so owns telling the user it failed. All
       // this has to do is leave the pending state without a rejection escaping
       // an event handler that has nowhere to hand it.
-      console.error(err);
+      onError(err, { source: 'ScheduleAvailabilityEditor' });
     } finally {
       setSaving(false);
     }
