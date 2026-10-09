@@ -14,7 +14,7 @@ import {
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { body, checkExact, validationResult } from 'express-validator';
+import { body, checkExact } from 'express-validator';
 import { assert } from 'node:console';
 import { setPassword } from '../auth/setpassword';
 import { LAMBDA_NAME_REGEX_PATTERN } from '../cloud/aws/deploy';
@@ -23,7 +23,7 @@ import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { requireSuperAdmin } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { sendOutcome } from '../fhir/outcomes';
 import { getShardSystemRepo, Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
@@ -38,6 +38,7 @@ import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
+import { sendValidationErrors } from '../util/validator';
 import { getAsyncJobTracking } from '../workers/base';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import type { LambdaCleanerOptions } from '../workers/lambda-cleaner';
@@ -54,21 +55,6 @@ export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_cost_limit: 'int',
   autovacuum_vacuum_cost_delay: 'float',
 } as const satisfies Record<string, 'float' | 'int'>;
-
-/**
- * Validates the request and sends an error response if there are validation errors.
- * @param req - The Express request object.
- * @param res - The Express response object.
- * @returns True if there were validation errors and a response was sent.
- */
-function validateRequest(req: Request, res: Response): boolean {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    sendOutcome(res, invalidRequest(errors));
-    return true;
-  }
-  return false;
-}
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
@@ -156,7 +142,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     requireSuperAdmin();
     requireAsync(req);
-    if (validateRequest(req, res)) {
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -256,7 +242,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-    if (validateRequest(req, res)) {
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -307,7 +293,7 @@ superAdminRouter.post(
   ],
   async (req: Request, res: Response) => {
     const { repo } = requireSuperAdmin();
-    if (validateRequest(req, res)) {
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -332,7 +318,7 @@ superAdminRouter.post(
   ],
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
-    if (validateRequest(req, res)) {
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -348,7 +334,7 @@ superAdminRouter.post(
   [body('botId').notEmpty().withMessage('Bot ID is required')],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-    if (validateRequest(req, res)) {
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -395,7 +381,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-    if (validateRequest(req, res)) {
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -470,7 +456,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-    if (validateRequest(req, res)) {
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -536,7 +522,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-    if (validateRequest(req, res)) {
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -578,7 +564,7 @@ superAdminRouter.post(
   [body('dataVersion').isInt().withMessage('dataVersion must be an integer')],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-    if (validateRequest(req, res)) {
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -609,7 +595,7 @@ superAdminRouter.post(
   ],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-    if (validateRequest(req, res)) {
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -663,7 +649,7 @@ superAdminRouter.post(
   ],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-    if (validateRequest(req, res)) {
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -703,7 +689,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     requireSuperAdmin();
     requireAsync(req);
-    if (validateRequest(req, res)) {
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
