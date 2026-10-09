@@ -21,28 +21,23 @@ jobs:
     runs-on: medplum-build-16core
     timeout-minutes: 5
     steps:
-      - name: Inspect secrets and docker login
+      - name: Probe Docker Hub token endpoint
         env:
           DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
           DH_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
-          echo "username length: ${#DH_USER}"
-          echo "token length: ${#DH_TOKEN}"
-          [[ "$DH_USER" =~ [[:space:]] ]] && echo "username contains whitespace" || echo "username has no whitespace"
-          [[ "$DH_TOKEN" =~ [[:space:]] ]] && echo "token contains whitespace" || echo "token has no whitespace"
-          docker version --format 'client {{.Client.Version}} / server {{.Server.Version}}'
-          for i in 1 2 3; do
-            for reg in "" docker.io; do
-              start=$(date +%s%3N)
-              if printf '%s' "$DH_TOKEN" | docker --config "$RUNNER_TEMP/dh-cli-$i-${reg:-none}" login $reg -u "$DH_USER" --password-stdin >/dev/null 2>"$RUNNER_TEMP/err"; then result=ok; else result="FAIL: $(cat "$RUNNER_TEMP/err")"; fi
-              echo "attempt $i registry='${reg}' $(( $(date +%s%3N) - start ))ms $result"
-            done
+          url="https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/postgres:pull"
+          probe() {
+            local label="$1"; shift
+            out=$(curl -s -o "$RUNNER_TEMP/body" --max-time 30 -w '%{http_code} %{time_total}s ip=%{remote_ip}' "$@" 2>&1) || true
+            echo "$label: $out body=$(head -c 200 "$RUNNER_TEMP/body" 2>/dev/null | sed -E 's/"(token|access_token)":"[^"]*"/"\1":"<redacted>"/g')"
+          }
+          for i in 1 2; do
+            probe "anon ipv4" -4 "$url"
+            probe "anon ipv6" -6 "$url"
+            probe "auth ipv4" -4 -u "$DH_USER:$DH_TOKEN" "$url&account=$DH_USER"
+            probe "auth ipv6" -6 -u "$DH_USER:$DH_TOKEN" "$url&account=$DH_USER"
           done
-      - name: docker/login-action
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
   build:
     name: Build
@@ -397,7 +392,7 @@ jobs:
       TEST_MAX_WORKERS: '75%'
     services:
       postgres:
-        image: docker.io/library/postgres:${{ matrix.pg-version }}
+        image: postgres:${{ matrix.pg-version }}
         credentials:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -413,7 +408,7 @@ jobs:
         ports:
           - 5432:5432
       redis:
-        image: docker.io/library/redis:${{ matrix.redis-version }}
+        image: redis:${{ matrix.redis-version }}
         credentials:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -569,7 +564,7 @@ jobs:
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
     services:
       postgres:
-        image: docker.io/library/postgres:${{ matrix.pg-version }}
+        image: postgres:${{ matrix.pg-version }}
         credentials:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -585,7 +580,7 @@ jobs:
         ports:
           - 5432:5432
       redis:
-        image: docker.io/library/redis:${{ matrix.redis-version }}
+        image: redis:${{ matrix.redis-version }}
         credentials:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
