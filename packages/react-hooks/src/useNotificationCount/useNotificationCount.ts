@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ResourceType } from '@medplum/fhirtypes';
 import { useCallback, useEffect, useState } from 'react';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import { useMedplum, useMedplumErrorHandler } from '../MedplumProvider/MedplumProvider.context';
 import { useSubscription } from '../useSubscription/useSubscription';
 
 export interface UseNotificationCountOptions {
@@ -23,6 +23,7 @@ export interface UseNotificationCountOptions {
  */
 export function useNotificationCount(options: UseNotificationCountOptions): number {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const { resourceType, countCriteria, subscriptionCriteria } = options;
   const [count, setCount] = useState(0);
 
@@ -31,9 +32,9 @@ export function useNotificationCount(options: UseNotificationCountOptions): numb
       medplum
         .search(resourceType, countCriteria, { cache })
         .then((result) => setCount(result.total as number))
-        .catch(console.error);
+        .catch((err: unknown) => onError(err, { source: 'useNotificationCount' }));
     },
-    [medplum, resourceType, countCriteria]
+    [medplum, onError, resourceType, countCriteria]
   );
 
   // Initial count

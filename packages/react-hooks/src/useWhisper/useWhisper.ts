@@ -3,7 +3,7 @@
 // Adapted from https://github.com/codyebberson/medplum-ai-realtime/blob/main/src/hooks/useWhisper.ts
 import { ReconnectingWebSocket, sleep } from '@medplum/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import { useMedplum, useMedplumErrorHandler } from '../MedplumProvider/MedplumProvider.context';
 import { useStabilizedCallback } from '../useStabilizedCallback/useStabilizedCallback';
 
 export type WhisperStatus =
@@ -56,6 +56,7 @@ export function useWhisper({
   idleTimeoutMs = DEFAULT_IDLE_TIMEOUT_MS,
 }: UseWhisperOptions): UseWhisperResult {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const emitTranscript = useStabilizedCallback(onTranscript);
   const [status, setStatus] = useState<WhisperStatus>('idle');
   const [error, setError] = useState<unknown>(undefined);
@@ -268,7 +269,7 @@ export function useWhisper({
 
         case 'ai-realtime:error':
         case 'error':
-          console.error('[useWhisper] error event', message);
+          onError(message, { source: 'useWhisper', message: 'Error event' });
           setError(message);
           setStatus('error');
           break;
@@ -278,7 +279,7 @@ export function useWhisper({
           break;
       }
     },
-    [setupSession, maybeStartAudioCapture, emitTranscript]
+    [setupSession, maybeStartAudioCapture, emitTranscript, onError]
   );
 
   const acquireMicrophone = useCallback(async (): Promise<MediaStream> => {

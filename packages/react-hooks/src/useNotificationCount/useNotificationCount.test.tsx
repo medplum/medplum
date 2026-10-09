@@ -78,8 +78,9 @@ describe('useNotificationCount', () => {
   });
 
   test('Handles search errors gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    vi.spyOn(medplum, 'search').mockRejectedValue(new Error('Search failed'));
+    const onError = vi.fn();
+    const error = new Error('Search failed');
+    vi.spyOn(medplum, 'search').mockRejectedValue(error);
 
     renderHook(
       () =>
@@ -88,14 +89,19 @@ describe('useNotificationCount', () => {
           countCriteria: 'bad-criteria',
           subscriptionCriteria: 'Communication',
         }),
-      { wrapper }
+      {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <MedplumProvider medplum={medplum} onError={onError}>
+            {children}
+          </MedplumProvider>
+        ),
+      }
     );
 
     await act(async () => {
       // Let promises settle
     });
 
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error, { source: 'useNotificationCount' });
   });
 });

@@ -279,7 +279,7 @@ describe('useWhisper', () => {
 
   test('handles ai-realtime:error message from server', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onError = vi.fn();
 
     const stream = { getTracks: () => [{ stop: vi.fn() }], getAudioTracks: () => [] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
@@ -287,7 +287,13 @@ describe('useWhisper', () => {
       value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
 
-    const { result } = renderHook(() => useWhisper({}), { wrapper });
+    const { result } = renderHook(() => useWhisper({}), {
+      wrapper: ({ children }: { children: React.ReactNode }) => (
+        <MedplumProvider medplum={medplum} onError={onError}>
+          {children}
+        </MedplumProvider>
+      ),
+    });
 
     await startWhisperAndConnect(result, wsServer);
     await expect(wsServer).toReceiveMessage({ type: 'ai-realtime:connect' });
@@ -301,7 +307,7 @@ describe('useWhisper', () => {
       expect(result.current.status).toBe('error');
       expect(result.current.error).toEqual(errorMessage);
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith('[useWhisper] error event', errorMessage);
+    expect(onError).toHaveBeenCalledExactlyOnceWith(errorMessage, { source: 'useWhisper', message: 'Error event' });
   });
 
   test('reuses the warm connection across stop/start', async () => {
