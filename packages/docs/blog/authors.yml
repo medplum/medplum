@@ -158,10 +158,10 @@ pauliusmui:
   name: Paulius Mui, MD
   title: CEO, Distillemr
   url: https://www.linkedin.com/in/pauliusmui/
-  image_url: https://distillemr.com/images/paulius.png
+  image_url: /img/avatars/paulius-mui.webp
 
 misham:
   name: Misha Manulis
   title: CTO, Distillemr
   url: https://www.linkedin.com/in/mishamanulis
-  image_url: https://distillemr.com/images/misha.png
+  image_url: /img/avatars/misha-manulis.webp
