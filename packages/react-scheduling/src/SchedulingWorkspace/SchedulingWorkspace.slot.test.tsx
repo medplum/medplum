@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { formatZonedDateTimeInput } from '../AppointmentFinder/AppointmentFinder.times';
 import { DrRiveraPractitioner, DrRiveraSchedule, SchedulingFixtures } from '../stories/scheduling';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
@@ -136,5 +136,32 @@ describe('SchedulingWorkspace blocked time details', () => {
     await waitFor(() => expect(pane.queryByText('Long lunch')).not.toBeInTheDocument());
     expect(pane.queryByText('Notes')).not.toBeInTheDocument();
     expect((await medplum.readResource('Slot', BLOCKED_SLOT.id)).comment).toBeUndefined();
+  });
+
+  test('deleting blocked time takes it off the calendar, once confirmed', async () => {
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await userEvent.click(await screen.findByText('Blocked'));
+    const pane = within(slotDetails() as HTMLElement);
+
+    // Backing out deletes nothing.
+    await userEvent.click(pane.getByRole('button', { name: 'Delete' }));
+    await userEvent.click(pane.getByRole('button', { name: 'Back' }));
+    expect(pane.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(await medplum.readResource('Slot', BLOCKED_SLOT.id)).toBeDefined();
+
+    // A refusal is shown, and the pane stays open to try again.
+    vi.spyOn(medplum, 'deleteResource').mockRejectedValueOnce(new Error('Forbidden'));
+    await userEvent.click(pane.getByRole('button', { name: 'Delete' }));
+    await userEvent.click(pane.getByRole('button', { name: 'Confirm Delete' }));
+    expect(await pane.findByText('Forbidden')).toBeInTheDocument();
+    await userEvent.click(pane.getByRole('button', { name: 'Back' }));
+    expect(pane.queryByText('Forbidden')).not.toBeInTheDocument();
+
+    await userEvent.click(pane.getByRole('button', { name: 'Delete' }));
+    await userEvent.click(pane.getByRole('button', { name: 'Confirm Delete' }));
+    await waitFor(() => expect(slotDetails()).not.toBeInTheDocument());
+    expect(screen.queryByText('Blocked')).not.toBeInTheDocument();
+    await expect(medplum.readResource('Slot', BLOCKED_SLOT.id)).rejects.toThrow();
   });
 });

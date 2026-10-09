@@ -122,7 +122,8 @@ export interface SchedulingWorkspaceProps {
  *   same pane the booking form uses, describing the visit and offering to cancel or
  *   reschedule it.
  * - Shows blocked time: clicking a Slot opens `SlotDetails` in that same pane, saying
- *   whose time it holds, when, and why, and offering to edit its time and comment.
+ *   whose time it holds, when, and why, and offering to edit its time and comment or
+ *   delete it.
  * - Highlights the time last chosen, wherever it was chosen: the click that opened the
  *   pane, then whatever the form's time search settles on, and nothing while the form
  *   holds no time. The calendar is never moved to reach it — a highlight off the week
