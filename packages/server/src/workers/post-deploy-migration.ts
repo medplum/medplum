@@ -11,6 +11,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import type { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
+import { normalizeShardId, TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type {
   CustomPostDeployMigrationJobData,
@@ -160,14 +161,17 @@ async function runDynamicMigration(
   const asyncJob = exec.getAsyncJob();
   const results: MigrationActionResult[] = [];
   try {
-    await withLongRunningDatabaseClient(async (client) => {
-      if (job.data.migrationActions.preDeploy.length) {
-        await executeMigrationActions(client, results, job.data.migrationActions.preDeploy);
-      }
-      if (job.data.migrationActions.postDeploy.length) {
-        await executeMigrationActions(client, results, job.data.migrationActions.postDeploy);
-      }
-    });
+    await withLongRunningDatabaseClient(
+      async (client) => {
+        if (job.data.migrationActions.preDeploy.length) {
+          await executeMigrationActions(client, results, job.data.migrationActions.preDeploy);
+        }
+        if (job.data.migrationActions.postDeploy.length) {
+          await executeMigrationActions(client, results, job.data.migrationActions.postDeploy);
+        }
+      },
+      { shardId: normalizeShardId(TODO_SHARD_ID) }
+    );
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(output);
   } catch (err: any) {
@@ -197,7 +201,10 @@ export async function runCustomMigration(
   const exec = await getTrackingAsyncJobExecutor(jobData.tracking);
   const asyncJob = exec.getAsyncJob();
 
-  if (jobData.skipInFirstBootMode && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER)))) {
+  if (
+    jobData.skipInFirstBootMode &&
+    (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID))))
+  ) {
     globalLogger.info('Skipping custom post-deploy migration since server is in firstBoot mode', {
       asyncJob: getReferenceString(asyncJob),
       version: `v${asyncJob.dataVersion}`,
@@ -211,9 +218,12 @@ export async function runCustomMigration(
 
   const results: MigrationActionResult[] = [];
   try {
-    await withLongRunningDatabaseClient(async (client) => {
-      await callback(client, results, job, jobData);
-    });
+    await withLongRunningDatabaseClient(
+      async (client) => {
+        await callback(client, results, job, jobData);
+      },
+      { shardId: normalizeShardId(TODO_SHARD_ID) }
+    );
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(output);
   } catch (err: any) {

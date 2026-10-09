@@ -5,6 +5,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { generateMigrationActions, writePreDeployActionsToBuilder } from '../../migrations/migrate';
+import { normalizeShardId, TODO_SHARD_ID } from '../sharding';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters } from './utils/parameters';
 
@@ -28,7 +29,7 @@ const operation = makeOperationDefinition(
 export async function dbSchemaDiffHandler(_req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const dbClient = getDatabasePool(DatabaseMode.READER);
+  const dbClient = getDatabasePool(DatabaseMode.READER, normalizeShardId(TODO_SHARD_ID));
   const b = new FileBuilder('  ', false);
   b.append('// The schema migration needed to match the expected schema');
   b.append('');

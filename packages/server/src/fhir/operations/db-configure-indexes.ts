@@ -5,10 +5,9 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { escapeIdentifier } from 'pg';
 import { getConfig } from '../../config/loader';
 import { requireSuperAdmin } from '../../context';
-import { DatabaseMode } from '../../database';
 import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
 import { getShardSystemRepo } from '../repo';
-import { PLACEHOLDER_SHARD_ID } from '../sharding';
+import { normalizeShardId, PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from '../sharding';
 import type { PgQueryable } from '../sql';
 import { isValidPostgresIdentifier } from '../sql';
 import { makeOperationDefinition } from './definitions';
@@ -101,16 +100,19 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
   await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.url));
   exec.start(async () => {
     const action: OutputAction[] = [];
-    await withLongRunningDatabaseClient(async (client) => {
-      await configureGinIndexes(client, action, tableNames, config);
+    await withLongRunningDatabaseClient(
+      async (client) => {
+        await configureGinIndexes(client, action, tableNames, config);
 
-      // Vacuum if the fastupdate is disabled to flush GIN pending lists
-      if (config.fastUpdate === false) {
-        for (const tableName of tableNames) {
-          await vacuumTable(client, action, tableName);
+        // Vacuum if the fastupdate is disabled to flush GIN pending lists
+        if (config.fastUpdate === false) {
+          for (const tableName of tableNames) {
+            await vacuumTable(client, action, tableName);
+          }
         }
-      }
-    }, DatabaseMode.WRITER);
+      },
+      { shardId: normalizeShardId(TODO_SHARD_ID) } // shardId will be an input to this handler
+    );
     return buildOutputParameters(operation, { action });
   });
   return [accepted(exec.getContentLocation(baseUrl))];

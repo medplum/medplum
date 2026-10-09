@@ -20,6 +20,7 @@ import type { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor
 import type { SystemRepository } from '../fhir/repo';
 import { repoAccess } from '../fhir/repository/access-tracker';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
+import { normalizeShardId, TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type { PostDeployJobData, PostDeployMigration, PrepareJobDataContext } from '../migrations/data/types';
 import { isFirstBootMode } from '../migrations/migration-utils';
@@ -160,7 +161,10 @@ export class ReindexJob {
 
   private async maybeSkipJob(): Promise<boolean> {
     const asyncJob = this.asyncJobExecutor.getAsyncJob();
-    if (Boolean(asyncJob.dataVersion) && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER)))) {
+    if (
+      Boolean(asyncJob.dataVersion) &&
+      (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID))))
+    ) {
       this.logger.info('Skipping reindex post-deploy migration since server is in firstBoot mode', {
         asyncJob: getReferenceString(asyncJob),
         version: `v${asyncJob.dataVersion}`,
