@@ -366,9 +366,15 @@ jobs:
       # contention pushes CPU-bound tests past their timeouts. Each non-serial vite config reads
       # this (falling back to 75%), so serial packages (agent, hl7, cdk) keep maxWorkers: 1.
       TEST_MAX_WORKERS: '75%'
+    # Fork PRs have no secrets, so they pull anonymously from the ECR Public mirror of the
+    # official images. Everything else authenticates to Docker Hub to avoid its anonymous rate limit.
+    # The runner skips registry login when credentials are empty.
     services:
       postgres:
-        image: postgres:${{ matrix.pg-version }}
+        image: ${{ case(github.event.pull_request.head.repo.fork, 'public.ecr.aws/docker/library/', '') }}postgres:${{ matrix.pg-version }}
+        credentials:
+          username: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_USERNAME) }}
+          password: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_TOKEN) }}
         env:
           POSTGRES_DB: medplum
           POSTGRES_USER: medplum
@@ -381,7 +387,10 @@ jobs:
         ports:
           - 5432:5432
       redis:
-        image: redis:${{ matrix.redis-version }}
+        image: ${{ case(github.event.pull_request.head.repo.fork, 'public.ecr.aws/docker/library/', '') }}redis:${{ matrix.redis-version }}
+        credentials:
+          username: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_USERNAME) }}
+          password: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_TOKEN) }}
         command: redis-server --requirepass medplum
         options: >-
           --health-cmd "redis-cli --no-auth-warning -a medplum ping"
@@ -532,9 +541,15 @@ jobs:
       PG_VERSION: ${{ matrix.pg-version }}
       REDIS_VERSION: ${{ matrix.redis-version }}
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+    # Fork PRs have no secrets, so they pull anonymously from the ECR Public mirror of the
+    # official images. Everything else authenticates to Docker Hub to avoid its anonymous rate limit.
+    # The runner skips registry login when credentials are empty.
     services:
       postgres:
-        image: postgres:${{ matrix.pg-version }}
+        image: ${{ case(github.event.pull_request.head.repo.fork, 'public.ecr.aws/docker/library/', '') }}postgres:${{ matrix.pg-version }}
+        credentials:
+          username: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_USERNAME) }}
+          password: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_TOKEN) }}
         env:
           POSTGRES_DB: medplum
           POSTGRES_USER: medplum
@@ -547,7 +562,10 @@ jobs:
         ports:
           - 5432:5432
       redis:
-        image: redis:${{ matrix.redis-version }}
+        image: ${{ case(github.event.pull_request.head.repo.fork, 'public.ecr.aws/docker/library/', '') }}redis:${{ matrix.redis-version }}
+        credentials:
+          username: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_USERNAME) }}
+          password: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_TOKEN) }}
         command: redis-server --requirepass medplum
         options: >-
           --health-cmd "redis-cli --no-auth-warning -a medplum ping"
