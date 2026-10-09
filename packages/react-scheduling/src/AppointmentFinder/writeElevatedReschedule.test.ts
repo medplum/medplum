@@ -10,6 +10,8 @@ import {
 } from '@medplum/core';
 import type { Appointment, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react-hooks';
+import type { Mock } from 'vitest';
 import {
   DrRiveraSchedule,
   ExamRoomASchedule,
@@ -43,9 +45,11 @@ function proposal(schedules: WithId<Schedule>[] = [DrRiveraSchedule, ExamRoomBSc
 describe('writeElevatedReschedule', () => {
   let medplum: MockClient;
   let existing: WithId<Appointment>;
+  let onError: Mock<MedplumErrorHandler>;
 
   beforeEach(async () => {
     medplum = new MockClient();
+    onError = vi.fn();
     for (const resource of [...SchedulingFixtures, ...ImagingBenchFixtures, ...RiveraImagingHeldSlots]) {
       await medplum.updateResource(resource);
     }
@@ -70,7 +74,7 @@ describe('writeElevatedReschedule', () => {
   test('updates the same appointment to the exact proposed length, preserving metadata and unscheduled actors', async () => {
     const update = vi.spyOn(medplum, 'updateResource');
     const original = structuredClone(existing);
-    const result = await writeElevatedReschedule(medplum, existing, proposal());
+    const result = await writeElevatedReschedule(medplum, existing, proposal(), onError);
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({ id: existing.id }),
       expect.objectContaining({
@@ -128,7 +132,8 @@ describe('writeElevatedReschedule', () => {
     const result = await writeElevatedReschedule(
       medplum,
       existing,
-      proposal([DrRiveraSchedule, ExamRoomBSchedule, renamed])
+      proposal([DrRiveraSchedule, ExamRoomBSchedule, renamed]),
+      onError
     );
     expect(
       result.appointments[0].participant
@@ -138,7 +143,12 @@ describe('writeElevatedReschedule', () => {
   });
 
   test('marks the first provider among the new schedules as primary, as $reschedule does', async () => {
-    const result = await writeElevatedReschedule(medplum, existing, proposal([ExamRoomBSchedule, DrRiveraSchedule]));
+    const result = await writeElevatedReschedule(
+      medplum,
+      existing,
+      proposal([ExamRoomBSchedule, DrRiveraSchedule]),
+      onError
+    );
     expect(getPrimaryProvider(result.appointments[0])).toEqual(DrRiveraSchedule.actor[0]);
     expect(result.appointments[0].participant.filter((p) => p.type?.length)).toHaveLength(1);
   });
@@ -154,7 +164,7 @@ describe('writeElevatedReschedule', () => {
     );
     await medplum.updateResource(buffered);
     const pending = await medplum.updateResource({ ...existing, status: 'pending' });
-    const result = await writeElevatedReschedule(medplum, pending, proposal());
+    const result = await writeElevatedReschedule(medplum, pending, proposal(), onError);
     expect(result.appointments[0].status).toBe('pending');
     expect(result.slots).toHaveLength(3);
     expect(
@@ -170,15 +180,15 @@ describe('writeElevatedReschedule', () => {
 
   test('moves the stored appointment rather than a stale copy', async () => {
     await medplum.updateResource({ ...existing, comment: 'Edited elsewhere' });
-    const result = await writeElevatedReschedule(medplum, existing, proposal());
+    const result = await writeElevatedReschedule(medplum, existing, proposal(), onError);
     expect(result.appointments[0].comment).toBe('Edited elsewhere');
   });
 
   test('refuses a proposal without a valid length', async () => {
     const create = vi.spyOn(medplum, 'createResource');
-    await expect(writeElevatedReschedule(medplum, existing, { ...proposal(), end: undefined })).rejects.toThrow(
-      'length'
-    );
+    await expect(
+      writeElevatedReschedule(medplum, existing, { ...proposal(), end: undefined }, onError)
+    ).rejects.toThrow('length');
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -189,7 +199,7 @@ describe('writeElevatedReschedule', () => {
   ])('rejects structurally ineligible schedules (%s)', async (override) => {
     await medplum.updateResource({ ...ExamRoomBSchedule, ...override });
     const create = vi.spyOn(medplum, 'createResource');
-    await expect(writeElevatedReschedule(medplum, existing, proposal())).rejects.toThrow(
+    await expect(writeElevatedReschedule(medplum, existing, proposal(), onError)).rejects.toThrow(
       'Every selected schedule must'
     );
     expect(create).not.toHaveBeenCalled();
@@ -228,7 +238,7 @@ describe('writeElevatedReschedule', () => {
 
     test('deletes the Slots it created when another Slot is refused', async () => {
       const created = recordCreatedSlots(2);
-      await expect(writeElevatedReschedule(medplum, existing, proposal())).rejects.toThrow('Slot refused');
+      await expect(writeElevatedReschedule(medplum, existing, proposal(), onError)).rejects.toThrow('Slot refused');
       expect(created).toHaveLength(1);
       await expect(medplum.readResource('Slot', created[0], { cache: 'no-cache' })).rejects.toThrow();
       await expectUntouched();
@@ -243,7 +253,9 @@ describe('writeElevatedReschedule', () => {
         concurrent = await medplum.updateResource({ ...existing, comment: 'Edited concurrently' });
         return read;
       }) as MockClient['readResource']);
-      await expect(writeElevatedReschedule(medplum, existing, proposal())).rejects.toThrow('Precondition Failed');
+      await expect(writeElevatedReschedule(medplum, existing, proposal(), onError)).rejects.toThrow(
+        'Precondition Failed'
+      );
       expect(created).toHaveLength(2);
       for (const id of created) {
         await expect(medplum.readResource('Slot', id, { cache: 'no-cache' })).rejects.toThrow();
@@ -251,7 +263,7 @@ describe('writeElevatedReschedule', () => {
       await expectUntouched(concurrent);
     });
 
-    test('completes the move and logs old Slots it could not delete', async () => {
+    test('completes the move and reports old Slots it could not delete', async () => {
       const deleteResource = medplum.deleteResource.bind(medplum);
       const [refused] = RiveraImagingHeldSlots;
       vi.spyOn(medplum, 'deleteResource').mockImplementation(async (resourceType, id, options) => {
@@ -260,13 +272,15 @@ describe('writeElevatedReschedule', () => {
         }
         return deleteResource(resourceType, id, options);
       });
-      const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-      const result = await writeElevatedReschedule(medplum, existing, proposal());
+      const result = await writeElevatedReschedule(medplum, existing, proposal(), onError);
       expect(result.appointments[0].start).toBe(START.toISOString());
       await expect(medplum.readResource('Slot', refused.id, { cache: 'no-cache' })).resolves.toMatchObject({
         id: refused.id,
       });
-      expect(log).toHaveBeenCalledWith(`Could not delete Slot/${refused.id}`, expect.any(Error));
+      expect(onError).toHaveBeenCalledExactlyOnceWith(new Error('Delete refused'), {
+        source: 'writeElevatedReschedule',
+        message: `Could not delete Slot/${refused.id}`,
+      });
     });
   });
 });

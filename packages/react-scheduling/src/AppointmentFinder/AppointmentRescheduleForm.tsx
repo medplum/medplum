@@ -94,7 +94,7 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
       let result: AppointmentReschedule;
       if (options.manual) {
         // Written through CRUD methods, which announce their own changes.
-        result = await writeElevatedReschedule(medplum, appointment, proposal);
+        result = await writeElevatedReschedule(medplum, appointment, proposal, onError);
       } else {
         // Read before the request: the operation deletes these, and the appointment comes
         // back pointing at the times it took instead.
