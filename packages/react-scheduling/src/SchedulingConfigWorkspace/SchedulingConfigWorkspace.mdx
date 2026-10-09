@@ -52,14 +52,16 @@ listed once it is saved.
 
 ## A provider's, room's, or device's page
 
-- **General:** a switch each for its own status and its Schedule's, then its name and its time zone.
+- **General:** a switch each for its own status and its Schedule's, then its name, where it is, and its time zone.
   Its own status applies everywhere, not only in scheduling. Switching it off switches its Schedule off too, and
   the Schedule can't be switched back on while it stays off. Switching the Schedule off on its own pauses booking
   without losing anything. A note says when it can't be booked: because it is inactive, or because its Schedule
   is switched off. A provider's name and NPIs (`Practitioner.identifier` with the `us-npi` system) are read-only,
   since they are kept by the system providers come from, and where a provider works is recorded on their roles
-  rather than here. The time zone (the `timezone` extension) is the one hours are read in for any visit type that
-  sets none of its own. A provider without one is warned that it is recommended, without blocking Save.
+  rather than here. A room's or device's name is edited, and so is its service facility (`Location.partOf`, or
+  `Device.location`), picked from the same Locations booking filters by. The time zone (the `timezone`
+  extension) is the one hours are read in for any visit type that sets none of its own. A provider without one is
+  warned that it is recommended, without blocking Save.
 - **Visit types offered:** what its Schedule offers. Each visit type offered is an entry showing its duration in
   effect and where its hours come from; opening one shows the Schedule's own scheduling parameters and hours for
   it, each empty field showing what it inherits. At most one entry is open at a time, and an entry with unsaved
@@ -79,5 +81,5 @@ offers to reload it. A field the editor would reject blocks Save, with the reaso
 range does not, unless it is edited.
 
 Switching to another row with unsaved changes asks before discarding them. Nothing in the workspace deletes a
-resource: a visit type or a Schedule is taken out of use by turning it off, which leaves its existing appointments
-untouched.
+resource: a visit type, room, device, or Schedule is taken out of use by turning it off, which leaves existing
+appointments untouched. For a room or device, that sets its status to `inactive`.
