@@ -162,6 +162,16 @@ export function resolveShardId(
 }
 
 /**
+ * Same result as `resolveShardId` for a single type with no consideration for routing constraints.
+ * @param projectShardId - The shard ID for project resources.
+ * @param resourceType - The resource type.
+ * @returns The shard this repository reads and writes resources of the given type on.
+ */
+export function getResourceTypeShardId(projectShardId: string, resourceType: ResourceType): string {
+  return globalShardResourceTypes.has(resourceType) ? GLOBAL_SHARD_ID : normalizeShardId(projectShardId);
+}
+
+/**
  * Returns the error thrown when an operation cannot be routed to a single shard.
  *
  * Modeled as an `exception` outcome and results in a 500 HTTP status code because a violation

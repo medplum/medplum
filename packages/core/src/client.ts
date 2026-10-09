@@ -3674,7 +3674,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options for cache settings.
    */
   private setCacheEntry(key: string, value: ReadablePromise<any>, options: MedplumRequestOptions | undefined): void {
-    if (this.isCacheEnabled(options)) {
+    // An already-aborted signal never fires 'abort', so the listener below could not evict its rejection.
+    if (this.isCacheEnabled(options) && !options?.signal?.aborted) {
       this.requestCache.set(key, { requestTime: Date.now(), value });
 
       // If the request is aborted, remove the abort result from the cache so

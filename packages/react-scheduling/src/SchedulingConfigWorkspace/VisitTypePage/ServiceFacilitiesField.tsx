@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Modal, Stack, Text } from '@mantine/core';
+import { Stack, Text } from '@mantine/core';
 import { createReference, deepEquals, getDisplayString } from '@medplum/core';
 import type { Location, Reference } from '@medplum/fhirtypes';
 import { MultiResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { LOCATION_SEARCH_CRITERIA } from '../../constants';
+import { ConfirmModal } from '../ConfirmModal';
 
 export interface ServiceFacilitiesFieldProps {
   /** The service facilities the visit type names. Empty means every service facility. */
@@ -79,31 +80,21 @@ export function ServiceFacilitiesField(props: ServiceFacilitiesFieldProps): JSX.
       <Text size="xs" c="dimmed">
         Booking filtered to a service facility offers this visit type only if it's listed here, or if none are.
       </Text>
-      <Modal
+      <ConfirmModal
         opened={pending !== undefined}
-        onClose={cancel}
         title={pending && confirmationTitle(pending, serviceName)}
-        centered
+        cancelLabel="Cancel"
+        confirmLabel={pending?.added ? `Limit to ${pending.added}` : 'Offer everywhere'}
+        onCancel={cancel}
+        onConfirm={() => {
+          if (pending) {
+            report(pending.next);
+          }
+          setPending(undefined);
+        }}
       >
-        {pending && (
-          <Stack gap="md">
-            <Text size="sm">{confirmationBody(pending, serviceName)}</Text>
-            <Group justify="flex-end" gap="sm">
-              <Button variant="default" onClick={cancel}>
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  report(pending.next);
-                  setPending(undefined);
-                }}
-              >
-                {pending.added ? `Limit to ${pending.added}` : 'Offer everywhere'}
-              </Button>
-            </Group>
-          </Stack>
-        )}
-      </Modal>
+        {pending && confirmationBody(pending, serviceName)}
+      </ConfirmModal>
     </Stack>
   );
 }

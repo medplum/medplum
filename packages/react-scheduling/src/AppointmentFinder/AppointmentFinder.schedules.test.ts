@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { parseReference, ServiceTypeReferenceURI } from '@medplum/core';
+import {
+  ALL_SERVICE_TYPES_CODE,
+  allServiceTypesCodeableConcept,
+  parseReference,
+  SCHEDULING_SERVICE_TYPE_SYSTEM,
+  ServiceTypeReferenceURI,
+} from '@medplum/core';
 import type { Device, HealthcareService, Location, Practitioner, PractitionerRole, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { SchedulingActorType } from '../actors';
@@ -173,10 +179,11 @@ describe('searchScheduleCandidates', () => {
     const candidates = await candidatesFor(medplum, service, 'Practitioner');
 
     // Comma-separated tokens are an OR, so both codes are one request, and a
-    // schedule linked by either of them is offered.
+    // schedule linked by either of them is offered. The last token finds
+    // schedules offering every visit type.
     expect(medplum.search).toHaveBeenCalledTimes(1);
     expect(querySentTo(medplum)['service-type']).toBe(
-      `${APPOINTMENT_TYPE_SYSTEM}|ultrasound-imaging,${APPOINTMENT_TYPE_SYSTEM}|vascular-study`
+      `${APPOINTMENT_TYPE_SYSTEM}|ultrasound-imaging,${APPOINTMENT_TYPE_SYSTEM}|vascular-study,${SCHEDULING_SERVICE_TYPE_SYSTEM}|${ALL_SERVICE_TYPES_CODE}`
     );
     expect(providersOf(candidates)).toStrictEqual(['Dr. Ada Vance', 'Dr. Maya Rivera', 'Dr. Tunde Okafor']);
   });
@@ -244,6 +251,25 @@ describe('searchScheduleCandidates', () => {
 
     expect(candidates).toHaveLength(2);
     expect(candidates.every((candidate) => candidate.schedule.serviceType?.[0].extension?.length)).toBe(true);
+  });
+
+  test('Offers a schedule marked as offering all visit types', async () => {
+    const medplum = await setupClient();
+    const practitioner = await medplum.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      name: [{ given: ['Ada'], family: 'Vance', prefix: ['Dr.'] }],
+    });
+    // Carries none of the service's codes and no link back to it.
+    await medplum.createResource<Schedule>({
+      resourceType: 'Schedule',
+      active: true,
+      actor: [{ reference: `Practitioner/${practitioner.id}` }],
+      serviceType: [allServiceTypesCodeableConcept()],
+    });
+
+    const candidates = await candidatesFor(medplum, UltrasoundImagingService, 'Practitioner');
+
+    expect(providersOf(candidates)).toStrictEqual(['Dr. Ada Vance', 'Dr. Maya Rivera', 'Dr. Tunde Okafor']);
   });
 
   test('Names an actor whose reference carries no display', async () => {

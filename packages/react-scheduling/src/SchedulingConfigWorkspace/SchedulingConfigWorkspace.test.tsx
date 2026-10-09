@@ -39,8 +39,22 @@ async function showInactive(): Promise<void> {
   await userEvent.click(screen.getByLabelText('Show inactive'));
 }
 
+function entry(name: string): HTMLElement {
+  return within(details()).getByRole('button', { name: new RegExp(`^${name}`) });
+}
+
 function details(): HTMLElement {
   return screen.getByRole('region', { name: 'Configuration details' });
+}
+
+function offeringSchedules(): HTMLElement {
+  return within(details()).getByRole('region', { name: 'Schedules offering this visit type' });
+}
+
+function groupTitles(region: HTMLElement): (string | undefined)[] {
+  return within(region)
+    .getAllByRole('group')
+    .map((group) => group.firstElementChild?.textContent);
 }
 
 function nameField(): HTMLElement {
@@ -233,6 +247,104 @@ describe('SchedulingConfigWorkspace', () => {
 
     expect(row('Ultrasound 3 (Retired)')).toHaveTextContent('Inactive');
     expect(row('Dr. Hana Lee')).toHaveTextContent('Inactive');
+  });
+
+  test('a saved Schedule replaces the one listed, so its row and page follow at once', async () => {
+    const medplum = await setup();
+    const search = vi.spyOn(medplum, 'searchResourcePages');
+    await userEvent.click(row('Dr. Maya Rivera'));
+    // Every entry starts closed, so opening one shows the save keeps what the viewer had open.
+    await userEvent.click(entry('Ultrasound Imaging'));
+
+    await userEvent.click(within(details()).getByRole('switch', { name: 'Schedule status' }));
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Dr. Maya Rivera')).toHaveTextContent('Schedule inactive'));
+    expect(row('Dr. Maya Rivera')).toHaveAttribute('aria-current', 'true');
+    expect(within(details()).getByRole('switch', { name: 'Schedule status' })).not.toBeChecked();
+    expect(entry('Ultrasound Imaging')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.queryByRole('region', { name: 'Unsaved changes' })).not.toBeInTheDocument();
+    expect(search).not.toHaveBeenCalled();
+  });
+
+  test("offering a room's first visit type creates its Schedule, and the room stays selected and in place", async () => {
+    await setup();
+    await userEvent.click(row('Exam Room C'));
+
+    await userEvent.click(within(details()).getByRole('button', { name: 'Offer visit types' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search visit types' }), 'Telehealth');
+    await userEvent.click(screen.getByRole('option', { name: 'Telehealth Consult' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Offer 1 visit type' }));
+    details().scrollTop = 300;
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeInTheDocument());
+    expect(entry('Telehealth Consult')).not.toHaveTextContent('Unsaved');
+    expect(row('Exam Room C')).toHaveAttribute('aria-current', 'true');
+    expect(details().scrollTop).toBe(300);
+  });
+
+  test('Schedules offering this visit type marks the ones that customize it', async () => {
+    await setup();
+
+    await userEvent.click(row('Telehealth Consult'));
+    const telehealth = offeringSchedules();
+    expect(await within(telehealth).findByText('Customized')).toHaveTextContent(
+      'Parameter values defined here override those on the Telehealth Consult visit type.'
+    );
+    expect(within(telehealth).getAllByText('Customized')).toHaveLength(1);
+
+    await userEvent.click(row('Ultrasound Imaging'));
+    const ultrasound = offeringSchedules();
+    const okafor = (await within(ultrasound).findByText('Dr. Tunde Okafor')).closest('button') as HTMLElement;
+    expect(within(okafor).getByText('Customized')).toBeInTheDocument();
+    const nguyen = within(ultrasound).getByText('Dr. Linh Nguyen').closest('button') as HTMLElement;
+    expect(within(nguyen).queryByText('Customized')).not.toBeInTheDocument();
+  });
+
+  test('Schedules offering this visit type groups them as the sidebar does, and leaves out actors booking skips', async () => {
+    await setup();
+
+    await userEvent.click(row('Ultrasound Imaging'));
+    await within(offeringSchedules()).findByText('Dr. Maya Rivera');
+    expect(groupTitles(offeringSchedules())).toEqual(['Providers', 'Devices', 'Rooms']);
+    const devices = within(offeringSchedules()).getByRole('group', { name: 'Devices' });
+    expect(within(devices).getByText('Ultrasound 1 (Main Campus)')).toBeInTheDocument();
+    const rooms = within(offeringSchedules()).getByRole('group', { name: 'Rooms' });
+    expect(within(rooms).getByText('Exam Room A')).toBeInTheDocument();
+    // Dr. Reyes is on leave with her Schedule switched off, and Ultrasound 3 is retired.
+    expect(within(offeringSchedules()).queryByText('Dr. Sofia Reyes')).not.toBeInTheDocument();
+    expect(within(offeringSchedules()).queryByText('Ultrasound 3 (Retired)')).not.toBeInTheDocument();
+
+    await userEvent.click(row('Telehealth Consult'));
+    await within(offeringSchedules()).findByText('Dr. Linh Nguyen');
+    expect(groupTitles(offeringSchedules())).toEqual(['Providers']);
+  });
+
+  test("selecting a Schedule offering a visit type opens its actor's page from the top, with that visit type's entry open", async () => {
+    await setup();
+    await userEvent.click(row('Telehealth Consult'));
+
+    details().scrollTop = 400;
+    await userEvent.click(within(offeringSchedules()).getByText('Dr. Linh Nguyen'));
+
+    expect(within(details()).getByRole('heading', { name: 'Dr. Linh Nguyen' })).toBeInTheDocument();
+    expect(details().scrollTop).toBe(0);
+    expect(entry('Telehealth Consult')).toHaveAttribute('aria-expanded', 'true');
+    expect(entry('Ultrasound Imaging')).toHaveAttribute('aria-expanded', 'false');
+    expect(row('Dr. Linh Nguyen')).toHaveAttribute('aria-current', 'true');
+  });
+
+  test('Schedules offering this visit type says when there are none, and where visit types are offered from', async () => {
+    await setup();
+
+    await userEvent.click(row('Unconfigured Visit'));
+
+    expect(
+      within(details()).getByText(
+        "Nothing offers Unconfigured Visit yet. Visit types are offered from a provider's, room's, or device's page."
+      )
+    ).toBeInTheDocument();
   });
 
   test('an empty project says each section has nothing yet, and still offers to create a visit type', async () => {

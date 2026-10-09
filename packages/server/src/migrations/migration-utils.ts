@@ -8,7 +8,7 @@ import { getConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool, withPoolClient } from '../database';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import { PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
 import type { PgQueryable } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
@@ -176,7 +176,7 @@ export async function queuePostDeployMigration(
   // but that could lead to race conditions if the queued job happened to be
   // picked up before the transaction was committed.
   // globalLogger.info('Adding post-deploy migration job', { version, asyncJob: getReferenceString(asyncJob) });
-  const jobData = migration.prepareJobData(asyncJob);
+  const jobData = migration.prepareJobData({ shardId: TODO_SHARD_ID, asyncJob });
   const result = await addPostDeployMigrationJobData(jobData, { deduplication: { id: `v${version}` } });
   if (!result) {
     globalLogger.error('Unable to add post-deploy migration job', {

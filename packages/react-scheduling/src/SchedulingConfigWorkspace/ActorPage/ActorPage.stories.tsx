@@ -27,7 +27,8 @@ interface Loaded {
 }
 
 /**
- * Opens the page on an actor as the story's server holds it.
+ * Opens the page on an actor as the story's server holds it, and reads it again after each save, the way the
+ * workspace swaps in what was stored.
  * @param props - The actor to open.
  * @param props.resourceType - Its type.
  * @param props.id - Its id.
@@ -37,6 +38,7 @@ function StoredActor(props: { readonly resourceType: BookableActorType; readonly
   const { resourceType, id } = props;
   const medplum = useMedplum();
   const [loaded, setLoaded] = useState<Loaded>();
+  const [reads, setReads] = useState(0);
 
   useEffect(() => {
     Promise.all([searchConfigurableActors(medplum, resourceType, {}), searchConfigurableServices(medplum, {})])
@@ -47,21 +49,28 @@ function StoredActor(props: { readonly resourceType: BookableActorType; readonly
         }
       })
       .catch(console.error);
-  }, [medplum, resourceType, id]);
+  }, [medplum, resourceType, id, reads]);
 
   if (!loaded) {
     return <Text c="dimmed">Loading…</Text>;
   }
+  const [schedule] = loaded.actor.schedules;
   return (
     <Box p="md">
-      <ActorPage actor={loaded.actor} services={loaded.services} />
+      <ActorPage
+        key={`${schedule?.id}-${schedule?.meta?.versionId}`}
+        actor={loaded.actor}
+        services={loaded.services}
+        onSynced={() => setReads((count) => count + 1)}
+      />
     </Box>
   );
 }
 
 /**
  * Dr. Linh Nguyen offers two visit types. Ultrasound Imaging follows the visit type in everything. Telehealth
- * Consult has a longer buffer after and custom hours on this Schedule.
+ * Consult has a longer buffer after and custom hours on this Schedule: open its entry to see both, with every
+ * field it leaves empty showing what it inherits.
  * @returns The story.
  */
 export const ProviderWithOverrides = (): JSX.Element => (
@@ -77,7 +86,8 @@ export const ProviderOnLeave = (): JSX.Element => (
 );
 
 /**
- * Exam Room C has no Schedule, so it offers nothing.
+ * Exam Room C has no Schedule, so it offers nothing and there is no Schedule status switch. Offering a first
+ * visit type creates its Schedule when you save, and not before.
  * @returns The story.
  */
 export const RoomWithNoSchedule = (): JSX.Element => <StoredActor resourceType="Location" id={ExamRoomC.id} />;

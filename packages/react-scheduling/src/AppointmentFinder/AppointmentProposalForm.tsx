@@ -1,19 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Checkbox, Group, Loader, NumberInput, Pill, Stack, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Group, Loader, NumberInput, Select, Stack, Text, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   createReference,
-  formatDate,
   getDisplayString,
-  getIdentifier,
-  getIdentifierByType,
   getReferenceString,
   getSchedulingRequirements,
   getSchedulingTimezone,
+  isDefined,
   isResource,
-  MRN_IDENTIFIER_TYPE,
   normalizeErrorString,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
@@ -21,19 +18,10 @@ import {
   SchedulingMedicalNecessityURI,
   toAppointmentSiteReference,
 } from '@medplum/core';
-import type {
-  Appointment,
-  Extension,
-  HealthcareService,
-  Location,
-  Patient,
-  Reference,
-  ValueSetExpansionContains,
-} from '@medplum/fhirtypes';
-import type { AsyncAutocompleteOption } from '@medplum/react';
-import { CalendarDateInput, ResourceInput, ResourceName, ValueSetAutocomplete } from '@medplum/react';
+import type { Appointment, Extension, HealthcareService, Location, Patient, Reference } from '@medplum/fhirtypes';
+import { CalendarDateInput, ResourceInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconAlertCircle, IconCalendarSearch, IconCheck } from '@tabler/icons-react';
+import { IconAlertCircle, IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SchedulingActorValue } from '../actors';
@@ -51,7 +39,6 @@ import {
   DEFAULT_PROCEDURE_VALUE_SET,
   EMPTY_REQUIREMENT_VALUES,
   hasRequiredValues,
-  toCodings,
 } from './AppointmentFinder.requirements';
 import type { ActorSelections, SelectionBlocker } from './AppointmentFinder.schedules';
 import {
@@ -63,28 +50,27 @@ import {
 } from './AppointmentFinder.schedules';
 import {
   formatTimezoneLabel,
+  formatZonedDateTimeInput,
   getAppointmentActors,
   getDurationMinutes,
+  getLaterOccurrenceStarts,
   getNativeInputType,
   isViewerTimezone,
   parseZonedDateTimeInput,
 } from './AppointmentFinder.times';
-import { AppointmentOptionRow } from './AppointmentOptionRow';
+import { AppointmentPatientInput } from './AppointmentPatientInput';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
+import { BookingRequirementFields } from './BookingRequirementFields';
 import { buildElevatedBooking } from './buildElevatedBooking';
 import type { BookingConflict } from './findConflicts';
 import { describeConflict, findBookingConflicts } from './findConflicts';
 import { useDaySearch } from './useDaySearch';
+import { getRescheduleDurationMinutes } from './writeElevatedReschedule';
 
 // The visit type decides which actors can be asked for at all, so nothing below it
 // is answerable yet. Unanswered, not answered wrongly, so it reads as a prompt.
 const NO_SERVICE_BLOCKER: SelectionBlocker = { message: 'Choose a visit type first.', severity: 'incomplete' };
-
-// Alphabetical, then by birth date: a short prefix — or the first click, before
-// anything is typed — leaves a list only a name orders usefully, and the birth
-// date is what tells the people sharing one apart.
-const PATIENT_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
 
 // No month-wide scan exists, so every day is offered and the search answers.
 const NO_MARKED_DATES: Date[] = [];
@@ -92,6 +78,15 @@ const NO_MARKED_DATES: Date[] = [];
 // Long enough that typing a time does not search on every keystroke, short enough
 // that the warning is there before the user reaches the book button.
 const CONFLICT_DEBOUNCE_MS = 400;
+
+/** Joins names the way a sentence listing all of them would. */
+const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
+
+// `Appointment/$find` searches a weekly series of two to six occurrences.
+const OCCURRENCE_OPTIONS = [
+  { value: '1', label: 'Does not repeat' },
+  ...[2, 3, 4, 5, 6].map((count) => ({ value: count.toString(), label: `Once a week for ${count} weeks` })),
+];
 
 /**
  * What the proposal the form assembles is for, which decides what it asks for.
@@ -130,7 +125,14 @@ export interface AppointmentProposalFormProps {
    * the time it holds blocks every search that keeps any of the actors holding it, and
    * moving a visit to a different room at the same hour finds nothing.
    */
-  readonly ignoreAppointment?: Reference<Appointment> | WithId<Appointment>;
+  readonly ignoreAppointment?: WithId<Appointment>;
+  /**
+   * References to the Schedules `ignoreAppointment` is held on now, ineligible ones included.
+   *
+   * A typed time that keeps all of these, the start, and the length would change nothing,
+   * so it is not proposed. Defaults to the schedules the form opens on.
+   */
+  readonly ignoreAppointmentSchedules?: readonly string[];
   /**
    * The day the time search opens on, and the day a typed time starts out on.
    * Defaults to today.
@@ -178,10 +180,15 @@ export interface AppointmentProposalFormProps {
   /** Extensions to put on every appointment this form books. */
   readonly appointmentExtensions?: readonly Extension[];
   /**
-   * Allows for manual entry of a time and length, bypassing the `$find` search and
-   * `$book` endpoint.
+   * Allows manual entry of a time and length, bypassing `$find`. Rescheduling starts from
+   * the length of `ignoreAppointment`.
    */
   readonly canBypassSchedulingRules?: boolean;
+  /**
+   * Asks how many weeks in a row to book the visit, searching for a weekly series of up
+   * to six. Only offered when booking: `$reschedule` moves a single visit.
+   */
+  readonly allowRecurring?: boolean;
 }
 
 /** What `onBook` is told about the proposal it was handed. */
@@ -212,6 +219,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     defaultPatient,
     defaultSelections,
     ignoreAppointment,
+    ignoreAppointmentSchedules,
     defaultStart,
     mrnSystem,
     onToggleTimeFinder,
@@ -222,6 +230,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     onSubmit,
     canBypassSchedulingRules,
     appointmentExtensions,
+    allowRecurring,
   } = props;
 
   const [location, setLocation] = useState<Reference<Location> | WithId<Location> | undefined>(defaultLocation);
@@ -240,9 +249,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>(undefined);
   const [manualChoice, setManualChoice] = useState<Appointment | undefined>(undefined);
-  const [manualDateTime, setManualDateTime] = useState('');
+  const [manualDateTime, setManualDateTime] = useState<string | undefined>(undefined);
   const [manualDurationMinutes, setManualDurationMinutes] = useState<number | undefined>(undefined);
   const [conflicts, setConflicts] = useState<readonly BookingConflict[]>([]);
+  const [occurrenceCount, setOccurrenceCount] = useState(1);
 
   const manual = chosen !== undefined && chosen === manualChoice;
 
@@ -254,6 +264,11 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // Only a booking writes the patient and the visit type's codes, so only a booking
   // asks for them: `$reschedule` takes a time and the schedules to hold it on.
   const takesDetails = mode === 'book';
+
+  // `$find` refuses a series search that ignores an appointment. Derived, so a count picked
+  // before the field went away stops applying with it.
+  const offersRecurring = allowRecurring && takesDetails && !ignoreAppointment;
+  const effectiveOccurrenceCount = offersRecurring ? occurrenceCount : 1;
 
   // A move is measured against the visit type but never writes it: changing it would leave
   // the visit's required codes, its authorization, and whatever was applied when it was
@@ -281,6 +296,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const combinations = useMemo(() => (searching ? getActorCombinations(selections) : []), [searching, selections]);
 
   const candidates = useMemo(() => getSelectedCandidates(selections), [selections]);
+  const scheduleKey = useMemo(
+    () => toScheduleKey(candidates.map((candidate) => getReferenceString(candidate.schedule))),
+    [candidates]
+  );
+  // What the visit is held on now, so a move that keeps it can be told apart. The schedules
+  // the form opens on can leave out ones that are no longer eligible, which a move drops.
+  const [openingScheduleKey] = useState(() =>
+    ignoreAppointmentSchedules ? toScheduleKey(ignoreAppointmentSchedules) : scheduleKey
+  );
 
   // `$find` applies each Schedule's own parameters, so the actors in one search need not
   // agree on a timezone. The first one is taken as the exemplar for what to display:
@@ -292,7 +316,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const clearManualTime = useCallback((): void => {
     setManualChoice(undefined);
-    setManualDateTime('');
+    setManualDateTime(undefined);
     setManualDurationMinutes(undefined);
     setConflicts([]);
   }, []);
@@ -315,9 +339,21 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     defaultStart,
     actorResources,
     ignoreAppointment,
+    occurrenceCount: effectiveOccurrenceCount,
     onResultsReplaced: clearChosen,
   });
   const { reset: resetDaySearch } = daySearch;
+
+  // Whatever moves the count moves what was found under it, the field going away included:
+  // a proposal carries the series it was found for, and a typed time books a single visit.
+  // Adjusted during render, so no time found under the old count is ever offered under the new.
+  const [searchedOccurrenceCount, setSearchedOccurrenceCount] = useState(effectiveOccurrenceCount);
+  if (searchedOccurrenceCount !== effectiveOccurrenceCount) {
+    setSearchedOccurrenceCount(effectiveOccurrenceCount);
+    setChosen(undefined);
+    clearManualTime();
+    resetDaySearch();
+  }
 
   // The first window is back and nothing is holding the search up, so what it found —
   // even if that is nothing — is what is on screen.
@@ -345,13 +381,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     }
   }, [chosen, onChangeTime]);
 
-  const patientItem = useCallback(
-    (option: AsyncAutocompleteOption<WithId<Patient>>) => (
-      <AppointmentOptionRow label={option.label} detail={formatPatientDetail(option.resource, mrnSystem)} />
-    ),
-    [mrnSystem]
-  );
-
   function toggleFinder(): void {
     setFinding(!finding);
   }
@@ -366,11 +395,17 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       // A different calendar can configure a different length, and nobody asked for
       // the one that happened to be on screen. The typed time goes with it: it was
       // proposed against these schedules, and a field still holding it would read as
-      // a time that is going to be booked.
-      clearManualTime();
+      // a time that is going to be booked. A move keeps both, since changing who holds
+      // it is often all a move is; it is proposed again against the new schedules below.
+      if (mode === 'reschedule') {
+        setManualChoice(undefined);
+        setConflicts([]);
+      } else {
+        clearManualTime();
+      }
       resetDaySearch();
     },
-    [clearManualTime, resetDaySearch]
+    [mode, clearManualTime, resetDaySearch]
   );
 
   function chooseService(next: WithId<HealthcareService> | undefined): void {
@@ -418,25 +453,62 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     [service, candidates]
   );
 
+  const storedDurationMinutes = ignoreAppointment ? getRescheduleDurationMinutes(ignoreAppointment) : undefined;
   // State holds the edit rather than the value, so a different visit type falls back to
   // its own default instead of keeping the last length typed.
-  const effectiveDurationMinutes = manualDurationMinutes ?? configuredDurationMinutes;
+  const effectiveDurationMinutes =
+    manualDurationMinutes ?? (mode === 'reschedule' ? storedDurationMinutes : configuredDurationMinutes);
+  // A move starts from where the visit is now, so only what changes needs typing.
+  const storedStart = mode === 'reschedule' && ignoreAppointment?.start ? new Date(ignoreAppointment.start) : undefined;
+  const effectiveDateTime = manualDateTime ?? (storedStart ? formatZonedDateTimeInput(storedStart, timezone) : '');
+
+  // Proposes the time and length on screen, typed or prefilled, against whichever schedules
+  // are chosen, so a reassignment needs nothing retyped. A searched time is never replaced.
+  const reproposeKey = searching && canBypassSchedulingRules && storedStart ? scheduleKey : undefined;
+  const [reproposedKey, setReproposedKey] = useState<string>();
+  if (reproposeKey !== reproposedKey) {
+    setReproposedKey(reproposeKey);
+    if (reproposeKey !== undefined && (!chosen || manual)) {
+      proposeManualTime(effectiveDateTime, effectiveDurationMinutes);
+    }
+  }
+
+  // Reconcile permission changes before rendering, so a revoked choice cannot be submitted.
+  if (!canBypassSchedulingRules && manualChoice) {
+    setChosen((current) => (current === manualChoice ? undefined : current));
+    clearManualTime();
+  }
 
   /**
-   * Takes the typed time and length together and proposes them, or takes the proposal
-   * back down while they are still incomplete.
+   * Records the typed time and length and proposes them.
    *
    * @param dateTime - A `YYYY-MM-DDTHH:MM` wall-clock value, read in the visit's timezone.
    * @param durationMinutes - How long the visit runs.
    */
   function enterManualTime(dateTime: string, durationMinutes: number | undefined): void {
-    // Stale the moment the fields move: what was looked up was about a different time.
-    setConflicts([]);
     setManualDateTime(dateTime);
     setManualDurationMinutes(durationMinutes);
+    proposeManualTime(dateTime, durationMinutes);
+  }
+
+  /**
+   * Proposes a time and length, or takes the proposal back down while they are incomplete
+   * or would change nothing.
+   *
+   * @param dateTime - A `YYYY-MM-DDTHH:MM` wall-clock value, read in the visit's timezone.
+   * @param durationMinutes - How long the visit runs.
+   */
+  function proposeManualTime(dateTime: string, durationMinutes: number | undefined): void {
+    // Stale the moment the fields move: what was looked up was about a different time.
+    setConflicts([]);
 
     const start = parseZonedDateTimeInput(dateTime, timezone);
-    if (!start || !durationMinutes || durationMinutes <= 0 || !service || candidates.length === 0) {
+    // Moving a visit to exactly where it already is would rewrite its Slots for nothing.
+    const unchanged =
+      scheduleKey === openingScheduleKey &&
+      start?.getTime() === storedStart?.getTime() &&
+      durationMinutes === storedDurationMinutes;
+    if (!start || !durationMinutes || durationMinutes <= 0 || !service || candidates.length === 0 || unchanged) {
       setManualChoice(undefined);
       // Only ever clears a manual time: a time from the search is not this field's to drop.
       setChosen((current) => (current === manualChoice ? undefined : current));
@@ -474,7 +546,13 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
     let active = true;
     const range = { start: new Date(debouncedChoice.start), end: new Date(debouncedChoice.end) };
-    findBookingConflicts({ medplum, service, candidates, range })
+    findBookingConflicts({
+      medplum,
+      service,
+      candidates,
+      range,
+      ignoredSlotReferences: ignoreAppointment?.slot?.map(getReferenceString).filter(isDefined),
+    })
       .then((found) => {
         if (active) {
           setConflicts(found);
@@ -490,7 +568,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     return () => {
       active = false;
     };
-  }, [medplum, chosen, debouncedChoice, service, candidates]);
+  }, [medplum, chosen, debouncedChoice, service, candidates, ignoreAppointment]);
 
   function choosePatient(next: WithId<Patient> | undefined): void {
     setPatient(next);
@@ -587,6 +665,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           onChange={chooseResources}
         />
 
+        {offersRecurring && (
+          <Select
+            label="Repeat"
+            data={OCCURRENCE_OPTIONS}
+            allowDeselect={false}
+            value={occurrenceCount.toString()}
+            onChange={(value) => setOccurrenceCount(Number(value ?? 1))}
+          />
+        )}
+
         <ChosenTime
           appointment={chosen}
           timezone={timezone}
@@ -621,80 +709,37 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         )}
 
         {takesDetails && (
-          <ResourceInput<WithId<Patient>>
-            resourceType="Patient"
-            name="patient"
-            label="Patient"
-            placeholder="Search patients by name"
-            required
-            searchCriteria={PATIENT_SEARCH_CRITERIA}
+          <AppointmentPatientInput
             defaultValue={defaultPatient}
-            itemComponent={patientItem}
+            mrnSystem={mrnSystem}
+            required
             onChange={choosePatient}
-            clearable={false}
           />
         )}
 
         {/* Each field is shown only for a visit type whose eligibility asks for it. */}
         {takesDetails && service && requirements.size > 0 && (
-          <Fragment key={service.id}>
-            {requirements.has(REQUIRES_PROCEDURE_CODE) && (
-              <ValueSetAutocomplete
-                name="procedure-code"
-                label="Procedure codes"
-                required
-                itemComponent={RequirementCodeItem}
-                pillComponent={RequirementCodePill}
-                binding={procedureBinding}
-                onChange={(elements) =>
-                  chooseRequirementValues({
-                    ...requirementValues,
-                    procedure: toCodings(elements),
-                  })
-                }
-              />
-            )}
-            {requirements.has(REQUIRES_DIAGNOSIS_CODE) && (
-              <ValueSetAutocomplete
-                name="diagnosis-code"
-                label="Diagnosis codes"
-                required
-                itemComponent={RequirementCodeItem}
-                pillComponent={RequirementCodePill}
-                binding={diagnosisBinding}
-                onChange={(elements) =>
-                  chooseRequirementValues({
-                    ...requirementValues,
-                    diagnosis: toCodings(elements),
-                  })
-                }
-              />
-            )}
-            {requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE) && (
-              <Checkbox
-                classNames={{ label: classes.requiredLabel }}
-                label="Medical necessity confirmed"
-                required
-                checked={requirementValues.medicalNecessity}
-                onChange={(event) =>
-                  chooseRequirementValues({ ...requirementValues, medicalNecessity: event.currentTarget.checked })
-                }
-              />
-            )}
-          </Fragment>
+          <BookingRequirementFields
+            key={service.id}
+            requirements={requirements}
+            values={requirementValues}
+            procedureBinding={procedureBinding}
+            diagnosisBinding={diagnosisBinding}
+            onChange={chooseRequirementValues}
+          />
         )}
 
         {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
         <Button fullWidth disabled={!chosen || written || detailsOutstanding} loading={writing} onClick={handleSubmit}>
-          {mode === 'reschedule' ? 'Reschedule appointment' : 'Book appointment'}
+          {getSubmitLabel(mode, effectiveOccurrenceCount)}
         </Button>
       </Stack>
 
       {searching && (
         <Stack className={classes.results} gap="lg">
-          {canBypassSchedulingRules && (
+          {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
             <ManualTime
-              dateTime={manualDateTime}
+              dateTime={effectiveDateTime}
               durationMinutes={effectiveDurationMinutes}
               timezone={timezone}
               conflicts={conflicts}
@@ -779,7 +824,12 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
           value={formatZonedDateTime(new Date(appointment.start), timezone)}
           // Mantine puts the description above the input by default.
           inputWrapperOrder={['label', 'input', 'description']}
-          description={<ChosenTimeCommitment appointment={appointment} actors={actors} />}
+          description={
+            <>
+              <ChosenTimeCommitment appointment={appointment} actors={actors} />
+              <LaterOccurrences appointment={appointment} timezone={timezone} />
+            </>
+          }
         />
       )}
 
@@ -870,7 +920,7 @@ function ManualTime(props: ManualTimeProps): JSX.Element {
           min={1}
           allowDecimal={false}
           w={110}
-          value={durationMinutes ?? ''}
+          value={durationMinutes === undefined ? '' : Math.round(durationMinutes)}
           onChange={(value) => onChange(dateTime, typeof value === 'number' ? value : undefined)}
         />
       </Group>
@@ -928,6 +978,46 @@ function ChosenTimeCommitment(props: ChosenTimeCommitmentProps): JSX.Element {
   );
 }
 
+interface LaterOccurrencesProps {
+  /** The time chosen, which is the series' first occurrence when it repeats. */
+  readonly appointment: Appointment;
+  /** IANA timezone the visit is scheduled in. */
+  readonly timezone?: string;
+}
+
+/**
+ * Names the dates a series books after the one on show, which Book writes too.
+ * @param props - The React props.
+ * @returns The line, or null for a visit that does not repeat.
+ */
+function LaterOccurrences(props: LaterOccurrencesProps): JSX.Element | null {
+  const { appointment, timezone } = props;
+  const starts = getLaterOccurrenceStarts(appointment, timezone);
+  if (starts.length === 0) {
+    return null;
+  }
+  const formatDay = new Intl.DateTimeFormat(undefined, { timeZone: timezone, month: 'short', day: 'numeric' });
+  return (
+    <>
+      <br />
+      Also books {listAll.format(starts.map((start) => formatDay.format(start)))} at the same time.
+    </>
+  );
+}
+
+/**
+ * Names what the submit button writes.
+ * @param mode - What the proposal is for.
+ * @param occurrenceCount - How many appointments a booking writes: one per occurrence of a series.
+ * @returns The button's label.
+ */
+function getSubmitLabel(mode: AppointmentProposalMode, occurrenceCount: number): string {
+  if (mode === 'reschedule') {
+    return 'Reschedule appointment';
+  }
+  return occurrenceCount > 1 ? `Book ${occurrenceCount} appointments` : 'Book appointment';
+}
+
 /**
  * Names what the action does next.
  * @param searching - Whether the time search is open.
@@ -939,61 +1029,6 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
     return 'Close time finder';
   }
   return chosen ? 'Change time' : 'Find a time';
-}
-
-/**
- * One code on offer, led by the code itself.
- *
- * The code is what a scheduler searches on and what a biller reads, and descriptions run long
- * before they diverge: the CPT descriptions for infusion procedures, to take one example, agree
- * for sixty characters. Led by its description, a row does not tell itself apart from the next.
- * The system is left out because a field's value set draws from a single code system in practice,
- * which makes printing it one url repeated down the list and nothing more.
- *
- * @param props - The option to render.
- * @returns The row.
- */
-function RequirementCodeItem(props: Readonly<AsyncAutocompleteOption<ValueSetExpansionContains>>): JSX.Element {
-  const { label, resource, active } = props;
-  return (
-    <Group wrap="nowrap" gap="xs">
-      {active && <IconCheck size={12} />}
-      <Text size="sm">
-        <Text span fw={600}>
-          {resource.code}
-        </Text>{' '}
-        <Text span>{label}</Text>
-      </Text>
-    </Group>
-  );
-}
-
-interface RequirementCodePillProps {
-  readonly item: AsyncAutocompleteOption<ValueSetExpansionContains>;
-  readonly disabled?: boolean;
-  readonly onRemove: () => void;
-}
-
-/**
- * A code that has been given, led by the code.
- *
- * What a scheduler checks a filled-in form against, and what a biller reads off it, is the code, so
- * it comes first and stays readable however narrow the pill gets. The description follows and is
- * clipped, since a dozen words times three pills would bury the rest of the form. The full text is
- * on the pill's `title`. A code typed in rather than picked off the list is its own description, so
- * it is printed once rather than twice.
- *
- * @param props - The chosen option, and how to take it back out.
- * @returns The pill.
- */
-function RequirementCodePill(props: RequirementCodePillProps): JSX.Element {
-  const { item, disabled, onRemove } = props;
-  const code = item.resource.code;
-  return (
-    <Pill className={classes.codePill} withRemoveButton={!disabled} onRemove={onRemove} title={item.label}>
-      {code && code !== item.label ? `${code} · ${item.label}` : item.label}
-    </Pill>
-  );
 }
 
 interface BuildBookingOptions {
@@ -1026,8 +1061,8 @@ function buildBooking(options: BuildBookingOptions): Appointment {
   const patientReference = getReferenceString(patient);
   const procedure = requirements.has(REQUIRES_PROCEDURE_CODE) ? values.procedure : [];
   const diagnosis = requirements.has(REQUIRES_DIAGNOSIS_CODE) ? values.diagnosis : [];
-  const serviceType = [...(proposal.serviceType ?? []), ...procedure.map((coding) => ({ coding: [coding] }))];
-  const reasonCode = [...(proposal.reasonCode ?? []), ...diagnosis.map((coding) => ({ coding: [coding] }))];
+  const serviceType = [...(proposal.serviceType ?? []), ...procedure];
+  const reasonCode = [...(proposal.reasonCode ?? []), ...diagnosis];
   const extension = [
     ...(proposal.extension ?? []),
     ...(requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE)
@@ -1056,31 +1091,12 @@ function buildBooking(options: BuildBookingOptions): Appointment {
 }
 
 /**
- * What tells one patient apart from another of the same name.
- * @param patient - The patient on offer.
- * @param mrnSystem - The system a project issues medical record numbers under.
- * @returns The line under their name, or undefined when nothing is on file.
+ * Packs schedule references into one comparable value, whatever order they come in.
+ * @param references - The schedule references.
+ * @returns The key.
  */
-function formatPatientDetail(patient: WithId<Patient>, mrnSystem: string | undefined): string | undefined {
-  const mrn = getMedicalRecordNumber(patient, mrnSystem);
-  return [formatDate(patient.birthDate), mrn && `MRN ${mrn}`].filter(Boolean).join(' · ') || undefined;
-}
-
-/**
- * Reads a patient's medical record number.
- *
- * A typed identifier answers it whoever issued it, which is the case that needs
- * no configuration. `mrnSystem` is for the project whose identifiers carry no
- * type, where nothing but the system says which one this is.
- *
- * @param patient - The patient to read.
- * @param mrnSystem - The system a project issues medical record numbers under.
- * @returns The medical record number, or undefined for a patient with none.
- */
-function getMedicalRecordNumber(patient: WithId<Patient>, mrnSystem: string | undefined): string | undefined {
-  return (
-    getIdentifierByType(patient, MRN_IDENTIFIER_TYPE) ?? (mrnSystem ? getIdentifier(patient, mrnSystem) : undefined)
-  );
+function toScheduleKey(references: readonly string[]): string {
+  return [...references].sort((a, b) => a.localeCompare(b)).join(',');
 }
 
 /**

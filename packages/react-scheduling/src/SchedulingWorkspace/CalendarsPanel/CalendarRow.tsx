@@ -30,7 +30,7 @@ export function CalendarRow(props: CalendarRowProps): JSX.Element {
     >
       <Group gap="sm" wrap="nowrap">
         {icon ? (
-          <ThemeIcon variant="filled" color={color} radius="sm" size={20} className={classes.icon}>
+          <ThemeIcon variant="light" color={color} radius="sm" size={20} className={classes.icon}>
             {icon}
           </ThemeIcon>
         ) : (

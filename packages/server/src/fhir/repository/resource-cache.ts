@@ -1,16 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { stringify } from '@medplum/core';
+import { stringify, tryParseReference } from '@medplum/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getCacheRedis } from '../../redis';
+import { GLOBAL_SHARD_ID, normalizeShardId } from '../sharding';
 
 const RESOURCE_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 
 export interface CacheEntry<T extends Resource = Resource> {
   resource: T;
   projectId: string;
+  /** The normalized id of the shard holding the resource. */
+  shardId: string;
 }
 
 /**
@@ -24,7 +27,7 @@ export async function getResourceCacheEntry<T extends Resource>(
   id: string
 ): Promise<CacheEntry<WithId<T>> | undefined> {
   const cachedValue = await getCacheRedis().get(getResourceCacheKey(resourceType, id));
-  return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<WithId<T>>) : undefined;
+  return cachedValue ? parseCacheEntry<WithId<T>>(cachedValue) : undefined;
 }
 
 /**
@@ -40,9 +43,9 @@ export async function getResourceCacheEntries(references: Reference[]): Promise<
   // is constructed in the correct order.
   const referenceKeyIndices: (number | undefined)[] = new Array(references.length);
   for (let i = 0; i < references.length; i++) {
-    const r = references[i];
-    if (r.reference) {
-      referenceKeys.push(r.reference);
+    const parsed = tryParseReference(references[i]);
+    if (parsed) {
+      referenceKeys.push(getResourceCacheKey(parsed[0], parsed[1]));
       referenceKeyIndices[i] = referenceKeys.length - 1;
     }
   }
@@ -61,22 +64,33 @@ export async function getResourceCacheEntries(references: Reference[]): Promise<
       result[i] = undefined;
     } else {
       const cachedValue = cachedValues[referenceKeyIndex];
-      result[i] = cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined;
+      result[i] = cachedValue ? parseCacheEntry(cachedValue) : undefined;
     }
   }
   return result;
+}
+
+function parseCacheEntry<T extends Resource>(cachedValue: string): CacheEntry<T> {
+  const cacheEntry = JSON.parse(cachedValue) as CacheEntry<T>;
+  cacheEntry.shardId ??= GLOBAL_SHARD_ID;
+  return cacheEntry;
 }
 
 /**
  * Writes a cache entry to Redis.
  * If the `cacheResourcesOnWrite` server config is disabled, does not create a new cache entry unless `force` is set.
  * @param resource - The resource to cache.
+ * @param shardId - The shard holding the resource.
  * @param options - Optional write options.
  * @param options.force - Create the entry even if it does not already exist.
  */
-export async function setResourceCacheEntry(resource: WithId<Resource>, options?: { force?: boolean }): Promise<void> {
+export async function setResourceCacheEntry(
+  resource: WithId<Resource>,
+  shardId: string,
+  options?: { force?: boolean }
+): Promise<void> {
   const key = getResourceCacheKey(resource.resourceType, resource.id);
-  const value = stringify({ resource, projectId: resource.meta?.project });
+  const value = stringify({ resource, projectId: resource.meta?.project, shardId: normalizeShardId(shardId) });
   if (!options?.force && getConfig().cacheResourcesOnWrite === false) {
     await getCacheRedis().set(key, value, 'EX', RESOURCE_CACHE_EX_SECONDS, 'XX');
   } else {

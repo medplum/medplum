@@ -1,0 +1,39 @@
+/* Wraps an appointment event's lines: lays them out as the event itself would, and fills the
+ * event. */
+.eventContent {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: inherit;
+  align-items: inherit;
+  gap: inherit;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Where the card is placed from: over the whole event, without taking its pointer. */
+.anchor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* The service type keeps to one line, cut short with an ellipsis: in a time grid so the patient
+ * under it shows on a half-hour event, and on a month's row so the time beside it stays whole.
+ * Nested, to outrank CalendarBase's wrapping titles and FullCalendar's titles giving way first. */
+.eventContent .title {
+  flex-shrink: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eventContent .time,
+.eventContent[data-time-grid] .title {
+  flex-shrink: 0;
+}
+
+/* Set apart from the service types named by their HealthcareService. */
+.untyped {
+  opacity: 0.75;
+}

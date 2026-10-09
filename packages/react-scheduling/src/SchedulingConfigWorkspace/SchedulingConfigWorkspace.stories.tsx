@@ -32,11 +32,12 @@ function Workspace(): JSX.Element {
  * Group Education Class books eight patients into one weekly session. Telehealth Consult names no service facility,
  * so it is offered at every one. Unconfigured Visit and Walk-in Clinic have no duration, so booking never offers
  * them, but they are listed here to be finished. Discontinued Consult and Ultrasound 3 are turned off, so they
- * are hidden until **Show inactive** is ticked under the filters button. Dr. Sofia Reyes is on leave:
- * still active, so listed, with the Schedule switched off. Exam Room C is listed though it has no Schedule.
+ * are hidden until **Show inactive** is ticked under the filters button. So is Dr. Sofia Reyes, who is on leave:
+ * still active, with the Schedule switched off. Exam Room C is listed though it has no Schedule.
  *
  * Pick one to edit it in place. Switching to another with unsaved changes asks first. The **+** beside Visit
- * types starts a new one, which is listed once it is saved.
+ * types starts a new one, which is listed once it is saved. A visit type's page lists the Schedules offering it, each
+ * opening its provider's, room's, or device's page.
  *
  * @returns The story.
  */

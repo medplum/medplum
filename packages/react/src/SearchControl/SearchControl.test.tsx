@@ -65,6 +65,13 @@ describe('SearchControl', () => {
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
+  test('Hides actions button when no actions are available', async () => {
+    await setup({ search: { resourceType: 'Patient' } });
+
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
+  });
+
   test('Renders additional columns', async () => {
     const props: SearchControlProps = {
       search: {
@@ -638,37 +645,43 @@ describe('SearchControl', () => {
     });
   });
 
-  test('Filter editor onOk', async () => {
-    const props: SearchControlProps = {
-      search: {
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
-      },
-      onLoad: vi.fn(),
-    };
-
-    await setup(props);
-
-    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
-
+  async function openFieldOptions(): Promise<void> {
+    await setup({ search: { resourceType: 'Patient', fields: ['name'] }, onLoad: vi.fn() });
     await act(async () => {
-      fireEvent.click(screen.getByText('Filters'));
+      fireEvent.click(screen.getByText('Fields'));
     });
-
-    expect(await screen.findByText('OK')).toBeInTheDocument();
-
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.focus(await screen.findByPlaceholderText('Select fields to display'));
     });
+    await screen.findByRole('option', { name: 'Name', hidden: true });
+  }
+
+  function fieldOption(name: string): HTMLElement | null {
+    return screen.queryByRole('option', { name, hidden: true });
+  }
+
+  test('Field editor offers resource properties that have no search parameter', async () => {
+    await openFieldOptions();
+    expect(fieldOption('Photo')).toBeInTheDocument();
+    expect(fieldOption('Marital Status')).toBeInTheDocument();
+    expect(fieldOption('Meta')).toBeInTheDocument();
   });
 
-  test('Filter editor onCancel', async () => {
+  test('Field editor offers a property once, even when a search parameter shares its name', async () => {
+    await openFieldOptions();
+    expect(fieldOption('Birth Date')).toBeInTheDocument();
+    expect(fieldOption('Birthdate')).toBeNull();
+    expect(screen.getAllByRole('option', { name: 'ID', hidden: true })).toHaveLength(1);
+  });
+
+  test('Field editor still offers search parameters that are not properties', async () => {
+    await openFieldOptions();
+    expect(fieldOption('Last Updated')).toBeInTheDocument();
+    expect(fieldOption('Phone')).toBeInTheDocument();
+  });
+
+  test('Filter popover applies a removed filter to the search', async () => {
+    const onChange = vi.fn();
     const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
@@ -681,21 +694,27 @@ describe('SearchControl', () => {
         ],
       },
       onLoad: vi.fn(),
+      onChange,
     };
 
     await setup(props);
 
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filters' })).toHaveAccessibleDescription('1 Filter Applied');
 
     await act(async () => {
       fireEvent.click(screen.getByText('Filters'));
     });
 
-    expect(await screen.findByLabelText('Close')).toBeInTheDocument();
+    expect(await screen.findByText('Add Filter')).toBeInTheDocument();
+    expect(screen.getByLabelText('Filter 1 field', { selector: 'input' })).toHaveValue('Name');
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Close'));
+      fireEvent.click(screen.getByLabelText('Remove filter 1'));
     });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][0].definition.filters).toEqual([]);
   });
 
   test('Popup menu and prompt', async () => {

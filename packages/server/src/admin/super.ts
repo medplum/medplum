@@ -26,7 +26,7 @@ import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/as
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getShardSystemRepo, Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import { PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
 import { isValidPostgresIdentifier } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted, setPreDeployVersion } from '../migration-sql';
@@ -221,7 +221,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(systemRepo);
     await exec.init(asyncJobUrl.toString());
     await exec.run(async (asyncJob) => {
-      await addReindexJob(resourceTypes as ResourceType[], asyncJob, opts);
+      await addReindexJob(TODO_SHARD_ID, resourceTypes as ResourceType[], asyncJob, opts);
     });
 
     const { baseUrl } = getConfig();
@@ -434,7 +434,7 @@ superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Re
   const exec = new AsyncJobExecutor(ctx.repo);
   await exec.init(req.originalUrl);
   await exec.run(async (asyncJob) => {
-    const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+    const jobData = prepareDynamicMigrationJobData({ shardId: TODO_SHARD_ID, asyncJob }, migrationActions);
     await addPostDeployMigrationJobData(jobData);
   });
 
@@ -502,7 +502,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(ctx.systemRepo);
     await exec.init(`${req.originalUrl}?${requestParams}`);
     await exec.run(async (asyncJob) => {
-      const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+      const jobData = prepareDynamicMigrationJobData({ shardId: TODO_SHARD_ID, asyncJob }, migrationActions);
       await addPostDeployMigrationJobData(jobData);
     });
 
@@ -567,7 +567,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(ctx.systemRepo);
     await exec.init(`${req.originalUrl}?${requestParams}`);
     await exec.run(async (asyncJob) => {
-      const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+      const jobData = prepareDynamicMigrationJobData({ shardId: TODO_SHARD_ID, asyncJob }, migrationActions);
       await addPostDeployMigrationJobData(jobData);
     });
 

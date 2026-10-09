@@ -5,9 +5,11 @@ import { useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getExtensionValue, SchedulingScheduleColorURI } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from '@medplum/fhirtypes';
+import cx from 'clsx';
 import type { JSX } from 'react';
 import { useMemo } from 'react';
-import type { FhirEventSource } from '../CalendarBase/CalendarBase';
+import { AppointmentEvent } from '../CalendarBase/AppointmentEvent';
+import type { ExtendedEvent, FhirEventSource } from '../CalendarBase/CalendarBase';
 import { CalendarBase } from '../CalendarBase/CalendarBase';
 import { resolveThemeColor } from '../colors';
 import type { DateTimeRange } from '../types';
@@ -47,7 +49,7 @@ export interface MultiCalendarProps {
 export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
   const theme = useMantineTheme();
 
-  const { sources, ...calendarBaseProps } = props;
+  const { sources, className, ...calendarBaseProps } = props;
 
   const eventSources = useMemo((): FhirEventSource[] => {
     return sources.map((source, i) => {
@@ -70,10 +72,16 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
     <CalendarBase
       eventSources={eventSources}
       nowIndicator
+      className={cx(className, classes.wrapper)}
       {...calendarBaseProps}
       eventInnerClass={classes.eventInner}
       eventTimeClass={classes.eventTime}
       availableTime={props.availableTime}
+      eventContent={(info) => {
+        const ext = info.event.extendedProps as ExtendedEvent;
+        // `true` keeps FullCalendar's own content for everything but appointments.
+        return ext.type === 'appointment' ? <AppointmentEvent appointment={ext.appointment} info={info} /> : true;
+      }}
       eventTimeFormat={{
         hour: 'numeric',
         minute: '2-digit',
