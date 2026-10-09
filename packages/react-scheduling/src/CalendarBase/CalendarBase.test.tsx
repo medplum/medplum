@@ -67,6 +67,23 @@ describe('CalendarBase', () => {
       expect(screen.queryByText('Old Name')).not.toBeInTheDocument();
     });
 
+    test('says the patient is loading when the reference has no display', async () => {
+      const appointment = createAppointment({
+        participant: [{ actor: { reference: 'Patient/123' }, status: 'accepted' }],
+      });
+      setup({ eventSources: [{ appointments: [appointment], slots: [] }] });
+      expect(screen.getByText('Loading…')).toBeInTheDocument();
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+    });
+
+    test("shows the read's error when the patient can't be read and the reference has no display", async () => {
+      const appointment = createAppointment({
+        participant: [{ actor: { reference: 'Patient/missing' }, status: 'accepted' }],
+      });
+      setup({ eventSources: [{ appointments: [appointment], slots: [] }] });
+      expect(await screen.findByText('[Not found]')).toBeInTheDocument();
+    });
+
     test('renders appointments without a patient', async () => {
       const appointment = {
         ...createAppointment(),

@@ -59,7 +59,8 @@ function appointmentsToEvents(
   return appointments
     .filter((appointment) => appointment.start && appointment.end)
     .map((appointment) => {
-      const name = getPatientParticipant(appointment)?.actor?.display ?? 'No Patient';
+      const actor = getPatientParticipant(appointment)?.actor;
+      const name = actor?.reference ? (actor.display ?? '') : 'No Patient';
 
       return {
         id: appointment.id,
