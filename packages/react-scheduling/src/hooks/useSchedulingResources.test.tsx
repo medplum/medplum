@@ -153,6 +153,16 @@ describe('useSchedulingSlots', () => {
       );
     });
 
+    test('searches only the given slot statuses', async () => {
+      const searches = configureSearch({ slotsBySchedule: { 'Schedule/schedule-a': [slotA] } });
+
+      setup(useSchedulingSlots, [SCHEDULE_A], RANGE, { slotStatuses: ['busy', 'busy-unavailable'] });
+
+      await waitFor(() => expect(searches['Slot']).toHaveLength(1));
+      expect(searches['Slot']?.[0].get('status')).toBe('busy,busy-unavailable');
+      expect(searches['Slot']?.[0].has('status:not')).toBe(false);
+    });
+
     test('emits one Slot query per schedule and merges the results', async () => {
       const searches = configureSearch({
         slotsBySchedule: { 'Schedule/schedule-a': [slotA], 'Schedule/schedule-b': [slotB] },
@@ -355,6 +365,48 @@ describe('useSchedulingSlots', () => {
       expect(result.current.slots).toEqual([updated]);
     });
 
+    test('keeps to the given slot statuses', async () => {
+      const busySlot: WithId<Slot> = { ...slotA, status: 'busy' };
+      configureSearch({ slotsBySchedule: { 'Schedule/schedule-a': [busySlot] } });
+      const { result } = setup(useSchedulingSlots, [SCHEDULE_A], RANGE, { slotStatuses: ['busy'] });
+      await waitFor(() => expect(result.current.slots).toEqual([busySlot]));
+
+      // A created Slot outside the statuses is left out, as a refetch would leave it out.
+      const freeSlot: WithId<Slot> = { ...slotA, id: 'slot-free', status: 'free' };
+      act(() => {
+        medplum.notifyResourceModified({
+          resourceType: 'Slot',
+          operation: 'create',
+          id: freeSlot.id,
+          resource: freeSlot,
+        });
+      });
+      expect(result.current.slots).toEqual([busySlot]);
+
+      // A loaded Slot updated out of the statuses is dropped.
+      const freed: WithId<Slot> = { ...busySlot, status: 'free' };
+      act(() => {
+        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'update', id: freed.id, resource: freed });
+      });
+      expect(result.current.slots).toEqual([]);
+    });
+
+    test('loads no slots for an empty status list', () => {
+      medplum.searchResources = vi.fn();
+      const { result } = setup(useSchedulingSlots, [SCHEDULE_A], RANGE, { slotStatuses: [] });
+
+      // Every Slot has a status, so none can match: no search runs, and there are no slots.
+      expect(medplum.searchResources).not.toHaveBeenCalled();
+      expect(result.current.slots).toEqual([]);
+      expect(result.current.loading).toBe(false);
+
+      // A created Slot is left out too.
+      act(() => {
+        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'create', id: slotA.id, resource: slotA });
+      });
+      expect(result.current.slots).toEqual([]);
+    });
+
     test('removes a deleted Slot by id', async () => {
       configureSearch({ slotsBySchedule: { 'Schedule/schedule-a': [slotA] } });
       const { result } = setup(useSchedulingSlots, [SCHEDULE_A], RANGE);
@@ -409,6 +461,15 @@ describe('useSchedulingAppointments', () => {
           ['date', `le${RANGE.end.toISOString()}`],
         ])
       );
+    });
+
+    test('searches only the given appointment statuses', async () => {
+      const searches = configureSearch({ appointmentsByActor: { 'Practitioner/pract-a': [apptA] } });
+
+      setup(useSchedulingAppointments, [SCHEDULE_A], RANGE, { appointmentStatuses: ['booked', 'arrived'] });
+
+      await waitFor(() => expect(searches['Appointment']).toHaveLength(1));
+      expect(searches['Appointment']?.[0].get('status')).toBe('booked,arrived');
     });
 
     test('emits one Appointment query per schedule actor and merges the results', async () => {
@@ -655,6 +716,64 @@ describe('useSchedulingAppointments', () => {
       });
 
       expect(result.current.appointments).toEqual([updated]);
+    });
+
+    test('keeps to the given appointment statuses', async () => {
+      configureSearch({ appointmentsByActor: { 'Practitioner/pract-a': [apptA] } });
+      const { result } = setup(useSchedulingAppointments, [SCHEDULE_A], RANGE, { appointmentStatuses: ['booked'] });
+      await waitFor(() => expect(result.current.appointments).toEqual([apptA]));
+
+      // A created Appointment outside the statuses is left out, as a refetch would leave it out.
+      const proposed: WithId<Appointment> = {
+        ...apptA,
+        id: 'appt-proposed',
+        status: 'proposed',
+        start: '2024-01-15T10:00:00.000Z',
+      };
+      act(() => {
+        medplum.notifyResourceModified({
+          resourceType: 'Appointment',
+          operation: 'create',
+          id: proposed.id,
+          resource: proposed,
+        });
+      });
+      expect(result.current.appointments).toEqual([apptA]);
+
+      // A loaded Appointment updated out of the statuses is dropped.
+      const cancelled: WithId<Appointment> = { ...apptA, status: 'cancelled' };
+      act(() => {
+        medplum.notifyResourceModified({
+          resourceType: 'Appointment',
+          operation: 'update',
+          id: cancelled.id,
+          resource: cancelled,
+        });
+      });
+      expect(result.current.appointments).toEqual([]);
+    });
+
+    test('loads no appointments for an empty status list', () => {
+      medplum.searchResources = vi.fn();
+      const { result } = setup(useSchedulingAppointments, [SCHEDULE_A], RANGE, { appointmentStatuses: [] });
+
+      // Every Appointment has a status, so none can match: no search runs, and there are no
+      // appointments.
+      expect(medplum.searchResources).not.toHaveBeenCalled();
+      expect(result.current.appointments).toEqual([]);
+      expect(result.current.loading).toBe(false);
+
+      // A created Appointment is left out too.
+      const created: WithId<Appointment> = { ...apptA, start: '2024-01-15T10:00:00.000Z' };
+      act(() => {
+        medplum.notifyResourceModified({
+          resourceType: 'Appointment',
+          operation: 'create',
+          id: created.id,
+          resource: created,
+        });
+      });
+      expect(result.current.appointments).toEqual([]);
     });
 
     test('removes a deleted Appointment by id', async () => {

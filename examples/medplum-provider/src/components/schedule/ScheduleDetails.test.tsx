@@ -3,6 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
+import { getQueryString } from '@medplum/core';
 import type { Appointment, ResourceType, Schedule, Slot } from '@medplum/fhirtypes';
 import { HomerEncounter, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -251,36 +252,24 @@ describe('ScheduleDetails', () => {
     });
   });
 
-  describe('Filtering', () => {
-    test('omits entered-in-error slots from the calendar', async () => {
-      const freeSlot = createSlot({ id: 'free-slot', status: 'free' });
-      const erroredSlot = createSlot({
-        id: 'errored-slot',
-        status: 'entered-in-error',
-        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
-        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
+  test('searches only the slots and appointments the calendar draws', async () => {
+    await setup(mockSchedule);
+
+    const searchFor = async (resourceType: ResourceType): Promise<URLSearchParams> => {
+      const call = await waitFor(() => {
+        const found = vi.mocked(medplum.searchResources).mock.calls.find(([type]) => type === resourceType);
+        expect(found).toBeDefined();
+        return found;
       });
+      return new URLSearchParams(getQueryString(call?.[1]));
+    };
 
-      await setup(mockSchedule, { slots: [freeSlot, erroredSlot] });
-
-      expect(await screen.findAllByText('Available')).toHaveLength(1);
-      expect(screen.queryAllByText('Entered in error')).toHaveLength(0);
-    });
-
-    test('omits cancelled appointments from the calendar', async () => {
-      const bookedAppointment = createAppointment();
-      const cancelledAppointment = createAppointment({
-        id: 'cancelled-appointment',
-        status: 'cancelled',
-        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
-        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
-        participant: [{ actor: { reference: 'Patient/999', display: 'Cancelled Patient' }, status: 'accepted' }],
-      });
-
-      await setup(mockSchedule, { appointments: [bookedAppointment, cancelledAppointment] });
-
-      expect(await screen.findByText(/John Doe/)).toBeInTheDocument();
-      expect(screen.queryByText(/Cancelled Patient/)).not.toBeInTheDocument();
-    });
+    // Entered-in-error slots are left out, and free ones kept to be booked from.
+    expect((await searchFor('Slot')).get('status:not')).toBe('entered-in-error');
+    // Cancelled and entered-in-error appointments are left out.
+    const appointmentStatuses = (await searchFor('Appointment')).get('status')?.split(',');
+    expect(appointmentStatuses).toContain('booked');
+    expect(appointmentStatuses).not.toContain('cancelled');
+    expect(appointmentStatuses).not.toContain('entered-in-error');
   });
 });
