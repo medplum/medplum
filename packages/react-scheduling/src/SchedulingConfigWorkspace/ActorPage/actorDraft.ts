@@ -2,10 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { deepClone, deepEquals, getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
 import type { Device, Location, Practitioner, Reference } from '@medplum/fhirtypes';
+import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM } from '../../constants';
 import { isActorInactive } from '../SchedulingConfigWorkspace.utils';
 
 /** A provider, room, or device, as stored or as the page would store it. */
 export type ActorResource = Practitioner | Location | Device;
+
+/** The kinds of actor the workspace creates. Providers come from elsewhere. */
+export type NewActorType = 'Location' | 'Device';
 
 /** What the page holds for the actor itself. */
 export interface ActorGeneralFields {
@@ -22,8 +26,27 @@ export interface ActorGeneralFields {
 const USER_FRIENDLY_NAME = 'user-friendly-name';
 
 /**
+ * A room or device that hasn't been saved yet. Rooms are typed `ro`, so the service facility pickers never
+ * offer one as a service facility.
+ * @param resourceType - What to create.
+ * @returns The resource to start from.
+ */
+export function newActorResource(resourceType: NewActorType): Location | Device {
+  if (resourceType === 'Location') {
+    return {
+      resourceType: 'Location',
+      status: 'active',
+      physicalType: {
+        coding: [{ system: LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, code: 'ro', display: 'Room' }],
+      },
+    };
+  }
+  return { resourceType: 'Device', status: 'active' };
+}
+
+/**
  * Seeds the page's General fields from the actor.
- * @param resource - The provider, room, or device, as stored.
+ * @param resource - The provider, room, or device, as stored or as newly started.
  * @returns What the page opens with.
  */
 export function actorGeneralFieldsOf(resource: ActorResource): ActorGeneralFields {
@@ -41,7 +64,7 @@ export function actorGeneralFieldsOf(resource: ActorResource): ActorGeneralField
 /**
  * Builds the actor to store from what the page holds. Only what was edited is rewritten, so a provider's
  * save changes its time zone and nothing an external system maintains.
- * @param base - The actor as stored.
+ * @param base - The actor as stored, or as newly started.
  * @param fields - What the page holds.
  * @param initial - What the page opened with.
  * @returns The actor to store.

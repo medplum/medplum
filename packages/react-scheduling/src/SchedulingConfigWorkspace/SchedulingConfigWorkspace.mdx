@@ -34,8 +34,8 @@ Locations typed as a room or a bed, and any Location with a Schedule, which book
 type.
 
 Each section reads one page of up to 1000, and says so when there are more. A section that can't be read is
-named above the page, and the others still list. The **+** beside Visit types starts a new visit type, which is
-listed once it is saved.
+named above the page, and the others still list. The **+** beside Visit types, Rooms, or Devices starts a new
+one, which is listed once it is saved. Providers can't be created here.
 
 ## A visit type's page
 
@@ -71,6 +71,10 @@ listed once it is saved.
 **Offer visit types** opens a searchable list of every active visit type not offered yet. Tick any number to offer
 them together. Offering an actor's first visit type creates its Schedule when the page is saved, and not before.
 **Stop offering** asks first, then removes the settings the Schedule holds for that visit type with it.
+
+A new room is typed as a room (`physicalType` `ro`), so the service facility pickers never offer it as a service
+facility. A new room or device starts active, unless switched off before Create, and can offer visit types once it
+is created. Unlike a new visit type, it doesn't start off: it can't be booked until it offers one anyway.
 
 ## Saving
 
