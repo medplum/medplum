@@ -3,12 +3,15 @@
 import type { MedplumClient, MedplumClientEventMap } from '@medplum/core';
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import type { MedplumNavigateFunction } from './MedplumProvider.context';
-import { reactContext } from './MedplumProvider.context';
+import { useStabilizedCallback } from '../useStabilizedCallback/useStabilizedCallback';
+import { defaultOnError } from './defaultOnError';
+import type { MedplumErrorDetails, MedplumErrorHandler, MedplumNavigateFunction } from './MedplumProvider.context';
+import { medplumErrorHandlerContext, reactContext } from './MedplumProvider.context';
 
 export interface MedplumProviderProps {
   readonly medplum: MedplumClient;
   readonly navigate?: MedplumNavigateFunction;
+  readonly onError?: MedplumErrorHandler;
   readonly children: ReactNode;
 }
 
@@ -32,6 +35,16 @@ const EVENTS_TO_TRACK = [
 export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
   const medplum = props.medplum;
   const navigate = props.navigate ?? defaultNavigate;
+  // Callers run their own recovery after reporting (clearing loading state and so on), so a handler
+  // that throws must not escape into them. Fall back to the console for both errors instead.
+  const onError = useStabilizedCallback((error: unknown, details?: MedplumErrorDetails): void => {
+    try {
+      (props.onError ?? defaultOnError)(error, details);
+    } catch (handlerError) {
+      defaultOnError(error, details);
+      defaultOnError(handlerError, { source: 'MedplumProvider', message: 'onError handler threw' });
+    }
+  });
 
   const [state, setState] = useState({
     profile: medplum.getProfile(),
@@ -66,7 +79,11 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
     [state, medplum, navigate]
   );
 
-  return <reactContext.Provider value={medplumContext}>{props.children}</reactContext.Provider>;
+  return (
+    <reactContext.Provider value={medplumContext}>
+      <medplumErrorHandlerContext.Provider value={onError}>{props.children}</medplumErrorHandlerContext.Provider>
+    </reactContext.Provider>
+  );
 }
 
 /**
