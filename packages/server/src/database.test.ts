@@ -12,7 +12,9 @@ import {
   prepareDatabasePoolsForShutdown,
   releaseAdvisoryLock,
 } from './database';
+import { GLOBAL_SHARD_ID, PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
+import { getConnectionShardId } from './sharding/connection-shard-id';
 
 describe('Advisory locks', () => {
   let clientA: PoolClient;
@@ -21,7 +23,7 @@ describe('Advisory locks', () => {
   beforeEach(async () => {
     const config = await loadTestConfig();
     await initDatabase(config);
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
     clientA = await pool.connect();
     clientB = await pool.connect();
     await clientA.query(`SET statement_timeout TO 100`);
@@ -61,6 +63,25 @@ describe('Advisory locks', () => {
   });
 });
 
+describe('getDatabasePool', () => {
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initDatabase(config);
+  });
+
+  afterAll(async () => {
+    await closeDatabase();
+  });
+
+  // getDatabasePool takes normalized shard IDs, so the placeholder and TODO IDs are not aliases for the global shard
+  test.each(['unknown-shard', '', PLACEHOLDER_SHARD_ID, TODO_SHARD_ID, 'toString'])(
+    'Throws for a shard with no database: "%s"',
+    (shardId) => {
+      expect(() => getDatabasePool(DatabaseMode.WRITER, shardId)).toThrow(`Database not set up for shard ${shardId}`);
+    }
+  );
+});
+
 describe('prepareDatabasePoolsForShutdown', () => {
   beforeEach(async () => {
     const config = await loadTestConfig();
@@ -73,8 +94,10 @@ describe('prepareDatabasePoolsForShutdown', () => {
   });
 
   test('Closes all idle connections regardless of the configured minimum', async () => {
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     const clients = await Promise.all([pool.connect(), pool.connect()]);
+    expect(getConnectionShardId(pool)).toStrictEqual(GLOBAL_SHARD_ID);
+    expect(clients.map(getConnectionShardId)).toStrictEqual([GLOBAL_SHARD_ID, GLOBAL_SHARD_ID]);
     clients.forEach((client) => client.release());
     expect(pool.options.min).toBe(2);
     expect(pool.idleCount).toBe(2);
@@ -94,8 +117,8 @@ describe('prepareDatabasePoolsForShutdown', () => {
   test('Handles errors thrown while preparing pools', async () => {
     type PoolWithRemove = Pool & { _remove: (client: PoolClient) => void };
 
-    const writerPool = getDatabasePool(DatabaseMode.WRITER);
-    const readerPool = getDatabasePool(DatabaseMode.READER);
+    const writerPool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
+    const readerPool = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
     const clients = await Promise.all([writerPool.connect(), readerPool.connect()]);
     clients.forEach((client) => client.release());
 
@@ -115,8 +138,14 @@ describe('prepareDatabasePoolsForShutdown', () => {
       expect(writerRemoveSpy).toHaveBeenCalledTimes(1);
       expect(readerRemoveSpy).toHaveBeenCalledTimes(1);
       expect(errorSpy).toHaveBeenCalledTimes(2);
-      expect(errorSpy).toHaveBeenCalledWith('Error purging idle pool connections', { err: writerError });
-      expect(errorSpy).toHaveBeenCalledWith('Error purging idle pool connections', { err: readerError });
+      expect(errorSpy).toHaveBeenCalledWith('Error purging idle pool connections', {
+        err: writerError,
+        shardId: GLOBAL_SHARD_ID,
+      });
+      expect(errorSpy).toHaveBeenCalledWith('Error purging idle pool connections', {
+        err: readerError,
+        shardId: GLOBAL_SHARD_ID,
+      });
     } finally {
       writerRemoveSpy.mockRestore();
       readerRemoveSpy.mockRestore();
@@ -125,7 +154,7 @@ describe('prepareDatabasePoolsForShutdown', () => {
   });
 
   test('Closes connections released during graceful shutdown', async () => {
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     const idleClient = await pool.connect();
     const activeClient = await pool.connect();
     idleClient.release();

@@ -8,7 +8,7 @@ import { getConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool, withPoolClient } from '../database';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
+import { normalizeShardId, PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
 import type { PgQueryable } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
@@ -190,21 +190,23 @@ export async function queuePostDeployMigration(
 
 export async function withLongRunningDatabaseClient<TResult>(
   callback: (client: PoolClient) => Promise<TResult>,
-  databaseMode?: DatabaseMode
+  opts: { shardId: string; databaseMode?: DatabaseMode }
 ): Promise<TResult> {
   return withPoolClient(
     async (client) => {
       await client.query(`SET statement_timeout TO 0`);
       return callback(client);
     },
-    getDatabasePool(databaseMode ?? DatabaseMode.WRITER)
+    getDatabasePool(opts.databaseMode ?? DatabaseMode.WRITER, opts.shardId)
   );
 }
 
 export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<AsyncJob> | undefined> {
   const config = getConfig();
   const isDisabled = config.database.runMigrations === false || config.database.disableRunPostDeployMigrations;
-  const pendingPostDeployMigration = await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER));
+  const pendingPostDeployMigration = await getPendingPostDeployMigration(
+    getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID))
+  );
 
   if (!isDisabled && pendingPostDeployMigration === MigrationVersion.UNKNOWN) {
     //throwing here seems extreme since it stops the server from starting
@@ -248,7 +250,7 @@ export async function maybeStartPostDeployMigration(
     );
   }
 
-  const pool = getDatabasePool(DatabaseMode.WRITER);
+  const pool = getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID));
   const pendingPostDeployMigration = await getPendingPostDeployMigration(pool);
   // This should never happen unless there is something wrong with the state of the database but technically possible
   if (pendingPostDeployMigration === MigrationVersion.UNKNOWN) {

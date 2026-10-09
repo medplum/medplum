@@ -26,7 +26,7 @@ import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/as
 import { sendOutcome } from '../fhir/outcomes';
 import { getShardSystemRepo, Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
-import { PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
+import { normalizeShardId, PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
 import { isValidPostgresIdentifier } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted, setPreDeployVersion } from '../migration-sql';
@@ -353,7 +353,7 @@ superAdminRouter.post('/rebuildprojectid', async (req: Request, res: Response) =
   await sendAsyncResponse(req, res, async () => {
     const resourceTypes = getResourceTypes();
     for (const resourceType of resourceTypes) {
-      await getDatabasePool(DatabaseMode.WRITER).query(
+      await getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID)).query(
         `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
       );
     }
@@ -364,7 +364,7 @@ superAdminRouter.get('/migrations', async (req: Request, res: Response) => {
   requireSuperAdmin();
 
   const postDeployMigrations = getPostDeployMigrationVersions();
-  const conn = getDatabasePool(DatabaseMode.WRITER);
+  const conn = getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID));
   const pendingPostDeployMigration = await getPendingPostDeployMigration(conn);
 
   res.json({
@@ -402,7 +402,7 @@ superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Re
   requireAsync(req);
 
   const migrationActions = await generateMigrationActions({
-    dbClient: getDatabasePool(DatabaseMode.WRITER),
+    dbClient: getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID)),
     dropUnmatchedIndexes: true,
   });
 
@@ -569,7 +569,10 @@ superAdminRouter.post(
     }
 
     assert(req.body.dataVersion !== undefined);
-    await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), req.body.dataVersion);
+    await markPostDeployMigrationCompleted(
+      getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID)),
+      req.body.dataVersion
+    );
 
     sendOutcome(res, allOk);
   }
@@ -600,7 +603,7 @@ superAdminRouter.post(
     }
 
     const schemaVersion = Number(req.body.schemaVersion);
-    await setPreDeployVersion(getDatabasePool(DatabaseMode.WRITER), schemaVersion);
+    await setPreDeployVersion(getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID)), schemaVersion);
     globalLogger.info('[Super Admin]: Schema version set', { schemaVersion });
 
     sendOutcome(res, allOk);
@@ -659,7 +662,7 @@ superAdminRouter.post(
       .join(', ')});`;
 
     const startTime = Date.now();
-    await getDatabasePool(DatabaseMode.WRITER).query(query); // shardId will be an input to this route
+    await getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID)).query(query); // shardId will be an input to this route
     globalLogger.info('[Super Admin]: Table settings updated', {
       tableName: req.body.tableName,
       settings: req.body.settings,
@@ -706,7 +709,7 @@ superAdminRouter.post(
 
     await sendAsyncResponse(req, res, async () => {
       const startTime = Date.now();
-      await getDatabasePool(DatabaseMode.WRITER).query(query); // shardId will be an input to this route
+      await getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID)).query(query); // shardId will be an input to this route
       globalLogger.info('[Super Admin]: Vacuum completed', {
         tableNames: req.body.tableNames,
         vacuum,

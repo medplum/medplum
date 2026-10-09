@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { OperationOutcomeError, accepted } from '@medplum/core';
+import { accepted, OperationOutcomeError } from '@medplum/core';
 import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError } from 'bullmq';
 import type { Request, Response } from 'express';
@@ -16,6 +16,7 @@ import { getProjectScopedUrl } from '../../../util/url';
 import { CancelledError } from '../../../workers/utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
+import { normalizeShardId, TODO_SHARD_ID } from '../../sharding';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
@@ -157,7 +158,10 @@ export class AsyncJobExecutor {
       getLogger().info('Marking post-deploy migration complete', {
         version: `v${completedDataVersion}`,
       });
-      await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), completedDataVersion);
+      await markPostDeployMigrationCompleted(
+        getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID)),
+        completedDataVersion
+      );
       this.resource = updatedJob = await this.repo.getSystemRepo().updateResource(updatedJob);
       await maybeAutoRunPendingPostDeployMigration();
       return updatedJob;

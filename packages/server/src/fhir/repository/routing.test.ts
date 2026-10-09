@@ -9,7 +9,7 @@ import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
-import { createTestProject, spyOnQuery, withTestContext } from '../../test.setup';
+import { createTestProject, spyOnQuery, TEST_SHARD_ID, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
 import { getShardSystemRepo } from '../repo';
 import { GLOBAL_SHARD_ID } from '../sharding';
@@ -17,11 +17,9 @@ import { repoAccess } from './access-tracker';
 import type { RepositoryConnections } from './repository-connections';
 
 /**
- * A shard other than the global one. No database is configured for it yet, so every connection
- * still dials the test database; these tests assert which connection an operation is routed to and
- * which combinations are refused, not that the data is actually held apart.
+ * A project shard backed by its own database in the sharded test configuration.
  */
-const projectShardId = 'shard-b';
+const projectShardId = TEST_SHARD_ID;
 
 /**
  * The shards a repository has opened connections for.
@@ -118,7 +116,7 @@ function expectRolledBack(querySpy: MockInstance | undefined): void {
 
 describe('Repository shard routing', () => {
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    const config = await loadTestConfig({ sharded: true });
     await initAppServices(config);
   });
 
@@ -139,6 +137,17 @@ describe('Repository shard routing', () => {
       repo.getDatabaseClient(repoAccess.sqlWrite('Observation'));
       repo.getDatabaseClient(repoAccess.sqlWrite('ProjectMembership'));
       expect(shardsOf(repo)).toStrictEqual([projectShardId, GLOBAL_SHARD_ID]);
+    } finally {
+      repo[Symbol.dispose]();
+    }
+  });
+
+  test('Throws when an operation reaches a shard with no configured database', () => {
+    const repo = getShardSystemRepo('unknown-shard');
+    try {
+      expect(() => repo.getDatabaseClient(repoAccess.sqlRead('Patient'))).toThrow(
+        'Database not set up for shard unknown-shard'
+      );
     } finally {
       repo[Symbol.dispose]();
     }
@@ -507,8 +516,10 @@ describe('Repository shard routing', () => {
 
   test('Reaches both shards in sequence outside a transaction', () =>
     withTestContext(async () => {
-      const { project, repo: projectRepo } = await createTestProject({ withRepo: true });
-      const patient = await projectRepo.createResource<Patient>({ resourceType: 'Patient' });
+      const { project } = await createTestProject();
+      // Projects are not yet assigned to a shard, so write the Patient to the project shard directly
+      using writer = getShardSystemRepo(projectShardId);
+      const patient = await writer.createResource<Patient>({ resourceType: 'Patient' });
 
       const repo = getShardSystemRepo(projectShardId);
       try {

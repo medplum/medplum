@@ -4,8 +4,9 @@ import { sleep } from '@medplum/core';
 import type { PoolClient, PoolConfig } from 'pg';
 import { Pool } from 'pg';
 import * as semver from 'semver';
-import type { MedplumDatabaseConfig, MedplumDatabaseSslConfig } from './config/types';
+import type { MedplumDatabaseConfig } from './config/types';
 import type { ServerConfig } from './config/utils';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
@@ -15,6 +16,7 @@ import {
   getPreDeployMigration,
 } from './migrations/migration-utils';
 import { getPreDeployMigrationVersions, MigrationVersion } from './migrations/migration-versions';
+import { getConnectionShardId, setConnectionShardId } from './sharding/connection-shard-id';
 import { getServerVersion } from './util/version';
 
 export const DatabaseMode = {
@@ -23,19 +25,31 @@ export const DatabaseMode = {
 } as const;
 export type DatabaseMode = (typeof DatabaseMode)[keyof typeof DatabaseMode];
 
-let pool: Pool | undefined;
-let readonlyPool: Pool | undefined;
+type ShardPools = { pool: Pool | undefined; readonlyPool: Pool | undefined };
+const globalPools: ShardPools = { pool: undefined, readonlyPool: undefined };
+const shardPools: Record<string, ShardPools> = {};
 
-export function getDatabasePool(mode: DatabaseMode): Pool {
-  if (!pool) {
-    throw new Error('Database not setup');
+export function getDatabasePool(mode: DatabaseMode, shardId: string): Pool {
+  let pools: ShardPools | undefined;
+  if (shardId === GLOBAL_SHARD_ID) {
+    pools = globalPools;
+  } else if (Object.hasOwn(shardPools, shardId)) {
+    pools = shardPools[shardId];
   }
 
-  if (mode === DatabaseMode.READER && readonlyPool) {
-    return readonlyPool;
+  if (!pools?.pool) {
+    if (shardId === GLOBAL_SHARD_ID) {
+      throw new Error('Database not setup');
+    } else {
+      throw new Error(`Database not set up for shard ${shardId}`);
+    }
   }
 
-  return pool;
+  if (mode === DatabaseMode.READER && pools.readonlyPool) {
+    return pools.readonlyPool;
+  }
+
+  return pools.pool;
 }
 
 export const locks = {
@@ -43,14 +57,40 @@ export const locks = {
 };
 
 export async function initDatabase(serverConfig: ServerConfig): Promise<void> {
-  pool = await initPool(serverConfig.database, serverConfig.databaseProxyEndpoint);
-
-  if (serverConfig.database.runMigrations !== false) {
-    await runMigrations(pool);
+  globalPools.pool = initPool(GLOBAL_SHARD_ID, serverConfig.database, serverConfig.databaseProxyEndpoint);
+  if (serverConfig.readonlyDatabase) {
+    globalPools.readonlyPool = initPool(
+      GLOBAL_SHARD_ID,
+      serverConfig.readonlyDatabase,
+      serverConfig.readonlyDatabaseProxyEndpoint
+    );
   }
 
-  if (serverConfig.readonlyDatabase) {
-    readonlyPool = await initPool(serverConfig.readonlyDatabase, serverConfig.readonlyDatabaseProxyEndpoint);
+  const migrationPools: Pool[] = [];
+  if (serverConfig.database.runMigrations !== false) {
+    migrationPools.push(globalPools.pool);
+  }
+
+  for (const [shardId, shardConfig] of Object.entries(serverConfig.shards ?? {})) {
+    if (shardId === GLOBAL_SHARD_ID) {
+      continue;
+    }
+    const shardPool = initPool(shardId, shardConfig.database, undefined);
+    const readonlyShardPool =
+      shardConfig.readonlyDatabase && initPool(shardId, shardConfig.readonlyDatabase, undefined);
+
+    shardPools[shardId] = {
+      pool: shardPool,
+      readonlyPool: readonlyShardPool,
+    };
+
+    if (shardConfig.database.runMigrations !== false) {
+      migrationPools.push(shardPool);
+    }
+  }
+
+  for (const pool of migrationPools) {
+    await runMigrations(pool);
   }
 }
 
@@ -59,7 +99,7 @@ function initPoolConfig(
   proxyEndpoint: string | undefined,
   applicationName = 'medplum-server'
 ): PoolConfig {
-  const poolConfig: PoolConfig = {
+  const poolConfig = {
     host: config.host,
     port: config.port,
     database: config.dbname,
@@ -81,16 +121,17 @@ function initPoolConfig(
     poolConfig.host = proxyEndpoint;
     // require SSL when using a proxy endpoint
     poolConfig.ssl = typeof poolConfig.ssl === 'object' ? poolConfig.ssl : {};
-    (poolConfig.ssl as MedplumDatabaseSslConfig).require = true;
+    poolConfig.ssl.require = true;
   }
 
   return poolConfig;
 }
 
-async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | undefined): Promise<Pool> {
-  const poolConfig = initPoolConfig(config, proxyEndpoint);
-
-  const pool = new Pool(poolConfig);
+function initPool(shardId: string, config: MedplumDatabaseConfig, proxyEndpoint: string | undefined): Pool {
+  const pool = new Pool(initPoolConfig(config, proxyEndpoint));
+  setConnectionShardId(pool, shardId);
+  // 'connect' fires once per new client, before it is handed out by either connect() or query()
+  pool.on('connect', (client) => setConnectionShardId(client, shardId));
 
   pool.on('error', (err) => {
     globalLogger.error('Database connection error', err);
@@ -126,14 +167,32 @@ export function getDefaultStatementTimeout(config: MedplumDatabaseConfig): numbe
 }
 
 export async function closeDatabase(): Promise<void> {
-  if (pool) {
-    await pool.end();
-    pool = undefined;
+  async function closePools(shardId: string, pools: ShardPools): Promise<void> {
+    if (pools.pool) {
+      globalLogger.info('Closing database pool', {
+        shardId,
+        totalCount: pools.pool.totalCount,
+        idleCount: pools.pool.idleCount,
+        waitingCount: pools.pool.waitingCount,
+      });
+      await pools.pool.end();
+      pools.pool = undefined;
+    }
+    if (pools.readonlyPool) {
+      globalLogger.info('Closing readonly database pool', {
+        shardId,
+        totalCount: pools.readonlyPool.totalCount,
+        idleCount: pools.readonlyPool.idleCount,
+        waitingCount: pools.readonlyPool.waitingCount,
+      });
+      await pools.readonlyPool.end();
+      pools.readonlyPool = undefined;
+    }
   }
 
-  if (readonlyPool) {
-    await readonlyPool.end();
-    readonlyPool = undefined;
+  await closePools(GLOBAL_SHARD_ID, globalPools);
+  for (const [shardId, pools] of Object.entries(shardPools)) {
+    await closePools(shardId, pools);
   }
 }
 
@@ -261,7 +320,11 @@ async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersi
     if (migration) {
       const start = Date.now();
       await migration.run(client);
-      globalLogger.info('Database pre-deploy migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
+      globalLogger.info('Database pre-deploy migration', {
+        shardId: getConnectionShardId(client),
+        version: `v${i}`,
+        duration: `${Date.now() - start} ms`,
+      });
       await client.query('UPDATE "DatabaseMigration" SET "version"=$1 WHERE "id" = 1', [i]);
     }
   }
@@ -274,20 +337,21 @@ async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersi
  * to the pool. {@link closeDatabase} later ends the pools completely.
  */
 export function prepareDatabasePoolsForShutdown(): void {
-  try {
-    if (pool) {
-      preparePoolForShutdown(pool, DatabaseMode.WRITER);
+  function preparePool(pool: Pool | undefined, mode: DatabaseMode, shardId: string): void {
+    try {
+      if (pool) {
+        preparePoolForShutdown(pool, mode);
+      }
+    } catch (err) {
+      globalLogger.error('Error purging idle pool connections', { err, shardId });
     }
-  } catch (err) {
-    globalLogger.error('Error purging idle pool connections', { err });
   }
 
-  try {
-    if (readonlyPool) {
-      preparePoolForShutdown(readonlyPool, DatabaseMode.READER);
-    }
-  } catch (err) {
-    globalLogger.error('Error purging idle pool connections', { err });
+  preparePool(globalPools.pool, DatabaseMode.WRITER, GLOBAL_SHARD_ID);
+  preparePool(globalPools.readonlyPool, DatabaseMode.READER, GLOBAL_SHARD_ID);
+  for (const [shardId, pools] of Object.entries(shardPools)) {
+    preparePool(pools.pool, DatabaseMode.WRITER, shardId);
+    preparePool(pools.readonlyPool, DatabaseMode.READER, shardId);
   }
 }
 

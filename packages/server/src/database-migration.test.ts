@@ -14,7 +14,7 @@ import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { SystemRepository } from './fhir/repo';
 import { getShardSystemRepo } from './fhir/repo';
-import { PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from './fhir/sharding';
+import { normalizeShardId, PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from './fhir/sharding';
 import type { PgQueryable } from './fhir/sql';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
@@ -468,7 +468,9 @@ describe('Database migrations', () => {
           systemRepo.searchOne<AsyncJob>(parseSearchRequest('AsyncJob', { type: 'data-migration', status: 'accepted' }))
         ).resolves.toBeUndefined();
 
-        expect(await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER))).toStrictEqual(1);
+        expect(
+          await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER, normalizeShardId(shardId)))
+        ).toStrictEqual(1);
 
         await expect(maybeStartPostDeployMigration(2)).rejects.toThrow(
           'Requested post-deploy migration v2, but the pending post-deploy migration is v1.'

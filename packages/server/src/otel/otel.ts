@@ -7,6 +7,7 @@ import os from 'node:os';
 import v8 from 'node:v8';
 import type { WorkerName } from '../config/types';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { getAllShards } from '../fhir/sharding';
 import { heartbeat } from '../heartbeat';
 import { getBatchQueue } from '../workers/batch';
 import { getCronQueue } from '../workers/cron';
@@ -34,22 +35,14 @@ export function getQueueMetricName(queueName: WorkerName, metric: QueueMetric): 
   return `medplum.${queueName}.${metric}`;
 }
 
-let queueEntries: [WorkerName, Queue][] | undefined;
-function getQueueEntries(): [WorkerName, Queue][] {
-  if (!queueEntries) {
-    if (!(getSubscriptionQueue() && getCronQueue() && getDownloadQueue() && getBatchQueue() && getSetAccountsQueue())) {
-      throw new Error('Queues not initialized');
-    }
-    queueEntries = [
-      ['subscription', getSubscriptionQueue() as Queue],
-      ['cron', getCronQueue() as Queue],
-      ['download', getDownloadQueue() as Queue],
-      ['batch', getBatchQueue() as Queue],
-      ['set-accounts', getSetAccountsQueue() as Queue],
-    ];
-  }
-  return queueEntries;
-}
+// Wrapped so each call goes through the module export, which tests replace with spies.
+const queueGetters: [WorkerName, () => Queue | undefined][] = [
+  ['subscription', () => getSubscriptionQueue()],
+  ['cron', () => getCronQueue()],
+  ['download', () => getDownloadQueue()],
+  ['batch', () => getBatchQueue()],
+  ['set-accounts', () => getSetAccountsQueue()],
+];
 
 // This file includes OpenTelemetry helpers.
 // Note that this file is related but separate from the OpenTelemetry initialization code in instrumentation.ts.
@@ -152,37 +145,23 @@ export function initOtelHeartbeat(): void {
   if (otelHeartbeatListener) {
     return;
   }
-  otelHeartbeatListener = async () => {
-    const writerPool = getDatabasePool(DatabaseMode.WRITER);
-    const readerPool = getDatabasePool(DatabaseMode.READER);
-
-    setGauge('medplum.db.totalConnections', writerPool.totalCount, {
-      ...BASE_METRIC_OPTIONS,
-      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
-    });
-    setGauge('medplum.db.idleConnections', writerPool.idleCount, {
-      ...BASE_METRIC_OPTIONS,
-      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
-    });
-    setGauge('medplum.db.queriesAwaitingClient', writerPool.waitingCount, {
-      ...BASE_METRIC_OPTIONS,
-      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
-    });
-
-    if (writerPool !== readerPool) {
-      setGauge('medplum.db.totalConnections', readerPool.totalCount, {
-        ...BASE_METRIC_OPTIONS,
-        attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
-      });
-      setGauge('medplum.db.idleConnections', readerPool.idleCount, {
-        ...BASE_METRIC_OPTIONS,
-        attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
-      });
-      setGauge('medplum.db.queriesAwaitingClient', readerPool.waitingCount, {
-        ...BASE_METRIC_OPTIONS,
-        attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
-      });
+  // Workers initialize every queue before the heartbeat starts, so a missing one here is a wiring bug.
+  let missingQueues: WorkerName[] | undefined;
+  for (const [queueName, getQueue] of queueGetters) {
+    if (!getQueue()) {
+      missingQueues ??= [];
+      missingQueues.push(queueName);
     }
+  }
+  if (missingQueues) {
+    throw new Error(`Queues not initialized: ${missingQueues.join(', ')}`);
+  }
+  const shardIdsToCheck: string[] = [];
+  for (const shardConfig of getAllShards()) {
+    shardIdsToCheck.push(shardConfig.id);
+  }
+  otelHeartbeatListener = async () => {
+    await Promise.all(shardIdsToCheck.map((shardId) => recordShardMetrics(shardId)));
 
     const heapStats = v8.getHeapStatistics();
     setGauge('medplum.node.usedHeapSize', heapStats.used_heap_size, BASE_METRIC_OPTIONS);
@@ -199,7 +178,9 @@ export function initOtelHeartbeat(): void {
       BASE_METRIC_OPTIONS
     );
 
-    for (const [queueName, queue] of getQueueEntries()) {
+    // Workers can close before the heartbeat is cleaned up, leaving queues unset
+    for (const [queueName, getQueue] of queueGetters) {
+      const queue = getQueue();
       if (queue) {
         setGauge(getQueueMetricName(queueName, 'waitingCount'), await queue.getWaitingCount());
         setGauge(getQueueMetricName(queueName, 'delayedCount'), await queue.getDelayedCount());
@@ -210,12 +191,44 @@ export function initOtelHeartbeat(): void {
   heartbeat.addEventListener('heartbeat', otelHeartbeatListener);
 }
 
+async function recordShardMetrics(shardId: string): Promise<void> {
+  const writerPool = getDatabasePool(DatabaseMode.WRITER, shardId);
+  const readerPool = getDatabasePool(DatabaseMode.READER, shardId);
+
+  const writerAttrs = { ...BASE_METRIC_OPTIONS.attributes, shardId, dbInstanceType: 'writer' };
+  setGauge('medplum.db.totalConnections', writerPool.totalCount, {
+    ...BASE_METRIC_OPTIONS,
+    attributes: writerAttrs,
+  });
+  setGauge('medplum.db.idleConnections', writerPool.idleCount, {
+    ...BASE_METRIC_OPTIONS,
+    attributes: writerAttrs,
+  });
+  setGauge('medplum.db.queriesAwaitingClient', writerPool.waitingCount, {
+    ...BASE_METRIC_OPTIONS,
+    attributes: writerAttrs,
+  });
+
+  if (writerPool !== readerPool) {
+    const readerAttrs = { ...BASE_METRIC_OPTIONS.attributes, shardId, dbInstanceType: 'reader' };
+    setGauge('medplum.db.totalConnections', readerPool.totalCount, {
+      ...BASE_METRIC_OPTIONS,
+      attributes: readerAttrs,
+    });
+    setGauge('medplum.db.idleConnections', readerPool.idleCount, {
+      ...BASE_METRIC_OPTIONS,
+      attributes: readerAttrs,
+    });
+    setGauge('medplum.db.queriesAwaitingClient', readerPool.waitingCount, {
+      ...BASE_METRIC_OPTIONS,
+      attributes: readerAttrs,
+    });
+  }
+}
+
 export function cleanupOtelHeartbeat(): void {
   if (otelHeartbeatListener) {
     heartbeat.removeEventListener('heartbeat', otelHeartbeatListener);
     otelHeartbeatListener = undefined;
-  }
-  if (queueEntries) {
-    queueEntries = undefined;
   }
 }

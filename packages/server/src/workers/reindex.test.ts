@@ -888,7 +888,7 @@ describe('Reindex Worker', () => {
       const rows = await new SelectQuery('User')
         .column('projectId')
         .where('id', '=', user.id)
-        .execute(getDatabasePool(DatabaseMode.READER));
+        .execute(getDatabasePool(DatabaseMode.READER, repo.shardId));
       expect(rows[0].projectId).toStrictEqual(project.id);
     }));
 });

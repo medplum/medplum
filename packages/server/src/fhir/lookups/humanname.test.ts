@@ -58,7 +58,7 @@ describe('HumanName Lookup Table', () => {
         name: [{ given: ['Alice'], family: randomUUID() }],
       });
 
-      const db = getDatabasePool(DatabaseMode.WRITER);
+      const db = getDatabasePool(DatabaseMode.WRITER, repo.shardId);
       const rows = await db.query('SELECT "projectId" FROM "HumanName" WHERE "resourceId" = $1', [patient.id]);
       expect(rows.rows).toStrictEqual([{ projectId: project.id }]);
     }));

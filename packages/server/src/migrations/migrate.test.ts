@@ -5,6 +5,7 @@ import { escapeIdentifier } from 'pg';
 import type { Mock, MockInstance } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import {
   buildCreateTables,
@@ -61,10 +62,11 @@ describe('Generator', () => {
   });
 
   describe('generateMigrationActions', () => {
+    const shardId = GLOBAL_SHARD_ID;
     test('generates migration without errors', async () => {
       await expect(
         generateMigrationActions({
-          dbClient: getDatabasePool(DatabaseMode.WRITER),
+          dbClient: getDatabasePool(DatabaseMode.WRITER, shardId),
           dropUnmatchedIndexes: false,
           analyzeResourceTables: true,
         })
@@ -73,7 +75,7 @@ describe('Generator', () => {
 
     test('returns PhasalMigration with preDeploy and postDeploy arrays', async () => {
       const result = await generateMigrationActions({
-        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dbClient: getDatabasePool(DatabaseMode.WRITER, shardId),
         dropUnmatchedIndexes: false,
         analyzeResourceTables: false,
       });
@@ -117,7 +119,7 @@ describe('Generator', () => {
       });
 
       const result = await generateMigrationActions({
-        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dbClient: getDatabasePool(DatabaseMode.WRITER, shardId),
       });
 
       expect(result.preDeploy).toContainEqual(expect.objectContaining({ type: 'CREATE_TABLE' }));
@@ -542,6 +544,7 @@ describe('Generator', () => {
   });
 
   describe('generateIndexesActions', () => {
+    const shardId = GLOBAL_SHARD_ID;
     test('allows a primary key to satisfy a structurally identical unique index declaration', () => {
       const startTable: TableDefinition = {
         name: 'Coding',
@@ -562,7 +565,7 @@ describe('Generator', () => {
       };
 
       const result = generateIndexesActions(startTable, targetTable, {
-        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dbClient: getDatabasePool(DatabaseMode.WRITER, shardId),
         dropUnmatchedIndexes: true,
       });
 
@@ -614,7 +617,7 @@ describe('Generator', () => {
       };
 
       const result = generateIndexesActions(startTable, targetTable, {
-        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dbClient: getDatabasePool(DatabaseMode.WRITER, shardId),
         dropUnmatchedIndexes: true,
       });
 
