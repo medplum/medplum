@@ -1,0 +1,27 @@
+.DS_Store
+
+# Node/npm
+node_modules/
+package-lock.json
+
+# Dotenv
+.env
+
+# Output
+dist/
+
+# TypeScript incremental build
+tsconfig.tsbuildinfo
+
+# VSCode
+.vscode/
+
+# JetBrains
+.idea/
+
+# Local migration data — never commit source CCDAs or generated bundles
+ccda/
+fhir-output/
+failed/
+*.xml
+ccda*/
