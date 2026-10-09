@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Group } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { formatCodeableConcept, getDisplayString, getReferenceString, hasSchedulingParameters } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { AsyncAutocomplete } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
-import type { JSX } from 'react';
-import { useCallback } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { useCallback, useMemo } from 'react';
+import { VisitTypeIcon } from '../VisitTypeIcon';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { getServiceDurationMinutes } from './AppointmentServiceSelect.utils';
 
@@ -29,11 +31,15 @@ export interface AppointmentServiceSelectProps {
   readonly onChange: (service: WithId<HealthcareService> | undefined) => void;
   /** A chosen site, which narrows the services on offer to the ones held there. */
   readonly location?: WithId<Location> | Reference<Location>;
-  readonly label?: string;
+  readonly locations?: readonly (WithId<Location> | Reference<Location>)[];
+  readonly label?: ReactNode;
   readonly placeholder?: string;
   readonly required?: boolean;
   readonly error?: string;
   readonly disabled?: boolean;
+  readonly className?: string;
+  readonly excludeIds?: readonly string[];
+  readonly serviceColor?: (service: WithId<HealthcareService>) => string;
 }
 
 /**
@@ -52,6 +58,7 @@ export interface AppointmentServiceSelectProps {
 export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): JSX.Element {
   const {
     location,
+    locations,
     defaultValue,
     onChange,
     label = 'Visit type',
@@ -59,10 +66,14 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
     required,
     error,
     disabled,
+    excludeIds,
+    serviceColor,
+    className,
   } = props;
   const medplum = useMedplum();
 
-  const locationReference = location && getReferenceString(location);
+  const locationReference =
+    (locations ?? (location ? [location] : [])).map((site) => getReferenceString(site)).join(',') || undefined;
 
   const loadOptions = useCallback(
     async (input: string, signal: AbortSignal): Promise<WithId<HealthcareService>[]> => {
@@ -81,15 +92,33 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
       );
       // The scheduling filter is applied here rather than in the search because it
       // reads an extension, which no search parameter covers.
-      const services = pages.flatMap((page) => page.filter(hasSchedulingParameters));
+      const services = pages.flatMap((page) =>
+        page.filter((service) => hasSchedulingParameters(service) && !excludeIds?.includes(service.id))
+      );
       // Disjoint by construction — one needs `location` present, the other needs it
       // absent — so the merge is a sort with nothing to deduplicate, and where a visit
       // type was found never shows in the order.
       services.sort((left, right) => (left.name ?? '').localeCompare(right.name ?? ''));
       return services.slice(0, SERVICE_PAGE_SIZE);
     },
-    [medplum, locationReference]
+    [medplum, locationReference, excludeIds]
   );
+
+  const itemComponent = useMemo(() => {
+    if (!serviceColor) {
+      return ServiceItem;
+    }
+    return function ColoredServiceItem(
+      item: Readonly<AsyncAutocompleteOption<WithId<HealthcareService>>>
+    ): JSX.Element {
+      return (
+        <Group gap="sm" wrap="nowrap">
+          <VisitTypeIcon color={serviceColor(item.resource)} />
+          <ServiceItem {...item} />
+        </Group>
+      );
+    };
+  }, [serviceColor]);
 
   const handleChange = useCallback((services: WithId<HealthcareService>[]) => onChange(services[0]), [onChange]);
 
@@ -102,10 +131,11 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
       maxValues={1}
       error={error}
       disabled={disabled}
+      className={className}
       defaultValue={defaultValue}
       toOption={toOption}
       loadOptions={loadOptions}
-      itemComponent={ServiceItem}
+      itemComponent={itemComponent}
       onChange={handleChange}
     />
   );

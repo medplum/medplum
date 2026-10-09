@@ -1,0 +1,279 @@
+.colorStates {
+  :global(.appointment) {
+    --block-bar: var(--mantine-color-gray-6);
+    --block-bg: var(--mantine-color-gray-0);
+    --block-text: var(--mantine-color-gray-9);
+    --surface: var(--fc-classic-background);
+    --fill-tone: var(--block-bg);
+    --ink-tone: var(--block-text);
+    --past: 1;
+    --hover: 1;
+    --cancel: 1;
+    --bar-shown: color-mix(in srgb, var(--block-bar) calc(100% * var(--past) * var(--hover)), var(--surface));
+    --fill-shown: color-mix(in srgb, var(--fill-tone) calc(100% * var(--past)), var(--surface));
+    --ink-shown: color-mix(
+      in srgb,
+      var(--ink-tone) calc(100% * var(--past) * var(--hover) * var(--cancel)),
+      var(--surface)
+    );
+
+    padding-left: 4px;
+    border: 0;
+    box-shadow: 0 0 0 1px var(--surface);
+    background: linear-gradient(to right, var(--bar-shown) 4px, transparent 4px), var(--fill-shown);
+    color: var(--ink-shown);
+  }
+
+  &.colorStates :global(.appointment) {
+    background: linear-gradient(to right, var(--bar-shown) 4px, transparent 4px), var(--fill-shown);
+  }
+
+  :global([data-color-scheme='dark']) :global(.appointment) {
+    --fill-tone: color-mix(in oklch, var(--block-bar) 22%, var(--mantine-color-dark-7));
+    --ink-tone: color-mix(in oklch, var(--block-bar), white 60%);
+  }
+
+  :global(.appointment:hover) {
+    --hover: 0.8;
+  }
+
+  :global(.appointment.past) {
+    --past: 0.5;
+  }
+
+  :global(.appointment.cancelled) {
+    --cancel: 0.5;
+  }
+
+  &.colorStates :global(.appointment.appointment.appointment[class*='color-']) * {
+    color: inherit;
+  }
+
+  &.colorStates :global(.appointment) > div {
+    padding-inline: 4px;
+  }
+
+  &.colorStates :global(.appointment) [data-time-grid] > :first-child {
+    padding-top: 0;
+  }
+
+  :global(.appointment.color-indigo) {
+    --block-bar: var(--mantine-color-indigo-6);
+    --block-bg: var(--mantine-color-indigo-0);
+    --block-text: var(--mantine-color-indigo-9);
+  }
+
+  :global(.appointment.color-violet) {
+    --block-bar: var(--mantine-color-violet-6);
+    --block-bg: var(--mantine-color-violet-0);
+    --block-text: var(--mantine-color-violet-9);
+  }
+
+  :global(.appointment.color-grape) {
+    --block-bar: var(--mantine-color-grape-6);
+    --block-bg: var(--mantine-color-grape-0);
+    --block-text: var(--mantine-color-grape-9);
+  }
+
+  :global(.appointment.color-pink) {
+    --block-bar: var(--mantine-color-pink-6);
+    --block-bg: var(--mantine-color-pink-0);
+    --block-text: var(--mantine-color-pink-9);
+  }
+
+  :global(.appointment.color-red) {
+    --block-bar: var(--mantine-color-red-6);
+    --block-bg: var(--mantine-color-red-0);
+    --block-text: var(--mantine-color-red-9);
+  }
+
+  :global(.appointment.color-orange) {
+    --block-bar: var(--mantine-color-orange-6);
+    --block-bg: var(--mantine-color-orange-0);
+    --block-text: var(--mantine-color-orange-9);
+  }
+
+  :global(.appointment.color-yellow) {
+    --block-bar: var(--mantine-color-yellow-6);
+    --block-bg: var(--mantine-color-yellow-0);
+    --block-text: var(--mantine-color-yellow-9);
+  }
+
+  :global(.appointment.color-lime) {
+    --block-bar: var(--mantine-color-lime-6);
+    --block-bg: var(--mantine-color-lime-0);
+    --block-text: var(--mantine-color-lime-9);
+  }
+
+  :global(.appointment.color-green) {
+    --block-bar: var(--mantine-color-green-6);
+    --block-bg: var(--mantine-color-green-0);
+    --block-text: var(--mantine-color-green-9);
+  }
+
+  :global(.appointment.color-teal) {
+    --block-bar: var(--mantine-color-teal-6);
+    --block-bg: var(--mantine-color-teal-0);
+    --block-text: var(--mantine-color-teal-9);
+  }
+
+  :global(.appointment.color-cyan) {
+    --block-bar: var(--mantine-color-cyan-6);
+    --block-bg: var(--mantine-color-cyan-0);
+    --block-text: var(--mantine-color-cyan-9);
+  }
+
+  :global(.appointment.color-blue) {
+    --block-bar: var(--mantine-color-blue-6);
+    --block-bg: var(--mantine-color-blue-0);
+    --block-text: var(--mantine-color-blue-9);
+  }
+
+  &.colorStates :global(.slot.busy-unavailable) {
+    border: 0;
+    box-shadow: 0 0 0 1px var(--fc-classic-background);
+    background: var(--mantine-color-gray-5);
+    color: var(--mantine-color-white);
+  }
+
+  &.colorStates :global([data-color-scheme='dark']) :global(.slot.busy-unavailable) {
+    background: var(--mantine-color-dark-4);
+  }
+
+  &.colorStates :global(.slot.busy-unavailable) > div {
+    display: flex;
+    flex-direction: column;
+    padding: 4px 4px 0;
+  }
+
+  &.colorStates :global(.slot.busy-unavailable) > div > div {
+    padding: 0;
+    color: inherit;
+    font-style: normal;
+  }
+
+  &.colorStates :global(.slot.busy-unavailable) > div > div:last-child {
+    order: -1;
+    font-size: 11px;
+    line-height: 12px;
+    font-weight: 500;
+  }
+
+  &.colorStates :global(.slot.busy-unavailable) > div > div:first-child {
+    overflow: hidden;
+    padding-top: 2px;
+    font-size: 10px;
+    line-height: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &.colorStates :global(.slot.busy-unavailable) svg {
+    display: none;
+  }
+
+  &.colorStates :global(.slot.busy-unavailable) > div > div:last-child > span {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  &.colorStates :global(.slot.busy-unavailable) > div > div:last-child > span::before {
+    content: '';
+    flex-shrink: 0;
+    width: 11px;
+    height: 11px;
+    background-color: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 2h-14a3 3 0 0 0 -3 3v14a3 3 0 0 0 3 3h14a3 3 0 0 0 3 -3v-14a3 3 0 0 0 -3 -3zm-9.387 6.21l.094 .083l2.293 2.292l2.293 -2.292a1 1 0 0 1 1.497 1.32l-.083 .094l-2.292 2.293l2.292 2.293a1 1 0 0 1 -1.32 1.497l-.094 -.083l-2.293 -2.292l-2.293 2.292a1 1 0 0 1 -1.497 -1.32l.083 -.094l2.292 -2.293l-2.292 -2.293a1 1 0 0 1 1.32 -1.497z'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+
+  &.colorStates :global(.appointment.selected[class*='color-']) {
+    --hover: 1;
+
+    background: color-mix(in srgb, var(--block-bar) calc(100% * var(--past)), var(--surface));
+    color: color-mix(in srgb, var(--mantine-color-white) calc(100% * var(--past)), var(--surface));
+  }
+
+  &.colorStates :global(.appointment.recurring) > div > *,
+  &.colorStates :global(.appointment.cancelled) > div > * {
+    padding-right: 16px;
+  }
+
+  &.colorStates :global(.appointment.recurring.cancelled) > div > * {
+    padding-right: 32px;
+  }
+
+  :global(.appointment.recurring)::after,
+  :global(.appointment.cancelled)::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 12px;
+    height: 12px;
+    background-color: currentColor;
+    pointer-events: none;
+  }
+
+  :global(.appointment.recurring)::after {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3'/%3E%3Cpath d='M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+
+  :global(.appointment.cancelled)::before {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0'/%3E%3Cpath d='M18.364 5.636l-12.728 12.728'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+
+  :global(.appointment.recurring.cancelled)::before {
+    right: 20px;
+  }
+
+  :global(.appointment):is(:global(.checked-in), :global(.arrived), :global(.fulfilled))
+    :global(.mantine-Text-root)::before {
+    content: '';
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    margin-right: 3px;
+    vertical-align: -1px;
+    background-color: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M18.333 2c1.96 0 3.56 1.537 3.662 3.472l.005 .195v12.666c0 1.96 -1.537 3.56 -3.472 3.662l-.195 .005h-12.666a3.667 3.667 0 0 1 -3.662 -3.472l-.005 -.195v-12.666c0 -1.96 1.537 -3.56 3.472 -3.662l.195 -.005h12.666zm-2.626 7.293a1 1 0 0 0 -1.414 0l-3.293 3.292l-1.293 -1.292l-.094 -.083a1 1 0 0 0 -1.32 1.497l2 2l.094 .083a1 1 0 0 0 1.32 -.083l4 -4l.083 -.094a1 1 0 0 0 -.083 -1.32z'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+
+  &.colorStates :global(.appointment.pending[class*='color-']),
+  &.colorStates :global(.appointment.cancelled[class*='color-']) {
+    background: var(--surface);
+
+    &:not(:focus-visible) {
+      outline: 1.5px dashed
+        color-mix(in srgb, var(--block-bar) calc(100% * var(--past) * var(--cancel)), var(--surface));
+      outline-offset: -1.5px;
+    }
+  }
+
+  &.colorStates :global(.appointment.selected[class*='color-']):is(:global(.pending), :global(.cancelled)) {
+    background: var(--fill-shown);
+    color: var(--ink-shown);
+  }
+
+  :global([data-color-scheme][data-color-scheme]) {
+    --fc-classic-today: transparent;
+  }
+
+  &.colorStates :global([role='columnheader'][aria-current='date']) [aria-hidden='true'] {
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+
+  :global([role='columnheader'][aria-current='date']) [aria-hidden='true']::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--mantine-color-red-6);
+  }
+}

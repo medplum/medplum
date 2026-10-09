@@ -77,7 +77,7 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
 
       {filters && (
         <>
-          <Box mb="xs" role="group" aria-label="Filter calendars">
+          <Box role="group" aria-label="Filter calendars">
             {filters}
           </Box>
           <Divider />

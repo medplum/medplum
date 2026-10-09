@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, sleep } from '@medplum/core';
+import { createReference, RecurrenceIdExtensionURI, sleep } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
@@ -126,6 +126,37 @@ describe('CalendarBase', () => {
       });
       expect(screen.getByText(/Homer Simpson/)).toBeInTheDocument();
       expect(screen.getByText(/Bob Jones/)).toBeInTheDocument();
+    });
+
+    test('marks events with the source class, recurrence, selection, and past', async () => {
+      const recurring = createAppointment({
+        id: 'apt-recurring',
+        extension: [{ url: RecurrenceIdExtensionURI, valueDateTime: baseDate.toISOString() }],
+        participant: [{ actor: { reference: 'Patient/1', display: 'Homer Simpson' }, status: 'accepted' }],
+      });
+      const past = createAppointment({
+        id: 'apt-past',
+        start: new Date(baseDate.getTime() - 2 * 60 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() - 90 * 60 * 1000).toISOString(),
+        participant: [{ actor: { reference: 'Patient/2', display: 'Bob Jones' }, status: 'accepted' }],
+      });
+      vi.useFakeTimers({ toFake: ['Date'], now: baseDate });
+      try {
+        setup({
+          eventSources: [
+            { schedule: DrAliceSmithSchedule, appointments: [recurring, past], slots: [], className: 'color-blue' },
+          ],
+          selectedAppointmentId: 'apt-recurring',
+        });
+        const recurringEvent = screen.getByText(/Homer Simpson/).closest('.appointment');
+        const pastEvent = screen.getByText(/Bob Jones/).closest('.appointment');
+        expect(recurringEvent).toHaveClass('color-blue', 'recurring', 'selected');
+        expect(recurringEvent).not.toHaveClass('past');
+        expect(pastEvent).toHaveClass('color-blue', 'past');
+        expect(pastEvent).not.toHaveClass('recurring', 'selected');
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     test('renders "free" slots', async () => {

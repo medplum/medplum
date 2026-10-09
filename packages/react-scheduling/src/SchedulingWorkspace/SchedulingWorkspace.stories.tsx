@@ -1,10 +1,33 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { MantineColorsTuple, MantineThemeOverride } from '@mantine/core';
+import { MantineProvider, useMantineColorScheme, useMantineTheme } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import type { Appointment, Location, Reference } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import {
+  createReference,
+  RecurrenceIdExtensionURI,
+  RecurringAppointmentSeriesIdentifierSystem,
+  SchedulingScheduleColorURI,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
+import type {
+  Appointment,
+  AppointmentParticipant,
+  Device,
+  Extension,
+  HealthcareService,
+  Location,
+  Practitioner,
+  Reference,
+  Resource,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { useMemo } from 'react';
 import {
   withBookStub,
   withCancelStub,
@@ -18,6 +41,7 @@ import { CancellationReasonValueSets } from '../stories/mockValueSet';
 import {
   AppointmentPatientFixtures,
   AuthorizationValueSets,
+  buildSchedulableService,
   CalendarWeekFixtures,
   DIAGNOSIS_VALUE_SET,
   ImagingBenchFixtures,
@@ -26,6 +50,7 @@ import {
   PROCEDURE_VALUE_SET,
   SchedulingFixtures,
 } from '../stories/scheduling';
+import colorStatesClasses from './ColorAndStates.module.css';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
 /**
@@ -197,7 +222,476 @@ BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
 export const AtASite = (): JSX.Element => <Workspace defaultLocation={{ reference: 'Location/satellite-clinic' }} />;
 AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
 
+
+const PALETTE = [
+  '#477E76',
+  '#009BAD',
+  '#09DBFF',
+  '#00B6E7',
+  '#0076C1',
+  '#4891E4',
+  '#879DBF',
+  '#B6BFED',
+  '#6F6D99',
+  '#8E74D1',
+  '#BF89E4',
+  '#E9A4FF',
+  '#9C509D',
+  '#D16DA4',
+  '#CB99AF',
+  '#BA4C66',
+  '#FFABB2',
+  '#AD8080',
+  '#ED806D',
+  '#B65B1B',
+  '#FFB652',
+  '#C7AA76',
+  '#B69200',
+  '#837400',
+  '#92B649',
+  '#7F9267',
+  '#89DB89',
+  '#1B8940',
+  '#28B077',
+  '#00CDB3',
+] as const;
+
+const PALETTE_COLORS: Record<string, MantineColorsTuple> = Object.fromEntries(
+  PALETTE.map((hex, i) => [`palette${i}`, Array.from({ length: 10 }, () => hex) as unknown as MantineColorsTuple])
+);
+
+function colorExtension(index: number): Extension {
+  return { url: SchedulingScheduleColorURI, valueString: `palette${index}` };
+}
+
+const PROVIDER_NAMES: readonly (readonly [string, string])[] = [
+  ['Maya', 'Rivera'],
+  ['Tunde', 'Okafor'],
+  ['Maria', 'Martinez'],
+  ['Wei', 'Chen'],
+  ['James', 'Kim'],
+  ['Ama', 'Osei'],
+  ['Lena', 'Novak'],
+  ['Omar', 'Haddad'],
+  ['Priya', 'Nair'],
+  ['Sofia', 'Costa'],
+];
+const ROOM_NAMES = [
+  'Exam Room 1',
+  'Exam Room 2',
+  'Exam Room 3',
+  'Procedure Room A',
+  'Procedure Room B',
+  'Infusion Bay 1',
+  'Infusion Bay 2',
+  'Consult Room 1',
+  'Consult Room 2',
+  'Recovery Room',
+];
+const DEVICE_NAMES = [
+  'Ultrasound 1',
+  'Ultrasound 2',
+  'X-Ray 1',
+  'CT Scanner 1',
+  'MRI 1',
+  'EKG Cart 1',
+  'Portable US 1',
+  'Doppler 1',
+  'C-Arm 1',
+  'Bone Densitometer',
+];
+const SERVICE_TYPES = [
+  'New Patient Visit',
+  'Follow-up',
+  'Annual Physical',
+  'Ultrasound',
+  'Lab Draw',
+  'Imaging Consult',
+  'Infusion',
+  'Telehealth Check-in',
+  'Procedure',
+  'Wellness Check',
+];
+const serviceResources: WithId<HealthcareService>[] = SERVICE_TYPES.map((name, i) => ({
+  resourceType: 'HealthcareService',
+  id: `gen-service-${i}`,
+  active: true,
+  name,
+}));
+
+const PATIENT_NAMES = [
+  'Miles Cooper',
+  'Renee Alvarez',
+  'Jordan Reyes',
+  'Sam Whitfield',
+  'Ada Fletcher',
+  'Leo Marsh',
+  'Nina Bauer',
+  'Theo Park',
+];
+
+const providerResources: WithId<Practitioner>[] = PROVIDER_NAMES.map(([given, family], i) => ({
+  resourceType: 'Practitioner',
+  id: `gen-prov-${i}`,
+  active: true,
+  name: [{ given: [given], family, prefix: ['Dr.'] }],
+}));
+const roomResources: WithId<Location>[] = ROOM_NAMES.map((name, i) => ({
+  resourceType: 'Location',
+  id: `gen-room-${i}`,
+  status: 'active',
+  name,
+  physicalType: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/location-physical-type', code: 'ro' }] },
+}));
+const deviceResources: WithId<Device>[] = DEVICE_NAMES.map((name, i) => ({
+  resourceType: 'Device',
+  id: `gen-device-${i}`,
+  status: 'active',
+  deviceName: [{ name, type: 'user-friendly-name' }],
+}));
+
+function paletteSchedule(
+  idSuffix: string,
+  actorReference: string,
+  actorDisplay: string,
+  colorIndex: number
+): WithId<Schedule> {
+  return {
+    resourceType: 'Schedule',
+    id: `gen-sched-${idSuffix}`,
+    active: true,
+    actor: [{ reference: actorReference, display: actorDisplay }],
+    extension: [colorExtension(colorIndex)],
+  };
+}
+
+const providerSchedules = providerResources.map((provider, i) =>
+  paletteSchedule(`prov-${i}`, `Practitioner/${provider.id}`, `Dr. ${PROVIDER_NAMES[i][0]} ${PROVIDER_NAMES[i][1]}`, i)
+);
+const roomSchedules = roomResources.map((room, i) =>
+  paletteSchedule(`room-${i}`, `Location/${room.id}`, ROOM_NAMES[i], 10 + i)
+);
+const deviceSchedules = deviceResources.map((device, i) =>
+  paletteSchedule(`device-${i}`, `Device/${device.id}`, DEVICE_NAMES[i], 20 + i)
+);
+
+const WEEK_DAYS = [3, 4, 5, 6, 7, 8, 9];
+const VISITS_PER_DAY = 12;
+const START_MINUTES = [0, 5, 10, 15, 20, 30, 40, 45, 50];
+const DURATION_CHOICES = [20, 20, 30, 30, 30, 45, 60, 90];
+
+function localIso(day: number, hour: number, minute: number): string {
+  return new Date(2020, 4, day, hour, minute, 0, 0).toISOString();
+}
+
+function mulberry32(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function buildWeekAppointments(): WithId<Appointment>[] {
+  const random = mulberry32(20200504);
+  const pick = <T,>(choices: readonly T[]): T => choices[Math.floor(random() * choices.length)];
+  const out: WithId<Appointment>[] = [];
+  WEEK_DAYS.forEach((day, dayIndex) => {
+    for (let slotIndex = 0; slotIndex < VISITS_PER_DAY; slotIndex++) {
+      const n = dayIndex * VISITS_PER_DAY + slotIndex;
+      const start = localIso(day, 7 + Math.floor(random() * 10), pick(START_MINUTES));
+      const end = new Date(new Date(start).getTime() + pick(DURATION_CHOICES) * 60_000).toISOString();
+      const participant: AppointmentParticipant[] = [
+        {
+          status: 'accepted',
+          actor: { reference: `Patient/gen-pt-${n}`, display: PATIENT_NAMES[n % PATIENT_NAMES.length] },
+        },
+        { status: 'accepted', actor: createReference(providerResources[n % providerResources.length]) },
+      ];
+      if (slotIndex % 3 === 0) {
+        participant.push({
+          status: 'accepted',
+          actor: createReference(roomResources[(dayIndex + slotIndex) % roomResources.length]),
+        });
+        participant.push({
+          status: 'accepted',
+          actor: createReference(deviceResources[(dayIndex * 2 + slotIndex) % deviceResources.length]),
+        });
+      }
+      out.push({
+        resourceType: 'Appointment',
+        id: `gen-appt-${day}-${slotIndex}`,
+        status: 'booked',
+        serviceType: toServiceTypeCodeableConcepts(serviceResources[(n * 7) % serviceResources.length]),
+        start,
+        end,
+        participant,
+      });
+    }
+  });
+  return out;
+}
+
+const appointmentResources: WithId<Appointment>[] = buildWeekAppointments();
+
+const PALETTE_FIXTURES: Resource[] = [
+  ...serviceResources,
+  ...providerResources,
+  ...providerSchedules,
+  ...roomResources,
+  ...roomSchedules,
+  ...deviceResources,
+  ...deviceSchedules,
+  ...appointmentResources,
+];
+
+const GRAY_CALENDAR_FIXTURES: Resource[] = [
+  ...serviceResources,
+  ...providerResources,
+  ...[...providerSchedules, ...roomSchedules, ...deviceSchedules].map((schedule) => ({
+    ...schedule,
+    extension: [{ url: SchedulingScheduleColorURI, valueString: 'gray' }],
+  })),
+  ...roomResources,
+  ...deviceResources,
+  ...appointmentResources,
+];
+
+function WithPaletteColors({ children }: { children: ReactNode }): JSX.Element {
+  const base = useMantineTheme();
+  const { colorScheme } = useMantineColorScheme();
+  const theme = useMemo(
+    (): MantineThemeOverride => ({ ...base, colors: { ...base.colors, ...PALETTE_COLORS } }),
+    [base]
+  );
+  return (
+    <MantineProvider theme={theme} forceColorScheme={colorScheme === 'dark' ? 'dark' : 'light'}>
+      {children}
+    </MantineProvider>
+  );
+}
+
+export const ManyColorCodedCalendars = (): JSX.Element => (
+  <WithPaletteColors>
+    <Workspace />
+  </WithPaletteColors>
+);
+ManyColorCodedCalendars.decorators = [withFixtures(PALETTE_FIXTURES)];
+
+export const ColoredAppointmentBlocks = (): JSX.Element => (
+  <WithPaletteColors>
+    <Workspace />
+  </WithPaletteColors>
+);
+ColoredAppointmentBlocks.decorators = [withFixtures(GRAY_CALENDAR_FIXTURES)];
+
+
+const COLOR_STATES_VISIT_TYPES = [
+  ['New Patient Visit', 'indigo', '#364fc7'],
+  ['Follow-up', 'violet', '#5f3dc4'],
+  ['Annual Physical', 'grape', '#862e9c'],
+  ['Vaccination', 'pink', '#a61e4d'],
+  ['Urgent Visit', 'red', '#bc2727'],
+  ['Lab Draw', 'orange', '#b33a0a'],
+  ['Wellness Check', 'yellow', '#884e00'],
+  ['Nutrition Consult', 'lime', '#477408'],
+  ['Physical Therapy', 'green', '#237433'],
+  ['Infusion', 'teal', '#077452'],
+  ['Telehealth Check-in', 'cyan', '#0a6e81'],
+  ['Ultrasound', 'blue', '#1863a9'],
+] as const;
+
+function WithVisitTypeTones({ children }: { children: ReactNode }): JSX.Element {
+  const base = useMantineTheme();
+  const { colorScheme } = useMantineColorScheme();
+  const theme = useMemo(
+    (): MantineThemeOverride => ({
+      ...base,
+      colors: {
+        ...base.colors,
+        ...Object.fromEntries(
+          COLOR_STATES_VISIT_TYPES.map(([, color, tone]) => [
+            color,
+            base.colors[color].map((shade, i) => (i === 9 ? tone : shade)) as unknown as MantineColorsTuple,
+          ])
+        ),
+      },
+    }),
+    [base]
+  );
+  return (
+    <MantineProvider theme={theme} forceColorScheme={colorScheme === 'dark' ? 'dark' : 'light'}>
+      {children}
+    </MantineProvider>
+  );
+}
+
+const colorStatesServices: WithId<HealthcareService>[] = COLOR_STATES_VISIT_TYPES.map(([name]) =>
+  buildSchedulableService({
+    id: `color-states-${name.toLowerCase().replace(/[^a-z]+/g, '-')}`,
+    name,
+    category: 'Office visit',
+    durationMinutes: 30,
+    alignmentMinutes: 15,
+  })
+);
+
+const COLOR_STATES_COLORS = new Map<string, string>(
+  colorStatesServices.map((service, i) => [`HealthcareService/${service.id}`, COLOR_STATES_VISIT_TYPES[i][1]])
+);
+
+function colorStatesServiceColor(serviceReference: string): string | undefined {
+  return COLOR_STATES_COLORS.get(serviceReference);
+}
+
+function colorStatesOfferings(schedule: Schedule, index: number): number[] {
+  const actor = schedule.actor[0]?.reference ?? '';
+  if (actor.startsWith('Practitioner/')) {
+    return [0, 1, 2, 3].map((k) => (index * 3 + k) % COLOR_STATES_VISIT_TYPES.length);
+  }
+  if (actor.startsWith('Device/')) {
+    return [5, 9, 11];
+  }
+  return [0, 1, 2, 3, 4, 6, 7];
+}
+
+const colorStatesClinic: Resource[] = LOCAL_FIXTURES.filter(
+  (resource) =>
+    resource.resourceType !== 'HealthcareService' &&
+    resource.resourceType !== 'Appointment' &&
+    !(resource.resourceType === 'Slot' && (resource.status === 'busy' || resource.status === 'free'))
+).map((resource, _, all) =>
+  resource.resourceType === 'Schedule'
+    ? {
+        ...resource,
+        serviceType: colorStatesOfferings(
+          resource,
+          all
+            .filter((other): other is WithId<Schedule> => other.resourceType === 'Schedule')
+            .filter((other) => other.actor[0]?.reference?.split('/')[0] === resource.actor[0]?.reference?.split('/')[0])
+            .findIndex((other) => other.id === resource.id)
+        ).flatMap((i) => toServiceTypeCodeableConcepts(colorStatesServices[i])),
+        extension: [
+          ...(resource.extension ?? []).filter((extension) => extension.url !== SchedulingScheduleColorURI),
+          { url: SchedulingScheduleColorURI, valueString: 'gray' },
+        ],
+      }
+    : resource
+);
+
+const COLOR_STATES_VISITS_PER_DAY = 10;
+
+const COLOR_STATES_RECURRING = new Map<number, number>([
+  [2, 3],
+  [17, 1],
+  [28, 6],
+  [44, 4],
+  [45, 2],
+]);
+
+const COLOR_STATES_STATUSES = new Map<number, Appointment['status']>([
+  [6, 'pending'],
+  [23, 'pending'],
+  [37, 'pending'],
+  [14, 'cancelled'],
+  [44, 'cancelled'],
+]);
+
+function buildColorStatesAppointments(): WithId<Appointment>[] {
+  const providers = colorStatesClinic
+    .filter((resource): resource is WithId<Schedule> => resource.resourceType === 'Schedule')
+    .filter((schedule) => schedule.actor[0]?.reference?.startsWith('Practitioner/'))
+    .map((schedule, index) => ({ actor: schedule.actor[0], offers: colorStatesOfferings(schedule, index) }));
+  const blocked = colorStatesClinic
+    .filter((resource): resource is WithId<Slot> => resource.resourceType === 'Slot')
+    .filter((slot) => slot.status === 'busy-unavailable')
+    .map((slot) => [Date.parse(slot.start), Date.parse(slot.end)] as const);
+  const random = mulberry32(20200508);
+  const pick = <T,>(choices: readonly T[]): T => choices[Math.floor(random() * choices.length)];
+  const out: WithId<Appointment>[] = [];
+  [4, 5, 6, 7, 8].forEach((day, dayIndex) => {
+    for (let slotIndex = 0; slotIndex < COLOR_STATES_VISITS_PER_DAY; slotIndex++) {
+      const n = dayIndex * COLOR_STATES_VISITS_PER_DAY + slotIndex;
+      const provider = providers[n % providers.length];
+      const status = COLOR_STATES_STATUSES.get(n) ?? 'booked';
+      let start: string;
+      let end: string;
+      do {
+        start = localIso(day, 7 + Math.floor(random() * 10), pick(START_MINUTES));
+        const minutes = Math.max(pick(DURATION_CHOICES), status === 'booked' ? 0 : 45);
+        end = new Date(Date.parse(start) + minutes * 60_000).toISOString();
+      } while (blocked.some(([from, to]) => Date.parse(start) < to && Date.parse(end) > from));
+      const series = COLOR_STATES_RECURRING.get(n);
+      out.push({
+        resourceType: 'Appointment',
+        id: `color-states-appt-${day}-${slotIndex}`,
+        ...(series && {
+          identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: `color-states-series-${n}` }],
+          extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: series }],
+        }),
+        status,
+        serviceType: toServiceTypeCodeableConcepts(
+          colorStatesServices[provider.offers[Math.floor(n / providers.length) % provider.offers.length]]
+        ),
+        start,
+        end,
+        participant: [
+          {
+            status: 'accepted',
+            actor: createReference(AppointmentPatientFixtures[n % AppointmentPatientFixtures.length]),
+          },
+          { status: 'accepted', actor: provider.actor },
+        ],
+      });
+    }
+  });
+  return withColorStatesProgress(out);
+}
+
+const COLOR_STATES_NOW = Date.parse(localIso(4, 12, 5));
+
+function withColorStatesProgress(appointments: WithId<Appointment>[]): WithId<Appointment>[] {
+  const progressed = appointments.map((appointment): WithId<Appointment> => {
+    if (appointment.status !== 'booked') {
+      return appointment;
+    }
+    if (Date.parse(appointment.end as string) <= COLOR_STATES_NOW) {
+      return { ...appointment, status: 'fulfilled' };
+    }
+    if (Date.parse(appointment.start as string) <= COLOR_STATES_NOW) {
+      return { ...appointment, status: 'arrived' };
+    }
+    return appointment;
+  });
+  const next = progressed
+    .filter((appointment) => appointment.status === 'booked')
+    .sort((a, b) => Date.parse(a.start as string) - Date.parse(b.start as string))[0];
+  return progressed.map((appointment) =>
+    appointment === next ? { ...appointment, status: 'checked-in' } : appointment
+  );
+}
+
+const COLOR_STATES_FIXTURES: Resource[] = [
+  ...colorStatesClinic,
+  ...colorStatesServices,
+  ...buildColorStatesAppointments(),
+];
+
+export const ColorAndStates = (): JSX.Element => (
+  <WithVisitTypeTones>
+    <div className={colorStatesClasses.colorStates}>
+      <Workspace serviceTypeColor={colorStatesServiceColor} showCancelled />
+    </div>
+  </WithVisitTypeTones>
+);
+ColorAndStates.storyName = 'TEMP: Colors & States + Locations/Visit Type Filters';
+ColorAndStates.decorators = [withFixtures(COLOR_STATES_FIXTURES)];
+
 interface WorkspaceProps {
+  readonly serviceTypeColor?: (serviceReference: string) => string | undefined;
+  readonly showCancelled?: boolean;
   readonly canBypassSchedulingRules?: boolean;
   readonly defaultLocation?: Reference<Location>;
 }
@@ -215,6 +709,8 @@ function Workspace(props: WorkspaceProps): JSX.Element {
     <div style={{ height: 'calc(100vh - 72px)', padding: '1em', boxSizing: 'border-box' }}>
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
+        serviceTypeColor={props.serviceTypeColor}
+        showCancelled={props.showCancelled}
         defaultLocation={props.defaultLocation}
         procedureBinding={PROCEDURE_VALUE_SET}
         diagnosisBinding={DIAGNOSIS_VALUE_SET}

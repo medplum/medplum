@@ -1,0 +1,32 @@
+.field {
+  margin-inline: 8px;
+
+  label {
+    position: absolute;
+  }
+}
+
+.chosen {
+  padding: 6px 8px;
+  border-radius: var(--mantine-radius-sm);
+
+  &:hover {
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+  }
+}
+
+.remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 4px;
+  color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3));
+  cursor: pointer;
+
+  &:hover {
+    color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-gray-0));
+  }
+}
