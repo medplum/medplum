@@ -15,7 +15,7 @@ import {
 } from '@mantine/core';
 import { formatDate, getDisplayString } from '@medplum/core';
 import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
-import { ListWithDetailPane, MedplumLink, useMedplum, useResource } from '@medplum/react';
+import { ListWithDetailPane, MedplumLink, useMedplum, useMedplumErrorHandler, useResource } from '@medplum/react';
 import {
   IconArrowDown,
   IconArrowLeft,
@@ -59,6 +59,7 @@ interface SpaceInboxProps {
 export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const { topic: topicRef, onNewTopic, onSelectedItem, onAdd } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const topic = useResource(topicRef);
   const models = useMemo(() => getProjectModels(medplum), [medplum]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -239,6 +240,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     try {
       const result = await processMessage({
         medplum,
+        onError,
         input: text,
         userMessage,
         currentMessages,
