@@ -30,7 +30,7 @@ import {
   questionnaireItemIterator,
   validateLabOrderInputs,
 } from '@medplum/health-gorilla-core';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { AOESearch, LabSearch, TestSearch } from './autocomplete-endpoint';
 import { getAutocompleteSearchFunction } from './autocomplete-endpoint';
@@ -261,6 +261,7 @@ function specimenCollectionDateChange(
 
 export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions): UseHealthGorillaLabOrderReturn {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [performingLab, privateSetPerformingLab] = useState<LabOrganization | undefined>();
   const [performingLabAccountNumber, privateSetPerformingLabAccountNumber] = useState<string | undefined>();
   const [performingLabPhysicianAccountNumber, privateSetPerformingLabPhysicianAccountNumber] = useState<
@@ -333,11 +334,11 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
 
         dispatchTests({ type: 'aoeLoaded', testAoes: results });
       })
-      .catch((err) => {
-        console.error('Error fetching AOE questions', err);
+      .catch((err: unknown) => {
+        onError(err, { source: 'useHealthGorillaLabOrder', message: 'Error fetching AOE questions' });
         dispatchTests({ type: 'aoeError', tests: testCodingAoesBeingFetched });
       });
-  }, [fetchAoeQuestionnaire, testsAndMetadata]);
+  }, [fetchAoeQuestionnaire, onError, testsAndMetadata]);
 
   const patientRef = useMemo<(Reference<Patient> & { reference: string }) | undefined>(() => {
     if (isReferenceOfType('Patient', opts.patient)) {
