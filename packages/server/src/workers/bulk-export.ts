@@ -9,6 +9,7 @@ import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
 import { exportResources } from '../fhir/operations/export';
 import { groupExportResources } from '../fhir/operations/groupexport';
 import { BulkExporter } from '../fhir/operations/utils/bulkexporter';
+import { globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import type { AsyncJobTracking } from './base';
 import { getAsyncJobTracking, getTrackingAsyncJobExecutor } from './base';
@@ -44,9 +45,16 @@ export const initBulkExportWorker: WorkerInitializer = (config, options) => {
           getWorkerBullmqConfig(config, 'bulk-export', queueOptions, { concurrency: 1 })
         );
   worker?.on('failed', async (job, err) => {
-    if (job) {
+    if (!job) {
+      return;
+    }
+    try {
       const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
-      await exec.failJob(err);
+      if (isJobActive(exec.getAsyncJob())) {
+        await exec.failJob(err);
+      }
+    } catch (failErr) {
+      globalLogger.error('Failed to mark bulk export as failed', { jobId: job.id, error: failErr });
     }
   });
   return { name: queueName, queue, worker };
