@@ -636,6 +636,16 @@ export interface InviteRequest {
   admin?: boolean;
 }
 
+/**
+ * Adds an existing `ClientApplication` to a project.
+ * The inviter must have read access to the client referenced by `membership.profile`.
+ */
+export interface ClientApplicationInviteRequest {
+  resourceType: 'ClientApplication';
+  membership: Partial<ProjectMembership> & { profile: Reference<ClientApplication> };
+  upsert?: boolean;
+}
+
 export type RateLimitInfo = {
   /** Name of the rate limiter. */
   name: string;
@@ -4616,12 +4626,15 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
-   * Invite a user to a project.
+   * Invite a user or an existing client application to a project.
    * @param projectId - The project ID.
-   * @param body - The InviteRequest.
+   * @param body - The InviteRequest or ClientApplicationInviteRequest.
    * @returns Promise that returns a project membership or an operation outcome.
    */
-  async invite(projectId: string, body: InviteRequest): Promise<ProjectMembership | OperationOutcome> {
+  async invite(
+    projectId: string,
+    body: InviteRequest | ClientApplicationInviteRequest
+  ): Promise<ProjectMembership | OperationOutcome> {
     return this.post('admin/projects/' + projectId + '/invite', body);
   }
 
