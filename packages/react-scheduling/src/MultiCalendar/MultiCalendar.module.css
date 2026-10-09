@@ -1,20 +1,17 @@
-/* Booked and its successor states render as solid blocks; everything else
- * renders as a dashed outline over a pale tint of the calendar color. */
 .wrapper {
-  :global(.appointment.pending),
-  :global(.appointment.proposed),
-  :global(.appointment.waitlist),
-  :global(.appointment.cancelled),
-  :global(.appointment.noshow),
-  :global(.appointment.entered-in-error) {
-    background: color-mix(in oklch, var(--fc-event-color) 15%, var(--fc-classic-background));
-
-    /* An outline drawn inside the event doesn't change its size the way a border
-     * would. Skipped while focused so FullCalendar's focus ring still shows. */
-    &:not(:focus-visible) {
-      outline: 2px dashed var(--fc-event-color);
-      outline-offset: -2px;
-    }
+  /* Appointments are drawn as a light tint of their calendar color, with a bar of the full color
+   * down the leading edge. The tint is opaque, so the grid and other events don't show through,
+   * and a ring of the background keeps neighboring events of one color apart. */
+  :global(.appointment) {
+    border: 0;
+    padding-inline-start: 6px;
+    box-shadow: 0 0 0 1px var(--fc-classic-background);
+    background:
+      linear-gradient(to right, var(--fc-event-color) 4px, transparent 4px),
+      light-dark(
+        color-mix(in oklab, var(--fc-event-color) 10%, var(--fc-classic-background)),
+        color-mix(in oklab, var(--fc-event-color) 22%, var(--fc-classic-background))
+      );
 
     .eventInner,
     .eventTime {
@@ -22,6 +19,24 @@
         color-mix(in oklch, var(--fc-event-color), black 40%),
         color-mix(in oklch, var(--fc-event-color), white 55%)
       );
+    }
+  }
+
+  /* Booked and its successor states are tinted; everything else is a dashed outline over the
+   * plain background. */
+  :global(.appointment.pending),
+  :global(.appointment.proposed),
+  :global(.appointment.waitlist),
+  :global(.appointment.cancelled),
+  :global(.appointment.noshow),
+  :global(.appointment.entered-in-error) {
+    background: var(--fc-classic-background);
+
+    /* An outline drawn inside the event doesn't change its size the way a border
+     * would. Skipped while focused so FullCalendar's focus ring still shows. */
+    &:not(:focus-visible) {
+      outline: 2px dashed var(--fc-event-color);
+      outline-offset: -2px;
     }
   }
 
