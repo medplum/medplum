@@ -118,6 +118,7 @@ export interface CalendarBaseProps extends Omit<
 export function CalendarBase(props: CalendarBaseProps): JSX.Element {
   const colorScheme = useComputedColorScheme();
   const controller = useCalendarController();
+  const viewType = controller.view?.type;
 
   const {
     onRangeChange,
@@ -144,8 +145,8 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         };
 
         const slotExtra = {
-          interactive: false,
-          display: 'background',
+          interactive: Boolean(props.onSelectSlot || props.onDoubleClickSlot),
+          display: viewType === 'dayGridMonth' ? 'none' : 'auto', // Hide slots in month view
         };
 
         return {
@@ -156,7 +157,14 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
           ],
         };
       }),
-    [props.eventSources, props.onDoubleClickAppointment, props.onSelectAppointment]
+    [
+      props.eventSources,
+      props.onDoubleClickAppointment,
+      props.onSelectAppointment,
+      props.onSelectSlot,
+      props.onDoubleClickSlot,
+      viewType,
+    ]
   );
 
   const rawEventClick = useCallback(

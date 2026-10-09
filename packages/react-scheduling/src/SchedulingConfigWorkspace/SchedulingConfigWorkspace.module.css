@@ -3,14 +3,19 @@
 .root {
   display: flex;
   align-items: stretch;
-  gap: var(--mantine-spacing-md);
   height: 100%;
   width: 100%;
 }
 
 .sidebar {
+  /*
+   * Keep the section headers' visually hidden labels inside this scroll container. Escaping it, the ones below
+   * a long list stretched the page, which then scrolled as a whole.
+   */
+  position: relative;
   flex-shrink: 0;
   width: 300px;
+  padding-block: var(--mantine-spacing-md);
   overflow-y: auto;
 }
 
@@ -19,6 +24,7 @@
   position: relative;
   flex: 1;
   min-width: 0;
+  padding: var(--mantine-spacing-md) 0 var(--mantine-spacing-md) var(--mantine-spacing-md);
   overflow-y: auto;
   scrollbar-gutter: stable;
 }

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ServiceTypeReferenceURI, toServiceTypeCodeableConcepts } from '@medplum/core';
+import { allServiceTypesCodeableConcept, ServiceTypeReferenceURI, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { HealthcareService, Location, Practitioner, Schedule } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import type { ConfigurableActor } from '../configSearch';
@@ -11,6 +11,7 @@ import {
   buildServiceItems,
   getActorNotices,
   getOfferedServices,
+  getOfferings,
   isSameSelection,
   matchesFilter,
   withStoredActorResource,
@@ -193,6 +194,50 @@ describe('withStoredActorResource', () => {
 
     expect(withStoredActorResource(actors, makeSchedule('x', 'Practitioner/dr-other', []))).toEqual(actors);
     expect(withStoredActorResource(actors, shared)).toEqual(actors);
+  });
+});
+
+describe('getOfferings', () => {
+  test('lists the actors whose edited Schedule offers the visit type', () => {
+    const offering = makeSchedule('s', 'Practitioner/dr-smith', [configured]);
+    const second = makeSchedule('t', 'Location/room-1', [unconfigured]);
+    const other = makeSchedule('u', 'Location/room-1', [configured]);
+
+    const found = getOfferings(
+      [
+        { resource: drSmith, schedules: [offering] },
+        { resource: typedRoom, schedules: [second, other] },
+      ],
+      configured
+    );
+
+    expect(found.map((item) => item.schedule.id)).toEqual(['s']);
+  });
+
+  test('lists an actor whose Schedule offers every visit type', () => {
+    const everything = {
+      ...makeSchedule('s', 'Practitioner/dr-smith', []),
+      serviceType: [allServiceTypesCodeableConcept()],
+    };
+
+    expect(
+      getOfferings([{ resource: drSmith, schedules: [everything] }], configured).map((item) => item.schedule.id)
+    ).toEqual(['s']);
+  });
+
+  test('leaves out an actor that is turned off, or whose Schedule is, as booking skips both', () => {
+    const left = makeSchedule('s', 'Practitioner/dr-left', [configured]);
+    const paused = makeSchedule('t', 'Practitioner/dr-smith', [configured], { active: false });
+
+    expect(
+      getOfferings(
+        [
+          { resource: drLeft, schedules: [left] },
+          { resource: drSmith, schedules: [paused] },
+        ],
+        configured
+      )
+    ).toEqual([]);
   });
 });
 

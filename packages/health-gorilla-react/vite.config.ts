@@ -9,7 +9,7 @@ const vitestConfig = defineVitestConfig({
   },
   test: {
     name: '@medplum/health-gorilla-react',
-    maxWorkers: process.env.TEST_MAX_WORKERS ?? '50%',
+    maxWorkers: process.env.TEST_MAX_WORKERS ?? '75%',
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test.setup.ts',

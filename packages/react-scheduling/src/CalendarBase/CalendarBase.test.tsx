@@ -125,6 +125,24 @@ describe('CalendarBase', () => {
       expect(screen.getByText(/Blocked/)).toBeInTheDocument();
     });
 
+    test('hides slots in the month view', async () => {
+      const source = {
+        schedule: DrAliceSmithSchedule,
+        appointments: [createAppointment()],
+        slots: [createSlot()],
+      };
+      setup({ eventSources: [source] });
+      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+      expect(screen.getByText(/Available/)).toBeInTheDocument();
+
+      await userEvent.click(screen.getByText('Month'));
+      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+      expect(screen.queryByText(/Available/)).not.toBeInTheDocument();
+
+      await userEvent.click(screen.getByText('Week'));
+      expect(screen.getByText(/Available/)).toBeInTheDocument();
+    });
+
     test('filters out slots backing rendered appointmenst', () => {
       const appointment = createAppointment({ slot: [{ reference: 'Slot/slot-1' }] });
       const source = {
