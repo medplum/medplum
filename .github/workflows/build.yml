@@ -366,8 +366,6 @@ jobs:
       # contention pushes CPU-bound tests past their timeouts. Each non-serial vite config reads
       # this (falling back to 75%), so serial packages (agent, hl7, cdk) keep maxWorkers: 1.
       TEST_MAX_WORKERS: '75%'
-    # Authenticate to Docker Hub to avoid its anonymous rate limit. Fork PRs have no secrets, so they
-    # get empty credentials and the runner skips registry login, pulling anonymously.
     services:
       postgres:
         image: postgres:${{ matrix.pg-version }}
@@ -540,8 +538,6 @@ jobs:
       PG_VERSION: ${{ matrix.pg-version }}
       REDIS_VERSION: ${{ matrix.redis-version }}
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-    # Authenticate to Docker Hub to avoid its anonymous rate limit. Fork PRs have no secrets, so they
-    # get empty credentials and the runner skips registry login, pulling anonymously.
     services:
       postgres:
         image: postgres:${{ matrix.pg-version }}
