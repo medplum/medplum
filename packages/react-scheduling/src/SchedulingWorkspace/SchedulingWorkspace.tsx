@@ -32,6 +32,7 @@ import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
 import { getCalendarTimezones, groupAppointmentsByService } from './SchedulingWorkspace.utils';
+import { SlotDetails } from './SlotDetails';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
@@ -120,6 +121,8 @@ export interface SchedulingWorkspaceProps {
  * - Shows what is booked: clicking an appointment opens `AppointmentDetails` in the
  *   same pane the booking form uses, describing the visit and offering to cancel or
  *   reschedule it.
+ * - Shows blocked time: clicking a Slot opens `SlotDetails` in that same pane, saying
+ *   whose time it holds, when, and why.
  * - Highlights the time last chosen, wherever it was chosen: the click that opened the
  *   pane, then whatever the form's time search settles on, and nothing while the form
  *   holds no time. The calendar is never moved to reach it — a highlight off the week
@@ -163,6 +166,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // What was selected
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
   const [selectedAppointment, setSelectedAppointment] = useState<WithId<Appointment>>();
+  const [selectedSlotId, setSelectedSlotId] = useState<string>();
 
   const [paneTab, setPaneTab] = useState<PaneTab>('appointment');
 
@@ -277,6 +281,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const startBooking = useCallback((interval: DateTimeRange): void => {
     setSelectedAppointment(undefined);
+    setSelectedSlotId(undefined);
     setBookingSelection(interval);
     setHighlight(interval);
     setBlockHighlight(interval);
@@ -318,6 +323,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           setRescheduleFinderOpen(false);
         }
         closeBooking();
+        setSelectedSlotId(undefined);
         setSelectedAppointment(appointment);
       }
     },
@@ -328,6 +334,17 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setSelectedAppointment(undefined);
     setRescheduleFinderOpen(false);
   }, []);
+
+  const selectSlot = useCallback(
+    (slot: Slot): void => {
+      if (slot.id) {
+        closeBooking();
+        closeAppointment();
+        setSelectedSlotId(slot.id);
+      }
+    },
+    [closeBooking, closeAppointment]
+  );
 
   // The open appointment is held apart from the calendar's, so that a visit cancelled from
   // its pane stays open, showing it cancelled, once the calendar stops loading it.
@@ -353,6 +370,18 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     return loaded ?? (statuses.includes(selectedAppointment.status) ? undefined : selectedAppointment);
   }, [appointments, selectedAppointment]);
 
+  const openSlot = useMemo((): Slot | undefined => {
+    if (selectedSlotId) {
+      return (slots ?? []).find((s) => s.id === selectedSlotId);
+    }
+    return undefined;
+  }, [slots, selectedSlotId]);
+  // A Slot that leaves the calendar, by paging, hiding its calendar, or deletion, closes for good
+  // rather than reopening when it is loaded again.
+  if (selectedSlotId && slots && !openSlot) {
+    setSelectedSlotId(undefined);
+  }
+
   const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => ({
     id: candidate.schedule.id,
     label: getCandidateDisplay(candidate),
@@ -368,9 +397,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const displayError = resourcesError ?? schedulesLoadingError;
 
-  // The pane beside the calendar shows one thing at a time. Opening either side already
-  // closes the other, so this only decides which wins if they ever both hold something.
-  const showBooking = bookingSelection !== undefined && openAppointment === undefined;
+  // The pane beside the calendar shows one thing at a time. Opening any of them already
+  // closes the others, so this only decides which wins if they ever hold something together.
+  const showSlot = openSlot !== undefined && openAppointment === undefined;
+  const showBooking = bookingSelection !== undefined && openAppointment === undefined && openSlot === undefined;
   const blocking = showBooking && paneTab === 'block';
 
   return (
@@ -396,6 +426,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           loading={resourcesLoading}
           onSelectInterval={startBooking}
           onSelectAppointment={selectAppointment}
+          onSelectSlot={selectSlot}
           selection={blocking ? blockHighlight : highlight}
         />
         <div className={classes.footer}>
@@ -425,6 +456,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             diagnosisBinding={diagnosisBinding}
             mrnSystem={mrnSystem}
           />
+        </section>
+      )}
+      {showSlot && (
+        <section key={openSlot.id} className={classes.pane} aria-label="Blocked time details">
+          <Group justify="space-between" wrap="nowrap" mb="sm">
+            <Title order={4}>Blocked time</Title>
+            <CloseButton aria-label="Close blocked time details" onClick={() => setSelectedSlotId(undefined)} />
+          </Group>
+          <SlotDetails slot={openSlot} />
         </section>
       )}
       {showBooking && (

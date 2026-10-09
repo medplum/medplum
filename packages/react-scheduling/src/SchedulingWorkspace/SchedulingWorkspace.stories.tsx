@@ -113,6 +113,9 @@ export default {
  * the visit being moved. Move it and the drawer goes back to the details, with the event
  * redrawn at its new time behind them.
  *
+ * Blocked time opens in that pane too: click Exam Room A's "Blocked" block on Thursday to
+ * see whose time it holds, when, and why.
+ *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
  * somewhere else.
