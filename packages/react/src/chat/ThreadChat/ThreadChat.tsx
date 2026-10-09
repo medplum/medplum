@@ -36,6 +36,19 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
     }
   }, [thread?.id, prevThreadId]);
 
+  // Send failures go to the caller's onError when given, the same as BaseChat's own errors, and to
+  // the MedplumProvider error handler otherwise.
+  const reportSendError = useCallback(
+    (err: unknown): void => {
+      if (onError) {
+        onError(err as Error);
+      } else {
+        reportError(err, { source: 'ThreadChat' });
+      }
+    },
+    [onError, reportError]
+  );
+
   const sendMessage = useCallback(
     (message: string, file?: File, existingDocRef?: DocumentReference) => {
       const profileRefStr = profileRef ? getReferenceString(profileRef) : undefined;
@@ -80,15 +93,15 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
               { op: 'add', path: '/sent', value: communication.sent },
             ]);
           } catch (err) {
-            onError?.(err as Error);
+            reportSendError(err);
           }
         }
         onMessageSent?.(communication);
       };
 
-      buildAndSend().catch((err: unknown) => reportError(err, { source: 'ThreadChat' }));
+      buildAndSend().catch(reportSendError);
     },
-    [medplum, reportError, profileRef, thread, threadRef, communications, onMessageSent, onError]
+    [medplum, profileRef, thread, threadRef, communications, onMessageSent, reportSendError]
   );
 
   // Currently we only support `delivered` on chats with 2 participants
