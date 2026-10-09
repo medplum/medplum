@@ -109,3 +109,34 @@ export const RoomWithNoSchedule = (): JSX.Element => <StoredActor resourceType="
 export const ProviderTimeZone = (): JSX.Element => (
   <StoredActor resourceType="Practitioner" id={DrPatelPractitioner.id} />
 );
+
+/**
+ * A room being created, marked as new and not saved yet. Nothing is written until Create, which is refused until
+ * it has a name. It starts active and is typed as a room, at the service facility picked from the same list
+ * booking filters by. Visit types can be offered once it is created.
+ * @returns The story.
+ */
+export const CreateRoom = (): JSX.Element => {
+  const medplum = useMedplum();
+  const [services, setServices] = useState<WithId<HealthcareService>[]>();
+
+  useEffect(() => {
+    searchConfigurableServices(medplum, {})
+      .then((result) => setServices(result.services))
+      .catch(console.error);
+  }, [medplum]);
+
+  if (!services) {
+    return <Text c="dimmed">Loading…</Text>;
+  }
+  return (
+    <Box p="md">
+      <ActorPage
+        newActorType="Location"
+        services={services}
+        onSynced={() => undefined}
+        onDiscardNew={() => undefined}
+      />
+    </Box>
+  );
+};

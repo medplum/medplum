@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Badge, Group, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Group, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { deepClone, deepEquals, normalizeErrorString } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
@@ -246,13 +246,7 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
         </Text>
         <Group gap="sm">
           <Title order={2}>{service?.name ?? (fields.name.trim() || 'Untitled visit type')}</Title>
-          {creating ? (
-            <Badge variant="light" color="blue">
-              Not saved yet
-            </Badge>
-          ) : (
-            <StatusBadge status={fields.active ? 'active' : 'inactive'} />
-          )}
+          {creating ? <StatusBadge status="new" /> : <StatusBadge status={fields.active ? 'active' : 'inactive'} />}
         </Group>
       </Stack>
 
