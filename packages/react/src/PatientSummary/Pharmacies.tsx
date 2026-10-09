@@ -4,7 +4,7 @@ import { Box, Flex, Group, Loader, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatAddress, getReferenceString, OperationOutcomeError } from '@medplum/core';
 import type { Organization, Patient } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler, useResource } from '@medplum/react-hooks';
 import type { ComponentType, JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal } from '../Modal/Modal';
@@ -39,6 +39,7 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
   const { patient: patientProp, onClickResource, pharmacyDialogComponent } = props;
   const PharmacyDialogComponent = pharmacyDialogComponent;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [opened, { open, close }] = useDisclosure(false);
   const [resolvedPharmacies, setResolvedPharmacies] = useState<PharmacyWithPrimary[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('loading');
@@ -86,7 +87,7 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
               return { ...org, isPrimary: pharmacyRef.isPrimary };
             } catch (error) {
               if (!isNotFoundError(error)) {
-                // Error logged by Medplum error handler
+                onError(error, { source: 'Pharmacies' });
               }
               return null;
             }
@@ -117,7 +118,7 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [medplum, pharmacyRefs, props.pharmacies]);
+  }, [medplum, onError, pharmacyRefs, props.pharmacies]);
 
   const handleSubmit = useCallback(
     async (_pharmacy: Organization) => {

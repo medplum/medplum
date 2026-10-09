@@ -3,6 +3,7 @@
 
 import type { Organization, Patient } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react-hooks';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
@@ -29,9 +30,13 @@ function MockPharmacyDialog(props: PharmacyDialogBaseProps): JSX.Element {
   );
 }
 
-async function setup(children: ReactNode): Promise<void> {
+async function setup(children: ReactNode, onError?: MedplumErrorHandler): Promise<void> {
   await act(async () => {
-    render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
+    render(
+      <MedplumProvider medplum={medplum} onError={onError}>
+        {children}
+      </MedplumProvider>
+    );
   });
 }
 
@@ -330,11 +335,38 @@ describe('PatientSummary - Pharmacies', () => {
       ],
     };
 
-    await setup(<Pharmacies patient={patient} />);
+    const onError = vi.fn();
+    await setup(<Pharmacies patient={patient} />, onError);
 
     // Wait for the error state to appear
     await waitFor(() => {
       expect(screen.getByText('Failed to load pharmacies')).toBeInTheDocument();
     });
+    // A pharmacy that no longer exists is expected, not reported
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  test('Reports pharmacy reads that fail for reasons other than not found', async () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      id: 'patient-1',
+      extension: [
+        {
+          url: PATIENT_PREFERRED_PHARMACY_URL,
+          extension: [{ url: 'pharmacy', valueReference: { reference: 'Organization/unavailable-pharmacy' } }],
+        },
+      ],
+    };
+    const error = new Error('Service unavailable');
+    const readReference = vi.spyOn(medplum, 'readReference').mockRejectedValueOnce(error);
+    const onError = vi.fn();
+
+    await setup(<Pharmacies patient={patient} />, onError);
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load pharmacies')).toBeInTheDocument();
+    });
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error, { source: 'Pharmacies' });
+    readReference.mockRestore();
   });
 });
