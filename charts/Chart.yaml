@@ -16,7 +16,6 @@ keywords:
 home: https://www.medplum.com
 sources:
   - https://github.com/medplum/medplum
-documentation: https://www.medplum.com/docs
 icon: https://www.medplum.com/img/logo.svg
 maintainers:
   - name: Medplum Team
