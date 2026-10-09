@@ -54,10 +54,14 @@ export function useDoseSpotNotifications(options?: DoseSpotNotificationsOptions)
         onChange?.(newCount);
       }
     } catch (err: unknown) {
-      onError?.(err);
+      if (onError) {
+        onError(err);
+      } else {
+        reportError(err, { source: 'useDoseSpotNotifications' });
+      }
       stopTimer();
     }
-  }, [medplum, unreadCount, onChange, onError, stopTimer]);
+  }, [medplum, unreadCount, onChange, onError, reportError, stopTimer]);
 
   const startTimer = useCallback(() => {
     timerRef.current = setInterval(() => {
