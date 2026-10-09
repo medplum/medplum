@@ -57,7 +57,7 @@ export default defineConfig({
     },
   },
   test: {
-    maxWorkers: process.env.TEST_MAX_WORKERS ?? '50%',
+    maxWorkers: process.env.TEST_MAX_WORKERS ?? '75%',
     globals: true,
     environment: 'node',
     setupFiles: ['./src/test.setup.ts'],

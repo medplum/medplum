@@ -8,20 +8,12 @@ import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
+import type { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Message } from '../../types/spaces';
+import * as spacePersistence from '../../utils/spacePersistence';
 import { SpacesInbox } from './SpacesInbox';
-
-/** HistoryList navigates through links, so the stub selects a topic directly and echoes the active topic id. */
-type HistoryListProps = { currentTopicId?: string; onSelectTopic: (id: string) => void };
-vi.mock('./HistoryList', () => ({
-  HistoryList: ({ currentTopicId, onSelectTopic }: HistoryListProps) => (
-    <button type="button" data-current-topic={currentTopicId ?? ''} onClick={() => onSelectTopic('topic-456')}>
-      Select topic-456
-    </button>
-  ),
-}));
 
 const mockTopic: Communication = {
   resourceType: 'Communication',
@@ -93,6 +85,7 @@ describe('SpacesInbox', () => {
 
   beforeEach(() => {
     medplum = new MockClient();
+    vi.restoreAllMocks();
     vi.clearAllMocks();
     notifications.clean();
 
@@ -119,18 +112,18 @@ describe('SpacesInbox', () => {
     });
   });
 
-  const setup = (topic?: { reference: string }): ReturnType<typeof render> => {
-    return render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <SpacesInbox topic={topic} onNewTopic={onNewTopicMock} onSelectedItem={onSelectedItemMock} onAdd={onAdd} />
-          </MantineProvider>
-        </MedplumProvider>
-      </MemoryRouter>
-    );
-  };
+  const inbox = (topic?: { reference: string }): JSX.Element => (
+    <MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <MantineProvider>
+          <Notifications />
+          <SpacesInbox topic={topic} onNewTopic={onNewTopicMock} onSelectedItem={onSelectedItemMock} onAdd={onAdd} />
+        </MantineProvider>
+      </MedplumProvider>
+    </MemoryRouter>
+  );
+
+  const setup = (topic?: { reference: string }): ReturnType<typeof render> => render(inbox(topic));
 
   const panelHeader = (title: string): HTMLElement =>
     screen.getByText(title).closest('div')?.parentElement as HTMLElement;
@@ -166,42 +159,83 @@ describe('SpacesInbox', () => {
       const buttons = screen.getAllByRole('button');
       expect(buttons.length).toBeGreaterThan(0);
     });
+  });
 
-    test('conversation list is in the DOM but hidden', async () => {
+  describe('Conversation list', () => {
+    const mockTopics: Communication[] = [
+      {
+        resourceType: 'Communication',
+        id: 'topic-1',
+        status: 'completed',
+        meta: { lastUpdated: '2023-01-01T10:00:00Z' },
+        topic: { text: 'Topic 1' },
+      },
+      {
+        resourceType: 'Communication',
+        id: 'topic-2',
+        status: 'completed',
+        meta: { lastUpdated: '2023-01-02T10:00:00Z' },
+        topic: { text: 'Topic 2' },
+      },
+    ];
+
+    test('starts hidden, expands to show recent conversations, and collapses again', async () => {
+      const user = userEvent.setup();
+      vi.spyOn(spacePersistence, 'loadRecentTopics').mockResolvedValue(mockTopics);
+
       await act(async () => {
         setup();
       });
 
-      expect(screen.getByText('How can I help you today?')).toBeInTheDocument();
+      // Collapsed: the list is aria-hidden, so its links are not exposed
+      expect(screen.queryByRole('link', { name: /Topic 1/ })).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Show conversations' }));
+
+      const link = await screen.findByRole('link', { name: /Topic 1/ });
+      expect(link).toHaveAttribute('href', '/Spaces/Communication/topic-1');
+      expect(screen.getByRole('link', { name: /Topic 2/ })).toHaveAttribute('href', '/Spaces/Communication/topic-2');
+
+      await user.click(screen.getByRole('button', { name: 'Hide conversations' }));
+      expect(screen.queryByRole('link', { name: /Topic 1/ })).not.toBeInTheDocument();
+    });
+
+    test('shows empty state when there are no conversations', async () => {
+      const user = userEvent.setup();
+      vi.spyOn(spacePersistence, 'loadRecentTopics').mockResolvedValue([]);
+
+      await act(async () => {
+        setup();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Show conversations' }));
+      expect(screen.getByText('No conversations yet')).toBeInTheDocument();
     });
   });
 
   describe('Sidebar', () => {
     test('toggles the conversations sidebar and forwards the New conversation click', async () => {
       const user = userEvent.setup();
-      setup();
-      const sidebar = screen.getByText('Conversations').parentElement?.parentElement as HTMLElement;
-      expect(sidebar).toHaveStyle({ width: '0px' });
-      const header = screen.getByLabelText('New conversation').parentElement as HTMLElement;
-      await user.click(header.querySelector('button') as HTMLButtonElement);
-      expect(sidebar).toHaveStyle({ width: '280px' });
-      await user.click(screen.getByLabelText('New conversation'));
+      await act(async () => {
+        setup();
+      });
+      expect(screen.queryByRole('button', { name: 'Hide conversations' })).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Show conversations' }));
+      expect(screen.getByRole('button', { name: 'Hide conversations' })).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'New conversation' }));
       expect(onAdd).toHaveBeenCalledTimes(1);
-      await user.click(screen.getByText('Conversations').parentElement?.querySelector('button') as HTMLElement);
-      expect(sidebar).toHaveStyle({ width: '0px' });
+      await user.click(screen.getByRole('button', { name: 'Hide conversations' }));
+      expect(screen.queryByRole('button', { name: 'Hide conversations' })).not.toBeInTheDocument();
     });
 
     test('reports a failed history load, then loads the selected conversation', async () => {
-      const user = userEvent.setup();
-      medplum.searchResources = vi.fn().mockRejectedValue(new Error('History unavailable'));
-      setup();
-      await user.click(screen.getByText('Select topic-456'));
+      vi.spyOn(spacePersistence, 'loadRecentTopics').mockRejectedValue(new Error('History unavailable'));
+      const { rerender } = setup();
       expect(await screen.findByText('History unavailable')).toBeInTheDocument();
       mockConversation([{ role: 'user', content: 'Earlier question' }]);
-      await user.click(screen.getByText('Select topic-456'));
+      rerender(inbox({ reference: 'Communication/topic-456' }));
       expect(await screen.findByText('Earlier question')).toBeInTheDocument();
       expect(screen.queryByText('How can I help you today?')).not.toBeInTheDocument();
-      expect(screen.getByText('Select topic-456')).toHaveAttribute('data-current-topic', 'topic-456');
     });
   });
 
@@ -227,7 +261,6 @@ describe('SpacesInbox', () => {
       setup({ reference: 'Communication/topic-123' });
       expect(await screen.findByText('Look things up')).toBeInTheDocument();
       expect(screen.queryByText('hidden system prompt')).not.toBeInTheDocument();
-      expect(screen.getByText('Select topic-456')).toHaveAttribute('data-current-topic', 'topic-123');
       expect(screen.getByText('GET')).toBeInTheDocument();
       expect(screen.getByText('CALL')).toBeInTheDocument();
       expect(screen.getByText('Unable to parse tool call')).toBeInTheDocument();
@@ -280,8 +313,8 @@ describe('SpacesInbox', () => {
       const user = userEvent.setup();
       mockConversation([{ role: 'user', content: 'Persisted question' }]);
       setup({ reference: 'Communication/topic-123' });
-      await screen.findByText('Persisted question');
-      const viewport = document.querySelector('.mantine-ScrollArea-viewport') as HTMLElement;
+      const message = await screen.findByText('Persisted question');
+      const viewport = message.closest('.mantine-ScrollArea-viewport') as HTMLElement;
       Object.defineProperties(viewport, { scrollHeight: { value: 1000 }, clientHeight: { value: 300 } });
       fireEvent.scroll(viewport);
       await user.click(screen.getByLabelText('Scroll to bottom'));
@@ -318,6 +351,63 @@ describe('SpacesInbox', () => {
       await waitFor(() => {
         expect(onNewTopicMock).toHaveBeenCalledWith(mockTopic);
       });
+    });
+
+    test('bumps topic recency on every user prompt in an existing conversation', async () => {
+      const user = userEvent.setup();
+      medplum.executeBot = vi.fn().mockResolvedValue({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'content', valueString: 'Bot response' }],
+      });
+      medplum.patchResource = vi.fn().mockResolvedValue(mockTopic) as any;
+
+      await act(async () => {
+        setup({ reference: 'Communication/topic-123' });
+      });
+
+      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
+
+      await user.type(input, 'First follow-up');
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
+
+      await waitFor(() => {
+        expect(medplum.patchResource).toHaveBeenCalledWith('Communication', 'topic-123', [
+          { op: 'add', path: '/sent', value: expect.any(String) },
+        ]);
+      });
+
+      await user.type(input, 'Second follow-up');
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
+
+      await waitFor(() => {
+        expect(medplum.executeBot).toHaveBeenCalledTimes(2);
+      });
+      // One touch per user prompt — the assistant/tool messages persisted during
+      // each exchange never patch the parent topic.
+      expect(medplum.patchResource).toHaveBeenCalledTimes(2);
+    });
+
+    test('does not bump topic recency when the first message creates the topic', async () => {
+      const user = userEvent.setup();
+      medplum.executeBot = vi.fn().mockResolvedValue({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'content', valueString: 'Bot response' }],
+      });
+      medplum.patchResource = vi.fn().mockResolvedValue(mockTopic) as any;
+
+      await act(async () => {
+        setup();
+      });
+
+      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
+
+      await user.type(input, 'Hello AI');
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
+
+      await waitFor(() => {
+        expect(onNewTopicMock).toHaveBeenCalledWith(mockTopic);
+      });
+      expect(medplum.patchResource).not.toHaveBeenCalled();
     });
 
     test('does not send empty messages', async () => {

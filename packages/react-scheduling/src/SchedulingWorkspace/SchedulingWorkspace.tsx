@@ -6,11 +6,12 @@ import {
   getExtensionValue,
   getReferenceString,
   isDefined,
+  isResourceWithId,
   normalizeErrorString,
   SchedulingScheduleColorURI,
 } from '@medplum/core';
 import type { Appointment, Extension, Location, Reference, Slot } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -52,6 +53,14 @@ const NONE_DESELECTED: DeselectedIdsByActorType = {
   Location: new Set(),
   Device: new Set(),
 };
+
+const RESOURCE_OPTIONS = {
+  // "free" Slots are left out: they are easy to misinterpret as being the _only_
+  // bookable times. "entered-in-error" status slots are also not shown here.
+  slotStatuses: ['busy', 'busy-unavailable', 'busy-tentative'],
+  // Cancelled and entered-in-error appointments are not displayed here.
+  appointmentStatuses: ['proposed', 'pending', 'booked', 'arrived', 'fulfilled', 'noshow', 'checked-in', 'waitlist'],
+} as const;
 
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
@@ -158,7 +167,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // What was selected
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>();
+  const [selectedAppointment, setSelectedAppointment] = useState<WithId<Appointment>>();
 
   // What the calendar highlights
   const [highlight, setHighlight] = useState<DateTimeRange>();
@@ -234,7 +243,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     appointments,
     loading: resourcesLoading,
     error: resourcesError,
-  } = useSchedulingResources(schedules, range);
+  } = useSchedulingResources(schedules, range, RESOURCE_OPTIONS);
 
   const { sources, serviceTypes } = useMemo(() => {
     const actorsOnShow = new Set(
@@ -242,12 +251,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         .flatMap((candidate) => candidate.schedule.actor.map((actor) => actor.reference))
         .filter(isDefined)
     );
-    const visibleAppointments = (appointments ?? []).filter(
-      (appointment) =>
-        appointment.status !== 'cancelled' &&
-        appointment.participant.some(
-          (participant) => participant.actor?.reference && actorsOnShow.has(participant.actor.reference)
-        )
+    const visibleAppointments = (appointments ?? []).filter((appointment) =>
+      appointment.participant.some(
+        (participant) => participant.actor?.reference && actorsOnShow.has(participant.actor.reference)
+      )
     );
     // Appointments are drawn by service type rather than on the calendars they are held on,
     // so the Slots they hold have to be cleared here: a source only clears the ones behind
@@ -290,7 +297,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
   const startBooking = useCallback((interval: DateTimeRange): void => {
-    setSelectedAppointmentId(undefined);
+    setSelectedAppointment(undefined);
     setBookingSelection(interval);
     setHighlight(interval);
   }, []);
@@ -317,28 +324,45 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const selectAppointment = useCallback(
     (appointment: Appointment): void => {
-      if (appointment.id) {
-        if (appointment.id !== selectedAppointmentId) {
+      if (isResourceWithId(appointment)) {
+        if (appointment.id !== selectedAppointment?.id) {
           setRescheduleFinderOpen(false);
         }
         closeBooking();
-        setSelectedAppointmentId(appointment.id);
+        setSelectedAppointment(appointment);
       }
     },
-    [closeBooking, selectedAppointmentId]
+    [closeBooking, selectedAppointment?.id]
   );
 
   const closeAppointment = useCallback((): void => {
-    setSelectedAppointmentId(undefined);
+    setSelectedAppointment(undefined);
     setRescheduleFinderOpen(false);
   }, []);
 
-  const openAppointment = useMemo((): WithId<Appointment> | undefined => {
-    if (selectedAppointmentId) {
-      return (appointments ?? []).find((a) => a.id === selectedAppointmentId);
+  // The open appointment is held apart from the calendar's, so that a visit cancelled from
+  // its pane stays open, showing it cancelled, once the calendar stops loading it.
+  useResourceModified('Appointment', (event) => {
+    if (!selectedAppointment || event.id !== selectedAppointment.id) {
+      return;
     }
-    return undefined;
-  }, [appointments, selectedAppointmentId]);
+    if (event.operation === 'delete') {
+      closeAppointment();
+    } else if (event.resource) {
+      setSelectedAppointment(event.resource);
+    }
+  });
+
+  const openAppointment = useMemo((): WithId<Appointment> | undefined => {
+    if (!selectedAppointment) {
+      return undefined;
+    }
+    const loaded = appointments?.find((a) => a.id === selectedAppointment.id);
+    // One that left the calendar some other way, by paging or by hiding its calendars,
+    // closes with it.
+    const statuses: readonly string[] = RESOURCE_OPTIONS.appointmentStatuses;
+    return loaded ?? (statuses.includes(selectedAppointment.status) ? undefined : selectedAppointment);
+  }, [appointments, selectedAppointment]);
 
   const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => {
     const color = colorByScheduleId.get(candidate.schedule.id);

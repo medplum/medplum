@@ -6,6 +6,7 @@ import type {
   Address,
   Appointment,
   AppointmentParticipant,
+  AuditEvent,
   Binary,
   Bundle,
   CarePlan,
@@ -1698,6 +1699,19 @@ describe('FHIR resource validation', () => {
     expect(issues[0].severity).toBe('warning');
     expect(issues[0].details?.text).toContain('Invalid reference');
     expect(issues[0].details?.text).toContain('Organization');
+  });
+
+  test('System reference in AuditEvent.agent.who should not warn', () => {
+    const auditEvent: AuditEvent = {
+      resourceType: 'AuditEvent',
+      type: { code: 'rest', system: 'http://dicom.nema.org/resources/ontology/DCM' },
+      recorded: '2024-01-01T00:00:00Z',
+      agent: [{ who: { reference: 'system' }, requestor: true }],
+      source: { observer: { reference: 'Device/1' } },
+    };
+
+    const issues = validateResource(auditEvent);
+    expect(issues).toHaveLength(0);
   });
 
   test('Nested recursive properties', () => {

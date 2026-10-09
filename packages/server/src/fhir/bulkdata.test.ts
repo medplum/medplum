@@ -77,4 +77,24 @@ describe('Binary', () => {
       .set('X-Medplum', 'extended');
     expect(initRes).toHaveStatus(404);
   });
+
+  test('Failed export returns 400 with OperationOutcome', async () => {
+    const exportResource = await repo.createResource<BulkDataExport>({
+      resourceType: 'BulkDataExport',
+      status: 'error',
+      request: 'foo',
+      requestTime: new Date().toISOString(),
+    });
+
+    const res = await request(app)
+      .get('/fhir/R4/bulkdata/export/' + exportResource.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended');
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', code: 'invalid', details: { text: 'Bulk export failed' } }],
+    });
+  });
 });

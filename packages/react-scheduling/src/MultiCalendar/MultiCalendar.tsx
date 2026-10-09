@@ -11,6 +11,7 @@ import { useMemo } from 'react';
 import { AppointmentEvent } from '../CalendarBase/AppointmentEvent';
 import type { ExtendedEvent, FhirEventSource } from '../CalendarBase/CalendarBase';
 import { CalendarBase } from '../CalendarBase/CalendarBase';
+import { SlotEvent } from '../CalendarBase/SlotEvent';
 import { resolveThemeColor } from '../colors';
 import type { DateTimeRange } from '../types';
 import classes from './MultiCalendar.module.css';
@@ -79,8 +80,14 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
       availableTime={props.availableTime}
       eventContent={(info) => {
         const ext = info.event.extendedProps as ExtendedEvent;
-        // `true` keeps FullCalendar's own content for everything but appointments.
-        return ext.type === 'appointment' ? <AppointmentEvent appointment={ext.appointment} info={info} /> : true;
+        if (ext.type === 'appointment') {
+          return <AppointmentEvent appointment={ext.appointment} info={info} />;
+        } else if (ext.type === 'slot') {
+          return <SlotEvent slot={ext.slot} schedule={ext.schedule} info={info} />;
+        } else {
+          // `true` renders unknown event types via FullCalendar's default UI
+          return true;
+        }
       }}
       eventTimeFormat={{
         hour: 'numeric',

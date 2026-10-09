@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "5.2.3",
+  "version": "5.2.4",
   "description": "Medplum Command Line Interface",
   "keywords": [
     "medplum",
@@ -68,8 +68,8 @@
     "@aws-sdk/client-ssm": "3.1145.0",
     "@aws-sdk/client-sts": "3.1145.0",
     "@aws-sdk/types": "3.974.6",
-    "@medplum/core": "5.2.3",
-    "@medplum/hl7": "5.2.3",
+    "@medplum/core": "5.2.4",
+    "@medplum/hl7": "5.2.4",
     "commander": "12.1.0",
     "fast-glob": "3.3.3",
     "iconv-lite": "0.7.3",
@@ -77,8 +77,8 @@
     "tar": "7.5.22"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "5.2.3",
-    "@medplum/mock": "5.2.3",
+    "@medplum/fhirtypes": "5.2.4",
+    "@medplum/mock": "5.2.4",
     "@types/semver": "7.8.0",
     "aws-sdk-client-mock": "4.1.0"
   },
