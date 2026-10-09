@@ -3,7 +3,7 @@
 import { Stack } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
-import { Document, LinkTabs, useMedplum } from '@medplum/react';
+import { Document, LinkTabs, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router';
@@ -15,6 +15,7 @@ const baseTabs = ['Details', 'Edit', 'History'];
 export function ResourcePage(): JSX.Element | null {
   const navigate = useNavigate();
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
 
   const project = medplum.getProject();
   const schedulingEnabled = project?.features?.includes('scheduling');
@@ -29,9 +30,9 @@ export function ResourcePage(): JSX.Element | null {
       medplum
         .readResource(resourceType as ResourceType, id)
         .then(setResource)
-        .catch(console.error);
+        .catch((err: unknown) => onError(err, { source: 'ResourcePage' }));
     }
-  }, [medplum, resourceType, id, navigate]);
+  }, [medplum, onError, resourceType, id, navigate]);
 
   const tabs = [...baseTabs];
   if (resourceType === 'HealthcareService' && schedulingEnabled) {

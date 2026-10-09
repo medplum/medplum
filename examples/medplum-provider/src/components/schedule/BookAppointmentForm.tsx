@@ -23,7 +23,7 @@ import type {
   Practitioner,
   Slot,
 } from '@medplum/fhirtypes';
-import { Form, ResourceInput, useMedplum } from '@medplum/react';
+import { Form, ResourceInput, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { createEncounter } from '../../utils/encounter';
@@ -43,6 +43,7 @@ type BookAppointmentFormProps = {
 
 export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [patient, setPatient] = useState<WithId<Patient> | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
@@ -155,16 +156,16 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
           encounter = await bookEncounter(appointment);
         } catch (err) {
           // If we couldn't load the plan definition or create the encounter for
-          // some reason, we log the error but ignore it. The viewer can decide how
+          // some reason, we report the error but ignore it. The viewer can decide how
           // to proceed and manually create the encounter.
-          console.error(err);
+          onError(err, { source: 'BookAppointmentForm' });
         }
         await onSuccess?.({ appointment, slots, patient, encounter });
       } finally {
         setLoading(false);
       }
     },
-    [medplum, appointment, bookEncounter, onSuccess]
+    [medplum, onError, appointment, bookEncounter, onSuccess]
   );
 
   const handleSubmit = useCallback(async () => {

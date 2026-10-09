@@ -3,7 +3,7 @@
 import type { SearchRequest } from '@medplum/core';
 import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
-import { createPharmaciesSection, getDefaultSections, ThreadInbox } from '@medplum/react';
+import { createPharmaciesSection, getDefaultSections, ThreadInbox, useMedplumErrorHandler } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
@@ -22,6 +22,7 @@ export function MessagesPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const PharmacyDialogComponent = usePharmacyDialog();
   const [threadPatient, setThreadPatient] = useState<Reference<Patient>>();
   const { headerMenuItems, actionsModals, openEditModal } = usePatientActionsMenu(threadPatient);
@@ -95,7 +96,7 @@ export function MessagesPage(): JSX.Element {
         const path = subject ? `/${subject}/${getReferenceString(reference)}` : `/${getReferenceString(reference)}`;
         navigate(path)?.catch(console.error);
       })
-      .catch(console.error);
+      .catch((err: unknown) => onError(err, { source: 'MessagesPage' }));
   };
 
   return (

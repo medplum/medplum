@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Stack, Text } from '@mantine/core';
 import type { Attachment, DiagnosticReport } from '@medplum/fhirtypes';
-import { AttachmentDisplay, DiagnosticReportDisplay, useMedplum } from '@medplum/react';
+import { AttachmentDisplay, DiagnosticReportDisplay, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { resolveDerivedFromAttachments, resolvePresentedFormAttachments } from '../../utils/documentReference';
@@ -22,6 +22,7 @@ interface LabReportContentProps {
 export function LabReportContent(props: LabReportContentProps): JSX.Element {
   const { report } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [labDocumentAttachments, setLabDocumentAttachments] = useState<Attachment[]>([]);
 
   // Resolve both attachment sources together and commit them in a single state update, so the
@@ -42,10 +43,16 @@ export function LabReportContent(props: LabReportContentProps): JSX.Element {
           return;
         }
         if (derivedFromResult.status === 'rejected') {
-          console.error('Error resolving derivedFrom attachments:', derivedFromResult.reason);
+          onError(derivedFromResult.reason, {
+            source: 'LabReportContent',
+            message: 'Error resolving derivedFrom attachments',
+          });
         }
         if (presentedFormResult.status === 'rejected') {
-          console.error('Error resolving presentedForm attachments:', presentedFormResult.reason);
+          onError(presentedFormResult.reason, {
+            source: 'LabReportContent',
+            message: 'Error resolving presentedForm attachments',
+          });
         }
         const derivedFromAttachments = derivedFromResult.status === 'fulfilled' ? derivedFromResult.value : [];
         const presentedFormAttachments = presentedFormResult.status === 'fulfilled' ? presentedFormResult.value : [];
@@ -65,13 +72,13 @@ export function LabReportContent(props: LabReportContentProps): JSX.Element {
         });
         setLabDocumentAttachments(deduped);
       })
-      .catch(console.error);
+      .catch((err: unknown) => onError(err, { source: 'LabReportContent' }));
 
     return () => {
       cancelled = true;
       setLabDocumentAttachments([]);
     };
-  }, [medplum, report]);
+  }, [medplum, onError, report]);
 
   return (
     <Stack gap="sm" mb="xl">

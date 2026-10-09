@@ -15,6 +15,7 @@ import {
 } from '@mantine/core';
 import { getIdentifier } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
+import { useMedplumErrorHandler } from '@medplum/react';
 import { IconCheck, IconInfoCircle, IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -29,6 +30,7 @@ export interface CandidPayerDirectorySearchProps {
 
 export function CandidPayerDirectorySearch(props: CandidPayerDirectorySearchProps): JSX.Element | null {
   const { directory, onSelectPayer } = props;
+  const onError = useMedplumErrorHandler();
   const [searchTerm, setSearchTerm] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -83,7 +85,7 @@ export function CandidPayerDirectorySearch(props: CandidPayerDirectorySearchProp
             onChange={(event) => setSearchTerm(event.currentTarget.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !directory.searching) {
-                handleSearch().catch(console.error);
+                handleSearch().catch((err: unknown) => onError(err, { source: 'CandidPayerDirectorySearch' }));
               }
             }}
             rightSection={
@@ -95,7 +97,9 @@ export function CandidPayerDirectorySearch(props: CandidPayerDirectorySearchProp
           />
           <Button
             leftSection={<IconSearch size={16} />}
-            onClick={() => handleSearch().catch(console.error)}
+            onClick={() =>
+              handleSearch().catch((err: unknown) => onError(err, { source: 'CandidPayerDirectorySearch' }))
+            }
             loading={directory.searching}
           >
             Search
@@ -156,7 +160,9 @@ export function CandidPayerDirectorySearch(props: CandidPayerDirectorySearchProp
             </Table>
             <Group justify="space-between">
               <Button
-                onClick={() => handleImport().catch(console.error)}
+                onClick={() =>
+                  handleImport().catch((err: unknown) => onError(err, { source: 'CandidPayerDirectorySearch' }))
+                }
                 disabled={selected.size === 0}
                 loading={directory.importing}
               >
@@ -165,7 +171,11 @@ export function CandidPayerDirectorySearch(props: CandidPayerDirectorySearchProp
               <Pagination
                 value={directory.page}
                 total={directory.pageCount}
-                onChange={(pageNumber) => directory.setPage(pageNumber).catch(console.error)}
+                onChange={(pageNumber) =>
+                  directory
+                    .setPage(pageNumber)
+                    .catch((err: unknown) => onError(err, { source: 'CandidPayerDirectorySearch' }))
+                }
                 disabled={directory.searching || directory.fetchingPage}
               />
             </Group>

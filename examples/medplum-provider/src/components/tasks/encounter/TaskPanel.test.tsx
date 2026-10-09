@@ -5,6 +5,7 @@ import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type { Questionnaire, QuestionnaireResponse, ServiceRequest, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -44,12 +45,13 @@ describe('TaskPanel', () => {
   const setup = async (
     task: WithId<Task>,
     onUpdateTask: (task: WithId<Task>) => void,
-    enabled = true
+    enabled = true,
+    onError?: MedplumErrorHandler
   ): Promise<void> => {
     await act(async () => {
       render(
         <MemoryRouter initialEntries={['/Patient/123/Encounter/456?tab=tasks']}>
-          <MedplumProvider medplum={medplum}>
+          <MedplumProvider medplum={medplum} onError={onError}>
             <MantineProvider>
               <Notifications />
               <Routes>
@@ -333,16 +335,17 @@ describe('TaskPanel', () => {
     expect(navigateSpy).toHaveBeenCalledWith('Task/task-123?tab=tasks');
   });
 
-  test('logs a failed QuestionnaireResponse save, then creates the response and records it on the task', async () => {
+  test('reports a failed QuestionnaireResponse save, then creates the response and records it on the task', async () => {
     const user = userEvent.setup();
     await medplum.createResource(questionnaireFixture);
-    const createSpy = vi.spyOn(medplum, 'createResource').mockRejectedValueOnce(new Error('Save failed'));
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const error = new Error('Save failed');
+    const createSpy = vi.spyOn(medplum, 'createResource').mockRejectedValueOnce(error);
+    const onError = vi.fn();
     const onUpdateTask = vi.fn();
-    await setup(questionnaireTask, onUpdateTask);
+    await setup(questionnaireTask, onUpdateTask, true, onError);
 
     await user.type(await screen.findByLabelText('Panel Question'), 'A');
-    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(new Error('Save failed')), debounced);
+    await waitFor(() => expect(onError).toHaveBeenCalledExactlyOnceWith(error, { source: 'TaskPanel' }), debounced);
     expect(onUpdateTask).not.toHaveBeenCalled();
 
     await user.type(screen.getByLabelText('Panel Question'), 'B');

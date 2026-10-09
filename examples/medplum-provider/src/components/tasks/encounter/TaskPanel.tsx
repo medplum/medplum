@@ -6,7 +6,7 @@ import { showNotification } from '@mantine/notifications';
 import type { MedplumClient, WithId } from '@medplum/core';
 import { createReference, normalizeErrorString } from '@medplum/core';
 import type { DiagnosticReport, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useLocation, useNavigate } from 'react-router';
@@ -27,6 +27,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const navigate = useNavigate();
   const location = useLocation();
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
 
   const onActionButtonClicked = async (): Promise<void> => {
     // Keep the search query (relative navigation drops it by default).
@@ -60,7 +61,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
           onUpdateTask(updatedTask);
         }
       } catch (err) {
-        console.error(err);
+        onError(err, { source: 'TaskPanel' });
       }
     },
     SAVE_TIMEOUT_MS

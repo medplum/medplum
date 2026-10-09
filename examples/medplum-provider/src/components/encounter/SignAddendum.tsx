@@ -3,7 +3,7 @@
 import { Button, Card, Divider, Group, Stack, Text, Textarea } from '@mantine/core';
 import { createReference, formatDate } from '@medplum/core';
 import type { Encounter, Provenance } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile } from '@medplum/react';
+import { useMedplum, useMedplumErrorHandler, useMedplumProfile } from '@medplum/react';
 import { IconLock, IconPencil, IconSignature } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -29,6 +29,7 @@ interface AddendumDisplay {
 
 export const SignAddendum = ({ provenances, chartNoteStatus, encounter }: SignAddendumProps): JSX.Element | null => {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const author = useMedplumProfile();
   const authorReference = author ? createReference(author) : undefined;
   const [provenanceDisplays, setProvenanceDisplays] = useState<ProvenanceDisplay[]>([]);
@@ -75,9 +76,9 @@ export const SignAddendum = ({ provenances, chartNoteStatus, encounter }: SignAd
     };
 
     if (encounter.id) {
-      loadAddendums().catch(console.error);
+      loadAddendums().catch((err: unknown) => onError(err, { source: 'SignAddendum' }));
     }
-  }, [encounter.id, medplum]);
+  }, [encounter.id, medplum, onError]);
 
   const handleAddAddendum = async (): Promise<void> => {
     setIsSubmitting(true);

@@ -4,7 +4,7 @@ import { Badge, Button, Group, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getIdentifier } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
-import { Modal } from '@medplum/react';
+import { Modal, useMedplumErrorHandler } from '@medplum/react';
 import { IconRefresh } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import type { CandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
@@ -38,6 +38,7 @@ export interface CandidPayerDetailsModalProps {
 
 export function CandidPayerDetailsModal(props: CandidPayerDetailsModalProps): JSX.Element {
   const { directory, payer, onClose, onPayerUpdated } = props;
+  const onError = useMedplumErrorHandler();
 
   const handleRefresh = async (): Promise<void> => {
     const updated = await directory.refreshPayer(payer as WithId<Organization>);
@@ -60,7 +61,9 @@ export function CandidPayerDetailsModal(props: CandidPayerDetailsModalProps): JS
             <Button
               variant="outline"
               leftSection={<IconRefresh size={16} />}
-              onClick={() => handleRefresh().catch(console.error)}
+              onClick={() =>
+                handleRefresh().catch((err: unknown) => onError(err, { source: 'CandidPayerDetailsModal' }))
+              }
               loading={directory.refreshing}
             >
               Refresh from directory

@@ -3,7 +3,7 @@
 import { Box, Button, Divider, Group, Modal, Stack, Text, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { CodeableConcept, DocumentReference, Reference } from '@medplum/fhirtypes';
-import { CodeableConceptInput, ReferenceInput, useMedplum } from '@medplum/react';
+import { CodeableConceptInput, ReferenceInput, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
@@ -27,6 +27,7 @@ export function EditDocumentDetailsModal({
   onDeleted,
 }: EditDocumentDetailsModalProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
 
   // Editable field state, seeded from the resource. Inputs stay mounted while the delete
   // confirmation is shown (just visually hidden), so in-progress edits survive a cancel.
@@ -153,7 +154,14 @@ export function EditDocumentDetailsModal({
 
               <Divider />
 
-              <Button variant="filled" w="100%" onClick={() => handleSave().catch(console.error)} loading={saving}>
+              <Button
+                variant="filled"
+                w="100%"
+                onClick={() =>
+                  handleSave().catch((err: unknown) => onError(err, { source: 'EditDocumentDetailsModal' }))
+                }
+                loading={saving}
+              >
                 Save Changes
               </Button>
               <Button
@@ -175,7 +183,13 @@ export function EditDocumentDetailsModal({
                 <Button variant="outline" onClick={() => setConfirmingDelete(false)} disabled={deleting}>
                   Cancel
                 </Button>
-                <Button color="red" onClick={() => handleDelete().catch(console.error)} loading={deleting}>
+                <Button
+                  color="red"
+                  onClick={() =>
+                    handleDelete().catch((err: unknown) => onError(err, { source: 'EditDocumentDetailsModal' }))
+                  }
+                  loading={deleting}
+                >
                   Delete
                 </Button>
               </Group>

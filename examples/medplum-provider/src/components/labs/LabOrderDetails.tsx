@@ -26,7 +26,7 @@ import type {
   Reference,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { AttachmentDisplay, useMedplum, useResource } from '@medplum/react';
+import { AttachmentDisplay, useMedplum, useMedplumErrorHandler, useResource } from '@medplum/react';
 import { IconCheck, IconChevronDown, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -51,6 +51,7 @@ interface ProgressStep {
 export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const { order, onChange } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const patient = useResource(order.subject);
   const requester = useResource(order.requester);
   const [diagnosticReports, setDiagnosticReports] = useState<DiagnosticReport[]>([]);
@@ -197,21 +198,21 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
         const docs = await fetchLabOrderRequisitionDocuments(medplum, order);
         setLabOrderRequisitionDocs(docs);
       } catch (error) {
-        console.error('Error fetching lab order requisition documents:', error);
+        onError(error, { source: 'LabOrderDetails', message: 'Error fetching lab order requisition documents' });
         setLabOrderRequisitionDocs([]);
       } finally {
         setLoadingDocs(false);
       }
     };
 
-    fetchDocuments().catch(console.error);
+    fetchDocuments().catch((err: unknown) => onError(err, { source: 'LabOrderDetails' }));
 
     // Cleanup function to clear documents when component unmounts or order changes
     return () => {
       setLabOrderRequisitionDocs([]);
       setLoadingDocs(false);
     };
-  }, [medplum, order]);
+  }, [medplum, onError, order]);
 
   // Fetch Specimen Label documents when order changes
   useEffect(() => {
@@ -242,21 +243,21 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
         const searchResult = await medplum.searchResources('DocumentReference', searchParams, { cache: 'no-cache' });
         setSpecimenLabelDocs(searchResult);
       } catch (error) {
-        console.error('Error fetching specimen label documents:', error);
+        onError(error, { source: 'LabOrderDetails', message: 'Error fetching specimen label documents' });
         setSpecimenLabelDocs([]);
       } finally {
         setLoadingSpecimenDocs(false);
       }
     };
 
-    fetchSpecimenLabelDocuments().catch(console.error);
+    fetchSpecimenLabelDocuments().catch((err: unknown) => onError(err, { source: 'LabOrderDetails' }));
 
     // Cleanup function to clear documents when component unmounts or order changes
     return () => {
       setSpecimenLabelDocs([]);
       setLoadingSpecimenDocs(false);
     };
-  }, [medplum, order]);
+  }, [medplum, onError, order]);
 
   // Fetch QuestionnaireResponse when order changes
   useEffect(() => {
@@ -279,7 +280,10 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             setQuestionnaireResponse(response);
             return;
           } catch (error) {
-            console.error('Error fetching questionnaire response from current order:', error);
+            onError(error, {
+              source: 'LabOrderDetails',
+              message: 'Error fetching questionnaire response from current order',
+            });
           } finally {
             setLoadingQuestionnaire(false);
           }
@@ -356,21 +360,24 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             }
           }
         } catch (error) {
-          console.error('Error fetching questionnaire response from original order:', error);
+          onError(error, {
+            source: 'LabOrderDetails',
+            message: 'Error fetching questionnaire response from original order',
+          });
         } finally {
           setLoadingQuestionnaire(false);
         }
       }
     };
 
-    fetchQuestionnaireResponse().catch(console.error);
+    fetchQuestionnaireResponse().catch((err: unknown) => onError(err, { source: 'LabOrderDetails' }));
 
     // Cleanup function
     return () => {
       setQuestionnaireResponse(null);
       setLoadingQuestionnaire(false);
     };
-  }, [medplum, order]);
+  }, [medplum, onError, order]);
 
   return (
     <ScrollArea h="100%">
@@ -431,7 +438,13 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
                 </Menu.Target>
                 {canRevoke && (
                   <Menu.Dropdown>
-                    <Menu.Item onClick={() => handleRevoke().catch(console.error)}>Revoked</Menu.Item>
+                    <Menu.Item
+                      onClick={() =>
+                        handleRevoke().catch((err: unknown) => onError(err, { source: 'LabOrderDetails' }))
+                      }
+                    >
+                      Revoked
+                    </Menu.Item>
                   </Menu.Dropdown>
                 )}
               </Menu>

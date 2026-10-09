@@ -6,6 +6,7 @@ import type { WithId } from '@medplum/core';
 import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '@medplum/core';
 import type { Appointment, Bundle, Encounter, HealthcareService, PlanDefinition, Slot } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -52,14 +53,15 @@ describe('BookAppointmentForm', () => {
       encounter: Encounter | undefined;
     }) => void;
     healthcareService?: HealthcareService;
+    onError?: MedplumErrorHandler;
   };
 
   const setup = async (options: SetupOptions = {}): Promise<void> => {
-    const { onSuccess, healthcareService = defaultHealthcareService } = options;
+    const { onSuccess, healthcareService = defaultHealthcareService, onError } = options;
     await act(async () => {
       render(
         <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
+          <MedplumProvider medplum={medplum} onError={onError}>
             <MantineProvider>
               <Notifications />
               <BookAppointmentForm
@@ -475,13 +477,14 @@ describe('BookAppointmentForm', () => {
     test('swallows encounter creation errors and still calls onSuccess with encounter undefined', async () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const onError = vi.fn();
+      const error = new Error('PlanDefinition $apply failed');
 
       medplum.post = vi.fn().mockResolvedValue(makeBookResponse(bookedAppointmentWithParticipants));
       vi.spyOn(medplum, 'readReference').mockResolvedValue(planDefinition);
-      vi.mocked(createEncounter).mockRejectedValue(new Error('PlanDefinition $apply failed'));
+      vi.mocked(createEncounter).mockRejectedValue(error);
 
-      await setup({ onSuccess, healthcareService: healthcareServiceWithEncounter });
+      await setup({ onSuccess, healthcareService: healthcareServiceWithEncounter, onError });
 
       const patientInput = screen.getByRole('searchbox');
       await user.type(patientInput, 'Homer');
@@ -492,8 +495,7 @@ describe('BookAppointmentForm', () => {
       await waitFor(() => {
         expect(onSuccess).toHaveBeenCalledWith(expect.objectContaining({ encounter: undefined }));
       });
-      expect(consoleError).toHaveBeenCalled();
-      consoleError.mockRestore();
+      expect(onError).toHaveBeenCalledExactlyOnceWith(error, { source: 'BookAppointmentForm' });
     });
   });
 });

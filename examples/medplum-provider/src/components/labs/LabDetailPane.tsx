@@ -4,7 +4,7 @@ import { Box, Center, Loader } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { isReference } from '@medplum/core';
 import type { DiagnosticReport, Reference, ServiceRequest } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
@@ -27,6 +27,7 @@ interface LabDetailPaneProps {
 export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
   const { item, onOrderChange } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
 
   const basedOnRef =
     item.resourceType === 'DiagnosticReport'
@@ -69,11 +70,11 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
         }
       }
     };
-    fetchOrder().catch(console.error);
+    fetchOrder().catch((err: unknown) => onError(err, { source: 'LabDetailPane' }));
     return () => {
       subscribed = false;
     };
-  }, [medplum, item, basedOnRef]);
+  }, [medplum, onError, item, basedOnRef]);
 
   return (
     <Box h="100%" flex={1} style={{ overflow: 'hidden' }}>

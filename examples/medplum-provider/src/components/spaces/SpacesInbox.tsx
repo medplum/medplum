@@ -216,7 +216,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     if (!isFirstMessage && currentTopicId) {
       touchConversationTopic(medplum, currentTopicId)
         .then(() => setRefreshKey((prev) => prev + 1))
-        .catch(console.error);
+        .catch((err: unknown) => onError(err, { source: 'SpacesInbox' }));
     }
 
     const userMessage: Message = {
