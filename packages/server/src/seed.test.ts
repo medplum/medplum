@@ -11,7 +11,7 @@ import { configureGinIndexes, vacuumTable } from './fhir/operations/db-configure
 import type { SystemRepository } from './fhir/repo';
 import { getShardSystemRepo } from './fhir/repo';
 import { repoAccess } from './fhir/repository/access-tracker';
-import { PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from './fhir/sharding';
+import { normalizeShardId, PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from './fhir/sharding';
 import { SelectQuery } from './fhir/sql';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
@@ -30,7 +30,9 @@ const shardId = TODO_SHARD_ID;
 async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: SystemRepository): Promise<void> {
   const lastVersion = getLatestPostDeployMigrationVersion();
 
-  const pendingMigration = await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER));
+  const pendingMigration = await getPendingPostDeployMigration(
+    getDatabasePool(DatabaseMode.WRITER, normalizeShardId(shardId))
+  );
   if (pendingMigration === MigrationVersion.UNKNOWN) {
     throw new Error('Post-deploy migration version is unknown');
   }
@@ -116,7 +118,7 @@ describe('Seed', () => {
       expect(seedDatabaseSpy).toHaveBeenCalledTimes(1);
 
       // Make sure all database migrations have run
-      const pool = getDatabasePool(DatabaseMode.WRITER);
+      const pool = getDatabasePool(DatabaseMode.WRITER, normalizeShardId(shardId));
 
       const preDeployVersion = await getPreDeployVersion(pool);
       expect(preDeployVersion).toBeGreaterThanOrEqual(67);

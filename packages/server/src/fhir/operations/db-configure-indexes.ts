@@ -5,16 +5,16 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { escapeIdentifier } from 'pg';
 import { getConfig } from '../../config/loader';
 import { requireSuperAdmin } from '../../context';
-import { DatabaseMode } from '../../database';
 import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
 import { getShardSystemRepo } from '../repo';
-import { PLACEHOLDER_SHARD_ID } from '../sharding';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import type { PgQueryable } from '../sql';
 import { isValidPostgresIdentifier } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import {
   buildOutputParameters,
+  getShardIdParam,
   makeOperationDefinitionParameter as param,
   parseInputParameters,
 } from './utils/parameters';
@@ -25,6 +25,7 @@ const operation = makeOperationDefinition(
     name: 'db-configure-indexes',
     code: 'db-configure-indexes',
     parameter: [
+      param('in', 'shardId', 'string', 0, '1'),
       param('in', 'tableName', 'string', 1, '*'),
       param('in', 'fastUpdateAction', 'string', 0, '1'),
       param('in', 'fastUpdateValue', 'boolean', 0, '1'),
@@ -39,6 +40,7 @@ const operation = makeOperationDefinition(
 );
 
 type InputParameters = {
+  shardId?: string;
   tableName: string[];
   fastUpdateAction?: 'set' | 'reset';
   fastUpdateValue?: boolean;
@@ -58,6 +60,7 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
   }
 
   const params = parseInputParameters<InputParameters>(operation, req);
+  const shardId = getShardIdParam(params);
   const config: GinIndexConfig = {};
 
   for (const table of params.tableName) {
@@ -95,22 +98,26 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
     );
   }
 
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this handler
+  // The AsyncJob stays on the global shard so the job status endpoint can find it; only the index work targets shardId
+  const systemRepo = getShardSystemRepo(GLOBAL_SHARD_ID);
   const { baseUrl } = getConfig();
   const exec = new AsyncJobExecutor(systemRepo);
   await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.url));
   exec.start(async () => {
     const action: OutputAction[] = [];
-    await withLongRunningDatabaseClient(async (client) => {
-      await configureGinIndexes(client, action, tableNames, config);
+    await withLongRunningDatabaseClient(
+      async (client) => {
+        await configureGinIndexes(client, action, tableNames, config);
 
-      // Vacuum if the fastupdate is disabled to flush GIN pending lists
-      if (config.fastUpdate === false) {
-        for (const tableName of tableNames) {
-          await vacuumTable(client, action, tableName);
+        // Vacuum if the fastupdate is disabled to flush GIN pending lists
+        if (config.fastUpdate === false) {
+          for (const tableName of tableNames) {
+            await vacuumTable(client, action, tableName);
+          }
         }
-      }
-    }, DatabaseMode.WRITER);
+      },
+      { shardId }
+    );
     return buildOutputParameters(operation, { action });
   });
   return [accepted(exec.getContentLocation(baseUrl))];

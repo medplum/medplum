@@ -292,7 +292,7 @@ export class RepositoryConnection implements Disposable {
     }
     this.assertCanAcquireConnection();
     this.promoteRepositoryMode(options.mode);
-    return getDatabasePool(this.mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : options.mode);
+    return getDatabasePool(this.mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : options.mode, this.shardId);
   }
 
   /**
@@ -310,7 +310,7 @@ export class RepositoryConnection implements Disposable {
 
     this.assertCanAcquireConnection();
     this.promoteRepositoryMode(mode);
-    this.conn = await getDatabasePool(mode).connect();
+    this.conn = await getDatabasePool(mode, this.shardId).connect();
     this.connMode = mode;
     return this.conn;
   }

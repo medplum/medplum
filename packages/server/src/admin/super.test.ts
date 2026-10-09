@@ -15,6 +15,7 @@ import { LAMBDA_NAME_REGEX_PATTERN } from '../cloud/aws/deploy';
 import { loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type * as MigrationDataV1 from '../migrations/data/v1';
 import type * as MigrationDataV2 from '../migrations/data/v2';
@@ -22,7 +23,14 @@ import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
-import { createTestProject, getSuperAdminTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
+import { getConnectionShardId } from '../sharding/connection-shard-id';
+import {
+  createTestProject,
+  getSuperAdminTestProject,
+  TEST_SHARD_ID,
+  waitForAsyncJob,
+  withTestContext,
+} from '../test.setup';
 import type { CronJobData } from '../workers/cron';
 import { getCronQueue } from '../workers/cron';
 import type { LambdaCleanerJobData } from '../workers/lambda-cleaner';
@@ -30,7 +38,7 @@ import { getLambdaCleanerQueue } from '../workers/lambda-cleaner';
 import type { ReindexJobData } from '../workers/reindex';
 import { getReindexQueue } from '../workers/reindex';
 
-const mockPgMaintenanceQueries: string[] = [];
+const mockPgMaintenanceQueries: { shardId: string | undefined; sql: string }[] = [];
 
 vi.mock('pg', async () => {
   const original = await vi.importActual<typeof Pg>('pg');
@@ -58,13 +66,16 @@ vi.mock('pg', async () => {
     );
   }
 
-  function mockHandleMaintenanceQuery(args: unknown[]): { handled: true; result: unknown } | undefined {
+  function mockHandleMaintenanceQuery(
+    args: unknown[],
+    shardId: string | undefined
+  ): { handled: true; result: unknown } | undefined {
     const sql = mockGetSql(args[0]);
     if (!sql || !mockIsMaintenanceQuery(sql)) {
       return undefined;
     }
 
-    mockPgMaintenanceQueries.push(sql);
+    mockPgMaintenanceQueries.push({ shardId, sql });
 
     const result = {
       command: sql.split(/\s+/)[0],
@@ -88,7 +99,7 @@ vi.mock('pg', async () => {
 
     const originalQuery = client.query.bind(client);
     client.query = (...queryArgs: any[]): any => {
-      const handled = mockHandleMaintenanceQuery(queryArgs);
+      const handled = mockHandleMaintenanceQuery(queryArgs, getConnectionShardId(client));
       if (handled) {
         return handled.result;
       }
@@ -100,7 +111,7 @@ vi.mock('pg', async () => {
 
   class MockPool extends original.Pool {
     query(...args: any[]): any {
-      const handled = mockHandleMaintenanceQuery(args);
+      const handled = mockHandleMaintenanceQuery(args, getConnectionShardId(this));
       if (handled) {
         return handled.result;
       }
@@ -996,6 +1007,16 @@ describe('Super Admin routes', () => {
       });
       expect(res1).toHaveStatus(200);
     });
+
+    test('Rejects an unknown shardId', async () => {
+      const res1 = await request(app)
+        .get('/admin/super/migrations')
+        .query({ shardId: 'unknown-shard' })
+        .set('Authorization', 'Bearer ' + adminAccessToken);
+
+      expect(res1).toHaveStatus(400);
+      expect(res1.body.issue[0].details.text).toBe('Unknown shardId: unknown-shard');
+    });
   });
 
   describe('Table settings', () => {
@@ -1011,11 +1032,13 @@ describe('Super Admin routes', () => {
       expect(res1).toHaveStatus(200);
       expect(res1.body).toMatchObject(allOk);
 
-      expect(mockPgMaintenanceQueries).toContain(
-        'ALTER TABLE "Observation" SET (autovacuum_analyze_scale_factor = 0.005);'
-      );
+      expect(mockPgMaintenanceQueries).toContainEqual({
+        shardId: GLOBAL_SHARD_ID,
+        sql: 'ALTER TABLE "Observation" SET (autovacuum_analyze_scale_factor = 0.005);',
+      });
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Table settings updated', {
         durationMs: expect.any(Number),
+        shardId: GLOBAL_SHARD_ID,
         query: 'ALTER TABLE "Observation" SET (autovacuum_analyze_scale_factor = 0.005);',
         settings: { autovacuum_analyze_scale_factor: 0.005 },
         tableName: 'Observation',
@@ -1151,11 +1174,13 @@ describe('Super Admin routes', () => {
       expect(res1).toHaveStatus(200);
       expect(res1.body).toMatchObject(allOk);
 
-      expect(mockPgMaintenanceQueries).toContain(
-        'ALTER TABLE "Observation" SET (autovacuum_analyze_scale_factor = 0.005, autovacuum_vacuum_scale_factor = 0.01);'
-      );
+      expect(mockPgMaintenanceQueries).toContainEqual({
+        shardId: GLOBAL_SHARD_ID,
+        sql: 'ALTER TABLE "Observation" SET (autovacuum_analyze_scale_factor = 0.005, autovacuum_vacuum_scale_factor = 0.01);',
+      });
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Table settings updated', {
         durationMs: expect.any(Number),
+        shardId: GLOBAL_SHARD_ID,
         query:
           'ALTER TABLE "Observation" SET (autovacuum_analyze_scale_factor = 0.005, autovacuum_vacuum_scale_factor = 0.01);',
         settings: { autovacuum_analyze_scale_factor: 0.005, autovacuum_vacuum_scale_factor: 0.01 },
@@ -1207,9 +1232,10 @@ describe('Super Admin routes', () => {
 
       expect(asyncJob.output?.parameter?.find((p) => p.name === 'query')?.valueString).toBe(expectedQuery);
 
-      expect(mockPgMaintenanceQueries).toContain(expectedQuery);
+      expect(mockPgMaintenanceQueries).toContainEqual({ shardId: GLOBAL_SHARD_ID, sql: expectedQuery });
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
         durationMs: expect.any(Number),
+        shardId: GLOBAL_SHARD_ID,
         vacuum: true,
         analyze: undefined,
         query: expectedQuery,
@@ -1248,9 +1274,13 @@ describe('Super Admin routes', () => {
       expect(res1.headers['content-location']).toBeDefined();
       await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
 
-      expect(mockPgMaintenanceQueries).toContain('VACUUM "Observation", "Observation_History";');
+      expect(mockPgMaintenanceQueries).toContainEqual({
+        shardId: GLOBAL_SHARD_ID,
+        sql: 'VACUUM "Observation", "Observation_History";',
+      });
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
         durationMs: expect.any(Number),
+        shardId: GLOBAL_SHARD_ID,
         vacuum: true,
         analyze: undefined,
         query: 'VACUUM "Observation", "Observation_History";',
@@ -1273,9 +1303,13 @@ describe('Super Admin routes', () => {
       expect(res1.headers['content-location']).toBeDefined();
       await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
 
-      expect(mockPgMaintenanceQueries).toContain('VACUUM ANALYZE "Observation", "Observation_History";');
+      expect(mockPgMaintenanceQueries).toContainEqual({
+        shardId: GLOBAL_SHARD_ID,
+        sql: 'VACUUM ANALYZE "Observation", "Observation_History";',
+      });
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
         durationMs: expect.any(Number),
+        shardId: GLOBAL_SHARD_ID,
         vacuum: true,
         analyze: true,
         query: 'VACUUM ANALYZE "Observation", "Observation_History";',
@@ -1298,9 +1332,13 @@ describe('Super Admin routes', () => {
       expect(res1.headers['content-location']).toBeDefined();
       await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
 
-      expect(mockPgMaintenanceQueries).toContain('ANALYZE "Observation", "Observation_History";');
+      expect(mockPgMaintenanceQueries).toContainEqual({
+        shardId: GLOBAL_SHARD_ID,
+        sql: 'ANALYZE "Observation", "Observation_History";',
+      });
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
         durationMs: expect.any(Number),
+        shardId: GLOBAL_SHARD_ID,
         vacuum: false,
         analyze: true,
         query: 'ANALYZE "Observation", "Observation_History";',
@@ -1430,5 +1468,44 @@ describe('Super Admin routes', () => {
         }
       );
     });
+  });
+});
+
+describe('Super Admin routes with sharding enabled', () => {
+  const shardedApp = express();
+
+  beforeAll(async () => {
+    const config = await loadTestConfig({ sharded: true });
+    await initApp(shardedApp, config);
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  beforeEach(() => {
+    mockPgMaintenanceQueries.length = 0;
+  });
+
+  test('Requires a shardId', async () => {
+    const res = await request(shardedApp)
+      .get('/admin/super/migrations')
+      .set('Authorization', 'Bearer ' + adminAccessToken);
+
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('shardId is required when sharding is enabled');
+  });
+
+  test('Runs table settings on the requested shard', async () => {
+    const res = await request(shardedApp)
+      .post('/admin/super/tablesettings')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({ shardId: TEST_SHARD_ID, tableName: 'Observation', settings: { autovacuum_vacuum_threshold: 123 } });
+
+    expect(res).toHaveStatus(200);
+    expect(mockPgMaintenanceQueries).toStrictEqual([
+      { shardId: TEST_SHARD_ID, sql: 'ALTER TABLE "Observation" SET (autovacuum_vacuum_threshold = 123);' },
+    ]);
   });
 });

@@ -5,8 +5,12 @@ import type { Meter } from '@opentelemetry/api';
 import { metrics } from '@opentelemetry/api';
 import type { Pool } from 'pg';
 import { vi } from 'vitest';
+import { loadTestConfig } from '../config/loader';
 import * as databaseModule from '../database';
+import { DatabaseMode } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { heartbeat } from '../heartbeat';
+import { TEST_SHARD_ID } from '../test.setup';
 import * as batchModule from '../workers/batch';
 import * as cronModule from '../workers/cron';
 import * as downloadModule from '../workers/download';
@@ -62,7 +66,8 @@ function mockQueueGetters(queue: ReturnType<typeof createMockQueue> | undefined)
 describe('OpenTelemetry', () => {
   const OLD_ENV = process.env;
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    await loadTestConfig({ sharded: true });
     vi.spyOn(metrics, 'getMeter').mockReturnValue({
       createCounter: () => ({ add: vi.fn() }),
       createHistogram: () => ({ record: vi.fn() }),
@@ -194,6 +199,20 @@ describe('OpenTelemetry', () => {
     expect(heartbeatRemoveListenerSpy).not.toHaveBeenCalled();
   });
 
+  test('initOtelHeartbeat throws without registering a listener when a queue is missing', () => {
+    const heartbeatAddListenerSpy = vi.spyOn(heartbeat, 'addEventListener');
+    vi.spyOn(batchModule, 'getBatchQueue').mockReturnValue(undefined as never);
+    vi.spyOn(setAccountsModule, 'getSetAccountsQueue').mockReturnValue(undefined as never);
+
+    expect(() => initOtelHeartbeat()).toThrow('Queues not initialized: batch, set-accounts');
+    expect(heartbeatAddListenerSpy).not.toHaveBeenCalled();
+
+    // A failed init must not block a later one once the queues exist
+    mockQueueGetters(mockSharedQueue);
+    initOtelHeartbeat();
+    expect(heartbeatAddListenerSpy).toHaveBeenCalledTimes(1);
+  });
+
   test('Heartbeat listener records queue metrics for all queues', async () => {
     process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
     if (!mockSharedQueue) {
@@ -232,7 +251,7 @@ describe('OpenTelemetry', () => {
     getDatabasePoolSpy.mockRestore();
   });
 
-  test('Heartbeat listener skips queue collection when queues return undefined', async () => {
+  test('Heartbeat listener records other metrics when a queue disappears after startup', async () => {
     process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
     if (!mockSharedQueue) {
       throw new Error('Expected mock queue');
@@ -245,30 +264,29 @@ describe('OpenTelemetry', () => {
         }) as unknown as Pool
     );
 
-    // Initialize heartbeat with valid queues first
     initOtelHeartbeat();
-
-    // Trigger one heartbeat with valid queues to initialize queueEntries
+    vi.spyOn(batchModule, 'getBatchQueue').mockReturnValue(undefined as never);
     heartbeat.dispatchEvent({ type: 'heartbeat' });
     await sleep(0);
 
-    // Verify queue methods were called
-    expect(mockSharedQueue.getWaitingCount).toHaveBeenCalled();
-    expect(mockSharedQueue.getDelayedCount).toHaveBeenCalled();
+    // writer + reader for each shard
+    expect(getDatabasePoolSpy).toHaveBeenCalledTimes(4);
+    expect(getDatabasePoolSpy).toHaveBeenCalledWith(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
+    expect(getDatabasePoolSpy).toHaveBeenCalledWith(DatabaseMode.READER, GLOBAL_SHARD_ID);
+    expect(getDatabasePoolSpy).toHaveBeenCalledWith(DatabaseMode.WRITER, TEST_SHARD_ID);
+    expect(getDatabasePoolSpy).toHaveBeenCalledWith(DatabaseMode.READER, TEST_SHARD_ID);
 
-    // Clear the mock calls
-    mockSharedQueue.getWaitingCount.mockClear();
-    mockSharedQueue.getDelayedCount.mockClear();
+    // The four remaining queues are still read and published
+    expect(mockSharedQueue.getWaitingCount).toHaveBeenCalledTimes(4);
+    expect(mockSharedQueue.getDelayedCount).toHaveBeenCalledTimes(4);
+    expect(mockSharedQueue.getActiveCount).toHaveBeenCalledTimes(4);
+    expect(gaugeRecorder('medplum.cron.waitingCount')).toHaveBeenCalledWith(5, undefined);
+    expect(gaugeRecorder('medplum.set-accounts.activeCount')).toHaveBeenCalledWith(2, undefined);
 
-    // Now set mockSharedQueue to undefined for subsequent calls
-    mockQueueGetters(undefined);
-
-    // Trigger another heartbeat - should skip queue collection but not crash
-    heartbeat.dispatchEvent({ type: 'heartbeat' });
-    await sleep(0);
-
-    // Database pool should still be called
-    expect(getDatabasePoolSpy).toHaveBeenCalled();
+    // The missing queue is skipped
+    expect(gaugeRecorder('medplum.batch.waitingCount')).not.toHaveBeenCalled();
+    expect(gaugeRecorder('medplum.batch.delayedCount')).not.toHaveBeenCalled();
+    expect(gaugeRecorder('medplum.batch.activeCount')).not.toHaveBeenCalled();
 
     cleanupOtelHeartbeat();
     getDatabasePoolSpy.mockRestore();
