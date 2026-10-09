@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Bundle, Communication, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react-hooks';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
@@ -37,7 +38,7 @@ describe('ResourceBoard', () => {
     medplum.search = vi.fn().mockResolvedValue(bundleOf());
   });
 
-  async function setup(props: Partial<ResourceBoardProps>): Promise<void> {
+  async function setup(props: Partial<ResourceBoardProps>, providerOnError?: MedplumErrorHandler): Promise<void> {
     const defaultRenderItem = (item: Resource, ctx: { selected: boolean }): ReactNode => (
       <div data-testid={`item-${item.id}`} data-selected={ctx.selected}>
         {(item as Communication).topic?.text}
@@ -55,7 +56,7 @@ describe('ResourceBoard', () => {
           {...props}
         />,
         ({ children }) => (
-          <MedplumProvider medplum={medplum} navigate={mockNavigate}>
+          <MedplumProvider medplum={medplum} navigate={mockNavigate} onError={providerOnError}>
             {children}
           </MedplumProvider>
         )
@@ -130,6 +131,14 @@ describe('ResourceBoard', () => {
     medplum.search = vi.fn().mockRejectedValue(new Error('boom'));
     await setup({ onError });
     await waitFor(() => expect(onError).toHaveBeenCalled());
+  });
+
+  test('errors fall back to the MedplumProvider error handler', async () => {
+    const providerOnError = vi.fn();
+    const error = new Error('boom');
+    medplum.search = vi.fn().mockRejectedValue(error);
+    await setup({}, providerOnError);
+    await waitFor(() => expect(providerOnError).toHaveBeenCalledWith(error, { source: 'useResourceBoard' }));
   });
 
   test('hides pagination when onChange is omitted', async () => {

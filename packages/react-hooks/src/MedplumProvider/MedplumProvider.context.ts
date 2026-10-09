@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, ProfileResource } from '@medplum/core';
+import type { ErrorInfo } from 'react';
 import { createContext, useContext } from 'react';
 import { defaultOnError } from './defaultOnError';
 
@@ -16,6 +17,12 @@ export interface MedplumErrorDetails {
   readonly source?: string;
   /** What was being attempted when the error occurred, e.g. `'Error loading value set'`. */
   readonly message?: string;
+  /**
+   * React's information about an error thrown while rendering, as received by `ErrorBoundary`.
+   * Apps that route errors here should not also pass this handler to `createRoot`'s `onCaughtError`,
+   * or errors caught by `ErrorBoundary` will be reported twice.
+   */
+  readonly errorInfo?: ErrorInfo;
 }
 
 export type MedplumErrorHandler = (error: unknown, details?: MedplumErrorDetails) => void;

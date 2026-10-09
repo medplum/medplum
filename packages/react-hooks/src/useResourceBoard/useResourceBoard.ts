@@ -4,7 +4,8 @@ import type { MedplumClient, SearchRequest, WithId } from '@medplum/core';
 import { deepEquals, formatSearchQuery } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import type { MedplumErrorHandler } from '../MedplumProvider/MedplumProvider.context';
+import { useMedplum, useMedplumErrorHandler } from '../MedplumProvider/MedplumProvider.context';
 
 export interface ResourceBoardLoadResult<T extends Resource = Resource> {
   readonly items: WithId<T>[];
@@ -25,7 +26,7 @@ export interface UseResourceBoardProps<T extends Resource = Resource> {
 
   // Callbacks
   readonly onLoad?: (items: WithId<T>[], total: number | undefined) => void;
-  readonly onError?: (error: unknown) => void;
+  readonly onError?: MedplumErrorHandler;
 }
 
 export interface UseResourceBoardResult<T extends Resource = Resource> {
@@ -69,6 +70,7 @@ export function useResourceBoard<T extends Resource = Resource>(
 ): UseResourceBoardResult<T> {
   const { search, selectedId, loadItems, reloadKey } = options;
   const medplum = useMedplum();
+  const reportError = useMedplumErrorHandler();
 
   // State
   const [memoizedSearch, setMemoizedSearch] = useState(search);
@@ -107,14 +109,14 @@ export function useResourceBoard<T extends Resource = Resource>(
       optionsRef.current.onLoad?.(result.items, result.total);
     } catch (error) {
       if (requestId === loadRequestIdRef.current) {
-        (optionsRef.current.onError ?? console.error)(error);
+        (optionsRef.current.onError ?? reportError)(error, { source: 'useResourceBoard' });
       }
     } finally {
       if (requestId === loadRequestIdRef.current) {
         setLoading(false);
       }
     }
-  }, [memoizedSearch, loadItems, medplum]);
+  }, [memoizedSearch, loadItems, medplum, reportError]);
 
   // Effects
 
@@ -132,8 +134,8 @@ export function useResourceBoard<T extends Resource = Resource>(
   // A change to executeLoad (new search/fetcher) or to reloadKey (manual refresh)
   // re-runs the load. reloadKey reloads in place — no skeleton.
   useEffect(() => {
-    executeLoad().catch(console.error);
-  }, [executeLoad, reloadKey]);
+    executeLoad().catch(reportError);
+  }, [executeLoad, reloadKey, reportError]);
 
   // Re-resolves when selectedId or the loaded items change.
   // resolveSelected is read from a ref so unstable identities do not retrigger resolution.
@@ -162,12 +164,12 @@ export function useResourceBoard<T extends Resource = Resource>(
       } catch (error) {
         if (requestId === selectionRequestIdRef.current) {
           setSelectedState({ id: selectedId, value: undefined });
-          (optionsRef.current.onError ?? console.error)(error);
+          (optionsRef.current.onError ?? reportError)(error, { source: 'useResourceBoard' });
         }
       }
     };
-    resolveSelection().catch(console.error);
-  }, [selectedId, items, medplum, resourceType]);
+    resolveSelection().catch(reportError);
+  }, [selectedId, items, medplum, resourceType, reportError]);
 
   return { items, total, loading, selected, search: memoizedSearch, refresh: executeLoad };
 }
