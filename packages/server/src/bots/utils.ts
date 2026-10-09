@@ -244,18 +244,38 @@ const BOT_ACCESS_TOKEN_CACHE_MS = 30 * 60 * 1000;
 
 const botAccessTokenCache = new LRUCache<{ accessToken: string; loginId: string; expiresAt: number }>(1000);
 
+// Cache for concurrent requests for the same Bot and ProjectMembership
+const botAccessTokenInFlight = new Map<string, Promise<string>>();
+
 export function clearBotAccessTokenCache(): void {
   botAccessTokenCache.clear();
+  botAccessTokenInFlight.clear();
 }
 
-export async function getBotAccessToken(runAs: WithId<ProjectMembership>): Promise<string> {
-  // Keying on versionId ensures any change to the membership results in a fresh token
+export function getBotAccessToken(bot: WithId<Bot>, runAs: WithId<ProjectMembership>): Promise<string> {
+  const versionId = runAs.meta?.versionId;
+  if (!versionId) {
+    // Without a versionId, changes to the membership can't be detected, so the token is never cached
+    return ensureBotAccessToken(runAs, undefined);
+  }
+
+  const cacheKey = `${bot.id}:${runAs.id}:${versionId}`;
+  let pending = botAccessTokenInFlight.get(cacheKey);
+  if (!pending) {
+    pending = ensureBotAccessToken(runAs, cacheKey).finally(() => botAccessTokenInFlight.delete(cacheKey));
+    botAccessTokenInFlight.set(cacheKey, pending);
+  }
+  return pending;
+}
+
+async function ensureBotAccessToken(runAs: WithId<ProjectMembership>, cacheKey: string | undefined): Promise<string> {
   const systemRepo = getGlobalSystemRepo();
-  const cacheKey = `${runAs.id}:${runAs.meta?.versionId}`;
-  if (runAs.id && runAs.meta?.versionId) {
+  if (cacheKey) {
     const cached = botAccessTokenCache.get(cacheKey);
     if (cached && Date.now() < cached.expiresAt && (await isLoginValid(systemRepo, cached.loginId))) {
       return cached.accessToken;
+    } else {
+      botAccessTokenCache.delete(cacheKey);
     }
   }
 
@@ -279,31 +299,26 @@ export async function getBotAccessToken(runAs: WithId<ProjectMembership>): Promi
     scope: 'openid',
   });
 
-  botAccessTokenCache.set(cacheKey, {
-    accessToken,
-    loginId: login.id,
-    expiresAt: Date.now() + BOT_ACCESS_TOKEN_CACHE_MS,
-  });
+  if (cacheKey) {
+    botAccessTokenCache.set(cacheKey, {
+      accessToken,
+      loginId: login.id,
+      expiresAt: Date.now() + BOT_ACCESS_TOKEN_CACHE_MS,
+    });
+  }
   return accessToken;
 }
 
-/**
- * Checks whether a cached bot Login is still usable.
- * Bot Logins are cache-only, so they are lost if evicted from Redis.
- * @param systemRepo - The system repository.
- * @param loginId - The Login ID.
- * @returns True if the Login exists and has not been revoked.
- */
 async function isLoginValid(systemRepo: SystemRepository, loginId: string): Promise<boolean> {
   try {
-    const login = await systemRepo.readResource<Login>('Login', loginId);
+    const login = await systemRepo.readResource<Login>('Login', loginId, { checkCacheOnly: true });
     return !login.revoked;
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
-    if (isNotFound(outcome) || isGone(outcome)) {
-      return false;
+    if (!isNotFound(outcome) && !isGone(outcome)) {
+      getLogger().warn('Failed to read cached bot Login', { loginId, err: normalizeErrorString(err) });
     }
-    throw err;
+    return false;
   }
 }
 
