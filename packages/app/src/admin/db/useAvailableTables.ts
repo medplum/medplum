@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
+import { useMedplumErrorHandler } from '@medplum/react';
 import { useEffect } from 'react';
 import { getAvailableTables } from './utils';
 
@@ -10,6 +11,7 @@ export interface UseResourceTypesProps {
   readonly onError?: (error: unknown) => void;
 }
 export const useAvailableTables = ({ medplum, onChange, onError }: UseResourceTypesProps): void => {
+  const reportError = useMedplumErrorHandler();
   useEffect(() => {
     async function loadResourceTypes(): Promise<string[]> {
       const valueSet = await medplum.valueSetExpand({
@@ -26,8 +28,8 @@ export const useAvailableTables = ({ medplum, onChange, onError }: UseResourceTy
         if (onError) {
           onError(err);
         } else {
-          console.error(err);
+          reportError(err, { source: 'useAvailableTables' });
         }
       });
-  }, [medplum, onChange, onError]);
+  }, [medplum, onChange, onError, reportError]);
 };

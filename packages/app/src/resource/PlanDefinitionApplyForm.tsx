@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stack, Text, Title } from '@mantine/core';
 import type { PlanDefinition, Reference, RequestGroup } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, Form, FormSection, MedplumLink, ReferenceInput, useMedplum } from '@medplum/react';
+import {
+  CodeableConceptDisplay,
+  Form,
+  FormSection,
+  MedplumLink,
+  ReferenceInput,
+  useMedplum,
+  useMedplumErrorHandler,
+} from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 
@@ -12,6 +20,7 @@ export interface PlanDefinitionApplyFormProps {
 
 export function PlanDefinitionApplyForm(props: PlanDefinitionApplyFormProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [subject, setSubject] = useState<Reference>();
   const [result, setResult] = useState<RequestGroup>();
 
@@ -48,7 +57,7 @@ export function PlanDefinitionApplyForm(props: PlanDefinitionApplyFormProps): JS
             ],
           })
           .then(setResult)
-          .catch(console.log);
+          .catch((err: unknown) => onError(err, { source: 'PlanDefinitionApplyForm' }));
       }}
     >
       <Stack>

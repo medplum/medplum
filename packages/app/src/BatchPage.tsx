@@ -19,7 +19,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { convertToTransactionBundle, normalizeErrorString, stringify } from '@medplum/core';
 import type { Bundle, Parameters, Resource } from '@medplum/fhirtypes';
-import { Document, Form, QrCodeScanner, useMedplum } from '@medplum/react';
+import { Document, Form, QrCodeScanner, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import { IconCheck, IconUpload, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
@@ -62,6 +62,7 @@ function showNotification({
 export function BatchPage(): JSX.Element {
   const theme = useMantineTheme();
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [value, setValue] = useState<string>(DEFAULT_VALUE);
   const [output, setOutput] = useState<Record<string, Bundle>>({});
   const [smartHealthLink, setSmartHealthLink] = useState('');
@@ -338,7 +339,7 @@ export function BatchPage(): JSX.Element {
               loading={smartScanLoading}
               onClick={() => {
                 smartScanDisclosure[1].close();
-                handleQrCode(smartHealthLink).catch(console.error);
+                handleQrCode(smartHealthLink).catch((err: unknown) => onError(err, { source: 'BatchPage' }));
               }}
             >
               Resolve
@@ -347,7 +348,7 @@ export function BatchPage(): JSX.Element {
           <QrCodeScanner
             onScan={(data) => {
               smartScanDisclosure[1].close();
-              handleQrCode(data).catch(console.error);
+              handleQrCode(data).catch((err: unknown) => onError(err, { source: 'BatchPage' }));
             }}
           />
         </Stack>

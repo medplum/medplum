@@ -5,7 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import type { CodeChallengeMethod } from '@medplum/core';
 import { locationUtils, normalizeErrorString } from '@medplum/core';
 import type { ClientApplicationSignInForm } from '@medplum/fhirtypes';
-import { Loading, Logo, SignInForm, useMedplum } from '@medplum/react';
+import { Loading, Logo, SignInForm, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
@@ -15,6 +15,7 @@ export function OAuthPage(): JSX.Element | null {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const scope = params.get('scope') || 'openid';
   const clientId = params.get('client_id');
   const login = params.get('login');
@@ -43,8 +44,8 @@ export function OAuthPage(): JSX.Element | null {
       }
     }
 
-    fetchProjectInfo().catch(console.error);
-  }, [medplum, clientId, hasClientInfo]);
+    fetchProjectInfo().catch((err: unknown) => onError(err, { source: 'OAuthPage' }));
+  }, [medplum, onError, clientId, hasClientInfo]);
 
   if (!clientId) {
     return null;

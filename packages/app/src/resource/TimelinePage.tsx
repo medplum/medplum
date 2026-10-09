@@ -12,6 +12,7 @@ import {
   PatientTimeline,
   ServiceRequestTimeline,
   useMedplum,
+  useMedplumErrorHandler,
   useMedplumNavigate,
 } from '@medplum/react';
 import {
@@ -33,6 +34,7 @@ import { ResendSubscriptionsModal } from './ResendSubscriptionsModal';
 
 export function TimelinePage(): JSX.Element | null {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const navigate = useMedplumNavigate();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const reference = { reference: resourceType + '/' + id };
@@ -47,11 +49,15 @@ export function TimelinePage(): JSX.Element | null {
   }
 
   function onPin(communication: Communication, reloadTimeline: () => void): void {
-    setPriority(communication, 'stat').then(reloadTimeline).catch(console.error);
+    setPriority(communication, 'stat')
+      .then(reloadTimeline)
+      .catch((err: unknown) => onError(err, { source: 'TimelinePage' }));
   }
 
   function onUnpin(communication: Communication, reloadTimeline: () => void): void {
-    setPriority(communication, 'routine').then(reloadTimeline).catch(console.error);
+    setPriority(communication, 'routine')
+      .then(reloadTimeline)
+      .catch((err: unknown) => onError(err, { source: 'TimelinePage' }));
   }
 
   function onDetails(timelineItem: Resource): void {

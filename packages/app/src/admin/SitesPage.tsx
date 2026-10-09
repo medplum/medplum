@@ -5,13 +5,14 @@ import { showNotification } from '@mantine/notifications';
 import type { InternalSchemaElement } from '@medplum/core';
 import { deepClone, getElementDefinition, normalizeOperationOutcome } from '@medplum/core';
 import type { ProjectSite } from '@medplum/fhirtypes';
-import { ResourcePropertyInput, useMedplum } from '@medplum/react';
+import { ResourcePropertyInput, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
 
 export function SitesPage(): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const projectId = getProjectId(medplum);
   const projectDetails = medplum.get(`admin/projects/${projectId}`).read();
   const [schemaLoaded, setSchemaLoaded] = useState(false);
@@ -21,8 +22,8 @@ export function SitesPage(): JSX.Element {
     medplum
       .requestSchema('Project')
       .then(() => setSchemaLoaded(true))
-      .catch(console.log);
-  }, [medplum]);
+      .catch((err: unknown) => onError(err, { source: 'SitesPage' }));
+  }, [medplum, onError]);
 
   useEffect(() => {
     if (projectDetails) {
