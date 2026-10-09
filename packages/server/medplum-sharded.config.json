@@ -1,0 +1,14 @@
+{
+  "shards": {
+    "shard-1": {
+      "isDefaultShard": true,
+      "database": {
+        "host": "localhost",
+        "port": 5432,
+        "dbname": "medplum_shard_1",
+        "username": "medplum",
+        "password": "medplum"
+      }
+    }
+  }
+}

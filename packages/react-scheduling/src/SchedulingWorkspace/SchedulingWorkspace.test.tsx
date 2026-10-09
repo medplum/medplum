@@ -47,6 +47,24 @@ async function setupClient(resources: readonly Resource[] = SchedulingFixtures):
 }
 
 /**
+ * A calendar's row in the sidebar, picked out from the slots on the calendar, which name whose
+ * time they hold too.
+ *
+ * @param label - The calendar's row label.
+ * @returns The row's button.
+ */
+function calendarRow(label: string): HTMLElement {
+  const row = screen
+    .getAllByText(label)
+    .map((element) => element.closest('button'))
+    .find(Boolean);
+  if (!row) {
+    throw new Error(`No sidebar row for ${label}`);
+  }
+  return row;
+}
+
+/**
  * The Mantine color a calendar's row is drawn in, read off the swatch Mantine styles inline.
  *
  * No fixture Schedule names a color, so every row is on the cycled fallback palette — which
@@ -374,7 +392,7 @@ describe('SchedulingWorkspace', () => {
       clock = undefined;
     });
 
-    test(`shows the fixtures' booked appointments and free/blocked slots on the pinned "today"`, async () => {
+    test(`shows the fixtures' booked appointments and blocked slots on the pinned "today"`, async () => {
       // The same frozen "today" Storybook's `MockDateWrapper` uses, so `timeGridWeek`
       // renders the same Sun May 3 – Sat May 9 2020 week the fixtures are dated within.
       clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
@@ -391,8 +409,9 @@ describe('SchedulingWorkspace', () => {
       // rather than asserting on a single match.
       await waitFor(() => expect(screen.getAllByText('Miles Cooper').length).toBeGreaterThan(0));
       expect(screen.getAllByText('Renee Alvarez').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Available').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Blocked').length).toBeGreaterThan(0);
+      // Dr. Rivera's free Slot is not drawn: it would read as the only time open for booking.
+      expect(screen.queryByText('Available')).not.toBeInTheDocument();
     });
 
     test("an appointment is drawn once, in its service type's color, while any of its calendars is on show", async () => {
@@ -427,9 +446,9 @@ describe('SchedulingWorkspace', () => {
       expect(await serviceTypeColor('Ultrasound Imaging')).toBe(imaging);
       expect(await serviceTypeColor('Telehealth Consult')).toBe(eventColor('Liam Jones'));
       await userEvent.unhover(screen.getByRole('button', { name: 'Legend' }));
-      // The Slots it holds are not drawn as blocked time either; the one block on show is
-      // Exam Room A's maintenance.
-      expect(screen.getAllByText('Blocked')).toHaveLength(1);
+      // The Slots it holds are not drawn as blocked time either; the blocks on show are
+      // Exam Room A's maintenance and the buffer after Dr. Chen's infusion.
+      expect(screen.getAllByText('Blocked')).toHaveLength(2);
 
       // Hiding a calendar the visit is not held on leaves it alone.
       await userEvent.click(screen.getByText('Dr. Tunde Okafor').closest('button') as HTMLElement);
@@ -437,16 +456,14 @@ describe('SchedulingWorkspace', () => {
       expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
 
       // Hiding the provider leaves it too: it is still held on the device and the room.
-      await userEvent.click(screen.getByText('Dr. Maya Rivera').closest('button') as HTMLElement);
-      await waitFor(() =>
-        expect(screen.getByText('Dr. Maya Rivera').closest('button')).toHaveAttribute('aria-pressed', 'false')
-      );
+      await userEvent.click(calendarRow('Dr. Maya Rivera'));
+      await waitFor(() => expect(calendarRow('Dr. Maya Rivera')).toHaveAttribute('aria-pressed', 'false'));
       expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
       expect(eventColor('Miles Cooper')).toBe(imaging);
 
       // Hiding the rest takes it off the calendar.
       for (const label of ['Ultrasound 1 (Main Campus)', 'Exam Room A']) {
-        await userEvent.click(screen.getByText(label).closest('button') as HTMLElement);
+        await userEvent.click(calendarRow(label));
       }
       await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(0));
       expect(appointmentEvents('Renee Alvarez')).toHaveLength(1);

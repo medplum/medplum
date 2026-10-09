@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import type {
+  Binary,
   BulkDataExportOutput,
   Group,
   Observation,
@@ -12,15 +13,16 @@ import type {
   Project,
 } from '@medplum/fhirtypes';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
 import { getBinaryStorage } from '../../storage/loader';
-import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { createTestProject, streamToString, waitForAsyncJob, withTestContext } from '../../test.setup';
 import type { Repository, SystemRepository } from '../repo';
-import { groupExportResources } from './groupexport';
+import { groupExportResources, groupMemberChunkSize } from './groupexport';
 import { BulkExporter } from './utils/bulkexporter';
 
 describe('Group Export', () => {
@@ -423,6 +425,48 @@ describe('Group Export', () => {
     expect(await getExportedReferences(['Observation', 'Organization'])).toContainExactly(
       [observation, organization].map(getReferenceString)
     );
+  });
+
+  test('groupExportResources searches large groups in chunks', async () => {
+    const patient1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const patient2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    // In the compartments of both patients, which fall in different member chunks
+    const observation = await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient1),
+      performer: [createReference(patient2)],
+    });
+    const group = await repo.createResource<Group>({
+      resourceType: 'Group',
+      type: 'person',
+      actual: true,
+      member: [
+        { entity: createReference(patient1) },
+        ...Array.from({ length: groupMemberChunkSize }, () => ({ entity: { reference: `Patient/${randomUUID()}` } })),
+        { entity: createReference(patient2) },
+      ],
+    });
+
+    const exporter = new BulkExporter(repo);
+    await exporter.start('http://example.com');
+    await groupExportResources(repo, exporter, project, group, ['Patient', 'Observation']);
+    const bulkDataExport = await exporter.close(project);
+    expect(bulkDataExport.status).toBe('completed');
+
+    const readOutput = async (resourceType: string): Promise<string[]> => {
+      const url = bulkDataExport.output?.parameter?.find((param) => param.part?.[0]?.valueCode === resourceType)
+        ?.part?.[1]?.valueUri as string;
+      const binary = await systemRepo.readReference<Binary>({ reference: url });
+      const content = await streamToString(await getBinaryStorage().readBinary(binary));
+      return content
+        .trim()
+        .split('\n')
+        .map((line) => getReferenceString(JSON.parse(line)));
+    };
+    expect(await readOutput('Patient')).toContainExactly([patient1, patient2].map(getReferenceString));
+    expect(await readOutput('Observation')).toStrictEqual([getReferenceString(observation)]);
   });
 
   test('Export with read-only access policy (no write scope)', () =>

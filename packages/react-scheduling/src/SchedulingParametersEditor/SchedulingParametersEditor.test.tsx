@@ -128,19 +128,20 @@ describe('SchedulingParametersEditor', () => {
     expect(field('bufferBefore')).toHaveValue('0 min');
   });
 
-  test('editing one parameter leaves the others exactly as they were', () => {
+  test('editing one parameter leaves the others exactly as they were', async () => {
     const { saved } = renderEditor(FullyConfiguredService);
 
     setField('bufferBefore', '15');
     fireEvent.click(saveButton());
 
+    await waitFor(() => expect(saved).toHaveLength(1));
     expect(getHealthcareServiceSchedulingParameterValues(saved[0])).toEqual({
       ...getHealthcareServiceSchedulingParameterValues(FullyConfiguredService),
       bufferBefore: 15,
     });
   });
 
-  test('clearing every parameter drops the extension rather than leaving an empty one', () => {
+  test('clearing every parameter drops the extension rather than leaving an empty one', async () => {
     // Numeric parameters only: a Select is cleared by its own button rather than by typing.
     const service: WithId<HealthcareService> = {
       ...UnconfiguredService,
@@ -153,6 +154,7 @@ describe('SchedulingParametersEditor', () => {
     setField('duration', '');
     fireEvent.click(saveButton());
 
+    await waitFor(() => expect(saved).toHaveLength(1));
     expect(saved[0].extension).toBeUndefined();
   });
 
