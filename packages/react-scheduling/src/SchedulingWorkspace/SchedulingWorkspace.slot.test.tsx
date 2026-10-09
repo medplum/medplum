@@ -5,13 +5,15 @@ import { createReference } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test } from 'vitest';
+import { formatZonedDateTimeInput } from '../AppointmentFinder/AppointmentFinder.times';
 import { DrRiveraPractitioner, DrRiveraSchedule, SchedulingFixtures } from '../stories/scheduling';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 import { formatWhen } from './SchedulingWorkspace.utils';
 
 // The calendar opens on today, so everything is dated into the week on screen.
-const TODAY_AT = (hours: number): string => new Date(new Date().setHours(hours, 0, 0, 0)).toISOString();
+const TODAY_AT = (hours: number, minutes = 0): string =>
+  new Date(new Date().setHours(hours, minutes, 0, 0)).toISOString();
 
 const BLOCKED_SLOT: WithId<Slot> = {
   resourceType: 'Slot',
@@ -48,6 +50,18 @@ function slotDetails(): HTMLElement | null {
   return screen.queryByRole('region', { name: 'Blocked time details' });
 }
 
+/**
+ * Replaces what a field holds with the given text.
+ * @param field - The field to type into.
+ * @param text - What it should hold.
+ */
+async function retype(field: HTMLElement, text: string): Promise<void> {
+  await userEvent.clear(field);
+  if (text) {
+    await userEvent.type(field, text);
+  }
+}
+
 function appointmentDetails(): HTMLElement | null {
   return screen.queryByRole('region', { name: 'Appointment details' });
 }
@@ -82,5 +96,45 @@ describe('SchedulingWorkspace blocked time details', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Close blocked time details' }));
     await waitFor(() => expect(slotDetails()).not.toBeInTheDocument());
     expect(screen.getByText('Blocked')).toBeInTheDocument();
+  });
+
+  test('editing moves blocked time and changes its notes', async () => {
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await userEvent.click(await screen.findByText('Blocked'));
+    const pane = within(slotDetails() as HTMLElement);
+    const save = (): HTMLElement => pane.getByRole('button', { name: 'Save Changes' });
+
+    // Cancelling leaves the slot as it was.
+    await userEvent.click(pane.getByRole('button', { name: 'Edit' }));
+    expect(save()).toBeDisabled();
+    await userEvent.click(pane.getByRole('button', { name: 'Cancel' }));
+    expect(pane.queryByLabelText('Starts')).not.toBeInTheDocument();
+    expect(pane.getByText(formatWhen(BLOCKED_SLOT) as string)).toBeInTheDocument();
+
+    // It cannot end before it starts.
+    await userEvent.click(pane.getByRole('button', { name: 'Edit' }));
+    await retype(pane.getByLabelText('Ends'), formatZonedDateTimeInput(new Date(TODAY_AT(11))));
+    expect(pane.getByText('Must end after it starts.')).toBeInTheDocument();
+    expect(save()).toBeDisabled();
+
+    await retype(pane.getByLabelText('Ends'), formatZonedDateTimeInput(new Date(TODAY_AT(13, 30))));
+    await retype(pane.getByLabelText('Notes'), 'Long lunch');
+    await userEvent.click(save());
+
+    const moved = { start: BLOCKED_SLOT.start, end: TODAY_AT(13, 30) };
+    expect(await pane.findByText(formatWhen(moved) as string)).toBeInTheDocument();
+    expect(pane.getByText('Long lunch')).toBeInTheDocument();
+    const stored = await medplum.readResource('Slot', BLOCKED_SLOT.id);
+    expect(new Date(stored.end).getTime()).toBe(new Date(moved.end).getTime());
+    expect(stored.comment).toBe('Long lunch');
+
+    // Clearing the notes leaves the comment off.
+    await userEvent.click(pane.getByRole('button', { name: 'Edit' }));
+    await retype(pane.getByLabelText('Notes'), '');
+    await userEvent.click(save());
+    await waitFor(() => expect(pane.queryByText('Long lunch')).not.toBeInTheDocument());
+    expect(pane.queryByText('Notes')).not.toBeInTheDocument();
+    expect((await medplum.readResource('Slot', BLOCKED_SLOT.id)).comment).toBeUndefined();
   });
 });

@@ -122,7 +122,7 @@ export interface SchedulingWorkspaceProps {
  *   same pane the booking form uses, describing the visit and offering to cancel or
  *   reschedule it.
  * - Shows blocked time: clicking a Slot opens `SlotDetails` in that same pane, saying
- *   whose time it holds, when, and why.
+ *   whose time it holds, when, and why, and offering to edit its time and comment.
  * - Highlights the time last chosen, wherever it was chosen: the click that opened the
  *   pane, then whatever the form's time search settles on, and nothing while the form
  *   holds no time. The calendar is never moved to reach it — a highlight off the week
@@ -370,7 +370,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     return loaded ?? (statuses.includes(selectedAppointment.status) ? undefined : selectedAppointment);
   }, [appointments, selectedAppointment]);
 
-  const openSlot = useMemo((): Slot | undefined => {
+  const openSlot = useMemo((): WithId<Slot> | undefined => {
     if (selectedSlotId) {
       return (slots ?? []).find((s) => s.id === selectedSlotId);
     }
