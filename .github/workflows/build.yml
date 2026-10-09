@@ -370,8 +370,8 @@ jobs:
       postgres:
         image: postgres:${{ matrix.pg-version }}
         credentials:
-          username: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_USERNAME) }}
-          password: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_TOKEN) }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         env:
           POSTGRES_DB: medplum
           POSTGRES_USER: medplum
@@ -386,8 +386,8 @@ jobs:
       redis:
         image: redis:${{ matrix.redis-version }}
         credentials:
-          username: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_USERNAME) }}
-          password: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_TOKEN) }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         command: redis-server --requirepass medplum
         options: >-
           --health-cmd "redis-cli --no-auth-warning -a medplum ping"
@@ -542,8 +542,8 @@ jobs:
       postgres:
         image: postgres:${{ matrix.pg-version }}
         credentials:
-          username: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_USERNAME) }}
-          password: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_TOKEN) }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         env:
           POSTGRES_DB: medplum
           POSTGRES_USER: medplum
@@ -558,8 +558,8 @@ jobs:
       redis:
         image: redis:${{ matrix.redis-version }}
         credentials:
-          username: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_USERNAME) }}
-          password: ${{ case(github.event.pull_request.head.repo.fork, '', secrets.DOCKERHUB_TOKEN) }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         command: redis-server --requirepass medplum
         options: >-
           --health-cmd "redis-cli --no-auth-warning -a medplum ping"
