@@ -33,9 +33,9 @@ jobs:
           docker version --format 'client {{.Client.Version}} / server {{.Server.Version}}'
           for i in 1 2 3; do
             for reg in "" docker.io; do
-              start=$(date +%s.%N)
+              start=$(date +%s%3N)
               if printf '%s' "$DH_TOKEN" | docker --config "$RUNNER_TEMP/dh-cli-$i-${reg:-none}" login $reg -u "$DH_USER" --password-stdin >/dev/null 2>"$RUNNER_TEMP/err"; then result=ok; else result="FAIL: $(cat "$RUNNER_TEMP/err")"; fi
-              echo "attempt $i registry='${reg}' $(echo "$(date +%s.%N) - $start" | bc)s $result"
+              echo "attempt $i registry='${reg}' $(( $(date +%s%3N) - start ))ms $result"
             done
           done
       - name: docker/login-action
