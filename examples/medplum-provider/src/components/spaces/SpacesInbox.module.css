@@ -41,7 +41,7 @@
 
 .chatHeader {
   /* Matches the ListWithDetailPane sidebar header height so the two divider lines align. */
-  height: 64px;
+  height: 64px; // #ListWithDetailHeaderHeight
   border-bottom: 1px solid var(--mantine-color-gray-2);
   backdrop-filter: blur(10px);
   z-index: 10;
