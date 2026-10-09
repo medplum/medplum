@@ -277,8 +277,16 @@ export async function execDicomStudyJob(job: Job<DicomStudyJobData>): Promise<vo
     throw err;
   }
 
-  const watermark = await readInstanceWatermark(systemRepo, studyId);
-  const scan = await scanStudy(systemRepo, studyId);
+  // The study's children are found by a reference that any project can write, so every read below is
+  // confined to the study's own project rather than trusting whoever claims to belong to it.
+  const projectId = study.meta?.project;
+  if (!projectId) {
+    log.warn('Skipping DICOM study job for a DicomStudy with no project', { studyId });
+    return;
+  }
+
+  const watermark = await readInstanceWatermark(systemRepo, projectId, studyId);
+  const scan = await scanStudy(systemRepo, projectId, studyId);
 
   // Aggregates are committed before the ImagingStudy, and the ImagingStudy failure is caught, so a
   // series that cannot produce a valid ImagingStudy - a missing Modality, say - does not also stop
@@ -295,7 +303,7 @@ export async function execDicomStudyJob(job: Job<DicomStudyJobData>): Promise<vo
   // The queue collapses overlapping runs, but a stalled job is requeued without releasing its
   // deduplication key, so an instance can commit after this job read the study and still be dropped.
   // Re-checking here means convergence does not depend on the queue being exact.
-  if ((await readInstanceWatermark(systemRepo, studyId)) !== watermark) {
+  if ((await readInstanceWatermark(systemRepo, projectId, studyId)) !== watermark) {
     await addDicomStudyJob(target, studyId);
   }
 }
@@ -303,13 +311,21 @@ export async function execDicomStudyJob(job: Job<DicomStudyJobData>): Promise<vo
 /**
  * Returns the most recent instance write time for a study.
  * @param systemRepo - The repository to read with.
+ * @param projectId - The project the study belongs to.
  * @param studyId - The ID of the `DicomStudy`.
  * @returns The latest `meta.lastUpdated` across the study's instances, or undefined if it has none.
  */
-async function readInstanceWatermark(systemRepo: Repository, studyId: string): Promise<string | undefined> {
+async function readInstanceWatermark(
+  systemRepo: Repository,
+  projectId: string,
+  studyId: string
+): Promise<string | undefined> {
   const latest = await systemRepo.searchResources<DicomInstance>({
     resourceType: 'DicomInstance',
-    filters: [{ code: 'study', operator: Operator.EQUALS, value: `DicomStudy/${studyId}` }],
+    filters: [
+      { code: '_project', operator: Operator.EQUALS, value: projectId },
+      { code: 'study', operator: Operator.EQUALS, value: `DicomStudy/${studyId}` },
+    ],
     sortRules: [{ code: '_lastUpdated', descending: true }],
     count: 1,
   });

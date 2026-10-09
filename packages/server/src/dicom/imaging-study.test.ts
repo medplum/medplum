@@ -71,7 +71,7 @@ describe('ImagingStudy reconciliation', () => {
     // The system repo, because that is what the worker uses: it spans every project on the shard,
     // which is what makes the _project filters inside load-bearing.
     const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
-    await reconcileImagingStudy(systemRepo, study, await scanStudy(systemRepo, study.id));
+    await reconcileImagingStudy(systemRepo, study, await scanStudy(systemRepo, projectId, study.id));
     return repo.searchOne<ImagingStudy>({
       resourceType: 'ImagingStudy',
       filters: [

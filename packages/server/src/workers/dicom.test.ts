@@ -2,18 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference } from '@medplum/core';
-import type { Binary, DicomInstance, DicomSeries, DicomStudy, Reference } from '@medplum/fhirtypes';
+import { ContentType, createReference, Operator } from '@medplum/core';
+import type { Binary, DicomInstance, DicomSeries, DicomStudy, ImagingStudy, Reference } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
+import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { DICOM_UID_SYSTEM } from '../dicom/imaging-study';
 import type { Repository } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject, streamToString, withTestContext } from '../test.setup';
-import type { DicomJobData } from './dicom';
-import { addDicomJobs, execDicomJob, getDicomQueue, initDicomWorker } from './dicom';
+import type { DicomJobData, DicomStudyJobData } from './dicom';
+import { addDicomJobs, execDicomJob, execDicomStudyJob, getDicomQueue, initDicomWorker } from './dicom';
 import { queueRegistry } from './utils';
 
 let mockReadResult: { meta?: Record<string, unknown>; dict?: Record<string, unknown> };
@@ -294,6 +296,63 @@ describe('DICOM Worker', () => {
     await expect(execDicomJob(createJob(instance.id))).rejects.toThrow('reader failed');
     expect(info).toHaveBeenCalledWith('DICOM processing error', { id: instance.id, err: expect.any(Error) });
   });
+
+  test('execDicomStudyJob ignores series and instances another project attached to the study', () =>
+    withTestContext(async () => {
+      const victim = await createTestProject({ withRepo: true });
+      const study = await victim.repo.createResource<DicomStudy>({
+        resourceType: 'DicomStudy',
+        studyInstanceUid: randomUUID(),
+      });
+      const ownSeries = await createSeries(victim.repo, study, 'CT');
+      // Reference checks are off by default, so nothing stops another project pointing at the study.
+      await createSeries(repo, study, 'XX');
+
+      await execDicomStudyJob({
+        data: { target: { kind: 'project', projectId: dicomProjectId }, studyId: study.id },
+      } as Job<DicomStudyJobData>);
+
+      expect(await victim.repo.readResource<DicomStudy>('DicomStudy', study.id)).toMatchObject({
+        modalitiesInStudy: ['CT'],
+        numberOfStudyRelatedSeries: 1,
+        numberOfStudyRelatedInstances: 1,
+      });
+      const imagingStudy = await victim.repo.searchOne<ImagingStudy>({
+        resourceType: 'ImagingStudy',
+        filters: [
+          {
+            code: 'identifier',
+            operator: Operator.EXACT,
+            value: `${DICOM_UID_SYSTEM}|urn:oid:${study.studyInstanceUid}`,
+          },
+        ],
+      });
+      expect(imagingStudy?.series?.map((series) => series.uid)).toStrictEqual([ownSeries.seriesInstanceUid]);
+      expect(imagingStudy?.numberOfInstances).toBe(1);
+    }));
+
+  async function createSeries(
+    seriesRepo: Repository,
+    study: WithId<DicomStudy>,
+    modality: string
+  ): Promise<WithId<DicomSeries>> {
+    const series = await seriesRepo.createResource<DicomSeries>({
+      resourceType: 'DicomSeries',
+      study: createReference(study),
+      seriesInstanceUid: randomUUID(),
+      modality,
+    });
+    await seriesRepo.createResource<DicomInstance>({
+      resourceType: 'DicomInstance',
+      study: createReference(study),
+      series: createReference(series),
+      sopClassUid: '1.2.3',
+      sopInstanceUid: randomUUID(),
+      metadata: '{}',
+      raw: { reference: 'Binary/123' },
+    });
+    return series;
+  }
 
   async function createDicomInstance(options?: Partial<DicomInstance>): Promise<WithId<DicomInstance>> {
     const raw = await repo.createResource<Binary>({

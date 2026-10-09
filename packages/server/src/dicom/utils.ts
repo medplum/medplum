@@ -133,17 +133,21 @@ export interface StudyScan {
  * and a large study holds more of them than is reasonable to hold in memory.
  *
  * @param repo - The repository to read with.
+ * @param projectId - The project the study belongs to; children in any other project are ignored.
  * @param studyId - The ID of the `DicomStudy` to scan.
  * @returns The scan.
  */
-export async function scanStudy(repo: Repository, studyId: string): Promise<StudyScan> {
+export async function scanStudy(repo: Repository, projectId: string, studyId: string): Promise<StudyScan> {
   const studyReference = `DicomStudy/${studyId}`;
   const seriesList: WithId<DicomSeries>[] = [];
 
   await repo.processAllResources<DicomSeries>(
     {
       resourceType: 'DicomSeries',
-      filters: [{ code: 'study', operator: Operator.EQUALS, value: studyReference }],
+      filters: [
+        { code: '_project', operator: Operator.EQUALS, value: projectId },
+        { code: 'study', operator: Operator.EQUALS, value: studyReference },
+      ],
       // Sorted by _lastUpdated ascending so the search pages by cursor rather than by offset.
       // Offset paging throws past `maxSearchOffset` (default 10,000), which a large study reaches.
       sortRules: [{ code: '_lastUpdated' }],
@@ -156,27 +160,31 @@ export async function scanStudy(repo: Repository, studyId: string): Promise<Stud
 
   const instanceCounts = new Map<string, number>();
   for (const series of seriesList) {
-    instanceCounts.set(series.id, await countInstances(repo, 'series', `DicomSeries/${series.id}`));
+    instanceCounts.set(series.id, await countInstances(repo, projectId, 'series', `DicomSeries/${series.id}`));
   }
 
   return {
     seriesList,
     instanceCounts,
-    totalInstances: await countInstances(repo, 'study', studyReference),
+    totalInstances: await countInstances(repo, projectId, 'study', studyReference),
   };
 }
 
 /**
  * Counts the instances matching one reference search parameter.
  * @param repo - The repository to read with.
+ * @param projectId - The project to count within.
  * @param code - The search parameter to filter on.
  * @param value - The reference to match.
  * @returns The instance count.
  */
-async function countInstances(repo: Repository, code: string, value: string): Promise<number> {
+async function countInstances(repo: Repository, projectId: string, code: string, value: string): Promise<number> {
   const bundle = await repo.search<DicomInstance>({
     resourceType: 'DicomInstance',
-    filters: [{ code, operator: Operator.EQUALS, value }],
+    filters: [
+      { code: '_project', operator: Operator.EQUALS, value: projectId },
+      { code, operator: Operator.EQUALS, value },
+    ],
     count: 0,
     total: 'accurate',
   });
