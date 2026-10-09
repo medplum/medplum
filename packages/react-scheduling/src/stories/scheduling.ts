@@ -1108,6 +1108,8 @@ export const AppointmentPatientFixtures = [
   buildPatient('pt-jones', 'Liam', 'Jones', '2001-01-17'),
   buildPatient('pt-garcia', 'Eliana', 'Garcia', '1990-07-22'),
   buildPatient('pt-miller', 'Elijah', 'Miller', '1958-12-05'),
+  buildPatient('pt-patel', 'Anika', 'Patel', '1983-03-19'),
+  buildPatient('pt-novak', 'Theo', 'Novak', '1967-10-08'),
 ];
 
 /**
@@ -1298,6 +1300,80 @@ export const DrBrownAppointments: WithId<Appointment>[] = DrBrownSlots.map((slot
   ),
 }));
 
+/**
+ * A time on Monday morning, on the viewer's clock as the pinned "now" (12:05 that day) is, so
+ * it falls before then in any timezone.
+ * @param hour - The hour, 0 to 23.
+ * @param minute - The minute.
+ * @returns The time, as an instant.
+ */
+function mondayMorningAt(hour: number, minute = 0): string {
+  return new Date(2020, 4, 4, hour, minute).toISOString();
+}
+
+/** The times {@link MondayImagingAppointment} held, one per schedule it was held on. */
+export const MondayImagingHeldSlots: WithId<Slot>[] = (
+  [
+    ['slot-rivera-imaging-mon', DrRiveraSchedule],
+    ['slot-ultrasound-1-imaging-mon', Ultrasound1Schedule],
+    ['slot-exam-room-a-imaging-mon', ExamRoomASchedule],
+  ] as const
+).map(([id, schedule]) => ({
+  resourceType: 'Slot',
+  id,
+  status: 'busy',
+  start: mondayMorningAt(9),
+  end: mondayMorningAt(9, 30),
+  schedule: createReference(schedule),
+}));
+
+/** An imaging visit seen earlier on the pinned "today", so drawn as past. */
+export const MondayImagingAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-rivera-imaging-mon',
+  status: 'fulfilled',
+  start: mondayMorningAt(9),
+  end: mondayMorningAt(9, 30),
+  serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
+  slot: MondayImagingHeldSlots.map(createReference),
+  participant: setPrimaryProvider(
+    [
+      { status: 'accepted', actor: { reference: 'Patient/pt-patel', display: 'Anika Patel' } },
+      { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
+      { status: 'accepted', actor: createReference(Ultrasound1Device) },
+      { status: 'accepted', actor: createReference(ExamRoomA) },
+    ],
+    createReference(DrRiveraPractitioner)
+  ),
+};
+
+export const MondayTelehealthHeldSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'brown-mon',
+  status: 'busy',
+  schedule: createReference(DrBrownSchedule),
+  start: mondayMorningAt(10),
+  end: mondayMorningAt(10, 30),
+};
+
+/** A telehealth visit the patient missed earlier on the pinned "today", so drawn as past. */
+export const MondayTelehealthAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appointment-brown-mon',
+  status: 'noshow',
+  start: MondayTelehealthHeldSlot.start,
+  end: MondayTelehealthHeldSlot.end,
+  serviceType: toServiceTypeCodeableConcepts(TelehealthService),
+  slot: [createReference(MondayTelehealthHeldSlot)],
+  participant: setPrimaryProvider(
+    [
+      { status: 'accepted', actor: createReference(DrBrownPractitioner) },
+      { status: 'accepted', actor: { reference: 'Patient/pt-novak', display: 'Theo Novak' } },
+    ],
+    createReference(DrBrownPractitioner)
+  ),
+};
+
 export const ChenInfusionHeldSlot: WithId<Slot> = {
   resourceType: 'Slot',
   id: 'slot-chen-infusion-thu',
@@ -1367,6 +1443,10 @@ export const CalendarWeekFixtures = [
   DrBrownSchedule,
   ...DrBrownSlots,
   ...DrBrownAppointments,
+  MondayImagingAppointment,
+  ...MondayImagingHeldSlots,
+  MondayTelehealthHeldSlot,
+  MondayTelehealthAppointment,
   DrChenPractitioner,
   InfusionService,
   DrChenInfusionSchedule,
