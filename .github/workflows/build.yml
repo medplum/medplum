@@ -15,6 +15,29 @@ permissions:
   contents: read
 
 jobs:
+  # TEMPORARY: diagnose Docker Hub login failure for service containers. Remove before merge.
+  docker-login-debug:
+    name: Docker login debug
+    runs-on: medplum-build-16core
+    timeout-minutes: 5
+    steps:
+      - name: Inspect secrets and docker login
+        env:
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DH_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          echo "username length: ${#DH_USER}"
+          echo "token length: ${#DH_TOKEN}"
+          [[ "$DH_USER" =~ [[:space:]] ]] && echo "username contains whitespace" || echo "username has no whitespace"
+          [[ "$DH_TOKEN" =~ [[:space:]] ]] && echo "token contains whitespace" || echo "token has no whitespace"
+          docker version --format 'client {{.Client.Version}} / server {{.Server.Version}}'
+          printf '%s' "$DH_TOKEN" | docker --config "$RUNNER_TEMP/dh-cli" login -u "$DH_USER" --password-stdin || echo "docker login CLI failed with exit code $?"
+      - name: docker/login-action
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
   build:
     name: Build
     runs-on: medplum-build-16core
