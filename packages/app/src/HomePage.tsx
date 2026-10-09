@@ -9,7 +9,13 @@ import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import classes from './HomePage.module.css';
-import { addSearchValues, getTransactionBundle, RESOURCE_TYPE_CREATION_PATHS, saveLastSearch } from './HomePage.utils';
+import {
+  addSearchValues,
+  getResourceTypeDefaultFields,
+  getTransactionBundle,
+  RESOURCE_TYPE_CREATION_PATHS,
+  saveLastSearch,
+} from './HomePage.utils';
 
 export function HomePage(): JSX.Element {
   const medplum = useMedplum();
@@ -52,6 +58,7 @@ export function HomePage(): JSX.Element {
       <SearchControl
         checkboxesEnabled={true}
         search={search}
+        defaultFields={getResourceTypeDefaultFields(search.resourceType)}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
