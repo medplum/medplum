@@ -9,6 +9,7 @@ import type { Extension } from './Extension.d.ts';
 import type { Meta } from './Meta.d.ts';
 import type { Narrative } from './Narrative.d.ts';
 import type { Parameters } from './Parameters.d.ts';
+import type { Reference } from './Reference.d.ts';
 import type { Resource } from './Resource.d.ts';
 
 /**
@@ -115,6 +116,12 @@ export interface AsyncJob {
    * request, this URL will not include the request parameters.
    */
   request: string;
+
+  /**
+   * The profile that requested the job. Assigned by the server when it
+   * creates a bulk export job.
+   */
+  requester?: Reference<Resource>;
 
   /**
    * Outputs resulting from the async job.

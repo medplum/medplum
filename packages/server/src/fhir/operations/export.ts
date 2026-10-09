@@ -85,9 +85,11 @@ async function startExport(req: FhirRequest, exportType: string): Promise<FhirRe
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const { since, types, typeFilters } = parseExportParameters(req);
-  const typeFilterSearches = parseTypeFilters(ctx.repo, typeFilters);
+  // Bulk exports contain only the current project's data, even when linked projects are readable.
+  const repo = ctx.repo.clone({ projects: [ctx.project], superAdmin: false });
+  const typeFilterSearches = parseTypeFilters(repo, typeFilters);
 
-  const exporter = new BulkExporter(ctx.repo);
+  const exporter = new BulkExporter(repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
 
   exportResources(exporter, ctx.project, types, exportType, since, typeFilterSearches)
