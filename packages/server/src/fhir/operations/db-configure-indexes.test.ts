@@ -7,7 +7,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { getSuperAdminAccessToken, waitForAsyncJob } from '../../test.setup';
+import { getSuperAdminAccessToken, TEST_SHARD_ID, waitForAsyncJob } from '../../test.setup';
 import { GLOBAL_SHARD_ID } from '../sharding';
 
 describe('db-configure-indexes', () => {
@@ -19,12 +19,13 @@ describe('db-configure-indexes', () => {
   const escapedTableName = escapeIdentifier(tableName);
 
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    const config = await loadTestConfig({ sharded: true });
     await initApp(app, config);
     accessToken = await getSuperAdminAccessToken();
 
-    // Create a test table
-    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
+    // Only the test shard has the table, so the success tests see its indexes only if the work ran there
+    await getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID).query(`DROP TABLE IF EXISTS ${escapedTableName}`);
+    const pool = getDatabasePool(DatabaseMode.WRITER, TEST_SHARD_ID);
     await pool.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
     await pool.query(`CREATE TABLE ${escapedTableName} (aaa UUID[], bbb TEXT[])`);
     await pool.query(
@@ -101,6 +102,7 @@ describe('db-configure-indexes', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
+          { name: 'shardId', valueString: TEST_SHARD_ID },
           {
             name: 'tableName',
             valueString: tableName,
@@ -129,6 +131,7 @@ describe('db-configure-indexes', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
+          { name: 'shardId', valueString: TEST_SHARD_ID },
           {
             name: 'tableName',
             valueString: tableName,
@@ -191,6 +194,7 @@ describe('db-configure-indexes', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
+          { name: 'shardId', valueString: TEST_SHARD_ID },
           {
             name: 'tableName',
             valueString: tableName,
@@ -278,6 +282,7 @@ describe('db-configure-indexes', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
+          { name: 'shardId', valueString: TEST_SHARD_ID },
           {
             name: 'tableName',
             valueString: 'Robert"; DROP TABLE Students;',

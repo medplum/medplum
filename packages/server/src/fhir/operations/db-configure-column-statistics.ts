@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
+import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool, withPoolClient } from '../../database';
-import { normalizeShardId, TODO_SHARD_ID } from '../sharding';
 import { isValidPostgresIdentifier } from '../sql';
 import { makeOperationDefinition } from './definitions';
-import { makeOperationDefinitionParameter as param, parseInputParameters } from './utils/parameters';
+import { getShardIdParam, makeOperationDefinitionParameter as param, parseInputParameters } from './utils/parameters';
 
 const UpdateOperation = makeOperationDefinition(
   { scope: 'system' },
@@ -15,6 +14,7 @@ const UpdateOperation = makeOperationDefinition(
     name: 'db-configure-column-statistics',
     code: 'db-configure-column-statistics',
     parameter: [
+      param('in', 'shardId', 'string', 0, '1'),
       param('in', 'tableName', 'string', 1, '1'),
       param('in', 'columnNames', 'string', 1, '*'),
       param('in', 'resetToDefault', 'boolean', 1, '1'),
@@ -26,11 +26,13 @@ const UpdateOperation = makeOperationDefinition(
 export async function configureColumnStatisticsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
   const params = parseInputParameters<{
+    shardId?: string;
     tableName: string;
     columnNames: string[];
     resetToDefault: boolean;
     newStatisticsTarget?: number;
   }>(UpdateOperation, req);
+  const shardId = getShardIdParam(params);
 
   if (!isValidPostgresIdentifier(params.tableName)) {
     throw new OperationOutcomeError(badRequest('Invalid tableName'));
@@ -78,7 +80,7 @@ export async function configureColumnStatisticsHandler(req: FhirRequest): Promis
         throw err;
       }
     },
-    getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID)) // shardId will be an input to this route
+    getDatabasePool(DatabaseMode.WRITER, shardId)
   );
 
   return [allOk];

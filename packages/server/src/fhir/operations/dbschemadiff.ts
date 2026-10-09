@@ -5,9 +5,8 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { generateMigrationActions, writePreDeployActionsToBuilder } from '../../migrations/migrate';
-import { normalizeShardId, TODO_SHARD_ID } from '../sharding';
 import { makeOperationDefinition } from './definitions';
-import { buildOutputParameters } from './utils/parameters';
+import { buildOutputParameters, getShardIdParam, parseInputParameters } from './utils/parameters';
 
 const operation = makeOperationDefinition(
   { scope: 'system' },
@@ -15,21 +14,18 @@ const operation = makeOperationDefinition(
     name: 'db-schema-diff',
     code: 'schema-diff',
     parameter: [
-      {
-        use: 'out',
-        name: 'migrationString',
-        type: 'string',
-        min: 1,
-        max: '1',
-      },
+      { use: 'in', name: 'shardId', type: 'string', min: 0, max: '1' },
+      { use: 'out', name: 'migrationString', type: 'string', min: 1, max: '1' },
     ],
   }
 );
 
-export async function dbSchemaDiffHandler(_req: FhirRequest): Promise<FhirResponse> {
+export async function dbSchemaDiffHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const dbClient = getDatabasePool(DatabaseMode.READER, normalizeShardId(TODO_SHARD_ID));
+  const params = parseInputParameters<{ shardId?: string }>(operation, req);
+  const shardId = getShardIdParam(params);
+  const dbClient = getDatabasePool(DatabaseMode.READER, shardId);
   const b = new FileBuilder('  ', false);
   b.append('// The schema migration needed to match the expected schema');
   b.append('');

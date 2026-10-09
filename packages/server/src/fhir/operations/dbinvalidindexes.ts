@@ -4,9 +4,8 @@ import { allOk } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { normalizeShardId, TODO_SHARD_ID } from '../sharding';
 import { makeOperationDefinition } from './definitions';
-import { buildOutputParameters } from './utils/parameters';
+import { buildOutputParameters, getShardIdParam, parseInputParameters } from './utils/parameters';
 
 const operation = makeOperationDefinition(
   { scope: 'system' },
@@ -14,18 +13,13 @@ const operation = makeOperationDefinition(
     name: 'db-invalid-indexes',
     code: 'db-invalid-indexes',
     parameter: [
-      {
-        use: 'out',
-        name: 'invalidIndex',
-        type: 'string',
-        min: 0,
-        max: '*',
-      },
+      { use: 'in', name: 'shardId', type: 'string', min: 0, max: '1' },
+      { use: 'out', name: 'invalidIndex', type: 'string', min: 0, max: '*' },
     ],
   }
 );
 
-export async function dbInvalidIndexesHandler(_req: FhirRequest): Promise<FhirResponse> {
+export async function dbInvalidIndexesHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
   const sql = `SELECT
@@ -71,7 +65,9 @@ WHERE
 ORDER BY
     n.nspname, c.relname, i.indexrelid::regclass`;
 
-  const client = getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID));
+  const params = parseInputParameters<{ shardId?: string }>(operation, req);
+  const shardId = getShardIdParam(params);
+  const client = getDatabasePool(DatabaseMode.WRITER, shardId);
   const results = await client.query<{
     schema_name: string;
     table_name: string;

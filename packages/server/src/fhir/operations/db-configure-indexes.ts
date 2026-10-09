@@ -7,13 +7,14 @@ import { getConfig } from '../../config/loader';
 import { requireSuperAdmin } from '../../context';
 import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
 import { getShardSystemRepo } from '../repo';
-import { normalizeShardId, PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from '../sharding';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import type { PgQueryable } from '../sql';
 import { isValidPostgresIdentifier } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import {
   buildOutputParameters,
+  getShardIdParam,
   makeOperationDefinitionParameter as param,
   parseInputParameters,
 } from './utils/parameters';
@@ -24,6 +25,7 @@ const operation = makeOperationDefinition(
     name: 'db-configure-indexes',
     code: 'db-configure-indexes',
     parameter: [
+      param('in', 'shardId', 'string', 0, '1'),
       param('in', 'tableName', 'string', 1, '*'),
       param('in', 'fastUpdateAction', 'string', 0, '1'),
       param('in', 'fastUpdateValue', 'boolean', 0, '1'),
@@ -38,6 +40,7 @@ const operation = makeOperationDefinition(
 );
 
 type InputParameters = {
+  shardId?: string;
   tableName: string[];
   fastUpdateAction?: 'set' | 'reset';
   fastUpdateValue?: boolean;
@@ -57,6 +60,7 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
   }
 
   const params = parseInputParameters<InputParameters>(operation, req);
+  const shardId = getShardIdParam(params);
   const config: GinIndexConfig = {};
 
   for (const table of params.tableName) {
@@ -94,7 +98,8 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
     );
   }
 
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this handler
+  // The AsyncJob stays on the global shard so the job status endpoint can find it; only the index work targets shardId
+  const systemRepo = getShardSystemRepo(GLOBAL_SHARD_ID);
   const { baseUrl } = getConfig();
   const exec = new AsyncJobExecutor(systemRepo);
   await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.url));
@@ -111,7 +116,7 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
           }
         }
       },
-      { shardId: normalizeShardId(TODO_SHARD_ID) } // shardId will be an input to this handler
+      { shardId }
     );
     return buildOutputParameters(operation, { action });
   });

@@ -4,12 +4,12 @@ import { allOk, badRequest, EMPTY, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { normalizeShardId, TODO_SHARD_ID } from '../sharding';
 import type { PgQueryable } from '../sql';
 import { isValidPostgresIdentifier } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import {
   buildOutputParameters,
+  getShardIdParam,
   makeOperationDefinitionParameter as param,
   parseInputParameters,
 } from './utils/parameters';
@@ -23,6 +23,7 @@ const operation = makeOperationDefinition(
     name: 'db-index-bloat',
     code: 'db-index-bloat',
     parameter: [
+      param('in', 'shardId', 'string', 0, '1'),
       param('in', 'tableName', 'string', 0, '*'),
       param('in', 'minBloatPercent', 'decimal', 0, '1'),
       param('in', 'minIndexSize', 'decimal', 0, '1'),
@@ -80,10 +81,13 @@ export interface IndexBloatInfo {
 export async function dbIndexBloatHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const params = parseInputParameters<{ tableName?: string; minBloatPercent?: number; minIndexSize?: number }>(
-    operation,
-    req
-  );
+  const params = parseInputParameters<{
+    shardId?: string;
+    tableName?: string;
+    minBloatPercent?: number;
+    minIndexSize?: number;
+  }>(operation, req);
+  const shardId = getShardIdParam(params);
   const tableNames: string[] = [];
   for (const tableName of params.tableName?.split(',').map((name) => name.trim()) ?? EMPTY) {
     if (!isValidPostgresIdentifier(tableName)) {
@@ -95,10 +99,10 @@ export async function dbIndexBloatHandler(req: FhirRequest): Promise<FhirRespons
   const minIndexSize = params.minIndexSize ?? DEFAULT_MIN_INDEX_SIZE;
   validateThresholds(minBloatPercent, minIndexSize);
 
-  const client = getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID));
+  const pool = getDatabasePool(DatabaseMode.WRITER, shardId);
   const [btreeIndexes, ginIndexes] = await Promise.all([
-    getBtreeIndexBloat(client, minIndexSize, tableNames),
-    getGinIndexDensity(client, minIndexSize, tableNames),
+    getBtreeIndexBloat(pool, minIndexSize, tableNames),
+    getGinIndexDensity(pool, minIndexSize, tableNames),
   ]);
   const filteredBtreeIndexes = btreeIndexes.filter((index) => (index.bloatPercent ?? 0) >= minBloatPercent);
   const indexes = [...filteredBtreeIndexes, ...ginIndexes].sort((a, b) => b.indexSize - a.indexSize);
