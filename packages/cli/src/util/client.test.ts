@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClientOptions } from '@medplum/core';
+import { MEDPLUM_VERSION } from '@medplum/core';
 import type * as NodeFs from 'node:fs';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import { sep } from 'node:path';
 import type { Mock } from 'vitest';
 import { FileSystemStorage } from '../storage';
-import { createMedplumClient } from './client';
+import { CLI_USER_AGENT, createMedplumClient } from './client';
 
 vi.mock('node:os');
 vi.mock('fast-glob', () => {
@@ -160,7 +161,7 @@ describe('createMedplumClient', () => {
     });
 
     expect(medplumClient.getBaseUrl()).toContain('http://custom.example.com/');
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('healthcheck'));
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('healthcheck'), expect.anything());
   });
 
   test('throws error when healthcheck fails', async () => {
@@ -225,5 +226,26 @@ describe('createMedplumClient', () => {
     expect(medplumClient.getBaseUrl()).toContain('https://api.medplum.com/');
     // Verify healthcheck was not called for default URL
     expect(fetch).not.toHaveBeenCalledWith(expect.stringContaining('healthcheck'));
+  });
+
+  test('sends CLI User-Agent header', async () => {
+    const fetch = vi.fn(async () => {
+      return {
+        status: 200,
+        ok: true,
+        headers: { get: () => 'application/fhir+json' },
+        json: vi.fn(async () => ({ ok: true })),
+      };
+    });
+
+    const medplumClient = await createMedplumClient({ fetch, baseUrl: 'http://example.com/' });
+    await medplumClient.get('Patient');
+
+    expect(CLI_USER_AGENT).toBe(`medplum-cli/${MEDPLUM_VERSION}`);
+    // Both the healthcheck and the FHIR request should carry the User-Agent
+    expect(fetch).toHaveBeenCalledTimes(2);
+    for (const call of fetch.mock.calls as unknown as [string, RequestInit][]) {
+      expect((call[1]?.headers as Record<string, string>)['User-Agent']).toBe(CLI_USER_AGENT);
+    }
   });
 });

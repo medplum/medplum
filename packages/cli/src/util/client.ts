@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClientOptions } from '@medplum/core';
-import { MedplumClient } from '@medplum/core';
+import { MEDPLUM_VERSION, MedplumClient } from '@medplum/core';
 import { FileSystemStorage } from '../storage';
 import type { Profile } from '../utils';
+
+export const CLI_USER_AGENT = `medplum-cli/${MEDPLUM_VERSION}`;
 
 export async function createMedplumClient(
   options: MedplumClientOptions & { profile?: string },
@@ -37,6 +39,7 @@ export async function createMedplumClient(
     storage,
     onUnauthenticated,
     verbose: options.verbose,
+    defaultHeaders: { 'User-Agent': CLI_USER_AGENT },
   });
 
   // In most commands, we want to automatically set up credentials.
@@ -80,7 +83,7 @@ async function validateBaseUrl(
 ): Promise<void> {
   try {
     const url = new URL('healthcheck', baseUrl).toString();
-    const response = await fetchApi(url);
+    const response = await fetchApi(url, { headers: { 'User-Agent': CLI_USER_AGENT } });
     if (!response.ok) {
       throw new Error(`Healthcheck returned status ${response.status}`);
     }
