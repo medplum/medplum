@@ -4,7 +4,7 @@ import { Group, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/co
 import { useDisclosure } from '@mantine/hooks';
 import { formatQuantity } from '@medplum/core';
 import type { Encounter, Observation, Patient } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { SubmitButton } from '../Form/SubmitButton';
@@ -115,6 +115,7 @@ export interface VitalsProps {
 
 export function Vitals(props: VitalsProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const { patient, encounter } = props;
   const [vitals, setVitals] = useState(props.vitals);
   const [opened, { open, close }] = useDisclosure(false);
@@ -154,11 +155,11 @@ export function Vitals(props: VitalsProps): JSX.Element {
 
       Promise.all(newObservations.filter(Boolean).map((obs) => medplum.createResource(obs as Observation)))
         .then((newVitals) => setVitals([...newVitals, ...vitals]))
-        .catch(console.error);
+        .catch((err: unknown) => onError(err, { source: 'Vitals' }));
 
       close();
     },
-    [medplum, patient, encounter, vitals, close]
+    [medplum, onError, patient, encounter, vitals, close]
   );
 
   return (

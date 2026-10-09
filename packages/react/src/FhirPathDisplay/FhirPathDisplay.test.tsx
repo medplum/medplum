@@ -3,6 +3,7 @@
 import { PropertyType } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '../test-utils/render';
 import { FhirPathDisplay } from './FhirPathDisplay';
 
@@ -54,17 +55,19 @@ describe('FhirPathDisplay', () => {
   });
 
   test('Handles malformed date', () => {
-    console.warn = vi.fn();
+    const onError = vi.fn();
     render(
-      <FhirPathDisplay
-        resource={{
-          resourceType: 'Patient',
-          birthDate: 'not a date',
-        }}
-        path="between(birthDate, now(), 'years')"
-        propertyType={PropertyType.string}
-      />
+      <MedplumProvider medplum={new MockClient()} onError={onError}>
+        <FhirPathDisplay
+          resource={{
+            resourceType: 'Patient',
+            birthDate: 'not a date',
+          }}
+          path="between(birthDate, now(), 'years')"
+          propertyType={PropertyType.string}
+        />
+      </MedplumProvider>
     );
-    expect(console.warn).toHaveBeenCalledWith('FhirPathDisplay:', expect.any(Error));
+    expect(onError).toHaveBeenCalledWith(expect.any(Error), { source: 'FhirPathDisplay' });
   });
 });

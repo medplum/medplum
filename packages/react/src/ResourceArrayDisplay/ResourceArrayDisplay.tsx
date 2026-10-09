@@ -3,7 +3,7 @@
 import { Group, Text } from '@mantine/core';
 import type { InternalSchemaElement, SliceDefinitionWithTypes } from '@medplum/core';
 import { getPathDisplayName, isPopulated } from '@medplum/core';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { DescriptionListEntry } from '../DescriptionList/DescriptionList';
@@ -28,6 +28,7 @@ export interface ResourceArrayDisplayProps {
 export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Element | null {
   const { property, propertyType } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const values = useMemo<any[]>(() => (Array.isArray(props.values) ? props.values : []), [props.values]);
   const [loading, setLoading] = useState(true);
   const [slices, setSlices] = useState<SliceDefinitionWithTypes[]>([]);
@@ -48,11 +49,11 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
         setSlicedValues(slicedValues);
         setLoading(false);
       })
-      .catch((reason) => {
-        console.error(reason);
+      .catch((reason: unknown) => {
+        onError(reason, { source: 'ResourceArrayDisplay' });
         setLoading(false);
       });
-  }, [medplum, property, ctx.profileUrl, setSlicedValues, values]);
+  }, [medplum, onError, property, ctx.profileUrl, setSlicedValues, values]);
 
   if (loading) {
     return <div>Loading...</div>;

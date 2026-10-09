@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { evalFhirPath } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
+import { useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 
@@ -12,12 +13,13 @@ export interface FhirPathDisplayProps {
 }
 
 export function FhirPathDisplay(props: FhirPathDisplayProps): JSX.Element | null {
+  const onError = useMedplumErrorHandler();
   let value;
 
   try {
     value = evalFhirPath(props.path, props.resource);
   } catch (err) {
-    console.warn('FhirPathDisplay:', err);
+    onError(err, { source: 'FhirPathDisplay' });
     return null;
   }
 

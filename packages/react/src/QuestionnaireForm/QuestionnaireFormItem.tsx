@@ -34,6 +34,7 @@ import {
   QUESTIONNAIRE_ITEM_CONTROL_URL,
   QuestionnaireItemType,
   useMedplum,
+  useMedplumErrorHandler,
 } from '@medplum/react-hooks';
 import type { ChangeEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -430,6 +431,7 @@ interface ValueSetOptionsState {
 
 function useValueSetOptions(valueSetUrl: string | undefined): ValueSetOptionsState {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [valueSetOptions, setValueSetOptions] = useState<ValueSetExpansionContains[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | undefined>(() => (valueSetUrl ? undefined : true));
@@ -452,15 +454,15 @@ function useValueSetOptions(valueSetUrl: string | undefined): ValueSetOptionsSta
         const unavailable = isValueSetUnavailableError(err);
         setIsAvailable(!unavailable);
         if (!unavailable) {
-          console.error('Error loading value set:', err);
+          onError(err, { source: 'QuestionnaireFormItem', message: 'Error loading value set' });
         }
       } finally {
         setIsLoading(false);
       }
     }
 
-    loadValueSet().catch(console.error);
-  }, [valueSetUrl, medplum]);
+    loadValueSet().catch((err: unknown) => onError(err, { source: 'QuestionnaireFormItem' }));
+  }, [valueSetUrl, medplum, onError]);
 
   return { options: valueSetOptions, loading: isLoading, available: isAvailable };
 }

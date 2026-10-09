@@ -3,7 +3,7 @@
 import { Button, Loader, Table } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, Resource } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { ChangeEvent, JSX, MouseEvent } from 'react';
 import { memo, useEffect, useState } from 'react';
 import { FhirPathDisplay } from '../FhirPathDisplay/FhirPathDisplay';
@@ -39,6 +39,7 @@ export interface SmartSearchResponse {
  */
 export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { query, fields } = props;
@@ -118,8 +119,8 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
     medplum
       .requestSchema(props.resourceType)
       .then(() => setSchemaLoaded(true))
-      .catch(console.log);
-  }, [medplum, props.resourceType]);
+      .catch((err: unknown) => onError(err, { source: 'FhirPathTable' }));
+  }, [medplum, onError, props.resourceType]);
 
   if (!schemaLoaded) {
     return <Loader />;

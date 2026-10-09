@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { isPopulated, isProfileLoaded } from '@medplum/core';
 import type { ElementDefinitionType, Extension } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
@@ -16,6 +16,7 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
   const { propertyType } = props;
 
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const profileUrl: string | undefined = useMemo(() => {
     if (!isPopulated(propertyType.profile)) {
       return undefined;
@@ -31,12 +32,12 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
       medplum
         .requestProfileSchema(profileUrl)
         .then(() => setLoadingProfile(false))
-        .catch((reason) => {
+        .catch((reason: unknown) => {
           setLoadingProfile(false);
-          console.warn(reason);
+          onError(reason, { source: 'ExtensionInput' });
         });
     }
-  }, [medplum, profileUrl]);
+  }, [medplum, onError, profileUrl]);
 
   if (profileUrl && (loadingProfile || !isProfileLoaded(profileUrl))) {
     return <div>Loading...</div>;

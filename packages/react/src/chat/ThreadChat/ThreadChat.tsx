@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, formatCodeableConcept, getReferenceString } from '@medplum/core';
 import type { Communication, CommunicationPayload, DocumentReference, Reference } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile, usePrevious } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler, useMedplumProfile, usePrevious } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BaseChat } from '../BaseChat/BaseChat';
@@ -22,6 +22,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
   const { thread, title, onMessageSent, inputDisabled, excludeHeader, uploadEnabled, onError, onViewInDocuments } =
     props;
   const medplum = useMedplum();
+  const reportError = useMedplumErrorHandler();
   const profile = useMedplumProfile();
   const prevThreadId = usePrevious(thread?.id);
   const [communications, setCommunications] = useState<Communication[]>([]);
@@ -85,9 +86,9 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
         onMessageSent?.(communication);
       };
 
-      buildAndSend().catch(console.error);
+      buildAndSend().catch((err: unknown) => reportError(err, { source: 'ThreadChat' }));
     },
-    [medplum, profileRef, thread, threadRef, communications, onMessageSent, onError]
+    [medplum, reportError, profileRef, thread, threadRef, communications, onMessageSent, onError]
   );
 
   // Currently we only support `delivered` on chats with 2 participants
@@ -107,11 +108,11 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
                   // See: https://www.medplum.com/docs/communications/messaging-data-model#communication-lifecycle
                   // for more info about recommended `Communication` lifecycle
                 })
-                .catch(console.error);
+                .catch((err: unknown) => reportError(err, { source: 'ThreadChat' }));
             }
           }
         : undefined,
-    [medplum, thread.recipient?.length]
+    [medplum, reportError, thread.recipient?.length]
   );
 
   if (!profile) {

@@ -3,7 +3,7 @@
 import { Table } from '@mantine/core';
 import { formatDateTime, normalizeErrorString } from '@medplum/core';
 import type { Bundle, BundleEntry, Resource, ResourceType } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
@@ -17,6 +17,7 @@ export interface ResourceHistoryTableProps {
 
 export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [value, setValue] = useState(props.history);
 
   useEffect(() => {
@@ -24,9 +25,9 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Elem
       medplum
         .readHistory(props.resourceType as ResourceType, props.id)
         .then(setValue)
-        .catch(console.log);
+        .catch((err: unknown) => onError(err, { source: 'ResourceHistoryTable' }));
     }
-  }, [medplum, props.history, props.resourceType, props.id]);
+  }, [medplum, onError, props.history, props.resourceType, props.id]);
 
   if (!value) {
     return <div>Loading...</div>;

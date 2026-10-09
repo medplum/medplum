@@ -16,7 +16,7 @@ import type {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler, useResource } from '@medplum/react-hooks';
 import { IconCheck, IconCloudUpload, IconFileAlert, IconMessage } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -53,6 +53,7 @@ export interface ResourceTimelineProps<T extends Resource> {
 
 export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProps<T>): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const sender = medplum.getProfile() as ProfileResource;
   const inputRef = useRef<HTMLInputElement>(null);
   const resource = useResource(props.value);
@@ -146,11 +147,11 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     }
     loadTimelineResources(medplum, resourceType, id)
       .then(handleBatchResponse)
-      .catch((err) => {
-        console.error(err);
+      .catch((err: unknown) => {
+        onError(err, { source: 'ResourceTimeline' });
         setLoading(false);
       });
-  }, [medplum, props.value, loadTimelineResources, handleBatchResponse]);
+  }, [medplum, onError, props.value, loadTimelineResources, handleBatchResponse]);
 
   useEffect(() => loadTimeline(), [loadTimeline]);
 
@@ -166,7 +167,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     medplum
       .createResource(props.createCommunication(resource, sender, contentString))
       .then((result) => addResource(result))
-      .catch(console.error);
+      .catch((err: unknown) => onError(err, { source: 'ResourceTimeline' }));
   }
 
   /**

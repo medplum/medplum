@@ -11,7 +11,7 @@ import {
   toTypedValue,
 } from '@medplum/core';
 import type { Resource, SearchParameter } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { ResourceDiffRow } from '../ResourceDiffRow/ResourceDiffRow';
@@ -24,6 +24,7 @@ export interface ResourceDiffTableProps {
 
 export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | null {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const { original, revised } = props;
   const [schemaLoaded, setSchemaLoaded] = useState(false);
 
@@ -31,8 +32,8 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
     medplum
       .requestSchema(props.original.resourceType)
       .then(() => setSchemaLoaded(true))
-      .catch(console.log);
-  }, [medplum, props.original.resourceType]);
+      .catch((err: unknown) => onError(err, { source: 'ResourceDiffTable' }));
+  }, [medplum, onError, props.original.resourceType]);
 
   const diffTable = useMemo(() => {
     if (!schemaLoaded) {

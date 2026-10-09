@@ -4,7 +4,7 @@ import { Group, NativeSelect } from '@mantine/core';
 import type { MedplumClient } from '@medplum/core';
 import { LRUCache, ReadablePromise, createReference, isEmpty, isPopulated, tryGetProfile } from '@medplum/core';
 import type { Reference, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
@@ -45,6 +45,7 @@ type TargetType = ResourceTypeTargetType | ProfileTargetType;
 export function ReferenceInput<T extends Resource = Resource>(props: ReferenceInputProps<T>): JSX.Element {
   const { onChange } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [value, setValue] = useState(props.defaultValue);
   const [targetTypes, setTargetTypes] = useState<TargetType[] | undefined>(() => createTargetTypes(props.targetTypes));
   const [targetType, setTargetType] = useState<TargetType | undefined>(() =>
@@ -92,8 +93,8 @@ export function ReferenceInput<T extends Resource = Resource>(props: ReferenceIn
 
           return newTargetType;
         })
-        .catch((reason) => {
-          console.error(reason);
+        .catch((reason: unknown) => {
+          onError(reason, { source: 'ReferenceInput' });
           return { ...tt, error: reason };
         });
 
@@ -124,8 +125,8 @@ export function ReferenceInput<T extends Resource = Resource>(props: ReferenceIn
         // orphaned targetType has been resolved
         setTargetType(newTargetTypes[index]);
       })
-      .catch(console.error);
-  }, [medplum, targetType, targetTypes]);
+      .catch((err: unknown) => onError(err, { source: 'ReferenceInput' }));
+  }, [medplum, onError, targetType, targetTypes]);
 
   const setValueHelper = useCallback(
     (item: T | undefined) => {

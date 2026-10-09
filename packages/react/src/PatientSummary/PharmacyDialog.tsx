@@ -5,6 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams } from '@medplum/core';
 import { formatAddress, normalizeErrorString } from '@medplum/core';
 import type { Organization, Patient } from '@medplum/fhirtypes';
+import { useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import styles from './PharmacyDialog.module.css';
@@ -245,6 +246,7 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
     getExtraSearchParams,
     searchPlaceholders,
   } = props;
+  const onError = useMedplumErrorHandler();
 
   const placeholders = useMemo<Required<PharmacySearchFieldPlaceholders>>(
     () => ({ ...DEFAULT_SEARCH_PLACEHOLDERS, ...searchPlaceholders }),
@@ -361,7 +363,9 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
   return (
     <Box>
       <SearchForm
-        onSearch={(formData) => handleSearch(formData).catch(console.error)}
+        onSearch={(formData) =>
+          handleSearch(formData).catch((err: unknown) => onError(err, { source: 'PharmacyDialog' }))
+        }
         searching={searching}
         renderBeforeSearchButton={renderBeforeSearchButton}
         placeholders={placeholders}

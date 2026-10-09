@@ -4,7 +4,7 @@ import { Box, Flex, Radio, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED } from '@medplum/core';
 import type { Encounter, Observation, Patient } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { SubmitButton } from '../Form/SubmitButton';
@@ -45,6 +45,7 @@ export interface SexualOrientationProps {
 export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
   const { patient, encounter } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [sexualOrientation, setSexualOrientation] = useState(props.sexualOrientation);
   const [opened, { open, close }] = useDisclosure(false);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -98,9 +99,9 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
           setSexualOrientation(newSexualOrientation);
           close();
         })
-        .catch(console.error);
+        .catch((err: unknown) => onError(err, { source: 'SexualOrientation' }));
     },
-    [medplum, patient, encounter, close]
+    [medplum, onError, patient, encounter, close]
   );
 
   return (

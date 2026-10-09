@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { AccessPolicyInteraction, satisfiedAccessPolicy, tryGetProfile } from '@medplum/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler, useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { BackboneElementDisplay } from '../BackboneElementDisplay/BackboneElementDisplay';
@@ -33,6 +33,7 @@ export interface ResourceTableProps {
 export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
   const { profileUrl } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const accessPolicy = medplum.getAccessPolicy();
   const value = useResource(props.value);
   const [schemaLoaded, setSchemaLoaded] = useState(false);
@@ -53,8 +54,8 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
             console.error(`Schema not found for ${profileUrl}`);
           }
         })
-        .catch((reason) => {
-          console.error('Error in requestProfileSchema', reason);
+        .catch((reason: unknown) => {
+          onError(reason, { source: 'ResourceTable', message: 'Error in requestProfileSchema' });
         });
     } else {
       const schemaName = value.resourceType;
@@ -63,9 +64,9 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
         .then(() => {
           setSchemaLoaded(true);
         })
-        .catch(console.error);
+        .catch((err: unknown) => onError(err, { source: 'ResourceTable' }));
     }
-  }, [medplum, profileUrl, value]);
+  }, [medplum, onError, profileUrl, value]);
 
   const accessPolicyResource = useMemo(() => {
     return value && satisfiedAccessPolicy(value, AccessPolicyInteraction.READ, accessPolicy);

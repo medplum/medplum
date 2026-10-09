@@ -4,7 +4,7 @@ import { Box, Divider, Loader, Stack, Text, TextInput, UnstyledButton } from '@m
 import { useDebouncedCallback } from '@mantine/hooks';
 import { getReferenceString } from '@medplum/core';
 import type { DocumentReference, Reference } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import { IconFileText, IconPaperclip } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -17,6 +17,7 @@ export interface DocumentPickerProps {
 
 export function DocumentPicker({ subjectRef, onSelect, onUpload }: DocumentPickerProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [search, setSearch] = useState('');
   const [docs, setDocs] = useState<DocumentReference[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +38,7 @@ export function DocumentPicker({ subjectRef, onSelect, onUpload }: DocumentPicke
       const results = await medplum.searchResources('DocumentReference', params);
       setDocs([...results]);
     } catch (err) {
-      console.error(err);
+      onError(err, { source: 'DocumentPicker' });
     } finally {
       setLoading(false);
     }

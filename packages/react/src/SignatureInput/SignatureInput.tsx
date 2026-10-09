@@ -5,7 +5,7 @@ import { Button, Paper } from '@mantine/core';
 import type { ProfileResource } from '@medplum/core';
 import { createReference, HTTP_HL7_ORG } from '@medplum/core';
 import type { Reference, Signature } from '@medplum/fhirtypes';
-import { useMedplum, useStabilizedCallback } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler, useStabilizedCallback } from '@medplum/react-hooks';
 import { IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useRef } from 'react';
@@ -21,6 +21,7 @@ export interface SignatureInputProps extends PaperProps {
 
 export function SignatureInput(props: SignatureInputProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const { width = 500, height = 200, defaultValue, who, onChange, ...rest } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePad>(null);
@@ -46,7 +47,7 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
     if (canvasRef.current) {
       const signaturePad = new SignaturePad(canvasRef.current);
       if (defaultValue?.data) {
-        signaturePad.fromDataURL(defaultValue.data).catch(console.error);
+        signaturePad.fromDataURL(defaultValue.data).catch((err: unknown) => onError(err, { source: 'SignatureInput' }));
       }
       signaturePad.addEventListener('endStroke', handleEndStroke);
       signaturePadRef.current = signaturePad;
@@ -57,7 +58,7 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
         signaturePadRef.current.removeEventListener('endStroke', handleEndStroke);
       }
     };
-  }, [medplum, defaultValue, who, emitChange]);
+  }, [medplum, onError, defaultValue, who, emitChange]);
 
   const clearSignature = (): void => {
     if (signaturePadRef.current) {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Project, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react-hooks';
 import { MedplumProvider, useWhisper } from '@medplum/react-hooks';
 import { useState } from 'react';
 import type { Mock, MockInstance } from 'vitest';
@@ -79,6 +80,7 @@ async function setup(
     botAvailable?: boolean;
     voiceFeatureEnabled?: boolean;
     searchOneImpl?: () => Promise<any>;
+    onError?: MedplumErrorHandler;
   }
 ): Promise<SetupResult> {
   const medplum = new MockClient();
@@ -98,7 +100,7 @@ async function setup(
 
   await act(async () => {
     render(
-      <MedplumProvider medplum={medplum}>
+      <MedplumProvider medplum={medplum} onError={options?.onError}>
         <AIRealTimeQuestionnaireForm questionnaire={sampleQuestionnaire} {...props} />
       </MedplumProvider>
     );
@@ -176,11 +178,15 @@ describe('AIRealTimeQuestionnaireForm', () => {
   });
 
   test('Treats bot availability failure as unavailable', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await setup({}, { searchOneImpl: async () => Promise.reject(new Error('network')) });
+    const onError = vi.fn();
+    const error = new Error('network');
+    await setup({}, { searchOneImpl: async () => Promise.reject(error), onError });
     expect(screen.getByText(/Voice dictation unavailable/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start Dictation' })).toBeDisabled();
-    consoleError.mockRestore();
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error, {
+      source: 'AIRealTimeQuestionnaireForm',
+      message: 'Error checking bot availability',
+    });
   });
 
   test('Disables button and shows not-enabled message when project voice feature is off', async () => {

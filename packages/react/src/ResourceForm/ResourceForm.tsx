@@ -10,7 +10,7 @@ import {
   tryGetProfile,
 } from '@medplum/core';
 import type { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler, useResource } from '@medplum/react-hooks';
 import { IconAlertCircle, IconChevronDown, IconEdit, IconTrash } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { FormEvent, JSX } from 'react';
@@ -36,6 +36,7 @@ export interface ResourceFormProps {
 export function ResourceForm(props: ResourceFormProps): JSX.Element {
   const { outcome } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const defaultValue = useResource(props.defaultValue);
   const resourceType = defaultValue?.resourceType as ResourceType;
   const [schemaLoaded, setSchemaLoaded] = useState(false);
@@ -59,8 +60,8 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
               console.error(`Schema not found for ${profileUrl}`);
             }
           })
-          .catch((reason) => {
-            console.error('Error in requestProfileSchema', reason);
+          .catch((reason: unknown) => {
+            onError(reason, { source: 'ResourceForm', message: 'Error in requestProfileSchema' });
           });
       } else {
         medplum
@@ -69,10 +70,10 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
             setValue(defaultValue);
             setSchemaLoaded(true);
           })
-          .catch(console.log);
+          .catch((err: unknown) => onError(err, { source: 'ResourceForm' }));
       }
     }
-  }, [medplum, defaultValue, resourceType, props.profileUrl]);
+  }, [medplum, onError, defaultValue, resourceType, props.profileUrl]);
 
   const accessPolicyResource = useMemo(() => {
     return defaultValue && satisfiedAccessPolicy(defaultValue, AccessPolicyInteraction.READ, accessPolicy);
