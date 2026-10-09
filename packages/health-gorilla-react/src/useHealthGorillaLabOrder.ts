@@ -155,6 +155,7 @@ function updateMetadata(prev: TestsReducerState, action: UpdateMetadataAction): 
 
   const prevTestMetadata = prev.testMetadata[test.code];
   if (!prev.selectedTests.some((t) => t.code === test.code) || !prevTestMetadata) {
+    // eslint-disable-next-line no-console -- Developer diagnostic for API misuse
     console.warn(`Cannot update metadata for test ${test.code} since it is not a selected tests`);
     return prev;
   }
@@ -163,6 +164,7 @@ function updateMetadata(prev: TestsReducerState, action: UpdateMetadataAction): 
   const restrictedKeys = Object.keys(partialMetadata).filter((k) => !EDITABLE_TEST_METADATA_KEYS.includes(k as any));
 
   if (restrictedKeys.length > 0) {
+    // eslint-disable-next-line no-console -- Developer diagnostic for API misuse
     console.warn(`Cannot update test metadata fields: ${restrictedKeys.join(', ')}`);
 
     allowedUpdates = Object.fromEntries(Object.entries(partialMetadata).filter(([k]) => !restrictedKeys.includes(k)));

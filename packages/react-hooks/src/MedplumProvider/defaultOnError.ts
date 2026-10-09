@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumErrorDetails } from './MedplumProvider.context';
 
+/* eslint-disable no-console -- This is the console fallback for reported errors */
+
 /**
  * The default error handler, which logs to the console.
  * @param error - The error to report.

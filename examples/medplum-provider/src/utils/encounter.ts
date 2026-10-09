@@ -135,6 +135,7 @@ async function createChargeItemFromPlanDefinition(
   );
 
   if (!serviceBillingCodeExtension?.valueCodeableConcept || !chargeDefinitionExtension?.valueCanonical) {
+    // eslint-disable-next-line no-console -- Informational: not every PlanDefinition carries billing extensions
     console.log('PlanDefinition missing required extensions for charge item creation');
     return;
   }

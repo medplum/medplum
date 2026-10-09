@@ -314,6 +314,33 @@ export const medplumEslintConfig = [
     },
   },
   /**
+   * React packages report caught errors through the MedplumProvider error handler
+   * (useMedplumErrorHandler) rather than the console, so apps can route them to telemetry.
+   */
+  {
+    files: [
+      'packages/app/src/**',
+      'packages/dosespot-react/src/**',
+      'packages/health-gorilla-react/src/**',
+      'packages/react/src/**',
+      'packages/react-hooks/src/**',
+      'packages/react-scheduling/src/**',
+      'packages/scriptsure-react/src/**',
+      'examples/medplum-provider/src/**',
+    ],
+    ignores: [
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/*.stories.tsx',
+      '**/stories/**',
+      '**/test-utils/**',
+      '**/test.setup.ts',
+    ],
+    rules: {
+      'no-console': ['error', { allow: ['debug'] }],
+    },
+  },
+  /**
    * vite.config.ts and vitest.config.ts are often outside package tsconfig include (e.g. rootDir src);
    * skip type-aware parsing.
    *

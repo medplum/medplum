@@ -158,6 +158,7 @@ function tryGetElementDefinition(resourceType: string, fhirPath: string): Intern
     } as SearchParameter);
     return details?.elementDefinitions?.[0];
   } catch (err) {
+    // eslint-disable-next-line no-console -- Developer diagnostic computed during render; reporting it would repeat every render
     console.warn('Failed to get element definition', { resourceType, fhirPath, err });
     return undefined;
   }

@@ -124,6 +124,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.url:
     case PropertyType.xhtml:
       if (isObject(value) && !isString(value)) {
+        // eslint-disable-next-line no-console -- Data-quality diagnostic during render; reporting it would repeat every render
         console.warn('Non-standard FHIR data or missing primitive value with extension', {
           path: props.path,
           propertyType,

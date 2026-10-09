@@ -177,6 +177,7 @@ export function useWhisper({
 
       processor.port.onmessage = (event: MessageEvent<Float32Array>) => {
         if (websocket.readyState !== WebSocket.OPEN) {
+          // eslint-disable-next-line no-console -- Developer diagnostic that fires per audio frame while the socket is closed
           console.warn('WebSocket is not open. Unable to send audio data.');
           return;
         }
