@@ -4,7 +4,7 @@ import type { MedplumClientEventMap, ProfileResource } from '@medplum/core';
 import { ClientStorage, MemoryStorage, MockAsyncClientStorage, getDisplayString, sleep } from '@medplum/core';
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
 import { MockClient, MockFetchClient, createFakeJwt } from '@medplum/mock';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import type { MockInstance } from 'vitest';
@@ -569,6 +569,48 @@ describe('MedplumProvider', () => {
       expect(consoleErrorSpy).toHaveBeenCalledWith(withoutDetails);
       expect(consoleErrorSpy).toHaveBeenCalledWith(withoutProvider);
       consoleErrorSpy.mockRestore();
+    });
+
+    test('Reports a navigate prop that rejects, and returns its result', async () => {
+      const onError = vi.fn();
+      const error = new Error('Navigation blocked');
+      let returned: unknown;
+      function Navigator(): JSX.Element {
+        const medplumNavigate = useMedplumNavigate();
+        useEffect(() => {
+          returned = medplumNavigate('/Patient');
+        }, [medplumNavigate]);
+        return <div>Navigator</div>;
+      }
+
+      const rejecting = vi.fn().mockRejectedValue(error);
+      const { unmount } = render(
+        <MedplumProvider medplum={new MockClient()} navigate={rejecting} onError={onError}>
+          <Navigator />
+        </MedplumProvider>
+      );
+
+      expect(rejecting).toHaveBeenCalledWith('/Patient');
+      // The caller still gets the navigate prop's promise, so awaiting it sees the rejection too
+      await expect(returned).rejects.toBe(error);
+      await waitFor(() =>
+        expect(onError).toHaveBeenCalledExactlyOnceWith(error, {
+          source: 'MedplumProvider',
+          message: 'Navigation failed',
+        })
+      );
+      unmount();
+
+      // A navigate prop that returns nothing has nothing to report
+      const synchronous = vi.fn();
+      render(
+        <MedplumProvider medplum={new MockClient()} navigate={synchronous} onError={onError}>
+          <Navigator />
+        </MedplumProvider>
+      );
+      expect(synchronous).toHaveBeenCalledWith('/Patient');
+      expect(returned).toBeUndefined();
+      expect(onError).toHaveBeenCalledTimes(1);
     });
 
     test('Falls back to the console when the handler throws', () => {
