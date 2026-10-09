@@ -59,4 +59,35 @@ describe('buildActorResource', () => {
 
     expect(edit(withZone, { timezone: undefined })).toEqual(room3);
   });
+
+  test("writes a room's name, status, and service facility", () => {
+    expect(edit(room3, { name: ' Room 3A ', active: false, location: { reference: 'Location/northside' } })).toEqual({
+      ...room3,
+      name: 'Room 3A',
+      status: 'inactive',
+      partOf: { reference: 'Location/northside' },
+    });
+    const { partOf: _partOf, ...unplaced } = room3;
+    expect(edit(room3, { location: undefined })).toEqual(unplaced);
+  });
+
+  test("writes a device's name as its first user-friendly name, and its location", () => {
+    const modelOnly: Device = { resourceType: 'Device', deviceName: [{ name: 'US-2000', type: 'model-name' }] };
+    expect(edit(modelOnly, { name: 'Ultrasound 2', location: { reference: 'Location/downtown' } })).toEqual({
+      ...modelOnly,
+      deviceName: [
+        { name: 'Ultrasound 2', type: 'user-friendly-name' },
+        { name: 'US-2000', type: 'model-name' },
+      ],
+      location: { reference: 'Location/downtown' },
+    });
+
+    const named: Device = {
+      resourceType: 'Device',
+      deviceName: [{ name: 'Ultrasound 2', type: 'user-friendly-name' }],
+    };
+    expect(edit(named, { name: 'Ultrasound 3' }).deviceName).toEqual([
+      { name: 'Ultrasound 3', type: 'user-friendly-name' },
+    ]);
+  });
 });

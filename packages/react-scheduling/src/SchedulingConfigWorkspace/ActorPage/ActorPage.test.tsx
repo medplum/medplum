@@ -9,7 +9,7 @@ import {
   TimezoneExtensionURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
-import type { Bundle, HealthcareService, Location, Practitioner, Resource, Schedule } from '@medplum/fhirtypes';
+import type { Bundle, Device, HealthcareService, Location, Practitioner, Resource, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
 import { setScheduleAvailability } from '../../availability';
@@ -19,7 +19,14 @@ import {
   setHealthcareServiceSchedulingParameterValues,
   setScheduleSchedulingParameterValues,
 } from '../../parameterValues';
-import { fireEvent, renderWithMedplum, screen, userEvent, waitFor, within } from '../../test-utils/render';
+import {
+  clickAutocompleteOption,
+  installAutocompleteTimers,
+  removePill,
+  settleAutocomplete,
+  typeInAutocomplete,
+} from '../../test-utils/asyncAutocomplete';
+import { act, fireEvent, renderWithMedplum, screen, userEvent, waitFor, within } from '../../test-utils/render';
 import { ActorPage } from './ActorPage';
 
 const downtown: WithId<Location> = { resourceType: 'Location', id: 'downtown', name: 'Downtown Clinic' };
@@ -685,6 +692,101 @@ describe('ActorPage', () => {
       } finally {
         services.pop();
       }
+    });
+
+    test('a room is retired by switching its status off, and nothing deletes it', async () => {
+      const { medplum, onSynced } = await setup(room3);
+      const remove = vi.spyOn(medplum, 'deleteResource');
+
+      expect(screen.queryByRole('button', { name: /delete|remove/i })).not.toBeInTheDocument();
+      await userEvent.click(within(general()).getByRole('switch', { name: 'Room status' }));
+      await save();
+
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      expect(sentBundle(medplum).entry?.map((item) => item.request?.method)).toEqual(['PUT']);
+      expect((sentResources(medplum)[0] as Location).status).toBe('inactive');
+      expect(remove).not.toHaveBeenCalled();
+    });
+
+    test("a room's name is required", async () => {
+      const { medplum } = await setup(room3);
+
+      await userEvent.clear(within(general()).getByRole('textbox', { name: /Name/ }));
+      await save();
+
+      expect(within(general()).getByText('A name is required.')).toBeInTheDocument();
+      expect(within(saveBar() as HTMLElement).getByRole('button', { name: 'Save' })).toHaveAttribute(
+        'aria-disabled',
+        'true'
+      );
+      expect(medplum.executeBatch).not.toHaveBeenCalled();
+    });
+
+    describe('service facility', () => {
+      installAutocompleteTimers();
+
+      async function pick(label: string, name: string): Promise<void> {
+        await typeInAutocomplete(within(general()).getByRole('searchbox', { name: label }), name.split(' ')[0]);
+        await clickAutocompleteOption(name);
+      }
+
+      async function saveNow(): Promise<void> {
+        await act(async () => {
+          fireEvent.click(within(saveBar() as HTMLElement).getByRole('button', { name: 'Save' }));
+        });
+      }
+
+      test("assigning a room to a service facility stores it as the room's partOf", async () => {
+        const { partOf: _partOf, ...unplaced } = room3;
+        const { medplum, onSynced } = await setup(unplaced);
+
+        expect(within(general()).getByRole('searchbox', { name: 'Service facility' })).toHaveAttribute(
+          'placeholder',
+          'Hidden when booking by service facility'
+        );
+        await pick('Service facility', 'Downtown Clinic');
+        await saveNow();
+
+        await waitFor(() => expect(onSynced).toHaveBeenCalled());
+        expect((sentResources(medplum)[0] as Location).partOf?.reference).toBe('Location/downtown');
+      });
+
+      test("a device's name and location are stored on the Device", async () => {
+        const device: WithId<Device> = {
+          resourceType: 'Device',
+          id: 'ultrasound-2',
+          deviceName: [{ name: 'US-2000', type: 'model-name' }],
+        };
+        const { medplum, onSynced } = await setup(device);
+
+        expect(within(general()).getByRole('searchbox', { name: 'Service facility' })).toHaveAttribute(
+          'placeholder',
+          'Shown at every service facility'
+        );
+        fireEvent.change(within(general()).getByRole('textbox', { name: /Name/ }), {
+          target: { value: 'Ultrasound 2' },
+        });
+        await pick('Service facility', 'Northside');
+        await saveNow();
+
+        await waitFor(() => expect(onSynced).toHaveBeenCalled());
+        const sent = sentResources(medplum)[0] as Device;
+        expect(sent.deviceName?.[0]).toEqual({ name: 'Ultrasound 2', type: 'user-friendly-name' });
+        expect(sent.location?.reference).toBe('Location/northside');
+      });
+
+      test('moving a room to another service facility keeps what it offers', async () => {
+        const atNorthside = { ...room3, partOf: { reference: 'Location/northside', display: 'Northside' } };
+        await setup(atNorthside, [makeSchedule('Location/room-3', [cystoscopy])], [], cystoscopy.id);
+        await settleAutocomplete();
+
+        await removePill('Northside');
+        await pick('Service facility', 'Downtown Clinic');
+        await settleAutocomplete();
+
+        expect(entry('Cystoscopy')).toBeInTheDocument();
+        expect(saveBar()).not.toBeNull();
+      });
     });
   });
 
