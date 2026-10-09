@@ -193,14 +193,15 @@ describe('Saved AuditEvents', () => {
       await waitForAuditEvent(repo, patient);
 
       const original = (Repository.prototype as any).updateResourceImpl;
-      const updateSpy = vi
-        .spyOn(Repository.prototype as any, 'updateResourceImpl')
-        .mockImplementation(function (this: Repository, ...args: any[]) {
-          if ((args[0] as Resource).resourceType === 'AuditEvent') {
-            return Promise.reject(new Error('Simulated AuditEvent save failure'));
-          }
-          return original.apply(this, args);
-        });
+      const updateSpy = vi.spyOn(Repository.prototype as any, 'updateResourceImpl').mockImplementation(function (
+        this: Repository,
+        ...args: any[]
+      ) {
+        if ((args[0] as Resource).resourceType === 'AuditEvent') {
+          return Promise.reject(new Error('Simulated AuditEvent save failure'));
+        }
+        return original.apply(this, args);
+      });
       const counterSpy = vi.spyOn(otelModule, 'incrementCounter');
       try {
         await repo.patchResource<Patient>('Patient', patient.id, [{ op: 'add', path: '/active', value: true }]);
