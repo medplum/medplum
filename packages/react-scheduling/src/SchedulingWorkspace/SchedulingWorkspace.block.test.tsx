@@ -115,7 +115,7 @@ describe('SchedulingWorkspace blocking', () => {
     expect(bundle.entry?.map((entry) => entry.resource)).toStrictEqual([
       expect.objectContaining({
         schedule: { reference: 'Schedule/schedule-dr-rivera' },
-        status: 'busy',
+        status: 'busy-unavailable',
         comment: 'Lunch',
       }),
     ]);
@@ -125,7 +125,7 @@ describe('SchedulingWorkspace blocking', () => {
     // The pane is done with, and the block is on the calendar without a reload.
     expect(pane()).not.toBeInTheDocument();
     expect(markedTime()).toBe('none');
-    expect(screen.getByText('slot Schedule/schedule-dr-rivera busy')).toBeInTheDocument();
+    expect(screen.getByText('slot Schedule/schedule-dr-rivera busy-unavailable')).toBeInTheDocument();
   });
 
   test('Keeps each tab’s answers and its own highlight across a switch, and the tab across clicks', async () => {

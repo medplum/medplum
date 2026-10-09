@@ -37,10 +37,11 @@ export interface BlockTimeFormProps {
 }
 
 /**
- * Takes time off the calendars chosen, without booking a visit into it.
+ * Marks time as blocked on the calendars chosen.
  *
- * Writes a `busy` Slot over the time on each of them, all in one transaction, and
- * announces each so views reading Slots draw them.
+ * Writes a `busy-unavailable` Slot over the time on each of them, and
+ * announces each so views reading Slots draw them. Blocks are created
+ * transactionally when the `transaction-bundles` feature is enabled.
  *
  * @param props - The React props.
  * @returns The form.
@@ -191,8 +192,9 @@ interface BlockSlotsOptions {
 }
 
 /**
- * Writes a `busy` Slot over the time on each schedule, in one transaction: all or none
- * land, on projects with the `transaction-bundles` feature.
+ * Writes a `busy-unavailable` Slot over the time on each schedule, in one
+ * batch; a transaction is used when the `transaction-bundles` feature is
+ * available.
  * @see https://www.medplum.com/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions
  * @param medplum - The client to write through.
  * @param options - The schedules, the time, and the comment.
@@ -207,7 +209,7 @@ async function writeBlockSlots(medplum: MedplumClient, options: BlockSlotsOption
       resource: {
         resourceType: 'Slot',
         schedule: createReference(schedule),
-        status: 'busy',
+        status: 'busy-unavailable',
         start: start.toISOString(),
         end: end.toISOString(),
         comment,

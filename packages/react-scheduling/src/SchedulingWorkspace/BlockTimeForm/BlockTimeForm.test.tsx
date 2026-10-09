@@ -96,7 +96,7 @@ describe('BlockTimeForm', () => {
     expect(bundle.entry?.map((entry) => entry.resource)).toStrictEqual([
       expect.objectContaining({
         schedule: { reference: getReferenceString(DrRiveraSchedule) },
-        status: 'busy',
+        status: 'busy-unavailable',
         start: RANGE.start.toISOString(),
         end: new Date(2026, 7, 18, 14, 30).toISOString(),
         comment: 'Staff meeting',
@@ -138,7 +138,7 @@ describe('BlockTimeForm', () => {
     const riveraOnly = await medplum.createResource<Slot>({
       resourceType: 'Slot',
       schedule: { reference: getReferenceString(DrRiveraSchedule) },
-      status: 'busy',
+      status: 'busy-unavailable',
       start: RANGE.start.toISOString(),
       end: RANGE.end.toISOString(),
     });
