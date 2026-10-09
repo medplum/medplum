@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, ContentType, streamToBuffer } from '@medplum/core';
-import type { Binary } from '@medplum/fhirtypes';
+import { badRequest, ContentType, getReferenceString, streamToBuffer } from '@medplum/core';
+import type { AccessPolicy, Binary, Bundle, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -104,6 +104,23 @@ describe('Bot $init', () => {
     expect(res3.body.resourceType).toBe('Bot');
     expect(res3.body.id).toBe(res2.body.id);
 
+    const membershipRes = await request(app)
+      .get('/fhir/R4/ProjectMembership?profile=' + getReferenceString(res2.body))
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(membershipRes).toHaveStatus(200);
+    const membership = (membershipRes.body as Bundle<ProjectMembership>).entry?.[0]?.resource;
+    expect(membership?.accessPolicy?.reference).toBeDefined();
+
+    const policyRes = await request(app)
+      .get('/fhir/R4/' + membership?.accessPolicy?.reference)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(policyRes).toHaveStatus(200);
+    expect(policyRes.body).toMatchObject({
+      resourceType: 'AccessPolicy',
+      name: 'Alice personal bot Bot Access Policy',
+      resource: [{ resourceType: '*' }],
+    } satisfies Partial<AccessPolicy>);
+
     // Create bot with invalid name (should fail)
     const res4 = await request(app)
       .post('/fhir/R4/Bot/$init')
@@ -111,6 +128,38 @@ describe('Bot $init', () => {
       .type('json')
       .send({ foo: 'bar' });
     expect(res4).toHaveStatus(400);
+  });
+
+  test('Uses the provided access policy', async () => {
+    const { accessToken, repo } = await createTestProject({
+      membership: { admin: true },
+      withAccessToken: true,
+      withRepo: true,
+    });
+
+    const accessPolicy = await repo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      name: 'Existing bot policy',
+      resource: [{ resourceType: 'Patient', readonly: true }],
+    });
+
+    const res = await request(app)
+      .post('/fhir/R4/Bot/$init')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        name: 'Alice personal bot',
+        description: 'Alice bot description',
+        accessPolicy: { reference: getReferenceString(accessPolicy) },
+      });
+    expect(res).toHaveStatus(201);
+
+    const membershipRes = await request(app)
+      .get('/fhir/R4/ProjectMembership?profile=' + getReferenceString(res.body))
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(membershipRes).toHaveStatus(200);
+    const membership = (membershipRes.body as Bundle<ProjectMembership>).entry?.[0]?.resource;
+    expect(membership?.accessPolicy?.reference).toBe(getReferenceString(accessPolicy));
   });
 
   test('Create bot with base-64 source code', async () => {

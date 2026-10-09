@@ -7,6 +7,8 @@ import TabItem from '@theme/TabItem';
 
 Creates a new [Medplum Bot](/docs/). Posting to this endpoint creates a [`Bot`](/docs/api/fhir/medplum/bot) resource and a corresponding [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resource.
 
+If `accessPolicy` is omitted, Medplum creates an [`AccessPolicy`](/docs/api/fhir/medplum/accesspolicy) named `<name> Bot Access Policy` that grants read and write access to all resource types (`resourceType: "*"`) and assigns it to that membership. Pass `accessPolicy` to use an existing policy instead.
+
 ### Parameters
 
 ```ts
