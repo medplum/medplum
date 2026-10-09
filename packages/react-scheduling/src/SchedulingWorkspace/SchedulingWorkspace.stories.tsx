@@ -222,7 +222,6 @@ BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
 export const AtASite = (): JSX.Element => <Workspace defaultLocation={{ reference: 'Location/satellite-clinic' }} />;
 AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
 
-
 const PALETTE = [
   '#477E76',
   '#009BAD',
@@ -486,7 +485,6 @@ export const ColoredAppointmentBlocks = (): JSX.Element => (
   </WithPaletteColors>
 );
 ColoredAppointmentBlocks.decorators = [withFixtures(GRAY_CALENDAR_FIXTURES)];
-
 
 const COLOR_STATES_VISIT_TYPES = [
   ['New Patient Visit', 'indigo', '#364fc7'],
