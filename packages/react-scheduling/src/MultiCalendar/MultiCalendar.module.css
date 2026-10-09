@@ -1,13 +1,20 @@
 .wrapper {
   /* Appointments are drawn as a light tint of their calendar color, with a bar of the full color
    * down the leading edge. The tint is opaque, so the grid and other events don't show through,
-   * and a ring of the background keeps neighboring events of one color apart. */
+   * and a ring of the background keeps neighboring events of one color apart.
+   * `--emphasis` fades the bar and text toward the background, as hovering does. */
   :global(.appointment) {
+    --emphasis: 100%;
+
     border: 0;
     padding-inline-start: 6px;
     box-shadow: 0 0 0 1px var(--fc-classic-background);
     background:
-      linear-gradient(to right, var(--fc-event-color) 4px, transparent 4px),
+      linear-gradient(
+        to right,
+        color-mix(in oklab, var(--fc-event-color) var(--emphasis), var(--fc-classic-background)) 4px,
+        transparent 4px
+      ),
       light-dark(
         color-mix(in oklab, var(--fc-event-color) 10%, var(--fc-classic-background)),
         color-mix(in oklab, var(--fc-event-color) 22%, var(--fc-classic-background))
@@ -15,10 +22,20 @@
 
     .eventInner,
     .eventTime {
-      color: light-dark(
-        color-mix(in oklch, var(--fc-event-color), black 40%),
-        color-mix(in oklch, var(--fc-event-color), white 55%)
+      color: color-mix(
+        in oklab,
+        light-dark(
+            color-mix(in oklch, var(--fc-event-color), black 40%),
+            color-mix(in oklch, var(--fc-event-color), white 55%)
+          )
+          var(--emphasis),
+        var(--fc-classic-background)
       );
+    }
+
+    /* Only events that can be clicked answer to the pointer. */
+    &[role='button']:hover {
+      --emphasis: 80%;
     }
   }
 
