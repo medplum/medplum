@@ -155,11 +155,11 @@ describe('CalendarBase', () => {
         slots: [createSlot()],
       };
       setup({ eventSources: [source] });
-      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+      expect(screen.getByText(/Homer Simpson/)).toBeInTheDocument();
       expect(screen.getByText(/Available/)).toBeInTheDocument();
 
       await userEvent.click(screen.getByText('Month'));
-      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+      expect(screen.getByText(/Homer Simpson/)).toBeInTheDocument();
       expect(screen.queryByText(/Available/)).not.toBeInTheDocument();
 
       await userEvent.click(screen.getByText('Week'));
