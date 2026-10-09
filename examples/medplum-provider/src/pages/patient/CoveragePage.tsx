@@ -9,10 +9,11 @@ import { ResourceBoard } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
 import { CheckEligibilityModal } from '../../components/insurance/CheckEligibilityModal';
 import { CoverageDetailPanel } from '../../components/insurance/CoverageDetailPanel';
 import { EligibilityListItem } from '../../components/insurance/EligibilityListItem';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { showErrorNotification } from '../../utils/notifications';
 
 /**
@@ -29,7 +30,7 @@ export function CoveragePage(): JSX.Element {
     coverageId?: string;
     requestId?: string;
   };
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const [checkOpened, { open: openCheck, close: closeCheck }] = useDisclosure(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -61,7 +62,7 @@ export function CoveragePage(): JSX.Element {
     if (query === location.search) {
       return;
     }
-    navigate(`${location.pathname}${query}`, { replace: true })?.catch(console.error);
+    navigate(`${location.pathname}${query}`, { replace: true });
   }, [search, toQuery, location.search, location.pathname, navigate]);
 
   const requestUri = useCallback(
@@ -82,7 +83,7 @@ export function CoveragePage(): JSX.Element {
   const handleCreated = (request: WithId<CoverageEligibilityRequest>): void => {
     startTransition(() => {
       setRefreshKey((key) => key + 1);
-      navigate(requestUri(request, ownCoverageId(request) ?? coverageId))?.catch(console.error);
+      navigate(requestUri(request, ownCoverageId(request) ?? coverageId));
     });
   };
 
@@ -131,9 +132,9 @@ export function CoveragePage(): JSX.Element {
             <Text c="dimmed">Select an eligibility check to view details.</Text>
           </Box>
         }
-        onChange={(s) => navigate(`${location.pathname}${toQuery(s)}`)?.catch(console.error)}
+        onChange={(s) => navigate(`${location.pathname}${toQuery(s)}`)}
         onSelectFirst={(request) =>
-          navigate(requestUri(request, coverageId ?? ownCoverageId(request)), { replace: true })?.catch(console.error)
+          navigate(requestUri(request, coverageId ?? ownCoverageId(request)), { replace: true })
         }
         onError={showErrorNotification}
       />

@@ -9,7 +9,8 @@ import { ResourceBoard } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { showErrorNotification } from '../../utils/notifications';
 import { DocumentDetailPanel } from './DocumentDetailPanel';
 import { DocumentListItem } from './DocumentListItem';
@@ -19,7 +20,7 @@ import { isDocumentSourceFilter, matchDocumentSourceOption } from './DocumentSou
 import { UploadDocumentModal } from './UploadDocumentModal';
 
 export function DocumentsPage(): JSX.Element {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const { patientId, documentId } = useParams() as { patientId: string; documentId?: string };
 
@@ -75,7 +76,7 @@ export function DocumentsPage(): JSX.Element {
     const path = documentId
       ? `/Patient/${patientId}/DocumentReference/${documentId}`
       : `/Patient/${patientId}/DocumentReference`;
-    navigate(`${path}${query}`, { replace: true })?.catch(console.error);
+    navigate(`${path}${query}`, { replace: true });
   }, [search, toQuery, location.search, documentId, patientId, navigate]);
 
   // Keep the current pagination query when navigating to a document.
@@ -106,7 +107,7 @@ export function DocumentsPage(): JSX.Element {
 
   const handleCreated = (doc: DocumentReference): void => {
     setRefreshKey((k) => k + 1);
-    navigate(docUri(doc.id))?.catch(console.error);
+    navigate(docUri(doc.id));
   };
 
   const refreshList = useCallback((): void => setRefreshKey((k) => k + 1), []);
@@ -114,7 +115,7 @@ export function DocumentsPage(): JSX.Element {
   // After a soft-delete, drop the (now-hidden) selection and reload so the next doc surfaces.
   const handleDeleted = useCallback((): void => {
     setRefreshKey((k) => k + 1);
-    navigate(`/Patient/${patientId}/DocumentReference${location.search}`)?.catch(console.error);
+    navigate(`/Patient/${patientId}/DocumentReference${location.search}`);
   }, [navigate, patientId, location.search]);
 
   // The source filter is URL-driven like the rest of the search. Changing it resets pagination
@@ -126,7 +127,7 @@ export function DocumentsPage(): JSX.Element {
         filters.push(...source.filters);
       }
       const query = toQuery({ ...search, filters, offset: 0 });
-      navigate(`/Patient/${patientId}/DocumentReference${query}`)?.catch(console.error);
+      navigate(`/Patient/${patientId}/DocumentReference${query}`);
     },
     [search, toQuery, patientId, navigate]
   );
@@ -177,8 +178,8 @@ export function DocumentsPage(): JSX.Element {
             <Text c="dimmed">Select a document to view it.</Text>
           </Box>
         }
-        onSelectFirst={(doc) => navigate(docUri(doc.id), { replace: true })?.catch(console.error)}
-        onChange={(s) => navigate(`/Patient/${patientId}/DocumentReference${toQuery(s)}`)?.catch(console.error)}
+        onSelectFirst={(doc) => navigate(docUri(doc.id), { replace: true })}
+        onChange={(s) => navigate(`/Patient/${patientId}/DocumentReference${toQuery(s)}`)}
         onError={showErrorNotification}
       />
 

@@ -5,16 +5,17 @@ import { Document, Logo, RegisterForm, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
+import { useAppNavigate } from '../hooks/useAppNavigate';
 
 export function RegisterPage(): JSX.Element | null {
   const medplum = useMedplum();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (medplum.getProfile()) {
-      navigate('/signin?project=new')?.catch(console.error);
+      navigate('/signin?project=new');
     }
   }, [medplum, navigate]);
 
@@ -40,7 +41,7 @@ export function RegisterPage(): JSX.Element | null {
       googleClientId={import.meta.env.GOOGLE_CLIENT_ID}
       recaptchaSiteKey={import.meta.env.RECAPTCHA_SITE_KEY}
       login={searchParams.get('login') || undefined}
-      onSignIn={() => navigate('/signin')?.catch(console.error)}
+      onSignIn={() => navigate('/signin')}
     >
       <Logo size={32} />
       <Title order={3} py="lg">

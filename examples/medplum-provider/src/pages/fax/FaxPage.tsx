@@ -3,9 +3,10 @@
 import type { SearchRequest } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { useParams, useSearchParams } from 'react-router';
 import { FaxBoard } from '../../components/fax/FaxBoard';
 import type { FaxTab } from '../../components/fax/FaxListItem';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { useNewInUrl } from '../../hooks/useNewInUrl';
 import classes from './FaxPage.module.css';
 
@@ -19,7 +20,7 @@ function getFaxBasePath(faxId: string | undefined): string {
 
 export function FaxPage(): JSX.Element {
   const { faxId } = useParams();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [searchParams] = useSearchParams();
 
   const category = searchParams.get('category');
@@ -39,7 +40,7 @@ export function FaxPage(): JSX.Element {
   };
 
   const onNew = (fax: Communication): void => {
-    navigate(`${getFaxBasePath(fax.id)}?${query}`)?.catch(console.error);
+    navigate(`${getFaxBasePath(fax.id)}?${query}`);
   };
 
   // Pagination: write the new offset to the URL, keeping the selected fax open
@@ -47,7 +48,7 @@ export function FaxPage(): JSX.Element {
     const newOffset = search.offset ?? 0;
     const next = `${FAX_QUERY_BASE}&category=${category ?? 'inbound'}${newOffset > 0 ? `&_offset=${newOffset}` : ''}`;
     const basePath = faxId ? `/Fax/Communication/${faxId}` : '/Fax/Communication';
-    navigate(`${basePath}?${next}`)?.catch(console.error);
+    navigate(`${basePath}?${next}`);
   };
 
   return (

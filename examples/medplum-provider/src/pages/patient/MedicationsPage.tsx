@@ -35,13 +35,14 @@ import {
 import { IconPlus, IconShoppingCart, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { useParams, useSearchParams } from 'react-router';
 import { MedicationRequestDetails } from '../../components/meds/MedicationRequestDetails';
 import type { MedTab } from '../../components/meds/MedListItem';
 import { MedListItem } from '../../components/meds/MedListItem';
 import { MedSelectEmpty } from '../../components/meds/MedSelectEmpty';
 import { PrescriptionIFrameModal } from '../../components/meds/PrescriptionIFrameModal';
 import { hasDoseSpotIdentifier, hasScriptSureIdentifier } from '../../components/utils';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { usePatient } from '../../hooks/usePatient';
 import { useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
 import { showErrorNotification } from '../../utils/notifications';
@@ -72,7 +73,7 @@ const DEFAULT_TAB: MedTab = 'active';
 
 export function MedicationsPage(): JSX.Element {
   const { patientId, medicationRequestId } = useParams();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const medplum = useMedplum();
   const { orderMedication } = useScriptSureOrderMedication();
   const { addToCart, adding, checkout, removeFromCart, clearCart } = useScriptSureCart();
@@ -327,7 +328,7 @@ export function MedicationsPage(): JSX.Element {
       if (result.medicationRequestId && patientId) {
         navigate(
           `/Patient/${patientId}/MedicationRequest/${result.medicationRequestId}?status=${TAB_TO_STATUS_PARAM.draft}`
-        )?.catch(console.error);
+        );
       }
     },
     [fetchData, navigate, patientId, setTab]

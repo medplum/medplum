@@ -9,11 +9,12 @@ import { ListWithDetailPane, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
 import { LabDetailPane } from '../../components/labs/LabDetailPane';
 import { LabListItem } from '../../components/labs/LabListItem';
 import { LabResultListItem } from '../../components/labs/LabResultListItem';
 import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { usePatient } from '../../hooks/usePatient';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
@@ -38,7 +39,7 @@ export interface LabsPageProps {
 export function LabsPage(props: LabsPageProps): JSX.Element {
   const { tab } = props;
   const { patientId, serviceRequestId, diagnosticReportId } = useParams();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const medplum = useMedplum();
 
@@ -81,7 +82,7 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
   useEffect(() => {
     const normalizedQuery = formatSearchQuery(search);
     if (location.search !== normalizedQuery) {
-      navigate(`${location.pathname}${normalizedQuery}`, { replace: true })?.catch(console.error);
+      navigate(`${location.pathname}${normalizedQuery}`, { replace: true });
     }
   }, [search, location.pathname, location.search, navigate]);
 
@@ -161,7 +162,7 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
     (newPage: number): void => {
       // Navigate to the list (dropping any selected item) with the new offset.
       const nextSearch: SearchRequest = { ...search, offset: (newPage - 1) * (search.count ?? DEFAULT_COUNT) };
-      navigate(`/Patient/${patientId}/${resourceType}${formatSearchQuery(nextSearch)}`)?.catch(console.error);
+      navigate(`/Patient/${patientId}/${resourceType}${formatSearchQuery(nextSearch)}`);
     },
     [search, navigate, patientId, resourceType]
   );
@@ -170,7 +171,7 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
     setNewOrderModalOpened(false);
     const openTab = tabs.find((t) => t.value === 'open');
     fetchData()
-      .then(() => (openTab ? navigate(openTab.uri)?.catch(console.error) : undefined))
+      .then(() => (openTab ? navigate(openTab.uri) : undefined))
       .catch(showErrorNotification);
   }, [fetchData, navigate, tabs]);
 

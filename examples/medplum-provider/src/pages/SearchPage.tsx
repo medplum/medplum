@@ -7,13 +7,14 @@ import type { Patient, Reference, Resource, UserConfiguration } from '@medplum/f
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
+import { useAppNavigate } from '../hooks/useAppNavigate';
 import { useResourceType } from './resource/useResourceType';
 import classes from './SearchPage.module.css';
 
 export function SearchPage(): JSX.Element {
   const medplum = useMedplum();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
 
@@ -29,13 +30,11 @@ export function SearchPage(): JSX.Element {
       saveLastSearch(populatedSearch);
       setSearch(populatedSearch);
     } else {
-      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`, { replace: true })?.catch(
-        console.error
-      );
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`, { replace: true });
     }
   }, [medplum, navigate, location]);
 
-  useResourceType(search?.resourceType, { onInvalidResourceType: () => navigate('..')?.catch(console.error) });
+  useResourceType(search?.resourceType, { onInvalidResourceType: () => navigate('..') });
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
     return <Loading />;
@@ -46,13 +45,13 @@ export function SearchPage(): JSX.Element {
       <SearchControl
         checkboxesEnabled={true}
         search={search}
-        onClick={(e) => navigate(getResourceUrl(e.resource))?.catch(console.error)}
+        onClick={(e) => navigate(getResourceUrl(e.resource))}
         onAuxClick={(e) => window.open(getResourceUrl(e.resource), '_blank')}
         onNew={() => {
-          navigate(`/${search.resourceType}/new`)?.catch(console.error);
+          navigate(`/${search.resourceType}/new`);
         }}
         onChange={(e) => {
-          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}
       />
     </Paper>

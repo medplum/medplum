@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Modal } from '@medplum/react';
 import type { JSX } from 'react';
-import { useNavigate } from 'react-router';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { SmartHealthLinkImport } from './SmartHealthLinkImport';
 
 export interface SmartHealthLinkImportModalProps {
@@ -11,14 +11,14 @@ export interface SmartHealthLinkImportModalProps {
 }
 
 export function SmartHealthLinkImportModal({ opened, onClose }: SmartHealthLinkImportModalProps): JSX.Element {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
 
   return (
     <Modal opened={opened} onClose={onClose} size="lg" title="Import from SMART Health Card or Link">
       <SmartHealthLinkImport
         onImported={(patient) => {
           onClose();
-          navigate(`/Patient/${patient.id}/timeline`)?.catch(console.error);
+          navigate(`/Patient/${patient.id}/timeline`);
         }}
       />
     </Modal>

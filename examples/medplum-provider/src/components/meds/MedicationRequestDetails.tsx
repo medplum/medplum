@@ -14,7 +14,7 @@ import type { Dosage, MedicationRequest, Patient, Practitioner, Quantity } from 
 import { useResource } from '@medplum/react';
 import { IconExternalLink, IconMaximize } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
-import { useNavigate } from 'react-router';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { getQuantityQualifierLabel } from './quantity-qualifiers';
 
 interface MedicationRequestDetailsProps {
@@ -112,7 +112,7 @@ function DetailRow(props: { label: string; children: ReactNode }): JSX.Element {
 
 export function MedicationRequestDetails(props: MedicationRequestDetailsProps): JSX.Element {
   const { medicationRequest, medicationOrderExtensions, onOpenInScriptSure } = props;
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const requesterRes = useResource(medicationRequest.requester) as Practitioner | undefined;
   const patientRes = useResource(medicationRequest.subject) as Patient | undefined;
 
@@ -135,7 +135,7 @@ export function MedicationRequestDetails(props: MedicationRequestDetailsProps): 
 
   const openFullRecord = (): void => {
     if (medicationRequest.id) {
-      navigate(`/MedicationRequest/${medicationRequest.id}`)?.catch(console.error);
+      navigate(`/MedicationRequest/${medicationRequest.id}`);
     }
   };
 

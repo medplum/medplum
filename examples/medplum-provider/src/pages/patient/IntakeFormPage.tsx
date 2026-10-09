@@ -14,7 +14,7 @@ import {
 } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { onboardPatient } from '../../utils/intake-form';
 
 const voiceInstructions = (
@@ -43,7 +43,7 @@ export function IntakeFormPage({
   skipValueSetCheck = false,
   questionnaire: propQuestionnaire,
 }: IntakeFormPageProps = {}): JSX.Element {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const questionnaire = propQuestionnaire ?? defaultQuestionnaire;
@@ -73,7 +73,7 @@ export function IntakeFormPage({
       }
       try {
         const patient = await onboardPatient(medplum, questionnaire, response);
-        navigate(`/Patient/${patient.id}/timeline`)?.catch(console.error);
+        navigate(`/Patient/${patient.id}/timeline`);
       } catch (error) {
         showNotification({
           color: 'red',

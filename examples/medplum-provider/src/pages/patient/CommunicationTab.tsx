@@ -6,13 +6,14 @@ import type { Communication } from '@medplum/fhirtypes';
 import { ThreadInbox } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useMemo } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { usePatient } from '../../hooks/usePatient';
 import { normalizeCommunicationSearch } from '../../utils/communication-search';
 
 export function CommunicationTab(): JSX.Element {
   const { patientId, messageId } = useParams();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const patient = usePatient();
 
@@ -35,7 +36,7 @@ export function CommunicationTab(): JSX.Element {
   useEffect(() => {
     if (normalizedSearch !== currentSearch) {
       const prefix = normalizedSearch ? `?${normalizedSearch}` : '';
-      navigate(`/Patient/${patientId}/Communication${prefix}`, { replace: true })?.catch(console.error);
+      navigate(`/Patient/${patientId}/Communication${prefix}`, { replace: true });
     }
   }, [currentSearch, navigate, normalizedSearch, patientId]);
 
@@ -45,7 +46,7 @@ export function CommunicationTab(): JSX.Element {
 
   const onChange = (search: SearchRequest): void => {
     // Keep the selected thread open when the list search changes (pagination, filters)
-    navigate(`${basePath}${formatSearchQuery(search)}`)?.catch(console.error);
+    navigate(`${basePath}${formatSearchQuery(search)}`);
   };
 
   const getThreadUri = (topic: Communication): string => {
@@ -66,11 +67,11 @@ export function CommunicationTab(): JSX.Element {
   const completedUri = `/Patient/${patientId}/Communication${formatSearchQuery(buildStatusSearch('completed'))}`;
 
   const onNew = (message: Communication): void => {
-    navigate(getThreadUri(message))?.catch(console.error);
+    navigate(getThreadUri(message));
   };
 
   const onSelectFirst = (thread: Communication): void => {
-    navigate(getThreadUri(thread), { replace: true })?.catch(console.error);
+    navigate(getThreadUri(thread), { replace: true });
   };
 
   return (

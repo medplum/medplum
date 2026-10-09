@@ -9,8 +9,9 @@ import type { DiagnosticReport, QuestionnaireResponse, Task } from '@medplum/fhi
 import { useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../../config/constants';
+import { useAppNavigate } from '../../../hooks/useAppNavigate';
 import { SimpleTask } from './SimpleTask';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 import { TaskServiceRequest } from './TaskServiceRequest';
@@ -24,14 +25,14 @@ interface TaskPanelProps {
 
 export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const { task, enabled = true, onUpdateTask } = props;
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const medplum = useMedplum();
   const onError = useMedplumErrorHandler();
 
   const onActionButtonClicked = async (): Promise<void> => {
     // Keep the search query (relative navigation drops it by default).
-    navigate(`Task/${task.id}${location.search}`)?.catch(console.error);
+    navigate(`Task/${task.id}${location.search}`);
   };
 
   const onChangeResponse = (response: QuestionnaireResponse): void => {

@@ -8,8 +8,9 @@ import { OperationOutcomeAlert, ReferenceInput, useMedplum, useMedplumProfile } 
 import { IconAlertCircle, IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { ScheduleDetails } from '../../components/schedule/ScheduleDetails';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './SchedulePage.module.css';
 
@@ -19,7 +20,7 @@ import classes from './SchedulePage.module.css';
  * @returns A React component that displays the schedule page.
  */
 export function SchedulePage(): JSX.Element | null {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const { id } = useParams<{ id: string }>();
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
@@ -108,7 +109,7 @@ export function SchedulePage(): JSX.Element | null {
             setLoading(false);
           } else {
             // Loading ownership transfers to the ID-loading effect on navigation.
-            navigate(`/Calendar/Schedule/${foundSchedule.id}`, { replace: true })?.catch(console.error);
+            navigate(`/Calendar/Schedule/${foundSchedule.id}`, { replace: true });
           }
         } else {
           setSchedule(undefined);
@@ -138,7 +139,7 @@ export function SchedulePage(): JSX.Element | null {
         setSchedule(undefined);
         setLoading(false);
         if (id) {
-          navigate('/Calendar/Schedule')?.catch(console.error);
+          navigate('/Calendar/Schedule');
         }
       }
     },
@@ -158,7 +159,7 @@ export function SchedulePage(): JSX.Element | null {
       })
       .then((created) => {
         // Loading ownership transfers to the ID-loading effect on navigation.
-        navigate(`/Calendar/Schedule/${created.id}`, { replace: true })?.catch(console.error);
+        navigate(`/Calendar/Schedule/${created.id}`, { replace: true });
       })
       .catch((err) => {
         showErrorNotification(err);

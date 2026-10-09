@@ -7,8 +7,9 @@ import { createPharmaciesSection, getDefaultSections, ThreadInbox, useMedplumErr
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
 import { usePharmacyDialog } from '../../components/pharmacy/usePharmacyDialog';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { useNewInUrl } from '../../hooks/useNewInUrl';
 import { normalizeCommunicationSearch } from '../../utils/communication-search';
 import { usePatientActionsMenu } from '../patient/usePatientActionsMenu';
@@ -19,7 +20,7 @@ import classes from './MessagesPage.module.css';
  */
 export function MessagesPage(): JSX.Element {
   const { messageId } = useParams();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const medplum = useMedplum();
   const onError = useMedplumErrorHandler();
@@ -48,13 +49,13 @@ export function MessagesPage(): JSX.Element {
     const isDetailView = Boolean(messageId);
     if (!isDetailView && normalizedSearch !== currentSearch) {
       const prefix = normalizedSearch ? `?${normalizedSearch}` : '';
-      navigate(`${isNewMessage ? `${basePath}/new` : basePath}${prefix}`, { replace: true })?.catch(console.error);
+      navigate(`${isNewMessage ? `${basePath}/new` : basePath}${prefix}`, { replace: true });
     }
   }, [currentSearch, navigate, normalizedSearch, messageId, isNewMessage, basePath]);
 
   const onChange = (search: SearchRequest): void => {
     // Keep the selected thread open when the list search changes (pagination, filters)
-    navigate(`${basePath}${formatSearchQuery(search)}`)?.catch(console.error);
+    navigate(`${basePath}${formatSearchQuery(search)}`);
   };
 
   const getThreadUri = (topic: Communication): string => {
@@ -81,11 +82,11 @@ export function MessagesPage(): JSX.Element {
   );
 
   const onNew = (message: Communication): void => {
-    navigate(getThreadUri(message))?.catch(console.error);
+    navigate(getThreadUri(message));
   };
 
   const onSelectFirst = (thread: Communication): void => {
-    navigate(getThreadUri(thread), { replace: true })?.catch(console.error);
+    navigate(getThreadUri(thread), { replace: true });
   };
 
   const onViewInDocuments = (reference: Reference<DocumentReference>): void => {
@@ -94,7 +95,7 @@ export function MessagesPage(): JSX.Element {
       .then((docRef) => {
         const subject = docRef.subject?.reference;
         const path = subject ? `/${subject}/${getReferenceString(reference)}` : `/${getReferenceString(reference)}`;
-        navigate(path)?.catch(console.error);
+        navigate(path);
       })
       .catch((err: unknown) => onError(err, { source: 'MessagesPage' }));
   };

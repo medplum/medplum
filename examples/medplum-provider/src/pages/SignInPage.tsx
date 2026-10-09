@@ -3,10 +3,11 @@
 import { Title } from '@mantine/core';
 import { Logo, SignInForm } from '@medplum/react';
 import type { JSX } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
+import { useAppNavigate } from '../hooks/useAppNavigate';
 
 export function SignInPage(): JSX.Element {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [searchParams] = useSearchParams();
 
   return (
@@ -14,12 +15,8 @@ export function SignInPage(): JSX.Element {
       // Configure according to your settings
       googleClientId={import.meta.env.GOOGLE_CLIENT_ID}
       clientId={import.meta.env.MEDPLUM_CLIENT_ID}
-      onSuccess={() => navigate('/')?.catch(console.error)}
-      onRegister={
-        import.meta.env.MEDPLUM_REGISTER_ENABLED === 'true'
-          ? () => navigate('/register')?.catch(console.error)
-          : undefined
-      }
+      onSuccess={() => navigate('/')}
+      onRegister={import.meta.env.MEDPLUM_REGISTER_ENABLED === 'true' ? () => navigate('/register') : undefined}
       projectId={searchParams.get('project') || undefined}
       login={searchParams.get('login') || undefined}
     >

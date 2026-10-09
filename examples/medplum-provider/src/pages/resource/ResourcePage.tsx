@@ -6,14 +6,15 @@ import type { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, LinkTabs, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router';
+import { Outlet, useParams } from 'react-router';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import classes from './ResourcePage.module.css';
 import { useResourceType } from './useResourceType';
 
 const baseTabs = ['Details', 'Edit', 'History'];
 
 export function ResourcePage(): JSX.Element | null {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const medplum = useMedplum();
   const onError = useMedplumErrorHandler();
 
@@ -23,7 +24,7 @@ export function ResourcePage(): JSX.Element | null {
   const { resourceType, id } = useParams();
   const [resource, setResource] = useState<Resource | undefined>(undefined);
 
-  useResourceType(resourceType, { onInvalidResourceType: () => navigate('..')?.catch(console.error) });
+  useResourceType(resourceType, { onInvalidResourceType: () => navigate('..') });
 
   useEffect(() => {
     if (resourceType && id) {
