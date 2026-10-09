@@ -5,7 +5,7 @@ import type { Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
 import { ConfigFixtures } from '../stories/scheduling';
-import { act, renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingConfigWorkspace } from './SchedulingConfigWorkspace';
 
 async function setup(resources: readonly Resource[] = ConfigFixtures): Promise<MockClient> {
@@ -345,6 +345,24 @@ describe('SchedulingConfigWorkspace', () => {
         "Nothing offers Unconfigured Visit yet. Visit types are offered from a provider's, room's, or device's page."
       )
     ).toBeInTheDocument();
+  });
+
+  test("a provider's saved time zone is kept on the page, and the row stays selected", async () => {
+    await setup();
+    await userEvent.click(row('Dr. Anika Patel'));
+    const general = within(details()).getByRole('region', { name: 'General' });
+    const timezone = within(general).getByRole('textbox', { name: 'Time zone' });
+
+    fireEvent.focus(timezone);
+    fireEvent.change(timezone, { target: { value: 'America/Chicago' } });
+    fireEvent.click(screen.getByText('America/Chicago'));
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Unsaved changes' })).not.toBeInTheDocument());
+    expect(row('Dr. Anika Patel')).toHaveAttribute('aria-current', 'true');
+    expect(
+      within(within(details()).getByRole('region', { name: 'General' })).getByRole('textbox', { name: 'Time zone' })
+    ).toHaveValue('America/Chicago');
   });
 
   test('an empty project says each section has nothing yet, and still offers to create a visit type', async () => {
