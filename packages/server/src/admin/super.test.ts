@@ -23,6 +23,7 @@ import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
+import { getConnectionShardId } from '../sharding/connection-shard-id';
 import {
   createTestProject,
   getSuperAdminTestProject,
@@ -98,7 +99,7 @@ vi.mock('pg', async () => {
 
     const originalQuery = client.query.bind(client);
     client.query = (...queryArgs: any[]): any => {
-      const handled = mockHandleMaintenanceQuery(queryArgs, client.shardId);
+      const handled = mockHandleMaintenanceQuery(queryArgs, getConnectionShardId(client));
       if (handled) {
         return handled.result;
       }
@@ -110,8 +111,7 @@ vi.mock('pg', async () => {
 
   class MockPool extends original.Pool {
     query(...args: any[]): any {
-      const shardId = 'shardId' in this && typeof this.shardId === 'string' ? this.shardId : undefined;
-      const handled = mockHandleMaintenanceQuery(args, shardId);
+      const handled = mockHandleMaintenanceQuery(args, getConnectionShardId(this));
       if (handled) {
         return handled.result;
       }
@@ -1038,6 +1038,7 @@ describe('Super Admin routes', () => {
       });
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Table settings updated', {
         durationMs: expect.any(Number),
+        shardId: GLOBAL_SHARD_ID,
         query: 'ALTER TABLE "Observation" SET (autovacuum_analyze_scale_factor = 0.005);',
         settings: { autovacuum_analyze_scale_factor: 0.005 },
         tableName: 'Observation',
@@ -1179,6 +1180,7 @@ describe('Super Admin routes', () => {
       });
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Table settings updated', {
         durationMs: expect.any(Number),
+        shardId: GLOBAL_SHARD_ID,
         query:
           'ALTER TABLE "Observation" SET (autovacuum_analyze_scale_factor = 0.005, autovacuum_vacuum_scale_factor = 0.01);',
         settings: { autovacuum_analyze_scale_factor: 0.005, autovacuum_vacuum_scale_factor: 0.01 },
@@ -1233,6 +1235,7 @@ describe('Super Admin routes', () => {
       expect(mockPgMaintenanceQueries).toContainEqual({ shardId: GLOBAL_SHARD_ID, sql: expectedQuery });
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
         durationMs: expect.any(Number),
+        shardId: GLOBAL_SHARD_ID,
         vacuum: true,
         analyze: undefined,
         query: expectedQuery,
@@ -1277,6 +1280,7 @@ describe('Super Admin routes', () => {
       });
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
         durationMs: expect.any(Number),
+        shardId: GLOBAL_SHARD_ID,
         vacuum: true,
         analyze: undefined,
         query: 'VACUUM "Observation", "Observation_History";',
@@ -1305,6 +1309,7 @@ describe('Super Admin routes', () => {
       });
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
         durationMs: expect.any(Number),
+        shardId: GLOBAL_SHARD_ID,
         vacuum: true,
         analyze: true,
         query: 'VACUUM ANALYZE "Observation", "Observation_History";',
@@ -1333,6 +1338,7 @@ describe('Super Admin routes', () => {
       });
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
         durationMs: expect.any(Number),
+        shardId: GLOBAL_SHARD_ID,
         vacuum: false,
         analyze: true,
         query: 'ANALYZE "Observation", "Observation_History";',
