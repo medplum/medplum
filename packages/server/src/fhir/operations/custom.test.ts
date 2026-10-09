@@ -203,6 +203,106 @@ describe('Custom operation', () => {
     });
   });
 
+  describe('streaming', () => {
+    const streamingCode = `
+      exports.handler = async function (medplum, event) {
+        const { responseStream } = event;
+        if (!responseStream) {
+          return { message: 'buffered' };
+        }
+        responseStream.startStreaming(200, { 'Content-Type': 'text/event-stream' });
+        responseStream.write('data: Hello\\n\\n');
+        responseStream.end();
+        return { message: 'streamed' };
+      };
+      `;
+
+    async function setupStreamingOperation(code: string, streamingEnabled: boolean): Promise<void> {
+      const res1 = await request(app)
+        .post('/fhir/R4/Bot')
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Bot',
+          name: `Streaming Operation Bot ${code}`,
+          runtimeVersion: 'vmcontext',
+          streamingEnabled,
+        });
+      expect(res1).toHaveStatus(201);
+      const bot = res1.body as WithId<Bot>;
+
+      const res2 = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ code: streamingCode });
+      expect(res2).toHaveStatus(200);
+
+      const res3 = await request(app)
+        .post('/fhir/R4/OperationDefinition')
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'OperationDefinition',
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+              valueReference: createReference(bot),
+            },
+          ],
+          name: code,
+          status: 'active',
+          kind: 'operation',
+          code,
+          system: true,
+          type: false,
+          instance: false,
+          parameter: [{ use: 'out', name: 'message', type: 'string', min: 1, max: '1' }],
+        });
+      expect(res3).toHaveStatus(201);
+    }
+
+    test('Streams when the bot and the caller both ask for it', async () => {
+      await setupStreamingOperation('streaming-operation', true);
+
+      const res = await request(app)
+        .post('/fhir/R4/$streaming-operation')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Accept', ContentType.EVENT_STREAM)
+        .send({});
+      expect(res).toHaveStatus(200);
+      expect(res.headers['content-type']).toContain(ContentType.EVENT_STREAM);
+      expect(res.text).toContain('data: Hello');
+    });
+
+    test('Buffers when the caller does not ask for a stream', async () => {
+      await setupStreamingOperation('buffered-operation', true);
+
+      const res = await request(app)
+        .post('/fhir/R4/$buffered-operation')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({});
+      expect(res).toHaveStatus(200);
+      expect(res.headers['content-type']).not.toContain(ContentType.EVENT_STREAM);
+      expect(res.body.parameter[0]).toMatchObject({ name: 'message', valueString: 'buffered' });
+    });
+
+    test('Buffers when the bot is not marked streaming', async () => {
+      await setupStreamingOperation('non-streaming-operation', false);
+
+      const res = await request(app)
+        .post('/fhir/R4/$non-streaming-operation')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Accept', ContentType.EVENT_STREAM)
+        .send({});
+      expect(res).toHaveStatus(200);
+      expect(res.headers['content-type']).not.toContain(ContentType.EVENT_STREAM);
+    });
+  });
+
   test('System-level custom operation', async () => {
     const resMissing = await request(app)
       .post('/fhir/R4/$my-system-operation')

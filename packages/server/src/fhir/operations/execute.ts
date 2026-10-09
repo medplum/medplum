@@ -15,6 +15,8 @@ import type { Request, Response } from 'express';
 import { executeBot } from '../../bots/execute';
 import type { BotExecutionResult } from '../../bots/types';
 import {
+  acceptsEventStream,
+  createBotResponseStream,
   getBotDefaultHeaders,
   getBotProjectMembership,
   getOutParametersFromResult,
@@ -71,23 +73,8 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
   const bot = await ctx.systemRepo.readResource<Bot>('Bot', userBot.id);
 
   // Check if client accepts streaming and bot supports it
-  const acceptsStreaming = bot.streamingEnabled && req.header('Accept')?.includes('text/event-stream');
-  let responseStream: BotResponseStream | undefined = undefined;
-  if (acceptsStreaming) {
-    // Create a BotResponseStream that wraps the Express response.
-    // Bot must call startStreaming() before write() to commit headers.
-    responseStream = Object.assign(res, {
-      startStreaming: (statusCode: number, headers: Record<string, string>): void => {
-        if (!res.headersSent) {
-          res.status(statusCode);
-          for (const [key, value] of Object.entries(headers)) {
-            res.setHeader(key, value);
-          }
-          res.flushHeaders();
-        }
-      },
-    }) as BotResponseStream;
-  }
+  const acceptsStreaming = bot.streamingEnabled && acceptsEventStream(req.headers);
+  const responseStream: BotResponseStream | undefined = acceptsStreaming ? createBotResponseStream(res) : undefined;
 
   // Execute the bot
   // If the request is HTTP POST, then the body is the input
@@ -126,13 +113,25 @@ async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> 
   // Otherwise, search by identifier
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    const bot = await ctx.repo.searchOne<Bot>({
+    // Two results are enough to know the identifier is ambiguous. The search is
+    // caller-scoped, so it spans linked projects that export `Bot`, and an
+    // identifier can therefore match in more than one of them. Resolving to an
+    // arbitrary one of those would silently execute code from whichever project
+    // the database happened to return first, so refuse instead.
+    const [bot, duplicate] = await ctx.repo.searchResources<Bot>({
       resourceType: 'Bot',
       filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
+      count: 2,
     });
 
     if (!bot) {
       throw new OperationOutcomeError(notFound);
+    }
+
+    if (duplicate) {
+      throw new OperationOutcomeError(
+        badRequest(`Bot identifier "${identifier}" matched multiple bots; qualify it with a system to disambiguate.`)
+      );
     }
 
     return bot;
