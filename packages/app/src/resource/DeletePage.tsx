@@ -6,12 +6,13 @@ import { normalizeErrorString } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import { useAppNavigate } from '../useAppNavigate';
 
 export function DeletePage(): JSX.Element {
   const medplum = useMedplum();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
 
   return (
     <Document>
@@ -21,7 +22,7 @@ export function DeletePage(): JSX.Element {
         onClick={() => {
           medplum
             .deleteResource(resourceType, id)
-            .then(() => navigate(`/${resourceType}`)?.catch(console.error))
+            .then(() => navigate(`/${resourceType}`))
             .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
         }}
       >

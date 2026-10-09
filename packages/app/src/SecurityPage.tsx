@@ -8,7 +8,7 @@ import type { Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { DescriptionList, DescriptionListEntry, Document, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useAppNavigate } from './useAppNavigate';
 
 interface UserSession {
   readonly id: string;
@@ -30,7 +30,7 @@ interface SecurityDetails {
 }
 
 export function SecurityPage(): JSX.Element | null {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const medplum = useMedplum();
   const [details, setDetails] = useState<SecurityDetails | undefined>();
 
@@ -101,14 +101,12 @@ export function SecurityPage(): JSX.Element | null {
       </Document>
       <Document>
         <Title>Password</Title>
-        <Button onClick={() => navigate('/changepassword')?.catch(console.error)}>Change password</Button>
+        <Button onClick={() => navigate('/changepassword')}>Change password</Button>
       </Document>
       <Document>
         <Title>Multi Factor Auth</Title>
         <p>Enrolled: {details.security.mfaEnrolled.toString()}</p>
-        <Button onClick={() => navigate('/mfa')?.catch(console.error)}>
-          {details.security.mfaEnrolled ? 'Manage MFA' : 'Enroll'}
-        </Button>
+        <Button onClick={() => navigate('/mfa')}>{details.security.mfaEnrolled ? 'Manage MFA' : 'Enroll'}</Button>
       </Document>
     </>
   );

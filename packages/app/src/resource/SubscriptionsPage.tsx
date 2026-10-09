@@ -6,11 +6,12 @@ import type { ResourceType } from '@medplum/fhirtypes';
 import { Document, SearchControl } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import { useAppNavigate } from '../useAppNavigate';
 
 export function SubscriptionsPage(): JSX.Element | null {
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Subscription',
     filters: [{ code: 'url', operator: Operator.EQUALS, value: `${resourceType}/${id}` }],
@@ -21,7 +22,7 @@ export function SubscriptionsPage(): JSX.Element | null {
     <Document>
       <SearchControl
         search={search}
-        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onChange={(e) => setSearch(e.definition)}
         hideFilters
       />

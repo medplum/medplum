@@ -9,7 +9,7 @@ import { SearchControl, useMedplum } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useAppNavigate } from '../useAppNavigate';
 import { getProjectId } from '../utils';
 import type { MfaMethod } from './mfa';
 import { getAllowedMfaMethods, getEnrolledMfaMethods } from './mfa';
@@ -53,7 +53,7 @@ function getMemberUserId(membership: Resource): string | undefined {
 export function MemberTable(props: MemberTableProps): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [profileType, setProfileType] = useState(props.profileTypeOptions[0].value);
 
   const { showMfaEnrollment } = props;

@@ -6,7 +6,8 @@ import type { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtype
 import { Document, ResourceForm, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import { useAppNavigate } from '../useAppNavigate';
 import { cleanResource } from './utils';
 
 export function EditPage(): JSX.Element | null {
@@ -14,7 +15,7 @@ export function EditPage(): JSX.Element | null {
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const [original, setOriginal] = useState<Resource | undefined>();
   const [value, setValue] = useState<Resource | undefined>();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export function EditPage(): JSX.Element | null {
       medplum
         .updateResource(cleanResource(newResource))
         .then(() => {
-          navigate(`/${resourceType}/${id}/details`)?.catch(console.error);
+          navigate(`/${resourceType}/${id}/details`);
           showNotification({ id: 'succes', color: 'green', message: 'Success' });
         })
         .catch((err) => {
@@ -54,7 +55,7 @@ export function EditPage(): JSX.Element | null {
       medplum
         .patchResource(resourceType, id, patchOperations)
         .then(() => {
-          navigate(`/${resourceType}/${id}/details`)?.catch(console.error);
+          navigate(`/${resourceType}/${id}/details`);
           showNotification({ id: 'succes', color: 'green', message: 'Success' });
         })
         .catch((err) => {
@@ -65,10 +66,7 @@ export function EditPage(): JSX.Element | null {
     [medplum, resourceType, id, original, navigate]
   );
 
-  const handleDelete = useCallback(
-    () => navigate(`/${resourceType}/${id}/delete`)?.catch(console.error),
-    [navigate, resourceType, id]
-  );
+  const handleDelete = useCallback(() => navigate(`/${resourceType}/${id}/delete`), [navigate, resourceType, id]);
 
   if (!value) {
     return null;

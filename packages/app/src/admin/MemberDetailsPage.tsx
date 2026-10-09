@@ -7,7 +7,8 @@ import type { User } from '@medplum/fhirtypes';
 import { Loading, MedplumLink, ResourceTable, useMedplum, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
+import { useAppNavigate } from '../useAppNavigate';
 import { getProjectId } from '../utils';
 import { AccountSecurityCard } from './AccountSecurity';
 
@@ -23,7 +24,7 @@ function getMemberListPath(pathname: string): string {
 
 export function MemberDetailsPage(): JSX.Element {
   const medplum = useMedplum();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const { membershipId } = useParams() as { membershipId: string };
   const projectId = getProjectId(medplum);
@@ -47,7 +48,7 @@ export function MemberDetailsPage(): JSX.Element {
       .delete(`admin/projects/${projectId}/members/${membershipId}`)
       .then(() => {
         medplum.invalidateSearches('ProjectMembership');
-        navigate(listPath)?.catch(console.error);
+        navigate(listPath);
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum, projectId, membershipId, navigate, listPath]);

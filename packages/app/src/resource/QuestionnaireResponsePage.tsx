@@ -6,11 +6,12 @@ import type { Questionnaire } from '@medplum/fhirtypes';
 import { Document, SearchControl, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import { useAppNavigate } from '../useAppNavigate';
 
 export function QuestionnaireResponsePage(): JSX.Element {
   const { id } = useParams() as { id: string };
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const medplum = useMedplum();
 
   const questionnaire = medplum.readReference<Questionnaire>({ reference: `Questionnaire/${id}` }).read();
@@ -30,7 +31,7 @@ export function QuestionnaireResponsePage(): JSX.Element {
     <Document>
       <SearchControl
         search={search}
-        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onChange={(e) => setSearch(e.definition)}
         hideFilters
         hideToolbar

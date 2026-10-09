@@ -6,16 +6,17 @@ import { Document, PatientAccountsForm, useResource } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import { useAppNavigate } from '../useAppNavigate';
 
 export function AccountsPage(): JSX.Element | null {
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const resource = useResource({ reference: resourceType + '/' + id });
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
 
   const handleSaved = useCallback(() => {
     // Navigate to the same page to force a full re-fetch of the Patient resource
-    navigate(0)?.catch(console.error);
+    navigate(0);
   }, [navigate]);
 
   if (!resource) {

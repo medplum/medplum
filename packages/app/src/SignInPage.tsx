@@ -4,12 +4,13 @@ import { Title } from '@mantine/core';
 import { getAppName, Logo, SignInForm, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { getConfig, isRegisterEnabled } from './config';
+import { useAppNavigate } from './useAppNavigate';
 
 export function SignInPage(): JSX.Element {
   const profile = useMedplumProfile();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [searchParams] = useSearchParams();
   const config = getConfig();
 
@@ -17,7 +18,7 @@ export function SignInPage(): JSX.Element {
     // only redirect to next if it is a pathname to avoid redirecting
     // to a maliciously crafted URL, e.g. /signin?next=https%3A%2F%2Fevil.com
     const nextUrl = searchParams.get('next');
-    navigate(nextUrl?.startsWith('/') ? nextUrl : '/')?.catch(console.error);
+    navigate(nextUrl?.startsWith('/') ? nextUrl : '/');
   }, [searchParams, navigate]);
 
   useEffect(() => {
@@ -29,8 +30,8 @@ export function SignInPage(): JSX.Element {
   return (
     <SignInForm
       onSuccess={() => navigateToNext()}
-      onForgotPassword={() => navigate('/resetpassword')?.catch(console.error)}
-      onRegister={isRegisterEnabled() ? () => navigate('/register')?.catch(console.error) : undefined}
+      onForgotPassword={() => navigate('/resetpassword')}
+      onRegister={isRegisterEnabled() ? () => navigate('/register') : undefined}
       googleClientId={config.googleClientId}
       login={searchParams.get('login') || undefined}
       projectId={searchParams.get('project') || undefined}

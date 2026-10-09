@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SetPasswordForm } from '@medplum/react';
 import type { JSX } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import { useAppNavigate } from './useAppNavigate';
 
 export function SetPasswordPage(): JSX.Element {
   const { id, secret } = useParams() as { id: string; secret: string };
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
 
-  return <SetPasswordForm id={id} secret={secret} onSignIn={() => navigate('/signin')?.catch(console.error)} />;
+  return <SetPasswordForm id={id} secret={secret} onSignIn={() => navigate('/signin')} />;
 }

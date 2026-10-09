@@ -8,11 +8,12 @@ import type { ClientApplicationSignInForm } from '@medplum/fhirtypes';
 import { Loading, Logo, SignInForm, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { getConfig } from './config';
+import { useAppNavigate } from './useAppNavigate';
 
 export function OAuthPage(): JSX.Element | null {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [params] = useSearchParams();
   const medplum = useMedplum();
   const onError = useMedplumErrorHandler();
@@ -69,8 +70,8 @@ export function OAuthPage(): JSX.Element | null {
   return (
     <SignInForm
       onCode={onCode}
-      onForgotPassword={() => navigate('/resetpassword')?.catch(console.error)}
-      onRegister={() => navigate('/register')?.catch(console.error)}
+      onForgotPassword={() => navigate('/resetpassword')}
+      onRegister={() => navigate('/register')}
       googleClientId={getConfig().googleClientId}
       clientId={clientId || undefined}
       redirectUri={params.get('redirect_uri') || undefined}

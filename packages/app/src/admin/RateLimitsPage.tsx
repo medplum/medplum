@@ -8,7 +8,7 @@ import { ResourceName, useMedplum } from '@medplum/react';
 import { IconArrowDown, IconArrowUp, IconRefresh } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useAppNavigate } from '../useAppNavigate';
 import { getProjectId } from '../utils';
 
 interface QuotaInfo {
@@ -267,7 +267,7 @@ function MembershipTable({ memberships, sortDirection, onToggleSort }: Membershi
 }
 
 function MembershipRow({ membership }: { readonly membership: MembershipQuota }): JSX.Element {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const utilization = getUtilization(membership);
   return (
     <Table.Tr onClick={() => navigate(`/admin/users/${membership.membershipId}`)} style={{ cursor: 'pointer' }}>

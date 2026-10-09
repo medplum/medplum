@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ResetPasswordForm } from '@medplum/react';
 import type { JSX } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { getConfig, isRegisterEnabled } from './config';
+import { useAppNavigate } from './useAppNavigate';
 
 export function ResetPasswordPage(): JSX.Element {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [searchParams] = useSearchParams();
   const config = getConfig();
   const projectId = searchParams.get('project') || undefined;
@@ -15,8 +16,8 @@ export function ResetPasswordPage(): JSX.Element {
     <ResetPasswordForm
       projectId={projectId}
       recaptchaSiteKey={config.recaptchaSiteKey}
-      onSignIn={() => navigate('/signin')?.catch(console.error)}
-      onRegister={isRegisterEnabled() ? () => navigate('/register')?.catch(console.error) : undefined}
+      onSignIn={() => navigate('/signin')}
+      onRegister={isRegisterEnabled() ? () => navigate('/register') : undefined}
     />
   );
 }

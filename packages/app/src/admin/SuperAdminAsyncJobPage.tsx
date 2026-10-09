@@ -17,7 +17,7 @@ import {
 import { IconMinus, IconPlus, IconRefresh } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useAppNavigate } from '../useAppNavigate';
 import { startAsyncJobAsync } from './SuperAdminStartAsyncJob';
 
 const tabs = [
@@ -60,7 +60,7 @@ const SYSTEM_ASYNCJOB_SEARCH: SearchRequest = {
 };
 
 function AsyncJobs(): JSX.Element {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [search] = useState(SYSTEM_ASYNCJOB_SEARCH);
 
   return (
@@ -69,7 +69,7 @@ function AsyncJobs(): JSX.Element {
       <SearchControl
         checkboxesEnabled={false}
         search={search}
-        onClick={(e) => navigate(getResourceUrl(e.resource))?.catch(console.error)}
+        onClick={(e) => navigate(getResourceUrl(e.resource))}
         onAuxClick={(e) => window.open(getResourceUrl(e.resource), '_blank')}
       />
     </Stack>
