@@ -13,6 +13,7 @@ import { hl7 } from './hl7';
 import { profile } from './profiles';
 import { project } from './project';
 import { deleteObject, get, patch, post, put } from './rest';
+import { generateTypes } from './types';
 import { addSubcommand, MedplumCommand } from './utils';
 
 export async function main(argv: string[]): Promise<void> {
@@ -92,6 +93,9 @@ export async function main(argv: string[]): Promise<void> {
 
   // DICOMweb commands
   addSubcommand(index, dicomweb);
+
+  // Code generation commands
+  addSubcommand(index, generateTypes);
 
   try {
     await index.parseAsync(argv);

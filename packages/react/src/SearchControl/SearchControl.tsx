@@ -29,7 +29,6 @@ import {
   IconArrowUp,
   IconColumns,
   IconDots,
-  IconFilter,
   IconLibraryPlus,
   IconPlus,
   IconReload,
@@ -43,7 +42,7 @@ import { Modal } from '../Modal/Modal';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
 import { SearchFieldEditor } from '../SearchFieldEditor/SearchFieldEditor';
-import { SearchFilterEditor } from '../SearchFilterEditor/SearchFilterEditor';
+import { SearchFilterPopover } from '../SearchFilterEditor/SearchFilterPopover';
 import { SearchFilterValueDialog } from '../SearchFilterValueDialog/SearchFilterValueDialog';
 import { SearchFilterValueDisplay } from '../SearchFilterValueDisplay/SearchFilterValueDisplay';
 import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
@@ -126,7 +125,6 @@ interface SearchControlState {
   readonly deleting?: boolean;
   readonly dialogOpenTime?: number;
   readonly fieldEditorVisible: boolean;
-  readonly filterEditorVisible: boolean;
   readonly filterDialogVisible: boolean;
   readonly filterDialogFilter?: Filter;
   readonly filterDialogSearchParam?: SearchParameter;
@@ -155,7 +153,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     selected: {},
     exportDialogVisible: false,
     fieldEditorVisible: false,
-    filterEditorVisible: false,
     filterDialogVisible: false,
   });
   const [activeRowId, setActiveRowId] = useState<string>();
@@ -348,16 +345,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             >
               Fields
             </Button>
-            <Button
-              className={classes.toolbarButton}
-              size="compact-md"
-              variant="subtle"
-              color="gray"
-              leftSection={<IconFilter size={16} />}
-              onClick={() => setState((s) => ({ ...s, filterEditorVisible: true, dialogOpenTime: Date.now() }))}
-            >
-              Filters
-            </Button>
+            <SearchFilterPopover search={memoizedSearch} onChange={emitSearchChange} />
             <SearchSortEditor search={memoizedSearch} onChange={emitSearchChange} />
             {lastResult && (
               <Text size="xs" fw={500} c="dimmed" ml={4} data-testid="count-display">
@@ -612,16 +600,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           setState((s) => ({ ...s, fieldEditorVisible: false }));
         }}
         onCancel={() => setState((s) => ({ ...s, fieldEditorVisible: false }))}
-      />
-      <SearchFilterEditor
-        key={`search-filter-editor-${state.dialogOpenTime}`}
-        search={memoizedSearch}
-        visible={state.filterEditorVisible}
-        onOk={(result) => {
-          emitSearchChange(result);
-          setState((s) => ({ ...s, filterEditorVisible: false }));
-        }}
-        onCancel={() => setState((s) => ({ ...s, filterEditorVisible: false }))}
       />
       <SearchExportDialog
         key={`search-export-dialog-${state.dialogOpenTime}`}

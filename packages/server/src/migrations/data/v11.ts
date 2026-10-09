@@ -1,7 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
-import type { AsyncJob } from '@medplum/fhirtypes';
 import type { ReindexPostDeployMigration } from '../../workers/reindex';
 import { prepareReindexJobData, ReindexJob } from '../../workers/reindex';
 
@@ -9,8 +7,8 @@ import { prepareReindexJobData, ReindexJob } from '../../workers/reindex';
 const maxResourceVersion = 7 - 1;
 export const migration: ReindexPostDeployMigration = {
   type: 'reindex',
-  prepareJobData(asyncJob: WithId<AsyncJob>) {
-    return prepareReindexJobData(['AllergyIntolerance', 'Immunization', 'ProjectMembership'], asyncJob, {
+  prepareJobData(ctx) {
+    return prepareReindexJobData(ctx, ['AllergyIntolerance', 'Immunization', 'ProjectMembership'], {
       maxResourceVersion,
     });
   },

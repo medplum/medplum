@@ -14,7 +14,7 @@ import {
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { body, checkExact, validationResult } from 'express-validator';
+import { body, checkExact } from 'express-validator';
 import { assert } from 'node:console';
 import { setPassword } from '../auth/setpassword';
 import { LAMBDA_NAME_REGEX_PATTERN } from '../cloud/aws/deploy';
@@ -23,10 +23,10 @@ import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { requireSuperAdmin } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { sendOutcome } from '../fhir/outcomes';
 import { getShardSystemRepo, Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import { PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
 import { isValidPostgresIdentifier } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted, setPreDeployVersion } from '../migration-sql';
@@ -38,6 +38,7 @@ import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
+import { sendValidationErrors } from '../util/validator';
 import { getAsyncJobTracking } from '../workers/base';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import type { LambdaCleanerOptions } from '../workers/lambda-cleaner';
@@ -141,10 +142,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -221,7 +219,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(systemRepo);
     await exec.init(asyncJobUrl.toString());
     await exec.run(async (asyncJob) => {
-      await addReindexJob(resourceTypes as ResourceType[], asyncJob, opts);
+      await addReindexJob(TODO_SHARD_ID, resourceTypes as ResourceType[], asyncJob, opts);
     });
 
     const { baseUrl } = getConfig();
@@ -244,10 +242,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -298,10 +293,7 @@ superAdminRouter.post(
   ],
   async (req: Request, res: Response) => {
     const { repo } = requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -326,10 +318,7 @@ superAdminRouter.post(
   ],
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -345,10 +334,7 @@ superAdminRouter.post(
   [body('botId').notEmpty().withMessage('Bot ID is required')],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -395,10 +381,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -434,7 +417,7 @@ superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Re
   const exec = new AsyncJobExecutor(ctx.repo);
   await exec.init(req.originalUrl);
   await exec.run(async (asyncJob) => {
-    const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+    const jobData = prepareDynamicMigrationJobData({ shardId: TODO_SHARD_ID, asyncJob }, migrationActions);
     await addPostDeployMigrationJobData(jobData);
   });
 
@@ -473,10 +456,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -502,7 +482,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(ctx.systemRepo);
     await exec.init(`${req.originalUrl}?${requestParams}`);
     await exec.run(async (asyncJob) => {
-      const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+      const jobData = prepareDynamicMigrationJobData({ shardId: TODO_SHARD_ID, asyncJob }, migrationActions);
       await addPostDeployMigrationJobData(jobData);
     });
 
@@ -542,10 +522,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -567,7 +544,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(ctx.systemRepo);
     await exec.init(`${req.originalUrl}?${requestParams}`);
     await exec.run(async (asyncJob) => {
-      const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+      const jobData = prepareDynamicMigrationJobData({ shardId: TODO_SHARD_ID, asyncJob }, migrationActions);
       await addPostDeployMigrationJobData(jobData);
     });
 
@@ -587,10 +564,7 @@ superAdminRouter.post(
   [body('dataVersion').isInt().withMessage('dataVersion must be an integer')],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -621,10 +595,7 @@ superAdminRouter.post(
   ],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -678,10 +649,7 @@ superAdminRouter.post(
   ],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -721,10 +689,7 @@ superAdminRouter.post(
   async (req: Request, res: Response) => {
     requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 

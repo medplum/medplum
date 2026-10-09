@@ -405,6 +405,10 @@ class ResourceValidator implements CrawlerVisitor {
       return;
     }
 
+    if (reference.reference === 'system' && field.path === 'AuditEvent.agent.who') {
+      return;
+    }
+
     const targetProfiles = field.type.find((t) => t.code === 'Reference')?.targetProfile;
     if (!targetProfiles) {
       // No required target profiles

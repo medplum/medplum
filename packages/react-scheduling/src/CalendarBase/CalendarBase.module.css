@@ -29,6 +29,16 @@
   cursor: pointer;
 }
 
+/* Events sit inside the day lane, which gets the "pointer" cursor when the
+ * calendar is "selectable" (meaning a time range can be selected). But clicking
+ * on our non-interactive event does not start a range selection, so the cursor
+ * is misleading. Unset the pointer for that case here.
+ * See also: https://github.com/fullcalendar/fullcalendar/issues/8071#issuecomment-6085650613
+ */
+.event:not(.clickable) {
+  cursor: default;
+}
+
 .selectedRange {
   background-color: light-dark(#228be62e, #4dabf73d);
 }

@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Box, Center, Loader, Stack } from '@mantine/core';
+import { Alert, Box, Center, Divider, Loader, Stack } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { HealthcareService, Resource } from '@medplum/fhirtypes';
 import { IconCalculatorFilled, IconCalendarEvent, IconMapPinFilled } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { isBookableActorType } from '../actors';
 import { ActorPage } from './ActorPage/ActorPage';
@@ -17,7 +17,7 @@ import { ConfigPanel } from './ConfigPanel/ConfigPanel';
 import { ConfirmModal } from './ConfirmModal';
 import classes from './SchedulingConfigWorkspace.module.css';
 import type { ConfigSelection } from './SchedulingConfigWorkspace.utils';
-import { buildActorItems, buildServiceItems, isSameSelection } from './SchedulingConfigWorkspace.utils';
+import { buildActorItems, buildServiceItems, getOfferings, isSameSelection } from './SchedulingConfigWorkspace.utils';
 import { useConfigurableResources } from './useConfigurableResources';
 import { VisitTypePage } from './VisitTypePage/VisitTypePage';
 
@@ -60,6 +60,16 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
   const [pending, setPending] = useState<ConfigSelection>();
   const [nextNewKey, setNextNewKey] = useState(1);
 
+  const detailRef = useRef<HTMLElement>(null);
+
+  // A different page opens at its top. The same page remounting, as after a save, keeps its place.
+  function open(next: ConfigSelection | undefined): void {
+    setSelection(next);
+    if (detailRef.current) {
+      detailRef.current.scrollTop = 0;
+    }
+  }
+
   function select(next: ConfigSelection): void {
     if (isSameSelection(next, selection)) {
       return;
@@ -68,7 +78,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       setPending(next);
       return;
     }
-    setSelection(next);
+    open(next);
   }
 
   function startNew(): void {
@@ -78,7 +88,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
 
   function confirmDiscard(): void {
     setDirty(false);
-    setSelection(pending);
+    open(pending);
     setPending(undefined);
   }
 
@@ -127,6 +137,14 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         service={service}
         onSynced={handleSynced}
         onDirtyChange={setDirty}
+        offeringGroups={ACTOR_SECTIONS.map(({ title, resourceType }) => ({
+          title,
+          offerings: getOfferings(actors[resourceType].items, service),
+        }))}
+        offeringsLoading={ACTOR_SECTIONS.some(({ resourceType }) => actors[resourceType].loading)}
+        onOpenOffering={({ actor: { resource } }) =>
+          select({ kind: 'actor', resourceType: resource.resourceType, id: resource.id, openServiceId: service.id })
+        }
       />
     ) : (
       <ConfigEmptyState notFound />
@@ -205,7 +223,9 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         />
       </Box>
 
-      <Box component="section" className={classes.detail} aria-label="Configuration details">
+      <Divider orientation="vertical" />
+
+      <Box component="section" ref={detailRef} className={classes.detail} aria-label="Configuration details">
         <Stack gap="md">
           {loadErrors.map(
             ([title, error]) =>

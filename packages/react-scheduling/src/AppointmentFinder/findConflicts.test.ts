@@ -55,6 +55,23 @@ describe('findBookingConflicts', () => {
     await expect(conflicts()).resolves.toEqual([]);
   });
 
+  test("excludes the moving appointment's busy and buffer slots but still warns about other visits", async () => {
+    found = [
+      { ...slot('2026-08-17T14:00:00Z', '2026-08-17T14:30:00Z', 'busy'), id: 'own' },
+      { ...slot('2026-08-17T14:20:00Z', '2026-08-17T14:40:00Z', 'busy-unavailable'), id: 'own-buffer' },
+    ];
+    const options = {
+      medplum,
+      service: UltrasoundImagingService,
+      candidates: [candidate(DrRiveraSchedule)],
+      range: { start: START, end: END },
+      ignoredSlotReferences: ['Slot/own', 'Slot/own-buffer'],
+    };
+    expect(await findBookingConflicts(options)).toEqual([]);
+    found.push({ ...slot('2026-08-17T14:00:00Z', '2026-08-17T14:30:00Z', 'busy-tentative'), id: 'other' });
+    expect(await findBookingConflicts(options)).toEqual([expect.objectContaining({ kind: 'appointment' })]);
+  });
+
   test('names whose schedule an existing appointment is on', async () => {
     found = [slot('2026-08-17T14:15:00.000Z', '2026-08-17T14:45:00.000Z', 'busy')];
     await expect(conflicts()).resolves.toEqual(["Overlaps an existing appointment on Dr. Maya Rivera's schedule"]);

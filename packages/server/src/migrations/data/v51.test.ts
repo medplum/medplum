@@ -52,7 +52,8 @@ describe('Post-deploy migration v51', () => {
       const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
       const readResourceSpy = vi.spyOn(Repository.prototype, 'readResource');
 
-      const result = await migration.run(systemRepo, undefined, migration.prepareJobData(asyncJob));
+      const jobData = migration.prepareJobData({ shardId: GLOBAL_SHARD_ID, asyncJob });
+      const result = await migration.run(systemRepo, undefined, jobData);
 
       expect(result).toBe('finished');
       expect(obliterateSpy).toHaveBeenCalledWith({ force: true });

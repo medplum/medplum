@@ -14,7 +14,7 @@ import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { SystemRepository } from './fhir/repo';
 import { getShardSystemRepo } from './fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
+import { PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from './fhir/sharding';
 import type { PgQueryable } from './fhir/sql';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
@@ -75,7 +75,7 @@ vi.mock('./migrations/data/v1', async () => {
   );
   migrationMocks.customMigration = {
     type: 'custom',
-    prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
+    prepareJobData: prepareCustomMigrationJobData,
     run: function (repo, job, jobData) {
       return runCustomMigration(repo, job, jobData, async (_client, results) => {
         results.push({ name: 'nothing', durationMs: 5 });
@@ -141,6 +141,8 @@ async function expungePostDeployMigrationAsyncJob(systemRepo: SystemRepository):
   );
 }
 
+const shardId = TODO_SHARD_ID;
+
 describe('Database migrations', () => {
   let systemRepo: SystemRepository;
 
@@ -148,7 +150,7 @@ describe('Database migrations', () => {
     const { prepareCustomMigrationJobData, runCustomMigration } = await import('./workers/post-deploy-migration');
     migrationMocks.customMigration = {
       type: 'custom',
-      prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
+      prepareJobData: prepareCustomMigrationJobData,
       run: function (repo, job, jobData) {
         return runCustomMigration(repo, job, jobData, async (_client, results) => {
           results.push({ name: 'nothing', durationMs: 5 });
@@ -257,7 +259,7 @@ describe('Database migrations', () => {
 
           expect(jobData).toEqual(
             expect.objectContaining<CustomPostDeployMigrationJobData>({
-              ...prepareCustomMigrationJobData(asyncJob),
+              ...prepareCustomMigrationJobData({ shardId, asyncJob }),
               // requestId and traceId will likely be different since in the mocked v1 migration,
               // the call to prepareJobData is not within `withTestContext`
               requestId: expect.any(String),
@@ -332,7 +334,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        const expectedJobData = prepareCustomMigrationJobData(asyncJob);
+        const expectedJobData = prepareCustomMigrationJobData({ shardId, asyncJob });
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         expect(queueAddSpy.mock.lastCall?.[1]).toEqual(expectedJobData);
         expect(queueAddSpy.mock.lastCall?.[2]).toEqual({ deduplication: { id: 'v1' } });
@@ -364,7 +366,7 @@ describe('Database migrations', () => {
           status: 'accepted',
         });
 
-        const expectedJobData = prepareCustomMigrationJobData(asyncJob);
+        const expectedJobData = prepareCustomMigrationJobData({ shardId, asyncJob });
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         expect(queueAddSpy.mock.lastCall?.[1]).toEqual(expectedJobData);
       }));
@@ -403,7 +405,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        const expectedJobData = prepareCustomMigrationJobData(asyncJob);
+        const expectedJobData = prepareCustomMigrationJobData({ shardId, asyncJob });
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         expect(queueAddSpy.mock.lastCall?.[1]).toEqual(expectedJobData);
 
@@ -506,7 +508,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob);
+        const jobData = prepareReindexJobData({ shardId, asyncJob }, ['ImmunizationEvaluation']);
         const result = await (await ReindexJob.create(jobData)).execute(undefined);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
@@ -538,7 +540,7 @@ describe('Database migrations', () => {
 
         expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(0);
 
-        const jobData = prepareReindexJobData(['MedicinalProductContraindication'], asyncJob);
+        const jobData = prepareReindexJobData({ shardId, asyncJob }, ['MedicinalProductContraindication']);
         await (await ReindexJob.create(jobData)).execute(undefined);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
@@ -582,7 +584,7 @@ describe('Database migrations', () => {
 
       let jobData: ReindexJobData = {} as unknown as ReindexJobData;
       await withTestContext(async () => {
-        jobData = prepareReindexJobData(['ValueSet'], asyncJob);
+        jobData = prepareReindexJobData({ shardId, asyncJob }, ['ValueSet']);
       });
 
       const reindexJob = await ReindexJob.create(jobData);

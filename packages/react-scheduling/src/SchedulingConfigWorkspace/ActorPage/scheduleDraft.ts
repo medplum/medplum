@@ -197,6 +197,16 @@ export function withoutService(schedule: Schedule, service: WithId<HealthcareSer
 }
 
 /**
+ * Whether a stored Schedule sets anything of its own for a visit type it offers.
+ * @param service - The visit type.
+ * @param schedule - The Schedule.
+ * @returns True when it overrides the visit type in anything.
+ */
+export function scheduleHasOverrides(service: WithId<HealthcareService>, schedule: Schedule): boolean {
+  return hasOverrides(offeringFieldsOf(service, schedule));
+}
+
+/**
  * Whether a Schedule sets anything of its own for a visit type: a scheduling parameter, or custom hours.
  * @param fields - What the Schedule sets for it.
  * @returns True when it overrides the visit type in anything.

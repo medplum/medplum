@@ -7,6 +7,7 @@ import {
   getReferenceString,
   isDefined,
   resolveId,
+  serviceTypeOffersService,
 } from '@medplum/core';
 import type { HealthcareService, Resource, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType } from '../actors';
@@ -234,5 +235,38 @@ export function withStoredActorResource(
       ...actor,
       schedules: index < 0 ? [...actor.schedules, stored] : actor.schedules.with(index, stored),
     };
+  });
+}
+
+/** An actor whose Schedule offers a visit type. */
+export interface ConfigOffering {
+  readonly actor: ConfigurableActor;
+  /** The Schedule the workspace edits for the actor, which offers the visit type. */
+  readonly schedule: WithId<Schedule>;
+}
+
+/** The actors of one type whose Schedules offer a visit type, under the title the sidebar lists that type by. */
+export interface ConfigOfferingGroup {
+  readonly title: string;
+  readonly offerings: readonly ConfigOffering[];
+}
+
+/**
+ * Finds every actor whose Schedule offers a visit type and booking can use: one that is turned off, or whose
+ * Schedule is, is left out. Only the Schedule the workspace edits counts, since that is the one its page opens.
+ * @param actors - Every provider, room, and device loaded.
+ * @param service - The visit type.
+ * @returns The offerings, in the order the actors were given.
+ */
+export function getOfferings(
+  actors: readonly ConfigurableActor[],
+  service: WithId<HealthcareService>
+): ConfigOffering[] {
+  return actors.flatMap((actor) => {
+    const [schedule] = actor.schedules;
+    if (!schedule || isActorTurnedOff(actor)) {
+      return [];
+    }
+    return serviceTypeOffersService(schedule.serviceType, service) ? [{ actor, schedule }] : [];
   });
 }

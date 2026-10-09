@@ -11,32 +11,10 @@ import {
   SchedulingMedicalNecessityURI,
   ServiceTypeReferenceURI,
 } from '@medplum/core';
-import type { Appointment, AppointmentParticipant, CodeableConcept, Patient, Reference } from '@medplum/fhirtypes';
+import type { Appointment, AppointmentParticipant, Patient, Reference } from '@medplum/fhirtypes';
 import type { BookingRequirementValues } from '../../AppointmentFinder/AppointmentFinder.requirements';
-
-export function getPatientParticipant(appointment: Appointment): AppointmentParticipant | undefined {
-  return appointment.participant.find((participant) => participant.actor?.reference?.startsWith('Patient/'));
-}
-
-export interface ServiceTypes {
-  readonly visitType?: CodeableConcept;
-  readonly procedures: CodeableConcept[];
-}
-
-/**
- * Reads the first entry carrying a HealthcareService reference as the visit type.
- * Additional referenced entries are ignored. Entries without a reference are procedures.
- *
- * @param appointment - The appointment being described.
- * @returns The visit type, if present, and the procedure codes.
- */
-export function partitionServiceTypes(appointment: Appointment): ServiceTypes {
-  const serviceType = appointment.serviceType ?? [];
-  return {
-    visitType: serviceType.find((concept) => getExtension(concept, ServiceTypeReferenceURI)),
-    procedures: serviceType.filter((concept) => !getExtension(concept, ServiceTypeReferenceURI)),
-  };
-}
+import { getPatientParticipant } from '../../actors';
+import { partitionServiceTypes } from '../../serviceTypes';
 
 /**
  * Reads back what the booking form recorded for the visit type's requirements.

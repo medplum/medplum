@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { extractServiceTypeReferences, getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
+import type { Appointment } from '@medplum/fhirtypes';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 
 /** The zones the calendars on show are kept in, and whether any of them is unknown. */
@@ -44,4 +46,26 @@ export function getCalendarTimezones(candidates: readonly ScheduleCandidate[]): 
   }
 
   return { timezones, anyUnknown };
+}
+
+/**
+ * Sorts appointments by the service type they are for, which is what they are colored by.
+ *
+ * An appointment naming several services is sorted under the first.
+ *
+ * @param appointments - The appointments to sort.
+ * @returns The appointments, by HealthcareService reference; those naming none are under
+ * `undefined`.
+ */
+export function groupAppointmentsByService(
+  appointments: readonly WithId<Appointment>[]
+): Map<string | undefined, WithId<Appointment>[]> {
+  const groups = new Map<string | undefined, WithId<Appointment>[]>();
+  for (const appointment of appointments) {
+    const reference = extractServiceTypeReferences(appointment.serviceType)[0]?.reference;
+    const group = groups.get(reference) ?? [];
+    group.push(appointment);
+    groups.set(reference, group);
+  }
+  return groups;
 }

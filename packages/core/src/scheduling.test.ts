@@ -12,6 +12,7 @@ import type {
 } from '@medplum/fhirtypes';
 import type { HealthcareServiceSchedulingParameterExtension, SchedulingParameterExtension } from './scheduling';
 import {
+  allServiceTypesCodeableConcept,
   clearHealthcareServiceSchedulingParameter,
   clearScheduleParameter,
   clearScheduleSchedulingParameter,
@@ -31,10 +32,13 @@ import {
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
+  SCHEDULING_SERVICE_TYPE_SYSTEM,
   schedulingDurationToMinutes,
   SchedulingParametersURI,
   SchedulingSiteURI,
+  serviceTypeIncludesAllServices,
   serviceTypeIncludesService,
+  serviceTypeOffersService,
   setHealthcareServiceSchedulingParameter,
   setPrimaryProvider,
   setScheduleParameter,
@@ -355,6 +359,39 @@ describe('serviceType CodeableConcepts', () => {
     const serviceType = toServiceTypeCodeableConcepts(service);
     expect(serviceTypeIncludesService(serviceType, { ...service, id: 'service-2' })).toBe(false);
     expect(serviceTypeIncludesService(undefined, service)).toBe(false);
+  });
+
+  test('the all-services marker offers every service without listing any', () => {
+    const serviceType = [allServiceTypesCodeableConcept()];
+
+    expect(serviceType[0].coding).toEqual([
+      { system: 'https://medplum.com/fhir/CodeSystem/scheduling-service-type', code: 'all' },
+    ]);
+    expect(serviceTypeIncludesAllServices(serviceType)).toBe(true);
+    expect(serviceTypeOffersService(serviceType, service)).toBe(true);
+    // Listing a service by reference keeps its literal meaning.
+    expect(serviceTypeIncludesService(serviceType, service)).toBe(false);
+  });
+
+  test('a listed service is offered without the marker', () => {
+    expect(serviceTypeOffersService(toServiceTypeCodeableConcepts(service), service)).toBe(true);
+  });
+
+  test.each([
+    ['a missing serviceType', undefined],
+    ['an empty serviceType', []],
+    ['the same code in another system', [{ coding: [{ system: 'http://example.com/service', code: 'all' }] }]],
+    ['another code in the same system', [{ coding: [{ system: SCHEDULING_SERVICE_TYPE_SYSTEM, code: 'none' }] }]],
+    ['a concept with only matching text', [{ text: 'All service types' }]],
+  ])('%s is not the all-services marker', (_name, serviceType) => {
+    expect(serviceTypeIncludesAllServices(serviceType)).toBe(false);
+    expect(serviceTypeOffersService(serviceType, service)).toBe(false);
+  });
+
+  test('the marker still offers every service alongside listed ones', () => {
+    const serviceType = [...toServiceTypeCodeableConcepts(service), allServiceTypesCodeableConcept()];
+
+    expect(serviceTypeOffersService(serviceType, { reference: 'HealthcareService/service-2' })).toBe(true);
   });
 });
 

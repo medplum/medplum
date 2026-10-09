@@ -285,6 +285,20 @@ export const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
     {
       resource: {
         resourceType: 'SearchParameter',
+        id: 'Appointment-status',
+        url: 'http://hl7.org/fhir/SearchParameter/Appointment-status',
+        name: 'status',
+        status: 'draft',
+        description: 'The overall status of the appointment',
+        code: 'status',
+        base: ['Appointment'],
+        type: 'token',
+        expression: 'Appointment.status',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
         id: 'Slot-schedule',
         url: 'http://hl7.org/fhir/SearchParameter/Slot-schedule',
         name: 'schedule',

@@ -113,7 +113,7 @@ describe('SchedulingWorkspace appointment details', () => {
     expect(details()).not.toBeInTheDocument();
   });
 
-  test('clicking an appointment opens its details', async () => {
+  test('clicking an appointment opens its details, until its calendar is hidden', async () => {
     renderWithMedplum(<SchedulingWorkspace />, medplum);
 
     await clickAppointment();
@@ -122,6 +122,10 @@ describe('SchedulingWorkspace appointment details', () => {
     expect(await open.findByText('Miles Cooper')).toBeInTheDocument();
     expect(open.getByText('booked')).toBeInTheDocument();
     expect(open.getByText('Ultrasound Imaging')).toBeInTheDocument();
+
+    // The visit is on Dr. Rivera's calendar alone, so hiding it takes the details with it.
+    await userEvent.click(screen.getByRole('button', { name: /Dr. Maya Rivera/, pressed: true }));
+    await waitFor(() => expect(details()).not.toBeInTheDocument());
   });
 
   test('closing the details leaves the appointment on the calendar', async () => {

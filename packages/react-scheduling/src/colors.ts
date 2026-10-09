@@ -35,3 +35,18 @@ export function resolveThemeColor(
   }
   return FALLBACK_COLORS[fallbackIndex % FALLBACK_COLORS.length];
 }
+
+/**
+ * Picks a fallback color position from a key, so the same key is always given the same
+ * color, whatever else there is to color.
+ * @param key - What is being colored, such as a resource's reference.
+ * @returns A position to pass to `resolveThemeColor` as its `fallbackIndex`.
+ */
+export function fallbackColorIndex(key: string): number {
+  // 32-bit FNV-1a.
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < key.length; i++) {
+    hash = Math.imul(hash ^ key.charCodeAt(i), 0x01000193);
+  }
+  return hash >>> 0;
+}

@@ -129,9 +129,27 @@ export function parseReference<T extends Resource>(reference: Reference<T> | und
   if (reference?.reference === undefined) {
     throw new OperationOutcomeError(validationError('Reference missing reference property.'));
   }
+  const parsed = tryParseReference(reference);
+  if (!parsed) {
+    throw new OperationOutcomeError(validationError('Unable to parse reference string.'));
+  }
+  return parsed;
+}
+
+/**
+ * Parses a reference and returns a tuple of [ResourceType, ID], or undefined if the reference cannot be parsed.
+ * @param reference - A reference to a FHIR resource.
+ * @returns A tuple containing the `ResourceType` and the ID of the resource, or undefined if the reference cannot be parsed.
+ */
+export function tryParseReference<T extends Resource>(
+  reference: Reference<T> | undefined
+): [T['resourceType'], string] | undefined {
+  if (reference?.reference === undefined) {
+    return undefined;
+  }
   const [type, id] = reference.reference.split('/') as [T['resourceType'] | '', string];
   if (type === '' || id === '' || id === undefined) {
-    throw new OperationOutcomeError(validationError('Unable to parse reference string.'));
+    return undefined;
   }
   return [type, id];
 }

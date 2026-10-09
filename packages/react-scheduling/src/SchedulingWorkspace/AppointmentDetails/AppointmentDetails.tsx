@@ -1,30 +1,32 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Badge, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
+import { Alert, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   formatCodeableConcept,
   getExtension,
   getExtensionValue,
-  isDefined,
   normalizeErrorString,
   RecurrenceIdExtensionURI,
   RecurrenceTemplateExtensionURI,
   resolveId,
   SchedulingMedicalNecessityURI,
 } from '@medplum/core';
-import type { Appointment, CodeableConcept, Parameters, Reference } from '@medplum/fhirtypes';
+import type { Appointment, CodeableConcept, Parameters } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconArrowLeft, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { Fragment, useCallback, useState } from 'react';
+import { getNonPatientActors, getPatientParticipant } from '../../actors';
 import { formatDayHeading, formatZonedTime } from '../../AppointmentFinder/AppointmentFinder.times';
 import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
+import { AppointmentStatusBadge } from '../../AppointmentStatusBadge';
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
+import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
+import { partitionServiceTypes } from '../../serviceTypes';
 import classes from './AppointmentDetails.module.css';
-import { getPatientParticipant, partitionServiceTypes } from './AppointmentDetails.utils';
 import { AppointmentDetailsForm } from './AppointmentDetailsForm';
 
 /** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
@@ -38,19 +40,6 @@ const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pendin
  */
 const RESCHEDULABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
 
-const STATUS_COLORS: Record<Appointment['status'], string> = {
-  proposed: 'yellow',
-  pending: 'yellow',
-  booked: 'blue',
-  arrived: 'blue',
-  fulfilled: 'blue',
-  cancelled: 'red',
-  noshow: 'red',
-  'entered-in-error': 'red',
-  'checked-in': 'blue',
-  waitlist: 'gray',
-};
-
 export interface AppointmentCancelFormProps {
   readonly appointment: WithId<Appointment>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
@@ -59,6 +48,11 @@ export interface AppointmentCancelFormProps {
 }
 
 export interface AppointmentDetailsProps {
+  /**
+   * Allows users to override scheduling rules when rescheduling or reassigning
+   * an appointment, including its length. The host controls access.
+   */
+  readonly canBypassSchedulingRules?: boolean;
   readonly appointment: WithId<Appointment>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
   /**
@@ -205,7 +199,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     mrnSystem,
   } = props;
   const patient = getPatientParticipant(appointment)?.actor;
-  const otherActors = getOtherActors(appointment);
+  const otherActors = getNonPatientActors(appointment);
   const [editing, setEditing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
@@ -275,24 +269,25 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           appointment={appointment}
           onToggleTimeFinder={onToggleTimeFinder}
           onRescheduled={finishRescheduling}
+          canBypassSchedulingRules={props.canBypassSchedulingRules}
         />
       </Stack>
     );
   }
 
   const cancelable = CANCELABLE_STATUSES.has(appointment.status);
-  const { procedures } = partitionServiceTypes(appointment);
+  const { visitType, procedures } = partitionServiceTypes(appointment);
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
 
   // Both pages fill the pane the same way, so what can be done to the visit sits at the
   // foot of either.
   return (
     <Stack gap="sm" className={classes.details}>
-      <Badge color={STATUS_COLORS[appointment.status]}>{appointment.status}</Badge>
+      <AppointmentStatusBadge status={appointment.status} />
       {!editing && patientLine}
       {whenLine}
       <Detail label="Repeats" value={formatSeries(appointment)} />
-      <Detail label="Service" value={formatService(appointment)} />
+      <Detail label="Service" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
       <Detail
         label="With"
         value={
@@ -393,19 +388,6 @@ function Detail(props: DetailProps): JSX.Element | null {
 }
 
 /**
- * Everyone and everything the visit is held on besides the patient.
- * @param appointment - The appointment being described.
- * @returns Their references, in the order the appointment lists them.
- */
-function getOtherActors(appointment: Appointment): Reference[] {
-  const patient = getPatientParticipant(appointment);
-  return appointment.participant
-    .filter((participant) => participant !== patient)
-    .map((participant) => participant.actor)
-    .filter(isDefined);
-}
-
-/**
  * Says when the visit is, as far as it is known.
  * @param appointment - The appointment being described.
  * @returns The day and the times, or undefined for an appointment holding no time.
@@ -434,14 +416,4 @@ function formatSeries(appointment: Appointment): string | undefined {
   // Only the first occurrence keeps the template, so only it says how many there are.
   const count = getExtension(appointment, RecurrenceTemplateExtensionURI, 'occurrenceCount')?.valuePositiveInt;
   return count ? `Weekly · visit ${position} of ${count}` : `Weekly · visit ${position}`;
-}
-
-/**
- * Names what the visit is for, preferring the service over the kind of visit.
- * @param appointment - The appointment being described.
- * @returns The service or appointment type, or undefined when neither is on file.
- */
-function formatService(appointment: Appointment): string | undefined {
-  const service = formatCodeableConcept(partitionServiceTypes(appointment).visitType);
-  return service || formatCodeableConcept(appointment.appointmentType) || undefined;
 }

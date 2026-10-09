@@ -804,3 +804,8 @@ export function spyOnQuery<R extends QueryResultRow = any, I = any[]>(
     (queryText: string, values?: QueryConfigValues<I>) => Promise<QueryResult<R>>
   >;
 }
+
+/**
+ * Shard ID to use for testing purposes. Matches the default shard in medplum-sharded.config.json.
+ */
+export const TEST_SHARD_ID = 'shard-1';

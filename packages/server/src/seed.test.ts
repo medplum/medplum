@@ -11,7 +11,7 @@ import { configureGinIndexes, vacuumTable } from './fhir/operations/db-configure
 import type { SystemRepository } from './fhir/repo';
 import { getShardSystemRepo } from './fhir/repo';
 import { repoAccess } from './fhir/repository/access-tracker';
-import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
+import { PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from './fhir/sharding';
 import { SelectQuery } from './fhir/sql';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
@@ -24,6 +24,8 @@ import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrati
 import { closeRedis, getCacheRedis, initRedis } from './redis';
 import * as seedModule from './seed';
 import { deleteRedisKeys, withTestContext } from './test.setup';
+
+const shardId = TODO_SHARD_ID;
 
 async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: SystemRepository): Promise<void> {
   const lastVersion = getLatestPostDeployMigrationVersion();
@@ -49,7 +51,7 @@ async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: System
 async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository, version: number): Promise<void> {
   const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
-  const jobData = migration.prepareJobData(asyncJob);
+  const jobData = migration.prepareJobData({ shardId, asyncJob });
   globalLogger.write(`${new Date().toISOString()} - Starting post-deploy migration v${version}`);
   const result = await migration.run(systemRepo, undefined, jobData);
   globalLogger.write(`${new Date().toISOString()} - Post-deploy migration v${version} result: ${result}`);

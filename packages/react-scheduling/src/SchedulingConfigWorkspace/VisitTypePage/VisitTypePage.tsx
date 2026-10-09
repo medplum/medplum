@@ -33,7 +33,9 @@ import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPa
 import type { ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { ParameterWarnings } from '../ConfigPage/ParameterWarnings';
+import type { ConfigOffering, ConfigOfferingGroup } from '../SchedulingConfigWorkspace.utils';
 import { StatusBadge } from '../StatusBadge';
+import { OfferingSchedulesSection } from './OfferingSchedulesSection';
 import { ServiceFacilitiesField } from './ServiceFacilitiesField';
 
 export interface VisitTypePageProps {
@@ -45,6 +47,12 @@ export interface VisitTypePageProps {
   readonly onDiscardNew?: () => void;
   /** Called whenever the page starts or stops holding unsaved changes. */
   readonly onDirtyChange?: (dirty: boolean) => void;
+  /** Every provider, room, and device whose Schedule offers the visit type, by type. */
+  readonly offeringGroups?: readonly ConfigOfferingGroup[];
+  /** What offers the visit type is still being read. */
+  readonly offeringsLoading?: boolean;
+  /** Opens the page of an actor offering the visit type. */
+  readonly onOpenOffering?: (offering: ConfigOffering) => void;
 }
 
 interface VisitTypeFields {
@@ -123,7 +131,15 @@ function buildVisitType(
  * @returns The page.
  */
 export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
-  const { service, onSynced, onDiscardNew, onDirtyChange } = props;
+  const {
+    service,
+    onSynced,
+    onDiscardNew,
+    onDirtyChange,
+    offeringGroups = [],
+    offeringsLoading,
+    onOpenOffering,
+  } = props;
   const medplum = useMedplum();
   const creating = !service;
   const [initial] = useState(() => fieldsOf(service));
@@ -312,6 +328,16 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
             {availabilityError}
           </Text>
         )}
+      </ConfigSection>
+
+      <ConfigSection title="Schedules offering this visit type">
+        <OfferingSchedulesSection
+          service={service}
+          serviceName={serviceName}
+          groups={offeringGroups}
+          loading={offeringsLoading}
+          onOpen={onOpenOffering}
+        />
       </ConfigSection>
 
       <SaveBar

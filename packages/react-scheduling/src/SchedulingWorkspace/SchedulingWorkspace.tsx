@@ -6,11 +6,12 @@ import {
   getExtensionValue,
   getReferenceString,
   isDefined,
+  isResourceWithId,
   normalizeErrorString,
   SchedulingScheduleColorURI,
 } from '@medplum/core';
 import type { Appointment, Extension, Location, Reference, Slot } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -21,7 +22,8 @@ import { AppointmentBookingForm } from '../AppointmentFinder/AppointmentBookingF
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
-import { resolveThemeColor } from '../colors';
+import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
+import { fallbackColorIndex, resolveThemeColor } from '../colors';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
@@ -29,11 +31,13 @@ import type { DateTimeRange } from '../types';
 import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
 import type { CalendarFilterValues } from './CalendarFilters';
 import { CalendarFilters } from './CalendarFilters';
+import type { ServiceTypeLegendItem } from './CalendarLegend';
+import { CalendarLegend } from './CalendarLegend';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
-import { getCalendarTimezones } from './SchedulingWorkspace.utils';
+import { getCalendarTimezones, groupAppointmentsByService } from './SchedulingWorkspace.utils';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
@@ -49,6 +53,14 @@ const NONE_DESELECTED: DeselectedIdsByActorType = {
   Location: new Set(),
   Device: new Set(),
 };
+
+const RESOURCE_OPTIONS = {
+  // "free" Slots are left out: they are easy to misinterpret as being the _only_
+  // bookable times. "entered-in-error" status slots are also not shown here.
+  slotStatuses: ['busy', 'busy-unavailable', 'busy-tentative'],
+  // Cancelled and entered-in-error appointments are not displayed here.
+  appointmentStatuses: ['proposed', 'pending', 'booked', 'arrived', 'fulfilled', 'noshow', 'checked-in', 'waitlist'],
+} as const;
 
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
@@ -69,7 +81,7 @@ export interface SchedulingWorkspaceProps {
    */
   readonly appointmentCancellationReasonValueSet?: string;
   /**
-   * Lets the booking form take a typed time and length, placing a visit the scheduling
+   * Lets booking and rescheduling take a typed time and length, placing a visit the scheduling
    * rules would refuse: over occupied or blocked time, past the configured capacity,
    * or at a time or length the visit type does not offer.
    *
@@ -79,7 +91,8 @@ export interface SchedulingWorkspaceProps {
    * Such a booking is sent as a transaction, so the appointment and its Slots commit
    * together on projects with the `transaction-bundles` feature enabled. Without it they
    * are applied as a plain batch, where an appointment that failed to write would leave
-   * Slots holding no visit.
+   * Slots holding no visit. Manual rescheduling writes Slot by Slot instead: old Slots the
+   * user cannot delete stay behind as blocked time after the move.
    * @see https://www.medplum.com/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions
    */
   readonly canBypassSchedulingRules?: boolean;
@@ -101,6 +114,9 @@ export interface SchedulingWorkspaceProps {
  *
  * - Picks a color for each Schedule so that it can render consistently across
  *   those components.
+ * - Draws each appointment once, however many of the calendars on show it is held on,
+ *   in the color of its service type, picked by hashing the HealthcareService's reference.
+ *   A legend below the calendar keys those colors.
  * - Books from the calendar: clicking open time opens {@link AppointmentBookingForm}
  *   in a pane on the right, with its time search opened on the day that was clicked.
  *   The form writes the booking and announces what it wrote, which is what puts the
@@ -151,7 +167,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // What was selected
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>();
+  const [selectedAppointment, setSelectedAppointment] = useState<WithId<Appointment>>();
 
   // What the calendar highlights
   const [highlight, setHighlight] = useState<DateTimeRange>();
@@ -227,31 +243,61 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     appointments,
     loading: resourcesLoading,
     error: resourcesError,
-  } = useSchedulingResources(schedules, range);
+  } = useSchedulingResources(schedules, range, RESOURCE_OPTIONS);
 
-  const sources = useMemo((): MultiCalendarSource[] => {
-    return activeCandidates.map((candidate) => {
+  const { sources, serviceTypes } = useMemo(() => {
+    const actorsOnShow = new Set(
+      activeCandidates
+        .flatMap((candidate) => candidate.schedule.actor.map((actor) => actor.reference))
+        .filter(isDefined)
+    );
+    const visibleAppointments = (appointments ?? []).filter((appointment) =>
+      appointment.participant.some(
+        (participant) => participant.actor?.reference && actorsOnShow.has(participant.actor.reference)
+      )
+    );
+    // Appointments are drawn by service type rather than on the calendars they are held on,
+    // so the Slots they hold have to be cleared here: a source only clears the ones behind
+    // its own appointments.
+    const openSlots = filterBookedSlots(slots ?? [], visibleAppointments);
+    const calendarSources = activeCandidates.map((candidate): MultiCalendarSource => {
       const scheduleReference = getReferenceString(candidate.schedule);
-      const actorReferences = new Set(candidate.schedule.actor.map((actor) => actor.reference).filter(isDefined));
       return {
         schedule: candidate.schedule,
         color: colorByScheduleId.get(candidate.schedule.id),
-        slots: (slots ?? []).filter((slot: Slot) => slot.schedule?.reference === scheduleReference),
-        appointments: (appointments ?? []).filter(
-          (appointment: Appointment) =>
-            appointment.status !== 'cancelled' &&
-            (appointment.participant ?? []).some(
-              (participant) => participant.actor?.reference && actorReferences.has(participant.actor.reference)
-            )
-        ),
+        slots: openSlots.filter((slot: Slot) => slot.schedule?.reference === scheduleReference),
+        appointments: [],
       };
     });
-  }, [activeCandidates, slots, appointments, colorByScheduleId]);
+    const groups = Array.from(groupAppointmentsByService(visibleAppointments), ([reference, group]) => ({
+      reference,
+      group,
+      // Picked by the service type's reference, so its color holds whichever week is on show,
+      // for everyone, and as other service types come and go.
+      color: reference ? resolveThemeColor(theme, undefined, fallbackColorIndex(reference)) : 'gray',
+    }));
+    const serviceSources = groups.map(({ group, color }): MultiCalendarSource => ({
+      color,
+      slots: [],
+      appointments: group,
+    }));
+    const legend = groups
+      .map(({ reference, group, color }): ServiceTypeLegendItem => ({
+        id: reference ?? 'none',
+        // Named as its events are titled, by the HealthcareService its color is picked from.
+        appointment: group[0],
+        color,
+      }))
+      // By reference, so the order holds from week to week; the names load only as the legend
+      // shows them. The appointments naming no service type go last.
+      .sort((a, b) => Number(a.id === 'none') - Number(b.id === 'none') || a.id.localeCompare(b.id));
+    return { sources: [...calendarSources, ...serviceSources], serviceTypes: legend };
+  }, [activeCandidates, slots, appointments, colorByScheduleId, theme]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
   const startBooking = useCallback((interval: DateTimeRange): void => {
-    setSelectedAppointmentId(undefined);
+    setSelectedAppointment(undefined);
     setBookingSelection(interval);
     setHighlight(interval);
   }, []);
@@ -278,28 +324,45 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const selectAppointment = useCallback(
     (appointment: Appointment): void => {
-      if (appointment.id) {
-        if (appointment.id !== selectedAppointmentId) {
+      if (isResourceWithId(appointment)) {
+        if (appointment.id !== selectedAppointment?.id) {
           setRescheduleFinderOpen(false);
         }
         closeBooking();
-        setSelectedAppointmentId(appointment.id);
+        setSelectedAppointment(appointment);
       }
     },
-    [closeBooking, selectedAppointmentId]
+    [closeBooking, selectedAppointment?.id]
   );
 
   const closeAppointment = useCallback((): void => {
-    setSelectedAppointmentId(undefined);
+    setSelectedAppointment(undefined);
     setRescheduleFinderOpen(false);
   }, []);
 
-  const openAppointment = useMemo((): WithId<Appointment> | undefined => {
-    if (selectedAppointmentId) {
-      return (appointments ?? []).find((a) => a.id === selectedAppointmentId);
+  // The open appointment is held apart from the calendar's, so that a visit cancelled from
+  // its pane stays open, showing it cancelled, once the calendar stops loading it.
+  useResourceModified('Appointment', (event) => {
+    if (!selectedAppointment || event.id !== selectedAppointment.id) {
+      return;
     }
-    return undefined;
-  }, [appointments, selectedAppointmentId]);
+    if (event.operation === 'delete') {
+      closeAppointment();
+    } else if (event.resource) {
+      setSelectedAppointment(event.resource);
+    }
+  });
+
+  const openAppointment = useMemo((): WithId<Appointment> | undefined => {
+    if (!selectedAppointment) {
+      return undefined;
+    }
+    const loaded = appointments?.find((a) => a.id === selectedAppointment.id);
+    // One that left the calendar some other way, by paging or by hiding its calendars,
+    // closes with it.
+    const statuses: readonly string[] = RESOURCE_OPTIONS.appointmentStatuses;
+    return loaded ?? (statuses.includes(selectedAppointment.status) ? undefined : selectedAppointment);
+  }, [appointments, selectedAppointment]);
 
   const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => {
     const color = colorByScheduleId.get(candidate.schedule.id);
@@ -352,7 +415,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onSelectAppointment={selectAppointment}
           selection={highlight}
         />
-        <CalendarTimezoneNotice className={classes.timezoneNotice} timezones={timezones} anyUnknown={anyUnknown} />
+        <div className={classes.footer}>
+          <CalendarTimezoneNotice timezones={timezones} anyUnknown={anyUnknown} />
+          <CalendarLegend className={classes.legend} serviceTypes={serviceTypes} />
+        </div>
       </div>
       {openAppointment && (
         <section
@@ -366,6 +432,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           </Group>
           <AppointmentDetails
             appointment={openAppointment}
+            canBypassSchedulingRules={canBypassSchedulingRules}
             cancellationReasonValueSet={appointmentCancellationReasonValueSet}
             onCancelled={props.onCancelled}
             onRescheduled={props.onRescheduled}

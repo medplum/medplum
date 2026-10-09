@@ -206,14 +206,16 @@ async function chooseReason(label = 'Patient: Feeling Better'): Promise<void> {
 }
 
 describe('AppointmentDetails', () => {
-  test('shows saved requirements as details until Edit is clicked', () => {
+  test('shows saved requirements as details until Edit is clicked', async () => {
     renderDetails(AUTHORIZED_APPOINTMENT);
+    await screen.findByText('Miles Cooper');
     expect(screen.getByText(ProcedureCodes[0].display as string)).toBeInTheDocument();
     expect(screen.getByText(DiagnosisCodes[0].display as string)).toBeInTheDocument();
     expect(screen.getByText('Confirmed')).toBeInTheDocument();
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await screen.findByText('Miles Cooper');
     expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
     expect(cancelButton()).not.toBeInTheDocument();
   });
@@ -232,7 +234,7 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText(/Tuesday, May 5/)).toBeInTheDocument();
   });
 
-  test('names only the visit type under the service, not the procedure codes booked with it', () => {
+  test('names only the visit type under the service, not the procedure codes booked with it', async () => {
     renderDetails({
       ...BOOKED_APPOINTMENT,
       serviceType: [
@@ -241,13 +243,18 @@ describe('AppointmentDetails', () => {
       ],
     });
 
-    expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
+    expect(await screen.findByText('Ultrasound Imaging')).toBeInTheDocument();
   });
 
-  test('uses only the first referenced visit type', () => {
+  test('uses only the first visit type referring to a HealthcareService', async () => {
     renderDetails({
       ...BOOKED_APPOINTMENT,
       serviceType: [
+        // Carries the extension, but what it refers to is not a HealthcareService.
+        {
+          text: 'Misfiled visit type',
+          extension: [{ url: ServiceTypeReferenceURI, valueReference: { reference: 'Practitioner/dr-rivera' } }],
+        },
         ...(BOOKED_APPOINTMENT.serviceType ?? []),
         {
           text: 'Ignored visit type',
@@ -257,34 +264,23 @@ describe('AppointmentDetails', () => {
       ],
     });
 
-    expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
+    expect(await screen.findByText('Ultrasound Imaging')).toBeInTheDocument();
     expect(screen.queryByText(/Ignored visit type/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Misfiled visit type/)).not.toBeInTheDocument();
     expect(screen.getByText('Abdominal ultrasound')).toBeInTheDocument();
   });
 
-  test('shows unreferenced service types as procedures when there is no visit type', () => {
+  test('shows unreferenced service types as procedures when there is no visit type', async () => {
     renderDetails({
       ...BOOKED_APPOINTMENT,
       appointmentType: undefined,
       serviceType: [{ text: 'Office visit' }, { text: 'Follow-up' }],
     });
+    await screen.findByText('Miles Cooper');
 
     expect(screen.getByText('Office visit, Follow-up')).toBeInTheDocument();
     expect(screen.getByText('Procedure codes')).toBeInTheDocument();
     expect(screen.queryByText('Service')).not.toBeInTheDocument();
-  });
-
-  test('falls back to appointment type for the service when all service types are procedures', () => {
-    renderDetails({
-      ...BOOKED_APPOINTMENT,
-      appointmentType: { text: 'Follow-up visit' },
-      serviceType: [{ text: 'Abdominal ultrasound' }],
-    });
-
-    expect(screen.getByText('Service')).toBeInTheDocument();
-    expect(screen.getByText('Follow-up visit')).toBeInTheDocument();
-    expect(screen.getByText('Procedure codes')).toBeInTheDocument();
-    expect(screen.getByText('Abdominal ultrasound')).toBeInTheDocument();
   });
 
   test('leaves out what is not on file', async () => {
@@ -450,7 +446,7 @@ describe('AppointmentDetails', () => {
     expect(stored.cancelationReason?.coding?.[0].code).toBe('prov-hosp');
   });
 
-  test('says where a visit falls in the series it was booked in', () => {
+  test('says where a visit falls in the series it was booked in', async () => {
     renderDetails({
       ...BOOKED_APPOINTMENT,
       extension: [
@@ -461,50 +457,57 @@ describe('AppointmentDetails', () => {
         { url: RecurrenceIdExtensionURI, valuePositiveInt: 1 },
       ],
     });
+    await screen.findByText('Miles Cooper');
 
     expect(screen.getByText('Repeats')).toBeInTheDocument();
     expect(screen.getByText('Weekly · visit 1 of 4')).toBeInTheDocument();
   });
 
-  test('says where a later visit falls, without the count only the first keeps', () => {
+  test('says where a later visit falls, without the count only the first keeps', async () => {
     // `$book` leaves the series' template on its first occurrence alone.
     renderDetails({ ...BOOKED_APPOINTMENT, extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: 3 }] });
+    await screen.findByText('Miles Cooper');
 
     expect(screen.getByText('Weekly · visit 3')).toBeInTheDocument();
   });
 
-  test('shows the reason a cancelled appointment carries', () => {
+  test('shows the reason a cancelled appointment carries', async () => {
     renderDetails({
       ...BOOKED_APPOINTMENT,
       status: 'cancelled',
       cancelationReason: { coding: [{ code: 'pat-fb', display: 'Patient: Feeling Better' }] },
     });
+    await screen.findByText('Miles Cooper');
 
     expect(screen.getByText('Patient: Feeling Better')).toBeInTheDocument();
   });
 
-  test('offers no cancellation for an appointment $cancel would refuse', () => {
+  test('offers no cancellation for an appointment $cancel would refuse', async () => {
     renderDetails({ ...BOOKED_APPOINTMENT, status: 'cancelled' });
+    await screen.findByText('Miles Cooper');
 
     expect(cancelButton()).toHaveAttribute('disabled');
     expect(screen.getByText('This appointment is cancelled.')).toBeInTheDocument();
   });
 
-  test('says why an appointment already seen cannot be cancelled', () => {
+  test('says why an appointment already seen cannot be cancelled', async () => {
     renderDetails({ ...BOOKED_APPOINTMENT, status: 'fulfilled' });
+    await screen.findByText('Miles Cooper');
 
     expect(cancelButton()).toHaveAttribute('disabled');
     expect(screen.getByText("An appointment in 'fulfilled' status cannot be cancelled.")).toBeInTheDocument();
   });
 
-  test('offers to reschedule a visit $reschedule would accept', () => {
+  test('offers to reschedule a visit $reschedule would accept', async () => {
     renderDetails(BOOKED_APPOINTMENT);
+    await screen.findByText('Miles Cooper');
 
     expect(rescheduleButton()).toBeInTheDocument();
   });
 
-  test('offers no reschedule for a visit $reschedule would refuse', () => {
+  test('offers no reschedule for a visit $reschedule would refuse', async () => {
     renderDetails({ ...BOOKED_APPOINTMENT, status: 'cancelled' });
+    await screen.findByText('Miles Cooper');
 
     expect(rescheduleButton()).not.toBeInTheDocument();
   });

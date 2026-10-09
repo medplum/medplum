@@ -102,6 +102,20 @@ function buildMessageCommunication(topicId: string, message: Message, sequenceNu
 }
 
 /**
+ * Touches a conversation topic so its meta.lastUpdated reflects the latest message
+ * activity. loadRecentTopics sorts topics by -_lastUpdated, so without this a topic
+ * would keep its creation-time position no matter how recently it was used.
+ * @param medplum - The Medplum client instance
+ * @param topicId - The ID of the conversation topic
+ * @returns The updated Communication resource
+ */
+export async function touchConversationTopic(medplum: MedplumClient, topicId: string): Promise<Communication> {
+  return medplum.patchResource('Communication', topicId, [
+    { op: 'add', path: '/sent', value: new Date().toISOString() },
+  ]);
+}
+
+/**
  * Loads the last messages for a conversation topic
  * @param medplum - The Medplum client instance
  * @param topicId - The ID of the conversation topic

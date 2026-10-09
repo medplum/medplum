@@ -27,6 +27,8 @@ export interface FindBookingConflictsOptions {
   readonly service: WithId<HealthcareService>;
   readonly candidates: readonly ScheduleCandidate[];
   readonly range: DateTimeRange;
+  /** Slot references held by the appointment being moved, including buffers. */
+  readonly ignoredSlotReferences?: readonly string[];
 }
 
 /**
@@ -59,6 +61,7 @@ function overlaps(slot: Slot, range: DateTimeRange): boolean {
  */
 export async function findBookingConflicts(options: FindBookingConflictsOptions): Promise<BookingConflict[]> {
   const { medplum, service, candidates, range } = options;
+  const ignored = new Set(options.ignoredSlotReferences);
   const startIso = range.start.toISOString();
   const endIso = range.end.toISOString();
 
@@ -74,7 +77,7 @@ export async function findBookingConflicts(options: FindBookingConflictsOptions)
         ['_count', String(CONFLICT_PAGE_SIZE)],
       ]);
 
-      const overlapping = slots.filter((slot) => overlaps(slot, range));
+      const overlapping = slots.filter((slot) => !ignored.has(getReferenceString(slot)) && overlaps(slot, range));
       const label = getCandidateDisplay(candidate);
 
       // Treat buffers and blocks as exclusive: the server never stamps a capacity on the

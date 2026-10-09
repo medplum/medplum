@@ -196,7 +196,6 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
         loading={loading}
         selectedKey={selectedId}
         selected={selected}
-        refresh={fetchData}
         tabs={tabs}
         activeTab={activeTab}
         headerActions={headerActions}
@@ -221,8 +220,8 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
             />
           )
         }
-        renderDetail={(item, ctx) => (
-          <LabDetailPane item={item} onOrderChange={() => ctx.refresh().catch(showErrorNotification)} />
+        renderDetail={(item) => (
+          <LabDetailPane item={item} onOrderChange={() => fetchData().catch(showErrorNotification)} />
         )}
       />
 

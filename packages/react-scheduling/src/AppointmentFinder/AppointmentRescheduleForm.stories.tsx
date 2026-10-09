@@ -1,13 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Alert } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { Document } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { withFindStub, withFixtures, withMockedDate, withRescheduleStub } from '../stories/decorators';
 import {
+  ExamRoomBSchedule,
   ImagingBenchFixtures,
   RiveraImagingAppointment,
   RiveraImagingHeldSlots,
@@ -127,3 +130,47 @@ function reportReschedule(
     setAppointment(moved);
   };
 }
+
+/**
+ * Manual moves can overlap occupied time while keeping the stored appointment length.
+ * @returns The manual override story.
+ */
+export const ManualOverride = (): JSX.Element => {
+  const medplum = useMedplum();
+  const [appointment, setAppointment] = useState<WithId<Appointment>>();
+  const [written, setWritten] = useState<AppointmentReschedule>();
+  // Read back for `meta.versionId`, which the manual write's `ifMatch` needs.
+  useEffect(() => {
+    medplum.readResource('Appointment', RiveraImagingAppointment.id).then(setAppointment).catch(console.error);
+  }, [medplum]);
+  return (
+    <Document>
+      {written && (
+        <Alert color="green" title="Appointment rescheduled" mb="md">
+          Same appointment: {written.appointments[0].id}. Reserved {written.slots.length} replacement slots. Start:{' '}
+          {written.appointments[0].start}. End: {written.appointments[0].end}.
+        </Alert>
+      )}
+      {appointment && (
+        <AppointmentRescheduleForm
+          appointment={appointment}
+          canBypassSchedulingRules
+          onRescheduled={(result) => {
+            setAppointment(result.appointments[0]);
+            setWritten(result);
+          }}
+        />
+      )}
+    </Document>
+  );
+};
+const ManualConflictSlot: Slot = {
+  resourceType: 'Slot',
+  id: 'manual-reschedule-conflict',
+  schedule: { reference: `Schedule/${ExamRoomBSchedule.id}` },
+  status: 'busy',
+  start: RiveraImagingAppointment.start as string,
+  end: RiveraImagingAppointment.end as string,
+};
+// Replace Exam Room A with B and enter May 5 at 13:00 Eastern to reassign into this occupied time.
+ManualOverride.decorators = [withFixtures([ManualConflictSlot]), withFindStub({ empty: true })];

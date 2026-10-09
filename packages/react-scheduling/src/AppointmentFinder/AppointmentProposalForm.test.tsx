@@ -1797,7 +1797,10 @@ describe('AppointmentProposalForm', () => {
     });
 
     test('Offers nothing to repeat for a booking ignoring an appointment', async () => {
-      setup(medplum, { allowRecurring: true, ignoreAppointment: { reference: 'Appointment/held' } });
+      setup(medplum, {
+        allowRecurring: true,
+        ignoreAppointment: { resourceType: 'Appointment', id: 'held', status: 'booked', participant: [] },
+      });
       await settleAutocomplete();
       expect(screen.queryByRole('textbox', { name: 'Repeat' })).not.toBeInTheDocument();
     });

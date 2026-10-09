@@ -9,6 +9,7 @@ import {
   getReferenceString,
   getSchedulingRequirements,
   getSchedulingTimezone,
+  isDefined,
   isResource,
   normalizeErrorString,
   REQUIRES_DIAGNOSIS_CODE,
@@ -49,6 +50,7 @@ import {
 } from './AppointmentFinder.schedules';
 import {
   formatTimezoneLabel,
+  formatZonedDateTimeInput,
   getAppointmentActors,
   getDurationMinutes,
   getLaterOccurrenceStarts,
@@ -64,6 +66,7 @@ import { buildElevatedBooking } from './buildElevatedBooking';
 import type { BookingConflict } from './findConflicts';
 import { describeConflict, findBookingConflicts } from './findConflicts';
 import { useDaySearch } from './useDaySearch';
+import { getRescheduleDurationMinutes } from './writeElevatedReschedule';
 
 // The visit type decides which actors can be asked for at all, so nothing below it
 // is answerable yet. Unanswered, not answered wrongly, so it reads as a prompt.
@@ -122,7 +125,14 @@ export interface AppointmentProposalFormProps {
    * the time it holds blocks every search that keeps any of the actors holding it, and
    * moving a visit to a different room at the same hour finds nothing.
    */
-  readonly ignoreAppointment?: Reference<Appointment> | WithId<Appointment>;
+  readonly ignoreAppointment?: WithId<Appointment>;
+  /**
+   * References to the Schedules `ignoreAppointment` is held on now, ineligible ones included.
+   *
+   * A typed time that keeps all of these, the start, and the length would change nothing,
+   * so it is not proposed. Defaults to the schedules the form opens on.
+   */
+  readonly ignoreAppointmentSchedules?: readonly string[];
   /**
    * The day the time search opens on, and the day a typed time starts out on.
    * Defaults to today.
@@ -170,8 +180,8 @@ export interface AppointmentProposalFormProps {
   /** Extensions to put on every appointment this form books. */
   readonly appointmentExtensions?: readonly Extension[];
   /**
-   * Allows for manual entry of a time and length, bypassing the `$find` search and
-   * `$book` endpoint.
+   * Allows manual entry of a time and length, bypassing `$find`. Rescheduling starts from
+   * the length of `ignoreAppointment`.
    */
   readonly canBypassSchedulingRules?: boolean;
   /**
@@ -209,6 +219,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     defaultPatient,
     defaultSelections,
     ignoreAppointment,
+    ignoreAppointmentSchedules,
     defaultStart,
     mrnSystem,
     onToggleTimeFinder,
@@ -238,7 +249,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>(undefined);
   const [manualChoice, setManualChoice] = useState<Appointment | undefined>(undefined);
-  const [manualDateTime, setManualDateTime] = useState('');
+  const [manualDateTime, setManualDateTime] = useState<string | undefined>(undefined);
   const [manualDurationMinutes, setManualDurationMinutes] = useState<number | undefined>(undefined);
   const [conflicts, setConflicts] = useState<readonly BookingConflict[]>([]);
   const [occurrenceCount, setOccurrenceCount] = useState(1);
@@ -285,6 +296,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const combinations = useMemo(() => (searching ? getActorCombinations(selections) : []), [searching, selections]);
 
   const candidates = useMemo(() => getSelectedCandidates(selections), [selections]);
+  const scheduleKey = useMemo(
+    () => toScheduleKey(candidates.map((candidate) => getReferenceString(candidate.schedule))),
+    [candidates]
+  );
+  // What the visit is held on now, so a move that keeps it can be told apart. The schedules
+  // the form opens on can leave out ones that are no longer eligible, which a move drops.
+  const [openingScheduleKey] = useState(() =>
+    ignoreAppointmentSchedules ? toScheduleKey(ignoreAppointmentSchedules) : scheduleKey
+  );
 
   // `$find` applies each Schedule's own parameters, so the actors in one search need not
   // agree on a timezone. The first one is taken as the exemplar for what to display:
@@ -296,7 +316,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const clearManualTime = useCallback((): void => {
     setManualChoice(undefined);
-    setManualDateTime('');
+    setManualDateTime(undefined);
     setManualDurationMinutes(undefined);
     setConflicts([]);
   }, []);
@@ -375,11 +395,17 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       // A different calendar can configure a different length, and nobody asked for
       // the one that happened to be on screen. The typed time goes with it: it was
       // proposed against these schedules, and a field still holding it would read as
-      // a time that is going to be booked.
-      clearManualTime();
+      // a time that is going to be booked. A move keeps both, since changing who holds
+      // it is often all a move is; it is proposed again against the new schedules below.
+      if (mode === 'reschedule') {
+        setManualChoice(undefined);
+        setConflicts([]);
+      } else {
+        clearManualTime();
+      }
       resetDaySearch();
     },
-    [clearManualTime, resetDaySearch]
+    [mode, clearManualTime, resetDaySearch]
   );
 
   function chooseService(next: WithId<HealthcareService> | undefined): void {
@@ -427,25 +453,62 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     [service, candidates]
   );
 
+  const storedDurationMinutes = ignoreAppointment ? getRescheduleDurationMinutes(ignoreAppointment) : undefined;
   // State holds the edit rather than the value, so a different visit type falls back to
   // its own default instead of keeping the last length typed.
-  const effectiveDurationMinutes = manualDurationMinutes ?? configuredDurationMinutes;
+  const effectiveDurationMinutes =
+    manualDurationMinutes ?? (mode === 'reschedule' ? storedDurationMinutes : configuredDurationMinutes);
+  // A move starts from where the visit is now, so only what changes needs typing.
+  const storedStart = mode === 'reschedule' && ignoreAppointment?.start ? new Date(ignoreAppointment.start) : undefined;
+  const effectiveDateTime = manualDateTime ?? (storedStart ? formatZonedDateTimeInput(storedStart, timezone) : '');
+
+  // Proposes the time and length on screen, typed or prefilled, against whichever schedules
+  // are chosen, so a reassignment needs nothing retyped. A searched time is never replaced.
+  const reproposeKey = searching && canBypassSchedulingRules && storedStart ? scheduleKey : undefined;
+  const [reproposedKey, setReproposedKey] = useState<string>();
+  if (reproposeKey !== reproposedKey) {
+    setReproposedKey(reproposeKey);
+    if (reproposeKey !== undefined && (!chosen || manual)) {
+      proposeManualTime(effectiveDateTime, effectiveDurationMinutes);
+    }
+  }
+
+  // Reconcile permission changes before rendering, so a revoked choice cannot be submitted.
+  if (!canBypassSchedulingRules && manualChoice) {
+    setChosen((current) => (current === manualChoice ? undefined : current));
+    clearManualTime();
+  }
 
   /**
-   * Takes the typed time and length together and proposes them, or takes the proposal
-   * back down while they are still incomplete.
+   * Records the typed time and length and proposes them.
    *
    * @param dateTime - A `YYYY-MM-DDTHH:MM` wall-clock value, read in the visit's timezone.
    * @param durationMinutes - How long the visit runs.
    */
   function enterManualTime(dateTime: string, durationMinutes: number | undefined): void {
-    // Stale the moment the fields move: what was looked up was about a different time.
-    setConflicts([]);
     setManualDateTime(dateTime);
     setManualDurationMinutes(durationMinutes);
+    proposeManualTime(dateTime, durationMinutes);
+  }
+
+  /**
+   * Proposes a time and length, or takes the proposal back down while they are incomplete
+   * or would change nothing.
+   *
+   * @param dateTime - A `YYYY-MM-DDTHH:MM` wall-clock value, read in the visit's timezone.
+   * @param durationMinutes - How long the visit runs.
+   */
+  function proposeManualTime(dateTime: string, durationMinutes: number | undefined): void {
+    // Stale the moment the fields move: what was looked up was about a different time.
+    setConflicts([]);
 
     const start = parseZonedDateTimeInput(dateTime, timezone);
-    if (!start || !durationMinutes || durationMinutes <= 0 || !service || candidates.length === 0) {
+    // Moving a visit to exactly where it already is would rewrite its Slots for nothing.
+    const unchanged =
+      scheduleKey === openingScheduleKey &&
+      start?.getTime() === storedStart?.getTime() &&
+      durationMinutes === storedDurationMinutes;
+    if (!start || !durationMinutes || durationMinutes <= 0 || !service || candidates.length === 0 || unchanged) {
       setManualChoice(undefined);
       // Only ever clears a manual time: a time from the search is not this field's to drop.
       setChosen((current) => (current === manualChoice ? undefined : current));
@@ -483,7 +546,13 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
     let active = true;
     const range = { start: new Date(debouncedChoice.start), end: new Date(debouncedChoice.end) };
-    findBookingConflicts({ medplum, service, candidates, range })
+    findBookingConflicts({
+      medplum,
+      service,
+      candidates,
+      range,
+      ignoredSlotReferences: ignoreAppointment?.slot?.map(getReferenceString).filter(isDefined),
+    })
       .then((found) => {
         if (active) {
           setConflicts(found);
@@ -499,7 +568,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     return () => {
       active = false;
     };
-  }, [medplum, chosen, debouncedChoice, service, candidates]);
+  }, [medplum, chosen, debouncedChoice, service, candidates, ignoreAppointment]);
 
   function choosePatient(next: WithId<Patient> | undefined): void {
     setPatient(next);
@@ -670,7 +739,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         <Stack className={classes.results} gap="lg">
           {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
             <ManualTime
-              dateTime={manualDateTime}
+              dateTime={effectiveDateTime}
               durationMinutes={effectiveDurationMinutes}
               timezone={timezone}
               conflicts={conflicts}
@@ -851,7 +920,7 @@ function ManualTime(props: ManualTimeProps): JSX.Element {
           min={1}
           allowDecimal={false}
           w={110}
-          value={durationMinutes ?? ''}
+          value={durationMinutes === undefined ? '' : Math.round(durationMinutes)}
           onChange={(value) => onChange(dateTime, typeof value === 'number' ? value : undefined)}
         />
       </Group>
@@ -1019,6 +1088,15 @@ function buildBooking(options: BuildBookingOptions): Appointment {
     ...(extension.length > 0 && { extension }),
     ...(supportingInformation && { supportingInformation }),
   };
+}
+
+/**
+ * Packs schedule references into one comparable value, whatever order they come in.
+ * @param references - The schedule references.
+ * @returns The key.
+ */
+function toScheduleKey(references: readonly string[]): string {
+  return [...references].sort((a, b) => a.localeCompare(b)).join(',');
 }
 
 /**

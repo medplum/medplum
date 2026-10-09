@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { ResourceModifiedEvent, WithId } from '@medplum/core';
 import { createReference, setPrimaryProvider, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
@@ -30,6 +30,7 @@ import {
 import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
 import type { AppointmentReschedule, AppointmentRescheduleFormProps } from './AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from './AppointmentRescheduleForm';
+import { SchedulingUnvalidatedRescheduleURI } from './writeElevatedReschedule';
 
 installAutocompleteTimers();
 
@@ -66,13 +67,18 @@ async function setupRescheduleClient(): Promise<MockClient> {
  * Mounts the form and waits for it to open on what the visit is held on.
  * @param medplum - The client to render against.
  * @param props - Anything to override.
+ * @returns The rendered form.
  */
-async function setup(medplum: MockClient, props?: Partial<AppointmentRescheduleFormProps>): Promise<void> {
+async function setup(
+  medplum: MockClient,
+  props?: Partial<AppointmentRescheduleFormProps>
+): Promise<ReturnType<typeof renderWithMedplum>> {
   const element: JSX.Element = (
     <AppointmentRescheduleForm appointment={APPOINTMENT} onRescheduled={onRescheduled} {...props} />
   );
-  renderWithMedplum(element, medplum);
+  const rendered = renderWithMedplum(element, medplum);
   await settleAutocomplete();
+  return rendered;
 }
 
 /** Confirms the move. */
@@ -129,6 +135,181 @@ describe('AppointmentRescheduleForm', () => {
   afterEach(() => {
     restoreReschedule();
     restoreFind();
+  });
+
+  describe('Manual overrides', () => {
+    /**
+     * Collects what the client announces about the resources it writes.
+     * @returns The announcements, in order, filled in as they happen.
+     */
+    function recordModifications(): ResourceModifiedEvent[] {
+      const events: ResourceModifiedEvent[] = [];
+      medplum.addEventListener('resourceModified', (event) => events.push(event.payload));
+      return events;
+    }
+
+    async function enterTime(): Promise<void> {
+      await openTimeFinder();
+      fireEvent.change(screen.getByLabelText('Date & time'), { target: { value: '2026-08-18T14:07' } });
+      await settleAutocomplete();
+    }
+
+    test('standard users have no manual override', async () => {
+      await setup(medplum);
+      await openTimeFinder();
+      expect(screen.queryByText('Or enter a time')).not.toBeInTheDocument();
+    });
+
+    test('admins still send searched times through $reschedule', async () => {
+      const post = vi.spyOn(medplum, 'post');
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await moveToAnotherTime();
+      expect(lastRescheduleParameters(post)).toBeDefined();
+      expect(onRescheduled.mock.calls[0][0].appointments[0].extension ?? []).not.toContainEqual(
+        expect.objectContaining({ url: SchedulingUnvalidatedRescheduleURI })
+      );
+    });
+
+    test('moves a typed time at its stored length, announces each write once and calls back once', async () => {
+      const stored = await medplum.readResource('Appointment', APPOINTMENT.id);
+      const events = recordModifications();
+      const notify = vi.spyOn(medplum, 'notifyResourceModified');
+      const post = vi.spyOn(medplum, 'post');
+      await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });
+      await enterTime();
+      expect(screen.getByLabelText('Minutes')).toHaveValue('30');
+      await clickReschedule();
+      expect(lastRescheduleParameters(post)).toBeUndefined();
+      expect(onRescheduled).toHaveBeenCalledTimes(1);
+      const result = onRescheduled.mock.calls[0][0];
+      expect(result.appointments[0].id).toBe(APPOINTMENT.id);
+      expect(result.appointments[0].end).toBe('2026-08-18T18:37:00.000Z');
+      expect(events.map(({ resourceType, operation, id }) => `${operation} ${resourceType}/${id}`).sort()).toEqual(
+        [
+          ...result.slots.map((slot: Slot) => `create Slot/${slot.id}`),
+          `update Appointment/${APPOINTMENT.id}`,
+          ...HELD_SLOTS.map((slot) => `delete Slot/${slot.id}`),
+        ].sort()
+      );
+      expect(notify).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
+    });
+
+    test('moves a typed time at a typed length', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await enterTime();
+      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '45' } });
+      await settleAutocomplete();
+      await clickReschedule();
+      expect(onRescheduled.mock.calls[0][0].appointments[0].end).toBe('2026-08-18T18:52:00.000Z');
+    });
+
+    test('opens the typed time on the appointment as it stands, proposing nothing until something changes', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await openTimeFinder();
+      // 11:00 in New York is 15:00Z, where the appointment is now.
+      expect(screen.getByLabelText('Date & time')).toHaveValue('2026-08-18T11:00');
+      expect(screen.getByLabelText('Minutes')).toHaveValue('30');
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
+    });
+
+    test('changes only the length, keeping the time it opened on', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await openTimeFinder();
+      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '45' } });
+      await settleAutocomplete();
+      await clickReschedule();
+      const [moved] = onRescheduled.mock.calls[0][0].appointments;
+      expect([moved.start, moved.end]).toEqual(['2026-08-18T15:00:00.000Z', '2026-08-18T15:45:00.000Z']);
+    });
+
+    test('proposes the same time on other schedules once an actor changes, with nothing typed', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await removePill(/Exam Room A/);
+      await chooseActor(/room/i, 'Exam Room B', 'Exam Room B');
+      await openTimeFinder();
+      await clickReschedule();
+      const result = onRescheduled.mock.calls[0][0];
+      expect([result.appointments[0].start, result.appointments[0].end]).toEqual([
+        '2026-08-18T15:00:00.000Z',
+        '2026-08-18T15:30:00.000Z',
+      ]);
+      expect(result.slots.map((slot: Slot) => slot.schedule.reference)).toContain('Schedule/schedule-exam-room-b');
+    });
+
+    test('proposes the same time when the move only drops an actor that can no longer be offered', async () => {
+      await medplum.updateResource({ ...ExamRoomASchedule, active: false });
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await openTimeFinder();
+      await clickReschedule();
+      const result = onRescheduled.mock.calls[0][0];
+      expect(result.appointments[0].start).toBe('2026-08-18T15:00:00.000Z');
+      expect(result.slots.map((slot: Slot) => slot.schedule.reference)).not.toContain(
+        `Schedule/${ExamRoomASchedule.id}`
+      );
+    });
+
+    test('keeps a typed time and length when the actors change', async () => {
+      await setup(medplum, { canBypassSchedulingRules: true });
+      await enterTime();
+      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '45' } });
+      await settleAutocomplete();
+      await removePill(/Exam Room A/);
+      await chooseActor(/room/i, 'Exam Room B', 'Exam Room B');
+      expect(screen.getAllByLabelText('Date & time').find((input) => !input.hasAttribute('readonly'))).toHaveValue(
+        '2026-08-18T14:07'
+      );
+      expect(screen.getByLabelText('Minutes')).toHaveValue('45');
+      await clickReschedule();
+      const result = onRescheduled.mock.calls[0][0];
+      expect([result.appointments[0].start, result.appointments[0].end]).toEqual([
+        '2026-08-18T18:07:00.000Z',
+        '2026-08-18T18:52:00.000Z',
+      ]);
+      expect(result.slots.map((slot: Slot) => slot.schedule.reference)).toContain('Schedule/schedule-exam-room-b');
+    });
+
+    test('asks for a length when the appointment has none, rather than using the configured one', async () => {
+      const stored = await medplum.updateResource({ ...APPOINTMENT, end: undefined });
+      await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });
+      await enterTime();
+      expect(screen.getByLabelText('Minutes')).toHaveValue('');
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
+      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '20' } });
+      await settleAutocomplete();
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeEnabled();
+    });
+
+    test('clears a manual selection if permission is withdrawn', async () => {
+      const rendered = await setup(medplum, { canBypassSchedulingRules: true });
+      await enterTime();
+      rendered.rerender(
+        <AppointmentRescheduleForm
+          appointment={APPOINTMENT}
+          onRescheduled={onRescheduled}
+          canBypassSchedulingRules={false}
+        />
+      );
+      await settleAutocomplete();
+      expect(chosenTimeField()).toBeNull();
+      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
+    });
+
+    test('keeps entered answers after a rejected appointment update without announcing a move', async () => {
+      const stored = await medplum.readResource('Appointment', APPOINTMENT.id);
+      vi.spyOn(medplum, 'updateResource').mockRejectedValue(new Error('Write denied'));
+      const events = recordModifications();
+      await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });
+      await enterTime();
+      await clickReschedule();
+      expect(screen.getByText('Write denied')).toBeInTheDocument();
+      expect(screen.getByLabelText('Minutes')).toHaveValue('30');
+      expect(screen.getAllByLabelText('Date & time').find((input) => !input.hasAttribute('readonly'))).toHaveValue(
+        '2026-08-18T14:07'
+      );
+      expect(onRescheduled).not.toHaveBeenCalled();
+      expect(events.some((event) => event.resourceType === 'Appointment')).toBe(false);
+    });
   });
 
   describe('Opening on the visit as it stands', () => {

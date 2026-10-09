@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Filter } from '@medplum/core';
 import { accepted, concatUrls, isResource, Operator, parseReference } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Group, Project, Resource } from '@medplum/fhirtypes';
@@ -16,6 +17,8 @@ import {
 } from './export';
 import { collectReferences, shouldResolveReference } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';
+
+export const groupMemberChunkSize = 1000;
 
 /**
  * Handles a Group export request.
@@ -75,7 +78,12 @@ export async function groupExportResources(
   }
 
   if (patientReferences.length > 0) {
-    const compartment = { code: '_compartment', operator: Operator.EQUALS, value: patientReferences.join(',') };
+    // Each member is a SQL bind parameter, so search members in chunks to stay under the Postgres parameter limit
+    const compartments: Filter[] = [];
+    for (let i = 0; i < patientReferences.length; i += groupMemberChunkSize) {
+      const chunk = patientReferences.slice(i, i + groupMemberChunkSize);
+      compartments.push({ code: '_compartment', operator: Operator.EQUALS, value: chunk.join(',') });
+    }
     const references = new Set<string>();
     for (const resourceType of getExportResourceTypes(repo, 'Group', types)) {
       await exportResourceType(
@@ -83,7 +91,7 @@ export async function groupExportResources(
         resourceType,
         exportPageSize,
         since,
-        [{ resourceType, filters: [compartment] }],
+        compartments.map((compartment) => ({ resourceType, filters: [compartment] })),
         (resource) => addResolvableReferences(resource, references)
       );
     }

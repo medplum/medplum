@@ -89,6 +89,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'logEvent',
   'getCacheEntry',
   'getCacheEntries',
+  'cacheEntryOnShard',
   'setCacheEntry',
   'deleteCacheEntry',
   'deleteCacheEntries',
