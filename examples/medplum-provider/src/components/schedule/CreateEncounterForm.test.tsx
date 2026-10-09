@@ -124,7 +124,8 @@ describe('CreateEncounterForm', () => {
         patientRef,
         undefined,
         appointment,
-        practitionerRef
+        practitionerRef,
+        expect.any(Function)
       );
     });
   });

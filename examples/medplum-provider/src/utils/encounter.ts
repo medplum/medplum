@@ -28,6 +28,7 @@ import type {
   Slot,
   Task,
 } from '@medplum/fhirtypes';
+import type { MedplumErrorHandler } from '@medplum/react';
 
 export async function createAppointment(
   medplum: MedplumClient,
@@ -81,7 +82,8 @@ export async function createEncounter(
   patient: Patient | Reference<Patient>,
   planDefinition: PlanDefinition | undefined,
   appointment: Appointment,
-  practitioner: Practitioner | Reference<Practitioner>
+  practitioner: Practitioner | Reference<Practitioner>,
+  onError: MedplumErrorHandler
 ): Promise<WithId<Encounter>> {
   const practitionerRef = isResource(practitioner) ? createReference(practitioner) : practitioner;
   const patientRef = isResource(patient) ? createReference(patient) : patient;
@@ -111,7 +113,7 @@ export async function createEncounter(
     await createChargeItemFromPlanDefinition(medplum, encounter, patientRef, planDefinition);
   }
 
-  await handleChargeItemsFromTasks(medplum, encounter, patientRef);
+  await handleChargeItemsFromTasks(medplum, encounter, patientRef, onError);
 
   return encounter;
 }
@@ -165,7 +167,8 @@ async function createChargeItemFromPlanDefinition(
 async function handleChargeItemsFromTasks(
   medplum: MedplumClient,
   encounter: Encounter,
-  patient: Reference<Patient>
+  patient: Reference<Patient>,
+  onError: MedplumErrorHandler
 ): Promise<void> {
   const tasks = await medplum.search('Task', {
     encounter: getReferenceString(encounter),
@@ -190,7 +193,7 @@ async function handleChargeItemsFromTasks(
         });
         await createChargeItemFromServiceRequest(medplum, patient, serviceRequest);
       } catch (err) {
-        console.error(`Error processing ServiceRequest ${serviceRequestRef}:`, err);
+        onError(err, { source: 'createEncounter', message: `Error processing ServiceRequest ${serviceRequestRef}` });
       }
     })
   );

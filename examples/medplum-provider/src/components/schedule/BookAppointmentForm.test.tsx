@@ -364,7 +364,8 @@ describe('BookAppointmentForm', () => {
         { reference: `Patient/${HomerSimpson.id}` },
         planDefinition,
         bookedAppointmentWithParticipants,
-        { reference: 'Practitioner/prac-1' }
+        { reference: 'Practitioner/prac-1' },
+        expect.any(Function)
       );
     });
 

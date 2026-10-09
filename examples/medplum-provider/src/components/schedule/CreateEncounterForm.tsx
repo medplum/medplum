@@ -5,7 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { isReference } from '@medplum/core';
 import type { Appointment, Coding, Patient, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
-import { CodingInput, Form, ResourceInput, useMedplum } from '@medplum/react';
+import { CodingInput, Form, ResourceInput, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import { IconAlertSquareRounded, IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
@@ -20,6 +20,7 @@ export interface CreateEncounterFormProps {
 
 export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const navigate = useAppNavigate();
 
   const [planDefinition, setPlanDefinition] = useState<PlanDefinition | undefined>();
@@ -56,14 +57,15 @@ export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Elemen
         patientRefs[0],
         planDefinition,
         props.appointment,
-        practitionerRefs[0]
+        practitionerRefs[0],
+        onError
       );
 
       navigate(encounterUrl(encounter));
     } catch (err) {
       showErrorNotification(err);
     }
-  }, [medplum, encounterClass, planDefinition, props.appointment, navigate, patientRefs, practitionerRefs]);
+  }, [medplum, onError, encounterClass, planDefinition, props.appointment, navigate, patientRefs, practitionerRefs]);
 
   const warnings: string[] = [];
 

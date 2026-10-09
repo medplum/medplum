@@ -90,9 +90,9 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
 
       const planDefinition = await medplum.readReference(planDefinitionRef);
 
-      return createEncounter(medplum, encounterClass, patient, planDefinition, appointment, practitioner);
+      return createEncounter(medplum, encounterClass, patient, planDefinition, appointment, practitioner, onError);
     },
-    [medplum, healthcareService]
+    [medplum, healthcareService, onError]
   );
 
   const bookAppointment = useCallback(

@@ -3,7 +3,7 @@
 import { Button, Flex, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { Coding, Patient, PlanDefinition, Practitioner, Reference, Schedule } from '@medplum/fhirtypes';
-import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum } from '@medplum/react';
+import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import type { DateTimeRange } from '@medplum/react-scheduling';
 import { IconAlertSquareRounded, IconCircleCheck, IconCirclePlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -28,6 +28,7 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
   const [end, setEnd] = useState(appointmentSlot?.end);
   const [isLoading, setIsLoading] = useState(false);
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const navigate = useAppNavigate();
 
   const [formattedDate, formattedSlotTime] = useMemo(() => {
@@ -73,7 +74,8 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
         patient,
         planDefinitionData,
         appointment,
-        props.practitioner
+        props.practitioner,
+        onError
       );
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Visit created' });
       navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`);

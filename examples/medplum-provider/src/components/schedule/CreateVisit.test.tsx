@@ -313,7 +313,15 @@ describe('CreateVisit', () => {
       const patient = expect.objectContaining({ resourceType: 'Patient' });
       const coding = expect.objectContaining({ code: 'test-code' });
       expect(createAppointment).toHaveBeenCalledWith(medplum, range.start, range.end, patient, practitioner, undefined);
-      expect(createEncounter).toHaveBeenCalledWith(medplum, coding, patient, undefined, appointment, practitioner);
+      expect(createEncounter).toHaveBeenCalledWith(
+        medplum,
+        coding,
+        patient,
+        undefined,
+        appointment,
+        practitioner,
+        expect.any(Function)
+      );
     });
 
     test('shows an error notification and re-enables the button when creation fails', async () => {

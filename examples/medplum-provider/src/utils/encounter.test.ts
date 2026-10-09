@@ -12,6 +12,8 @@ import type {
   Task,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react';
+import type { Mock } from 'vitest';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { addDiagnosesToEncounter, createAppointment, createEncounter, updateEncounterStatus } from './encounter';
 
@@ -20,9 +22,11 @@ describe('encounter utils', () => {
   let practitioner: Practitioner;
   let patient: Patient;
   let classification: Coding;
+  let onError: Mock<MedplumErrorHandler>;
 
   beforeEach(() => {
     medplum = new MockClient();
+    onError = vi.fn();
     practitioner = {
       resourceType: 'Practitioner',
       id: 'prac-1',
@@ -186,7 +190,8 @@ describe('encounter utils', () => {
         patient,
         planDefinition,
         appointment,
-        practitioner
+        practitioner,
+        onError
       );
 
       expect(encounter.status).toBe('planned');
@@ -224,7 +229,8 @@ describe('encounter utils', () => {
         patient,
         planDefinition,
         appointment,
-        practitioner
+        practitioner,
+        onError
       );
 
       expect(encounter.appointment).toEqual(
@@ -247,7 +253,7 @@ describe('encounter utils', () => {
       vi.spyOn(medplum, 'search').mockResolvedValue({ entry: [] } as any);
 
       const planDefinition: PlanDefinition = { resourceType: 'PlanDefinition', id: 'plan-1', status: 'active' };
-      await createEncounter(medplum, classification, patient, planDefinition, appointment, practitioner);
+      await createEncounter(medplum, classification, patient, planDefinition, appointment, practitioner, onError);
 
       expect(createResourceSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -277,7 +283,7 @@ describe('encounter utils', () => {
         status: 'active',
         title: 'Annual Wellness Visit',
       };
-      await createEncounter(medplum, classification, patient, planDefinition, appointment, practitioner);
+      await createEncounter(medplum, classification, patient, planDefinition, appointment, practitioner, onError);
 
       expect(createResourceSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -301,10 +307,35 @@ describe('encounter utils', () => {
       vi.spyOn(medplum, 'post').mockResolvedValue({});
       vi.spyOn(medplum, 'search').mockResolvedValue({ entry: [] } as any);
 
-      await createEncounter(medplum, classification, patient, undefined, appointment, practitioner);
+      await createEncounter(medplum, classification, patient, undefined, appointment, practitioner, onError);
 
       const encounterCall = createResourceSpy.mock.calls.find(([r]) => r.resourceType === 'Encounter');
       expect((encounterCall?.[0] as Encounter | undefined)?.type).toBeUndefined();
+    });
+
+    test('reports a Task ServiceRequest it cannot process and still creates the encounter', async () => {
+      const appointment: Appointment = { resourceType: 'Appointment', id: 'appt-1', status: 'booked', participant: [] };
+      vi.spyOn(medplum, 'search').mockResolvedValue({
+        entry: [{ resource: { resourceType: 'Task', focus: { reference: 'ServiceRequest/sr-1' } } as Task }],
+      } as any);
+      const error = new Error('ServiceRequest unavailable');
+      vi.spyOn(medplum, 'readReference').mockRejectedValue(error);
+
+      const encounter = await createEncounter(
+        medplum,
+        classification,
+        patient,
+        undefined,
+        appointment,
+        practitioner,
+        onError
+      );
+
+      expect(encounter.status).toBe('planned');
+      expect(onError).toHaveBeenCalledExactlyOnceWith(error, {
+        source: 'createEncounter',
+        message: 'Error processing ServiceRequest ServiceRequest/sr-1',
+      });
     });
   });
 
