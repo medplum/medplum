@@ -11,7 +11,7 @@ The server (`packages/server`) is a multi-tenant Node.js/Express application bac
 - OAuth2 / OpenID Connect and login flows (`/auth/...`, `/oauth2/...`): password login, MFA, Google and external identity providers, SMART on FHIR, client credentials, token exchange, refresh tokens, PKCE.
 - Admin and SCIM APIs (`/admin/...`, `/scim/...`).
 - WebSockets (subscriptions, FHIRcast) and the Agent protocol.
-- Bots: user-supplied JavaScript executed by the server (`vmcontext` runtime) or in AWS Lambda.
+- Bots: user-supplied JavaScript executed in AWS Lambda, or in the server process itself (`vmcontext` runtime, see below).
 - File uploads and Binary storage, including DICOM.
 - Parsers for clinical formats: HL7 v2 (`packages/hl7`), C-CDA (`packages/ccda`), and FHIRPath expressions (`packages/core`).
 
@@ -54,11 +54,13 @@ cd /src/packages/core && npx vitest run src/fhirpath
 
 Server tests create isolated Projects and users through helpers in `packages/server/src/test.setup.ts` (for example `createTestProject` and `initTestAuth`). These are the best starting point for reproducing cross-project or privilege escalation issues. Use `supertest` against `initApp` the way existing tests do. Do not re-run `npm run test:seed`: the database is already seeded.
 
+The scheduling tests listed in `serialTestFiles` in `packages/server/vite.config.ts` (`book.test.ts`, `hold.test.ts`, `cancel.test.ts` and others under `src/fhir/operations`) belong to a separate project. Run them with `--project @medplum/server-serial`; with `--project @medplum/server`, vitest reports "No test files found".
+
 The image has no network, so tests that expect real network behavior can fail. For example, `packages/hl7/src/client.test.ts` "Connection timeout when server does not respond" gets `ENETUNREACH` instead of a timeout. Such failures are environmental, not findings.
 
 ## How you rate severity
 
-- **Critical**: unauthenticated access to PHI or other Project data; reading or writing another Project's resources (tenant isolation bypass); authentication bypass; account takeover; remote code execution on the server, including escape from the bot `vmcontext` sandbox to the host process; SQL injection.
+- **Critical**: unauthenticated access to PHI or other Project data; reading or writing another Project's resources (tenant isolation bypass); authentication bypass; account takeover; remote code execution on the server, SQL injection.
 - **High**: bypass of AccessPolicy restrictions within a Project (for example, a restricted user reading resources or fields the policy hides, or writing where they only have read access); privilege escalation to Project admin or super admin; stored XSS in the Medplum app that can steal tokens; OAuth/OIDC flaws that leak tokens or codes; SSRF reaching internal services.
 - **Medium**: information disclosure without PHI (for example user enumeration, internal metadata); reflected XSS; CSRF on state-changing endpoints; weaknesses that require an unusual but realistic configuration.
 - **Low**: issues that require an admin to harm their own Project, or with no demonstrated security impact.
@@ -74,7 +76,13 @@ Do not report the following, which are out of scope under our [security policy](
 - Outdated dependency versions without a working proof of concept.
 - Self-XSS, or issues that need an unlikely degree of user interaction.
 - Behavior controlled by server configuration that is insecure only when an operator chooses an insecure setting (for example `allowedOrigins: "*"` in the development config, or the development reCAPTCHA keys).
-- Bots executing arbitrary code inside their own sandbox or Lambda: running user code is their purpose. Only escapes from that sandbox, or access to other Projects' data, are in scope.
+- Bots running arbitrary code. `vmcontext` bots are not sandboxed: they run inside the server process with the host's `require` and `process`, by design (see the comment at the top of `packages/server/src/bots/vmcontext.ts`). They are disabled unless `vmContextBotsEnabled` is set, and are only meant for deployments where Bot code is written by trusted administrators. The test config (`packages/server/medplum.config.json`) enables them, so don't report reading `process.env`, calling `child_process`, or other host access from bot code. Lambda bots likewise run whatever code they are given.
+
+  Bot issues that **are** in scope (rate them as access-control bugs, usually high or critical):
+  - a user without permission to create or update Bots gets code executed anyway;
+  - bots running when `vmContextBotsEnabled` is false;
+  - invoking another Project's bot, or reading its secrets, code or output;
+  - a bot's `event.accessToken` carrying more privilege than the bot's own ProjectMembership.
 - Super admin capabilities: super admins are trusted with access to all Projects.
 
 Reports should include a reproducer (ideally a Vitest test in the style of the existing tests) and, where possible, a minimal patch.

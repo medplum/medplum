@@ -7,7 +7,7 @@
 # Nothing starts them automatically, so run .oss-scanner/start-services.sh before the server tests.
 # See .oss-scanner/threat_model.md for how to run tests.
 
-FROM node:24-bookworm
+FROM node:24-bookworm@sha256:3d27e5c11e5786e309ec3e03f93ae536eb36e6e5eb3714d5eb3300a36157add0
 
 ENV DEBIAN_FRONTEND=noninteractive \
     TURBO_TELEMETRY_DISABLED=1 \
@@ -39,7 +39,7 @@ RUN PG_VERSION=$(ls /etc/postgresql | sort -V | tail -n 1) \
 # Seed the test database (migrations, structure definitions, search parameters) so the server tests are ready to run.
 # A failed seed leaves the image unusable for server tests, so it fails the build.
 RUN .oss-scanner/start-services.sh \
-    && (cd packages/server && SHOULD_RUN_SEED_TEST=1 npm run test:seed) \
+    && (cd packages/server && npm run test:seed) \
     && pg_ctlcluster "$(ls /etc/postgresql | sort -V | tail -n 1)" main stop
 
 # Smoke test a few server tests so the image is known to work, without letting a failure abort the build
