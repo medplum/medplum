@@ -19,7 +19,7 @@ import timeGridPlugin from '@fullcalendar/react/timegrid';
 import { Button, Group, Loader, SegmentedControl, Text, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
-import { assertNever } from '@medplum/core';
+import { assertNever, getExtension, RecurrenceIdExtensionURI } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
@@ -37,6 +37,7 @@ export interface FhirEventSource {
   slots: Slot[];
   appointments: Appointment[];
   color?: string;
+  className?: string;
 }
 
 export type ExtendedEvent =
@@ -68,7 +69,9 @@ function appointmentsToEvents(
         start: appointment.start,
         end: appointment.end,
         extendedProps: { type: 'appointment', appointment, schedule } satisfies ExtendedEvent,
-        className: `appointment ${appointment.status}`,
+        className: cx('appointment', appointment.status, {
+          recurring: getExtension(appointment, RecurrenceIdExtensionURI) !== undefined,
+        }),
         ...extra,
       };
     });
@@ -131,6 +134,7 @@ export interface CalendarBaseProps extends Omit<
   onDoubleClickSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
   onSelectInterval?: (interval: DateTimeRange) => void;
   selection?: DateTimeRange;
+  selectedAppointmentId?: string;
   eventSources: FhirEventSource[];
 
   onRangeChange?: (range: DateTimeRange) => void;
@@ -158,6 +162,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     onDoubleClickSlot,
     onSelectInterval,
     selection,
+    selectedAppointmentId,
     loading,
     ...fullCalendarProps
   } = props;
@@ -364,6 +369,8 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
           cx(props.eventClass, classes.event, {
             [classes.clickable]: evt.isInteractive,
             [classes.shortEvent]: evt.isShort,
+            selected: !!selectedAppointmentId && evt.event.id === selectedAppointmentId,
+            past: !!evt.event.end && evt.event.end.getTime() <= Date.now(),
           })
         }
         eventTimeClass={cx(props.eventTimeClass, classes.eventTime)}

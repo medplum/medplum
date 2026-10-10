@@ -2,8 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { getReferenceString, isDefined, isResourceWithId, normalizeErrorString } from '@medplum/core';
-import type { Appointment, Extension, Location, Reference, Slot } from '@medplum/fhirtypes';
+import {
+  extractServiceTypeReferences,
+  getReferenceString,
+  isDefined,
+  isResourceWithId,
+  normalizeErrorString,
+} from '@medplum/core';
+import type { Appointment, Extension, HealthcareService, Location, Reference, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -40,6 +46,8 @@ type PaneTab = 'appointment' | 'block';
 const NO_CANDIDATES: CandidatesByActorType = { Practitioner: [], Location: [], Device: [] };
 
 const NO_FILTERS: CalendarFilterValues = {};
+const NO_SERVICES: readonly WithId<HealthcareService>[] = [];
+const NO_LOCATIONS: readonly (Reference<Location> | WithId<Location>)[] = [];
 
 const NONE_DESELECTED: DeselectedIdsByActorType = {
   Practitioner: new Set(),
@@ -53,6 +61,11 @@ const RESOURCE_OPTIONS = {
   slotStatuses: ['busy', 'busy-unavailable', 'busy-tentative'],
   // Cancelled and entered-in-error appointments are not displayed here.
   appointmentStatuses: ['proposed', 'pending', 'booked', 'arrived', 'fulfilled', 'noshow', 'checked-in', 'waitlist'],
+} as const;
+
+const RESOURCE_OPTIONS_WITH_CANCELLED = {
+  ...RESOURCE_OPTIONS,
+  appointmentStatuses: [...RESOURCE_OPTIONS.appointmentStatuses, 'cancelled'],
 } as const;
 
 export interface SchedulingWorkspaceProps {
@@ -91,6 +104,8 @@ export interface SchedulingWorkspaceProps {
    * @see https://www.medplum.com/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions
    */
   readonly canBypassSchedulingRules?: boolean;
+  readonly serviceTypeColor?: (serviceReference: string) => string | undefined;
+  readonly showCancelled?: boolean;
   /**
    * Extensions to put on every appointment booked from this workspace. See
    * {@link AppointmentProposalFormProps.appointmentExtensions}.
@@ -141,6 +156,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     canBypassSchedulingRules,
     appointmentExtensions,
     defaultLocation,
+    serviceTypeColor,
+    showCancelled,
   } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
@@ -154,9 +171,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // Owned by `CalendarFilters`, which reports both whenever either changes. Held here
   // because the candidate search below is keyed on them.
-  const initialFilters: CalendarFilterValues = defaultLocation ? { location: defaultLocation } : NO_FILTERS;
+  const initialFilters: CalendarFilterValues = defaultLocation ? { locations: [defaultLocation] } : NO_FILTERS;
   const [filters, setFilters] = useState<CalendarFilterValues>(initialFilters);
-  const { service: selectedService, location: selectedLocation } = filters;
+  const { services: selectedServices = NO_SERVICES, locations: selectedLocations = NO_LOCATIONS } = filters;
+  const selectedLocation = selectedLocations.length === 1 ? selectedLocations[0] : undefined;
+  const selectedService = selectedServices.length === 1 ? selectedServices[0] : undefined;
+  const selectedServiceReferences = useMemo(
+    () => new Set(selectedServices.map((service) => getReferenceString(service))),
+    [selectedServices]
+  );
 
   const [range, setRange] = useState<DateTimeRange>();
 
@@ -182,13 +205,23 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         // We search for a large number of schedule candidates here because we
         // do client-side filtering based on locations in the list. Follow up:
         // https://github.com/medplum/medplum/issues/10618
-        const candidates = await searchScheduleCandidates(medplum, selectedService, {
-          actorType,
-          query: '',
-          location: selectedLocation,
-          signal: controller.signal,
-          count: 250,
-        });
+        const sites = selectedLocations.length > 0 ? selectedLocations : [undefined];
+        const services = selectedServices.length > 0 ? selectedServices : [undefined];
+        const searches = await Promise.all(
+          sites.flatMap((location) =>
+            services.map((service) =>
+              searchScheduleCandidates(medplum, service, {
+                actorType,
+                query: '',
+                location,
+                signal: controller.signal,
+                count: 250,
+              })
+            )
+          )
+        );
+        const byId = new Map(searches.flat().map((candidate) => [candidate.schedule.id, candidate]));
+        const candidates = [...byId.values()];
         return [actorType, candidates] as const;
       })
     )
@@ -209,7 +242,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         }
       });
     return () => controller.abort();
-  }, [medplum, selectedService, selectedLocation]);
+  }, [medplum, selectedServices, selectedLocations]);
 
   const activeCandidates = useMemo(() => {
     return BOOKABLE_ACTOR_TYPES.flatMap((actorType) =>
@@ -218,12 +251,25 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   }, [candidatesByActorType, deselectedIds]);
 
   const schedules = useMemo(() => activeCandidates.map((c) => c.schedule), [activeCandidates]);
+  const resourceOptions = showCancelled ? RESOURCE_OPTIONS_WITH_CANCELLED : RESOURCE_OPTIONS;
   const {
     slots,
     appointments,
     loading: resourcesLoading,
     error: resourcesError,
-  } = useSchedulingResources(schedules, range, RESOURCE_OPTIONS);
+  } = useSchedulingResources(schedules, range, resourceOptions);
+
+  // Picked by the service type's reference, so its color holds whichever week is on show,
+  // for everyone, and as other service types come and go.
+  const colorForService = useCallback(
+    (reference: string): string =>
+      resolveThemeColor(theme, serviceTypeColor?.(reference), fallbackColorIndex(reference)),
+    [theme, serviceTypeColor]
+  );
+  const colorForServiceResource = useCallback(
+    (service: WithId<HealthcareService>): string => colorForService(getReferenceString(service)),
+    [colorForService]
+  );
 
   const { sources, serviceTypes } = useMemo(() => {
     const actorsOnShow = new Set(
@@ -231,15 +277,21 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         .flatMap((candidate) => candidate.schedule.actor.map((actor) => actor.reference))
         .filter(isDefined)
     );
-    const visibleAppointments = (appointments ?? []).filter((appointment) =>
+    const onCalendarAppointments = (appointments ?? []).filter((appointment) =>
       appointment.participant.some(
         (participant) => participant.actor?.reference && actorsOnShow.has(participant.actor.reference)
       )
     );
+    const visibleAppointments =
+      selectedServiceReferences.size === 0
+        ? onCalendarAppointments
+        : onCalendarAppointments.filter((appointment) =>
+            selectedServiceReferences.has(extractServiceTypeReferences(appointment.serviceType)[0]?.reference ?? '')
+          );
     // Appointments are drawn by service type rather than on the calendars they are held on,
     // so the Slots they hold have to be cleared here: a source only clears the ones behind
     // its own appointments.
-    const openSlots = filterBookedSlots(slots ?? [], visibleAppointments);
+    const openSlots = filterBookedSlots(slots ?? [], onCalendarAppointments);
     const calendarSources = activeCandidates.map((candidate): MultiCalendarSource => {
       const scheduleReference = getReferenceString(candidate.schedule);
       return {
@@ -251,9 +303,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     const groups = Array.from(groupAppointmentsByService(visibleAppointments), ([reference, group]) => ({
       reference,
       group,
-      // Picked by the service type's reference, so its color holds whichever week is on show,
-      // for everyone, and as other service types come and go.
-      color: reference ? resolveThemeColor(theme, undefined, fallbackColorIndex(reference)) : 'gray',
+      color: reference ? colorForService(reference) : 'gray',
     }));
     const serviceSources = groups.map(({ group, color }): MultiCalendarSource => ({
       color,
@@ -271,7 +321,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       // shows them. The appointments naming no service type go last.
       .sort((a, b) => Number(a.id === 'none') - Number(b.id === 'none') || a.id.localeCompare(b.id));
     return { sources: [...calendarSources, ...serviceSources], serviceTypes: legend };
-  }, [activeCandidates, slots, appointments, theme]);
+  }, [activeCandidates, slots, appointments, colorForService, selectedServiceReferences]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
@@ -349,9 +399,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     const loaded = appointments?.find((a) => a.id === selectedAppointment.id);
     // One that left the calendar some other way, by paging or by hiding its calendars,
     // closes with it.
-    const statuses: readonly string[] = RESOURCE_OPTIONS.appointmentStatuses;
+    const statuses: readonly string[] = resourceOptions.appointmentStatuses;
     return loaded ?? (statuses.includes(selectedAppointment.status) ? undefined : selectedAppointment);
-  }, [appointments, selectedAppointment]);
+  }, [appointments, selectedAppointment, resourceOptions]);
 
   const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => ({
     id: candidate.schedule.id,
@@ -380,7 +430,13 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           items={panelItems}
           candidatesLoading={candidatesLoading}
           onToggle={toggleCandidate}
-          filters={<CalendarFilters defaultValue={initialFilters} onChange={setFilters} />}
+          filters={
+            <CalendarFilters
+              defaultValue={initialFilters}
+              onChange={setFilters}
+              serviceColor={colorForServiceResource}
+            />
+          }
         />
       </div>
       <div className={classes.calendar}>
@@ -397,6 +453,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onSelectInterval={startBooking}
           onSelectAppointment={selectAppointment}
           selection={blocking ? blockHighlight : highlight}
+          selectedAppointmentId={openAppointment?.id}
         />
         <div className={classes.footer}>
           <CalendarTimezoneNotice timezones={timezones} anyUnknown={anyUnknown} />

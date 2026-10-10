@@ -31,6 +31,7 @@ export interface MultiCalendarProps {
   onDoubleClickAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onRangeChange?: (range: DateTimeRange) => void;
   selection?: DateTimeRange;
+  selectedAppointmentId?: string;
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
   loading?: boolean;
@@ -65,8 +66,8 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
       }
 
       // Convert color name into a concrete color value we can pass to FullCalendar
-      const color = theme.colors[resolveThemeColor(theme, colorName, i)][7];
-      return { ...source, color };
+      const resolved = resolveThemeColor(theme, colorName, i);
+      return { ...source, color: theme.colors[resolved][7], className: `color-${resolved}` };
     });
   }, [sources, theme]);
 

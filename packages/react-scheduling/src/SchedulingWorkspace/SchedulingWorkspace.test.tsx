@@ -1,14 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { DEFAULT_THEME } from '@mantine/core';
-import type { Resource } from '@medplum/fhirtypes';
+import { createReference, toServiceTypeCodeableConcepts } from '@medplum/core';
+import type { Appointment, Resource, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { SinonFakeTimers } from 'sinon';
 import { useFakeTimers } from 'sinon';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
-import { CalendarWeekFixtures, SatelliteClinic, SchedulingFixtures } from '../stories/scheduling';
-import { pillRemoveButton } from '../test-utils/asyncAutocomplete';
+import {
+  CalendarWeekFixtures,
+  DrRiveraPractitioner,
+  DrRiveraSchedule,
+  SatelliteClinic,
+  SchedulingFixtures,
+  TelehealthService,
+} from '../stories/scheduling';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
@@ -24,18 +31,25 @@ import { SchedulingWorkspace } from './SchedulingWorkspace';
  */
 async function chooseFilter(placeholder: string, option: string | RegExp): Promise<void> {
   await userEvent.click(screen.getByPlaceholderText(placeholder));
-  await userEvent.click(await screen.findByText(option));
+  const target = await waitFor(() => {
+    const match = screen.getAllByText(option).find((element) => element.closest('[role="option"]'));
+    expect(match).toBeDefined();
+    return match as HTMLElement;
+  });
+  await userEvent.click(target);
+}
+
+async function removeVisitType(name: string): Promise<void> {
+  await userEvent.click(screen.getByRole('button', { name: `Remove ${name}` }));
 }
 
 /**
- * Takes a filter back to matching everything, the one way there is: the pill's own
- * remove button, which Mantine leaves aria-hidden and out of the tab order. Tracked
- * as an accessibility gap in https://github.com/medplum/medplum/issues/10609.
+ * Takes a chosen site off the filter, by the button on its row under the field.
  *
- * @param name - The value the filter is currently on.
+ * @param name - The site's name.
  */
 async function clearFilter(name: string): Promise<void> {
-  await userEvent.click(pillRemoveButton(name));
+  await userEvent.click(await screen.findByRole('button', { name: `Remove ${name}` }));
 }
 
 async function setupClient(resources: readonly Resource[] = SchedulingFixtures): Promise<MockClient> {
@@ -291,7 +305,7 @@ describe('SchedulingWorkspace', () => {
       await chooseFilter('All visit types', 'Telehealth Consult');
       await waitFor(() => expect(screen.getByText('No providers or staff found')).toBeInTheDocument());
 
-      await clearFilter('Telehealth Consult');
+      await removeVisitType('Telehealth Consult');
 
       await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
       expect(screen.getByText('Exam Room A')).toBeInTheDocument();
@@ -307,7 +321,7 @@ describe('SchedulingWorkspace', () => {
       // Out of the list under telehealth, then back under All, still hidden...
       await chooseFilter('All visit types', 'Telehealth Consult');
       await waitFor(() => expect(screen.queryByText('Dr. Maya Rivera')).not.toBeInTheDocument());
-      await clearFilter('Telehealth Consult');
+      await removeVisitType('Telehealth Consult');
       await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
 
       // ...but a row is drawn for every candidate whatever its state, so it is always
@@ -374,6 +388,108 @@ describe('SchedulingWorkspace', () => {
       expect(screen.getAllByText('Blocked').length).toBeGreaterThan(0);
       // Dr. Rivera's free Slot is not drawn: it would read as the only time open for booking.
       expect(screen.queryByText('Available')).not.toBeInTheDocument();
+    });
+
+    test('choosing visit types adds up the calendars that serve any of them', async () => {
+      clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
+      renderWithMedplum(<SchedulingWorkspace />, await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures]));
+      await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
+
+      await chooseFilter('All visit types', 'Telehealth Consult');
+      await waitFor(() => expect(screen.queryByText('Dr. Maya Rivera')).not.toBeInTheDocument());
+      expect(screen.getByText('Dr. Olivia Brown')).toBeInTheDocument();
+
+      await chooseFilter('Add a visit type', 'Ultrasound Imaging');
+      await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
+      expect(screen.getByText('Dr. Olivia Brown')).toBeInTheDocument();
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(1));
+      expect(appointmentEvents('Liam Jones')).toHaveLength(1);
+
+      await removeVisitType('Telehealth Consult');
+      await waitFor(() => expect(screen.queryByText('Dr. Olivia Brown')).not.toBeInTheDocument());
+      expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
+      expect(appointmentEvents('Liam Jones')).toHaveLength(0);
+    });
+
+    test('with visit types chosen, only their visits are drawn, on whichever calendar', async () => {
+      clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
+      const riveraTelehealthSlot: Slot = {
+        resourceType: 'Slot',
+        id: 'rivera-telehealth-slot',
+        status: 'busy',
+        schedule: createReference(DrRiveraSchedule),
+        start: '2020-05-07T15:00:00Z',
+        end: '2020-05-07T15:30:00Z',
+      };
+      const riveraTelehealth: Appointment = {
+        resourceType: 'Appointment',
+        id: 'rivera-telehealth',
+        status: 'booked',
+        start: '2020-05-07T15:00:00Z',
+        end: '2020-05-07T15:30:00Z',
+        slot: [{ reference: 'Slot/rivera-telehealth-slot' }],
+        serviceType: toServiceTypeCodeableConcepts(TelehealthService),
+        participant: [
+          { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
+          { status: 'accepted', actor: { reference: 'Patient/pt-park', display: 'Theo Park' } },
+        ],
+      };
+      renderWithMedplum(
+        <SchedulingWorkspace />,
+        await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures, riveraTelehealthSlot, riveraTelehealth])
+      );
+      await waitFor(() => expect(appointmentEvents('Theo Park')).toHaveLength(1));
+      const riveraSlots = (): Element[] =>
+        [...document.querySelectorAll('.slot')].filter((slot) => slot.textContent?.includes('Dr. Maya Rivera'));
+      const riveraSlotsBefore = riveraSlots().length;
+
+      await chooseFilter('All visit types', 'Ultrasound Imaging');
+
+      await waitFor(() => expect(appointmentEvents('Theo Park')).toHaveLength(0));
+      expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument();
+      expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
+      expect(riveraSlots()).toHaveLength(riveraSlotsBefore);
+    });
+
+    test('draws cancelled visits only when asked to', async () => {
+      clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
+      const cancelled: Appointment = {
+        resourceType: 'Appointment',
+        id: 'rivera-cancelled',
+        status: 'cancelled',
+        start: '2020-05-07T15:00:00Z',
+        end: '2020-05-07T15:30:00Z',
+        serviceType: toServiceTypeCodeableConcepts(TelehealthService),
+        participant: [
+          { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
+          { status: 'accepted', actor: { reference: 'Patient/pt-park', display: 'Theo Park' } },
+        ],
+      };
+      const medplum = await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures, cancelled]);
+
+      const { unmount } = renderWithMedplum(<SchedulingWorkspace />, medplum);
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(1));
+      expect(appointmentEvents('Theo Park')).toHaveLength(0);
+      unmount();
+
+      renderWithMedplum(<SchedulingWorkspace showCancelled />, medplum);
+      await waitFor(() => expect(appointmentEvents('Theo Park')).toHaveLength(1));
+      expect(appointmentEvents('Theo Park')[0]).toHaveClass('cancelled');
+    });
+
+    test('draws a visit type in the color the host picks for it', async () => {
+      clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
+      const pickColor = vi.fn((reference: string) =>
+        reference.startsWith('HealthcareService/') ? 'grape' : undefined
+      );
+      renderWithMedplum(
+        <SchedulingWorkspace serviceTypeColor={pickColor} />,
+        await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures])
+      );
+
+      await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(1));
+      expect(eventColor('Miles Cooper')).toBe(DEFAULT_THEME.colors.grape[7]);
+      expect(appointmentEvents('Miles Cooper')[0]).toHaveClass('color-grape');
     });
 
     test("an appointment is drawn once, in its service type's color, while any of its calendars is on show", async () => {
