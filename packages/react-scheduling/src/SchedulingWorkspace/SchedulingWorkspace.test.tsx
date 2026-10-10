@@ -517,7 +517,9 @@ describe('SchedulingWorkspace', () => {
 
     test('draws a visit type in the color the host picks for it', async () => {
       clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
-      const pickColor = vi.fn((reference: string) => (reference.startsWith('HealthcareService/') ? 'grape' : undefined));
+      const pickColor = vi.fn((reference: string) =>
+        reference.startsWith('HealthcareService/') ? 'grape' : undefined
+      );
       renderWithMedplum(
         <SchedulingWorkspace serviceTypeColor={pickColor} />,
         await setupClient([...SchedulingFixtures, ...CalendarWeekFixtures])

@@ -347,14 +347,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       // shows them. The appointments naming no service type go last.
       .sort((a, b) => Number(a.id === 'none') - Number(b.id === 'none') || a.id.localeCompare(b.id));
     return { sources: [...calendarSources, ...serviceSources], serviceTypes: legend };
-  }, [
-    activeCandidates,
-    slots,
-    appointments,
-    colorByScheduleId,
-    colorForService,
-    selectedServiceReferences,
-  ]);
+  }, [activeCandidates, slots, appointments, colorByScheduleId, colorForService, selectedServiceReferences]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
