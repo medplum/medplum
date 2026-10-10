@@ -138,6 +138,33 @@ describe('createMedplumClient', () => {
     }
   });
 
+  test('Login does not resume expired active login', async () => {
+    const testProfile = 'expiredProfile';
+    const storage = new FileSystemStorage(testProfile);
+    storage.setObject('options', { name: testProfile, baseUrl: 'https://api.medplum.com/' });
+    storage.setObject('activeLogin', {
+      accessToken:
+        'header.' + Buffer.from(JSON.stringify({ login_id: 'login-123', exp: 1 })).toString('base64') + '.signature',
+      refreshToken: 'expired-refresh-token',
+      profile: { reference: 'Practitioner/123' },
+      project: { reference: 'Project/123' },
+    });
+
+    const fetch = vi.fn(async () => ({ status: 401 }));
+    console.error = vi.fn();
+
+    const medplumClient = await createMedplumClient({ fetch, profile: testProfile }, false);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 10);
+    });
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(console.error).not.toHaveBeenCalled();
+    expect(console.log).not.toHaveBeenCalledWith('Unauthenticated: run `npx medplum login` to sign in');
+    expect(medplumClient.getActiveLogin()).toBeUndefined();
+    expect(storage.getObject('options')).toMatchObject({ name: testProfile });
+  });
+
   test('validates base URL healthcheck on non-default URL', async () => {
     const fetch = vi.fn(async (url: string) => {
       if (url.includes('healthcheck')) {
