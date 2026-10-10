@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Checkbox, Combobox, Group, Stack, Text, useCombobox } from '@mantine/core';
+import { Button, Checkbox, Combobox, Group, Loader, Stack, Text, useCombobox } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
 import { IconChevronDown } from '@tabler/icons-react';
@@ -13,6 +13,10 @@ const PAGE_SIZE = 10;
 export interface OfferPickerProps {
   /** The active visit types the Schedule doesn't offer yet. */
   readonly services: readonly WithId<HealthcareService>[];
+  /** Whether it's still being worked out if a visit type can be booked with the actor, which lists it disabled. */
+  readonly checking?: (service: WithId<HealthcareService>) => boolean;
+  /** Why a visit type can't be offered, which lists it disabled with the reason. */
+  readonly disabledReason?: (service: WithId<HealthcareService>) => string | undefined;
   readonly onOffer: (services: WithId<HealthcareService>[]) => void;
 }
 
@@ -23,7 +27,7 @@ export interface OfferPickerProps {
  * @returns The picker.
  */
 export function OfferPicker(props: OfferPickerProps): JSX.Element {
-  const { services, onOffer } = props;
+  const { services, checking, disabledReason, onOffer } = props;
   const [search, setSearch] = useState('');
   // Kept when the dropdown closes, so a stray click outside it doesn't lose what was ticked.
   const [checked, setChecked] = useState<ReadonlySet<string>>(new Set());
@@ -106,25 +110,40 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
           />
           <Combobox.Options mah={280} style={{ overflowY: 'auto' }} aria-multiselectable>
             {list?.rows.length === 0 && <Combobox.Empty>No visit types match</Combobox.Empty>}
-            {list?.rows.map((service) => (
-              <Combobox.Option
-                key={service.id}
-                value={service.id}
-                active={checked.has(service.id)}
-                aria-selected={checked.has(service.id)}
-              >
-                <Group gap="sm" wrap="nowrap">
-                  <Checkbox
-                    checked={checked.has(service.id)}
-                    onChange={() => undefined}
-                    aria-hidden
-                    tabIndex={-1}
-                    style={{ pointerEvents: 'none' }}
-                  />
-                  <Text size="sm">{serviceLabel(service)}</Text>
-                </Group>
-              </Combobox.Option>
-            ))}
+            {list?.rows.map((service) => {
+              const pending = checking?.(service) ?? false;
+              const reason = pending ? undefined : disabledReason?.(service);
+              const disabled = pending || !!reason;
+              return (
+                <Combobox.Option
+                  key={service.id}
+                  value={service.id}
+                  active={checked.has(service.id)}
+                  aria-selected={checked.has(service.id)}
+                  disabled={disabled}
+                  aria-disabled={disabled}
+                >
+                  <Group gap="sm" wrap="nowrap">
+                    <Checkbox
+                      checked={checked.has(service.id)}
+                      onChange={() => undefined}
+                      aria-hidden
+                      tabIndex={-1}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                    <Stack gap={0} style={{ flex: 1 }}>
+                      <Text size="sm">{serviceLabel(service)}</Text>
+                      {reason && (
+                        <Text size="xs" c="dimmed">
+                          {reason}
+                        </Text>
+                      )}
+                    </Stack>
+                    {pending && <Loader size={12} aria-label="Checking service facilities" />}
+                  </Group>
+                </Combobox.Option>
+              );
+            })}
           </Combobox.Options>
           <Combobox.Footer>
             <Stack gap="xs">

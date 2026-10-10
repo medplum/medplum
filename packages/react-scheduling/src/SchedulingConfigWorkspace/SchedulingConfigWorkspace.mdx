@@ -48,11 +48,13 @@ listed once it is saved.
   with the same fields as `ScheduleAvailabilityEditor`.
 - **Schedules offering this visit type:** every provider, room, and device whose Schedule offers it, grouped as the
   sidebar lists them, and marked **Customized** when the Schedule sets anything of its own for it. One that is turned
-  off, or whose Schedule is, is left out, as booking skips both. Picking one opens that actor's page on this visit type.
+  off, or whose Schedule is, is left out, as booking skips both. One that shares no service facility with the visit
+  type is marked as not bookable. Picking one opens that actor's page on this visit type.
 
 ## A provider's, room's, or device's page
 
-- **General:** a switch each for its own status and its Schedule's, then its name. Its own status applies
+- **General:** a switch each for its own status and its Schedule's, then its name and where it is: the Locations a
+  room or device sits within, outermost first, or the locations of a provider's active roles. Its own status applies
   everywhere, not only in scheduling. Switching it off switches its Schedule off too, and the Schedule can't be
   switched back on while it stays off. Switching the Schedule off on its own pauses booking without losing
   anything. A note says when it can't be booked: because it is inactive, or because its Schedule is switched off.
@@ -63,8 +65,9 @@ listed once it is saved.
   opened from a visit type's page, which opens that visit type's entry.
 
 **Offer visit types** opens a searchable list of every active visit type not offered yet. Tick any number to offer
-them together. Offering an actor's first visit type creates its Schedule when the page is saved, and not before.
-**Stop offering** asks first, then removes the settings the Schedule holds for that visit type with it.
+them together. One held only at service facilities the actor isn't at is listed disabled, naming where it is held. Offering
+an actor's first visit type creates its Schedule when the page is saved, and not before. **Stop offering** asks
+first, then removes the settings the Schedule holds for that visit type with it.
 
 ## Saving
 
