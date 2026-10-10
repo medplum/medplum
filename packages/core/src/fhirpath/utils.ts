@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
+import type { Coding, Element, Period, Quantity } from '@medplum/fhirtypes';
 import type { TypedValue } from '../types';
 import { PropertyType, getElementDefinition, isResource } from '../types';
 import type { InternalSchemaElement } from '../typeschema/types';
@@ -56,6 +56,18 @@ export function toJsBoolean(obj: TypedValue[]): boolean {
   return obj.length === 0 ? false : !!obj[0].value;
 }
 
+/**
+ * Determines whether a typed value carries nothing at all.
+ *
+ * A primitive whose value is absent is still present as an element when it has a primitive
+ * extension, so an extension alone is enough to make the value non-empty.
+ * @param typedValue - The typed value to check.
+ * @returns True if the value has neither content nor a primitive extension.
+ */
+export function isTypedValueEmpty(typedValue: TypedValue): boolean {
+  return isEmpty(typedValue.value) && typedValue.primitiveExtension === undefined;
+}
+
 export function singleton(collection: TypedValue[], type?: string): TypedValue | undefined {
   if (collection.length === 0) {
     return undefined;
@@ -88,6 +100,11 @@ export function getTypedPropertyValue(
   path: string,
   options?: GetTypedPropertyValueOptions
 ): TypedValue[] | TypedValue | undefined {
+  if (input.primitiveExtension !== undefined) {
+    // A primitive and its `_property` sibling are one node with e.g. `id` and `extension` as children
+    return getTypedPropertyValue({ type: 'Element', value: input.primitiveExtension }, path, options);
+  }
+
   if (!input.value) {
     return undefined;
   }
@@ -143,7 +160,7 @@ export function getTypedPropertyValueWithSchema(
   // So we need to use the element path to find the type.
   let resultValue: any = undefined;
   let resultType = 'undefined';
-  let primitiveExtension: Extension[] | undefined = undefined;
+  let primitiveExtension: Element | (Element | null)[] | undefined = undefined;
 
   const lastPathSegmentIndex = element.path.lastIndexOf('.');
   const lastPathSegment = element.path.substring(lastPathSegmentIndex + 1);
@@ -166,26 +183,8 @@ export function getTypedPropertyValueWithSchema(
     }
   }
 
-  // When checking for primitive extensions, we must use the "resolved" path.
-  // In the case of [x] choice-of-type, the type must be resolved to a single type.
-  if (primitiveExtension) {
-    if (Array.isArray(resultValue)) {
-      // Slice to avoid mutating the array in the input value
-      resultValue = resultValue.slice();
-      for (let i = 0; i < Math.max(resultValue.length, primitiveExtension.length); i++) {
-        resultValue[i] = assignPrimitiveExtension(resultValue[i], primitiveExtension[i]);
-      }
-    } else if (!resultValue && Array.isArray(primitiveExtension)) {
-      resultValue = primitiveExtension.slice();
-      for (let i = 0; i < primitiveExtension.length; i++) {
-        resultValue[i] = assignPrimitiveExtension(undefined, primitiveExtension[i]);
-      }
-    } else {
-      resultValue = assignPrimitiveExtension(resultValue, primitiveExtension);
-    }
-  }
-
-  if (isEmpty(resultValue)) {
+  // An element is present if it has a value, a primitive extension, or both
+  if (isEmpty(resultValue) && isEmpty(primitiveExtension)) {
     return undefined;
   }
 
@@ -193,18 +192,30 @@ export function getTypedPropertyValueWithSchema(
     resultType = element.type[0].code;
   }
 
-  if (Array.isArray(resultValue)) {
-    return resultValue.map((element) => toTypedValueWithType(element, resultType));
-  } else {
-    return toTypedValueWithType(resultValue, resultType);
+  // When checking for primitive extensions, we must use the "resolved" path.
+  // In the case of [x] choice-of-type, the type must be resolved to a single type.
+  // Either side may be the array: `_given` can have entries where `given` does not, and vice versa.
+  const values: any[] | undefined = Array.isArray(resultValue) ? resultValue : undefined;
+  const extensions: (Element | null)[] | undefined = Array.isArray(primitiveExtension) ? primitiveExtension : undefined;
+  if (values || extensions) {
+    const length = Math.max(values?.length ?? 0, extensions?.length ?? 0);
+    const results: TypedValue[] = [];
+    for (let i = 0; i < length; i++) {
+      // `null` on either side is a padding slot keeping the two arrays aligned, not a value.
+      results.push(toTypedValueWithType(values?.[i] ?? undefined, resultType, extensions?.[i] ?? undefined));
+    }
+    return results;
   }
+
+  return toTypedValueWithType(resultValue, resultType, primitiveExtension as Element | undefined);
 }
 
-function toTypedValueWithType(value: any, type: string): TypedValue {
+function toTypedValueWithType(value: any, type: string, primitiveExtension?: Element): TypedValue {
   if (type === 'Resource' && isResource(value)) {
     type = value.resourceType;
   }
-  return { type, value };
+  // Only set the property when there is one, so that the common case keeps its usual shape.
+  return primitiveExtension === undefined ? { type, value } : { type, value, primitiveExtension };
 }
 
 /**
@@ -336,8 +347,8 @@ export function fhirPathArrayNotEquals(x: TypedValue[], y: TypedValue[]): TypedV
  * @returns True if equal.
  */
 export function fhirPathEquals(x: TypedValue, y: TypedValue): TypedValue[] {
-  const xValue = x.value?.valueOf();
-  const yValue = y.value?.valueOf();
+  const xValue = x.value;
+  const yValue = y.value;
   if (typeof xValue === 'number' && typeof yValue === 'number') {
     return booleanToTypedValue(Math.abs(xValue - yValue) < 1e-8);
   }
@@ -375,10 +386,8 @@ export function fhirPathArrayEquivalent(x: TypedValue[], y: TypedValue[]): Typed
  * @returns True if equivalent.
  */
 export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
-  const { type: xType, value: xValueRaw } = x;
-  const { type: yType, value: yValueRaw } = y;
-  const xValue = xValueRaw?.valueOf();
-  const yValue = yValueRaw?.valueOf();
+  const { type: xType, value: xValue } = x;
+  const { type: yType, value: yValue } = y;
 
   if (typeof xValue === 'number' && typeof yValue === 'number') {
     // Use more generous threshold than equality
@@ -424,8 +433,8 @@ export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
  * @returns The sort order of the values.
  */
 function fhirPathEquivalentCompare(x: TypedValue, y: TypedValue): number {
-  const xValue = x.value?.valueOf();
-  const yValue = y.value?.valueOf();
+  const xValue = x.value;
+  const yValue = y.value;
   if (typeof xValue === 'number' && typeof yValue === 'number') {
     return xValue - yValue;
   }
@@ -595,27 +604,4 @@ function deepEquals<T1 extends object, T2 extends object>(object1: T1, object2: 
 
 function isObject(obj: unknown): obj is object {
   return obj !== null && typeof obj === 'object';
-}
-
-function assignPrimitiveExtension(target: any, primitiveExtension: any): any {
-  if (primitiveExtension) {
-    if (typeof primitiveExtension !== 'object') {
-      throw new Error('Primitive extension must be an object');
-    }
-    return safeAssign(target ?? {}, primitiveExtension);
-  }
-  return target;
-}
-
-/**
- * For primitive string, number, boolean, the return value will be the corresponding
- * `String`, `Number`, or `Boolean` version of the type.
- * @param target - The value to have `source` properties assigned to.
- * @param source - An object to be assigned to `target`.
- * @returns The `target` value with the properties of `source` assigned to it.
- */
-function safeAssign(target: any, source: any): any {
-  delete source.__proto__; //eslint-disable-line no-proto
-  delete source.constructor;
-  return Object.assign(target, source);
 }
