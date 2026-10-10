@@ -18,11 +18,6 @@ export const mockTopic: Communication = {
   },
 };
 
-/**
- * Builds an SSE response that delivers one content chunk and completes.
- * @param content - The chunk to stream
- * @returns The streaming response
- */
 export function createMockStreamingResponse(content: string): Response {
   const encoder = new TextEncoder();
   const sseData = `data: ${JSON.stringify({ content })}\n\ndata: [DONE]\n\n`;
@@ -45,10 +40,7 @@ export interface ControlledStream {
   close: () => void;
 }
 
-/**
- * Builds an SSE response the test feeds chunk by chunk, to observe state mid-stream.
- * @returns The response plus push and close controls
- */
+// An SSE response the test feeds chunk by chunk, to observe state mid-stream
 export function controlledStream(): ControlledStream {
   let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
   const stream = new ReadableStream<Uint8Array>({ start: (c) => (controller = c) });
@@ -59,12 +51,6 @@ export function controlledStream(): ControlledStream {
   };
 }
 
-/**
- * Builds a persisted message, as loadConversationMessages reads it back.
- * @param message - The message to persist
- * @param seq - Its sequence number in the conversation
- * @returns The Communication resource
- */
 export function toCommunication(message: Message, seq: number): Communication {
   const contentString = JSON.stringify({ ...message, sequenceNumber: seq });
   return { resourceType: 'Communication', id: `msg-${seq}`, status: 'completed', payload: [{ contentString }] };
@@ -72,33 +58,15 @@ export function toCommunication(message: Message, seq: number): Communication {
 
 export type MockToolCall = { id?: string; function: { name: string; arguments: unknown } };
 
-/**
- * Builds a translator bot response requesting tool calls.
- * @param toolCalls - The tool calls to request
- * @param visualize - Whether the bot asks for a visualization
- * @returns The bot response
- */
 export function toolCallsResponse(toolCalls: MockToolCall[], visualize = false): Parameters {
   const parameter = [{ name: 'tool_calls', valueString: JSON.stringify(toolCalls) }];
   return { resourceType: 'Parameters', parameter: [...parameter, { name: 'visualize', valueBoolean: visualize }] };
 }
 
-/**
- * Builds a translator bot response with a final answer.
- * @param content - The answer text
- * @returns The bot response
- */
 export function contentResponse(content: string): Parameters {
   return { resourceType: 'Parameters', parameter: [{ name: 'content', valueString: content }] };
 }
 
-/**
- * Builds a fhir_request tool call.
- * @param id - The tool call id
- * @param method - The HTTP method
- * @param path - The FHIR path
- * @returns The tool call
- */
 export function fhirRequestToolCall(id: string, method: string, path: string): MockToolCall {
   return { id, function: { name: 'fhir_request', arguments: JSON.stringify({ method, path }) } };
 }
@@ -109,10 +77,6 @@ export interface Deferred<T> {
   reject: (reason?: unknown) => void;
 }
 
-/**
- * Creates a promise the test resolves or rejects by hand.
- * @returns The promise and its settle functions
- */
 export function deferred<T>(): Deferred<T> {
   let resolve: (value: T) => void = () => undefined;
   let reject: (reason?: unknown) => void = () => undefined;

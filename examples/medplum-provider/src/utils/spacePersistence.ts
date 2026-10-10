@@ -115,7 +115,7 @@ export async function touchConversationTopic(medplum: MedplumClient, topicId: st
   ]);
 }
 
-export const MESSAGE_WINDOW_SIZE = 100;
+const MESSAGE_WINDOW_SIZE = 100;
 
 /**
  * Loads the most recent messages for a conversation topic.

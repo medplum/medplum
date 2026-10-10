@@ -50,12 +50,7 @@ export interface SpacesInboxProps extends UseSpacesConversationResult {
   onAdd?: () => void;
 }
 
-/**
- * The Spaces chat view. All conversation state and async work live in
- * useSpacesConversation; this component only owns what the user sees and clicks.
- * @param props - The conversation state and actions, plus navigation callbacks
- * @returns The chat view with its conversation list and side panels
- */
+// Conversation state and async work live in useSpacesConversation; this owns only view state.
 export function SpacesInbox(props: SpacesInboxProps): JSX.Element {
   const {
     status,

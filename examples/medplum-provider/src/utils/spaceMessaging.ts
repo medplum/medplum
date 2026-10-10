@@ -22,8 +22,6 @@ const componentGeneratorBotSseId: Identifier = {
   system: 'https://www.medplum.com/bots',
 };
 
-const noop = (): void => undefined;
-
 export interface ToolCall {
   id: string;
   function: {
@@ -221,8 +219,7 @@ function toApiMessages(messages: Message[]): Pick<Message, 'role' | 'content' | 
 }
 
 /**
- * Finds the bot to run for an identifier. A project can hold several bots with the same
- * identifier (an old copy next to a redeployed one), so the most recently updated wins.
+ * Finds the bot to run for an identifier. Several bots can share one, so the newest wins.
  * @param medplum - The Medplum client
  * @param identifier - The bot identifier
  * @returns The bot id
@@ -267,33 +264,13 @@ export interface StreamingResult {
   code?: string;
 }
 
-/**
- * Reads the error carried by an SSE frame, if any. The server reports a failure mid-stream
- * as a frame with an `error` field rather than a non-2xx status.
- * @param parsed - The parsed SSE frame
- * @returns The error message, or undefined when the frame is not an error
- */
-function streamErrorMessage(parsed: unknown): string | undefined {
-  if (!parsed || typeof parsed !== 'object' || !('error' in parsed)) {
-    return undefined;
-  }
-  const error: unknown = parsed.error;
-  if (typeof error === 'string') {
-    return error;
-  }
-  if (error && typeof error === 'object' && typeof (error as { message?: unknown }).message === 'string') {
-    return (error as { message: string }).message;
-  }
-  return undefined;
-}
-
 export async function sendToBotStreaming(
   medplum: MedplumClient,
   botId: Identifier,
   messages: Message[],
   model: string,
   reasoningEffort: ReasoningEffort,
-  onChunk: (chunk: string) => void,
+  onChunk?: (chunk: string) => void,
   additionalParams?: { name: string; valueString: string }[]
 ): Promise<StreamingResult> {
   const url = medplum.fhirUrl('Bot', await resolveBotId(medplum, botId), '$execute').toString();
@@ -330,7 +307,7 @@ export async function sendToBotStreaming(
     const data = await response.json();
     const content = data.parameter?.find((p: { name: string }) => p.name === 'content')?.valueString || '';
     if (content) {
-      onChunk(content);
+      onChunk?.(content);
       codeExtractor.process(content);
     }
     return { content, code: codeExtractor.getCode() };
@@ -366,24 +343,23 @@ export async function sendToBotStreaming(
           continue;
         }
 
-        let parsed: unknown;
+        let frame: { error?: unknown; content?: string; choices?: { delta?: { content?: string } }[] };
         try {
-          parsed = JSON.parse(data);
+          frame = JSON.parse(data);
         } catch {
           continue;
         }
 
-        const streamError = streamErrorMessage(parsed);
-        if (streamError) {
-          throw new Error(streamError);
+        // A failure mid-stream arrives as an error frame, not a non-2xx status
+        if (typeof frame.error === 'string') {
+          throw new Error(frame.error);
         }
 
-        const frame = parsed as { content?: string; choices?: { delta?: { content?: string } }[] };
         const chunk = frame.content || frame.choices?.[0]?.delta?.content;
         if (chunk) {
           fullContent += chunk;
           codeExtractor.process(chunk);
-          onChunk(chunk);
+          onChunk?.(chunk);
         }
       }
     }
@@ -531,7 +507,7 @@ export async function processMessage(options: ProcessMessageOptions): Promise<Pr
       next,
       model,
       reasoningEffort,
-      events.onStreamChunk ?? noop
+      events.onStreamChunk
     );
     content = result.content;
   }
@@ -554,7 +530,7 @@ export async function processMessage(options: ProcessMessageOptions): Promise<Pr
       next,
       model,
       reasoningEffort,
-      events.onComponentStreamChunk ?? events.onStreamChunk ?? noop,
+      events.onComponentStreamChunk ?? events.onStreamChunk,
       [{ name: 'fhirData', valueString: JSON.stringify(fhirData) }]
     );
     componentCode = result.code;
