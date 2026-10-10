@@ -9,7 +9,6 @@ import type { CalendarsPanelItem } from './CalendarsPanel';
 export interface CalendarRowProps {
   readonly item: CalendarsPanelItem;
   readonly icon?: ReactNode;
-  readonly color: string;
   readonly onToggle?: (id: string) => void;
 }
 
@@ -17,7 +16,6 @@ export function CalendarRow(props: CalendarRowProps): JSX.Element {
   const { item, icon, onToggle } = props;
   const selected = item.selected ?? true;
   const interactive = !!onToggle;
-  const color = selected ? props.color : 'gray';
 
   return (
     <UnstyledButton
@@ -30,11 +28,11 @@ export function CalendarRow(props: CalendarRowProps): JSX.Element {
     >
       <Group gap="sm" wrap="nowrap">
         {icon ? (
-          <ThemeIcon variant="light" color={color} radius="sm" size={20} className={classes.icon}>
+          <ThemeIcon variant="light" color="gray" radius="sm" size={20} className={classes.icon}>
             {icon}
           </ThemeIcon>
         ) : (
-          <Avatar src={item.imageUrl} name={item.label} color={color} radius="xl" size={28} />
+          <Avatar src={item.imageUrl} name={item.label} color="gray" radius="xl" size={28} />
         )}
         <Text truncate c={selected ? undefined : 'dimmed'}>
           {item.label}

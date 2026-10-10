@@ -24,6 +24,18 @@
       );
     }
   }
+
+  /* Slots are drawn in one gray, whichever source they come from, leaving color to the
+   * appointments. */
+  :global(.slot) {
+    background: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-4));
+    color: var(--mantine-color-white);
+
+    .eventTime,
+    .eventInner {
+      color: inherit;
+    }
+  }
 }
 
 .eventTime {

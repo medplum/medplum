@@ -79,25 +79,6 @@ function calendarRow(label: string): HTMLElement {
 }
 
 /**
- * The Mantine color a calendar's row is drawn in, read off the swatch Mantine styles inline.
- *
- * No fixture Schedule names a color, so every row is on the cycled fallback palette — which
- * is the palette a filter can shift a calendar along.
- *
- * @param label - The calendar's row label.
- * @returns The Mantine color name.
- */
-function calendarColor(label: string): string {
-  const row = screen.getByText(label).closest('button') as HTMLElement;
-  const swatch = row.querySelector('[style*="-bg"]');
-  const color = /--(?:avatar|ti)-bg: var\(--mantine-color-([a-z]+)-/.exec(swatch?.getAttribute('style') ?? '')?.[1];
-  if (!color) {
-    throw new Error(`No color on the row for ${label}`);
-  }
-  return color;
-}
-
-/**
  * The appointment events on the calendar for a patient.
  *
  * @param patient - The patient's name, which is what an appointment event is titled.
@@ -179,25 +160,6 @@ describe('SchedulingWorkspace', () => {
 
     await waitFor(() => expect(screen.getByText('No devices found')).toBeInTheDocument());
     expect(screen.getByText('No rooms found')).toBeInTheDocument();
-  });
-
-  test('a calendar keeps its color when a filter drops the ones listed before it', async () => {
-    const medplum = await setupClient();
-    renderWithMedplum(<SchedulingWorkspace />, medplum);
-
-    await waitFor(() => expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument());
-    const color = calendarColor('Satellite Exam Room');
-
-    // The satellite keeps its own room and drops both main campus rooms listed above it,
-    // which is what would shift the satellite room onto another color if the palette were
-    // picked by position in the narrowed list.
-    await chooseFilter('All locations', 'Uro Associates - Satellite');
-    await waitFor(() => expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument());
-    expect(calendarColor('Satellite Exam Room')).toBe(color);
-
-    await clearFilter('Uro Associates - Satellite');
-    await waitFor(() => expect(screen.getByText('Exam Room A')).toBeInTheDocument());
-    expect(calendarColor('Satellite Exam Room')).toBe(color);
   });
 
   describe('Location filter', () => {

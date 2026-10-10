@@ -4,12 +4,10 @@ import { Alert, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantin
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
-  getExtensionValue,
   getReferenceString,
   isDefined,
   isResourceWithId,
   normalizeErrorString,
-  SchedulingScheduleColorURI,
 } from '@medplum/core';
 import type { Appointment, Extension, HealthcareService, Location, Reference, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
@@ -46,8 +44,6 @@ type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<s
 type PaneTab = 'appointment' | 'block';
 
 const NO_CANDIDATES: CandidatesByActorType = { Practitioner: [], Location: [], Device: [] };
-
-const EMPTY_COLOR_INDEXES: ReadonlyMap<string, number> = new Map();
 
 const NO_FILTERS: CalendarFilterValues = {};
 const NO_SERVICES: readonly WithId<HealthcareService>[] = [];
@@ -126,8 +122,6 @@ export interface SchedulingWorkspaceProps {
 /**
  * A data-coordination component pairing `CalendarsPanel` with {@link MultiCalendar}.
  *
- * - Picks a color for each Schedule so that it can render consistently across
- *   those components.
  * - Draws each appointment once, however many of the calendars on show it is held on,
  *   in the color of its service type, picked by hashing the HealthcareService's reference.
  *   A legend below the calendar keys those colors.
@@ -172,7 +166,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const [candidatesByActorType, setCandidatesByActorType] = useState<CandidatesByActorType>(NO_CANDIDATES);
   const [candidatesLoading, setCandidatesLoading] = useState(false);
-  const [colorIndexes, setColorIndexes] = useState<ReadonlyMap<string, number>>(EMPTY_COLOR_INDEXES);
 
   const [deselectedIds, setDeselectedIds] = useState<DeselectedIdsByActorType>(NONE_DESELECTED);
 
@@ -235,7 +228,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       .then((results) => {
         if (!controller.signal.aborted) {
           setSchedulesLoadingError(undefined);
-          setColorIndexes((previous) => numberNewCandidates(previous, results));
           setCandidatesByActorType(Object.fromEntries(results) as CandidatesByActorType);
         }
       })
@@ -251,23 +243,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       });
     return () => controller.abort();
   }, [medplum, selectedServices, selectedLocations]);
-
-  // Every candidate across all the bookable types gets its own color, shared between its
-  // CalendarsPanel row and its MultiCalendar source so the two always match. The fallback
-  // palette is picked by the number the calendar was given when it was first offered, so a
-  // filter narrowing the list leaves the colors of the calendars it keeps alone.
-  const colorByScheduleId = useMemo(() => {
-    const all = BOOKABLE_ACTOR_TYPES.flatMap((actorType) => candidatesByActorType[actorType]);
-    const map = new Map<string, keyof typeof theme.colors>();
-    for (const candidate of all) {
-      const extensionColor = getExtensionValue(candidate.schedule, SchedulingScheduleColorURI) as string | undefined;
-      map.set(
-        candidate.schedule.id,
-        resolveThemeColor(theme, extensionColor, colorIndexes.get(candidate.schedule.id) ?? 0)
-      );
-    }
-    return map;
-  }, [candidatesByActorType, colorIndexes, theme]);
 
   const activeCandidates = useMemo(() => {
     return BOOKABLE_ACTOR_TYPES.flatMap((actorType) =>
@@ -321,7 +296,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       const scheduleReference = getReferenceString(candidate.schedule);
       return {
         schedule: candidate.schedule,
-        color: colorByScheduleId.get(candidate.schedule.id),
         slots: openSlots.filter((slot: Slot) => slot.schedule?.reference === scheduleReference),
         appointments: [],
       };
@@ -347,7 +321,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       // shows them. The appointments naming no service type go last.
       .sort((a, b) => Number(a.id === 'none') - Number(b.id === 'none') || a.id.localeCompare(b.id));
     return { sources: [...calendarSources, ...serviceSources], serviceTypes: legend };
-  }, [activeCandidates, slots, appointments, colorByScheduleId, colorForService, selectedServiceReferences]);
+  }, [activeCandidates, slots, appointments, colorForService, selectedServiceReferences]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
@@ -429,18 +403,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     return loaded ?? (statuses.includes(selectedAppointment.status) ? undefined : selectedAppointment);
   }, [appointments, selectedAppointment, resourceOptions]);
 
-  const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => {
-    const color = colorByScheduleId.get(candidate.schedule.id);
-    if (!color) {
-      throw new Error('Got candidate without resolved color');
-    }
-    return {
-      id: candidate.schedule.id,
-      label: getCandidateDisplay(candidate),
-      color,
-      selected,
-    };
-  };
+  const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => ({
+    id: candidate.schedule.id,
+    label: getCandidateDisplay(candidate),
+    selected,
+  });
 
   const panelItems = Object.fromEntries(
     BOOKABLE_ACTOR_TYPES.map((actorType) => [
@@ -562,34 +529,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       )}
     </div>
   );
-}
-
-/**
- * Gives every calendar not yet numbered the next number, keeping the number the rest hold.
- *
- * The number picks a calendar's fallback color, so it has to outlive the list a filter
- * narrows: numbering by position in that list would repaint every calendar surviving the
- * filter. Numbers run in the order calendars were first offered, which holds for as long
- * as the workspace is open.
- *
- * @param previous - The numbers already given out.
- * @param results - The candidates that just arrived, by actor type.
- * @returns The numbers, extended for whatever is new, or `previous` when nothing is.
- */
-function numberNewCandidates(
-  previous: ReadonlyMap<string, number>,
-  results: readonly (readonly [BookableActorType, ScheduleCandidate[]])[]
-): ReadonlyMap<string, number> {
-  let next: Map<string, number> | undefined;
-  for (const [, candidates] of results) {
-    for (const candidate of candidates) {
-      if (!previous.has(candidate.schedule.id)) {
-        next ??= new Map(previous);
-        next.set(candidate.schedule.id, next.size);
-      }
-    }
-  }
-  return next ?? previous;
 }
 
 function toggleId(ids: ReadonlySet<string>, id: string): Set<string> {

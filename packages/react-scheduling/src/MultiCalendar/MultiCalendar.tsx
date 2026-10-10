@@ -38,7 +38,8 @@ export interface MultiCalendarProps {
 }
 
 /**
- * A component that can display appointments and slots from several color-coded calendars.
+ * A component that can display appointments and slots from several Schedules, with each
+ * schedule's appointments color-coded. Slots are drawn in gray, whichever schedule holds them.
  *
  * If you pass a Schedule as an attribute of a source, it will be passed back
  * to event handlers alongside the interacted Appointment/Slot resources. It may also
