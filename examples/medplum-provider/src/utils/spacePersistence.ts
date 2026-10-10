@@ -115,17 +115,23 @@ export async function touchConversationTopic(medplum: MedplumClient, topicId: st
   ]);
 }
 
+export const MESSAGE_WINDOW_SIZE = 100;
+
 /**
- * Loads the last messages for a conversation topic
+ * Loads the most recent messages for a conversation topic.
+ *
+ * Only the newest MESSAGE_WINDOW_SIZE Communications are fetched. The window is then
+ * trimmed to start at a user message, because a window that starts mid-turn would hand
+ * the model tool replies with no preceding tool_calls message, which it rejects.
  * @param medplum - The Medplum client instance
  * @param topicId - The ID of the conversation topic
- * @returns Array of messages
+ * @returns Array of messages in conversation order
  */
 export async function loadConversationMessages(medplum: MedplumClient, topicId: string): Promise<Message[]> {
   const communications = await medplum.searchResources('Communication', {
     'part-of': `Communication/${topicId}`,
-    _sort: '_lastUpdated',
-    _count: '100',
+    _sort: '-_lastUpdated',
+    _count: String(MESSAGE_WINDOW_SIZE),
   });
 
   const messages: { message: Message; sequenceNumber: number }[] = [];
@@ -157,7 +163,11 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
   // Sort by sequenceNumber to ensure correct message order for OpenAI
   messages.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
 
-  return messages.map((m) => m.message);
+  const firstUserIndex = messages.findIndex((m) => m.message.role === 'user');
+  if (firstUserIndex === -1) {
+    return [];
+  }
+  return messages.slice(firstUserIndex).map((m) => m.message);
 }
 
 /**

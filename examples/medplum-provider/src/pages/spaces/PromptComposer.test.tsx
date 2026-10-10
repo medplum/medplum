@@ -322,6 +322,30 @@ describe('PromptComposer', () => {
       await waitFor(() => expect(screen.queryByText('Reasoning effort')).not.toBeInTheDocument());
     });
 
+    test('Closes an open picker on click outside and returns focus to the prompt', async () => {
+      setup();
+
+      fireEvent.click(screen.getByRole('button', { name: /GPT-5.5/ }));
+      expect(await screen.findByText('Model')).toBeInTheDocument();
+
+      fireEvent.mouseDown(document.body);
+
+      await waitFor(() => expect(screen.queryByText('Model')).not.toBeInTheDocument());
+      expect(textarea()).toHaveFocus();
+    });
+
+    test('Toggling a picker closed returns focus to the prompt', async () => {
+      setup();
+
+      fireEvent.click(screen.getByRole('button', { name: /Medium/ }));
+      expect(await screen.findByText('Reasoning effort')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: /Medium/ }));
+
+      await waitFor(() => expect(screen.queryByText('Reasoning effort')).not.toBeInTheDocument());
+      expect(textarea()).toHaveFocus();
+    });
+
     test('Falls back to the raw value for a model missing from the list', () => {
       render(
         <MemoryRouter>

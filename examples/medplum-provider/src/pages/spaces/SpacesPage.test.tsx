@@ -5,29 +5,22 @@ import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import userEvent from '@testing-library/user-event';
+import type { JSX } from 'react';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { contentResponse, mockTopic } from '../../test-utils/spaces';
 import { SpacesPage } from './SpacesPage';
-
-const mockTopic: Communication = {
-  resourceType: 'Communication',
-  id: 'topic-123',
-  status: 'in-progress',
-  identifier: [
-    {
-      system: 'http://medplum.com/ai-message',
-      value: 'ai-message-topic',
-    },
-  ],
-  topic: {
-    text: 'Test conversation',
-  },
-};
 
 const mockProfile = {
   resourceType: 'Practitioner' as const,
   id: 'practitioner-123',
 };
+
+function LocationProbe(): JSX.Element {
+  const location = useLocation();
+  return <div data-testid="location">{location.pathname}</div>;
+}
 
 describe('SpacesPage', () => {
   let medplum: MockClient;
@@ -42,7 +35,14 @@ describe('SpacesPage', () => {
       .fn()
       .mockReturnValue({ resourceType: 'Project', id: 'project-123', features: ['bots', 'ai'] });
     medplum.searchResources = vi.fn().mockResolvedValue([]);
-    medplum.readReference = vi.fn().mockResolvedValue(mockTopic);
+    medplum.createResource = vi.fn().mockImplementation((resource: Communication) => {
+      if (resource.identifier?.[0]?.value === 'ai-message-topic') {
+        return Promise.resolve(mockTopic);
+      }
+      return Promise.resolve({ ...resource, id: 'message-123' });
+    });
+    medplum.searchOne = vi.fn().mockResolvedValue({ resourceType: 'Bot', id: 'bot-1' }) as any;
+    medplum.executeBot = vi.fn().mockResolvedValue(contentResponse('Bot response'));
   });
 
   const setup = (initialEntries = ['/Spaces']): ReturnType<typeof render> => {
@@ -57,6 +57,7 @@ describe('SpacesPage', () => {
                 <Route path="Communication/:topicId" element={<SpacesPage />} />
               </Route>
             </Routes>
+            <LocationProbe />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -103,14 +104,35 @@ describe('SpacesPage', () => {
     expect(screen.getByPlaceholderText('Ask, search, or make anything...')).toBeInTheDocument();
   });
 
-  test('renders SpaceInbox with topic reference from URL', async () => {
+  test('loads the conversation named by the URL', async () => {
     await act(async () => {
       setup(['/Spaces/Communication/123']);
     });
 
     await waitFor(() => {
-      expect(medplum.readReference).toHaveBeenCalledWith({ reference: 'Communication/123' });
+      expect(medplum.searchResources).toHaveBeenCalledWith(
+        'Communication',
+        expect.objectContaining({ 'part-of': 'Communication/123' })
+      );
     });
+  });
+
+  test('navigates to the new topic after the first message without reloading it', async () => {
+    const user = userEvent.setup();
+    await act(async () => {
+      setup(['/Spaces/Communication']);
+    });
+
+    await user.type(screen.getByPlaceholderText('Ask, search, or make anything...'), 'Hello AI');
+    await user.click(screen.getByRole('button', { name: 'Send message' }));
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/Spaces/Communication/topic-123'));
+    expect(await screen.findByText('Bot response')).toBeInTheDocument();
+    expect(screen.getByText('Hello AI')).toBeInTheDocument();
+    const messageLoads = vi
+      .mocked(medplum.searchResources)
+      .mock.calls.filter(([, query]) => (query as Record<string, string>)?.['part-of']);
+    expect(messageLoads).toHaveLength(0);
   });
 
   test('generates correct link for selected item', async () => {

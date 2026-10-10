@@ -15,7 +15,7 @@ import {
 } from '@mantine/core';
 import { formatDate, getDisplayString } from '@medplum/core';
 import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
-import { ListWithDetailPane, MedplumLink, useMedplum, useResource } from '@medplum/react';
+import { ListWithDetailPane, MedplumLink, useResource } from '@medplum/react';
 import {
   IconArrowDown,
   IconArrowLeft,
@@ -29,14 +29,10 @@ import {
 } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { GeneratedComponent, UseSpacesConversationResult } from '../../hooks/useSpacesConversation';
 import { PromptComposer } from '../../pages/spaces/PromptComposer';
 import type { Message } from '../../types/spaces';
-import { showErrorNotification } from '../../utils/notifications';
-import { processMessage } from '../../utils/spaceMessaging';
-import type { ReasoningEffort } from '../../utils/spaceModels';
-import { DEFAULT_REASONING_EFFORT, getDefaultModel, getProjectModels } from '../../utils/spaceModels';
-import { loadConversationMessages, loadRecentTopics, touchConversationTopic } from '../../utils/spacePersistence';
 import { ComponentPreview } from './ComponentPreview';
 import { Markdown } from './Markdown';
 import { ResourceBox } from './ResourceBox';
@@ -49,90 +45,93 @@ import classes from './SpacesInbox.module.css';
 // the first message creates the real topic.
 const NEW_CONVERSATION: Communication = { resourceType: 'Communication', status: 'in-progress' };
 
-interface SpaceInboxProps {
-  topic: Communication | Reference<Communication> | undefined;
-  onNewTopic: (topic: Communication) => void;
+export interface SpacesInboxProps extends UseSpacesConversationResult {
   onSelectedItem: (topic: Communication) => string;
   onAdd?: () => void;
 }
 
-export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
-  const { topic: topicRef, onNewTopic, onSelectedItem, onAdd } = props;
-  const medplum = useMedplum();
-  const topic = useResource(topicRef);
-  const models = useMemo(() => getProjectModels(medplum), [medplum]);
-  const [messages, setMessages] = useState<Message[]>([]);
+/**
+ * The Spaces chat view. All conversation state and async work live in
+ * useSpacesConversation; this component only owns what the user sees and clicks.
+ * @param props - The conversation state and actions, plus navigation callbacks
+ * @returns The chat view with its conversation list and side panels
+ */
+export function SpacesInbox(props: SpacesInboxProps): JSX.Element {
+  const {
+    status,
+    messages,
+    topicId,
+    hasStarted,
+    topics,
+    topicsLoading,
+    currentFhirRequest,
+    streamingContent,
+    streamingComponentCode,
+    generatedComponent,
+    models,
+    model,
+    setModel,
+    reasoningEffort,
+    setReasoningEffort,
+    send,
+    onSelectedItem,
+    onAdd,
+  } = props;
+
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(() => getDefaultModel(models));
-  const [selectedReasoningEffort, setSelectedReasoningEffort] = useState<ReasoningEffort>(DEFAULT_REASONING_EFFORT);
-  const [hasStarted, setHasStarted] = useState(false);
-  const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
-  const [currentTopicId, setCurrentTopicId] = useState(topic?.id);
+  const [selectedPatients, setSelectedPatients] = useState<(Patient | Reference<Patient>)[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [topics, setTopics] = useState<Communication[]>([]);
-  const [topicsLoading, setTopicsLoading] = useState(true);
   const [selectedResource, setSelectedResource] = useState<string | undefined>();
   const [selectedResources, setSelectedResources] = useState<string[] | undefined>();
   const [resourceFromComponent, setResourceFromComponent] = useState(false);
-  const [selectedPatients, setSelectedPatients] = useState<(Patient | Reference<Patient>)[]>([]);
-  const [streamingContent, setStreamingContent] = useState<string | undefined>();
-  const [streamingComponentCode, setStreamingComponentCode] = useState<string | undefined>();
   const [componentPanelOpen, setComponentPanelOpen] = useState(false);
-  const [componentPreview, setComponentPreview] = useState<{ code: string; resources?: string[] } | undefined>();
+  const [componentPreview, setComponentPreview] = useState<GeneratedComponent | undefined>();
   const [expandedResponses, setExpandedResponses] = useState(new Set<string>());
   const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
-  const isSendingRef = useRef(false);
-  const loadVersionRef = useRef(0);
   const isAtBottomRef = useRef(true);
 
-  // Load conversation when topic changes
+  const sending = status === 'sending';
+  const generating = streamingComponentCode !== undefined;
+
+  const [prevTopicId, setPrevTopicId] = useState(topicId);
+  if (topicId !== prevTopicId) {
+    setPrevTopicId(topicId);
+    setSelectedResource(undefined);
+    setSelectedResources(undefined);
+    setResourceFromComponent(false);
+    setComponentPreview(undefined);
+    setComponentPanelOpen(false);
+    setExpandedResponses(new Set());
+    setShowScrollButton(false);
+  }
+
+  // Must stay above the scroll effects: effects run in declaration order and they read this ref
   useEffect(() => {
-    const topicId = topic?.id;
-    if (topicId) {
-      if (isSendingRef.current) {
-        return;
-      }
-      loadVersionRef.current++;
-      const myVersion = loadVersionRef.current;
-      const loadTopic = async (): Promise<void> => {
-        try {
-          setLoading(true);
-          const loadedMessages = await loadConversationMessages(medplum, topicId);
-          // Check if this load is stale (a newer load or send has started)
-          if (myVersion !== loadVersionRef.current) {
-            return;
-          }
-          setMessages([...loadedMessages]);
-          isAtBottomRef.current = true;
-          setShowScrollButton(false);
-          setCurrentTopicId(topicId);
-          setHasStarted(true);
-          setSelectedResource(undefined);
-          setSelectedResources(undefined);
-          setComponentPreview(undefined);
-          setStreamingComponentCode(undefined);
-          setComponentPanelOpen(false);
-        } catch (error) {
-          showErrorNotification(error);
-        } finally {
-          if (myVersion === loadVersionRef.current) {
-            setLoading(false);
-          }
-        }
-      };
-      loadTopic().catch(showErrorNotification);
-    } else {
-      setMessages([]);
-      setHasStarted(false);
-      setCurrentTopicId(undefined);
+    isAtBottomRef.current = true;
+  }, [topicId]);
+
+  // The panel opens on generation start ('' code), not on the first chunk, which can take a while
+  const [prevGenerating, setPrevGenerating] = useState(generating);
+  if (generating !== prevGenerating) {
+    setPrevGenerating(generating);
+    if (generating) {
       setSelectedResource(undefined);
       setSelectedResources(undefined);
       setComponentPreview(undefined);
+      setComponentPanelOpen(true);
     }
-  }, [topic, medplum]);
+  }
+
+  const [prevGenerated, setPrevGenerated] = useState(generatedComponent);
+  if (generatedComponent !== prevGenerated) {
+    setPrevGenerated(generatedComponent);
+    if (generatedComponent) {
+      setSelectedResource(undefined);
+      setComponentPreview(generatedComponent);
+      setComponentPanelOpen(true);
+    }
+  }
 
   useEffect(() => {
     const viewport = scrollViewportRef.current;
@@ -142,12 +141,12 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         behavior: 'auto',
       });
     }
-  }, [messages, hasStarted, streamingContent, loading, currentFhirRequest, streamingComponentCode]);
+  }, [messages, hasStarted, streamingContent, status, currentFhirRequest, streamingComponentCode]);
 
-  // Scroll again after loading finishes to show resources
+  // Scroll again after a send finishes to show resources
   useEffect(() => {
     const viewport = scrollViewportRef.current;
-    if (viewport && hasStarted && !loading && isAtBottomRef.current) {
+    if (viewport && hasStarted && status === 'idle' && isAtBottomRef.current) {
       const timer = setTimeout(() => {
         viewport.scrollTo({
           top: viewport.scrollHeight,
@@ -157,7 +156,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [loading, hasStarted]);
+  }, [status, hasStarted]);
 
   // Track whether the user is scrolled to the bottom; pause autoscroll otherwise
   const handleScrollPositionChange = (): void => {
@@ -180,122 +179,18 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     setShowScrollButton(false);
   };
 
-  const refreshTopics = useCallback(async (): Promise<void> => {
-    setTopics(await loadRecentTopics(medplum, 20));
-  }, [medplum]);
-
-  // Load the conversation list. `refreshKey` is bumped by processMessage when a
-  // send creates or renames a topic. The loading flag is only cleared, never
-  // re-set, so refreshes update the list in place without a skeleton flash.
-  useEffect(() => {
-    refreshTopics()
-      .catch(showErrorNotification)
-      .finally(() => setTopicsLoading(false));
-  }, [refreshTopics, refreshKey]);
-
-  const handleSend = async (overrideInput?: string): Promise<void> => {
-    if (isSendingRef.current) {
-      return;
-    }
-    const text = (overrideInput ?? input).trim();
-    // A message can be sent with patient context alone, no text required
-    if (!text && selectedPatients.length === 0) {
-      return;
-    }
-
-    const isFirstMessage = !hasStarted;
-    if (isFirstMessage) {
-      setHasStarted(true);
-    }
-
-    // Bump the topic's meta.lastUpdated on every user prompt so the conversation
-    // list (sorted by -_lastUpdated) reflects latest user activity. This is the
-    // only place that touches the parent topic — assistant/tool output is persisted
-    // as child messages and never bumps it. A just-created topic (first message) is
-    // already fresh. Fire-and-forget: a stale sort is not worth failing the send.
-    if (!isFirstMessage && currentTopicId) {
-      touchConversationTopic(medplum, currentTopicId)
-        .then(() => setRefreshKey((prev) => prev + 1))
-        .catch(console.error);
-    }
-
-    const userMessage: Message = {
-      role: 'user',
-      content: text,
-      selectedPatients: selectedPatients.length > 0 ? selectedPatients : undefined,
-    };
-    const currentMessages = [...messages, userMessage];
-    setMessages(currentMessages);
-    isAtBottomRef.current = true;
-    setShowScrollButton(false);
-    setInput('');
-    setCurrentFhirRequest(undefined);
-    setStreamingContent(undefined);
-    setComponentPreview(undefined);
-    setLoading(true);
-    isSendingRef.current = true;
-    loadVersionRef.current++;
-
-    try {
-      const result = await processMessage({
-        medplum,
-        input: text,
-        userMessage,
-        currentMessages,
-        currentTopicId,
-        selectedModel,
-        selectedReasoningEffort,
-        isFirstMessage,
-        setCurrentTopicId,
-        setRefreshKey,
-        setCurrentFhirRequest,
-        onNewTopic,
-        selectedPatients,
-        onStreamChunk: (chunk) => {
-          setStreamingContent((prev) => (prev ?? '') + chunk);
-          setCurrentFhirRequest(undefined);
-        },
-        onComponentStart: () => {
-          // Show the "Generating component..." card and open the preview panel
-          // immediately, before FHIR data is fetched and the first chunk arrives.
-          setSelectedResource(undefined);
-          setSelectedResources(undefined);
-          setComponentPanelOpen(true);
-          setStreamingComponentCode('');
-          setCurrentFhirRequest(undefined);
-        },
-        onComponentStreamChunk: (chunk) => {
-          setStreamingComponentCode((prev) => (prev ?? '') + chunk);
-          setCurrentFhirRequest(undefined);
-        },
-      });
-      setStreamingContent(undefined);
-      setStreamingComponentCode(undefined);
-      setMessages(result.updatedMessages);
-      if (result.assistantMessage.componentCode) {
-        setComponentPreview({
-          code: result.assistantMessage.componentCode,
-          resources: result.assistantMessage.resources,
-        });
-        setSelectedResource(undefined);
-        setComponentPanelOpen(true);
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      setMessages([...currentMessages, { role: 'assistant', content: `Error: ${errorMessage}` }]);
-    } finally {
-      isSendingRef.current = false;
-      setStreamingContent(undefined);
-      setStreamingComponentCode(undefined);
-      setLoading(false);
-      // componentPanelOpen intentionally left as-is so the panel stays open after streaming
+  const handleSend = (overrideInput?: string): void => {
+    if (send(overrideInput ?? input, selectedPatients)) {
+      setInput('');
+      isAtBottomRef.current = true;
+      setShowScrollButton(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent): void => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend().catch((error) => showErrorNotification(error));
+      handleSend();
     }
   };
 
@@ -309,6 +204,20 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       }
       return next;
     });
+  };
+
+  const openResource = (ref: string, fromComponent: boolean): void => {
+    setComponentPanelOpen(false);
+    setResourceFromComponent(fromComponent);
+    setSelectedResources(undefined);
+    setSelectedResource(ref);
+  };
+
+  const openComponent = (component: GeneratedComponent): void => {
+    setSelectedResource(undefined);
+    setSelectedResources(undefined);
+    setComponentPreview(component);
+    setComponentPanelOpen(true);
   };
 
   const visibleMessages = messages.filter((m) => m.role !== 'system');
@@ -329,8 +238,8 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     <ListWithDetailPane<Communication>
       items={topics}
       loading={topicsLoading}
-      selectedKey={topic?.id ?? currentTopicId}
-      selected={topic ?? NEW_CONVERSATION}
+      selectedKey={topicId}
+      selected={topics.find((t) => t.id === topicId) ?? NEW_CONVERSATION}
       listWidth={280}
       listVisible={sidebarOpen}
       headerText="Conversations"
@@ -508,15 +417,9 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                                 withBorder
                                 p="sm"
                                 style={{ cursor: 'pointer' }}
-                                onClick={() => {
-                                  setSelectedResource(undefined);
-                                  setSelectedResources(undefined);
-                                  setComponentPreview({
-                                    code: message.componentCode as string,
-                                    resources: message.resources,
-                                  });
-                                  setComponentPanelOpen(true);
-                                }}
+                                onClick={() =>
+                                  openComponent({ code: message.componentCode as string, resources: message.resources })
+                                }
                               >
                                 <Group gap="sm" wrap="nowrap">
                                   <ThemeIcon size="lg" variant="light" color="violet">
@@ -536,12 +439,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                                   <ResourceBox
                                     key={idx}
                                     resourceReference={resourceRef}
-                                    onClick={(ref) => {
-                                      setComponentPanelOpen(false);
-                                      setResourceFromComponent(false);
-                                      setSelectedResources(undefined);
-                                      setSelectedResource(ref);
-                                    }}
+                                    onClick={(ref) => openResource(ref, false)}
                                   />
                                 ))
                               ) : (
@@ -571,7 +469,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                         </div>
                       );
                     })}
-                    {loading && (
+                    {sending && (
                       <div className={cx(classes.messageWrapper, classes.assistantMessage)}>
                         <div className={classes.messageContent}>
                           {streamingContent && <Markdown>{streamingContent}</Markdown>}
@@ -580,13 +478,13 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                               Executing {currentFhirRequest}...
                             </Text>
                           )}
-                          {!streamingContent && !currentFhirRequest && streamingComponentCode === undefined && (
+                          {!streamingContent && !currentFhirRequest && !generating && (
                             <Text size="sm" c="dimmed" fs="italic">
                               Thinking...
                             </Text>
                           )}
                         </div>
-                        {streamingComponentCode !== undefined && (
+                        {generating && (
                           <Stack gap="xs" mt="sm" w={300}>
                             <Paper
                               withBorder
@@ -636,12 +534,12 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                   onInputChange={setInput}
                   onKeyDown={handleKeyDown}
                   onSend={handleSend}
-                  loading={loading}
+                  loading={status !== 'idle'}
                   models={models}
-                  selectedModel={selectedModel}
-                  onModelChange={setSelectedModel}
-                  selectedReasoningEffort={selectedReasoningEffort}
-                  onReasoningEffortChange={setSelectedReasoningEffort}
+                  selectedModel={model}
+                  onModelChange={setModel}
+                  selectedReasoningEffort={reasoningEffort}
+                  onReasoningEffortChange={setReasoningEffort}
                   selectedPatients={selectedPatients}
                   setSelectedPatients={setSelectedPatients}
                 />
@@ -709,7 +607,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           )}
 
           {/* Component Preview Panel */}
-          {componentPanelOpen && (componentPreview || streamingComponentCode !== undefined) && (
+          {componentPanelOpen && (componentPreview || generating) && (
             <div className={classes.resourcePanel}>
               <div className={classes.resourceHeader}>
                 <Text fw={600} size="sm">
@@ -718,20 +616,16 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                 <CloseButton onClick={() => setComponentPanelOpen(false)} />
               </div>
               <ScrollArea style={{ flex: 1 }} p="md">
-                {streamingComponentCode !== undefined && (
+                {generating && (
                   <Code block style={{ whiteSpace: 'pre-wrap' }}>
                     {streamingComponentCode || ' '}
                   </Code>
                 )}
-                {streamingComponentCode === undefined && componentPreview && (
+                {!generating && componentPreview && (
                   <ComponentPreview
                     code={componentPreview.code}
                     resources={componentPreview.resources}
-                    onResourceClick={(ref) => {
-                      setComponentPanelOpen(false);
-                      setResourceFromComponent(true);
-                      setSelectedResource(ref);
-                    }}
+                    onResourceClick={(ref) => openResource(ref, true)}
                   />
                 )}
               </ScrollArea>

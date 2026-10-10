@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type { Message } from '../types/spaces';
 import { processMessage, sendToBotStreaming } from './spaceMessaging';
+import { createConversationTopic, saveMessage } from './spacePersistence';
 
 vi.mock('./spacePersistence', () => ({
   createConversationTopic: vi.fn().mockResolvedValue({ id: 'topic-1', resourceType: 'Communication' }),
@@ -62,7 +64,8 @@ describe('sendToBotStreaming', () => {
     vi.clearAllMocks();
     mockMedplum = {
       getAccessToken: vi.fn().mockReturnValue('mock-token'),
-      fhirUrl: vi.fn().mockReturnValue(new URL('https://api.medplum.com/fhir/R4/Bot/$execute')),
+      fhirUrl: vi.fn().mockReturnValue(new URL('https://api.medplum.com/fhir/R4/Bot/bot-1/$execute')),
+      searchOne: vi.fn().mockResolvedValue({ resourceType: 'Bot', id: 'bot-1' }),
     };
   });
 
@@ -137,13 +140,35 @@ describe('sendToBotStreaming', () => {
     ).rejects.toThrow('No response body');
   });
 
+  test('runs the most recently updated bot with the identifier', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockBufferedResponse('OK'));
+
+    await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', 'medium', vi.fn());
+
+    expect(mockMedplum.searchOne).toHaveBeenCalledWith('Bot', {
+      identifier: 'https://www.medplum.com/bots|test-bot',
+      _sort: '-_lastUpdated',
+    });
+    expect(mockMedplum.fhirUrl).toHaveBeenCalledWith('Bot', 'bot-1', '$execute');
+  });
+
+  test('throws when no bot has the identifier', async () => {
+    mockMedplum.searchOne = vi.fn().mockResolvedValue(undefined);
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await expect(
+      sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', 'medium', vi.fn())
+    ).rejects.toThrow('Bot not found: test-bot');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   test('sends correct request headers and body', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockBufferedResponse('OK'));
 
     await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', 'medium', vi.fn());
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https%3A%2F%2Fwww.medplum.com%2Fbots%7Ctest-bot',
+      'https://api.medplum.com/fhir/R4/Bot/bot-1/$execute',
       expect.objectContaining({
         method: 'POST',
         headers: {
@@ -284,39 +309,70 @@ describe('sendToBotStreaming', () => {
 
     expect(result.content).toBe('Hello world');
   });
+
+  test('rejects when the stream carries an error frame', async () => {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode('data: {"content":"partial"}\n\n'));
+        controller.enqueue(encoder.encode('data: {"error":"Model overloaded"}\n\n'));
+        controller.close();
+      },
+    });
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(stream, { status: 200, headers: { 'Content-Type': 'text/event-stream' } })
+    );
+
+    await expect(
+      sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', 'medium', vi.fn())
+    ).rejects.toThrow('Model overloaded');
+  });
+
+  test('extracts code from a fence with any language tag', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      createMockStreamingResponse(['```typescript\n', 'const answer = 42;\n', '```'])
+    );
+
+    const result = await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', 'medium', vi.fn());
+
+    expect(result.code).toBe('const answer = 42;');
+  });
 });
 
-describe('processMessage - max iterations behavior', () => {
-  const baseParams = {
-    input: 'Show me the patient list',
-    userMessage: { role: 'user' as const, content: 'Show me the patient list' },
-    currentMessages: [{ role: 'user' as const, content: 'Show me the patient list' }],
-    currentTopicId: 'topic-1',
-    selectedModel: 'gpt-4o',
-    selectedReasoningEffort: 'medium' as const,
-    isFirstMessage: false,
-    setCurrentTopicId: vi.fn(),
-    setRefreshKey: vi.fn(),
-    setCurrentFhirRequest: vi.fn(),
-    onNewTopic: vi.fn(),
+describe('processMessage', () => {
+  const userMessage: Message = { role: 'user', content: 'Show me the patient list' };
+  const baseOptions = {
+    messages: [] as Message[],
+    userMessage,
+    topicId: 'topic-1',
+    model: 'gpt-4o',
+    reasoningEffort: 'medium' as const,
   };
 
-  function makeMockMedplum(executeBotImpl: () => unknown): Partial<MedplumClient> {
+  function makeMockMedplum(executeBotImpl: () => unknown): MedplumClient {
     return {
       getAccessToken: vi.fn().mockReturnValue('mock-token'),
       fhirUrl: vi.fn().mockReturnValue(new URL('https://api.medplum.com/fhir/R4')),
+      searchOne: vi.fn().mockResolvedValue({ resourceType: 'Bot', id: 'bot-1' }),
       executeBot: vi.fn().mockImplementation(executeBotImpl),
-      get: vi.fn().mockResolvedValue({ resourceType: 'Bundle', entry: [] }),
-    };
+      get: vi.fn().mockResolvedValue({
+        resourceType: 'Bundle',
+        entry: [{ resource: { resourceType: 'Patient', id: 'p-1' } }],
+      }),
+      readResource: vi.fn().mockResolvedValue({ resourceType: 'Patient', id: 'p-1' }),
+    } as unknown as MedplumClient;
   }
 
-  function makeBotResponse(opts: { toolCalls?: unknown[]; content?: string } = {}): unknown {
+  function makeBotResponse(opts: { toolCalls?: unknown[]; content?: string; visualize?: boolean } = {}): unknown {
     const params = [];
     if (opts.content) {
       params.push({ name: 'content', valueString: opts.content });
     }
     if (opts.toolCalls) {
       params.push({ name: 'tool_calls', valueString: JSON.stringify(opts.toolCalls) });
+    }
+    if (opts.visualize) {
+      params.push({ name: 'visualize', valueBoolean: true });
     }
     return { resourceType: 'Parameters', parameter: params };
   }
@@ -326,85 +382,210 @@ describe('processMessage - max iterations behavior', () => {
     function: { name: 'fhir_request', arguments: JSON.stringify({ method: 'GET', path: 'Patient' }) },
   };
 
+  // Translator returns a tool call on the first call and a final answer on the second.
+  function toolThenAnswer(): MedplumClient {
+    let calls = 0;
+    return makeMockMedplum(() => {
+      calls++;
+      return Promise.resolve(
+        calls === 1 ? makeBotResponse({ toolCalls: [stubToolCall] }) : makeBotResponse({ content: 'Final answer.' })
+      );
+    });
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(createMockBufferedResponse('Summary.'));
   });
 
   test('returns AI summary with note when loop hits max iterations and tools ran', async () => {
-    let callCount = 0;
-    const medplum = makeMockMedplum(() => {
-      callCount++;
-      // fhirRequestToolsId bot always returns a tool call (never completes)
-      // resourceSummaryBotId bot returns a summary
-      if (callCount <= 10) {
-        return Promise.resolve(makeBotResponse({ toolCalls: [stubToolCall] }));
-      }
-      // Summary bot call
-      return Promise.resolve(makeBotResponse({ content: 'Here is what I found so far: 10 patients.' }));
-    });
+    const medplum = makeMockMedplum(() => Promise.resolve(makeBotResponse({ toolCalls: [stubToolCall] })));
+    vi.mocked(fetch).mockResolvedValue(createMockBufferedResponse('Here is what I found so far: 10 patients.'));
 
-    const result = await processMessage({ ...baseParams, medplum: medplum as MedplumClient });
+    const result = await processMessage({ ...baseOptions, medplum });
 
+    expect(medplum.executeBot).toHaveBeenCalledTimes(10);
     expect(result.assistantMessage.content).toContain('Here is what I found so far: 10 patients.');
     expect(result.assistantMessage.content).toContain('processing limit');
     expect(result.assistantMessage.content).toContain('more specific question');
   });
 
-  test('returns fallback note when loop hits max iterations and no tools ran', async () => {
-    // Always returns tool calls but executeToolCalls produces no tool messages
-    // Simulate by having the bot never produce tool messages — easiest way is
-    // to have the bot always respond with tool calls but mock executeBot on the
-    // summary call to return empty, and fhir GET to return empty bundle.
-    const medplum = makeMockMedplum(() => Promise.resolve(makeBotResponse({ toolCalls: [stubToolCall] })));
+  test('returns the fallback text when the bot answers with nothing', async () => {
+    const medplum = makeMockMedplum(() => Promise.resolve(makeBotResponse({})));
 
-    // Override get so the tool call produces a tool message (so summary IS called)
-    // but the summary itself returns no content
-    (medplum.executeBot as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce(makeBotResponse({ toolCalls: [stubToolCall] })) // iter 1 translator
-      // subsequent translator calls — all 9 remaining
-      .mockResolvedValue(makeBotResponse({ toolCalls: [stubToolCall] }));
+    const result = await processMessage({ ...baseOptions, medplum });
 
-    // For the no-tool-message path: override so no tool messages are added.
-    // We test this by having currentMessages start empty of tool role.
-    // Actually the simplest test: pass currentMessages with NO prior tool messages
-    // and have the bot always return tool calls — the summary bot won't be called
-    // because currentMessages.some(m => m.role === 'tool') would be true after iter 1.
-    // Let's instead test the edge case where executeBot for the summary returns empty.
-    const medplum2 = makeMockMedplum(() => Promise.resolve(makeBotResponse({})));
-
-    const result = await processMessage({ ...baseParams, medplum: medplum2 as MedplumClient });
-
-    // Loop hits max, no tool calls returned (empty toolCalls), so loopCompleted = true
-    // This path actually completes normally — let's verify the happy path instead.
+    expect(fetch).not.toHaveBeenCalled();
     expect(result.assistantMessage.content).toBe(
       'I received your message but was unable to generate a response. Please try again.'
     );
   });
 
-  test('completes normally when bot returns final answer before max iterations', async () => {
-    // First call: tool call → second call: summary → done
-    // Actually: iteration 1 → tool call → executeToolCalls → iteration 2 → no tool calls → loopCompleted
-    // Then: currentMessages has tool role → summary bot called
-    let botCallCount = 0;
-    const medplum3 = makeMockMedplum(() => {
-      botCallCount++;
-      if (botCallCount === 1) {
-        // Translator: returns tool call
-        return Promise.resolve(makeBotResponse({ toolCalls: [stubToolCall] }));
-      }
-      if (botCallCount === 2) {
-        // Translator: no tool calls, final answer
-        return Promise.resolve(makeBotResponse({ content: 'Final answer.' }));
-      }
-      // Summary bot
-      return Promise.resolve(makeBotResponse({ content: 'Summary.' }));
-    });
+  test('summarizes the tool results when the bot finishes before max iterations', async () => {
+    const result = await processMessage({ ...baseOptions, medplum: toolThenAnswer() });
 
-    const result = await processMessage({ ...baseParams, medplum: medplum3 as MedplumClient });
-
-    // loopCompleted = true on iter 2, so NO note appended
-    // tool messages exist, so summary bot is called → content = 'Summary.'
     expect(result.assistantMessage.content).toBe('Summary.');
     expect(result.assistantMessage.content).not.toContain('processing limit');
+    expect(result.assistantMessage.resources).toEqual(['Patient/p-1']);
+  });
+
+  test('does not mutate the input and returns the full exchange in order', async () => {
+    const history = Object.freeze([
+      { role: 'user', content: 'Earlier question' },
+      { role: 'assistant', content: 'Earlier answer' },
+    ]) as unknown as Message[];
+
+    const result = await processMessage({ ...baseOptions, messages: history, medplum: toolThenAnswer() });
+
+    expect(history).toHaveLength(2);
+    expect(result.messages.map((m) => m.role)).toEqual(['user', 'assistant', 'user', 'assistant', 'tool', 'assistant']);
+    expect(result.messages[3].tool_calls).toEqual([stubToolCall]);
+    expect(result.messages[4].tool_call_id).toBe('call-1');
+    expect(result.messages[5]).toBe(result.assistantMessage);
+  });
+
+  test('persists the tool_calls message before its tool replies with sequential numbers', async () => {
+    const history: Message[] = [
+      { role: 'user', content: 'Earlier question' },
+      { role: 'assistant', content: 'Earlier answer' },
+    ];
+
+    await processMessage({ ...baseOptions, messages: history, medplum: toolThenAnswer() });
+
+    const saved = vi
+      .mocked(saveMessage)
+      .mock.calls.map(([, topicId, message, sequence]) => [topicId, message.role, sequence]);
+    expect(saved).toEqual([
+      ['topic-1', 'user', 2],
+      ['topic-1', 'assistant', 3],
+      ['topic-1', 'tool', 4],
+      ['topic-1', 'assistant', 5],
+    ]);
+  });
+
+  test('replies with a tool error and keeps going when tool arguments are malformed', async () => {
+    const brokenToolCall = {
+      id: 'call-broken',
+      function: { name: 'fhir_request', arguments: '{"method":"GET","path":' },
+    };
+    let calls = 0;
+    const medplum = makeMockMedplum(() => {
+      calls++;
+      return Promise.resolve(
+        calls === 1 ? makeBotResponse({ toolCalls: [brokenToolCall] }) : makeBotResponse({ content: 'Done' })
+      );
+    });
+
+    const result = await processMessage({ ...baseOptions, medplum });
+
+    expect(medplum.get).not.toHaveBeenCalled();
+    const toolReply = result.messages.find((m) => m.role === 'tool');
+    expect(toolReply?.tool_call_id).toBe('call-broken');
+    expect(JSON.parse(toolReply?.content ?? '')).toMatchObject({ error: true, message: 'Invalid tool arguments' });
+    expect(result.assistantMessage.content).toBe('Summary.');
+  });
+
+  test('streams the reply from the summary bot once the conversation holds tool results', async () => {
+    const history: Message[] = [
+      { role: 'user', content: 'Earlier question' },
+      { role: 'assistant', content: null, tool_calls: [stubToolCall] },
+      { role: 'tool', content: '{}', tool_call_id: 'call-1' },
+      { role: 'assistant', content: 'Earlier answer' },
+    ];
+    const medplum = makeMockMedplum(() => Promise.resolve(makeBotResponse({ content: 'terse translator text' })));
+
+    const result = await processMessage({ ...baseOptions, messages: history, medplum });
+
+    expect(medplum.executeBot).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(result.assistantMessage.content).toBe('Summary.');
+  });
+
+  test('uses the translator reply directly while the conversation has no tool results', async () => {
+    const medplum = makeMockMedplum(() => Promise.resolve(makeBotResponse({ content: 'Direct answer' })));
+
+    const result = await processMessage({ ...baseOptions, medplum });
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(result.assistantMessage.content).toBe('Direct answer');
+  });
+
+  test('creates a topic when none is given and reports it', async () => {
+    const onTopicCreated = vi.fn();
+    const medplum = makeMockMedplum(() => Promise.resolve(makeBotResponse({ content: 'Hi' })));
+
+    const result = await processMessage({ ...baseOptions, topicId: undefined, medplum, events: { onTopicCreated } });
+
+    expect(createConversationTopic).toHaveBeenCalledWith(medplum, 'Show me the patient list', 'gpt-4o');
+    expect(onTopicCreated).toHaveBeenCalledWith({ id: 'topic-1', resourceType: 'Communication' });
+    expect(result.topicId).toBe('topic-1');
+    expect(vi.mocked(saveMessage).mock.calls[0][1]).toBe('topic-1');
+  });
+
+  test('adds the selected patients as a system message the bot receives', async () => {
+    const medplum = makeMockMedplum(() => Promise.resolve(makeBotResponse({ content: 'Hi' })));
+    const withPatients: Message = {
+      ...userMessage,
+      selectedPatients: [{ reference: 'Patient/123', display: 'Homer Simpson' }],
+    };
+
+    const result = await processMessage({ ...baseOptions, userMessage: withPatients, medplum });
+
+    expect(result.messages[1].role).toBe('system');
+    expect(result.messages[1].content).toContain('- Homer Simpson (Patient/123)');
+    const sent = JSON.parse(vi.mocked(medplum.executeBot).mock.calls[0][1].parameter[0].valueString);
+    expect(sent[1].role).toBe('system');
+  });
+
+  test('reports the growing conversation after each tool call and each tool reply', async () => {
+    const onProgress = vi.fn();
+
+    await processMessage({ ...baseOptions, medplum: toolThenAnswer(), events: { onProgress } });
+
+    expect(onProgress.mock.calls.map(([messages]) => messages.map((m: Message) => m.role))).toEqual([
+      ['user', 'assistant'],
+      ['user', 'assistant', 'tool'],
+    ]);
+    // Each report is a copy: later growth must not reach into an earlier snapshot
+    expect(onProgress.mock.calls[0][0]).toHaveLength(2);
+  });
+
+  test('reports FHIR request progress and clears it between steps', async () => {
+    const onFhirRequest = vi.fn();
+
+    await processMessage({ ...baseOptions, medplum: toolThenAnswer(), events: { onFhirRequest } });
+
+    expect(onFhirRequest.mock.calls).toEqual([['Step 1: GET Patient'], [undefined]]);
+  });
+
+  test('generates a component when the bot asks for a visualization', async () => {
+    let calls = 0;
+    const medplum = makeMockMedplum(() => {
+      calls++;
+      return Promise.resolve(
+        calls === 1
+          ? makeBotResponse({ toolCalls: [stubToolCall], visualize: true })
+          : makeBotResponse({ content: 'Final answer.' })
+      );
+    });
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(createMockBufferedResponse('Summary.'))
+      .mockResolvedValueOnce(createMockBufferedResponse('```tsx\nexport default function Chart() {}\n```'));
+    const onComponentStart = vi.fn();
+    const onComponentStreamChunk = vi.fn();
+
+    const result = await processMessage({
+      ...baseOptions,
+      medplum,
+      events: { onComponentStart, onComponentStreamChunk },
+    });
+
+    expect(onComponentStart).toHaveBeenCalledTimes(1);
+    expect(onComponentStreamChunk).toHaveBeenCalled();
+    expect(medplum.readResource).toHaveBeenCalledWith('Patient', 'p-1');
+    expect(result.assistantMessage.content).toBe('Summary.');
+    expect(result.assistantMessage.componentCode).toBe('export default function Chart() {}');
+    const componentRequest = JSON.parse(vi.mocked(fetch).mock.calls[1][1]?.body as string);
+    expect(componentRequest.parameter.find((p: { name: string }) => p.name === 'fhirData')).toBeDefined();
   });
 });
