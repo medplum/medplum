@@ -14,6 +14,7 @@ import {
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
+import { systemResourceProjectId } from '../../constants';
 import { getLogger } from '../../logger';
 import type { PgQueryable } from '../sql';
 import { InsertQuery, SelectQuery } from '../sql';
@@ -24,6 +25,7 @@ export interface ReferenceTableRow extends LookupTableRow {
   readonly resourceId: string;
   readonly targetId: string;
   readonly code: string;
+  readonly projectId: string;
 }
 
 /**
@@ -43,7 +45,7 @@ export function isChainedSearchDisabled(resourceType: string): boolean {
  * Each reference is represented as a separate row in the "<ResourceType>_References" table.
  */
 export class ReferenceTable extends LookupTable {
-  static readonly allColumnNames = ['resourceId', 'targetId', 'code'] as const;
+  static readonly allColumnNames = ['resourceId', 'targetId', 'code', 'projectId'] as const;
 
   getTableName(resourceType: ResourceType): string {
     return resourceType + '_References';
@@ -103,7 +105,7 @@ export class ReferenceTable extends LookupTable {
     const newRowsByResource = new Map<string, ReferenceTableRow[]>();
     await this.extractAllValues(newRowsByResource, resources, resourceBatchSize);
 
-    const resourcesWithChangedReferences: Resource[] = [];
+    const resourcesWithChangedReferences: WithId<Resource>[] = [];
     const rowsToInsert: LookupTableRow[] = [];
     for (const resource of resources) {
       const existingHashes = existingHashesByResource.get(resource.id);
@@ -224,8 +226,6 @@ export class ReferenceTable extends LookupTable {
     }
     const tableName = this.getTableName(resourceType);
 
-    // Reference lookup tables have a covering primary key, so a conflict means
-    // that the exact desired row already exists in the database
     for (let i = 0; i < values.length; i += 10_000) {
       const batchedValues = values.slice(i, i + 10_000);
       const insert = new InsertQuery(tableName, batchedValues).ignoreOnConflict();
@@ -237,7 +237,7 @@ export class ReferenceTable extends LookupTable {
 /**
  * Creates a hash string for a reference row for efficient comparison.
  * @param row - The reference table row.
- * @returns A hash string combining resourceId, targetId, and code.
+ * @returns A hash string combining all columns of the row.
  */
 function hashRow(row: ReferenceTableRow): string {
   return ReferenceTable.allColumnNames.map((c) => row[c]).join('|');
@@ -294,6 +294,8 @@ function addSearchReferenceResult(
     resourceId: resource.id,
     targetId: targetId,
     code: searchParam.code,
+    // Mirrors `buildResourceRow`, so the reference row and the resource row cannot disagree
+    projectId: resource.meta?.project ?? systemResourceProjectId,
   });
 }
 

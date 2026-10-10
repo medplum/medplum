@@ -6,7 +6,8 @@ import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
-import { globalLogger } from '../../logger';
+import { systemResourceProjectId } from '../../constants';
+import { getLogger, globalLogger } from '../../logger';
 import { repoAccess } from '../repository/access-tracker';
 import { getTestProjectSystemRepo } from '../repository/test-utils';
 import { lookupTables } from '../searchparameter';
@@ -90,11 +91,13 @@ describe('ReferenceTable', () => {
           resourceId: obs.id,
           code: 'patient',
           targetId: patient1,
+          projectId: systemResourceProjectId,
         },
         {
           resourceId: obs.id,
           code: 'subject',
           targetId: patient1,
+          projectId: systemResourceProjectId,
         },
       ]);
 
@@ -110,16 +113,19 @@ describe('ReferenceTable', () => {
           resourceId: obs.id,
           code: 'encounter',
           targetId: encounterId,
+          projectId: systemResourceProjectId,
         },
         {
           resourceId: obs.id,
           code: 'patient',
           targetId: patient2,
+          projectId: systemResourceProjectId,
         },
         {
           resourceId: obs.id,
           code: 'subject',
           targetId: patient2,
+          projectId: systemResourceProjectId,
         },
       ]);
 
@@ -172,11 +178,13 @@ describe('ReferenceTable', () => {
           resourceId: obs.id,
           code: 'patient',
           targetId: patientId,
+          projectId: systemResourceProjectId,
         },
         {
           resourceId: obs.id,
           code: 'subject',
           targetId: patientId,
+          projectId: systemResourceProjectId,
         },
       ]);
     });
@@ -205,6 +213,32 @@ describe('ReferenceTable', () => {
       // Verify at least one resource was indexed
       const rows = await refTable.getExistingRows(getReferenceTestClient(resources[0].resourceType), [resources[0]]);
       expect(rows.length).toBeGreaterThan(0);
+    });
+
+    test('logs the ids of changed resources rather than their contents', async () => {
+      const obs = await systemRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        subject: { reference: 'Patient/' + randomUUID() },
+        status: 'registered',
+        code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
+      });
+
+      const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
+      try {
+        await refTable.batchIndexResources(
+          getReferenceTestClient(obs.resourceType),
+          [{ ...obs, subject: { reference: 'Patient/' + randomUUID() } }],
+          false
+        );
+
+        // Resources carry PHI, so only their ids belong in a log line
+        expect(infoSpy).toHaveBeenCalledWith(
+          'Reference changes detected',
+          expect.objectContaining({ sampleIds: [obs.id] })
+        );
+      } finally {
+        infoSpy.mockRestore();
+      }
     });
   });
 
@@ -327,8 +361,8 @@ describe('ReferenceTable', () => {
       // Existing rows are left stale until reindexed
       const updateRows = await refTable.getExistingRows(getReferenceTestClient('Observation'), [obs]);
       expect(updateRows).toContainExactly([
-        { resourceId: obs.id, code: 'patient', targetId: patient1 },
-        { resourceId: obs.id, code: 'subject', targetId: patient1 },
+        { resourceId: obs.id, code: 'patient', targetId: patient1, projectId: systemResourceProjectId },
+        { resourceId: obs.id, code: 'subject', targetId: patient1, projectId: systemResourceProjectId },
       ]);
 
       await systemRepo.deleteResource('Observation', obs.id);
@@ -339,11 +373,13 @@ describe('ReferenceTable', () => {
     test('always writes ProjectMembership references', async () => {
       getConfig().disableChainedSearch = ['ProjectMembership'];
 
+      const projectId = randomUUID();
       const userId = randomUUID();
       const membership: WithId<ProjectMembership> = {
         resourceType: 'ProjectMembership',
         id: randomUUID(),
-        project: { reference: 'Project/' + randomUUID() },
+        meta: { project: projectId },
+        project: { reference: 'Project/' + projectId },
         user: { reference: 'User/' + userId },
         profile: { reference: 'Practitioner/' + randomUUID() },
       };
@@ -351,7 +387,7 @@ describe('ReferenceTable', () => {
 
       await refTable.batchIndexResources(client, [membership], true);
       const rows = await refTable.getExistingRows(client, [membership]);
-      expect(rows).toContainEqual({ resourceId: membership.id, code: 'user', targetId: userId });
+      expect(rows).toContainEqual({ resourceId: membership.id, code: 'user', targetId: userId, projectId });
 
       await refTable.deleteValuesForResource(client, membership);
     });
