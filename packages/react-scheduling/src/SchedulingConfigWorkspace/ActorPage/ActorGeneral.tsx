@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Select, SimpleGrid, Stack, Switch, Text, Tooltip, VisuallyHidden } from '@mantine/core';
-import { capitalize, getDisplayString } from '@medplum/core';
-import type { Practitioner } from '@medplum/fhirtypes';
+import { Box, Select, SimpleGrid, Stack, Switch, Text, TextInput, Tooltip, VisuallyHidden } from '@mantine/core';
+import { capitalize, createReference, getDisplayString } from '@medplum/core';
+import type { Location, Practitioner, Reference } from '@medplum/fhirtypes';
+import { ResourceInput } from '@medplum/react';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import type { CSSProperties, JSX, ReactNode } from 'react';
 import { useId, useMemo } from 'react';
 import { getActorTypeLabel } from '../../actors';
-import { NPI_SYSTEM } from '../../constants';
+import { LOCATION_SEARCH_CRITERIA, NPI_SYSTEM } from '../../constants';
 import { getTimezoneOptions } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
 import type { ActorGeneralFields, ActorResource } from './actorDraft';
 
@@ -19,6 +20,8 @@ export interface ActorGeneralProps {
   /** Whether the actor's Schedule is active, as edited, or undefined when it has none. */
   readonly scheduleActive: boolean | undefined;
   readonly onScheduleActiveChange: (active: boolean) => void;
+  /** Why the name can't be saved, once that should be said. */
+  readonly nameError?: string;
 }
 
 /**
@@ -28,7 +31,7 @@ export interface ActorGeneralProps {
  * @returns The section's fields.
  */
 export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
-  const { resource, value, onChange, scheduleActive, onScheduleActiveChange } = props;
+  const { resource, value, onChange, scheduleActive, onScheduleActiveChange, nameError } = props;
   const typeLabel = getActorTypeLabel(resource.resourceType);
   // Only turning off is allowed while the actor is inactive, so a Schedule stored on can still be switched off.
   const scheduleLocked = !value.active && !scheduleActive;
@@ -76,11 +79,24 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
     );
   }
 
+  const isRoom = resource.resourceType === 'Location';
   return (
     <>
       {statuses}
       <FieldGrid>
-        <ReadOnlyField label="Name" value={getDisplayString(resource)} />
+        <TextInput
+          label="Name"
+          required
+          value={value.name}
+          onChange={(event) => update({ name: event.currentTarget.value })}
+          error={nameError}
+          placeholder={isRoom ? 'e.g. Exam Room 3' : 'e.g. Ultrasound 2'}
+        />
+        <LocationField
+          placeholder={isRoom ? 'Hidden when booking by service facility' : 'Shown at every service facility'}
+          value={value.location}
+          onChange={(location) => update({ location })}
+        />
         <TimezoneField
           description={`Used for this ${typeLabel.toLowerCase()}'s hours unless a visit type sets its own.`}
           value={value.timezone}
@@ -181,6 +197,32 @@ function TimezoneField(props: {
       comboboxProps={{ keepMounted: false }}
       clearButtonProps={{ 'aria-label': 'Clear time zone' }}
       nothingFoundMessage="No matching time zone"
+    />
+  );
+}
+
+interface LocationFieldProps {
+  readonly placeholder: string;
+  readonly value: Reference<Location> | undefined;
+  readonly onChange: (value: Reference<Location> | undefined) => void;
+}
+
+/**
+ * Picks one of the service facilities booking's site filter offers.
+ * @param props - What to show when blank, the Location referenced, and a change handler.
+ * @returns The field.
+ */
+function LocationField(props: LocationFieldProps): JSX.Element {
+  const { placeholder, value, onChange } = props;
+  return (
+    <ResourceInput<Location>
+      resourceType="Location"
+      name="service-facility"
+      label="Service facility"
+      placeholder={placeholder}
+      searchCriteria={LOCATION_SEARCH_CRITERIA}
+      defaultValue={value}
+      onChange={(location) => onChange(location && createReference(location))}
     />
   );
 }

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { deepClone, getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
-import type { Device, Location, Practitioner } from '@medplum/fhirtypes';
+import { deepClone, deepEquals, getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
+import type { Device, Location, Practitioner, Reference } from '@medplum/fhirtypes';
 import { isActorInactive } from '../SchedulingConfigWorkspace.utils';
 
 /** A provider, room, or device, as stored or as the page would store it. */
@@ -9,11 +9,17 @@ export type ActorResource = Practitioner | Location | Device;
 
 /** What the page holds for the actor itself. */
 export interface ActorGeneralFields {
+  /** A room's or device's name. Unused for a provider, whose name is read-only. */
+  readonly name: string;
   /** Whether the actor is on: `Practitioner.active`, or a room's or device's `status` not being `inactive`. */
   readonly active: boolean;
+  /** A room's `partOf`, or a device's `location`. */
+  readonly location?: Reference<Location>;
   /** The actor's `timezone` extension. */
   readonly timezone?: string;
 }
+
+const USER_FRIENDLY_NAME = 'user-friendly-name';
 
 /**
  * Seeds the page's General fields from the actor.
@@ -22,7 +28,14 @@ export interface ActorGeneralFields {
  */
 export function actorGeneralFieldsOf(resource: ActorResource): ActorGeneralFields {
   const timezone = getExtensionValue(resource, TimezoneExtensionURI) as string | undefined;
-  return { active: !isActorInactive(resource), timezone };
+  const active = !isActorInactive(resource);
+  if (resource.resourceType === 'Practitioner') {
+    return { name: '', active, timezone };
+  }
+  if (resource.resourceType === 'Location') {
+    return { name: resource.name ?? '', active, location: resource.partOf, timezone };
+  }
+  return { name: resource.deviceName?.[0]?.name ?? '', active, location: resource.location, timezone };
 }
 
 /**
@@ -46,6 +59,15 @@ export function buildActorResource<T extends ActorResource>(
   if (fields.active !== initial.active) {
     setActive(draft, fields.active);
   }
+  if (draft.resourceType === 'Practitioner') {
+    return draft;
+  }
+  if (fields.name !== initial.name) {
+    setName(draft, fields.name.trim());
+  }
+  if (!deepEquals(fields.location, initial.location)) {
+    setLocation(draft, fields.location);
+  }
   return draft;
 }
 
@@ -68,4 +90,25 @@ function setTimezone(resource: ActorResource, timezone: string | undefined): voi
   } else {
     delete resource.extension;
   }
+}
+
+function setLocation(resource: Location | Device, location: Reference<Location> | undefined): void {
+  if (resource.resourceType === 'Location') {
+    resource.partOf = location;
+  } else {
+    resource.location = location;
+  }
+}
+
+function setName(resource: Location | Device, name: string): void {
+  if (resource.resourceType === 'Location') {
+    resource.name = name;
+    return;
+  }
+  // The name shown for a device is its first `deviceName`, so the edited name goes first.
+  const [first, ...rest] = resource.deviceName ?? [];
+  resource.deviceName =
+    first?.type === USER_FRIENDLY_NAME
+      ? [{ ...first, name }, ...rest]
+      : [{ name, type: USER_FRIENDLY_NAME }, ...(resource.deviceName ?? [])];
 }

@@ -84,6 +84,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [triedToSave, setTriedToSave] = useState(false);
   const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'>>();
   const [reloading, setReloading] = useState(false);
+  // Bumped by Discard to remount the General fields, whose location input holds its own selection.
+  const [discards, setDiscards] = useState(0);
 
   const actorDraft = useMemo(
     () => buildActorResource(stored, general, initialGeneral),
@@ -132,7 +134,9 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     availabilityError: availabilityErrorFor(service),
   }));
   const blocking = checks.find(({ errors, availabilityError }) => Object.keys(errors).length > 0 || availabilityError);
-  const blockedReason = getOfferingBlockedReason(blocking);
+  const nameError =
+    actorDraft.resourceType !== 'Practitioner' && !general.name.trim() ? 'A name is required.' : undefined;
+  const blockedReason = nameError ?? getOfferingBlockedReason(blocking);
 
   function handleGeneralChange(next: ActorGeneralFields): void {
     if (next.active !== general.active) {
@@ -191,6 +195,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
   function handleDiscard(): void {
     setGeneral(initialGeneral);
+    setDiscards((count) => count + 1);
     setFields(initial);
     setOpen((current) => (current && Object.hasOwn(initial.offerings, current) ? current : null));
     setTriedToSave(false);
@@ -241,11 +246,13 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
       <ConfigSection title="General">
         <ActorGeneral
+          key={discards}
           resource={actorDraft}
           value={general}
           onChange={handleGeneralChange}
           scheduleActive={scheduleActive}
           onScheduleActiveChange={(active) => setFields((current) => ({ ...current, active }))}
+          nameError={triedToSave || initialGeneral.name ? nameError : undefined}
         />
         {alert && (
           <Alert color="blue" variant="light">
