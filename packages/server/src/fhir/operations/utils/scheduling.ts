@@ -1021,6 +1021,36 @@ function stampBookingCapacity(
 }
 
 /**
+ * Runs `validate` for one of several Appointments booked together, and says which one any error it
+ * throws is about. A series' occurrences all share the first's path, so that alone can't.
+ *
+ * @param appointments - The Appointments booked together.
+ * @param idx - The index of the one being validated.
+ * @param validate - Validates it.
+ * @returns What `validate` returns.
+ */
+async function aboutAppointment<T>(appointments: Appointment[], idx: number, validate: () => Promise<T>): Promise<T> {
+  try {
+    return await validate();
+  } catch (err) {
+    if (appointments.length === 1 || !(err instanceof OperationOutcomeError)) {
+      throw err;
+    }
+    const prefix = `Appointment ${idx + 1} of ${appointments.length} (${appointments[idx].start})`;
+    throw new OperationOutcomeError(
+      {
+        ...err.outcome,
+        issue: err.outcome.issue.map((issue) => ({
+          ...issue,
+          details: { ...issue.details, text: issue.details?.text ? `${prefix}: ${issue.details.text}` : prefix },
+        })),
+      },
+      { cause: err }
+    );
+  }
+}
+
+/**
  * Books proposed Appointments all or none, each validated on its own, in one serializable
  * transaction.
  *
@@ -1035,10 +1065,11 @@ export async function createProposedAppointments(
   customizer: (appointment: Appointment, slots: Slot[]) => void
 ): Promise<Bundle<Appointment | Slot>> {
   const validated = await Promise.all(
-    proposedAppointments.map(async (proposedAppointment) => {
-      const [appointment, slots, healthcareService, schedulingParametersGroup] = await validateProposedAppointment(
-        repo,
-        proposedAppointment
+    proposedAppointments.map(async (proposedAppointment, idx) => {
+      const [appointment, slots, healthcareService, schedulingParametersGroup] = await aboutAppointment(
+        proposedAppointments,
+        idx,
+        () => validateProposedAppointment(repo, proposedAppointment)
       );
 
       // We will write this attribute later, check that we aren't clobbering something that was submitted
@@ -1064,8 +1095,10 @@ export async function createProposedAppointments(
       // Sequential: a transaction is pinned to one database connection, and each Appointment's
       // availability is checked against the ones created before it.
       const results: (Appointment | Slot)[] = [];
-      for (const { appointment, slots, healthcareService, schedulingParametersGroup } of validated) {
-        await validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup);
+      for (const [idx, { appointment, slots, healthcareService, schedulingParametersGroup }] of validated.entries()) {
+        await aboutAppointment(proposedAppointments, idx, () =>
+          validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup)
+        );
         const createdSlots = new Array<WithId<Slot>>(slots.length);
         for (const [i, slot] of slots.entries()) {
           createdSlots[i] = await txRepo.createResource<Slot>(slot);
