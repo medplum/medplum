@@ -1,129 +1,96 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { Notifications, notifications } from '@mantine/notifications';
-import type { Communication, Parameters } from '@medplum/fhirtypes';
+import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { fhirRequestToolCall } from '../../test-utils/spaces';
 import type { Message } from '../../types/spaces';
-import * as spacePersistence from '../../utils/spacePersistence';
+import type { SpacesInboxProps } from './SpacesInbox';
 import { SpacesInbox } from './SpacesInbox';
 
-const mockTopic: Communication = {
-  resourceType: 'Communication',
-  id: 'topic-123',
-  status: 'in-progress',
-  identifier: [
-    {
-      system: 'http://medplum.com/ai-message',
-      value: 'ai-message-topic',
-    },
-  ],
-  topic: {
-    text: 'Test conversation',
+const recentTopics: Communication[] = [
+  {
+    resourceType: 'Communication',
+    id: 'topic-1',
+    status: 'completed',
+    meta: { lastUpdated: '2023-01-01T10:00:00Z' },
+    topic: { text: 'Topic 1' },
   },
-};
-
-const mockProfile = {
-  resourceType: 'Practitioner' as const,
-  id: 'practitioner-123',
-};
-
-function createMockStreamingResponse(content: string): Response {
-  const encoder = new TextEncoder();
-  const sseData = `data: ${JSON.stringify({ content })}\n\ndata: [DONE]\n\n`;
-  const stream = new ReadableStream({
-    start(controller) {
-      controller.enqueue(encoder.encode(sseData));
-      controller.close();
-    },
-  });
-
-  return new Response(stream, {
-    status: 200,
-    headers: { 'Content-Type': 'text/event-stream' },
-  });
-}
-
-function controlledStream(): { response: Response; push: (content: string) => void; close: () => void } {
-  let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
-  const stream = new ReadableStream<Uint8Array>({ start: (c) => (controller = c) });
-  return {
-    response: new Response(stream, { status: 200, headers: { 'Content-Type': 'text/event-stream' } }),
-    push: (content) => controller?.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content })}\n\n`)),
-    close: () => controller?.close(),
-  };
-}
-
-function toCommunication(message: Message, seq: number): Communication {
-  const contentString = JSON.stringify({ ...message, sequenceNumber: seq });
-  return { resourceType: 'Communication', id: `msg-${seq}`, status: 'completed', payload: [{ contentString }] };
-}
-
-type ToolCall = { id?: string; function: { name: string; arguments: unknown } };
-
-function toolCallsResponse(toolCalls: ToolCall[], visualize = false): Parameters {
-  const parameter = [{ name: 'tool_calls', valueString: JSON.stringify(toolCalls) }];
-  return { resourceType: 'Parameters', parameter: [...parameter, { name: 'visualize', valueBoolean: visualize }] };
-}
-
-function fhirRequestToolCall(id: string, method: string, path: string): ToolCall {
-  return { id, function: { name: 'fhir_request', arguments: JSON.stringify({ method, path }) } };
-}
+  {
+    resourceType: 'Communication',
+    id: 'topic-2',
+    status: 'completed',
+    meta: { lastUpdated: '2023-01-02T10:00:00Z' },
+    topic: { text: 'Topic 2' },
+  },
+];
 
 describe('SpacesInbox', () => {
   let medplum: MockClient;
-  const onNewTopicMock = vi.fn();
-  const onSelectedItemMock = vi.fn((topic: Communication) => `/Spaces/Communication/${topic.id}`);
   const onAdd = vi.fn();
+
+  function makeProps(overrides: Partial<SpacesInboxProps> = {}): SpacesInboxProps {
+    return {
+      status: 'idle',
+      messages: [],
+      topicId: undefined,
+      hasStarted: false,
+      topics: [],
+      topicsLoading: false,
+      currentFhirRequest: undefined,
+      streamingContent: undefined,
+      streamingComponentCode: undefined,
+      generatedComponent: undefined,
+      models: [{ value: 'gpt-5.5', label: 'GPT-5.5' }],
+      model: 'gpt-5.5',
+      setModel: vi.fn(),
+      reasoningEffort: 'high',
+      setReasoningEffort: vi.fn(),
+      send: vi.fn().mockReturnValue(true),
+      onSelectedItem: (topic: Communication) => `/Spaces/Communication/${topic.id}`,
+      onAdd,
+      ...overrides,
+    };
+  }
+
+  // Props for a loaded conversation.
+  function conversation(messages: Message[], overrides: Partial<SpacesInboxProps> = {}): SpacesInboxProps {
+    return makeProps({ messages, topicId: 'topic-123', hasStarted: true, ...overrides });
+  }
 
   beforeEach(() => {
     medplum = new MockClient();
     vi.restoreAllMocks();
     vi.clearAllMocks();
-    notifications.clean();
 
     Element.prototype.scrollTo = vi.fn();
-    medplum.getProfile = vi.fn().mockResolvedValue(mockProfile) as any;
     medplum.searchResources = vi
       .fn()
       .mockImplementation((resourceType: string) => Promise.resolve(resourceType === 'Patient' ? [HomerSimpson] : []));
-    medplum.searchOne = vi.fn().mockResolvedValue({ resourceType: 'Bot', id: 'bot-123' });
-    medplum.getAccessToken = vi.fn().mockReturnValue('mock-token');
-    medplum.fhirUrl = vi.fn().mockReturnValue(new URL('https://api.medplum.com/fhir/R4/Bot/bot-123/$execute'));
     medplum.readReference = vi.fn().mockImplementation((ref: any) => {
-      if (ref.reference?.startsWith('Communication/')) {
-        return Promise.resolve(mockTopic);
-      }
       const [resourceType, id] = ref.reference?.split('/') || [];
       return Promise.resolve({ resourceType, id, meta: {} } as any);
     });
-    medplum.createResource = vi.fn().mockImplementation((resource: any) => {
-      if (resource.identifier?.[0]?.value === 'ai-message-topic') {
-        return Promise.resolve(mockTopic);
-      }
-      return Promise.resolve({ ...resource, id: 'message-123' } as Communication);
-    });
   });
 
-  const inbox = (topic?: { reference: string }): JSX.Element => (
+  const inbox = (props: SpacesInboxProps): JSX.Element => (
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
         <MantineProvider>
-          <Notifications />
-          <SpacesInbox topic={topic} onNewTopic={onNewTopicMock} onSelectedItem={onSelectedItemMock} onAdd={onAdd} />
+          <SpacesInbox {...props} />
         </MantineProvider>
       </MedplumProvider>
     </MemoryRouter>
   );
 
-  const setup = (topic?: { reference: string }): ReturnType<typeof render> => render(inbox(topic));
+  const setup = (props: SpacesInboxProps = makeProps()): ReturnType<typeof render> => render(inbox(props));
 
   const panelHeader = (title: string): HTMLElement =>
     screen.getByText(title).closest('div')?.parentElement as HTMLElement;
@@ -134,58 +101,22 @@ describe('SpacesInbox', () => {
   const goBackFromDetails = (user: UserEvent): Promise<void> =>
     user.click(panelHeader('Resource Details').querySelector('button') as HTMLElement);
 
-  const mockConversation = (messages: Message[]): void => {
-    const comms = messages.map(toCommunication);
-    medplum.searchResources = vi
-      .fn()
-      .mockImplementation(async (t: string) => (t === 'Patient' ? [HomerSimpson] : comms));
-  };
+  const promptInput = (): HTMLElement => screen.getByPlaceholderText('Ask, search, or make anything...');
 
-  describe('Initial state (before first message)', () => {
-    test('renders the initial state with How can I help you today? heading', async () => {
-      await act(async () => {
-        setup();
-      });
+  describe('Empty state', () => {
+    test('renders the welcome message and the prompt', () => {
+      setup();
 
       expect(screen.getByText('How can I help you today?')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Ask, search, or make anything...')).toBeInTheDocument();
-    });
-
-    test('shows history button', async () => {
-      await act(async () => {
-        setup();
-      });
-
-      const buttons = screen.getAllByRole('button');
-      expect(buttons.length).toBeGreaterThan(0);
+      expect(promptInput()).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Show conversations' })).toBeInTheDocument();
     });
   });
 
   describe('Conversation list', () => {
-    const mockTopics: Communication[] = [
-      {
-        resourceType: 'Communication',
-        id: 'topic-1',
-        status: 'completed',
-        meta: { lastUpdated: '2023-01-01T10:00:00Z' },
-        topic: { text: 'Topic 1' },
-      },
-      {
-        resourceType: 'Communication',
-        id: 'topic-2',
-        status: 'completed',
-        meta: { lastUpdated: '2023-01-02T10:00:00Z' },
-        topic: { text: 'Topic 2' },
-      },
-    ];
-
     test('starts hidden, expands to show recent conversations, and collapses again', async () => {
       const user = userEvent.setup();
-      vi.spyOn(spacePersistence, 'loadRecentTopics').mockResolvedValue(mockTopics);
-
-      await act(async () => {
-        setup();
-      });
+      setup(makeProps({ topics: recentTopics }));
 
       // Collapsed: the list is aria-hidden, so its links are not exposed
       expect(screen.queryByRole('link', { name: /Topic 1/ })).not.toBeInTheDocument();
@@ -202,44 +133,30 @@ describe('SpacesInbox', () => {
 
     test('shows empty state when there are no conversations', async () => {
       const user = userEvent.setup();
-      vi.spyOn(spacePersistence, 'loadRecentTopics').mockResolvedValue([]);
-
-      await act(async () => {
-        setup();
-      });
+      setup();
 
       await user.click(screen.getByRole('button', { name: 'Show conversations' }));
       expect(screen.getByText('No conversations yet')).toBeInTheDocument();
     });
-  });
 
-  describe('Sidebar', () => {
-    test('toggles the conversations sidebar and forwards the New conversation click', async () => {
+    test('shows no empty state while conversations are loading', async () => {
       const user = userEvent.setup();
-      await act(async () => {
-        setup();
-      });
-      expect(screen.queryByRole('button', { name: 'Hide conversations' })).not.toBeInTheDocument();
+      setup(makeProps({ topicsLoading: true }));
+
       await user.click(screen.getByRole('button', { name: 'Show conversations' }));
-      expect(screen.getByRole('button', { name: 'Hide conversations' })).toBeInTheDocument();
+      expect(screen.queryByText('No conversations yet')).not.toBeInTheDocument();
+    });
+
+    test('forwards the New conversation click', async () => {
+      const user = userEvent.setup();
+      setup();
+
       await user.click(screen.getByRole('button', { name: 'New conversation' }));
       expect(onAdd).toHaveBeenCalledTimes(1);
-      await user.click(screen.getByRole('button', { name: 'Hide conversations' }));
-      expect(screen.queryByRole('button', { name: 'Hide conversations' })).not.toBeInTheDocument();
-    });
-
-    test('reports a failed history load, then loads the selected conversation', async () => {
-      vi.spyOn(spacePersistence, 'loadRecentTopics').mockRejectedValue(new Error('History unavailable'));
-      const { rerender } = setup();
-      expect(await screen.findByText('History unavailable')).toBeInTheDocument();
-      mockConversation([{ role: 'user', content: 'Earlier question' }]);
-      rerender(inbox({ reference: 'Communication/topic-456' }));
-      expect(await screen.findByText('Earlier question')).toBeInTheDocument();
-      expect(screen.queryByText('How can I help you today?')).not.toBeInTheDocument();
     });
   });
 
-  describe('Loading a topic', () => {
+  describe('Conversation view', () => {
     const toolCallMessages: Message[] = [
       { role: 'system', content: 'hidden system prompt' },
       { role: 'user', content: 'Look things up' },
@@ -255,12 +172,13 @@ describe('SpacesInbox', () => {
       { role: 'tool', tool_call_id: 'tc-get', content: JSON.stringify({ resourceType: 'Patient', id: 'patient-1' }) },
     ];
 
-    test('loads persisted messages, hides system messages, and renders tool calls with toggleable responses', async () => {
+    test('hides system messages and renders tool calls with toggleable responses', async () => {
       const user = userEvent.setup();
-      mockConversation(toolCallMessages);
-      setup({ reference: 'Communication/topic-123' });
-      expect(await screen.findByText('Look things up')).toBeInTheDocument();
+      setup(conversation(toolCallMessages));
+
+      expect(screen.getByText('Look things up')).toBeInTheDocument();
       expect(screen.queryByText('hidden system prompt')).not.toBeInTheDocument();
+      expect(screen.queryByText('How can I help you today?')).not.toBeInTheDocument();
       expect(screen.getByText('GET')).toBeInTheDocument();
       expect(screen.getByText('CALL')).toBeInTheDocument();
       expect(screen.getByText('Unable to parse tool call')).toBeInTheDocument();
@@ -271,12 +189,54 @@ describe('SpacesInbox', () => {
       expect(screen.getByText('▼')).toBeInTheDocument();
     });
 
+    test('renders user and assistant messages, including error replies', () => {
+      setup(
+        conversation([
+          { role: 'user', content: 'Hello AI' },
+          { role: 'assistant', content: 'Hello! How can I help you?' },
+          { role: 'user', content: 'Again' },
+          { role: 'assistant', content: 'Error: Bot execution failed' },
+        ])
+      );
+
+      expect(screen.getByText('Hello AI')).toBeInTheDocument();
+      expect(screen.getByText('Hello! How can I help you?')).toBeInTheDocument();
+      expect(screen.getByText(/Error: Bot execution failed/)).toBeInTheDocument();
+    });
+
+    test('shows selected patients above the user message', async () => {
+      setup(
+        conversation([
+          { role: 'user', content: 'Summarize', selectedPatients: [HomerSimpson] },
+          { role: 'assistant', content: 'About Homer' },
+        ])
+      );
+
+      const userMessage = screen.getByText('Summarize').parentElement?.parentElement as HTMLElement;
+      expect(await within(userMessage).findByText('Homer Simpson')).toBeInTheDocument();
+    });
+
+    test('renders resource boxes and opens and closes the resource panel', async () => {
+      const user = userEvent.setup();
+      setup(conversation([{ role: 'assistant', content: 'Found patient', resources: ['Patient/patient-123'] }]));
+
+      const resourceBox = await screen.findByTestId('resource-box');
+      expect(within(resourceBox).getByText('Patient/patient-123')).toBeInTheDocument();
+
+      await user.click(resourceBox);
+      expect(await screen.findByTestId('resource-panel')).toBeInTheDocument();
+      expect(screen.getByText('Resource Details')).toBeInTheDocument();
+
+      await closePanel(user, 'Resource Details');
+      await waitFor(() => expect(screen.queryByTestId('resource-panel')).not.toBeInTheDocument());
+    });
+
     test('opens the results list, drills into a result, navigates back, and closes each panel', async () => {
       const user = userEvent.setup();
       const resources = ['Patient/p-1', 'Patient/p-2', 'Patient/p-3'];
-      mockConversation([{ role: 'assistant', content: 'Found three', resources }]);
-      setup({ reference: 'Communication/topic-123' });
-      await user.click(await screen.findByText('3 results'));
+      setup(conversation([{ role: 'assistant', content: 'Found three', resources }]));
+
+      await user.click(screen.getByText('3 results'));
       expect(screen.getByText('Results (3)')).toBeInTheDocument();
       await user.click((await screen.findAllByTestId('resource-box'))[1]);
       expect(screen.getByText('Resource Details')).toBeInTheDocument();
@@ -289,9 +249,9 @@ describe('SpacesInbox', () => {
     test('opens a persisted component, drills into one of its resources, returns, and closes', async () => {
       const user = userEvent.setup();
       const componentCode = 'function Widget() {\n  return <Text>Widget rendered</Text>;\n}';
-      mockConversation([{ role: 'assistant', content: 'Here you go', componentCode, resources: ['Patient/p-1'] }]);
-      setup({ reference: 'Communication/topic-123' });
-      await user.click(await screen.findByText('View Component'));
+      setup(conversation([{ role: 'assistant', content: 'Here you go', componentCode, resources: ['Patient/p-1'] }]));
+
+      await user.click(screen.getByText('View Component'));
       expect(screen.getByText('Component Preview')).toBeInTheDocument();
       await user.click(screen.getByRole('tab', { name: 'Resources' }));
       await user.click(await screen.findByTestId('resource-box'));
@@ -302,18 +262,25 @@ describe('SpacesInbox', () => {
       expect(screen.queryByText('Component Preview')).not.toBeInTheDocument();
     });
 
-    test('shows an error notification when loading the topic fails', async () => {
-      medplum.searchResources = vi.fn().mockRejectedValue(new Error('Load failed'));
-      setup({ reference: 'Communication/topic-123' });
-      expect(await screen.findByText('Load failed')).toBeInTheDocument();
-      expect(screen.getByText('How can I help you today?')).toBeInTheDocument();
+    test('closes open panels when the conversation changes', async () => {
+      const user = userEvent.setup();
+      const props = conversation([{ role: 'assistant', content: 'Found three', resources: ['A/1', 'B/2', 'C/3'] }]);
+      const { rerender } = setup(props);
+
+      await user.click(screen.getByText('3 results'));
+      expect(screen.getByText('Results (3)')).toBeInTheDocument();
+
+      rerender(inbox(conversation([{ role: 'user', content: 'Other conversation' }], { topicId: 'topic-456' })));
+
+      expect(screen.queryByText('Results (3)')).not.toBeInTheDocument();
+      expect(screen.getByText('Other conversation')).toBeInTheDocument();
     });
 
     test('shows a scroll-to-bottom button when scrolled up and scrolls down on click', async () => {
       const user = userEvent.setup();
-      mockConversation([{ role: 'user', content: 'Persisted question' }]);
-      setup({ reference: 'Communication/topic-123' });
-      const message = await screen.findByText('Persisted question');
+      setup(conversation([{ role: 'user', content: 'Persisted question' }]));
+
+      const message = screen.getByText('Persisted question');
       const viewport = message.closest('.mantine-ScrollArea-viewport') as HTMLElement;
       Object.defineProperties(viewport, { scrollHeight: { value: 1000 }, clientHeight: { value: 300 } });
       fireEvent.scroll(viewport);
@@ -323,514 +290,124 @@ describe('SpacesInbox', () => {
     });
   });
 
-  describe('Sending messages', () => {
-    test('sends a message and creates a new conversation topic', async () => {
+  describe('Sending', () => {
+    test('sends the input and clears it when accepted', async () => {
       const user = userEvent.setup();
-      medplum.executeBot = vi.fn().mockResolvedValue({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'content', valueString: 'Bot response' }],
-      });
+      const props = makeProps();
+      setup(props);
 
-      await act(async () => {
-        setup();
-      });
-
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-
-      await user.type(input, 'Hello AI');
+      await user.type(promptInput(), 'Hello AI');
       await user.click(screen.getByRole('button', { name: 'Send message' }));
 
-      await waitFor(() => {
-        expect(medplum.createResource).toHaveBeenCalled();
-      });
-
-      await waitFor(() => {
-        expect(medplum.executeBot).toHaveBeenCalled();
-      });
-
-      await waitFor(() => {
-        expect(onNewTopicMock).toHaveBeenCalledWith(mockTopic);
-      });
+      expect(props.send).toHaveBeenCalledWith('Hello AI', []);
+      expect(promptInput()).toHaveValue('');
     });
 
-    test('bumps topic recency on every user prompt in an existing conversation', async () => {
+    test('keeps the input when the send is refused', async () => {
       const user = userEvent.setup();
-      medplum.executeBot = vi.fn().mockResolvedValue({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'content', valueString: 'Bot response' }],
-      });
-      medplum.patchResource = vi.fn().mockResolvedValue(mockTopic) as any;
+      const props = makeProps({ send: vi.fn().mockReturnValue(false) });
+      setup(props);
 
-      await act(async () => {
-        setup({ reference: 'Communication/topic-123' });
-      });
+      await user.type(promptInput(), 'Hello AI');
+      await user.keyboard('{Enter}');
 
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-
-      await user.type(input, 'First follow-up');
-      await user.click(screen.getByRole('button', { name: 'Send message' }));
-
-      await waitFor(() => {
-        expect(medplum.patchResource).toHaveBeenCalledWith('Communication', 'topic-123', [
-          { op: 'add', path: '/sent', value: expect.any(String) },
-        ]);
-      });
-
-      await user.type(input, 'Second follow-up');
-      await user.click(screen.getByRole('button', { name: 'Send message' }));
-
-      await waitFor(() => {
-        expect(medplum.executeBot).toHaveBeenCalledTimes(2);
-      });
-      // One touch per user prompt — the assistant/tool messages persisted during
-      // each exchange never patch the parent topic.
-      expect(medplum.patchResource).toHaveBeenCalledTimes(2);
+      expect(props.send).toHaveBeenCalledWith('Hello AI', []);
+      expect(promptInput()).toHaveValue('Hello AI');
     });
 
-    test('does not bump topic recency when the first message creates the topic', async () => {
+    test('sends on Enter but not on Shift+Enter', async () => {
       const user = userEvent.setup();
-      medplum.executeBot = vi.fn().mockResolvedValue({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'content', valueString: 'Bot response' }],
-      });
-      medplum.patchResource = vi.fn().mockResolvedValue(mockTopic) as any;
+      const props = makeProps();
+      setup(props);
 
-      await act(async () => {
-        setup();
-      });
+      await user.type(promptInput(), 'Hello AI');
+      await user.keyboard('{Shift>}{Enter}{/Shift}');
+      expect(props.send).not.toHaveBeenCalled();
 
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-
-      await user.type(input, 'Hello AI');
-      await user.click(screen.getByRole('button', { name: 'Send message' }));
-
-      await waitFor(() => {
-        expect(onNewTopicMock).toHaveBeenCalledWith(mockTopic);
-      });
-      expect(medplum.patchResource).not.toHaveBeenCalled();
+      await user.keyboard('{Enter}');
+      expect(props.send).toHaveBeenCalledWith('Hello AI\n', []);
     });
 
-    test('does not send empty messages', async () => {
-      await act(async () => {
-        setup();
-      });
+    test('offers voice mode instead of Send for empty input', () => {
+      setup();
 
       expect(screen.queryByRole('button', { name: 'Send message' })).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Start voice mode' })).toBeInTheDocument();
-      expect(medplum.createResource).not.toHaveBeenCalled();
     });
 
-    test('handles Enter key to send message', async () => {
+    test('sends selected patients as context', async () => {
       const user = userEvent.setup();
-      medplum.executeBot = vi.fn().mockResolvedValue({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'content', valueString: 'Bot response' }],
-      });
+      const props = makeProps();
+      setup(props);
 
-      await act(async () => {
-        setup();
-      });
-
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-
-      await user.click(input);
-      await user.keyboard('{Enter}');
-      expect(medplum.createResource).not.toHaveBeenCalled();
-
-      await user.type(input, 'Hello AI');
-      await user.keyboard('{Enter}');
-
-      await waitFor(() => {
-        expect(medplum.createResource).toHaveBeenCalled();
-      });
-    });
-
-    test('sends selected patients as context and shows them above the message', async () => {
-      const user = userEvent.setup();
-      medplum.executeBot = vi.fn().mockResolvedValue({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'content', valueString: 'About Homer' }],
-      });
-      setup();
       await user.click(screen.getByRole('button', { name: 'Patients' }));
       await user.click(await screen.findByText('Homer Simpson', {}, { timeout: 3000 }));
-      await user.type(screen.getByPlaceholderText('Ask, search, or make anything...'), 'Summarize');
+      await user.type(promptInput(), 'Summarize');
       await user.click(screen.getByRole('button', { name: 'Send message' }));
-      expect(await screen.findByText('About Homer')).toBeInTheDocument();
-      const userMessage = screen.getByText('Summarize').parentElement?.parentElement as HTMLElement;
-      expect(within(userMessage).getByText('Homer Simpson')).toBeInTheDocument();
+
+      expect(props.send).toHaveBeenCalledWith('Summarize', [expect.objectContaining({ id: HomerSimpson.id })]);
+    });
+
+    test('disables Send while the conversation is busy', async () => {
+      const user = userEvent.setup();
+      setup(conversation([{ role: 'user', content: 'Earlier' }], { status: 'sending' }));
+
+      await user.type(promptInput(), 'Another');
+      expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled();
     });
   });
 
-  describe('Chat state (after first message)', () => {
-    test('displays user and assistant messages', async () => {
-      const user = userEvent.setup();
-      medplum.executeBot = vi.fn().mockResolvedValue({
-        resourceType: 'Parameters',
-        parameter: [{ name: 'content', valueString: 'Hello! How can I help you?' }],
-      });
+  describe('Progress', () => {
+    test('shows thinking, the running FHIR request, then the streamed summary', () => {
+      const base = conversation([{ role: 'user', content: 'Look things up' }], { status: 'sending' });
+      const { rerender } = setup(base);
+      expect(screen.getByText('Thinking...')).toBeInTheDocument();
 
-      await act(async () => {
-        setup();
-      });
+      rerender(inbox({ ...base, currentFhirRequest: 'Step 1: GET Patient' }));
+      expect(screen.getByText('Executing Step 1: GET Patient...')).toBeInTheDocument();
+      expect(screen.queryByText('Thinking...')).not.toBeInTheDocument();
 
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-
-      await user.type(input, 'Hello AI');
-      await user.click(screen.getByRole('button', { name: 'Send message' }));
-
-      await waitFor(() => {
-        expect(screen.getByText('Hello AI')).toBeInTheDocument();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('Hello! How can I help you?')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Tool calls and FHIR requests', () => {
-    test('handles fhir_request tool calls', async () => {
-      const user = userEvent.setup();
-      const mockPatient = { resourceType: 'Patient', id: 'patient-123', name: [{ given: ['John'], family: 'Doe' }] };
-
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient/patient-123')]))
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [],
-        });
-
-      medplum.get = vi.fn().mockResolvedValue(mockPatient);
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found patient John Doe'));
-
-      await act(async () => {
-        setup();
-      });
-
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-      await user.type(input, 'Get patient 123');
-      await user.click(screen.getByRole('button', { name: 'Send message' }));
-
-      await waitFor(
-        () => {
-          expect(medplum.get).toHaveBeenCalled();
-        },
-        { timeout: 3000 }
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText('Found patient John Doe')).toBeInTheDocument();
-      });
+      rerender(inbox({ ...base, streamingContent: 'Found **two** patients' }));
+      expect(screen.getByText('two')).toBeInTheDocument();
+      expect(screen.queryByText('Thinking...')).not.toBeInTheDocument();
     });
 
-    test('handles FHIR request errors', async () => {
-      const user = userEvent.setup();
-
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient/nonexistent')]))
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [],
-        });
-
-      medplum.get = vi.fn().mockRejectedValue(new Error('Not found'));
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Patient not found'));
-
-      await act(async () => {
-        setup();
-      });
-
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-
-      await user.type(input, 'Get nonexistent patient');
-      await user.click(screen.getByRole('button', { name: 'Send message' }));
-
-      await waitFor(() => {
-        expect(medplum.get).toHaveBeenCalled();
-      });
-
-      await waitFor(() => {
-        expect(globalThis.fetch).toHaveBeenCalled();
-      });
-    });
-  });
-
-  describe('Component generation', () => {
     test('streams the generated component into the preview panel and keeps it as a card', async () => {
       const user = userEvent.setup();
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient/patient-123')], true))
-        .mockResolvedValueOnce({ resourceType: 'Parameters', parameter: [] });
-      medplum.get = vi.fn().mockResolvedValue({ resourceType: 'Patient', id: 'patient-123' });
-      medplum.readResource = vi.fn().mockResolvedValue({ resourceType: 'Patient', id: 'patient-123' });
-      const componentStream = controlledStream();
-      vi.spyOn(globalThis, 'fetch')
-        .mockResolvedValueOnce(createMockStreamingResponse('Here is your chart'))
-        .mockResolvedValueOnce(componentStream.response);
-      setup();
-      await user.type(screen.getByPlaceholderText('Ask, search, or make anything...'), 'Chart patients');
-      await user.click(screen.getByRole('button', { name: 'Send message' }));
-      const generating = await screen.findByText('Generating component...', {}, { timeout: 3000 });
+      const base = conversation([{ role: 'user', content: 'Chart patients' }], { status: 'sending' });
+      const { rerender } = setup(base);
+
+      rerender(inbox({ ...base, streamingComponentCode: '' }));
+      const generating = screen.getByText('Generating component...');
       expect(screen.getByText('Component Preview')).toBeInTheDocument();
+      expect(screen.queryByText('Thinking...')).not.toBeInTheDocument();
+
       await closePanel(user, 'Component Preview');
       expect(screen.queryByText('Component Preview')).not.toBeInTheDocument();
       await user.click(generating);
       expect(screen.getByText('Component Preview')).toBeInTheDocument();
-      await act(async () =>
-        componentStream.push('```jsx\nfunction Chart() {\n  return <Text>Generated chart</Text>;\n}\n```')
+
+      const code = 'function Chart() {\n  return <Text>Generated chart</Text>;\n}';
+      rerender(inbox({ ...base, streamingComponentCode: `\`\`\`jsx\n${code}\n` }));
+      expect(screen.getByText(/function Chart/)).toBeInTheDocument();
+
+      rerender(
+        inbox(
+          conversation(
+            [
+              { role: 'user', content: 'Chart patients' },
+              { role: 'assistant', content: 'Here is your chart', componentCode: code, resources: ['Patient/p-1'] },
+            ],
+            { generatedComponent: { code, resources: ['Patient/p-1'] } }
+          )
+        )
       );
-      expect(await screen.findByText(/function Chart/)).toBeInTheDocument();
-      await act(async () => componentStream.close());
-      expect(await screen.findByText('View Component')).toBeInTheDocument();
+
+      expect(screen.getByText('View Component')).toBeInTheDocument();
       expect(screen.getByText('Here is your chart')).toBeInTheDocument();
       expect(screen.queryByText('Generating component...')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('Resource display', () => {
-    test('displays resource boxes when resources are returned', async () => {
-      const user = userEvent.setup();
-
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient/patient-123')]))
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [],
-        });
-
-      medplum.get = vi.fn().mockResolvedValue({
-        resourceType: 'Patient',
-        id: 'patient-123',
-      });
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found patient'));
-
-      await act(async () => {
-        setup();
-      });
-
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-
-      await user.type(input, 'Get patient');
-      await user.click(screen.getByRole('button', { name: 'Send message' }));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('resource-box')).toBeInTheDocument();
-      });
-
-      await waitFor(() => {
-        const resourceBox = screen.getByTestId('resource-box');
-        expect(within(resourceBox).getByText('Patient/patient-123')).toBeInTheDocument();
-      });
-    });
-
-    test('opens resource panel when clicking on resource box', async () => {
-      const user = userEvent.setup();
-
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient/patient-123')]))
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [],
-        });
-
-      medplum.get = vi.fn().mockResolvedValue({
-        resourceType: 'Patient',
-        id: 'patient-123',
-      });
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found patient'));
-
-      await act(async () => {
-        setup();
-      });
-
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-
-      await user.type(input, 'Get patient');
-      await user.click(screen.getByRole('button', { name: 'Send message' }));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('resource-box')).toBeInTheDocument();
-      });
-
-      const resourceBox = screen.getByTestId('resource-box');
-      await user.click(resourceBox);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('resource-panel')).toBeInTheDocument();
-        expect(screen.getByText('Resource Details')).toBeInTheDocument();
-      });
-    });
-
-    test('closes resource panel when clicking close button', async () => {
-      const user = userEvent.setup();
-
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient/patient-123')]))
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [],
-        });
-
-      medplum.get = vi.fn().mockResolvedValue({
-        resourceType: 'Patient',
-        id: 'patient-123',
-      });
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found patient'));
-
-      await act(async () => {
-        setup();
-      });
-
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-
-      await user.type(input, 'Get patient');
-      await user.click(screen.getByRole('button', { name: 'Send message' }));
-
-      await waitFor(() => {
-        expect(screen.getByTestId('resource-box')).toBeInTheDocument();
-      });
-
-      const resourceBox = screen.getByTestId('resource-box');
-      await user.click(resourceBox);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('resource-panel')).toBeInTheDocument();
-      });
-
-      const allButtons = screen.getAllByRole('button');
-      const closeButton = allButtons.find((btn) => btn.className.includes('CloseButton'));
-      if (!closeButton) {
-        throw new Error('CloseButton not found');
-      }
-
-      await user.click(closeButton);
-
-      await waitFor(() => {
-        expect(screen.queryByTestId('resource-panel')).not.toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Error handling', () => {
-    test('displays error message when bot execution fails', async () => {
-      const user = userEvent.setup();
-      medplum.executeBot = vi.fn().mockRejectedValue(new Error('Bot execution failed'));
-
-      await act(async () => {
-        setup();
-      });
-
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-
-      await user.type(input, 'Hello AI');
-      await user.click(screen.getByRole('button', { name: 'Send message' }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Error: Bot execution failed/)).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('HTTP method support', () => {
-    test.each([
-      ['GET', 'get'],
-      ['POST', 'post'],
-      ['PUT', 'put'],
-      ['DELETE', 'delete'],
-    ])('handles %s requests', async (method, clientMethod) => {
-      const user = userEvent.setup();
-
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method,
-                      path: 'Patient/patient-123',
-                      body: method !== 'GET' && method !== 'DELETE' ? { resourceType: 'Patient' } : undefined,
-                    }),
-                  },
-                },
-              ]),
-            },
-          ],
-        })
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Success' }],
-        });
-
-      (medplum as any)[clientMethod] = vi.fn().mockResolvedValue({ resourceType: 'Patient', id: 'patient-123' });
-
-      await act(async () => {
-        setup();
-      });
-
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-
-      await user.type(input, `${method} patient`);
-      await user.click(screen.getByRole('button', { name: 'Send message' }));
-
-      await waitFor(() => {
-        expect((medplum as any)[clientMethod]).toHaveBeenCalled();
-      });
-    });
-  });
-
-  describe('Bundle handling', () => {
-    test('extracts resource references from Bundle entries', async () => {
-      const user = userEvent.setup();
-      const mockBundle = {
-        resourceType: 'Bundle',
-        entry: [
-          { resource: { resourceType: 'Patient', id: 'patient-1' } },
-          { resource: { resourceType: 'Patient', id: 'patient-2' } },
-        ],
-      };
-
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce(toolCallsResponse([fhirRequestToolCall('tool-1', 'GET', 'Patient?name=John')]))
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [],
-        });
-
-      medplum.get = vi.fn().mockResolvedValue(mockBundle);
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found 2 patients'));
-
-      await act(async () => {
-        setup();
-      });
-
-      const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-
-      await user.type(input, 'Search patients');
-      await user.click(screen.getByRole('button', { name: 'Send message' }));
-
-      await waitFor(() => {
-        expect(medplum.get).toHaveBeenCalled();
-      });
-
-      await waitFor(() => {
-        const resourceBoxes = screen.getAllByTestId('resource-box');
-        expect(resourceBoxes.length).toBe(2);
-      });
+      expect(screen.getByText('Component Preview')).toBeInTheDocument();
+      expect(await screen.findByText('Generated chart')).toBeInTheDocument();
     });
   });
 });
