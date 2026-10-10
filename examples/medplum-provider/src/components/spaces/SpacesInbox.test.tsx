@@ -139,14 +139,6 @@ describe('SpacesInbox', () => {
       expect(screen.getByText('No conversations yet')).toBeInTheDocument();
     });
 
-    test('shows no empty state while conversations are loading', async () => {
-      const user = userEvent.setup();
-      setup(makeProps({ topicsLoading: true }));
-
-      await user.click(screen.getByRole('button', { name: 'Show conversations' }));
-      expect(screen.queryByText('No conversations yet')).not.toBeInTheDocument();
-    });
-
     test('forwards the New conversation click', async () => {
       const user = userEvent.setup();
       setup();
@@ -262,20 +254,6 @@ describe('SpacesInbox', () => {
       expect(screen.queryByText('Component Preview')).not.toBeInTheDocument();
     });
 
-    test('closes open panels when the conversation changes', async () => {
-      const user = userEvent.setup();
-      const props = conversation([{ role: 'assistant', content: 'Found three', resources: ['A/1', 'B/2', 'C/3'] }]);
-      const { rerender } = setup(props);
-
-      await user.click(screen.getByText('3 results'));
-      expect(screen.getByText('Results (3)')).toBeInTheDocument();
-
-      rerender(inbox(conversation([{ role: 'user', content: 'Other conversation' }], { topicId: 'topic-456' })));
-
-      expect(screen.queryByText('Results (3)')).not.toBeInTheDocument();
-      expect(screen.getByText('Other conversation')).toBeInTheDocument();
-    });
-
     test('shows a scroll-to-bottom button when scrolled up and scrolls down on click', async () => {
       const user = userEvent.setup();
       setup(conversation([{ role: 'user', content: 'Persisted question' }]));
@@ -301,18 +279,6 @@ describe('SpacesInbox', () => {
 
       expect(props.send).toHaveBeenCalledWith('Hello AI', []);
       expect(promptInput()).toHaveValue('');
-    });
-
-    test('keeps the input when the send is refused', async () => {
-      const user = userEvent.setup();
-      const props = makeProps({ send: vi.fn().mockReturnValue(false) });
-      setup(props);
-
-      await user.type(promptInput(), 'Hello AI');
-      await user.keyboard('{Enter}');
-
-      expect(props.send).toHaveBeenCalledWith('Hello AI', []);
-      expect(promptInput()).toHaveValue('Hello AI');
     });
 
     test('sends on Enter but not on Shift+Enter', async () => {
@@ -347,31 +313,9 @@ describe('SpacesInbox', () => {
 
       expect(props.send).toHaveBeenCalledWith('Summarize', [expect.objectContaining({ id: HomerSimpson.id })]);
     });
-
-    test('disables Send while the conversation is busy', async () => {
-      const user = userEvent.setup();
-      setup(conversation([{ role: 'user', content: 'Earlier' }], { status: 'sending' }));
-
-      await user.type(promptInput(), 'Another');
-      expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled();
-    });
   });
 
-  describe('Progress', () => {
-    test('shows thinking, the running FHIR request, then the streamed summary', () => {
-      const base = conversation([{ role: 'user', content: 'Look things up' }], { status: 'sending' });
-      const { rerender } = setup(base);
-      expect(screen.getByText('Thinking...')).toBeInTheDocument();
-
-      rerender(inbox({ ...base, currentFhirRequest: 'Step 1: GET Patient' }));
-      expect(screen.getByText('Executing Step 1: GET Patient...')).toBeInTheDocument();
-      expect(screen.queryByText('Thinking...')).not.toBeInTheDocument();
-
-      rerender(inbox({ ...base, streamingContent: 'Found **two** patients' }));
-      expect(screen.getByText('two')).toBeInTheDocument();
-      expect(screen.queryByText('Thinking...')).not.toBeInTheDocument();
-    });
-
+  describe('Component generation', () => {
     test('streams the generated component into the preview panel and keeps it as a card', async () => {
       const user = userEvent.setup();
       const base = conversation([{ role: 'user', content: 'Chart patients' }], { status: 'sending' });

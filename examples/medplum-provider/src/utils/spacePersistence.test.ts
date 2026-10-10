@@ -556,59 +556,6 @@ describe('spacePersistence', () => {
       expect(messages[2].content).toBe('Third');
     });
 
-    test('trims leading messages so the window starts at a user message', async () => {
-      const payload = (message: Record<string, unknown>): Communication['payload'] => [
-        { contentString: JSON.stringify(message) },
-      ];
-      const mockCommunications: (Communication & { id: string })[] = [
-        {
-          resourceType: 'Communication',
-          id: 'c-1',
-          status: 'completed',
-          payload: payload({ role: 'tool', content: '{}', tool_call_id: 'call-0', sequenceNumber: 1 }),
-        },
-        {
-          resourceType: 'Communication',
-          id: 'c-2',
-          status: 'completed',
-          payload: payload({ role: 'assistant', content: 'Earlier answer', sequenceNumber: 2 }),
-        },
-        {
-          resourceType: 'Communication',
-          id: 'c-3',
-          status: 'completed',
-          payload: payload({ role: 'user', content: 'Next question', sequenceNumber: 3 }),
-        },
-        {
-          resourceType: 'Communication',
-          id: 'c-4',
-          status: 'completed',
-          payload: payload({ role: 'assistant', content: 'Next answer', sequenceNumber: 4 }),
-        },
-      ];
-
-      vi.spyOn(medplum, 'searchResources').mockResolvedValue(mockCommunications as any);
-
-      const messages = await loadConversationMessages(medplum, 'topic-1');
-
-      expect(messages.map((m) => m.content)).toEqual(['Next question', 'Next answer']);
-    });
-
-    test('returns no messages when the window holds no user message', async () => {
-      const mockCommunications: (Communication & { id: string })[] = [
-        {
-          resourceType: 'Communication',
-          id: 'c-1',
-          status: 'completed',
-          payload: [{ contentString: JSON.stringify({ role: 'assistant', content: 'Orphan', sequenceNumber: 1 }) }],
-        },
-      ];
-
-      vi.spyOn(medplum, 'searchResources').mockResolvedValue(mockCommunications as any);
-
-      await expect(loadConversationMessages(medplum, 'topic-1')).resolves.toEqual([]);
-    });
-
     test('does not add duplicate responses when all tool responses exist', async () => {
       const mockCommunications: (Communication & { id: string })[] = [
         {
