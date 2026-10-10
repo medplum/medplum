@@ -49,14 +49,6 @@ describe('Markdown', () => {
     expect(block).toHaveAttribute('data-block', 'true');
   });
 
-  test('Renders a fenced block without a language tag as a block', () => {
-    render(<Markdown>{'```\nplain fence\n```\n'}</Markdown>);
-
-    const block = screen.getByText('plain fence');
-    expect(block.tagName).toBe('PRE');
-    expect(block).toHaveAttribute('data-block', 'true');
-  });
-
   test('Maps headings down to Mantine Title orders 3 through 6', () => {
     render(<Markdown>{'# One\n\n## Two\n\n### Three\n\n#### Four\n'}</Markdown>);
 

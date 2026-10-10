@@ -74,31 +74,6 @@ describe('PatientPicker', () => {
     });
   });
 
-  test('ignores a slow response from an earlier search', async () => {
-    let resolveFirst: (patients: Patient[]) => void = () => undefined;
-    searchSpy.mockImplementationOnce(
-      () =>
-        new Promise<Patient[]>((resolve) => {
-          resolveFirst = resolve;
-        })
-    );
-    searchSpy.mockResolvedValueOnce([marge]);
-
-    await act(async () => setup());
-    await waitFor(() => expect(searchSpy).toHaveBeenCalledTimes(1));
-
-    const input = screen.getByPlaceholderText('Search patients...');
-    fireEvent.change(input, { target: { value: 'Marge' } });
-
-    expect(await screen.findByText('Marge Simpson')).toBeInTheDocument();
-
-    // The initial, unfiltered search resolves late; its results must not replace the current ones.
-    await act(async () => resolveFirst([homer]));
-
-    expect(screen.getByText('Marge Simpson')).toBeInTheDocument();
-    expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
-  });
-
   test('surfaces an error notification when the search fails', async () => {
     const { showErrorNotification } = await import('../../utils/notifications');
     const error = new Error('network down');

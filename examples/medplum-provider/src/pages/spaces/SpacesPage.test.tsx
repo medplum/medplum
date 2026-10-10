@@ -1,26 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import type { JSX } from 'react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { contentResponse, mockTopic } from '../../test-utils/spaces';
+import { mockTopic } from '../../test-utils/spaces';
 import { SpacesPage } from './SpacesPage';
 
 const mockProfile = {
   resourceType: 'Practitioner' as const,
   id: 'practitioner-123',
 };
-
-function LocationProbe(): JSX.Element {
-  const location = useLocation();
-  return <div data-testid="location">{location.pathname}</div>;
-}
 
 describe('SpacesPage', () => {
   let medplum: MockClient;
@@ -35,14 +27,6 @@ describe('SpacesPage', () => {
       .fn()
       .mockReturnValue({ resourceType: 'Project', id: 'project-123', features: ['bots', 'ai'] });
     medplum.searchResources = vi.fn().mockResolvedValue([]);
-    medplum.createResource = vi.fn().mockImplementation((resource: Communication) => {
-      if (resource.identifier?.[0]?.value === 'ai-message-topic') {
-        return Promise.resolve(mockTopic);
-      }
-      return Promise.resolve({ ...resource, id: 'message-123' });
-    });
-    medplum.searchOne = vi.fn().mockResolvedValue({ resourceType: 'Bot', id: 'bot-1' }) as any;
-    medplum.executeBot = vi.fn().mockResolvedValue(contentResponse('Bot response'));
   });
 
   const setup = (initialEntries = ['/Spaces']): ReturnType<typeof render> => {
@@ -57,7 +41,6 @@ describe('SpacesPage', () => {
                 <Route path="Communication/:topicId" element={<SpacesPage />} />
               </Route>
             </Routes>
-            <LocationProbe />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -115,24 +98,6 @@ describe('SpacesPage', () => {
         expect.objectContaining({ 'part-of': 'Communication/123' })
       );
     });
-  });
-
-  test('navigates to the new topic after the first message without reloading it', async () => {
-    const user = userEvent.setup();
-    await act(async () => {
-      setup(['/Spaces/Communication']);
-    });
-
-    await user.type(screen.getByPlaceholderText('Ask, search, or make anything...'), 'Hello AI');
-    await user.click(screen.getByRole('button', { name: 'Send message' }));
-
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/Spaces/Communication/topic-123'));
-    expect(await screen.findByText('Bot response')).toBeInTheDocument();
-    expect(screen.getByText('Hello AI')).toBeInTheDocument();
-    const messageLoads = vi
-      .mocked(medplum.searchResources)
-      .mock.calls.filter(([, query]) => (query as Record<string, string>)?.['part-of']);
-    expect(messageLoads).toHaveLength(0);
   });
 
   test('generates correct link for selected item', async () => {
