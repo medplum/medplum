@@ -98,14 +98,18 @@ describe('Reference checks', () => {
         password: randomUUID(),
       });
 
-      const { membership: membership2, project: project2 } = await registerNew({
+      const globalSystemRepo = getGlobalSystemRepo();
+      const { membership: membership2, project: originalProject2 } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
         projectName: randomUUID(),
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      const globalSystemRepo = getGlobalSystemRepo();
+      const project2 = await globalSystemRepo.updateResource({
+        ...originalProject2,
+        exportedResourceType: ['Patient'],
+      });
       const updatedProject = await globalSystemRepo.updateResource({
         ...project,
         checkReferencesOnWrite: true,

@@ -108,7 +108,10 @@ describe('Binary/$presigned-url', () => {
   });
 
   test('Linked project cannot generate upload link', async () => {
-    const owner = await createTestProject({ withAccessToken: true });
+    const owner = await createTestProject({
+      withAccessToken: true,
+      project: { exportedResourceType: ['Binary'] },
+    });
     const linked = await createTestProject({
       withAccessToken: true,
       project: { link: [{ project: createReference(owner.project) }] },

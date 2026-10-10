@@ -217,11 +217,7 @@ export function getPermittedProjectIds(
 
   for (let i = 1; i < projects.length; i++) {
     const project = projects[i];
-    if (
-      resourceType === 'Project' || // When searching for projects, include all projects
-      !project.exportedResourceType?.length || // Include projects that do not specify exported resource types
-      project.exportedResourceType?.includes(resourceType as ResourceType) // Include projects that export resourceType
-    ) {
+    if (resourceType === 'Project' || project.exportedResourceType?.includes(resourceType as ResourceType)) {
       projectIds.push(project.id);
     }
   }
