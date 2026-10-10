@@ -732,7 +732,7 @@ describe('ActorPage', () => {
 
       async function saveNow(): Promise<void> {
         await act(async () => {
-          fireEvent.click(within(saveBar() as HTMLElement).getByRole('button', { name: 'Save' }));
+          fireEvent.click(within(saveBar() as HTMLElement).getByRole('button', { name: /^(Save|Create)$/ }));
         });
       }
 
@@ -786,6 +786,85 @@ describe('ActorPage', () => {
 
         expect(entry('Cystoscopy')).toBeInTheDocument();
         expect(saveBar()).not.toBeNull();
+      });
+
+      describe('creating', () => {
+        async function setupNew(
+          newActorType: 'Location' | 'Device'
+        ): Promise<Pick<Setup, 'medplum' | 'onSynced'> & { onDiscardNew: ReturnType<typeof vi.fn> }> {
+          const medplum = new MockClient({ seedDefaultData: false });
+          for (const resource of [downtown, northside, ...services]) {
+            await medplum.createResource(resource);
+          }
+          const onSynced = vi.fn();
+          const onDiscardNew = vi.fn();
+          vi.spyOn(medplum, 'executeBatch');
+          renderWithMedplum(
+            <ActorPage
+              newActorType={newActorType}
+              services={services}
+              onSynced={onSynced}
+              onDiscardNew={onDiscardNew}
+            />,
+            medplum
+          );
+          return { medplum, onSynced, onDiscardNew };
+        }
+
+        test('a new room says it is not saved yet, and offers no visit types until it is created', async () => {
+          await setupNew('Location');
+
+          expect(screen.getByText('New room')).toBeInTheDocument();
+          expect(screen.getByText('Not saved yet')).toBeInTheDocument();
+          expect(screen.getByText('Visit types can be offered once this room is created.')).toBeInTheDocument();
+          expect(screen.queryByRole('button', { name: 'Offer visit types' })).not.toBeInTheDocument();
+          expect(screen.getByRole('switch', { name: 'Room status' })).toBeChecked();
+          expect(screen.queryByRole('switch', { name: 'Schedule status' })).not.toBeInTheDocument();
+        });
+
+        test('creating a room stores an active Location typed as a room, at the service facility picked', async () => {
+          const { medplum, onSynced } = await setupNew('Location');
+
+          fireEvent.change(within(general()).getByRole('textbox', { name: /Name/ }), { target: { value: 'Room 9' } });
+          await pick('Service facility', 'Downtown Clinic');
+          await saveNow();
+
+          await waitFor(() => expect(onSynced).toHaveBeenCalled());
+          expect(sentBundle(medplum).entry?.map((item) => item.request)).toEqual([{ method: 'POST', url: 'Location' }]);
+          const created = onSynced.mock.calls[0][0][0] as WithId<Location>;
+          expect(created).toMatchObject({
+            name: 'Room 9',
+            status: 'active',
+            partOf: { reference: 'Location/downtown' },
+          });
+          expect(created.physicalType?.coding?.map((coding) => coding.code)).toEqual(['ro']);
+        });
+
+        test('a new device switched off is created inactive', async () => {
+          const { onSynced } = await setupNew('Device');
+
+          fireEvent.change(within(general()).getByRole('textbox', { name: /Name/ }), {
+            target: { value: 'Ultrasound 4' },
+          });
+          await userEvent.click(screen.getByRole('switch', { name: 'Device status' }));
+          await saveNow();
+
+          await waitFor(() => expect(onSynced).toHaveBeenCalled());
+          expect(onSynced.mock.calls[0][0][0]).toMatchObject({ resourceType: 'Device', status: 'inactive' });
+        });
+
+        test('a new room is refused without a name, and discarding it writes nothing', async () => {
+          const { medplum, onDiscardNew } = await setupNew('Location');
+
+          await saveNow();
+          expect(within(general()).getByText('A name is required.')).toBeInTheDocument();
+          await act(async () => {
+            fireEvent.click(within(saveBar() as HTMLElement).getByRole('button', { name: 'Discard' }));
+          });
+
+          expect(onDiscardNew).toHaveBeenCalled();
+          expect(medplum.executeBatch).not.toHaveBeenCalled();
+        });
       });
     });
   });

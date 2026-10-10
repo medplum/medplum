@@ -85,16 +85,22 @@ export function useConfigurableResources(): ConfigurableResources {
       (list, resource) => (resource.resourceType === 'HealthcareService' ? withStoredService(list, resource) : list),
       services.items
     );
-    const withSaved = (list: ResourceList<ConfigurableActor>): ResourceList<ConfigurableActor> => ({
+    const withSaved = (
+      list: ResourceList<ConfigurableActor>,
+      resourceType: BookableActorType
+    ): ResourceList<ConfigurableActor> => ({
       ...list,
-      items: saved.reduce((actorItems, resource) => withStoredActorResource(actorItems, resource), list.items),
+      items: saved.reduce(
+        (actorItems, resource) => withStoredActorResource(actorItems, resource, resourceType),
+        list.items
+      ),
     });
     return {
       services: { ...services, items },
       actors: {
-        Practitioner: withSaved(actors.Practitioner),
-        Location: withSaved(actors.Location),
-        Device: withSaved(actors.Device),
+        Practitioner: withSaved(actors.Practitioner, 'Practitioner'),
+        Location: withSaved(actors.Location, 'Location'),
+        Device: withSaved(actors.Device, 'Device'),
       },
       store,
     };

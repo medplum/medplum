@@ -5,7 +5,7 @@ import { TimezoneExtensionURI } from '@medplum/core';
 import type { Device, Location, Practitioner } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import type { ActorGeneralFields } from './actorDraft';
-import { actorGeneralFieldsOf, buildActorResource } from './actorDraft';
+import { actorGeneralFieldsOf, buildActorResource, newActorResource } from './actorDraft';
 
 const other = { url: 'http://example.org/other', valueString: 'kept' };
 
@@ -89,5 +89,19 @@ describe('buildActorResource', () => {
     expect(edit(named, { name: 'Ultrasound 3' }).deviceName).toEqual([
       { name: 'Ultrasound 3', type: 'user-friendly-name' },
     ]);
+  });
+});
+
+describe('newActorResource', () => {
+  test('a new room is typed as a room and active, and a new device is active', () => {
+    const room = edit(newActorResource('Location'), { name: 'Room 9' });
+    expect(room).toMatchObject({ resourceType: 'Location', name: 'Room 9', status: 'active' });
+    expect((room as Location).physicalType?.coding?.[0].code).toBe('ro');
+
+    expect(edit(newActorResource('Device'), { name: 'Ultrasound 4' })).toEqual({
+      resourceType: 'Device',
+      status: 'active',
+      deviceName: [{ name: 'Ultrasound 4', type: 'user-friendly-name' }],
+    });
   });
 });
