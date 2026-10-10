@@ -94,10 +94,13 @@ export function PromptComposer({
   const [modelPickerOpen, modelPickerHandlers] = useDisclosure(false);
   const [effortPickerOpen, effortPickerHandlers] = useDisclosure(false);
   const [patientPickerOpen, patientPickerHandlers] = useDisclosure(false);
-  const patientPickerDropdownRef = useRef<HTMLDivElement>(null);
-  const modelPickerDropdownRef = useRef<HTMLDivElement>(null);
-  const effortPickerDropdownRef = useRef<HTMLDivElement>(null);
   const [scrollable, setScrollable] = useState(false);
+
+  // Also wired to each Popover's onDismiss, which covers click-outside and Escape
+  const closeAndRefocus = (handlers: { close: () => void }): void => {
+    handlers.close();
+    textareaRef.current?.focus();
+  };
 
   // Track whether the textarea has grown past its max height and become scrollable
   useEffect(() => {
@@ -112,84 +115,6 @@ export function PromptComposer({
     });
     return () => cancelAnimationFrame(raf);
   }, [input]);
-
-  useEffect(() => {
-    if (!patientPickerOpen) {
-      return undefined;
-    }
-    const handler = (e: MouseEvent): void => {
-      if (patientPickerDropdownRef.current && !patientPickerDropdownRef.current.contains(e.target as Node)) {
-        patientPickerHandlers.close();
-      }
-    };
-    const raf = requestAnimationFrame(() => {
-      document.addEventListener('mousedown', handler);
-    });
-    return () => {
-      cancelAnimationFrame(raf);
-      document.removeEventListener('mousedown', handler);
-    };
-  }, [patientPickerOpen, patientPickerHandlers]);
-
-  const prevPatientPickerOpen = useRef(false);
-  useEffect(() => {
-    if (prevPatientPickerOpen.current && !patientPickerOpen) {
-      textareaRef.current?.focus();
-    }
-    prevPatientPickerOpen.current = patientPickerOpen;
-  }, [patientPickerOpen]);
-
-  useEffect(() => {
-    if (!modelPickerOpen) {
-      return undefined;
-    }
-    const handler = (e: MouseEvent): void => {
-      if (modelPickerDropdownRef.current && !modelPickerDropdownRef.current.contains(e.target as Node)) {
-        modelPickerHandlers.close();
-      }
-    };
-    const raf = requestAnimationFrame(() => {
-      document.addEventListener('mousedown', handler);
-    });
-    return () => {
-      cancelAnimationFrame(raf);
-      document.removeEventListener('mousedown', handler);
-    };
-  }, [modelPickerOpen, modelPickerHandlers]);
-
-  const prevModelPickerOpen = useRef(false);
-  useEffect(() => {
-    if (prevModelPickerOpen.current && !modelPickerOpen) {
-      textareaRef.current?.focus();
-    }
-    prevModelPickerOpen.current = modelPickerOpen;
-  }, [modelPickerOpen]);
-
-  useEffect(() => {
-    if (!effortPickerOpen) {
-      return undefined;
-    }
-    const handler = (e: MouseEvent): void => {
-      if (effortPickerDropdownRef.current && !effortPickerDropdownRef.current.contains(e.target as Node)) {
-        effortPickerHandlers.close();
-      }
-    };
-    const raf = requestAnimationFrame(() => {
-      document.addEventListener('mousedown', handler);
-    });
-    return () => {
-      cancelAnimationFrame(raf);
-      document.removeEventListener('mousedown', handler);
-    };
-  }, [effortPickerOpen, effortPickerHandlers]);
-
-  const prevEffortPickerOpen = useRef(false);
-  useEffect(() => {
-    if (prevEffortPickerOpen.current && !effortPickerOpen) {
-      textareaRef.current?.focus();
-    }
-    prevEffortPickerOpen.current = effortPickerOpen;
-  }, [effortPickerOpen]);
 
   const inputRef = useRef(input);
   useEffect(() => {
@@ -322,14 +247,20 @@ export function PromptComposer({
             </div>
           ) : (
             /* Patient picker */
-            <Popover opened={patientPickerOpen} position="top-start" shadow="md" radius="md">
+            <Popover
+              opened={patientPickerOpen}
+              onDismiss={() => closeAndRefocus(patientPickerHandlers)}
+              position="top-start"
+              shadow="md"
+              radius="md"
+            >
               <Popover.Target>
                 <Tooltip label="Patients" position="top" openDelay={100} disabled={patientPickerOpen}>
                   <ActionIcon
                     onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
                     onClick={() => {
                       if (patientPickerOpen) {
-                        patientPickerHandlers.close();
+                        closeAndRefocus(patientPickerHandlers);
                       } else {
                         patientPickerHandlers.open();
                       }
@@ -348,12 +279,7 @@ export function PromptComposer({
                   </ActionIcon>
                 </Tooltip>
               </Popover.Target>
-              <Popover.Dropdown
-                ref={patientPickerDropdownRef}
-                p={4}
-                miw={240}
-                onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
-              >
+              <Popover.Dropdown p={4} miw={240} onMouseDown={(e: React.MouseEvent) => e.preventDefault()}>
                 <Menu>
                   <PatientPicker
                     onSelect={(patient) => {
@@ -362,7 +288,7 @@ export function PromptComposer({
                           ? prev
                           : [...prev, patient]
                       );
-                      patientPickerHandlers.close();
+                      closeAndRefocus(patientPickerHandlers);
                     }}
                   />
                 </Menu>
@@ -405,7 +331,13 @@ export function PromptComposer({
           ) : (
             <>
               {/* Model selector */}
-              <Popover opened={modelPickerOpen} position="top-end" shadow="md" radius="md">
+              <Popover
+                opened={modelPickerOpen}
+                onDismiss={() => closeAndRefocus(modelPickerHandlers)}
+                position="top-end"
+                shadow="md"
+                radius="md"
+              >
                 <Popover.Target>
                   <Tooltip label="Model" position="top" openDelay={100} disabled={modelPickerOpen}>
                     <button
@@ -417,7 +349,7 @@ export function PromptComposer({
                       onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
                       onClick={() => {
                         if (modelPickerOpen) {
-                          modelPickerHandlers.close();
+                          closeAndRefocus(modelPickerHandlers);
                         } else {
                           modelPickerHandlers.open();
                         }
@@ -430,7 +362,7 @@ export function PromptComposer({
                     </button>
                   </Tooltip>
                 </Popover.Target>
-                <Popover.Dropdown ref={modelPickerDropdownRef} p={4} miw={180}>
+                <Popover.Dropdown p={4} miw={180}>
                   <Menu>
                     <Menu.Label style={{ padding: 'calc(var(--mantine-spacing-xs) / 2) var(--mantine-spacing-xs)' }}>
                       Model
@@ -446,7 +378,7 @@ export function PromptComposer({
                         }
                         onClick={() => {
                           onModelChange(model.value);
-                          modelPickerHandlers.close();
+                          closeAndRefocus(modelPickerHandlers);
                         }}
                       >
                         <Group gap={4} wrap="nowrap">
@@ -460,7 +392,13 @@ export function PromptComposer({
               </Popover>
 
               {/* Reasoning effort selector */}
-              <Popover opened={effortPickerOpen} position="top-end" shadow="md" radius="md">
+              <Popover
+                opened={effortPickerOpen}
+                onDismiss={() => closeAndRefocus(effortPickerHandlers)}
+                position="top-end"
+                shadow="md"
+                radius="md"
+              >
                 <Popover.Target>
                   <Tooltip label="Reasoning effort" position="top" openDelay={100} disabled={effortPickerOpen}>
                     <button
@@ -472,7 +410,7 @@ export function PromptComposer({
                       onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
                       onClick={() => {
                         if (effortPickerOpen) {
-                          effortPickerHandlers.close();
+                          closeAndRefocus(effortPickerHandlers);
                         } else {
                           effortPickerHandlers.open();
                         }
@@ -485,7 +423,7 @@ export function PromptComposer({
                     </button>
                   </Tooltip>
                 </Popover.Target>
-                <Popover.Dropdown ref={effortPickerDropdownRef} p={4} miw={160}>
+                <Popover.Dropdown p={4} miw={160}>
                   <Menu>
                     <Menu.Label style={{ padding: 'calc(var(--mantine-spacing-xs) / 2) var(--mantine-spacing-xs)' }}>
                       Reasoning effort
@@ -501,7 +439,7 @@ export function PromptComposer({
                         }
                         onClick={() => {
                           onReasoningEffortChange(effort.value);
-                          effortPickerHandlers.close();
+                          closeAndRefocus(effortPickerHandlers);
                         }}
                       >
                         <Text size="sm">{effort.label}</Text>

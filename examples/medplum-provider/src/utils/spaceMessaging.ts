@@ -2,19 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
 import { getDisplayString, getReferenceString, isNotFound, OperationOutcomeError } from '@medplum/core';
-import type { Bundle, Communication, Identifier, Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import type { useMedplum } from '@medplum/react';
+import type { Bundle, Communication, Identifier, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Message } from '../types/spaces';
 import type { ReasoningEffort } from './spaceModels';
 import { createConversationTopic, saveMessage } from './spacePersistence';
 
 const fhirRequestToolsId: Identifier = {
   value: 'ai-fhir-request-tools',
-  system: 'https://www.medplum.com/bots',
-};
-
-const resourceSummaryBotId: Identifier = {
-  value: 'ai-resource-summary',
   system: 'https://www.medplum.com/bots',
 };
 
@@ -47,7 +41,7 @@ export interface ExecuteToolCallsResult {
   resourceRefs: string[];
 }
 
-async function executeFhirRequest(medplum: ReturnType<typeof useMedplum>, args: FhirRequestArgs): Promise<Resource> {
+async function executeFhirRequest(medplum: MedplumClient, args: FhirRequestArgs): Promise<Resource> {
   const { method, path, body } = args;
   switch (method) {
     case 'GET':
@@ -93,7 +87,7 @@ export class StreamingCodeExtractor {
 
     while (true) {
       if (!this.inCodeBlock) {
-        const startMatch = this.buffer.match(/```(?:jsx|tsx|javascript|js)?\s*\n/);
+        const startMatch = this.buffer.match(/```[\w+-]*[ \t]*\r?\n/);
         if (startMatch?.index !== undefined) {
           this.inCodeBlock = true;
           this.buffer = this.buffer.slice(startMatch.index + startMatch[0].length);
@@ -142,65 +136,68 @@ export async function collectFhirData(medplum: MedplumClient, refs: string[]): P
   return results.filter((resource) => resource !== undefined);
 }
 
+function toolErrorMessage(toolCall: ToolCall, message: string, details?: string): Message {
+  return {
+    role: 'tool',
+    tool_call_id: toolCall.id,
+    content: JSON.stringify({ error: true, message, ...(details !== undefined && { details }) }),
+  };
+}
+
+/**
+ * Runs every tool call and returns one tool message per call. OpenAI requires a reply for
+ * every tool_call_id, so a call that cannot be parsed or executed still produces a message,
+ * carrying the error back to the model instead of throwing.
+ * @param medplum - The Medplum client instance
+ * @param toolCalls - The tool calls requested by the model
+ * @param onFhirRequest - Called with a short description before each FHIR request runs
+ * @returns The tool messages and the references of every resource they returned
+ */
 export async function executeToolCalls(
-  medplum: ReturnType<typeof useMedplum>,
+  medplum: MedplumClient,
   toolCalls: ToolCall[],
-  onFhirRequest: (request: string) => void
+  onFhirRequest?: (request: string) => void
 ): Promise<ExecuteToolCallsResult> {
   const messages: Message[] = [];
   const resourceRefs: string[] = [];
 
   for (const toolCall of toolCalls) {
     if (toolCall.function.name === 'fhir_request') {
-      const args =
-        typeof toolCall.function.arguments === 'string'
-          ? (JSON.parse(toolCall.function.arguments) as FhirRequestArgs)
-          : (toolCall.function.arguments as unknown as FhirRequestArgs);
+      let args: FhirRequestArgs | undefined;
+      try {
+        args =
+          typeof toolCall.function.arguments === 'string'
+            ? (JSON.parse(toolCall.function.arguments) as FhirRequestArgs)
+            : (toolCall.function.arguments as unknown as FhirRequestArgs);
+      } catch (err) {
+        const details = err instanceof Error ? err.message : 'Unknown error';
+        messages.push(toolErrorMessage(toolCall, 'Invalid tool arguments', details));
+        continue;
+      }
 
-      onFhirRequest(`${args.method} ${args.path}`);
+      onFhirRequest?.(`${args.method} ${args.path}`);
 
       try {
         const result = await executeFhirRequest(medplum, args);
         resourceRefs.push(...extractResourceRefs(result));
-
-        const toolMessage: Message = {
+        messages.push({
           role: 'tool',
           tool_call_id: toolCall.id,
           content: JSON.stringify(result),
-        };
-        messages.push(toolMessage);
+        });
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        const toolErrorMessage: Message = {
-          role: 'tool',
-          tool_call_id: toolCall.id,
-          content: JSON.stringify({
-            error: true,
-            message: `Unable to execute ${args.method}: ${args.path}`,
-            details: errorMessage,
-          }),
-        };
-        messages.push(toolErrorMessage);
+        const details = err instanceof Error ? err.message : 'Unknown error';
+        messages.push(toolErrorMessage(toolCall, `Unable to execute ${args.method}: ${args.path}`, details));
       }
     } else if (toolCall.function.name === 'set_visualization') {
       // Acknowledge visualization tool call (handled separately via visualize flag)
-      const toolMessage: Message = {
+      messages.push({
         role: 'tool',
         tool_call_id: toolCall.id,
         content: JSON.stringify({ acknowledged: true }),
-      };
-      messages.push(toolMessage);
+      });
     } else {
-      // Handle unrecognized tool calls - OpenAI requires a response for every tool_call_id
-      const toolErrorMessage: Message = {
-        role: 'tool',
-        tool_call_id: toolCall.id,
-        content: JSON.stringify({
-          error: true,
-          message: `Unrecognized tool: ${toolCall.function.name}`,
-        }),
-      };
-      messages.push(toolErrorMessage);
+      messages.push(toolErrorMessage(toolCall, `Unrecognized tool: ${toolCall.function.name}`));
     }
   }
 
@@ -221,14 +218,31 @@ function toApiMessages(messages: Message[]): Pick<Message, 'role' | 'content' | 
   }));
 }
 
+/**
+ * Finds the bot to run for an identifier. Several bots can share one, so the newest wins.
+ * @param medplum - The Medplum client
+ * @param identifier - The bot identifier
+ * @returns The bot id
+ */
+export async function resolveBotId(medplum: MedplumClient, identifier: Identifier): Promise<string> {
+  const bot = await medplum.searchOne('Bot', {
+    identifier: `${identifier.system}|${identifier.value}`,
+    _sort: '-_lastUpdated',
+  });
+  if (!bot?.id) {
+    throw new Error(`Bot not found: ${identifier.value}`);
+  }
+  return bot.id;
+}
+
 export async function sendToBot(
-  medplum: ReturnType<typeof useMedplum>,
+  medplum: MedplumClient,
   botId: Identifier,
   messages: Message[],
   model: string,
   reasoningEffort: ReasoningEffort
 ): Promise<{ content?: string; toolCalls?: ToolCall[]; visualize?: boolean }> {
-  const response = await medplum.executeBot(botId, {
+  const response = await medplum.executeBot(await resolveBotId(medplum, botId), {
     resourceType: 'Parameters',
     parameter: [
       { name: 'messages', valueString: JSON.stringify(toApiMessages(messages)) },
@@ -251,16 +265,15 @@ export interface StreamingResult {
 }
 
 export async function sendToBotStreaming(
-  medplum: ReturnType<typeof useMedplum>,
+  medplum: MedplumClient,
   botId: Identifier,
   messages: Message[],
   model: string,
   reasoningEffort: ReasoningEffort,
-  onChunk: (chunk: string) => void,
+  onChunk?: (chunk: string) => void,
   additionalParams?: { name: string; valueString: string }[]
 ): Promise<StreamingResult> {
-  const baseUrl = medplum.fhirUrl('Bot', '$execute').toString();
-  const url = `${baseUrl}?identifier=${encodeURIComponent(`${botId.system}|${botId.value}`)}`;
+  const url = medplum.fhirUrl('Bot', await resolveBotId(medplum, botId), '$execute').toString();
   const codeExtractor = new StreamingCodeExtractor();
 
   const response = await fetch(url, {
@@ -294,7 +307,7 @@ export async function sendToBotStreaming(
     const data = await response.json();
     const content = data.parameter?.find((p: { name: string }) => p.name === 'content')?.valueString || '';
     if (content) {
-      onChunk(content);
+      onChunk?.(content);
       codeExtractor.process(content);
     }
     return { content, code: codeExtractor.getCode() };
@@ -330,16 +343,23 @@ export async function sendToBotStreaming(
           continue;
         }
 
+        let frame: { error?: unknown; content?: string; choices?: { delta?: { content?: string } }[] };
         try {
-          const parsed = JSON.parse(data);
-          const chunk = parsed.content || parsed.choices?.[0]?.delta?.content;
-          if (chunk) {
-            fullContent += chunk;
-            codeExtractor.process(chunk);
-            onChunk(chunk);
-          }
+          frame = JSON.parse(data);
         } catch {
-          // Ignore parse errors
+          continue;
+        }
+
+        // A failure mid-stream arrives as an error frame, not a non-2xx status
+        if (typeof frame.error === 'string') {
+          throw new Error(frame.error);
+        }
+
+        const chunk = frame.content || frame.choices?.[0]?.delta?.content;
+        if (chunk) {
+          fullContent += chunk;
+          codeExtractor.process(chunk);
+          onChunk?.(chunk);
         }
       }
     }
@@ -348,92 +368,94 @@ export async function sendToBotStreaming(
   return { content: fullContent, code: codeExtractor.getCode() };
 }
 
-export interface ProcessMessageParams {
-  medplum: ReturnType<typeof useMedplum>;
-  input: string;
-  userMessage: Message;
-  currentMessages: Message[];
-  currentTopicId: string | undefined;
-  selectedModel: string;
-  selectedReasoningEffort: ReasoningEffort;
-  isFirstMessage: boolean;
-  setCurrentTopicId: (id: string | undefined) => void;
-  setRefreshKey: React.Dispatch<React.SetStateAction<number>>;
-  setCurrentFhirRequest: (request: string | undefined) => void;
-  onNewTopic: (topic: Communication) => void;
+/**
+ * Progress callbacks fired while a message is processed. All are optional.
+ */
+export interface ProcessMessageEvents {
+  /** The first message of a conversation created this topic. */
+  onTopicCreated?: (topic: Communication) => void;
+  /** The conversation grew (tool calls, tool replies); receives a copy of it so far. */
+  onProgress?: (messages: Message[]) => void;
+  /** A FHIR request is about to run (description), or has finished (undefined). */
+  onFhirRequest?: (request: string | undefined) => void;
+  /** A chunk of the summary response was received. */
   onStreamChunk?: (chunk: string) => void;
+  /** Component generation has begun; the first code chunk may take a while. */
   onComponentStart?: () => void;
+  /** A chunk of the generated component code was received. */
   onComponentStreamChunk?: (chunk: string) => void;
-  selectedPatients?: (Patient | Reference<Patient>)[];
+}
+
+export interface ProcessMessageOptions {
+  medplum: MedplumClient;
+  /** The conversation so far, before the user message. Never mutated. */
+  messages: Message[];
+  /** The message being sent. Its selectedPatients, if any, are added as context. */
+  userMessage: Message;
+  /** The current topic. When undefined, a topic is created from the user message. */
+  topicId: string | undefined;
+  model: string;
+  reasoningEffort: ReasoningEffort;
+  events?: ProcessMessageEvents;
 }
 
 export interface ProcessMessageResult {
-  activeTopicId: string | undefined;
+  topicId: string | undefined;
   assistantMessage: Message;
-  updatedMessages: Message[];
+  /** The full conversation after this exchange: input messages, user message, tool turns, reply. */
+  messages: Message[];
 }
 
-export async function processMessage(params: ProcessMessageParams): Promise<ProcessMessageResult> {
-  const {
-    medplum,
-    input,
-    userMessage,
-    currentMessages,
-    currentTopicId,
-    selectedModel,
-    selectedReasoningEffort,
-    isFirstMessage,
-    setCurrentTopicId,
-    setRefreshKey,
-    setCurrentFhirRequest,
-    onNewTopic,
-    onStreamChunk,
-    onComponentStart,
-    onComponentStreamChunk,
-    selectedPatients,
-  } = params;
+const MAX_AGENT_ITERATIONS = 10;
 
-  // Create topic on first message
-  let activeTopicId = currentTopicId;
-  if (isFirstMessage) {
-    const newTopic = await createConversationTopic(medplum, input.substring(0, 100), selectedModel);
-    activeTopicId = newTopic.id;
-    setCurrentTopicId(activeTopicId);
-    setRefreshKey((prev) => prev + 1);
-    onNewTopic(newTopic);
+/**
+ * Sends a user message through the agent loop and returns the resulting conversation.
+ *
+ * The function is pure with respect to its inputs: `messages` is copied, not mutated, and
+ * every intermediate message (patient context, tool calls, tool replies) is appended to the
+ * copy returned in the result. Persistence happens as the exchange progresses so a failure
+ * mid-loop leaves the stored conversation consistent.
+ * @param options - The message, conversation and model settings
+ * @returns The new topic id (if created), the assistant reply and the full message list
+ */
+export async function processMessage(options: ProcessMessageOptions): Promise<ProcessMessageResult> {
+  const { medplum, messages, userMessage, model, reasoningEffort, events = {} } = options;
+  const next: Message[] = [...messages, userMessage];
+
+  let topicId = options.topicId;
+  if (!topicId) {
+    const newTopic = await createConversationTopic(medplum, (userMessage.content ?? '').substring(0, 100), model);
+    topicId = newTopic.id;
+    events.onTopicCreated?.(newTopic);
   }
 
-  // Save user message
-  if (activeTopicId) {
-    await saveMessage(medplum, activeTopicId, userMessage, currentMessages.length - 1);
-  }
+  const persist = async (message: Message, sequenceNumber: number): Promise<void> => {
+    if (topicId) {
+      await saveMessage(medplum, topicId, message, sequenceNumber);
+    }
+  };
 
-  if (selectedPatients && selectedPatients.length > 0) {
+  await persist(userMessage, next.length - 1);
+
+  const selectedPatients = userMessage.selectedPatients ?? [];
+  if (selectedPatients.length > 0) {
     const patientLines = selectedPatients.map((p) => {
       const displayName = 'resourceType' in p ? getDisplayString(p) : (p.display ?? 'Unknown');
       return `- ${displayName} (${getReferenceString(p)})`;
     });
-    const patientContext: Message = {
+    next.push({
       role: 'system',
       content: `The user has pre-selected the following patient(s) for this request. Use these patient references when the request involves a patient and do not ask which patient:\n${patientLines.join('\n')}`,
-    };
-    currentMessages.push(patientContext);
+    });
   }
 
-  const MAX_AGENT_ITERATIONS = 10;
   const allResourceRefs: string[] = [];
   let visualize = false;
   let content: string | undefined;
   let loopCompleted = false;
 
   for (let iteration = 0; iteration < MAX_AGENT_ITERATIONS; iteration++) {
-    const translatorResponse = await sendToBot(
-      medplum,
-      fhirRequestToolsId,
-      currentMessages,
-      selectedModel,
-      selectedReasoningEffort
-    );
+    const translatorResponse = await sendToBot(medplum, fhirRequestToolsId, next, model, reasoningEffort);
 
     // No tool calls = bot is done, has final answer
     if (!translatorResponse.toolCalls || translatorResponse.toolCalls.length === 0) {
@@ -451,51 +473,43 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
       content: null,
       tool_calls: translatorResponse.toolCalls,
     };
-    currentMessages.push(assistantMessageWithToolCalls);
+    next.push(assistantMessageWithToolCalls);
+    const assistantSequence = next.length - 1;
+    events.onProgress?.([...next]);
 
     const { messages: toolMessages, resourceRefs } = await executeToolCalls(
       medplum,
       translatorResponse.toolCalls,
-      (request) => setCurrentFhirRequest(`Step ${iteration + 1}: ${request}`)
+      (request) => events.onFhirRequest?.(`Step ${iteration + 1}: ${request}`)
     );
-    currentMessages.push(...toolMessages);
+    next.push(...toolMessages);
     allResourceRefs.push(...resourceRefs);
+    events.onProgress?.([...next]);
 
-    // Persist per-iteration (keeps DB recoverable if mid-loop failure)
-    if (activeTopicId) {
-      const baseSequence = currentMessages.length - 1 - toolMessages.length;
-      for (let i = 0; i < toolMessages.length; i++) {
-        await saveMessage(medplum, activeTopicId, toolMessages[i], baseSequence + 1 + i);
-      }
-      await saveMessage(medplum, activeTopicId, assistantMessageWithToolCalls, baseSequence);
+    // Persist per-iteration (keeps DB recoverable if mid-loop failure). The tool_calls
+    // message goes first so a truncated reload never sees tool replies without it.
+    await persist(assistantMessageWithToolCalls, assistantSequence);
+    for (let i = 0; i < toolMessages.length; i++) {
+      await persist(toolMessages[i], assistantSequence + 1 + i);
     }
 
     // Reset FHIR indicator while bot thinks about next step
-    setCurrentFhirRequest(undefined);
+    events.onFhirRequest?.(undefined);
   }
 
-  // Get summary response after tool execution (streaming if callback provided)
-  if (currentMessages.some((m) => m.role === 'tool')) {
-    if (onStreamChunk) {
-      const result = await sendToBotStreaming(
-        medplum,
-        resourceSummaryBotSseId,
-        currentMessages,
-        selectedModel,
-        selectedReasoningEffort,
-        onStreamChunk
-      );
-      content = result.content;
-    } else {
-      const summaryResponse = await sendToBot(
-        medplum,
-        resourceSummaryBotId,
-        currentMessages,
-        selectedModel,
-        selectedReasoningEffort
-      );
-      content = summaryResponse.content;
-    }
+  // The translator bot only decides tool calls and writes little or no prose. Once a
+  // conversation holds tool results, every reply (even on turns without new tool calls)
+  // comes from the summary bot, which writes the answer and streams it.
+  if (next.some((m) => m.role === 'tool')) {
+    const result = await sendToBotStreaming(
+      medplum,
+      resourceSummaryBotSseId,
+      next,
+      model,
+      reasoningEffort,
+      events.onStreamChunk
+    );
+    content = result.content;
   }
 
   if (!loopCompleted && content) {
@@ -508,27 +522,18 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
 
   let componentCode: string | undefined;
   if (visualize && allResourceRefs.length > 0) {
-    // Signal that component generation has begun so the UI can show feedback
-    // while we fetch FHIR data and wait for the bot's first streamed chunk.
-    onComponentStart?.();
-
+    events.onComponentStart?.();
     const fhirData = await collectFhirData(medplum, allResourceRefs);
-
-    const componentChunkCallback = onComponentStreamChunk ?? onStreamChunk;
-    if (componentChunkCallback) {
-      const result = await sendToBotStreaming(
-        medplum,
-        componentGeneratorBotSseId,
-        currentMessages,
-        selectedModel,
-        selectedReasoningEffort,
-        componentChunkCallback,
-        [{ name: 'fhirData', valueString: JSON.stringify(fhirData) }]
-      );
-      componentCode = result.code;
-    } else {
-      await sendToBot(medplum, componentGeneratorBotSseId, currentMessages, selectedModel, selectedReasoningEffort);
-    }
+    const result = await sendToBotStreaming(
+      medplum,
+      componentGeneratorBotSseId,
+      next,
+      model,
+      reasoningEffort,
+      events.onComponentStreamChunk ?? events.onStreamChunk,
+      [{ name: 'fhirData', valueString: JSON.stringify(fhirData) }]
+    );
+    componentCode = result.code;
   }
 
   const uniqueRefs = allResourceRefs.length > 0 ? [...new Set(allResourceRefs)] : undefined;
@@ -539,13 +544,11 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
     componentCode,
   };
 
-  if (activeTopicId) {
-    await saveMessage(medplum, activeTopicId, assistantMessage, currentMessages.length);
-  }
+  await persist(assistantMessage, next.length);
 
   return {
-    activeTopicId,
+    topicId,
     assistantMessage,
-    updatedMessages: [...currentMessages, assistantMessage],
+    messages: [...next, assistantMessage],
   };
 }

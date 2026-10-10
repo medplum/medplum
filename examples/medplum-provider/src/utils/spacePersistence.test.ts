@@ -235,7 +235,7 @@ describe('spacePersistence', () => {
 
       expect(medplum.searchResources).toHaveBeenCalledWith('Communication', {
         'part-of': 'Communication/topic-1',
-        _sort: '_lastUpdated',
+        _sort: '-_lastUpdated',
         _count: '100',
       });
       expect(messages).toEqual([
@@ -252,6 +252,12 @@ describe('spacePersistence', () => {
 
     test('handles messages with tool_calls and resources', async () => {
       const mockCommunications: (Communication & { id: string })[] = [
+        {
+          resourceType: 'Communication',
+          id: 'comm-0',
+          status: 'completed',
+          payload: [{ contentString: JSON.stringify({ role: 'user', content: 'Help', sequenceNumber: 0 }) }],
+        },
         {
           resourceType: 'Communication',
           id: 'comm-1',
@@ -289,15 +295,15 @@ describe('spacePersistence', () => {
 
       const messages = await loadConversationMessages(medplum, 'topic-1');
 
-      expect(messages).toHaveLength(2);
-      expect(messages[0]).toEqual({
+      expect(messages).toHaveLength(3);
+      expect(messages[1]).toEqual({
         role: 'assistant',
         content: 'I can help',
         tool_calls: [{ id: 'call-1', type: 'function' }],
         tool_call_id: undefined,
         resources: ['Patient/123'],
       });
-      expect(messages[1]).toEqual({
+      expect(messages[2]).toEqual({
         role: 'tool',
         content: '{"result": "success"}',
         tool_call_id: 'call-1',
@@ -554,6 +560,12 @@ describe('spacePersistence', () => {
       const mockCommunications: (Communication & { id: string })[] = [
         {
           resourceType: 'Communication',
+          id: 'comm-0',
+          status: 'completed',
+          payload: [{ contentString: JSON.stringify({ role: 'user', content: 'Go', sequenceNumber: 0 }) }],
+        },
+        {
+          resourceType: 'Communication',
           id: 'comm-1',
           status: 'completed',
           payload: [
@@ -602,13 +614,13 @@ describe('spacePersistence', () => {
 
       const messages = await loadConversationMessages(medplum, 'topic-1');
 
-      // Should have exactly 3 messages - no duplicates added
-      expect(messages).toHaveLength(3);
-      expect(messages[0].role).toBe('assistant');
-      expect(messages[1].role).toBe('tool');
-      expect(messages[1].tool_call_id).toBe('call-1');
-      expect(messages[1].content).toBe('{"result": "success"}');
-      expect(messages[2].role).toBe('assistant');
+      // Should have exactly 4 messages - no duplicates added
+      expect(messages).toHaveLength(4);
+      expect(messages[1].role).toBe('assistant');
+      expect(messages[2].role).toBe('tool');
+      expect(messages[2].tool_call_id).toBe('call-1');
+      expect(messages[2].content).toBe('{"result": "success"}');
+      expect(messages[3].role).toBe('assistant');
     });
   });
 });
