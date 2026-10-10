@@ -369,6 +369,9 @@ jobs:
     services:
       postgres:
         image: postgres:${{ matrix.pg-version }}
+        credentials:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         env:
           POSTGRES_DB: medplum
           POSTGRES_USER: medplum
@@ -382,6 +385,9 @@ jobs:
           - 5432:5432
       redis:
         image: redis:${{ matrix.redis-version }}
+        credentials:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         command: redis-server --requirepass medplum
         options: >-
           --health-cmd "redis-cli --no-auth-warning -a medplum ping"
@@ -535,6 +541,9 @@ jobs:
     services:
       postgres:
         image: postgres:${{ matrix.pg-version }}
+        credentials:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         env:
           POSTGRES_DB: medplum
           POSTGRES_USER: medplum
@@ -548,6 +557,9 @@ jobs:
           - 5432:5432
       redis:
         image: redis:${{ matrix.redis-version }}
+        credentials:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         command: redis-server --requirepass medplum
         options: >-
           --health-cmd "redis-cli --no-auth-warning -a medplum ping"

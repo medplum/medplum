@@ -43,8 +43,9 @@ export class BulkExporter {
   readonly writers: Record<string, BulkFileWriter> = {};
   readonly resourceSets = new Map<string, Set<string>>();
 
-  constructor(repo: Repository) {
+  constructor(repo: Repository, resource?: WithId<AsyncJob>) {
     this.repo = repo;
+    this.resource = resource;
   }
 
   async start(url: string): Promise<WithId<AsyncJob>> {

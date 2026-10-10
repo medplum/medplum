@@ -12,6 +12,7 @@ import type {
   PractitionerRole,
   Project,
 } from '@medplum/fhirtypes';
+import type { Job } from 'bullmq';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -21,6 +22,8 @@ import { getConfig, loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, streamToString, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { execBulkExportJob } from '../../workers/bulk-export';
+import { queueRegistry } from '../../workers/utils';
 import type { Repository, SystemRepository } from '../repo';
 import { groupExportResources, groupMemberChunkSize } from './groupexport';
 import { BulkExporter } from './utils/bulkexporter';
@@ -35,6 +38,11 @@ describe('Group Export', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    vi.mocked(queueRegistry.get('BulkExportQueue')?.add)?.mockImplementation(async (name, data) => {
+      const job = { name, data, queueName: 'BulkExportQueue' } as Job;
+      await execBulkExportJob(job);
+      return job;
+    });
     ({ project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true }));
     systemRepo = repo.getSystemRepo();
   });

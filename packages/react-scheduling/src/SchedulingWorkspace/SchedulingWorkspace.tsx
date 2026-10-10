@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, CloseButton, Group, Title, useMantineTheme } from '@mantine/core';
+import { Alert, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -30,6 +30,7 @@ import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
 import type { DateTimeRange } from '../types';
 import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
+import { BlockTimeForm } from './BlockTimeForm/BlockTimeForm';
 import type { CalendarFilterValues } from './CalendarFilters';
 import { CalendarFilters } from './CalendarFilters';
 import type { ServiceTypeLegendItem } from './CalendarLegend';
@@ -42,6 +43,7 @@ import { getCalendarTimezones, groupAppointmentsByService } from './SchedulingWo
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
+type PaneTab = 'appointment' | 'block';
 
 const NO_CANDIDATES: CandidatesByActorType = { Practitioner: [], Location: [], Device: [] };
 
@@ -79,6 +81,8 @@ export interface SchedulingWorkspaceProps {
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
+  /** Called with the Slots written when time is blocked from the pane's Block tab. */
+  readonly onBlocked?: (slots: WithId<Slot>[]) => void | Promise<void>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
   readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
   /** Called with the appointment as written, after its patient or its visit type's codes are edited. */
@@ -132,6 +136,8 @@ export interface SchedulingWorkspaceProps {
  *   The form writes the booking and announces what it wrote, which is what puts the
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
+ * - Blocks time from the calendar: the same pane has a Block tab, writing a `busy` Slot
+ *   over the time on each calendar the user names, reported through `onBlocked`.
  * - Shows what is booked: clicking an appointment opens `AppointmentDetails` in the
  *   same pane the booking form uses, describing the visit and offering to cancel or
  *   reschedule it.
@@ -151,6 +157,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     diagnosisBinding,
     mrnSystem,
     onBooked,
+    onBlocked,
     appointmentCancellationReasonValueSet,
     canBypassSchedulingRules,
     appointmentExtensions,
@@ -187,8 +194,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
   const [selectedAppointment, setSelectedAppointment] = useState<WithId<Appointment>>();
 
-  // What the calendar highlights
+  const [paneTab, setPaneTab] = useState<PaneTab>('appointment');
+
+  // What the calendar highlights, one per pane tab: a hidden tab's form still reports its time
   const [highlight, setHighlight] = useState<DateTimeRange>();
+  const [blockHighlight, setBlockHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
   const [rescheduleFinderOpen, setRescheduleFinderOpen] = useState(false);
 
@@ -352,11 +362,13 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setSelectedAppointment(undefined);
     setBookingSelection(interval);
     setHighlight(interval);
+    setBlockHighlight(interval);
   }, []);
 
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
     setHighlight(undefined);
+    setBlockHighlight(undefined);
     setTimeFinderOpen(false);
   }, []);
 
@@ -372,6 +384,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       return onBooked?.(booking);
     },
     [closeBooking, onBooked]
+  );
+
+  const finishBlock = useCallback(
+    (slots: WithId<Slot>[]): void | Promise<void> => {
+      closeBooking();
+      return onBlocked?.(slots);
+    },
+    [closeBooking, onBlocked]
   );
 
   const selectAppointment = useCallback(
@@ -441,6 +461,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // The pane beside the calendar shows one thing at a time. Opening either side already
   // closes the other, so this only decides which wins if they ever both hold something.
   const showBooking = bookingSelection !== undefined && openAppointment === undefined;
+  const blocking = showBooking && paneTab === 'block';
 
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
@@ -471,7 +492,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           loading={resourcesLoading}
           onSelectInterval={startBooking}
           onSelectAppointment={selectAppointment}
-          selection={highlight}
+          selection={blocking ? blockHighlight : highlight}
           selectedAppointmentId={openAppointment?.id}
         />
         <div className={classes.footer}>
@@ -504,26 +525,46 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         </section>
       )}
       {showBooking && (
-        <section className={cx(classes.pane, { [classes.paneWide]: timeFinderOpen })} aria-label="Book appointment">
+        <section
+          className={cx(classes.pane, { [classes.paneWide]: timeFinderOpen && !blocking })}
+          aria-label="Book appointment"
+        >
           <Group justify="space-between" wrap="nowrap" mb="sm">
-            <Title order={4}>Book appointment</Title>
+            <Title order={4}>{blocking ? 'Block time' : 'Book appointment'}</Title>
             <CloseButton aria-label="Close booking form" onClick={closeBooking} />
           </Group>
-          <AppointmentBookingForm
-            key={bookingSelection.start.toDateString()}
-            defaultStart={bookingSelection.start}
-            procedureBinding={procedureBinding}
-            diagnosisBinding={diagnosisBinding}
-            mrnSystem={mrnSystem}
-            canBypassSchedulingRules={canBypassSchedulingRules}
-            appointmentExtensions={appointmentExtensions}
-            allowRecurring
-            onToggleTimeFinder={setTimeFinderOpen}
-            onChangeTime={setHighlight}
-            onBooked={finishBooking}
-            defaultLocation={selectedLocation}
-            defaultService={selectedService}
-          />
+          {/* Both panels stay mounted, so switching tabs loses nothing typed into either. */}
+          <Tabs value={paneTab} onChange={(value) => setPaneTab(value as PaneTab)}>
+            <Tabs.List mb="sm">
+              <Tabs.Tab value="appointment">Appointment</Tabs.Tab>
+              <Tabs.Tab value="block">Block</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="appointment">
+              <AppointmentBookingForm
+                key={bookingSelection.start.toDateString()}
+                defaultStart={bookingSelection.start}
+                procedureBinding={procedureBinding}
+                diagnosisBinding={diagnosisBinding}
+                mrnSystem={mrnSystem}
+                canBypassSchedulingRules={canBypassSchedulingRules}
+                appointmentExtensions={appointmentExtensions}
+                allowRecurring
+                onToggleTimeFinder={setTimeFinderOpen}
+                onChangeTime={setHighlight}
+                onBooked={finishBooking}
+                defaultLocation={selectedLocation}
+                defaultService={selectedService}
+              />
+            </Tabs.Panel>
+            <Tabs.Panel value="block">
+              <BlockTimeForm
+                candidatesByActorType={candidatesByActorType}
+                defaultRange={bookingSelection}
+                onChangeTime={setBlockHighlight}
+                onBlocked={finishBlock}
+              />
+            </Tabs.Panel>
+          </Tabs>
         </section>
       )}
     </div>
