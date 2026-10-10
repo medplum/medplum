@@ -326,6 +326,37 @@ describe('useSpacesConversation', () => {
       expect(result.current.messages.map((m) => m.content)).toEqual(['Hello AI', 'Error: Bot execution failed']);
     });
 
+    test('runs the most recently updated bot carrying the identifier', async () => {
+      const { result } = setup();
+
+      act(() => {
+        result.current.send('Hello AI', []);
+      });
+
+      await waitFor(() => expect(result.current.status).toBe('idle'));
+      expect(medplum.searchOne).toHaveBeenCalledWith('Bot', {
+        identifier: 'https://www.medplum.com/bots|ai-fhir-request-tools',
+        _sort: '-_lastUpdated',
+      });
+      expect(medplum.executeBot).toHaveBeenCalledWith('bot-1', expect.anything());
+    });
+
+    test('appends an error reply when no bot carries the identifier', async () => {
+      medplum.searchOne = vi.fn().mockResolvedValue(undefined) as any;
+      const { result } = setup();
+
+      act(() => {
+        result.current.send('Hello AI', []);
+      });
+
+      await waitFor(() => expect(result.current.status).toBe('idle'));
+      expect(result.current.messages.map((m) => m.content)).toEqual([
+        'Hello AI',
+        'Error: Bot not found: ai-fhir-request-tools',
+      ]);
+      expect(medplum.executeBot).not.toHaveBeenCalled();
+    });
+
     test('passes the selected model and reasoning effort to the bot', async () => {
       const { result } = setup();
 
