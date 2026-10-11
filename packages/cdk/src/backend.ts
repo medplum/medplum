@@ -113,12 +113,16 @@ export class BackEnd extends Construct {
             new iam.PolicyStatement({
               effect: iam.Effect.ALLOW,
               actions: ['s3:GetObject'],
-              resources: [`arn:aws:s3:::${config.storageBucketName}/*`],
+              // Only the MicroVM artifact prefix, never the rest of the storage bucket
+              resources: [`arn:aws:s3:::${config.storageBucketName}/bot-microvm/*`],
             }),
             new iam.PolicyStatement({
               effect: iam.Effect.ALLOW,
               actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
-              resources: [`arn:aws:logs:${region}:${accountNumber}:*`],
+              resources: [
+                `arn:aws:logs:${region}:${accountNumber}:log-group:/aws/lambda-microvms/medplum-bot-*`,
+                `arn:aws:logs:${region}:${accountNumber}:log-group:/aws/lambda-microvms/medplum-bot-*:log-stream:*`,
+              ],
             }),
           ],
         }),
@@ -416,6 +420,20 @@ export class BackEnd extends Construct {
             'lambda:DeleteFunction',
           ],
           resources: [`arn:aws:lambda:${region}:${accountNumber}:function:medplum-bot-lambda-*`],
+        }),
+
+        // Lambda MicroVMs: Build images, and run, read, and terminate MicroVMs
+        // https://docs.aws.amazon.com/lambda/latest/dg/microvms-security.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'lambda:CreateMicrovmImage',
+            'lambda:GetMicrovmImage',
+            'lambda:RunMicrovm',
+            'lambda:GetMicrovm',
+            'lambda:TerminateMicrovm',
+          ],
+          resources: [`arn:aws:lambda:${region}:${accountNumber}:microvm-image:medplum-bot-microvm-*`],
         }),
 
         // Lambda: List functions

@@ -11,7 +11,7 @@ import {
   TerminateMicrovmCommand,
 } from '@aws-sdk/client-lambda-microvms';
 import type { WithId } from '@medplum/core';
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { createReference, normalizeErrorString, OperationOutcomeError, preconditionFailed } from '@medplum/core';
 import type { AsyncJob, Binary, Bot, Parameters } from '@medplum/fhirtypes';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
@@ -25,8 +25,18 @@ import { S3Storage } from './storage';
 /** The `AsyncJob.type` used for MicroVM bot invocations. */
 export const MICROVM_ASYNC_JOB_TYPE = 'aws-lambda-microvm';
 
+/**
+ * S3 key prefix for MicroVM code artifacts. The image build role can only read under this prefix,
+ * so it never has access to the rest of the storage bucket.
+ */
+export const MICROVM_ARTIFACT_PREFIX = 'bot-microvm/';
+
+/** CloudWatch log group prefix for MicroVM images. The image build role can only write under this prefix. */
+export const MICROVM_LOG_GROUP_PREFIX = '/aws/lambda-microvms/medplum-bot-';
+
 export function getBotMicrovmName(bot: WithId<Bot>): string {
-  return `bot-${bot.id}-image`;
+  // The server's IAM policy is scoped to images with this prefix
+  return `medplum-bot-microvm-${bot.id}`;
 }
 
 export async function deployBotMicrovmImage(bot: WithId<Bot>, binary: WithId<Binary>): Promise<string> {
@@ -47,18 +57,25 @@ export async function deployBotMicrovmImage(bot: WithId<Bot>, binary: WithId<Bin
     throw new Error('AWS Lambda MicroVM requires S3 storage');
   }
 
+  if (config.sseCustomerKey) {
+    // The build role cannot read objects encrypted with a customer-provided key
+    throw new Error('AWS Lambda MicroVM does not support SSE-C storage');
+  }
+
+  // Copy the code into the artifact prefix rather than pointing the build at the Binary itself
   const name = getBotMicrovmName(bot);
-  const bucket = storage.bucket;
-  const key = storage.getKey(binary);
+  const key = `${MICROVM_ARTIFACT_PREFIX}${bot.id}/${binary.id}/${binary.meta?.versionId}`;
+  await storage.copyFile(storage.getKey(binary), key);
 
   const client = getMicrovmClient();
 
   const microvmImage = await client.send(
     new CreateMicrovmImageCommand({
       name,
-      codeArtifact: { uri: `s3://${bucket}/${key}` },
+      codeArtifact: { uri: `s3://${storage.bucket}/${key}` },
       baseImageArn,
       buildRoleArn,
+      logging: { cloudWatch: { logGroup: `${MICROVM_LOG_GROUP_PREFIX}${bot.id}` } },
     })
   );
 
@@ -179,12 +196,23 @@ export async function reconcileMicrovmJob(repo: Repository, asyncJob: WithId<Asy
     return asyncJob;
   }
 
-  return repo.updateResource<AsyncJob>({
-    ...asyncJob,
-    status: terminated ? 'error' : 'active',
-    transactionTime: terminated ? new Date().toISOString() : undefined,
-    output: microvmOutput(microvm),
-  });
+  try {
+    return await repo.updateResource<AsyncJob>(
+      {
+        ...asyncJob,
+        status: terminated ? 'error' : 'active',
+        transactionTime: terminated ? new Date().toISOString() : undefined,
+        output: microvmOutput(microvm),
+      },
+      // Conditional update so a stale read never clobbers the agent's completion or another poller
+      { ifMatch: asyncJob.meta?.versionId }
+    );
+  } catch (err) {
+    if (err instanceof OperationOutcomeError && err.outcome.id === preconditionFailed.id) {
+      return repo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
+    }
+    throw err;
+  }
 }
 
 /**

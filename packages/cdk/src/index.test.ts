@@ -728,12 +728,15 @@ describe('Infra', () => {
               {
                 Action: 's3:GetObject',
                 Effect: 'Allow',
-                Resource: `arn:aws:s3:::${baseConfig.storageBucketName}/*`,
+                Resource: `arn:aws:s3:::${baseConfig.storageBucketName}/bot-microvm/*`,
               },
               {
                 Action: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
                 Effect: 'Allow',
-                Resource: `arn:aws:logs:${baseConfig.region}:${baseConfig.accountNumber}:*`,
+                Resource: [
+                  `arn:aws:logs:${baseConfig.region}:${baseConfig.accountNumber}:log-group:/aws/lambda-microvms/medplum-bot-*`,
+                  `arn:aws:logs:${baseConfig.region}:${baseConfig.accountNumber}:log-group:/aws/lambda-microvms/medplum-bot-*:log-stream:*`,
+                ],
               },
             ]),
             Version: '2012-10-17',
@@ -756,6 +759,17 @@ describe('Infra', () => {
                   { 'Fn::GetAtt': [Match.stringLikeRegexp('LambdaBuildRole'), 'Arn'] },
                 ]),
               }),
+              {
+                Action: [
+                  'lambda:CreateMicrovmImage',
+                  'lambda:GetMicrovmImage',
+                  'lambda:RunMicrovm',
+                  'lambda:GetMicrovm',
+                  'lambda:TerminateMicrovm',
+                ],
+                Effect: 'Allow',
+                Resource: `arn:aws:lambda:${baseConfig.region}:${baseConfig.accountNumber}:microvm-image:medplum-bot-microvm-*`,
+              },
             ]),
           },
         }),
