@@ -114,10 +114,10 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const name = creating ? general.name.trim() : getDisplayString(stored);
   const actorName = name || `this ${noun}`;
 
-  const draft = actorWithId && buildScheduleDraft(schedule, actorWithId, fields, initial, servicesById);
+  const scheduleDraft = actorWithId && buildScheduleDraft(schedule, actorWithId, fields, initial, servicesById);
   const actorDirty = !deepEquals(general, initialGeneral);
-  // Compares the fields rather than the draft, so edits the draft can't store yet, like an emptied week, still
-  // count and the save bar can say why it refuses.
+  // Compares the fields rather than the Schedule draft, so edits the draft can't store yet, like an emptied
+  // week, still count and the save bar can say why it refuses.
   const dirty = creating || actorDirty || !deepEquals(fields, initial);
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
@@ -194,9 +194,13 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       const changes: ConfigChange[] = [{ stored, draft: actorDraft, fullUrl }];
       if (fullUrl) {
         changes.push({ draft: { resourceType: 'Schedule', active: general.active, actor: [{ reference: fullUrl }] } });
-      } else if (draft) {
+      } else if (scheduleDraft) {
         // Conditional, so two pages offering this actor's first visit type at once can't each create a Schedule.
-        changes.push({ stored: schedule, draft, ifNoneExist: `actor=${getReferenceString(actorDraft)}` });
+        changes.push({
+          stored: schedule,
+          draft: scheduleDraft,
+          ifNoneExist: `actor=${getReferenceString(actorDraft)}`,
+        });
       }
       const result = await saveConfigChanges(medplum, changes);
       if (result.failures.length > 0) {
@@ -311,7 +315,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         {actorWithId && offered.length > 0 && (
           <Accordion variant="separated" value={open} onChange={setOpen}>
             {checks.map(({ service, errors, availabilityError }) => {
-              const timezone = getSchedulingTimezone(service, draft, actorWithId);
+              const timezone = getSchedulingTimezone(service, scheduleDraft, actorWithId);
               return (
                 <Accordion.Item key={service.id} value={service.id}>
                   {/* Beside the control rather than in it, which is itself a button. */}
@@ -320,7 +324,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
                       <OfferingSummary
                         service={service}
                         value={fields.offerings[service.id]}
-                        summary={draft ? summarizeOffering(service, draft) : ''}
+                        summary={scheduleDraft ? summarizeOffering(service, scheduleDraft) : ''}
                         dirty={isOfferingDirty(service)}
                       />
                     </Accordion.Control>
