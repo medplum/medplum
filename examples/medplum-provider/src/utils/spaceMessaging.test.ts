@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
+import { ReadablePromise } from '@medplum/core';
+import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { processMessage, sendToBotStreaming } from './spaceMessaging';
+import { collectFhirData, processMessage, sendToBotStreaming } from './spaceMessaging';
 
 vi.mock('./spacePersistence', () => ({
   createConversationTopic: vi.fn().mockResolvedValue({ id: 'topic-1', resourceType: 'Communication' }),
@@ -299,6 +301,7 @@ describe('processMessage - max iterations behavior', () => {
     setRefreshKey: vi.fn(),
     setCurrentFhirRequest: vi.fn(),
     onNewTopic: vi.fn(),
+    onError: vi.fn(),
   };
 
   function makeMockMedplum(executeBotImpl: () => unknown): Partial<MedplumClient> {
@@ -406,5 +409,30 @@ describe('processMessage - max iterations behavior', () => {
     // tool messages exist, so summary bot is called → content = 'Summary.'
     expect(result.assistantMessage.content).toBe('Summary.');
     expect(result.assistantMessage.content).not.toContain('processing limit');
+  });
+});
+
+describe('collectFhirData', () => {
+  test('Skips missing resources silently and reports other read failures', async () => {
+    const medplum = new MockClient();
+    const onError = vi.fn();
+    const patient = await medplum.createResource({ resourceType: 'Patient', name: [{ family: 'Found' }] });
+    const readResource = medplum.readResource.bind(medplum);
+    const error = new Error('Server unavailable');
+    vi.spyOn(medplum, 'readResource').mockImplementation((resourceType, id, options) =>
+      id === 'broken' ? new ReadablePromise(Promise.reject(error)) : readResource(resourceType, id, options)
+    );
+
+    const result = await collectFhirData(
+      medplum,
+      [`Patient/${patient.id}`, 'Patient/missing', 'Patient/broken'],
+      onError
+    );
+
+    expect(result).toEqual([patient]);
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error, {
+      source: 'collectFhirData',
+      message: 'Failed to fetch Patient/broken',
+    });
   });
 });

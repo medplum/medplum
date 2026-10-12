@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DOSESPOT_SELF_ENROLL_PRESCRIBER_BOT } from './common';
 
@@ -45,6 +45,7 @@ export function useDoseSpotSelfEnrollment(options?: DoseSpotSelfEnrollmentOption
   error: unknown;
 } {
   const medplum = useMedplum();
+  const reportError = useMedplumErrorHandler();
   const enabled = options?.enabled ?? true;
   const initializingRef = useRef(false);
   const [result, setResult] = useState<DoseSpotSelfEnrollmentResult | undefined>(undefined);
@@ -83,8 +84,8 @@ export function useDoseSpotSelfEnrollment(options?: DoseSpotSelfEnrollmentOption
   }, [medplum, enabled]);
 
   useEffect(() => {
-    enroll().catch(console.error);
-  }, [enroll]);
+    enroll().catch((err: unknown) => reportError(err, { source: 'useDoseSpotSelfEnrollment' }));
+  }, [enroll, reportError]);
 
   return { result, loading, error };
 }

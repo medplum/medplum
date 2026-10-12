@@ -3,7 +3,7 @@
 import type { MedplumClient, SearchRequest, WithId } from '@medplum/core';
 import { DEFAULT_SEARCH_COUNT } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
-import type { ResourceBoardLoadResult } from '@medplum/react-hooks';
+import type { MedplumErrorHandler, ResourceBoardLoadResult } from '@medplum/react-hooks';
 import { useResourceBoard } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import type {
@@ -47,7 +47,7 @@ export type ResourceBoardDetailContext = ListWithDetailPaneDetailContext;
  * settles with items while nothing is selected (owned by ListWithDetailPane). The consumer decides how to navigate
  * (e.g. with history replace).
  * @param onLoad - Fired after every successful load.
- * @param onError - List-load and selection-resolution errors. Default: console.error.
+ * @param onError - List-load and selection-resolution errors. Default: the MedplumProvider error handler.
  */
 export interface ResourceBoardProps<T extends Resource = Resource> {
   readonly search: SearchRequest;
@@ -68,7 +68,7 @@ export interface ResourceBoardProps<T extends Resource = Resource> {
   readonly onChange?: (search: SearchRequest) => void;
   readonly onSelectFirst?: (item: WithId<T>) => void;
   readonly onLoad?: (items: WithId<T>[], total: number | undefined) => void;
-  readonly onError?: (error: unknown) => void;
+  readonly onError?: MedplumErrorHandler;
 }
 
 /**

@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { CSSProperties, JSX, ReactNode, SyntheticEvent } from 'react';
 import { useState } from 'react';
 import { FormContext } from './Form.context';
@@ -13,6 +14,7 @@ export interface FormProps {
 }
 
 export function Form(props: FormProps): JSX.Element {
+  const onError = useMedplumErrorHandler();
   const [submitting, setSubmitting] = useState(false);
   return (
     <FormContext.Provider value={{ submitting }}>
@@ -26,9 +28,11 @@ export function Form(props: FormProps): JSX.Element {
             setSubmitting(true);
             const result = props.onSubmit(formData);
             if (result?.then) {
-              result.catch(console.error).finally(() => {
-                setSubmitting(false);
-              });
+              result
+                .catch((err: unknown) => onError(err, { source: 'Form' }))
+                .finally(() => {
+                  setSubmitting(false);
+                });
             } else {
               setSubmitting(false);
             }

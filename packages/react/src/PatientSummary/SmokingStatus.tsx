@@ -4,7 +4,7 @@ import { Radio, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { HTTP_HL7_ORG, LOINC, SNOMED, createReference, formatCodeableConcept } from '@medplum/core';
 import type { Encounter, Observation, Patient } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { SubmitButton } from '../Form/SubmitButton';
@@ -34,6 +34,7 @@ export interface SmokingStatusProps {
 
 export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [smokingStatus, setSmokingStatus] = useState(props.smokingStatus);
   const [opened, { open, close }] = useDisclosure(false);
 
@@ -86,9 +87,9 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
           setSmokingStatus(newSmokingStatus);
           close();
         })
-        .catch(console.error);
+        .catch((err: unknown) => onError(err, { source: 'SmokingStatus' }));
     },
-    [medplum, props.patient, props.encounter, close]
+    [medplum, onError, props.patient, props.encounter, close]
   );
 
   return (

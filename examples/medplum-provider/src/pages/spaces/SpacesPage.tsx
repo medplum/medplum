@@ -5,8 +5,9 @@ import type { Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconRobotOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { SpacesInbox } from '../../components/spaces/SpacesInbox';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import classes from './SpacesPage.module.css';
 
 /**
@@ -17,14 +18,14 @@ import classes from './SpacesPage.module.css';
 export function SpacesPage(): JSX.Element {
   const medplum = useMedplum();
   const { topicId } = useParams();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
 
   const project = medplum.getProject();
   const features = project?.features ?? [];
   const isEnabled = features.includes('bots') && features.includes('ai');
 
   const handleNewTopic = (newTopic: Communication): void => {
-    navigate(`/Spaces/Communication/${newTopic.id}`)?.catch(console.error);
+    navigate(`/Spaces/Communication/${newTopic.id}`);
   };
 
   const onSelectedItem = (selectedTopic: Communication): string => {
@@ -36,7 +37,7 @@ export function SpacesPage(): JSX.Element {
     : undefined;
 
   const handleNewConversation = (): void => {
-    navigate('/Spaces/Communication')?.catch(console.error);
+    navigate('/Spaces/Communication');
   };
 
   return (

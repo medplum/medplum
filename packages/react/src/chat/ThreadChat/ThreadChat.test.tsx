@@ -4,6 +4,7 @@ import type { ProfileResource, TypedEventTarget } from '@medplum/core';
 import { createReference, getReferenceString } from '@medplum/core';
 import type { Bundle, Communication, DocumentReference, Reference } from '@medplum/fhirtypes';
 import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react-hooks';
 // @ts-expect-error _subscriptionController is not exported from module normally
 // eslint-disable-next-line import/named
 import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
@@ -141,11 +142,14 @@ describe('ThreadChat', () => {
 
   async function setup(
     props: ThreadChatProps,
-    medplum?: MockClient
+    medplum?: MockClient,
+    providerOnError?: MedplumErrorHandler
   ): Promise<{ rerender: (props: ThreadChatProps) => Promise<void> }> {
     const { rerender: _rerender } = await act(async () =>
       render(<ThreadChat {...props} />, ({ children }) => (
-        <MedplumProvider medplum={medplum ?? defaultMedplum}>{children}</MedplumProvider>
+        <MedplumProvider medplum={medplum ?? defaultMedplum} onError={providerOnError}>
+          {children}
+        </MedplumProvider>
       ))
     );
     return {
@@ -423,6 +427,35 @@ describe('ThreadChat', () => {
     const sentMessage = onMessageSent.mock.calls[0][0] as Communication;
     const updatedThread = await defaultMedplum.readResource('Communication', thread.id as string);
     expect(updatedThread.sent).toBe(sentMessage.sent);
+  });
+
+  test('Reports a failed send to the onError prop, or else to the MedplumProvider handler', async () => {
+    const thread = await createThreadHeader(defaultMedplum);
+    const error = new Error('Send failed');
+    const createResource = vi.spyOn(defaultMedplum, 'createResource').mockRejectedValue(error);
+    const onError = vi.fn();
+    const providerOnError = vi.fn();
+
+    function send(text: string): void {
+      act(() => {
+        fireEvent.change(screen.getByPlaceholderText('Type a message...'), { target: { value: text } });
+      });
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+      });
+    }
+
+    const { rerender } = await setup({ thread, onError }, defaultMedplum, providerOnError);
+    send('First try');
+    await waitFor(() => expect(onError).toHaveBeenCalledExactlyOnceWith(error));
+    expect(providerOnError).not.toHaveBeenCalled();
+
+    await rerender({ thread });
+    send('Second try');
+    await waitFor(() => expect(providerOnError).toHaveBeenCalledExactlyOnceWith(error, { source: 'ThreadChat' }));
+    expect(onError).toHaveBeenCalledTimes(1);
+
+    createResource.mockRestore();
   });
 
   test('Not rendered when no profile', async () => {

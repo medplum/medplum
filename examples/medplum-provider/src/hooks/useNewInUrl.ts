@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
+import { useAppNavigate } from './useAppNavigate';
 
 /**
  * NewInUrlState is the result of the useNewInUrl hook.
@@ -24,14 +25,14 @@ export interface NewInUrlState {
  */
 export function useNewInUrl(basePath: string, suffix: string): NewInUrlState {
   const location = useLocation();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
 
   const openNew = useCallback((): void => {
-    navigate(`${basePath}/new${suffix}`)?.catch(console.error);
+    navigate(`${basePath}/new${suffix}`);
   }, [navigate, basePath, suffix]);
 
   const closeNew = useCallback((): void => {
-    navigate(`${basePath}${suffix}`)?.catch(console.error);
+    navigate(`${basePath}${suffix}`);
   }, [navigate, basePath, suffix]);
 
   return {

@@ -4,7 +4,7 @@ import { Alert, Button, Input, Stack, TextInput, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getIdentifier } from '@medplum/core';
 import type { Address, Organization } from '@medplum/fhirtypes';
-import { AddressInput, Modal, useMedplum } from '@medplum/react';
+import { AddressInput, Modal, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import { IconInfoCircle } from '@tabler/icons-react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -145,6 +145,7 @@ function CandidBillingOrganizationForm(props: CandidBillingOrganizationFormProps
   const { candidCreateBotId, candidEditBotId, organization, onRegistrationStatusChange, onSavingChange, onSaved } =
     props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
 
   const [name, setName] = useState(() => organization?.name ?? '');
   const [npi, setNpi] = useState(() => getIdentifierValue(organization, NPI_SYSTEM));
@@ -231,7 +232,7 @@ function CandidBillingOrganizationForm(props: CandidBillingOrganizationFormProps
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    handleSave().catch(console.error);
+    handleSave().catch((err: unknown) => onError(err, { source: 'CandidBillingOrganizationForm' }));
   };
 
   return (

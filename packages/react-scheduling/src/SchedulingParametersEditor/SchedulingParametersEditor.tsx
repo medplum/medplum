@@ -3,6 +3,7 @@
 import { Alert, Anchor, Button, Group, Paper, Stack, Text, Tooltip, VisuallyHidden } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
+import { useMedplumErrorHandler } from '@medplum/react-hooks';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useId, useState } from 'react';
@@ -152,6 +153,7 @@ export function SchedulingParametersEditor<T extends HealthcareService = Healthc
   props: SchedulingParametersEditorProps<T>
 ): JSX.Element {
   const { schedule, service, onCancel } = props;
+  const onError = useMedplumErrorHandler();
   const editingSchedule = schedule !== undefined;
 
   const [level] = useState(() => getLevelConfig(props));
@@ -187,7 +189,7 @@ export function SchedulingParametersEditor<T extends HealthcareService = Healthc
       }
     } catch (err) {
       // Reporting a failed write is the caller's; this only keeps the rejection out of the event handler.
-      console.error(err);
+      onError(err, { source: 'SchedulingParametersEditor' });
     } finally {
       setSaving(false);
     }

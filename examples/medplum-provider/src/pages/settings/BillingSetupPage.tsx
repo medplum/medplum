@@ -3,14 +3,15 @@
 import { Stack, Title } from '@mantine/core';
 import { Document } from '@medplum/react';
 import type { JSX } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { CandidBillingSettings } from '../../components/billing/CandidBillingSettings';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 
 const BASE_URL = '/Settings/Billing';
 
 export function BillingSetupPage(): JSX.Element {
   const { '*': path } = useParams();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
 
   return (
     <Document>

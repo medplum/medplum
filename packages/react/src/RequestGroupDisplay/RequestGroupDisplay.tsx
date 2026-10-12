@@ -3,7 +3,7 @@
 import { Button, Grid, Text } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
 import type { Bundle, BundleEntry, Reference, RequestGroup, Resource, Task } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler, useResource } from '@medplum/react-hooks';
 import { IconCheckbox, IconSquare } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useEffect, useState } from 'react';
@@ -18,16 +18,20 @@ export interface RequestGroupDisplayProps {
 
 export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Element | null {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const requestGroup = useResource(props.value);
   const [startedLoading, setStartedLoading] = useState(false);
   const [responseBundle, setResponseBundle] = useState<Bundle>();
 
   useEffect(() => {
     if (requestGroup && !startedLoading) {
-      medplum.executeBatch(buildBatchRequest(requestGroup)).then(setResponseBundle).catch(console.log);
+      medplum
+        .executeBatch(buildBatchRequest(requestGroup))
+        .then(setResponseBundle)
+        .catch((err: unknown) => onError(err, { source: 'RequestGroupDisplay' }));
       setStartedLoading(true);
     }
-  }, [medplum, requestGroup, startedLoading]);
+  }, [medplum, onError, requestGroup, startedLoading]);
 
   if (!requestGroup || !responseBundle) {
     return null;

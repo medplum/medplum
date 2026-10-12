@@ -9,7 +9,7 @@ import {
   normalizeErrorString,
 } from '@medplum/core';
 import type { Appointment, Patient, Reference } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler, useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { getPatientParticipant } from '../../actors';
@@ -52,6 +52,7 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
     onCancel,
   } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
 
   const service = useResource(extractServiceTypeReferences(appointment.serviceType)[0]);
   const requirements = useMemo(() => getSchedulingRequirements(service), [service]);
@@ -90,7 +91,7 @@ export function AppointmentDetailsForm(props: AppointmentDetailsFormProps): JSX.
       try {
         await onUpdated?.(updated);
       } catch (error) {
-        console.error(error);
+        onError(error, { source: 'AppointmentDetailsForm' });
       }
     } catch (error) {
       setSaveError(error);

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react-hooks';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { Mock, MockInstance } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
@@ -92,9 +93,11 @@ describe('CcdaDisplay', () => {
     global.fetch = originalFetch;
   });
 
-  function setup(url: string | undefined): void {
+  function setup(url: string | undefined, onError?: MedplumErrorHandler): void {
     render(<CcdaDisplay url={url} />, ({ children }) => (
-      <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+      <MedplumProvider medplum={medplum} onError={onError}>
+        {children}
+      </MedplumProvider>
     ));
   }
 
@@ -238,8 +241,7 @@ describe('CcdaDisplay', () => {
   });
 
   test('Handles API validation failure correctly', async () => {
-    // Mock console.error to check if error is logged
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onError = vi.fn();
 
     // Override fetch mock for this test to return a failed validation response
     const originalFetchSpy = fetchSpy;
@@ -265,7 +267,7 @@ describe('CcdaDisplay', () => {
 
     global.fetch = fetchSpy;
 
-    setup(EXAMPLE_CCDA_URL);
+    setup(EXAMPLE_CCDA_URL, onError);
 
     // Wait for the component to load
     expect(await screen.findByTestId('ccda-iframe')).toBeInTheDocument();
@@ -286,10 +288,10 @@ describe('CcdaDisplay', () => {
     expect(screen.queryByText(/Validation Results:/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Download Full Results/i })).not.toBeInTheDocument();
 
-    // Should log the error
-    expect(consoleErrorSpy).toHaveBeenCalledWith('CCDA validation error:', expect.any(Error));
-
-    // Clean up
-    consoleErrorSpy.mockRestore();
+    // Should report the error
+    expect(onError).toHaveBeenCalledExactlyOnceWith(new Error('Validation failed: 500 Internal Server Error'), {
+      source: 'CcdaDisplay',
+      message: 'CCDA validation error',
+    });
   });
 });

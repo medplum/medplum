@@ -74,17 +74,21 @@ describe('useDoseSpotNotifications', () => {
   test('handles errors', async () => {
     const medplum = new MockClient();
     const onError = vi.fn();
+    const providerOnError = vi.fn();
+    const error = new Error('API Error');
 
     medplum.getProjectMembership = vi.fn().mockReturnValue({
       identifier: [{ system: 'dosespot' }],
     });
 
-    medplum.executeBot = vi.fn().mockRejectedValue(new Error('API Error'));
+    medplum.executeBot = vi.fn().mockRejectedValue(error);
 
+    // One hook with its own onError option, and one that falls back to the MedplumProvider handler
     await act(async () => {
       render(
-        <MedplumProvider medplum={medplum}>
+        <MedplumProvider medplum={medplum} onError={providerOnError}>
           <MyTestIcon onError={onError} />
+          <MyTestIcon />
         </MedplumProvider>
       );
     });
@@ -93,6 +97,8 @@ describe('useDoseSpotNotifications', () => {
       vi.advanceTimersByTime(10000);
     });
 
-    expect(screen.getByText('Count:')).toBeDefined();
+    expect(screen.getAllByText('Count:')).toHaveLength(2);
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error);
+    expect(providerOnError).toHaveBeenCalledExactlyOnceWith(error, { source: 'useDoseSpotNotifications' });
   });
 });

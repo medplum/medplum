@@ -11,6 +11,7 @@ import {
   setPrimaryProvider,
 } from '@medplum/core';
 import type { Appointment, AppointmentParticipant, Schedule, Slot } from '@medplum/fhirtypes';
+import type { MedplumErrorHandler } from '@medplum/react-hooks';
 import type { AppointmentWrite } from './AppointmentFinder.writes';
 import { buildElevatedBooking } from './buildElevatedBooking';
 
@@ -58,16 +59,18 @@ export function getProposedSchedules(proposal: Appointment): string[] {
  * Writes in order: creates the new Slots, moves the appointment onto them with one
  * conditional update, then deletes the old Slots. The appointment is only ever wholly at its
  * old time or wholly at its new one. A failure before the update deletes the Slots it created;
- * a failure after it leaves the old Slots behind, logged, with the move complete.
+ * a failure after it leaves the old Slots behind, reported to `onError`, with the move complete.
  * @param medplum - The client to write through.
  * @param moving - The appointment being moved. Re-read before writing, so a stale copy is not written back.
  * @param proposal - The manually chosen start, length, and schedules.
+ * @param onError - Reports Slots that could not be deleted.
  * @returns The updated appointment and its new slots.
  */
 export async function writeElevatedReschedule(
   medplum: MedplumClient,
   moving: WithId<Appointment>,
-  proposal: Appointment
+  proposal: Appointment,
+  onError: MedplumErrorHandler
 ): Promise<AppointmentWrite> {
   const scheduleRefs = getProposedSchedules(proposal);
   if (scheduleRefs.length === 0 || scheduleRefs.some((ref) => !/^Schedule\/[^/]+$/.test(ref))) {
@@ -138,7 +141,7 @@ export async function writeElevatedReschedule(
   const newSlots = created.filter((result) => result.status === 'fulfilled').map((result) => result.value);
   const failedCreate = created.find((result) => result.status === 'rejected');
   if (failedCreate) {
-    await deleteSlots(medplum, newSlots);
+    await deleteSlots(medplum, newSlots, onError);
     throw failedCreate.reason;
   }
 
@@ -161,11 +164,11 @@ export async function writeElevatedReschedule(
       headers: { 'If-Match': `W/"${existing.meta.versionId}"` },
     });
   } catch (error) {
-    await deleteSlots(medplum, newSlots);
+    await deleteSlots(medplum, newSlots, onError);
     throw error;
   }
 
-  await deleteSlots(medplum, oldSlots);
+  await deleteSlots(medplum, oldSlots, onError);
   return { appointments: [appointment], appointment, slots: newSlots };
 }
 
@@ -211,15 +214,23 @@ function rescheduleParticipants(
 }
 
 /**
- * Deletes Slots, logging any that could not be deleted rather than failing.
+ * Deletes Slots, reporting any that could not be deleted rather than failing.
  * @param medplum - The client to write through.
  * @param slots - The Slots to delete.
+ * @param onError - Reports Slots that could not be deleted.
  */
-async function deleteSlots(medplum: MedplumClient, slots: readonly WithId<Slot>[]): Promise<void> {
+async function deleteSlots(
+  medplum: MedplumClient,
+  slots: readonly WithId<Slot>[],
+  onError: MedplumErrorHandler
+): Promise<void> {
   const results = await Promise.allSettled(slots.map((slot) => medplum.deleteResource('Slot', slot.id)));
   results.forEach((result, index) => {
     if (result.status === 'rejected') {
-      console.error(`Could not delete Slot/${slots[index].id}`, result.reason);
+      onError(result.reason, {
+        source: 'writeElevatedReschedule',
+        message: `Could not delete Slot/${slots[index].id}`,
+      });
     }
   });
 }

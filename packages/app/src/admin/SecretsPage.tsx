@@ -5,13 +5,14 @@ import { showNotification } from '@mantine/notifications';
 import type { InternalSchemaElement } from '@medplum/core';
 import { deepClone, getElementDefinition } from '@medplum/core';
 import type { ProjectSetting } from '@medplum/fhirtypes';
-import { ResourcePropertyInput, useMedplum } from '@medplum/react';
+import { ResourcePropertyInput, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
 
 export function SecretsPage(): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const projectId = getProjectId(medplum);
   const projectDetails = medplum.get(`admin/projects/${projectId}`).read();
   const [schemaLoaded, setSchemaLoaded] = useState(false);
@@ -21,8 +22,8 @@ export function SecretsPage(): JSX.Element {
     medplum
       .requestSchema('Project')
       .then(() => setSchemaLoaded(true))
-      .catch(console.log);
-  }, [medplum]);
+      .catch((err: unknown) => onError(err, { source: 'SecretsPage' }));
+  }, [medplum, onError]);
 
   useEffect(() => {
     if (projectDetails) {
@@ -44,7 +45,7 @@ export function SecretsPage(): JSX.Element {
           .post(`admin/projects/${projectId}/secrets`, secrets)
           .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
           .then(() => showNotification({ color: 'green', message: 'Saved' }))
-          .catch(console.log);
+          .catch((err: unknown) => onError(err, { source: 'SecretsPage' }));
       }}
     >
       <Title>Project Secrets</Title>

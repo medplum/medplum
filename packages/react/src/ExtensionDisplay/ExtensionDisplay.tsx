@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ElementType } from '@medplum/core';
 import { getDataType, isPopulated, isProfileLoaded, tryGetProfile } from '@medplum/core';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { BackboneElementDisplay } from '../BackboneElementDisplay/BackboneElementDisplay';
@@ -24,6 +24,7 @@ export function ExtensionDisplay(props: ExtensionDisplayProps): JSX.Element | nu
   const { elementDefinitionType } = props;
 
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const ctx = useContext(ElementsContext);
   const [typeSchema, setTypeSchema] = useState(getDataType('Extension'));
   const profileUrl: string | undefined = useMemo(() => {
@@ -47,12 +48,12 @@ export function ExtensionDisplay(props: ExtensionDisplayProps): JSX.Element | nu
             setTypeSchema(profile);
           }
         })
-        .catch((reason) => {
+        .catch((reason: unknown) => {
           setLoadingProfile(false);
-          console.warn(reason);
+          onError(reason, { source: 'ExtensionDisplay' });
         });
     }
-  }, [medplum, profileUrl]);
+  }, [medplum, onError, profileUrl]);
 
   if (profileUrl && (loadingProfile || !isProfileLoaded(profileUrl))) {
     return <div>Loading...</div>;

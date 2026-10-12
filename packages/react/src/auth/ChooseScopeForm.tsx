@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Checkbox, Flex, Group, Stack, Title } from '@mantine/core';
 import type { LoginAuthenticationResponse } from '@medplum/core';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { Fragment } from 'react/jsx-runtime';
 import { Form } from '../Form/Form';
@@ -34,6 +34,7 @@ const vitalSigns = '?category=http://terminology.hl7.org/CodeSystem/observation-
 
 export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   return (
     <Form
       onSubmit={(formData: Record<string, string>) => {
@@ -43,7 +44,7 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
             scope: Object.keys(formData).join(' '),
           })
           .then(props.handleAuthResponse)
-          .catch(console.log);
+          .catch((err: unknown) => onError(err, { source: 'ChooseScopeForm' }));
       }}
     >
       <Stack>

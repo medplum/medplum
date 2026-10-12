@@ -38,6 +38,7 @@ export function TestMetadataCardInput({ test, metadata, error }: TestMetadataCar
               error={error?.priority?.message}
               onChange={(newValue) => {
                 if (!newValue) {
+                  // eslint-disable-next-line no-console -- Developer diagnostic for an unexpected input value
                   console.warn('New value for priority unexpectedly falsey', newValue);
                   return;
                 }

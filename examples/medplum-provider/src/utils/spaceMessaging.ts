@@ -3,7 +3,7 @@
 import type { MedplumClient } from '@medplum/core';
 import { getDisplayString, getReferenceString, isNotFound, OperationOutcomeError } from '@medplum/core';
 import type { Bundle, Communication, Identifier, Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import type { useMedplum } from '@medplum/react';
+import type { MedplumErrorHandler, useMedplum } from '@medplum/react';
 import type { Message } from '../types/spaces';
 import type { ReasoningEffort } from './spaceModels';
 import { createConversationTopic, saveMessage } from './spacePersistence';
@@ -125,7 +125,11 @@ export class StreamingCodeExtractor {
   }
 }
 
-export async function collectFhirData(medplum: MedplumClient, refs: string[]): Promise<Resource[]> {
+export async function collectFhirData(
+  medplum: MedplumClient,
+  refs: string[],
+  onError: MedplumErrorHandler
+): Promise<Resource[]> {
   const results = await Promise.all(
     refs.map(async (ref) => {
       try {
@@ -133,7 +137,7 @@ export async function collectFhirData(medplum: MedplumClient, refs: string[]): P
         return await medplum.readResource(resourceType as ResourceType, id);
       } catch (error) {
         if (!(error instanceof OperationOutcomeError && isNotFound(error.outcome))) {
-          console.error(`Failed to fetch ${ref}:`, error);
+          onError(error, { source: 'collectFhirData', message: `Failed to fetch ${ref}` });
         }
         return undefined;
       }
@@ -350,6 +354,7 @@ export async function sendToBotStreaming(
 
 export interface ProcessMessageParams {
   medplum: ReturnType<typeof useMedplum>;
+  onError: MedplumErrorHandler;
   input: string;
   userMessage: Message;
   currentMessages: Message[];
@@ -376,6 +381,7 @@ export interface ProcessMessageResult {
 export async function processMessage(params: ProcessMessageParams): Promise<ProcessMessageResult> {
   const {
     medplum,
+    onError,
     input,
     userMessage,
     currentMessages,
@@ -512,7 +518,7 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
     // while we fetch FHIR data and wait for the bot's first streamed chunk.
     onComponentStart?.();
 
-    const fhirData = await collectFhirData(medplum, allResourceRefs);
+    const fhirData = await collectFhirData(medplum, allResourceRefs, onError);
 
     const componentChunkCallback = onComponentStreamChunk ?? onStreamChunk;
     if (componentChunkCallback) {

@@ -4,7 +4,7 @@ import { Alert, Button, Divider, List, ScrollArea, Stack, Stepper, Text } from '
 import type { WithId } from '@medplum/core';
 import { ContentType, deepClone, formatHumanName, normalizeErrorString } from '@medplum/core';
 import type { Bundle, Parameters, Patient } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import { IconCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -40,6 +40,7 @@ const STEP_IMPORT = 2;
 
 export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [scanning, setScanning] = useState(false);
   const [scanSessionKey, setScanSessionKey] = useState(0);
   const [activeStep, setActiveStep] = useState(STEP_INPUT);
@@ -366,9 +367,13 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
             }}
             onScan={(data) => {
               setShlink(data);
-              resolveLink(data, { fromScan: true }).catch(console.error);
+              resolveLink(data, { fromScan: true }).catch((err: unknown) =>
+                onError(err, { source: 'SmartHealthLinkImport' })
+              );
             }}
-            onResolve={() => resolveLink(shlink).catch(console.error)}
+            onResolve={() =>
+              resolveLink(shlink).catch((err: unknown) => onError(err, { source: 'SmartHealthLinkImport' }))
+            }
           />
         )}
 

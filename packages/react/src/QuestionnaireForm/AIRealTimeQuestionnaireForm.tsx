@@ -5,7 +5,7 @@ import { useDebouncedCallback } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Identifier, Parameters, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
-import { useMedplum, useWhisper } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler, useWhisper } from '@medplum/react-hooks';
 import { IconChevronDown, IconChevronUp, IconCircleFilled, IconMicrophone, IconTrash } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX, ReactNode } from 'react';
@@ -47,6 +47,7 @@ export interface AIRealTimeQuestionnaireFormProps extends QuestionnaireFormProps
 export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormProps): JSX.Element {
   const { aiModel, onTranscript, voiceInstructions, silenceDebounceMs, ...questionnaireFormProps } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(
     props.questionnaireResponse as QuestionnaireResponse | undefined
   );
@@ -89,17 +90,17 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
           setBotAvailability(bot ? 'available' : 'unavailable');
         }
       } catch (err) {
-        console.error('Error checking bot availability:', err);
+        onError(err, { source: 'AIRealTimeQuestionnaireForm', message: 'Error checking bot availability' });
         if (!cancelled) {
           setBotAvailability('unavailable');
         }
       }
     }
-    checkBotAvailability().catch(console.error);
+    checkBotAvailability().catch((err: unknown) => onError(err, { source: 'AIRealTimeQuestionnaireForm' }));
     return () => {
       cancelled = true;
     };
-  }, [medplum]);
+  }, [medplum, onError]);
 
   const isProjectVoiceEnabled = medplum.getProject()?.features?.includes('ai-realtime') ?? false;
   const isVoiceEnabled = isProjectVoiceEnabled && botAvailability === 'available';
@@ -182,7 +183,10 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
             setQuestionnaireResponse(aiQuestionnaireResponse);
             setResponseVersion((v) => v + 1);
           } catch (parseError) {
-            console.error('Failed to parse bot response as QuestionnaireResponse:', parseError);
+            onError(parseError, {
+              source: 'AIRealTimeQuestionnaireForm',
+              message: 'Failed to parse bot response as QuestionnaireResponse',
+            });
             showNotification({
               color: 'red',
               message: `Failed to parse bot response as QuestionnaireResponse: ${normalizeErrorString(parseError)}`,
@@ -190,12 +194,12 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
           }
         }
       } catch (error) {
-        console.error('Error processing transcript with AI:', error);
+        onError(error, { source: 'AIRealTimeQuestionnaireForm', message: 'Error processing transcript with AI' });
       } finally {
         setIsProcessing(false);
       }
     },
-    [medplum, aiModel]
+    [medplum, aiModel, onError]
   );
 
   useEffect(() => {
@@ -221,10 +225,14 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
       // Auto-drain: if speech accumulated while we were processing and the user
       // isn't actively mid-utterance, fire the next $ai immediately.
       if (inputRef.current.trim() && statusRef.current !== 'speech_started') {
-        flushTranscriptRef.current().catch((err) => console.error('Error draining transcript:', err));
+        flushTranscriptRef
+          .current()
+          .catch((err: unknown) =>
+            onError(err, { source: 'AIRealTimeQuestionnaireForm', message: 'Error draining transcript' })
+          );
       }
     };
-  }, [processTranscript, onTranscript]);
+  }, [processTranscript, onTranscript, onError]);
 
   const debouncedFlush = useDebouncedCallback(() => {
     if (statusRef.current === 'speech_started') {
@@ -256,8 +264,10 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
 
   const handleStartDictation = useCallback((): void => {
     setExpanded(true);
-    start().catch((err) => console.error('Error starting voice input:', err));
-  }, [start]);
+    start().catch((err: unknown) =>
+      onError(err, { source: 'AIRealTimeQuestionnaireForm', message: 'Error starting voice input' })
+    );
+  }, [start, onError]);
 
   const handleStopDictation = useCallback((): void => {
     setIsStopping(true);

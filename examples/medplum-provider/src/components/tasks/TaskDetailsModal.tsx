@@ -18,7 +18,8 @@ import {
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useParams } from 'react-router';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { usePatient } from '../../hooks/usePatient';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './TaskDetailsModal.module.css';
@@ -35,7 +36,7 @@ export const TaskDetailsModal = (props: TaskDetailsModalProps): JSX.Element => {
   const { patientId, encounterId } = useParams();
   const patient = usePatient();
   const medplum = useMedplum();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const author = useMedplumProfile();
   const taskResource = useResource(taskProp, showErrorNotification);
@@ -47,7 +48,7 @@ export const TaskDetailsModal = (props: TaskDetailsModalProps): JSX.Element => {
 
   // Closing returns to the encounter, keeping the search query so the visits list retains its pagination/sort.
   const handleClose = (): void => {
-    navigate(`/Patient/${patientId}/Encounter/${encounterId}${location.search}`)?.catch(console.error);
+    navigate(`/Patient/${patientId}/Encounter/${encounterId}${location.search}`);
   };
 
   useEffect(() => {

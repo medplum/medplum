@@ -6,7 +6,8 @@ import { DEFAULT_SEARCH_COUNT, formatSearchQuery, parseSearchRequest } from '@me
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { usePatient } from '../../hooks/usePatient';
 import { useResourceType } from '../resource/useResourceType';
 import { prependPatientPath } from './PatientPage.utils';
@@ -14,11 +15,11 @@ import { prependPatientPath } from './PatientPage.utils';
 export function PatientSearchPage(): JSX.Element {
   const medplum = useMedplum();
   const patient = usePatient();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
 
-  useResourceType(search?.resourceType, { onInvalidResourceType: () => navigate('..')?.catch(console.error) });
+  useResourceType(search?.resourceType, { onInvalidResourceType: () => navigate('..') });
 
   useEffect(() => {
     if (!patient) {
@@ -34,9 +35,7 @@ export function PatientSearchPage(): JSX.Element {
     ) {
       setSearch(populatedSearch);
     } else {
-      navigate(`/Patient/${patient.id}/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(
-        console.error
-      );
+      navigate(`/Patient/${patient.id}/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
     }
   }, [medplum, patient, navigate, location]);
 
@@ -49,17 +48,13 @@ export function PatientSearchPage(): JSX.Element {
       <SearchControl
         checkboxesEnabled={true}
         search={search}
-        onClick={(e) =>
-          navigate(`/Patient/${patient.id}/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)
-        }
+        onClick={(e) => navigate(`/Patient/${patient.id}/${e.resource.resourceType}/${e.resource.id}`)}
         onAuxClick={(e) => window.open(`/Patient/${patient.id}/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onNew={() => {
-          navigate(prependPatientPath(patient, `/${search.resourceType}/new`))?.catch(console.error);
+          navigate(prependPatientPath(patient, `/${search.resourceType}/new`));
         }}
         onChange={(e) => {
-          navigate(`/Patient/${patient.id}/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(
-            console.error
-          );
+          navigate(`/Patient/${patient.id}/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}
       />
     </Paper>

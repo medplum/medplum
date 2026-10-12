@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert } from '@mantine/core';
 import { locationUtils, normalizeErrorString } from '@medplum/core';
+import type { MedplumErrorHandler } from '@medplum/react-hooks';
+import { medplumErrorHandlerContext } from '@medplum/react-hooks';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Component } from 'react';
@@ -20,6 +22,8 @@ export interface ErrorBoundaryState {
  * See: https://reactjs.org/docs/error-boundaries.html
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  static readonly contextType = medplumErrorHandlerContext;
+  declare readonly context: MedplumErrorHandler;
   readonly state: ErrorBoundaryState;
 
   constructor(props: ErrorBoundaryProps) {
@@ -54,7 +58,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('Uncaught error:', error, errorInfo);
+    this.context(error, { source: 'ErrorBoundary', message: 'Render error', errorInfo });
   }
 
   render(): ReactNode {

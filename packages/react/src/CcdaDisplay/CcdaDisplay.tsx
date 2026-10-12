@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button } from '@mantine/core';
+import { useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { exportJsonFile, sendCommand } from '../utils/dom';
@@ -33,6 +34,7 @@ interface ValidationResult {
 
 export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
   const { url } = props;
+  const onError = useMedplumErrorHandler();
   const [shouldSend, setShouldSend] = useState(false);
   const iframeRef = useRef(null);
   const [validationResult, setValidationResult] = useState<ValidationResult>();
@@ -43,10 +45,12 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
       return;
     }
     if (shouldSend && iframeRef.current) {
-      sendCommand(iframeRef.current, { command: 'loadCcdaXml', value: url }).catch(console.error);
+      sendCommand(iframeRef.current, { command: 'loadCcdaXml', value: url }).catch((err: unknown) =>
+        onError(err, { source: 'CcdaDisplay' })
+      );
       setShouldSend(false);
     }
-  }, [url, shouldSend]);
+  }, [url, shouldSend, onError]);
 
   const validateCcda = async (): Promise<void> => {
     if (!url) {
@@ -84,7 +88,7 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
       setValidationResult(validationResult as ValidationResult);
     } catch (error) {
       setValidationResult(undefined);
-      console.error('CCDA validation error:', error);
+      onError(error, { source: 'CcdaDisplay', message: 'CCDA validation error' });
     } finally {
       setValidating(false);
     }

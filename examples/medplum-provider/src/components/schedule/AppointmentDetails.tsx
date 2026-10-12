@@ -26,6 +26,7 @@ import {
   ResourceInput,
   ResourceName,
   useMedplum,
+  useMedplumErrorHandler,
 } from '@medplum/react';
 import { useSearchOne } from '@medplum/react-hooks';
 import { IconFileCheck, IconNotes, IconTrash } from '@tabler/icons-react';
@@ -103,6 +104,7 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
 export function AppointmentDetails(props: { appointment: WithId<Appointment> }): JSX.Element {
   const { appointment } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
 
   const [encounter, encounterLoading, encounterOutcome] = useSearchOne(
     'Encounter',
@@ -153,7 +155,9 @@ export function AppointmentDetails(props: { appointment: WithId<Appointment> }):
   const [confirmLoading, setConfirmLoading] = useState(false);
   const handleConfirm = useCallback(async () => {
     if (!confirmable) {
-      console.error(new Error(`handleConfirm called from non confirmable status '${appointment.status}'`));
+      onError(new Error(`handleConfirm called from non confirmable status '${appointment.status}'`), {
+        source: 'AppointmentDetails',
+      });
       return;
     }
     setConfirmLoading(true);
@@ -185,7 +189,7 @@ export function AppointmentDetails(props: { appointment: WithId<Appointment> }):
     } finally {
       setConfirmLoading(false);
     }
-  }, [medplum, appointment, confirmable]);
+  }, [medplum, onError, appointment, confirmable]);
 
   const sortedParticipants = appointment.participant
     .map((participant) => {

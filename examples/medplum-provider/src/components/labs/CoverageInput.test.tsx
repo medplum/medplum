@@ -4,6 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import type { Coverage, Patient } from '@medplum/fhirtypes';
 import { HealthGorillaLabOrderProvider, useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -85,11 +86,11 @@ describe('CoverageInput', () => {
     vi.mocked(useHealthGorillaLabOrder).mockReturnValue(mockLabOrderReturn);
   });
 
-  function setup(props: { patient?: Patient; error?: { message: string } } = {}): void {
+  function setup(props: { patient?: Patient; error?: { message: string }; onError?: MedplumErrorHandler } = {}): void {
     const patient = props.patient || mockPatient;
     render(
       <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
+        <MedplumProvider medplum={medplum} onError={props.onError}>
           <MantineProvider>
             <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
               <CoverageInput patient={patient} error={props.error} />
@@ -389,16 +390,16 @@ describe('CoverageInput', () => {
   });
 
   test('Handles error when getActivePatientCoverages fails', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockGetActivePatientCoverages.mockRejectedValue(new Error('Failed to fetch coverages'));
-    setup();
+    const onError = vi.fn();
+    const error = new Error('Failed to fetch coverages');
+    mockGetActivePatientCoverages.mockRejectedValue(error);
+    setup({ onError });
 
     await waitFor(() => {
       expect(screen.getByText('No coverages found')).toBeInTheDocument();
     });
 
-    expect(consoleErrorSpy).toHaveBeenCalled();
-    consoleErrorSpy.mockRestore();
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error, { source: 'CoverageInput' });
   });
 
   test('Updates billing information when coverages are reordered', async () => {

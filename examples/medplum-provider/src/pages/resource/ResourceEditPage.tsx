@@ -6,15 +6,16 @@ import type { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtype
 import { useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { RESOURCE_PROFILE_URLS } from './utils';
 
 export function ResourceEditPage(): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, id } = useParams() as { resourceType: ResourceType | undefined; id: string | undefined };
   const [value, setValue] = useState<Resource | undefined>();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const profileUrl = resourceType && RESOURCE_PROFILE_URLS[resourceType];
 
@@ -36,7 +37,7 @@ export function ResourceEditPage(): JSX.Element | null {
       medplum
         .updateResource(newResource)
         .then(() => {
-          navigate('..')?.catch(console.error);
+          navigate('..');
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err) => {
@@ -47,7 +48,7 @@ export function ResourceEditPage(): JSX.Element | null {
     [medplum, navigate]
   );
 
-  const handleDelete = useCallback(() => navigate('..')?.catch(console.error), [navigate]);
+  const handleDelete = useCallback(() => navigate('..'), [navigate]);
 
   if (!value) {
     return null;

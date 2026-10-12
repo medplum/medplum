@@ -5,7 +5,7 @@ import type { InternalTypeSchema } from '@medplum/core';
 import { addProfileToResource, normalizeErrorString, tryGetProfile } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import type { ResourceFormProps } from '@medplum/react';
-import { Loading, ResourceForm, useMedplum } from '@medplum/react';
+import { Loading, ResourceForm, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -22,6 +22,7 @@ export function ResourceFormWithRequiredProfile(props: ResourceFormWithRequiredP
   const profileUrl = props.profileUrl;
 
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<any>();
   const [profile, setProfile] = useState<InternalTypeSchema>();
@@ -41,10 +42,10 @@ export function ResourceFormWithRequiredProfile(props: ResourceFormWithRequiredP
         }
       })
       .catch((reason) => {
-        console.error(reason);
+        onError(reason, { source: 'ResourceFormWithRequiredProfile' });
         setProfileError(reason);
       });
-  }, [medplum, profileUrl]);
+  }, [medplum, onError, profileUrl]);
 
   const handleSubmit = useCallback(
     (newResource: Resource): void => {

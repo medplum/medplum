@@ -5,7 +5,7 @@ import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { createReference, HTTP_HL7_ORG } from '@medplum/core';
 import type { ChargeItem, ChargeItemDefinition, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
-import { AsyncAutocomplete, CodeableConceptInput, useMedplum } from '@medplum/react';
+import { AsyncAutocomplete, CodeableConceptInput, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -153,6 +153,7 @@ interface AddChargeItemModalProps {
 
 function AddChargeItemModal({ opened, onClose, onSubmit }: AddChargeItemModalProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [cptCode, setCptCode] = useState<CodeableConcept | undefined>();
   const [chargeItemDefinition, setChargeItemDefinition] = useState<ChargeItemDefinition | undefined>();
 
@@ -169,12 +170,12 @@ function AddChargeItemModal({ opened, onClose, onSubmit }: AddChargeItemModalPro
         return resources;
       } catch (error) {
         if (!signal.aborted) {
-          console.error('Error searching ChargeItemDefinition:', error);
+          onError(error, { source: 'AddChargeItemModal', message: 'Error searching ChargeItemDefinition' });
         }
         return [];
       }
     },
-    [medplum]
+    [medplum, onError]
   );
 
   const handleSelectChargeItemDefinition = useCallback((items: unknown[]) => {

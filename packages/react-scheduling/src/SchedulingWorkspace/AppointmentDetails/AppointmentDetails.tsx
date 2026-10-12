@@ -14,7 +14,7 @@ import {
 } from '@medplum/core';
 import type { Appointment, CodeableConcept, Parameters } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import { IconArrowLeft, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { Fragment, useCallback, useState } from 'react';
@@ -88,6 +88,7 @@ export interface AppointmentDetailsProps {
 export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.Element {
   const { appointment, onCancelled, cancellationReasonValueSet } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<unknown>();
   const [reason, setReason] = useState<CodeableConcept>();
@@ -132,14 +133,14 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
       try {
         await onCancelled?.(cancelled);
       } catch (error) {
-        console.error(error);
+        onError(error, { source: 'AppointmentCancelForm' });
       }
     } catch (err: unknown) {
       setCancelError(err);
     } finally {
       setCancelling(false);
     }
-  }, [appointment, medplum, onCancelled, reason]);
+  }, [appointment, medplum, onCancelled, onError, reason]);
 
   return (
     <>

@@ -5,11 +5,11 @@ import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { isReference } from '@medplum/core';
 import type { Appointment, Coding, Patient, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
-import { CodingInput, Form, ResourceInput, useMedplum } from '@medplum/react';
+import { CodingInput, Form, ResourceInput, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import { IconAlertSquareRounded, IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { createEncounter, encounterUrl } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { PlanDefinitionSummary } from '../plandefinition/PlanDefinitionSummary';
@@ -20,7 +20,8 @@ export interface CreateEncounterFormProps {
 
 export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Element {
   const medplum = useMedplum();
-  const navigate = useNavigate();
+  const onError = useMedplumErrorHandler();
+  const navigate = useAppNavigate();
 
   const [planDefinition, setPlanDefinition] = useState<PlanDefinition | undefined>();
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
@@ -56,14 +57,15 @@ export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Elemen
         patientRefs[0],
         planDefinition,
         props.appointment,
-        practitionerRefs[0]
+        practitionerRefs[0],
+        onError
       );
 
-      navigate(encounterUrl(encounter))?.catch(console.error);
+      navigate(encounterUrl(encounter));
     } catch (err) {
       showErrorNotification(err);
     }
-  }, [medplum, encounterClass, planDefinition, props.appointment, navigate, patientRefs, practitionerRefs]);
+  }, [medplum, onError, encounterClass, planDefinition, props.appointment, navigate, patientRefs, practitionerRefs]);
 
   const warnings: string[] = [];
 

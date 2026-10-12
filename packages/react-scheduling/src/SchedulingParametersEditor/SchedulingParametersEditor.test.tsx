@@ -465,15 +465,20 @@ describe('SchedulingParametersEditor', () => {
   });
 
   test('a rejected save leaves the button usable rather than stuck pending', async () => {
-    const failing = vi.fn().mockRejectedValue(new Error('conflict'));
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    render(<SchedulingParametersEditor service={FullyConfiguredService} onSave={failing} />);
+    const error = new Error('conflict');
+    const failing = vi.fn().mockRejectedValue(error);
+    const onError = vi.fn();
+    renderWithMedplum(
+      <SchedulingParametersEditor service={FullyConfiguredService} onSave={failing} />,
+      new MockClient(),
+      onError
+    );
 
     fireEvent.click(saveButton());
 
     await waitFor(() => expect(failing).toHaveBeenCalled());
     await waitFor(() => expect(saveButton()).not.toHaveAttribute('data-loading'));
-    consoleError.mockRestore();
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error, { source: 'SchedulingParametersEditor' });
   });
 
   test('hides the cancel button when there is nothing to cancel to', () => {

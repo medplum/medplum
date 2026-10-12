@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, formatCodeableConcept, getReferenceString } from '@medplum/core';
 import type { Communication, CommunicationPayload, DocumentReference, Reference } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile, usePrevious } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler, useMedplumProfile, usePrevious } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BaseChat } from '../BaseChat/BaseChat';
@@ -22,6 +22,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
   const { thread, title, onMessageSent, inputDisabled, excludeHeader, uploadEnabled, onError, onViewInDocuments } =
     props;
   const medplum = useMedplum();
+  const reportError = useMedplumErrorHandler();
   const profile = useMedplumProfile();
   const prevThreadId = usePrevious(thread?.id);
   const [communications, setCommunications] = useState<Communication[]>([]);
@@ -34,6 +35,19 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
       setCommunications([]);
     }
   }, [thread?.id, prevThreadId]);
+
+  // Send failures go to the caller's onError when given, the same as BaseChat's own errors, and to
+  // the MedplumProvider error handler otherwise.
+  const reportSendError = useCallback(
+    (err: unknown): void => {
+      if (onError) {
+        onError(err as Error);
+      } else {
+        reportError(err, { source: 'ThreadChat' });
+      }
+    },
+    [onError, reportError]
+  );
 
   const sendMessage = useCallback(
     (message: string, file?: File, existingDocRef?: DocumentReference) => {
@@ -79,15 +93,15 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
               { op: 'add', path: '/sent', value: communication.sent },
             ]);
           } catch (err) {
-            onError?.(err as Error);
+            reportSendError(err);
           }
         }
         onMessageSent?.(communication);
       };
 
-      buildAndSend().catch(console.error);
+      buildAndSend().catch(reportSendError);
     },
-    [medplum, profileRef, thread, threadRef, communications, onMessageSent, onError]
+    [medplum, profileRef, thread, threadRef, communications, onMessageSent, reportSendError]
   );
 
   // Currently we only support `delivered` on chats with 2 participants
@@ -107,11 +121,11 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
                   // See: https://www.medplum.com/docs/communications/messaging-data-model#communication-lifecycle
                   // for more info about recommended `Communication` lifecycle
                 })
-                .catch(console.error);
+                .catch((err: unknown) => reportError(err, { source: 'ThreadChat' }));
             }
           }
         : undefined,
-    [medplum, thread.recipient?.length]
+    [medplum, reportError, thread.recipient?.length]
   );
 
   if (!profile) {

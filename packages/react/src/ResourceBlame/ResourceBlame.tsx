@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
@@ -18,13 +18,17 @@ export interface ResourceBlameProps {
 
 export function ResourceBlame(props: ResourceBlameProps): JSX.Element | null {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [value, setValue] = useState(props.history);
 
   useEffect(() => {
     if (!props.history && props.resourceType && props.id) {
-      medplum.readHistory(props.resourceType, props.id).then(setValue).catch(console.log);
+      medplum
+        .readHistory(props.resourceType, props.id)
+        .then(setValue)
+        .catch((err: unknown) => onError(err, { source: 'ResourceBlame' }));
     }
-  }, [medplum, props.history, props.resourceType, props.id]);
+  }, [medplum, onError, props.history, props.resourceType, props.id]);
 
   if (!value) {
     return <div>Loading...</div>;

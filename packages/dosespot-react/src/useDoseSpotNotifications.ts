@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DoseSpotNotificationCountsResponse } from './common';
 import { DOSESPOT_NOTIFICATION_COUNTS_BOT } from './common';
@@ -15,6 +15,7 @@ const DEFAULT_REFRESH_INTERVAL_MILLISECONDS = 10000;
 
 export function useDoseSpotNotifications(options?: DoseSpotNotificationsOptions): number | undefined {
   const medplum = useMedplum();
+  const reportError = useMedplumErrorHandler();
   const { onChange, onError } = options ?? {};
   const hasDoseSpot = medplum.getProjectMembership()?.identifier?.some((i) => i.system?.includes('dosespot'));
   const refreshInterval = options?.refreshIntervalMilliseconds ?? DEFAULT_REFRESH_INTERVAL_MILLISECONDS;
@@ -53,16 +54,20 @@ export function useDoseSpotNotifications(options?: DoseSpotNotificationsOptions)
         onChange?.(newCount);
       }
     } catch (err: unknown) {
-      onError?.(err);
+      if (onError) {
+        onError(err);
+      } else {
+        reportError(err, { source: 'useDoseSpotNotifications' });
+      }
       stopTimer();
     }
-  }, [medplum, unreadCount, onChange, onError, stopTimer]);
+  }, [medplum, unreadCount, onChange, onError, reportError, stopTimer]);
 
   const startTimer = useCallback(() => {
     timerRef.current = setInterval(() => {
-      updateCount().catch(console.error);
+      updateCount().catch((err: unknown) => reportError(err, { source: 'useDoseSpotNotifications' }));
     }, refreshInterval);
-  }, [updateCount, refreshInterval]);
+  }, [updateCount, refreshInterval, reportError]);
 
   useEffect(() => {
     // Start an interval timer to update the count every 5 seconds

@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ContentType, MedplumClient } from '@medplum/core';
+import { MedplumProvider } from '@medplum/react';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { createElement } from 'react';
 import type { Mock } from 'vitest';
 import { useAvailableTables } from './useAvailableTables';
 
@@ -14,7 +17,6 @@ describe('useAvailableTables', () => {
   beforeEach(() => {
     onChange = vi.fn();
     onError = vi.fn();
-    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -82,8 +84,8 @@ describe('useAvailableTables', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  test('Logs to console.error when onError not provided', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  test('Reports to the MedplumProvider error handler when onError not provided', async () => {
+    const providerOnError = vi.fn();
 
     const fetch = vi.fn(async () => {
       throw new Error('Network error');
@@ -91,10 +93,13 @@ describe('useAvailableTables', () => {
 
     medplum = new MedplumClient({ fetch });
 
-    renderHook(() => useAvailableTables({ medplum, onChange }));
+    renderHook(() => useAvailableTables({ medplum, onChange }), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(MedplumProvider, { medplum, onError: providerOnError, children }),
+    });
 
     await waitFor(() => {
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(providerOnError).toHaveBeenCalledWith(new Error('Network error'), { source: 'useAvailableTables' });
     });
 
     expect(onChange).not.toHaveBeenCalled();

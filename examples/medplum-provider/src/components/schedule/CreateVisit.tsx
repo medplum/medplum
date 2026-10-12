@@ -3,12 +3,12 @@
 import { Button, Flex, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { Coding, Patient, PlanDefinition, Practitioner, Reference, Schedule } from '@medplum/fhirtypes';
-import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum } from '@medplum/react';
+import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import type { DateTimeRange } from '@medplum/react-scheduling';
 import { IconAlertSquareRounded, IconCircleCheck, IconCirclePlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { createAppointment, createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { PlanDefinitionSummary } from '../plandefinition/PlanDefinitionSummary';
@@ -28,7 +28,8 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
   const [end, setEnd] = useState(appointmentSlot?.end);
   const [isLoading, setIsLoading] = useState(false);
   const medplum = useMedplum();
-  const navigate = useNavigate();
+  const onError = useMedplumErrorHandler();
+  const navigate = useAppNavigate();
 
   const [formattedDate, formattedSlotTime] = useMemo(() => {
     if (!appointmentSlot) {
@@ -73,10 +74,11 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
         patient,
         planDefinitionData,
         appointment,
-        props.practitioner
+        props.practitioner,
+        onError
       );
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Visit created' });
-      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`)?.catch(console.error);
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`);
     } catch (err) {
       showErrorNotification(err);
     } finally {

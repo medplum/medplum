@@ -39,6 +39,7 @@ import {
   ReferenceDisplay,
   ReferenceInput,
   useMedplum,
+  useMedplumErrorHandler,
 } from '@medplum/react';
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
@@ -590,6 +591,7 @@ export function ExplainSearchForm({
   openModal: () => void;
 }): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [explainProject, setExplainProject] = useState<Reference<Project> | undefined>();
   const [explainProfile, setExplainProfile] = useState<Reference<Practitioner | Patient> | undefined>();
   const [explainMemberships, setExplainMemberships] = useState<ProjectMembership[] | undefined>();
@@ -625,11 +627,11 @@ export function ExplainSearchForm({
           setOnBehalfOfProjectMembership(createReference(memberships[0]));
         }
       })
-      .catch((err) => {
-        console.error(err);
+      .catch((err: unknown) => {
+        onError(err, { source: 'ExplainSearchForm' });
         showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       });
-  }, [medplum, explainProfile, explainProject]);
+  }, [medplum, onError, explainProfile, explainProject]);
 
   const searchCriteria = useMemo(() => {
     const criteria: Record<string, string> = {};

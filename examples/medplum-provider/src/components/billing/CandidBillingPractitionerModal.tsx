@@ -4,7 +4,15 @@ import { Button, Input, Skeleton, Stack, TextInput, Tooltip } from '@mantine/cor
 import type { WithId } from '@medplum/core';
 import { createReference, getIdentifier } from '@medplum/core';
 import type { Address, HumanName, Organization, Practitioner, PractitionerRole, Reference } from '@medplum/fhirtypes';
-import { AddressInput, HumanNameInput, Modal, ResourceInput, useMedplum, useResource } from '@medplum/react';
+import {
+  AddressInput,
+  HumanNameInput,
+  Modal,
+  ResourceInput,
+  useMedplum,
+  useMedplumErrorHandler,
+  useResource,
+} from '@medplum/react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useCandidProviderContracts } from '../../hooks/useCandidProviderContracts';
@@ -285,6 +293,7 @@ interface CandidBillingPractitionerFormProps {
 
 function CandidBillingPractitionerForm(props: CandidBillingPractitionerFormProps): JSX.Element {
   const { candidCreateBotId, candidLinkBotId, practitioner, roles, onRegistrationStatusChange, onSave } = props;
+  const onError = useMedplumErrorHandler();
 
   const [name, setName] = useState<HumanName | undefined>(() => practitioner.name?.[0]);
   const [npi, setNpi] = useState(() => getIdentifier(practitioner, NPI_SYSTEM) ?? '');
@@ -345,7 +354,7 @@ function CandidBillingPractitionerForm(props: CandidBillingPractitionerFormProps
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    handleSave().catch(console.error);
+    handleSave().catch((err: unknown) => onError(err, { source: 'CandidBillingPractitionerForm' }));
   };
 
   return (

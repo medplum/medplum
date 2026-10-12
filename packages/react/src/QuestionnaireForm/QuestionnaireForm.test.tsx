@@ -9,6 +9,7 @@ import {
 } from '@medplum/core';
 import type { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react-hooks';
 import { MedplumProvider, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QuestionnaireItemType } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
 import {
@@ -39,10 +40,10 @@ const pageExtension: Extension[] = [
   },
 ];
 
-async function setup(args: QuestionnaireFormProps): Promise<void> {
+async function setup(args: QuestionnaireFormProps, onError?: MedplumErrorHandler): Promise<void> {
   await act(async () => {
     render(
-      <MedplumProvider medplum={medplum}>
+      <MedplumProvider medplum={medplum} onError={onError}>
         <QuestionnaireForm {...args} />
       </MedplumProvider>
     );
@@ -1526,30 +1527,33 @@ describe('QuestionnaireForm', () => {
       },
     ];
 
-    async function setupRadioAndCheckbox(): Promise<void> {
-      await setup({
-        questionnaire: {
-          resourceType: 'Questionnaire',
-          status: 'active',
-          item: [
-            {
-              linkId: 'radio',
-              text: 'Radio',
-              type: 'choice',
-              answerValueSet: valueSetUrl,
-              extension: itemControl('radio-button'),
-            },
-            {
-              linkId: 'checkbox',
-              text: 'Checkbox',
-              type: 'choice',
-              answerValueSet: valueSetUrl,
-              extension: itemControl('check-box'),
-            },
-          ],
+    async function setupRadioAndCheckbox(onError?: MedplumErrorHandler): Promise<void> {
+      await setup(
+        {
+          questionnaire: {
+            resourceType: 'Questionnaire',
+            status: 'active',
+            item: [
+              {
+                linkId: 'radio',
+                text: 'Radio',
+                type: 'choice',
+                answerValueSet: valueSetUrl,
+                extension: itemControl('radio-button'),
+              },
+              {
+                linkId: 'checkbox',
+                text: 'Checkbox',
+                type: 'choice',
+                answerValueSet: valueSetUrl,
+                extension: itemControl('check-box'),
+              },
+            ],
+          },
+          onSubmit: vi.fn(),
         },
-        onSubmit: vi.fn(),
-      });
+        onError
+      );
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(1000);
@@ -1575,20 +1579,21 @@ describe('QuestionnaireForm', () => {
     });
 
     test('Transient expand failure does not make the questions unavailable', async () => {
-      const valueSetExpandSpy = vi
-        .spyOn(medplum, 'valueSetExpand')
-        .mockRejectedValue(new OperationOutcomeError(serverError(new Error('Upstream timeout'))));
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const error = new OperationOutcomeError(serverError(new Error('Upstream timeout')));
+      const valueSetExpandSpy = vi.spyOn(medplum, 'valueSetExpand').mockRejectedValue(error);
+      const onError = vi.fn();
 
       try {
-        await setupRadioAndCheckbox();
+        await setupRadioAndCheckbox(onError);
 
         expect(screen.queryByText('This question is unavailable.')).not.toBeInTheDocument();
         expect(screen.getAllByPlaceholderText('No Answers Defined')).toHaveLength(2);
-        expect(consoleErrorSpy).toHaveBeenCalledWith('Error loading value set:', expect.any(OperationOutcomeError));
+        expect(onError).toHaveBeenCalledWith(error, {
+          source: 'QuestionnaireFormItem',
+          message: 'Error loading value set',
+        });
       } finally {
         valueSetExpandSpy.mockRestore();
-        consoleErrorSpy.mockRestore();
       }
     });
 

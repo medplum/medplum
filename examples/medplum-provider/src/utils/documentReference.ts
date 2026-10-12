@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
 import type { Attachment, DocumentReference, Observation, Reference, ServiceRequest } from '@medplum/fhirtypes';
+import type { MedplumErrorHandler } from '@medplum/react';
 
 const HEALTH_GORILLA_REQUEST_SYSTEM = 'https://www.healthgorilla.com';
 
@@ -39,11 +40,13 @@ export async function fetchLabOrderRequisitionDocuments(
  * content whose contentType matches the presentedForm entry.
  * @param medplum - The Medplum client
  * @param presentedForm - The DiagnosticReport.presentedForm attachments
+ * @param onError - Reports DocumentReferences that could not be resolved; those entries are skipped
  * @returns The displayable attachments
  */
 export async function resolvePresentedFormAttachments(
   medplum: MedplumClient,
-  presentedForm: Attachment[] | undefined
+  presentedForm: Attachment[] | undefined,
+  onError: MedplumErrorHandler
 ): Promise<Attachment[]> {
   const resolved = await Promise.all(
     (presentedForm ?? []).map(async (form) => {
@@ -60,7 +63,10 @@ export async function resolvePresentedFormAttachments(
         }
         return { ...content.attachment, title: form.title ?? content.attachment.title };
       } catch (error) {
-        console.error('Error resolving presented form document reference:', error);
+        onError(error, {
+          source: 'resolvePresentedFormAttachments',
+          message: 'Error resolving presented form document reference',
+        });
         return undefined;
       }
     })
@@ -79,11 +85,13 @@ export async function resolvePresentedFormAttachments(
  * presentedForm alone.
  * @param medplum - The Medplum client
  * @param resultRefs - The DiagnosticReport.result references
+ * @param onError - Reports Observations or DocumentReferences that could not be read; those are skipped
  * @returns The displayable attachments, in result/hasMember traversal order
  */
 export async function resolveDerivedFromAttachments(
   medplum: MedplumClient,
-  resultRefs: Reference<Observation>[] | undefined
+  resultRefs: Reference<Observation>[] | undefined,
+  onError: MedplumErrorHandler
 ): Promise<Attachment[]> {
   const attachments: Attachment[] = [];
   const visited = new Set<string>();
@@ -98,7 +106,10 @@ export async function resolveDerivedFromAttachments(
     try {
       observation = await medplum.readReference(ref);
     } catch (error) {
-      console.error('Error resolving Observation for derivedFrom attachment:', error);
+      onError(error, {
+        source: 'resolveDerivedFromAttachments',
+        message: 'Error resolving Observation for derivedFrom attachment',
+      });
       return;
     }
 
@@ -113,7 +124,10 @@ export async function resolveDerivedFromAttachments(
           attachments.push({ ...attachment, title: derived.display ?? attachment.title });
         }
       } catch (error) {
-        console.error('Error resolving derivedFrom document reference:', error);
+        onError(error, {
+          source: 'resolveDerivedFromAttachments',
+          message: 'Error resolving derivedFrom document reference',
+        });
       }
     }
 

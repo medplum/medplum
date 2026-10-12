@@ -4,7 +4,7 @@ import type { MantineColorScheme } from '@mantine/core';
 import { Box, Divider, Flex, Menu, SegmentedControl, Text, useMantineColorScheme } from '@mantine/core';
 import type { LoginState, ProfileResource } from '@medplum/core';
 import { formatHumanName, getReferenceString, locationUtils } from '@medplum/core';
-import { useMedplumContext } from '@medplum/react-hooks';
+import { useMedplumContext, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { TablerIcon } from '@tabler/icons-react';
 import {
   IconDeviceDesktop,
@@ -68,6 +68,7 @@ export interface HeaderDropdownProps {
 
 export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
   const context = useMedplumContext();
+  const onError = useMedplumErrorHandler();
   const { medplum, profile, navigate } = context;
   const activeLogin = medplum.getActiveLogin();
   const logins = medplum.getLogins();
@@ -86,7 +87,7 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
     medplum
       .setActiveLogin(login)
       .then(() => locationUtils.reload())
-      .catch(console.error);
+      .catch((err: unknown) => onError(err, { source: 'HeaderDropdown' }));
   }
 
   return (

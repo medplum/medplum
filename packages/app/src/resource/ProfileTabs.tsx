@@ -3,7 +3,7 @@
 import { Tabs, ThemeIcon } from '@mantine/core';
 import type { Resource } from '@medplum/fhirtypes';
 import type { SupportedProfileStructureDefinition } from '@medplum/react';
-import { isSupportedProfileStructureDefinition, useMedplum } from '@medplum/react';
+import { isSupportedProfileStructureDefinition, useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import { IconCircleFilled } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -17,6 +17,7 @@ export function ProfileTabs({ resource, currentProfile, onChange }: ProfileTabsP
   const resourceType = resource.resourceType;
 
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [availableProfiles, setAvailableProfiles] = useState<SupportedProfileStructureDefinition[]>();
 
   // This is a bit inefficient since the entire structure definition
@@ -29,8 +30,8 @@ export function ProfileTabs({ resource, currentProfile, onChange }: ProfileTabsP
       .then((results) => {
         setAvailableProfiles(results.filter(isSupportedProfileStructureDefinition));
       })
-      .catch(console.error);
-  }, [medplum, onChange, resourceType]);
+      .catch((err: unknown) => onError(err, { source: 'ProfileTabs' }));
+  }, [medplum, onError, onChange, resourceType]);
   return (
     <Tabs
       value={currentProfile?.url}

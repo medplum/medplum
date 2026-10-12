@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { tryGetDataType } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react';
 import { useEffect, useRef, useState } from 'react';
 
 type UseResourceTypeOptions = {
@@ -14,6 +14,7 @@ export function useResourceType(
   options?: UseResourceTypeOptions
 ): ResourceType | undefined {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
 
   const lastInput = useRef(resourceType);
   const [validatedResourceType, setValidatedResourceType] = useState<ResourceType | undefined>();
@@ -35,10 +36,10 @@ export function useResourceType(
               setValidatedResourceType(resourceType as ResourceType);
             }
           })
-          .catch(console.error);
+          .catch((err: unknown) => onError(err, { source: 'useResourceType' }));
       }
     }
-  }, [medplum, options, resourceType]);
+  }, [medplum, onError, options, resourceType]);
 
   return validatedResourceType;
 }

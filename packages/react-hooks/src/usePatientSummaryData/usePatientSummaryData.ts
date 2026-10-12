@@ -4,7 +4,7 @@ import type { QueryTypes } from '@medplum/core';
 import { resolveId } from '@medplum/core';
 import type { Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useEffect, useMemo, useState } from 'react';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+import { useMedplum, useMedplumErrorHandler } from '../MedplumProvider/MedplumProvider.context';
 
 /** Descriptor for a single FHIR search that a section needs. */
 export interface FhirSearchDescriptor {
@@ -92,6 +92,7 @@ export function usePatientSummaryData(
   sections: { readonly key: string; readonly searches?: FhirSearchDescriptor[] }[]
 ): PatientSummaryData {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [sectionData, setSectionData] = useState<SectionResults[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>();
@@ -205,10 +206,9 @@ export function usePatientSummaryData(
         // Surface the first error so the UI can indicate a partial load failure
         const failures = settledResults.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
         if (failures.length > 0) {
-          console.error(
-            'Some patient summary searches failed:',
-            failures.map((f) => f.reason)
-          );
+          for (const failure of failures) {
+            onError(failure.reason, { source: 'usePatientSummaryData', message: 'Patient summary search failed' });
+          }
           const firstError = failures[0].reason;
           setError(firstError instanceof Error ? firstError : new Error(String(firstError)));
         }
@@ -223,7 +223,7 @@ export function usePatientSummaryData(
     return () => {
       stale = true;
     };
-  }, [medplum, patientId, stableSections]);
+  }, [medplum, onError, patientId, stableSections]);
 
   return { sectionData, loading, error };
 }

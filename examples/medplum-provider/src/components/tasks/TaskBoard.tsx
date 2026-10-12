@@ -8,7 +8,7 @@ import { ListWithDetailPane, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { useControllableDisclosure } from '../../hooks/useControllableDisclosure';
 import { showErrorNotification } from '../../utils/notifications';
 import { NewTaskModal } from './NewTaskModal';
@@ -66,7 +66,7 @@ export function TaskBoard({
   onNewTaskClose,
 }: TaskBoardProps): JSX.Element {
   const medplum = useMedplum();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [tasks, setTasks] = useState<WithId<Task>[]>([]);
   const [selectedTask, setSelectedTask] = useState<WithId<Task> | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -249,7 +249,7 @@ export function TaskBoard({
         items={tasks}
         loading={loading}
         selectedKey={selectedKey}
-        onSelectFirst={(task) => navigate(getTaskUri(task), { replace: true })?.catch(console.error)}
+        onSelectFirst={(task) => navigate(getTaskUri(task), { replace: true })}
         renderItem={(task) => <TaskListItem task={task} getTaskUri={getTaskUri} />}
         emptyList={<EmptyTasksState />}
         tabs={tabs}

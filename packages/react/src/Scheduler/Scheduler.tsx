@@ -4,7 +4,7 @@ import { Button, Loader, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { arrayify, getReferenceString, isDefined, isReference, isResource, normalizeErrorString } from '@medplum/core';
 import type { Period, Practitioner, Reference, Resource, Schedule, Slot } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CalendarDateInput } from '../CalendarDateInput/CalendarDateInput';
@@ -35,6 +35,7 @@ export interface BaseSchedulerProps<T> {
  * @returns the JSX Element
  */
 export function BaseScheduler<T>(props: BaseSchedulerProps<T>): JSX.Element | null {
+  const onError = useMedplumErrorHandler();
   const [month, setMonth] = useState(getStartMonth);
   const [date, setDate] = useState<Date>();
   const [options, setOptions] = useState<SchedulingOption<T>[]>();
@@ -54,12 +55,12 @@ export function BaseScheduler<T>(props: BaseSchedulerProps<T>): JSX.Element | nu
       }
     }
 
-    doSearch().catch(console.error);
+    doSearch().catch((err: unknown) => onError(err, { source: 'BaseScheduler' }));
 
     return () => {
       active = false;
     };
-  }, [fetchOptions, month]);
+  }, [fetchOptions, month, onError]);
 
   const handleSelectOption = useCallback(
     (option: SchedulingOption<T>) => {

@@ -3,7 +3,7 @@
 import { Group, Stack, Text } from '@mantine/core';
 import type { ExtendedInternalSchemaElement, SliceDefinitionWithTypes } from '@medplum/core';
 import { getPathDisplayName } from '@medplum/core';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX, MouseEvent } from 'react';
 import { useContext, useEffect, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
@@ -29,6 +29,7 @@ export interface ResourceArrayInputProps extends BaseInputProps {
 export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element | null {
   const { property } = props;
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [loading, setLoading] = useState(true);
   const [slices, setSlices] = useState<SliceDefinitionWithTypes[]>([]);
   // props.defaultValue should NOT be used after this; prefer the defaultValue state
@@ -49,11 +50,11 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
         setSlicedValues(slicedValues);
         setLoading(false);
       })
-      .catch((reason) => {
-        console.error(reason);
+      .catch((reason: unknown) => {
+        onError(reason, { source: 'ResourceArrayInput' });
         setLoading(false);
       });
-  }, [medplum, property, defaultValue, ctx.profileUrl, setSlicedValues]);
+  }, [medplum, onError, property, defaultValue, ctx.profileUrl, setSlicedValues]);
 
   function setValuesWrapper(newValues: any[], sliceIndex: number): void {
     const newSlicedValues = [...slicedValues];

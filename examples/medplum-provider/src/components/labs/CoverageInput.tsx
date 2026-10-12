@@ -4,6 +4,7 @@ import { ActionIcon, Divider, Group, Input, List, ListItem, rem, Text } from '@m
 import type { Coverage, Patient } from '@medplum/fhirtypes';
 import type { BillingInformation, LabOrderInputErrors } from '@medplum/health-gorilla-core';
 import { useHealthGorillaLabOrderContext } from '@medplum/health-gorilla-react';
+import { useMedplumErrorHandler } from '@medplum/react';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -19,6 +20,7 @@ export type CoverageInputProps = {
 };
 export function CoverageInput({ patient, error }: CoverageInputProps): JSX.Element {
   const { getActivePatientCoverages, updateBillingInformation, state } = useHealthGorillaLabOrderContext();
+  const onError = useMedplumErrorHandler();
   const [coverages, setCoverages] = useState(INITIAL_COVERAGES);
   const disabled = state.billingInformation.billTo !== 'insurance';
 
@@ -27,8 +29,8 @@ export function CoverageInput({ patient, error }: CoverageInputProps): JSX.Eleme
       .then((coverages) => {
         setCoverages(coverages.map((coverage, i) => ({ coverage, selected: i <= 2 })));
       })
-      .catch(console.error);
-  }, [getActivePatientCoverages, patient]);
+      .catch((err: unknown) => onError(err, { source: 'CoverageInput' }));
+  }, [getActivePatientCoverages, onError, patient]);
 
   useEffect(() => {
     const selectedCoverages = coverages

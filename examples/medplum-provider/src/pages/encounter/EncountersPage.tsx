@@ -7,8 +7,9 @@ import type { Encounter } from '@medplum/fhirtypes';
 import { ResourceBoard } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
 import { EncounterChart } from '../../components/encounter/EncounterChart';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { showErrorNotification } from '../../utils/notifications';
 import { EncounterListItem } from './EncounterListItem';
 
@@ -18,7 +19,7 @@ import { EncounterListItem } from './EncounterListItem';
 const ENCOUNTER_LIST_FIELDS = ['_lastUpdated', 'period', 'status', 'type', 'participant'];
 
 export function EncountersPage(): JSX.Element {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const { patientId, encounterId, taskId } = useParams() as {
     patientId: string;
@@ -53,7 +54,7 @@ export function EncountersPage(): JSX.Element {
     if (query === location.search) {
       return;
     }
-    navigate(`${location.pathname}${query}`, { replace: true })?.catch(console.error);
+    navigate(`${location.pathname}${query}`, { replace: true });
   }, [search, location.search, location.pathname, navigate]);
 
   // Keep the current search query when navigating to an encounter.
@@ -112,9 +113,9 @@ export function EncountersPage(): JSX.Element {
           <Text c="dimmed">Select a visit to view its chart.</Text>
         </Box>
       }
-      onSelectFirst={(encounter) => navigate(encounterUri(encounter.id), { replace: true })?.catch(console.error)}
+      onSelectFirst={(encounter) => navigate(encounterUri(encounter.id), { replace: true })}
       onChange={(s) => {
-        navigate(`${location.pathname}${formatSearchQuery(s)}`)?.catch(console.error);
+        navigate(`${location.pathname}${formatSearchQuery(s)}`);
       }}
       onError={showErrorNotification}
     />

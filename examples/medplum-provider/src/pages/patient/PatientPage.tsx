@@ -14,8 +14,9 @@ import {
 } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router';
+import { Outlet } from 'react-router';
 import { usePharmacyDialog } from '../../components/pharmacy/usePharmacyDialog';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { useDoseSpotAccess } from '../../hooks/useDoseSpotAccess';
 import { usePatient } from '../../hooks/usePatient';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
@@ -24,7 +25,7 @@ import { getPatientPageTabs, patientPathPrefix } from './PatientPage.utils';
 import { usePatientActionsMenu } from './usePatientActionsMenu';
 
 export function PatientPage(): JSX.Element {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const medplum = useMedplum();
   const membership = medplum.getProjectMembership();
   const [outcome, setOutcome] = useState<OperationOutcome>();
@@ -79,9 +80,7 @@ export function PatientPage(): JSX.Element {
           <ScrollArea className={classes.scrollArea}>
             <PatientSummary
               patient={patient}
-              onClickResource={(resource) =>
-                navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
-              }
+              onClickResource={(resource) => navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)}
               sections={sections}
               headerMenuItems={headerMenuItems}
               onEditPatient={openEditModal}

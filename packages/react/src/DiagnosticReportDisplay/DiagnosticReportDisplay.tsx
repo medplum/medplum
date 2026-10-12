@@ -27,7 +27,7 @@ import type {
   RelatedPerson,
   Specimen,
 } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
@@ -57,6 +57,7 @@ DiagnosticReportDisplay.defaultProps = {
 
 export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JSX.Element | null {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const diagnosticReport = useResource(props.value);
   const [specimens, setSpecimens] = useState<Specimen[]>();
 
@@ -69,9 +70,9 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
             .map((outcome) => (outcome as PromiseFulfilledResult<Specimen>).value)
         )
         .then(setSpecimens)
-        .catch(console.error);
+        .catch((err: unknown) => onError(err, { source: 'DiagnosticReportDisplay' }));
     }
-  }, [medplum, diagnosticReport]);
+  }, [medplum, onError, diagnosticReport]);
 
   if (!diagnosticReport) {
     return null;
@@ -502,11 +503,14 @@ interface PerformingLabsProps {
 
 function PerformingLabs({ value }: PerformingLabsProps): JSX.Element | null {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [labs, setLabs] = useState<Organization[]>();
 
   useEffect(() => {
-    getPerformingLabs(medplum, value).then(setLabs).catch(console.error);
-  }, [medplum, value]);
+    getPerformingLabs(medplum, value)
+      .then(setLabs)
+      .catch((err: unknown) => onError(err, { source: 'DiagnosticReportDisplay' }));
+  }, [medplum, onError, value]);
 
   if (!labs || labs.length === 0) {
     return null;

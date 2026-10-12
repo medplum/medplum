@@ -6,7 +6,7 @@ import type { SpotlightActionData } from '@mantine/spotlight';
 import { Spotlight as MantineSpotlight, spotlight } from '@mantine/spotlight';
 import { formatHumanName, isUUID } from '@medplum/core';
 import type { Patient, ServiceRequest, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumNavigate } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler, useMedplumNavigate } from '@medplum/react-hooks';
 import { IconSearch } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
@@ -154,6 +154,7 @@ function KeyboardHint(): JSX.Element {
 
 export function Spotlight({ patientsOnly, staticActions }: SpotlightProps): JSX.Element {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [actions, setActions] = useState<SpotlightLinkActionGroup[]>([]);
@@ -170,7 +171,7 @@ export function Spotlight({ patientsOnly, staticActions }: SpotlightProps): JSX.
           const patients = resources.filter((r): r is Patient => r.resourceType === 'Patient');
           setActions(patientsToActions(patients));
         })
-        .catch(console.error)
+        .catch((err: unknown) => onError(err, { source: 'Spotlight' }))
         .finally(() => setSearching(false));
     } else {
       // Search patients, service requests, and resource types
@@ -187,7 +188,7 @@ export function Spotlight({ patientsOnly, staticActions }: SpotlightProps): JSX.
           const resourceTypes = valueSetResult.expansion?.contains ?? [];
           setActions(resourcesToActions(resources, resourceTypes));
         })
-        .catch(console.error)
+        .catch((err: unknown) => onError(err, { source: 'Spotlight' }))
         .finally(() => setSearching(false));
     }
   }, DEBOUNCE_MS);

@@ -7,13 +7,14 @@ import { formatSearchQuery, normalizeErrorString, parseSearchRequest } from '@me
 import { exportJsonFile, Loading, SearchControl, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
 import classes from './HomePage.module.css';
 import { addSearchValues, getTransactionBundle, RESOURCE_TYPE_CREATION_PATHS, saveLastSearch } from './HomePage.utils';
+import { useAppNavigate } from './useAppNavigate';
 
 export function HomePage(): JSX.Element {
   const medplum = useMedplum();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
 
@@ -33,9 +34,7 @@ export function HomePage(): JSX.Element {
       setSearch(populatedSearch);
     } else {
       // Otherwise, navigate to the desired URL
-      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`, { replace: true })?.catch(
-        console.error
-      );
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`, { replace: true });
     }
   }, [medplum, navigate, location]);
 
@@ -52,15 +51,13 @@ export function HomePage(): JSX.Element {
       <SearchControl
         checkboxesEnabled={true}
         search={search}
-        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
-          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}
         onNew={() => {
-          navigate(RESOURCE_TYPE_CREATION_PATHS[search.resourceType] ?? `/${search.resourceType}/new`)?.catch(
-            console.error
-          );
+          navigate(RESOURCE_TYPE_CREATION_PATHS[search.resourceType] ?? `/${search.resourceType}/new`);
         }}
         onExportCsv={() => {
           const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
@@ -96,7 +93,7 @@ export function HomePage(): JSX.Element {
             });
         }}
         onBulk={(ids: string[]) => {
-          navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`)?.catch(console.error);
+          navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`);
         }}
       />
     </Paper>

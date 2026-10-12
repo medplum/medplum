@@ -17,10 +17,11 @@ import {
 } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import { useAppNavigate } from '../useAppNavigate';
 
 export function ResourceVersionPage(): JSX.Element {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const { resourceType, id, versionId, tab } = useParams() as {
     resourceType: string;
     id: string;
@@ -78,7 +79,7 @@ export function ResourceVersionPage(): JSX.Element {
               onChange={(newIndex) =>
                 navigate(
                   `/${resourceType}/${id}/_history/${entries[entries.length - newIndex]?.resource?.meta?.versionId}/${currTab}`
-                )?.catch(console.error)
+                )
               }
             />
             <Group justify="right">
@@ -88,9 +89,7 @@ export function ResourceVersionPage(): JSX.Element {
                   { value: 'raw', label: 'Raw' },
                 ]}
                 value={currTab}
-                onChange={(name) =>
-                  navigate(`/${resourceType}/${id}/_history/${versionId}/${name || defaultTab}`)?.catch(console.error)
-                }
+                onChange={(name) => navigate(`/${resourceType}/${id}/_history/${versionId}/${name || defaultTab}`)}
               />
             </Group>
           </SimpleGrid>

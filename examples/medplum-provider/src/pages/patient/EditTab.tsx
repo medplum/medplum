@@ -7,8 +7,9 @@ import type { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { RESOURCE_PROFILE_URLS } from '../resource/utils';
 
 const missingProfileMessage = RESOURCE_PROFILE_URLS.Patient ? (
@@ -24,7 +25,7 @@ export function EditTab(): JSX.Element | null {
   const medplum = useMedplum();
   const { patientId } = useParams() as { patientId: string };
   const [value, setValue] = useState<Resource | undefined>();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
 
   useEffect(() => {
@@ -43,7 +44,7 @@ export function EditTab(): JSX.Element | null {
       medplum
         .updateResource(newResource)
         .then(() => {
-          navigate(`/Patient/${patientId}/timeline`)?.catch(console.error);
+          navigate(`/Patient/${patientId}/timeline`);
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err) => {

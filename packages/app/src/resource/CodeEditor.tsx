@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { sendCommand } from '@medplum/react';
+import { sendCommand, useMedplumErrorHandler } from '@medplum/react';
 import type { JSX, Ref } from 'react';
 
 export interface CodeEditorProps {
@@ -13,6 +13,7 @@ export interface CodeEditorProps {
 }
 
 export function CodeEditor(props: CodeEditorProps): JSX.Element {
+  const onError = useMedplumErrorHandler();
   const code = props.defaultValue;
   const url = new URL(`https://codeeditor.medplum.com/${props.language}-editor.html`);
   if (props.module) {
@@ -28,7 +29,9 @@ export function CodeEditor(props: CodeEditorProps): JSX.Element {
       ref={props.iframeRef}
       data-testid={props.testId}
       onLoad={(e) => {
-        sendCommand(e.currentTarget, { command: 'setValue', value: code }).catch(console.error);
+        sendCommand(e.currentTarget, { command: 'setValue', value: code }).catch((err: unknown) =>
+          onError(err, { source: 'CodeEditor' })
+        );
       }}
     />
   );

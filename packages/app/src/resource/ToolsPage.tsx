@@ -27,7 +27,16 @@ import {
 } from '@medplum/core';
 import type { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
-import { AsyncAutocomplete, Document, Form, Loading, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
+import {
+  AsyncAutocomplete,
+  Document,
+  Form,
+  Loading,
+  ResourceName,
+  StatusBadge,
+  useMedplum,
+  useMedplumErrorHandler,
+} from '@medplum/react';
 import { IconCheck, IconRouter } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -51,6 +60,7 @@ type UpgradeConfirmContentProps = {
 
 function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
   const { opened, close, version, loadingStatus, handleStatus, handleUpgrade } = props;
+  const onError = useMedplumErrorHandler();
 
   const [latestVersionString, setLatestVersionString] = useState<MedplumSemver>();
   const [availableVersions, setAvailableVersions] = useState<MedplumSemver[]>();
@@ -60,19 +70,21 @@ function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
   useEffect(() => {
     if (opened) {
       if (!latestVersionString) {
-        fetchLatestVersionString('app-tools-page').then(setLatestVersionString).catch(console.error);
+        fetchLatestVersionString('app-tools-page')
+          .then(setLatestVersionString)
+          .catch((err: unknown) => onError(err, { source: 'UpgradeConfirmContent' }));
       }
       if (!availableVersions) {
         fetchAllVersionStrings('app-tools-page')
           .then(setAvailableVersions)
-          .catch((err) => {
-            console.error(err);
+          .catch((err: unknown) => {
+            onError(err, { source: 'UpgradeConfirmContent' });
             setAvailableVersions([]);
           });
       }
       handleStatus();
     }
-  }, [opened, latestVersionString, availableVersions, handleStatus]);
+  }, [opened, latestVersionString, availableVersions, handleStatus, onError]);
 
   // If we don't yet know the current agent version, or are still loading it, show loading.
   if (!version || loadingStatus) {

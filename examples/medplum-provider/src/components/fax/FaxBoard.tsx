@@ -8,7 +8,7 @@ import { ResourceBoard, useMedplum } from '@medplum/react';
 import { IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { useControllableDisclosure } from '../../hooks/useControllableDisclosure';
 import { showErrorNotification } from '../../utils/notifications';
 import { FaxDetailPanel } from './FaxDetailPanel';
@@ -45,7 +45,7 @@ export function FaxBoard({
   onSendFaxClose,
 }: FaxBoardProps): JSX.Element {
   const medplum = useMedplum();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
 
   const [sendModalOpened, { open: openSendModal, close: closeSendModal }] = useControllableDisclosure({
     opened: sendFaxOpened,
@@ -139,7 +139,7 @@ export function FaxBoard({
         emptyDetail={<FaxSelectEmpty />}
         onChange={onChange}
         onSelectFirst={(fax) => {
-          navigate(getFaxUri(fax), { replace: true })?.catch(console.error);
+          navigate(getFaxUri(fax), { replace: true });
         }}
         onError={showErrorNotification}
       />

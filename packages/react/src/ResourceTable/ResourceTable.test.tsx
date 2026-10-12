@@ -4,6 +4,7 @@ import { HTTP_HL7_ORG, loadDataType } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { StructureDefinition } from '@medplum/fhirtypes';
 import { HomerSimpsonUSCorePatient, MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react-hooks';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '../test-utils/render';
 import type { ResourceTableProps } from './ResourceTable';
@@ -12,10 +13,10 @@ import { ResourceTable } from './ResourceTable';
 const medplum = new MockClient();
 
 describe('ResourceTable', () => {
-  async function setup(props: ResourceTableProps, client?: MockClient): Promise<void> {
+  async function setup(props: ResourceTableProps, client?: MockClient, onError?: MedplumErrorHandler): Promise<void> {
     await act(async () => {
       render(
-        <MedplumProvider medplum={client ?? medplum}>
+        <MedplumProvider medplum={client ?? medplum} onError={onError}>
           <ResourceTable {...props} />
         </MedplumProvider>
       );
@@ -98,5 +99,18 @@ describe('ResourceTable', () => {
     expect(screen.getByText('Birthsex')).toBeInTheDocument();
     expect(screen.getByText('Gender Identity')).toBeInTheDocument();
     expect(screen.getByText('Male')).toBeInTheDocument();
+  });
+
+  test('Reports a profile whose schema cannot be found', async () => {
+    const mockedMedplum = new MockClient();
+    mockedMedplum.requestProfileSchema = vi.fn(async (_profileUrl: string) => {});
+    const onError = vi.fn();
+    const profileUrl = 'https://example.com/StructureDefinition/unknown-profile';
+
+    await setup({ value: HomerSimpsonUSCorePatient, profileUrl }, mockedMedplum, onError);
+
+    expect(onError).toHaveBeenCalledExactlyOnceWith(new Error(`Schema not found for ${profileUrl}`), {
+      source: 'ResourceTable',
+    });
   });
 });

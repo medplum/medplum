@@ -67,5 +67,6 @@ export async function initApp(): Promise<void> {
 }
 
 if (process.env.NODE_ENV !== 'test') {
+  // eslint-disable-next-line no-console -- Runs before the MedplumProvider exists
   initApp().catch(console.error);
 }

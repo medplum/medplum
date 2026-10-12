@@ -6,15 +6,16 @@ import type { Task } from '@medplum/fhirtypes';
 import { Loading, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
 import { TaskBoard } from '../../components/tasks/TaskBoard';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { useNewInUrl } from '../../hooks/useNewInUrl';
 import { normalizeTaskSearch } from '../../utils/task-search';
 import classes from './TasksPage.module.css';
 
 export function TasksPage(): JSX.Element {
   const { taskId } = useParams();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const profile = useMedplumProfile();
   const [parsedSearch, setParsedSearch] = useState<SearchRequest>();
@@ -29,9 +30,7 @@ export function TasksPage(): JSX.Element {
   useEffect(() => {
     const { normalizedSearch, needsNavigation } = normalizeTaskSearch(location.pathname, location.search);
     if (needsNavigation) {
-      navigate(`${isNewTask ? `${basePath}/new` : basePath}${formatSearchQuery(normalizedSearch)}`)?.catch(
-        console.error
-      );
+      navigate(`${isNewTask ? `${basePath}/new` : basePath}${formatSearchQuery(normalizedSearch)}`);
     } else {
       setParsedSearch(normalizedSearch);
     }
@@ -42,7 +41,7 @@ export function TasksPage(): JSX.Element {
   }
 
   const onNew = (task: Task): void => {
-    navigate(`/Task/${task.id}${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
+    navigate(`/Task/${task.id}${formatSearchQuery(parsedSearch)}`);
   };
 
   // Preserve the /new suffix so auto-selecting a task keeps the new task modal open.
@@ -51,13 +50,13 @@ export function TasksPage(): JSX.Element {
   };
 
   const onDelete = (_: Task): void => {
-    navigate(`/Task${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
+    navigate(`/Task${formatSearchQuery(parsedSearch)}`);
   };
 
   const onChange = (search: SearchRequest): void => {
     // Keep the selected task open when the list search changes (pagination, filters)
     const basePath = taskId ? `/Task/${taskId}` : '/Task';
-    navigate(`${basePath}${formatSearchQuery(search)}`)?.catch(console.error);
+    navigate(`${basePath}${formatSearchQuery(search)}`);
   };
 
   const myTasksFilters = parsedSearch.filters?.filter((f) => f.code !== 'owner') || [];

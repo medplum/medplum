@@ -4,6 +4,7 @@ import type { ResourceModifiedEvent, WithId } from '@medplum/core';
 import { createReference, setPrimaryProvider, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { Appointment, Parameters, Slot } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
+import type { MedplumErrorHandler } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import type { MockInstance } from 'vitest';
 import { installFindStub } from '../stories/mockFind';
@@ -67,16 +68,18 @@ async function setupRescheduleClient(): Promise<MockClient> {
  * Mounts the form and waits for it to open on what the visit is held on.
  * @param medplum - The client to render against.
  * @param props - Anything to override.
+ * @param onError - Optional MedplumProvider error handler.
  * @returns The rendered form.
  */
 async function setup(
   medplum: MockClient,
-  props?: Partial<AppointmentRescheduleFormProps>
+  props?: Partial<AppointmentRescheduleFormProps>,
+  onError?: MedplumErrorHandler
 ): Promise<ReturnType<typeof renderWithMedplum>> {
   const element: JSX.Element = (
     <AppointmentRescheduleForm appointment={APPOINTMENT} onRescheduled={onRescheduled} {...props} />
   );
-  const rendered = renderWithMedplum(element, medplum);
+  const rendered = renderWithMedplum(element, medplum, onError);
   await settleAutocomplete();
   return rendered;
 }
@@ -576,15 +579,15 @@ describe('AppointmentRescheduleForm', () => {
     test('Reports a move the host callback threw over as written', async () => {
       // The visit has already moved by then, and a red refusal over it would read as a
       // visit still at its old time.
-      const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-      onRescheduled.mockRejectedValueOnce(new Error('Calendar refresh failed'));
-      await setup(medplum);
+      const error = new Error('Calendar refresh failed');
+      const onError = vi.fn();
+      onRescheduled.mockRejectedValueOnce(error);
+      await setup(medplum, undefined, onError);
 
       await moveToAnotherTime();
 
       expect(screen.queryByText('Calendar refresh failed')).not.toBeInTheDocument();
-      expect(logged).toHaveBeenCalled();
-      logged.mockRestore();
+      expect(onError).toHaveBeenCalledExactlyOnceWith(error, { source: 'AppointmentRescheduleForm' });
     });
   });
 });

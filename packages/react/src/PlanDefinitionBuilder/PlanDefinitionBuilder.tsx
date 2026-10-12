@@ -22,7 +22,7 @@ import type {
   Questionnaire,
   Reference,
 } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum, useMedplumErrorHandler, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX, MouseEvent, SyntheticEvent } from 'react';
 import { useEffect, useState } from 'react';
@@ -39,6 +39,7 @@ export interface PlanDefinitionBuilderProps {
 
 export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.Element | null {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const defaultValue = useResource(props.value);
   const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string>();
@@ -57,8 +58,8 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
     medplum
       .requestSchema('PlanDefinition')
       .then(() => setSchemaLoaded(true))
-      .catch(console.log);
-  }, [medplum]);
+      .catch((err: unknown) => onError(err, { source: 'PlanDefinitionBuilder' }));
+  }, [medplum, onError]);
 
   useEffect(() => {
     setValue(ensurePlanDefinitionKeys(defaultValue ?? { resourceType: 'PlanDefinition', status: 'active' }));
@@ -201,6 +202,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
   const { action } = props;
   const [actionType, setActionType] = useState<string | undefined>();
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const [loading, setLoading] = useState(false);
   const [resource, setResource] = useState<Questionnaire | ActivityDefinition | undefined>();
   const editing = props.selectedKey === props.action.id;
@@ -228,8 +230,8 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
       setResource(resource);
       setLoading(false);
     };
-    readResource().catch(console.error);
-  }, [action.definitionCanonical, medplum]);
+    readResource().catch((err: unknown) => onError(err, { source: 'PlanDefinitionBuilder' }));
+  }, [action.definitionCanonical, medplum, onError]);
 
   if (loading) {
     return <Loader />;

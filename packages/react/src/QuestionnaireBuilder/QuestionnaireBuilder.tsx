@@ -16,6 +16,7 @@ import {
   QuestionnaireItemType,
   setQuestionnaireItemReferenceTargetTypes,
   useMedplum,
+  useMedplumErrorHandler,
   useResource,
 } from '@medplum/react-hooks';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
@@ -39,6 +40,7 @@ export interface QuestionnaireBuilderProps {
 
 export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Element | null {
   const medplum = useMedplum();
+  const onError = useMedplumErrorHandler();
   const defaultValue = useResource(props.questionnaire);
   const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [value, setValue] = useState<Questionnaire>();
@@ -57,8 +59,8 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
     medplum
       .requestSchema('Questionnaire')
       .then(() => setSchemaLoaded(true))
-      .catch(console.log);
-  }, [medplum]);
+      .catch((err: unknown) => onError(err, { source: 'QuestionnaireBuilder' }));
+  }, [medplum, onError]);
 
   useEffect(() => {
     setValue(ensureQuestionnaireKeys(defaultValue ?? { resourceType: 'Questionnaire', status: 'active' }));

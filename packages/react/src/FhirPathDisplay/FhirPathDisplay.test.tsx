@@ -3,6 +3,8 @@
 import { PropertyType } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { render, screen } from '../test-utils/render';
 import { FhirPathDisplay } from './FhirPathDisplay';
 
@@ -54,17 +56,33 @@ describe('FhirPathDisplay', () => {
   });
 
   test('Handles malformed date', () => {
-    console.warn = vi.fn();
-    render(
-      <FhirPathDisplay
-        resource={{
-          resourceType: 'Patient',
-          birthDate: 'not a date',
-        }}
-        path="between(birthDate, now(), 'years')"
-        propertyType={PropertyType.string}
-      />
+    const medplum = new MockClient();
+    const onError = vi.fn();
+    const resource: Patient = { resourceType: 'Patient', birthDate: 'not a date' };
+    const renderUi = (): JSX.Element => (
+      <MedplumProvider medplum={medplum} onError={onError}>
+        <div data-testid="display">
+          <FhirPathDisplay
+            resource={resource}
+            path="between(birthDate, now(), 'years')"
+            propertyType={PropertyType.Quantity}
+          />
+        </div>
+      </MedplumProvider>
     );
-    expect(console.warn).toHaveBeenCalledWith('FhirPathDisplay:', expect.any(Error));
+
+    const { rerender } = render(renderUi());
+    expect(screen.getByTestId('display')).toBeEmptyDOMElement();
+    expect(onError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), { source: 'FhirPathDisplay' });
+
+    // Re-rendering with the same path and resource does not report the error again
+    rerender(renderUi());
+    expect(onError).toHaveBeenCalledTimes(1);
+
+    // Each render re-evaluates, so fixing the resource in place takes effect
+    resource.birthDate = '2000-01-01';
+    rerender(renderUi());
+    expect(screen.getByTestId('display')).not.toBeEmptyDOMElement();
+    expect(onError).toHaveBeenCalledTimes(1);
   });
 });

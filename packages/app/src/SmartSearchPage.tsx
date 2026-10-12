@@ -4,10 +4,11 @@ import type { FhirPathTableField } from '@medplum/react';
 import { MemoizedFhirPathTable } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
+import { useAppNavigate } from './useAppNavigate';
 
 export function SmartSearchPage(): JSX.Element | null {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const [resourceType, setResourceType] = useState<string>();
   const [query, setQuery] = useState<string>();
@@ -30,10 +31,10 @@ export function SmartSearchPage(): JSX.Element | null {
       checkboxesEnabled={true}
       query={query}
       fields={fields}
-      onClick={(e) => navigate(`/${resourceType}/${e.resource.id}`)?.catch(console.error)}
+      onClick={(e) => navigate(`/${resourceType}/${e.resource.id}`)}
       onAuxClick={(e) => window.open(`/${resourceType}/${e.resource.id}`, '_blank')}
       onBulk={(ids: string[]) => {
-        navigate(`/bulk/${resourceType}?ids=${ids.join(',')}`)?.catch(console.error);
+        navigate(`/bulk/${resourceType}?ids=${ids.join(',')}`);
       }}
     />
   );

@@ -3,11 +3,11 @@
 import { Text, Title } from '@mantine/core';
 import { Document } from '@medplum/react';
 import type { JSX } from 'react';
-import { useNavigate } from 'react-router';
+import { useAppNavigate } from '../../hooks/useAppNavigate';
 import { SmartHealthLinkImport } from './SmartHealthLinkImport';
 
 export function SmartHealthLinkImportPage(): JSX.Element {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
 
   return (
     <Document>
@@ -19,9 +19,7 @@ export function SmartHealthLinkImportPage(): JSX.Element {
           Scan a patient-shared QR code, match the patient, and import selected resources.
         </Text>
       </div>
-      <SmartHealthLinkImport
-        onImported={(patient) => navigate(`/Patient/${patient.id}/timeline`)?.catch(console.error)}
-      />
+      <SmartHealthLinkImport onImported={(patient) => navigate(`/Patient/${patient.id}/timeline`)} />
     </Document>
   );
 }
