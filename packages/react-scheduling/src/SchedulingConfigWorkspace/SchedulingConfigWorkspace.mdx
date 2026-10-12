@@ -39,9 +39,12 @@ one, which is listed once it is saved. Providers can't be created here.
 
 ## A visit type's page
 
-- **General:** whether it is active, its name, and the service facilities it is offered at
-  (`HealthcareService.location`). With none, it is offered at every service facility, so adding a first one or
-  removing the last asks first.
+- **General:** whether it is active, its name, the service facilities it is offered at
+  (`HealthcareService.location`), and its booking requirements. With no service facilities, it is offered at
+  every one, so adding a first one or removing the last asks first. Booking requirements are what schedulers must
+  enter to book it, such as for prior authorization: procedure codes, diagnosis codes, and confirmation of medical
+  necessity, each ticked on its own. They are the `scheduling-eligibility` codes on `HealthcareService.eligibility` that the booking form
+  reads. Unticking one removes only its code, and any other eligibility the visit type records is left as it is.
 - **Scheduling parameters:** duration, buffers, start interval, and capacity, with the same validation and
   warnings as `SchedulingParametersEditor`.
 - **Default availability:** the weekly hours every calendar offering it follows unless it sets its own, edited
