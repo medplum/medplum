@@ -137,6 +137,40 @@ describe('CcdaViewer', () => {
     expect(sectionTitles()).toStrictEqual(['Allergies', 'Medications', 'Problems']);
   });
 
+  test('Drag and drop sections', async () => {
+    render(<CcdaViewer xml={THREE_SECTIONS} />);
+    const card = (title: string): HTMLElement =>
+      screen.getAllByTestId('ccda-section').find((el) => el.querySelector('p')?.textContent === title) as HTMLElement;
+    const drag = async (from: string, to: string): Promise<void> => {
+      const handle = screen.getByLabelText(`Drag ${from}`);
+      await act(async () => fireEvent.dragStart(handle, { dataTransfer: { setData: vi.fn(), effectAllowed: '' } }));
+      expect(card(from)).toHaveAttribute('data-dragging');
+      await act(async () => fireEvent.dragOver(card(to)));
+      expect(card(to)).toHaveAttribute('data-drop-target');
+      await act(async () => fireEvent.drop(card(to)));
+      await act(async () => fireEvent.dragEnd(handle));
+    };
+
+    await drag('Problems', 'Allergies');
+    expect(sectionTitles()).toStrictEqual(['Problems', 'Allergies', 'Medications']);
+
+    await drag('Problems', 'Medications');
+    expect(sectionTitles()).toStrictEqual(['Allergies', 'Medications', 'Problems']);
+
+    await drag('Allergies', 'Medications');
+    expect(sectionTitles()).toStrictEqual(['Medications', 'Allergies', 'Problems']);
+    expect(JSON.parse(localStorage.getItem('medplum-ccda-viewer-order') ?? '[]')).toStrictEqual([
+      '10160-0',
+      '48765-2',
+      '11450-4',
+    ]);
+    expect(card('Allergies')).not.toHaveAttribute('data-dragging');
+
+    // A drop with no section being dragged (e.g. a file from the desktop) is ignored
+    await act(async () => fireEvent.drop(card('Problems')));
+    expect(sectionTitles()).toStrictEqual(['Medications', 'Allergies', 'Problems']);
+  });
+
   test('Duplicate table rows', async () => {
     const table = `<table>
       <thead><tr><th>Name</th><th>Dose</th></tr></thead>

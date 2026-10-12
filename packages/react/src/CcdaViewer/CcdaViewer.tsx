@@ -26,6 +26,7 @@ import {
   IconClipboardText,
   IconEye,
   IconFirstAidKit,
+  IconGripVertical,
   IconHeart,
   IconHeartbeat,
   IconListDetails,
@@ -109,6 +110,8 @@ function CcdaDocument(props: { readonly document: Element }): JSX.Element {
   });
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [tocOpen, setTocOpen] = useState(false);
+  const [dragKey, setDragKey] = useState<string>();
+  const [dropKey, setDropKey] = useState<string>();
 
   const ordered = useMemo(() => sortSections(sections, order), [sections, order]);
   const keys = ordered.map((s) => s.key);
@@ -122,6 +125,18 @@ function CcdaDocument(props: { readonly document: Element }): JSX.Element {
     if (i >= 0 && i < keys.length - 1) {
       saveOrder([...keys.slice(0, i), keys[i + 1], key, ...keys.slice(i + 2)]);
     }
+  };
+  // Dropping a section onto another takes the target's position.
+  const moveTo = (key: string, target: string): void => {
+    if (key !== target) {
+      const rest = keys.filter((k) => k !== key);
+      rest.splice(keys.indexOf(target), 0, key);
+      saveOrder(rest);
+    }
+  };
+  const endDrag = (): void => {
+    setDragKey(undefined);
+    setDropKey(undefined);
   };
   const toggleHidden = (key: string): void =>
     setHidden(hidden.includes(key) ? hidden.filter((k) => k !== key) : [...hidden, key]);
@@ -202,6 +217,18 @@ function CcdaDocument(props: { readonly document: Element }): JSX.Element {
               onMoveToTop={() => moveToTop(section.key)}
               onMoveDown={() => moveDown(section.key)}
               onHide={() => toggleHidden(section.key)}
+              dragging={dragKey === section.key}
+              dropTarget={dropKey === section.key && dragKey !== section.key}
+              droppable={dragKey !== undefined}
+              onDragStart={() => setDragKey(section.key)}
+              onDragOver={() => setDropKey(section.key)}
+              onDrop={() => {
+                if (dragKey) {
+                  moveTo(dragKey, section.key);
+                }
+                endDrag();
+              }}
+              onDragEnd={endDrag}
             />
           ))}
       </div>
@@ -217,15 +244,59 @@ interface CcdaSectionCardProps {
   readonly onMoveToTop: () => void;
   readonly onMoveDown: () => void;
   readonly onHide: () => void;
+  readonly dragging: boolean;
+  readonly dropTarget: boolean;
+  /** True while another section is being dragged. */
+  readonly droppable: boolean;
+  readonly onDragStart: () => void;
+  readonly onDragOver: () => void;
+  readonly onDrop: () => void;
+  readonly onDragEnd: () => void;
 }
 
 function CcdaSectionCard(props: CcdaSectionCardProps): JSX.Element {
   const { section, collapsed } = props;
   const title = sentenceCase(section.title);
   return (
-    <Paper withBorder p="sm" data-testid="ccda-section">
+    <Paper
+      withBorder
+      p="sm"
+      data-testid="ccda-section"
+      className={classes.section}
+      data-dragging={props.dragging || undefined}
+      data-drop-target={props.dropTarget || undefined}
+      onDragOver={
+        props.droppable
+          ? (e) => {
+              e.preventDefault();
+              props.onDragOver();
+            }
+          : undefined
+      }
+      onDrop={
+        props.droppable
+          ? (e) => {
+              e.preventDefault();
+              props.onDrop();
+            }
+          : undefined
+      }
+    >
       <Group justify="space-between" wrap="nowrap" mb={collapsed ? 0 : 'xs'}>
-        <Group gap="xs" wrap="nowrap">
+        <Group
+          gap="xs"
+          wrap="nowrap"
+          className={classes.dragHandle}
+          draggable
+          aria-label={`Drag ${title}`}
+          onDragStart={(e) => {
+            e.dataTransfer.setData('text/plain', section.key);
+            e.dataTransfer.effectAllowed = 'move';
+            props.onDragStart();
+          }}
+          onDragEnd={props.onDragEnd}
+        >
+          <IconGripVertical size={16} className={classes.grip} />
           {createElement(sectionIcon(section.title), { size: 20, className: classes.sectionTitle })}
           <Text fw={700} className={classes.sectionTitle}>
             {title}
@@ -349,6 +420,7 @@ const FALLBACK_ICONS: TablerIcon[] = [
   IconNurse,
   IconHeart,
   IconFirstAidKit,
+  IconGripVertical,
   IconHeartbeat,
   IconSquarePlus,
 ];

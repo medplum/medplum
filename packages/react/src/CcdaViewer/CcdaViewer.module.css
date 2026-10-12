@@ -5,6 +5,25 @@
   align-items: start;
 }
 
+.section[data-dragging] {
+  opacity: 0.5;
+}
+
+.section[data-drop-target] {
+  outline: 2px dashed var(--mantine-color-blue-filled);
+  outline-offset: 2px;
+}
+
+.dragHandle {
+  cursor: grab;
+  min-width: 0;
+}
+
+.grip {
+  flex-shrink: 0;
+  color: var(--mantine-color-dimmed);
+}
+
 .sectionTitle {
   color: var(--mantine-color-blue-filled);
 }
