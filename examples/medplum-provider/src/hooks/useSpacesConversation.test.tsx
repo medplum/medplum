@@ -42,7 +42,8 @@ describe('useSpacesConversation', () => {
       }
       if (query?.['part-of']) {
         const messages = await (options.messages ?? []);
-        return messages.map(toCommunication);
+        // Newest first, as the server returns them
+        return messages.map(toCommunication).reverse();
       }
       return options.topics ?? recentTopics;
     });

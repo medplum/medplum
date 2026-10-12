@@ -52,8 +52,13 @@ export function controlledStream(): ControlledStream {
 }
 
 export function toCommunication(message: Message, seq: number): Communication {
-  const contentString = JSON.stringify({ ...message, sequenceNumber: seq });
-  return { resourceType: 'Communication', id: `msg-${seq}`, status: 'completed', payload: [{ contentString }] };
+  return {
+    resourceType: 'Communication',
+    id: `msg-${seq}`,
+    meta: { lastUpdated: new Date(Date.UTC(2026, 0, 1, 0, 0, seq)).toISOString() },
+    status: 'completed',
+    payload: [{ contentString: JSON.stringify(message) }],
+  };
 }
 
 export type MockToolCall = { id?: string; function: { name: string; arguments: unknown } };

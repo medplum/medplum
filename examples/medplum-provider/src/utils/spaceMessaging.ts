@@ -429,13 +429,13 @@ export async function processMessage(options: ProcessMessageOptions): Promise<Pr
     events.onTopicCreated?.(newTopic);
   }
 
-  const persist = async (message: Message, sequenceNumber: number): Promise<void> => {
+  const persist = async (message: Message): Promise<void> => {
     if (topicId) {
-      await saveMessage(medplum, topicId, message, sequenceNumber);
+      await saveMessage(medplum, topicId, message);
     }
   };
 
-  await persist(userMessage, next.length - 1);
+  await persist(userMessage);
 
   const selectedPatients = userMessage.selectedPatients ?? [];
   if (selectedPatients.length > 0) {
@@ -474,7 +474,6 @@ export async function processMessage(options: ProcessMessageOptions): Promise<Pr
       tool_calls: translatorResponse.toolCalls,
     };
     next.push(assistantMessageWithToolCalls);
-    const assistantSequence = next.length - 1;
     events.onProgress?.([...next]);
 
     const { messages: toolMessages, resourceRefs } = await executeToolCalls(
@@ -486,11 +485,11 @@ export async function processMessage(options: ProcessMessageOptions): Promise<Pr
     allResourceRefs.push(...resourceRefs);
     events.onProgress?.([...next]);
 
-    // Persist per-iteration (keeps DB recoverable if mid-loop failure). The tool_calls
-    // message goes first so a truncated reload never sees tool replies without it.
-    await persist(assistantMessageWithToolCalls, assistantSequence);
-    for (let i = 0; i < toolMessages.length; i++) {
-      await persist(toolMessages[i], assistantSequence + 1 + i);
+    // Saved in order, one at a time: a reload orders by creation time, and the tool_calls
+    // message must precede its replies even if the loop fails midway.
+    await persist(assistantMessageWithToolCalls);
+    for (const toolMessage of toolMessages) {
+      await persist(toolMessage);
     }
 
     // Reset FHIR indicator while bot thinks about next step
@@ -544,7 +543,7 @@ export async function processMessage(options: ProcessMessageOptions): Promise<Pr
     componentCode,
   };
 
-  await persist(assistantMessage, next.length);
+  await persist(assistantMessage);
 
   return {
     topicId,

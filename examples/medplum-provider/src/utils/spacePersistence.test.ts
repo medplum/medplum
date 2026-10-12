@@ -88,7 +88,7 @@ describe('spacePersistence', () => {
         resources: ['Patient/123'],
       };
 
-      const result = await saveMessage(medplum, 'topic-1', message, 1);
+      const result = await saveMessage(medplum, 'topic-1', message);
 
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -113,7 +113,6 @@ describe('spacePersistence', () => {
                 tool_calls: [{ id: 'call-1', type: 'function' }],
                 tool_call_id: 'call-1',
                 resources: ['Patient/123'],
-                sequenceNumber: 1,
               }),
             },
           ],
@@ -134,7 +133,7 @@ describe('spacePersistence', () => {
         content: 'Response',
       };
 
-      const result = await saveMessage(medplum, 'topic-2', message, 2);
+      const result = await saveMessage(medplum, 'topic-2', message);
 
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -146,7 +145,6 @@ describe('spacePersistence', () => {
                 tool_calls: undefined,
                 tool_call_id: undefined,
                 resources: undefined,
-                sequenceNumber: 2,
               }),
             },
           ],
@@ -168,14 +166,13 @@ describe('spacePersistence', () => {
         tool_call_id: 'call-1',
       };
 
-      await saveMessage(medplum, 'topic-3', message, 3);
+      await saveMessage(medplum, 'topic-3', message);
 
       const call = createSpy.mock.calls[0][0] as Communication;
       const payload = JSON.parse(call.payload?.[0]?.contentString ?? '{}');
       expect(payload.content).toBeNull();
       expect(payload.role).toBe('tool');
       expect(payload.tool_call_id).toBe('call-1');
-      expect(payload.sequenceNumber).toBe(3);
     });
   });
 
@@ -202,13 +199,13 @@ describe('spacePersistence', () => {
         {
           resourceType: 'Communication',
           id: 'comm-1',
+          meta: { lastUpdated: '2026-01-01T00:00:01.000Z' },
           status: 'completed',
           payload: [
             {
               contentString: JSON.stringify({
                 role: 'user',
                 content: 'Hello',
-                sequenceNumber: 1,
               }),
             },
           ],
@@ -216,13 +213,13 @@ describe('spacePersistence', () => {
         {
           resourceType: 'Communication',
           id: 'comm-2',
+          meta: { lastUpdated: '2026-01-01T00:00:02.000Z' },
           status: 'completed',
           payload: [
             {
               contentString: JSON.stringify({
                 role: 'assistant',
                 content: 'Hi there',
-                sequenceNumber: 2,
               }),
             },
           ],
@@ -255,12 +252,14 @@ describe('spacePersistence', () => {
         {
           resourceType: 'Communication',
           id: 'comm-0',
+          meta: { lastUpdated: '2026-01-01T00:00:00.000Z' },
           status: 'completed',
-          payload: [{ contentString: JSON.stringify({ role: 'user', content: 'Help', sequenceNumber: 0 }) }],
+          payload: [{ contentString: JSON.stringify({ role: 'user', content: 'Help' }) }],
         },
         {
           resourceType: 'Communication',
           id: 'comm-1',
+          meta: { lastUpdated: '2026-01-01T00:00:01.000Z' },
           status: 'completed',
           payload: [
             {
@@ -269,7 +268,6 @@ describe('spacePersistence', () => {
                 content: 'I can help',
                 tool_calls: [{ id: 'call-1', type: 'function' }],
                 resources: ['Patient/123'],
-                sequenceNumber: 1,
               }),
             },
           ],
@@ -277,6 +275,7 @@ describe('spacePersistence', () => {
         {
           resourceType: 'Communication',
           id: 'comm-2',
+          meta: { lastUpdated: '2026-01-01T00:00:02.000Z' },
           status: 'completed',
           payload: [
             {
@@ -284,7 +283,6 @@ describe('spacePersistence', () => {
                 role: 'tool',
                 content: '{"result": "success"}',
                 tool_call_id: 'call-1',
-                sequenceNumber: 2,
               }),
             },
           ],
@@ -312,11 +310,12 @@ describe('spacePersistence', () => {
       });
     });
 
-    test('handles messages without sequenceNumber', async () => {
+    test('loads a message with no optional fields', async () => {
       const mockCommunications: (Communication & { id: string })[] = [
         {
           resourceType: 'Communication',
           id: 'comm-1',
+          meta: { lastUpdated: '2026-01-01T00:00:01.000Z' },
           status: 'completed',
           payload: [
             {
@@ -346,13 +345,13 @@ describe('spacePersistence', () => {
         {
           resourceType: 'Communication',
           id: 'comm-1',
+          meta: { lastUpdated: '2026-01-01T00:00:01.000Z' },
           status: 'completed',
           payload: [
             {
               contentString: JSON.stringify({
                 role: 'user',
                 content: 'Hello',
-                sequenceNumber: 1,
               }),
             },
           ],
@@ -360,12 +359,14 @@ describe('spacePersistence', () => {
         {
           resourceType: 'Communication',
           id: 'comm-2',
+          meta: { lastUpdated: '2026-01-01T00:00:02.000Z' },
           status: 'completed',
           // No payload
         },
         {
           resourceType: 'Communication',
           id: 'comm-3',
+          meta: { lastUpdated: '2026-01-01T00:00:03.000Z' },
           status: 'completed',
           payload: [], // Empty payload
         },
@@ -388,6 +389,7 @@ describe('spacePersistence', () => {
         {
           resourceType: 'Communication',
           id: 'comm-1',
+          meta: { lastUpdated: '2026-01-01T00:00:01.000Z' },
           status: 'completed',
           payload: [
             {
@@ -407,6 +409,7 @@ describe('spacePersistence', () => {
         {
           resourceType: 'Communication',
           id: 'comm-1',
+          meta: { lastUpdated: '2026-01-01T00:00:01.000Z' },
           status: 'completed',
           payload: [
             {
@@ -500,19 +503,19 @@ describe('spacePersistence', () => {
     });
   });
 
-  describe('loadConversationMessages - sorting and repair', () => {
-    test('sorts messages by sequenceNumber', async () => {
+  describe('loadConversationMessages - ordering', () => {
+    test('orders messages by creation time, oldest first, whatever order the server returns', async () => {
       const mockCommunications: (Communication & { id: string })[] = [
         {
           resourceType: 'Communication',
           id: 'comm-3',
+          meta: { lastUpdated: '2026-01-01T00:00:03.000Z' },
           status: 'completed',
           payload: [
             {
               contentString: JSON.stringify({
                 role: 'assistant',
                 content: 'Third',
-                sequenceNumber: 3,
               }),
             },
           ],
@@ -520,13 +523,13 @@ describe('spacePersistence', () => {
         {
           resourceType: 'Communication',
           id: 'comm-1',
+          meta: { lastUpdated: '2026-01-01T00:00:01.000Z' },
           status: 'completed',
           payload: [
             {
               contentString: JSON.stringify({
                 role: 'user',
                 content: 'First',
-                sequenceNumber: 1,
               }),
             },
           ],
@@ -534,13 +537,13 @@ describe('spacePersistence', () => {
         {
           resourceType: 'Communication',
           id: 'comm-2',
+          meta: { lastUpdated: '2026-01-01T00:00:02.000Z' },
           status: 'completed',
           payload: [
             {
               contentString: JSON.stringify({
                 role: 'assistant',
                 content: 'Second',
-                sequenceNumber: 2,
               }),
             },
           ],
@@ -561,12 +564,14 @@ describe('spacePersistence', () => {
         {
           resourceType: 'Communication',
           id: 'comm-0',
+          meta: { lastUpdated: '2026-01-01T00:00:00.000Z' },
           status: 'completed',
-          payload: [{ contentString: JSON.stringify({ role: 'user', content: 'Go', sequenceNumber: 0 }) }],
+          payload: [{ contentString: JSON.stringify({ role: 'user', content: 'Go' }) }],
         },
         {
           resourceType: 'Communication',
           id: 'comm-1',
+          meta: { lastUpdated: '2026-01-01T00:00:01.000Z' },
           status: 'completed',
           payload: [
             {
@@ -574,7 +579,6 @@ describe('spacePersistence', () => {
                 role: 'assistant',
                 content: null,
                 tool_calls: [{ id: 'call-1', function: { name: 'fhir_request' } }],
-                sequenceNumber: 1,
               }),
             },
           ],
@@ -582,6 +586,7 @@ describe('spacePersistence', () => {
         {
           resourceType: 'Communication',
           id: 'comm-2',
+          meta: { lastUpdated: '2026-01-01T00:00:02.000Z' },
           status: 'completed',
           payload: [
             {
@@ -589,7 +594,6 @@ describe('spacePersistence', () => {
                 role: 'tool',
                 content: '{"result": "success"}',
                 tool_call_id: 'call-1',
-                sequenceNumber: 2,
               }),
             },
           ],
@@ -597,13 +601,13 @@ describe('spacePersistence', () => {
         {
           resourceType: 'Communication',
           id: 'comm-3',
+          meta: { lastUpdated: '2026-01-01T00:00:03.000Z' },
           status: 'completed',
           payload: [
             {
               contentString: JSON.stringify({
                 role: 'assistant',
                 content: 'Done',
-                sequenceNumber: 3,
               }),
             },
           ],
