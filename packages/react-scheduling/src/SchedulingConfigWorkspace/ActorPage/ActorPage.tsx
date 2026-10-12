@@ -107,14 +107,14 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [discards, setDiscards] = useState(0);
 
   const actorDraft = useMemo(() => buildActorResource(base, general, initialGeneral), [base, general, initialGeneral]);
-  // A stored actor's draft keeps its id, so it stands in for the actor wherever its Schedule reads one.
-  const resource = stored && (actorDraft as ConfigurableActorResource);
+  // The edited actor, for the Schedule code, which needs its id: undefined until the actor is stored.
+  const actorWithId = stored && (actorDraft as ConfigurableActorResource);
   const typeLabel = getActorTypeLabel(actorDraft.resourceType);
   const noun = typeLabel.toLowerCase();
   const name = creating ? general.name.trim() : getDisplayString(stored);
   const actorName = name || `this ${noun}`;
 
-  const draft = resource && buildScheduleDraft(schedule, resource, fields, initial, servicesById);
+  const draft = actorWithId && buildScheduleDraft(schedule, actorWithId, fields, initial, servicesById);
   const actorDirty = !deepEquals(general, initialGeneral);
   // Compares the fields rather than the draft, so edits the draft can't store yet, like an emptied week, still
   // count and the save bar can say why it refuses.
@@ -123,7 +123,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
   const offered = Object.keys(fields.offerings).flatMap((id) => servicesById.get(id) ?? []);
   const scheduleActive = schedule ? fields.active : undefined;
-  const status = resource && getActorStatus(resource, scheduleActive);
+  const status = actorWithId && getActorStatus(actorWithId, scheduleActive);
   const alert = status && getBookingAlert(actorDraft, status);
 
   function errorsFor(service: WithId<HealthcareService>): ReturnType<typeof getBlockingErrors> {
@@ -298,20 +298,20 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       </ConfigSection>
 
       <ConfigSection title="Visit types offered">
-        {!resource && (
+        {!actorWithId && (
           <Text size="sm" c="dimmed">
             Visit types can be offered once {actorName} is created.
           </Text>
         )}
-        {resource && offered.length === 0 && (
+        {actorWithId && offered.length === 0 && (
           <Text size="sm" c="dimmed">
             {actorName} offers no visit types yet.
           </Text>
         )}
-        {resource && offered.length > 0 && (
+        {actorWithId && offered.length > 0 && (
           <Accordion variant="separated" value={open} onChange={setOpen}>
             {checks.map(({ service, errors, availabilityError }) => {
-              const timezone = getSchedulingTimezone(service, draft, resource);
+              const timezone = getSchedulingTimezone(service, draft, actorWithId);
               return (
                 <Accordion.Item key={service.id} value={service.id}>
                   {/* Beside the control rather than in it, which is itself a button. */}
@@ -353,7 +353,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           </Accordion>
         )}
 
-        {resource && <OfferPicker services={offerable} onOffer={offer} />}
+        {actorWithId && <OfferPicker services={offerable} onOffer={offer} />}
       </ConfigSection>
 
       <ConfirmModal
