@@ -74,8 +74,9 @@ them together. Offering an actor's first visit type creates its Schedule when th
 **Stop offering** asks first, then removes the settings the Schedule holds for that visit type with it.
 
 A new room is typed as a room (`physicalType` `ro`), so the service facility pickers never offer it as a service
-facility. A new room or device starts active, unless switched off before Create, and can offer visit types once it
-is created. Unlike a new visit type, it doesn't start off: it can't be booked until it offers one anyway.
+facility. A new room or device starts active, unless switched off before Create, and is created with a Schedule
+that offers nothing yet and is on or off with it. It can offer visit types once it is created. Unlike a new visit
+type, it doesn't start off: it can't be booked until it offers one anyway.
 
 ## Saving
 

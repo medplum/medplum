@@ -821,7 +821,7 @@ describe('ActorPage', () => {
           expect(screen.queryByRole('switch', { name: 'Schedule status' })).not.toBeInTheDocument();
         });
 
-        test('creating a room stores an active Location typed as a room, at the service facility picked', async () => {
+        test('creating a room stores an active Location typed as a room, at the service facility picked, and its Schedule', async () => {
           const { medplum, onSynced } = await setupNew('Location');
 
           fireEvent.change(within(general()).getByRole('textbox', { name: /Name/ }), { target: { value: 'Room 9' } });
@@ -829,7 +829,10 @@ describe('ActorPage', () => {
           await saveNow();
 
           await waitFor(() => expect(onSynced).toHaveBeenCalled());
-          expect(sentBundle(medplum).entry?.map((item) => item.request)).toEqual([{ method: 'POST', url: 'Location' }]);
+          expect(sentBundle(medplum).entry?.map((item) => item.request)).toEqual([
+            { method: 'POST', url: 'Location' },
+            { method: 'POST', url: 'Schedule' },
+          ]);
           const created = onSynced.mock.calls[0][0][0] as WithId<Location>;
           expect(created).toMatchObject({
             name: 'Room 9',
@@ -837,9 +840,12 @@ describe('ActorPage', () => {
             partOf: { reference: 'Location/downtown' },
           });
           expect(created.physicalType?.coding?.map((coding) => coding.code)).toEqual(['ro']);
+          const schedule = syncedSchedule(onSynced);
+          expect(schedule).toMatchObject({ active: true, actor: [{ reference: `Location/${created.id}` }] });
+          expect(schedule.serviceType).toBeUndefined();
         });
 
-        test('a new device switched off is created inactive', async () => {
+        test('a new device switched off is created inactive, with its Schedule off', async () => {
           const { onSynced } = await setupNew('Device');
 
           fireEvent.change(within(general()).getByRole('textbox', { name: /Name/ }), {
@@ -850,6 +856,7 @@ describe('ActorPage', () => {
 
           await waitFor(() => expect(onSynced).toHaveBeenCalled());
           expect(onSynced.mock.calls[0][0][0]).toMatchObject({ resourceType: 'Device', status: 'inactive' });
+          expect(syncedSchedule(onSynced).active).toBe(false);
         });
 
         test('a new room is refused without a name, and discarding it writes nothing', async () => {

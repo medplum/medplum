@@ -357,7 +357,7 @@ describe('SchedulingConfigWorkspace', () => {
     expect(within(section('Providers')).queryByRole('button', { name: /^New/ })).not.toBeInTheDocument();
   });
 
-  test('a new room is listed under Rooms and selected once created, and can then offer visit types', async () => {
+  test('a new room is listed under Rooms and selected once created, with its Schedule, and can then offer visit types', async () => {
     await setup();
 
     await userEvent.click(within(sidebar()).getByRole('button', { name: 'New room' }));
@@ -370,6 +370,7 @@ describe('SchedulingConfigWorkspace', () => {
     await waitFor(() => expect(row('Room 9')).toHaveAttribute('aria-current', 'true'));
     expect(within(section('Rooms')).getByText('Room 9')).toBeInTheDocument();
     expect(within(details()).getByRole('heading', { name: 'Room 9' })).toBeInTheDocument();
+    expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeChecked();
     expect(within(details()).getByText('Room 9 offers no visit types yet.')).toBeInTheDocument();
     expect(within(details()).getByRole('button', { name: 'Offer visit types' })).toBeInTheDocument();
   });

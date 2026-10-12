@@ -4,6 +4,7 @@ import { Accordion, Alert, Divider, Group, Stack, Text, Title } from '@mantine/c
 import type { WithId } from '@medplum/core';
 import {
   deepEquals,
+  generateId,
   getDisplayString,
   getReferenceString,
   getSchedulingTimezone,
@@ -65,8 +66,8 @@ export interface ActorPageProps {
  * The page for one provider, room, or device: its own fields, and the visit types its Schedule offers, each
  * opening to the Schedule's own parameters and hours for it. Everything is saved together.
  *
- * An actor with no Schedule gets one, on save, once it offers a visit type. A new room or device has to be
- * created before it can offer anything.
+ * An actor with no Schedule gets one, on save, once it offers a visit type. A new room or device is created
+ * with an empty Schedule, and has to be created before it can offer anything.
  *
  * It opens on what is stored and is not reset by a change of props, so the caller remounts it with a `key`
  * when the actor or its Schedule is replaced.
@@ -188,8 +189,12 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     setSaving(true);
     setFailure(undefined);
     try {
-      const changes: ConfigChange[] = [{ stored, draft: actorDraft }];
-      if (draft) {
+      // A new actor is created with an empty Schedule, which refers to it by this until the server gives it an id.
+      const fullUrl = creating ? `urn:uuid:${generateId()}` : undefined;
+      const changes: ConfigChange[] = [{ stored, draft: actorDraft, fullUrl }];
+      if (fullUrl) {
+        changes.push({ draft: { resourceType: 'Schedule', active: general.active, actor: [{ reference: fullUrl }] } });
+      } else if (draft) {
         // Conditional, so two pages offering this actor's first visit type at once can't each create a Schedule.
         changes.push({ stored: schedule, draft, ifNoneExist: `actor=${getReferenceString(actorDraft)}` });
       }
@@ -263,8 +268,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
       {creating && (
         <Alert color="blue" variant="light">
-          Nothing is created until you press Create. It starts active, but can't be booked until it's created and offers
-          a visit type.
+          Nothing is created until you press Create, which creates its Schedule too. It starts active, but can't be
+          booked until it's created and offers a visit type.
         </Alert>
       )}
 

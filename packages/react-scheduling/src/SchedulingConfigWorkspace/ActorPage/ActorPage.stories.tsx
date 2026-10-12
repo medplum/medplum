@@ -113,7 +113,7 @@ export const ProviderTimeZone = (): JSX.Element => (
 /**
  * A room being created, marked as new and not saved yet. Nothing is written until Create, which is refused until
  * it has a name. It starts active and is typed as a room, at the service facility picked from the same list
- * booking filters by. Visit types can be offered once it is created.
+ * booking filters by. Its Schedule is created with it, and visit types can be offered once it is created.
  * @returns The story.
  */
 export const CreateRoom = (): JSX.Element => {
