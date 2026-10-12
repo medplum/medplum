@@ -5,3 +5,7 @@
 .preserveBreaks {
   white-space: pre-wrap;
 }
+
+.description:not(:has(+ :global(.mantine-Input-wrapper))) {
+  margin-bottom: calc(var(--mantine-spacing-xs) / 2);
+}

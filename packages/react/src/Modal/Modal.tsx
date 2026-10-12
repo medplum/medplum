@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ModalProps as MantineModalProps } from '@mantine/core';
 import { Modal as MantineModal } from '@mantine/core';
+import { IconX } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { CSSProperties, JSX, ReactNode } from 'react';
 import { Form } from '../Form/Form';
@@ -82,7 +83,12 @@ export function Modal(props: ModalProps): JSX.Element {
       centered={centered}
       padding={padding}
       radius={radius}
-      closeButtonProps={{ 'aria-label': 'Close', radius: 'xl', ...closeButtonProps }}
+      closeButtonProps={{
+        'aria-label': 'Close',
+        radius: 'xl',
+        icon: <IconX size={16} stroke={2} />,
+        ...closeButtonProps,
+      }}
       classNames={{
         ...classNames,
         // The slot rules are scoped under `.modal` in the CSS module, so the root class has to
@@ -91,6 +97,7 @@ export function Modal(props: ModalProps): JSX.Element {
         content: cx(classes.content, classNames?.content),
         header: cx(classes.header, classNames?.header),
         title: cx(classes.title, classNames?.title),
+        close: cx(classes.close, classNames?.close),
         body: cx(classes.body, classNames?.body),
       }}
       style={bodyHeight ? [style, { '--medplum-modal-body-height': bodyHeight }] : style}
