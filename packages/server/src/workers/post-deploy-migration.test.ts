@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { randomUUID } from 'node:crypto';
 import { getReferenceString } from '@medplum/core';
 import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError, Job, Queue } from 'bullmq';
+import { randomUUID } from 'node:crypto';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';

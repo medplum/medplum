@@ -677,7 +677,12 @@ describe('v53', () => {
     );
 
     test.each([
-      { name: 'delays the job when the database connection is lost', code: '57P01', transientFailures: 0, delays: true },
+      {
+        name: 'delays the job when the database connection is lost',
+        code: '57P01',
+        transientFailures: 0,
+        delays: true,
+      },
       {
         name: 'delays the job when an idle range transaction ends its session',
         code: '25P03',
