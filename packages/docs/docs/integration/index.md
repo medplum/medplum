@@ -10,6 +10,12 @@ Medplum's integrations the most commonly used features of the platform, and the 
 
 Medplum supports the following first party integrations.
 
+:::info[Self-hosted deployments]
+
+Premium integrations, such as [Health Gorilla Lab Orders](/docs/integration/health-gorilla) and [ScriptSure](/docs/integration/scriptsure), are also available to self-hosted deployments on the [Medplum Enterprise](https://www.medplum.com/enterprise) plan. Contact us at [hello@medplum.com](mailto:hello@medplum.com) to get started, or see [pricing](/pricing).
+
+:::
+
 <table>
   <thead>
     <tr>
