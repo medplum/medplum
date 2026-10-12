@@ -322,47 +322,52 @@ export async function sendToBotStreaming(
   let fullContent = '';
   let buffer = '';
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
-
-    buffer += value;
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-
-    for (const line of lines) {
-      if (!line.trim()) {
-        continue;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
       }
 
-      if (line.startsWith('data: ')) {
-        const data = line.slice(6);
-        if (!data || data === '[DONE]') {
+      buffer += value;
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim()) {
           continue;
         }
 
-        let frame: { error?: unknown; content?: string; choices?: { delta?: { content?: string } }[] };
-        try {
-          frame = JSON.parse(data);
-        } catch {
-          continue;
-        }
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (!data || data === '[DONE]') {
+            continue;
+          }
 
-        // A failure mid-stream arrives as an error frame, not a non-2xx status
-        if (typeof frame.error === 'string') {
-          throw new Error(frame.error);
-        }
+          let frame: { error?: unknown; content?: string; choices?: { delta?: { content?: string } }[] };
+          try {
+            frame = JSON.parse(data);
+          } catch {
+            continue;
+          }
 
-        const chunk = frame.content || frame.choices?.[0]?.delta?.content;
-        if (chunk) {
-          fullContent += chunk;
-          codeExtractor.process(chunk);
-          onChunk?.(chunk);
+          // A failure mid-stream arrives as an error frame, not a non-2xx status
+          if (typeof frame.error === 'string') {
+            throw new Error(frame.error);
+          }
+
+          const chunk = frame.content || frame.choices?.[0]?.delta?.content;
+          if (chunk) {
+            fullContent += chunk;
+            codeExtractor.process(chunk);
+            onChunk?.(chunk);
+          }
         }
       }
     }
+  } finally {
+    // An error frame throws out of the loop; stop reading rather than wait for the server to close
+    await reader.cancel().catch(() => undefined);
   }
 
   return { content: fullContent, code: codeExtractor.getCode() };
