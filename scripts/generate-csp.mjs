@@ -24,6 +24,10 @@ import { join } from 'node:path';
 //   node scripts/generate-csp.mjs --out policy.json    # write a CloudFront policy config
 //   node scripts/generate-csp.mjs --check policy.json  # fail if that file is stale
 //
+// The output is a build artifact and is deliberately not committed: a policy
+// generated from a stale build omits hashes for inline scripts added since, and
+// applying it would block them.
+//
 // To apply a generated policy:
 //   aws cloudfront create-response-headers-policy --response-headers-policy-config file://policy.json
 
