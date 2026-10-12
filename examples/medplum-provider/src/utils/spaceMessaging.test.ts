@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type { Message } from '../types/spaces';
 import { processMessage, sendToBotStreaming } from './spaceMessaging';
 
 vi.mock('./spacePersistence', () => ({
@@ -62,7 +63,8 @@ describe('sendToBotStreaming', () => {
     vi.clearAllMocks();
     mockMedplum = {
       getAccessToken: vi.fn().mockReturnValue('mock-token'),
-      fhirUrl: vi.fn().mockReturnValue(new URL('https://api.medplum.com/fhir/R4/Bot/$execute')),
+      fhirUrl: vi.fn().mockReturnValue(new URL('https://api.medplum.com/fhir/R4/Bot/bot-1/$execute')),
+      searchOne: vi.fn().mockResolvedValue({ resourceType: 'Bot', id: 'bot-1' }),
     };
   });
 
@@ -143,7 +145,7 @@ describe('sendToBotStreaming', () => {
     await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', 'medium', vi.fn());
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https%3A%2F%2Fwww.medplum.com%2Fbots%7Ctest-bot',
+      'https://api.medplum.com/fhir/R4/Bot/bot-1/$execute',
       expect.objectContaining({
         method: 'POST',
         headers: {
@@ -286,28 +288,27 @@ describe('sendToBotStreaming', () => {
   });
 });
 
-describe('processMessage - max iterations behavior', () => {
-  const baseParams = {
-    input: 'Show me the patient list',
-    userMessage: { role: 'user' as const, content: 'Show me the patient list' },
-    currentMessages: [{ role: 'user' as const, content: 'Show me the patient list' }],
-    currentTopicId: 'topic-1',
-    selectedModel: 'gpt-4o',
-    selectedReasoningEffort: 'medium' as const,
-    isFirstMessage: false,
-    setCurrentTopicId: vi.fn(),
-    setRefreshKey: vi.fn(),
-    setCurrentFhirRequest: vi.fn(),
-    onNewTopic: vi.fn(),
+describe('processMessage', () => {
+  const userMessage: Message = { role: 'user', content: 'Show me the patient list' };
+  const baseOptions = {
+    messages: [] as Message[],
+    userMessage,
+    topicId: 'topic-1',
+    model: 'gpt-4o',
+    reasoningEffort: 'medium' as const,
   };
 
-  function makeMockMedplum(executeBotImpl: () => unknown): Partial<MedplumClient> {
+  function makeMockMedplum(executeBotImpl: () => unknown): MedplumClient {
     return {
       getAccessToken: vi.fn().mockReturnValue('mock-token'),
       fhirUrl: vi.fn().mockReturnValue(new URL('https://api.medplum.com/fhir/R4')),
+      searchOne: vi.fn().mockResolvedValue({ resourceType: 'Bot', id: 'bot-1' }),
       executeBot: vi.fn().mockImplementation(executeBotImpl),
-      get: vi.fn().mockResolvedValue({ resourceType: 'Bundle', entry: [] }),
-    };
+      get: vi.fn().mockResolvedValue({
+        resourceType: 'Bundle',
+        entry: [{ resource: { resourceType: 'Patient', id: 'p-1' } }],
+      }),
+    } as unknown as MedplumClient;
   }
 
   function makeBotResponse(opts: { toolCalls?: unknown[]; content?: string } = {}): unknown {
@@ -326,85 +327,50 @@ describe('processMessage - max iterations behavior', () => {
     function: { name: 'fhir_request', arguments: JSON.stringify({ method: 'GET', path: 'Patient' }) },
   };
 
+  // Translator returns a tool call on the first call and a final answer on the second.
+  function toolThenAnswer(): MedplumClient {
+    let calls = 0;
+    return makeMockMedplum(() => {
+      calls++;
+      return Promise.resolve(
+        calls === 1 ? makeBotResponse({ toolCalls: [stubToolCall] }) : makeBotResponse({ content: 'Final answer.' })
+      );
+    });
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(createMockBufferedResponse('Summary.'));
   });
 
   test('returns AI summary with note when loop hits max iterations and tools ran', async () => {
-    let callCount = 0;
-    const medplum = makeMockMedplum(() => {
-      callCount++;
-      // fhirRequestToolsId bot always returns a tool call (never completes)
-      // resourceSummaryBotId bot returns a summary
-      if (callCount <= 10) {
-        return Promise.resolve(makeBotResponse({ toolCalls: [stubToolCall] }));
-      }
-      // Summary bot call
-      return Promise.resolve(makeBotResponse({ content: 'Here is what I found so far: 10 patients.' }));
-    });
+    const medplum = makeMockMedplum(() => Promise.resolve(makeBotResponse({ toolCalls: [stubToolCall] })));
+    vi.mocked(fetch).mockResolvedValue(createMockBufferedResponse('Here is what I found so far: 10 patients.'));
 
-    const result = await processMessage({ ...baseParams, medplum: medplum as MedplumClient });
+    const result = await processMessage({ ...baseOptions, medplum });
 
+    expect(medplum.executeBot).toHaveBeenCalledTimes(10);
     expect(result.assistantMessage.content).toContain('Here is what I found so far: 10 patients.');
     expect(result.assistantMessage.content).toContain('processing limit');
     expect(result.assistantMessage.content).toContain('more specific question');
   });
 
-  test('returns fallback note when loop hits max iterations and no tools ran', async () => {
-    // Always returns tool calls but executeToolCalls produces no tool messages
-    // Simulate by having the bot never produce tool messages — easiest way is
-    // to have the bot always respond with tool calls but mock executeBot on the
-    // summary call to return empty, and fhir GET to return empty bundle.
-    const medplum = makeMockMedplum(() => Promise.resolve(makeBotResponse({ toolCalls: [stubToolCall] })));
+  test('returns the fallback text when the bot answers with nothing', async () => {
+    const medplum = makeMockMedplum(() => Promise.resolve(makeBotResponse({})));
 
-    // Override get so the tool call produces a tool message (so summary IS called)
-    // but the summary itself returns no content
-    (medplum.executeBot as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce(makeBotResponse({ toolCalls: [stubToolCall] })) // iter 1 translator
-      // subsequent translator calls — all 9 remaining
-      .mockResolvedValue(makeBotResponse({ toolCalls: [stubToolCall] }));
+    const result = await processMessage({ ...baseOptions, medplum });
 
-    // For the no-tool-message path: override so no tool messages are added.
-    // We test this by having currentMessages start empty of tool role.
-    // Actually the simplest test: pass currentMessages with NO prior tool messages
-    // and have the bot always return tool calls — the summary bot won't be called
-    // because currentMessages.some(m => m.role === 'tool') would be true after iter 1.
-    // Let's instead test the edge case where executeBot for the summary returns empty.
-    const medplum2 = makeMockMedplum(() => Promise.resolve(makeBotResponse({})));
-
-    const result = await processMessage({ ...baseParams, medplum: medplum2 as MedplumClient });
-
-    // Loop hits max, no tool calls returned (empty toolCalls), so loopCompleted = true
-    // This path actually completes normally — let's verify the happy path instead.
+    expect(fetch).not.toHaveBeenCalled();
     expect(result.assistantMessage.content).toBe(
       'I received your message but was unable to generate a response. Please try again.'
     );
   });
 
-  test('completes normally when bot returns final answer before max iterations', async () => {
-    // First call: tool call → second call: summary → done
-    // Actually: iteration 1 → tool call → executeToolCalls → iteration 2 → no tool calls → loopCompleted
-    // Then: currentMessages has tool role → summary bot called
-    let botCallCount = 0;
-    const medplum3 = makeMockMedplum(() => {
-      botCallCount++;
-      if (botCallCount === 1) {
-        // Translator: returns tool call
-        return Promise.resolve(makeBotResponse({ toolCalls: [stubToolCall] }));
-      }
-      if (botCallCount === 2) {
-        // Translator: no tool calls, final answer
-        return Promise.resolve(makeBotResponse({ content: 'Final answer.' }));
-      }
-      // Summary bot
-      return Promise.resolve(makeBotResponse({ content: 'Summary.' }));
-    });
+  test('summarizes the tool results when the bot finishes before max iterations', async () => {
+    const result = await processMessage({ ...baseOptions, medplum: toolThenAnswer() });
 
-    const result = await processMessage({ ...baseParams, medplum: medplum3 as MedplumClient });
-
-    // loopCompleted = true on iter 2, so NO note appended
-    // tool messages exist, so summary bot is called → content = 'Summary.'
     expect(result.assistantMessage.content).toBe('Summary.');
     expect(result.assistantMessage.content).not.toContain('processing limit');
+    expect(result.assistantMessage.resources).toEqual(['Patient/p-1']);
   });
 });

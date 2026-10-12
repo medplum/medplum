@@ -29,39 +29,19 @@ import {
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { UseSpacesConversationResult } from '../../hooks/useSpacesConversation';
 import { PromptComposer } from '../../pages/spaces/PromptComposer';
 import type { GeneratedComponent, Message } from '../../types/spaces';
-import type { ReasoningEffort, SpaceModelOption } from '../../utils/spaceModels';
 import { ComponentPreview } from './ComponentPreview';
 import { Markdown } from './Markdown';
 import { ResourceBox } from './ResourceBox';
 import { ResourcePanel } from './ResourcePanel';
 import classes from './SpacesInbox.module.css';
 
-export interface ConversationPaneProps {
-  messages: Message[];
-  /** True while the conversation loads or a send runs. */
-  loading: boolean;
-  /** False only for a new conversation with nothing sent yet. */
-  hasStarted: boolean;
-  /** Description of the FHIR request currently running, during a send. */
-  currentFhirRequest: string | undefined;
-  /** The summary streamed so far, during a send. */
-  streamingContent: string | undefined;
-  /** The component code streamed so far; '' once generation starts, undefined otherwise. */
-  streamingComponentCode: string | undefined;
-  /** The component produced by the last completed send. */
-  generatedComponent: GeneratedComponent | undefined;
-  models: SpaceModelOption[];
-  model: string;
-  setModel: (model: string) => void;
-  reasoningEffort: ReasoningEffort;
-  setReasoningEffort: (effort: ReasoningEffort) => void;
-  /**
-   * Sends a message. Returns false, without side effects, when the conversation is busy or
-   * there is nothing to send (no text and no patients).
-   */
-  send: (text: string, patients: (Patient | Reference<Patient>)[]) => boolean;
+export interface ConversationPaneProps extends Omit<
+  UseSpacesConversationResult,
+  'topicId' | 'conversationKey' | 'topics' | 'topicsLoading'
+> {
   sidebarOpen: boolean;
   onShowSidebar: () => void;
   onAdd?: () => void;
@@ -71,8 +51,8 @@ export interface ConversationPaneProps {
 // change of conversation starts from fresh view state.
 export function ConversationPane(props: ConversationPaneProps): JSX.Element {
   const {
+    status,
     messages,
-    loading,
     hasStarted,
     currentFhirRequest,
     streamingContent,
@@ -101,6 +81,7 @@ export function ConversationPane(props: ConversationPaneProps): JSX.Element {
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
 
+  const sending = status === 'sending';
   const generating = streamingComponentCode !== undefined;
 
   // The panel opens on generation start ('' code), not on the first chunk, which can take a while
@@ -133,12 +114,12 @@ export function ConversationPane(props: ConversationPaneProps): JSX.Element {
         behavior: 'auto',
       });
     }
-  }, [messages, hasStarted, streamingContent, loading, currentFhirRequest, streamingComponentCode]);
+  }, [messages, hasStarted, streamingContent, status, currentFhirRequest, streamingComponentCode]);
 
   // Scroll again after a send finishes to show resources
   useEffect(() => {
     const viewport = scrollViewportRef.current;
-    if (viewport && hasStarted && !loading && isAtBottomRef.current) {
+    if (viewport && hasStarted && status === 'idle' && isAtBottomRef.current) {
       const timer = setTimeout(() => {
         viewport.scrollTo({
           top: viewport.scrollHeight,
@@ -148,7 +129,7 @@ export function ConversationPane(props: ConversationPaneProps): JSX.Element {
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [loading, hasStarted]);
+  }, [status, hasStarted]);
 
   // Track whether the user is scrolled to the bottom; pause autoscroll otherwise
   const handleScrollPositionChange = (): void => {
@@ -428,7 +409,7 @@ export function ConversationPane(props: ConversationPaneProps): JSX.Element {
                     </div>
                   );
                 })}
-                {loading && (
+                {sending && (
                   <div className={cx(classes.messageWrapper, classes.assistantMessage)}>
                     <div className={classes.messageContent}>
                       {streamingContent && <Markdown>{streamingContent}</Markdown>}
@@ -493,7 +474,7 @@ export function ConversationPane(props: ConversationPaneProps): JSX.Element {
               onInputChange={setInput}
               onKeyDown={handleKeyDown}
               onSend={handleSend}
-              loading={loading}
+              loading={status !== 'idle'}
               models={models}
               selectedModel={model}
               onModelChange={setModel}
