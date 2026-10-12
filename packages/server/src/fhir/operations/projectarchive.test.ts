@@ -1,7 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, MEDPLUM_VERSION } from '@medplum/core';
-import type { AsyncJob, Binary, ClientApplication, Patient, Resource, User } from '@medplum/fhirtypes';
+import type {
+  AsyncJob,
+  Binary,
+  ClientApplication,
+  JsonWebKey,
+  Patient,
+  Project,
+  ProjectMembership,
+  Resource,
+  User,
+} from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import express from 'express';
 import request from 'supertest';
@@ -103,6 +113,7 @@ describe('Project $archive and $restore', () => {
       lastName: 'User',
       email: `archive-${project.id}@example.com`,
       passwordHash: 'hash-1',
+      project: createReference(project),
       meta: { project: project.id },
     });
     await systemRepo.updateResource<User>({ ...user, passwordHash: 'hash-2', mfaSecret: 'secret' });
@@ -146,6 +157,16 @@ describe('Project $archive and $restore', () => {
 
     expect(await post('$restore', superAdmin.accessToken)).toHaveStatus(400);
 
+    // An archive cannot claim an existing project it did not come from
+    const hijack = {
+      ...job.output,
+      parameter: [
+        ...(job.output?.parameter?.filter((p) => p.name !== 'project') ?? []),
+        { name: 'project', valueReference: createReference(superAdmin.project) },
+      ],
+    };
+    expect(await post('$restore', superAdmin.accessToken, hijack)).toHaveStatus(400);
+
     // Restore twice for idempotence; the skewed manifest exercises the warnings
     const skewed = {
       resourceType: 'Parameters',
@@ -170,7 +191,7 @@ describe('Project $archive and $restore', () => {
     }
   });
 
-  test('Restore rejects resources from other projects', async () => {
+  test('Restore rejects resources outside the project', async () => {
     const a = await createTestProject({ withRepo: true });
     const b = await createTestProject();
     const patient = await a.repo.createResource<Patient>({ resourceType: 'Patient' });
@@ -182,5 +203,24 @@ describe('Project $archive and $restore', () => {
     await expect(systemRepo.restoreResourceVersions('Patient', b.project.id, [moved])).rejects.toThrow(
       `Patient/${patient.id} belongs to another project`
     );
+
+    const meta = { project: b.project.id, versionId: crypto.randomUUID(), lastUpdated: new Date().toISOString() };
+    const membership: ProjectMembership = {
+      resourceType: 'ProjectMembership',
+      id: crypto.randomUUID(),
+      meta,
+      project: createReference(a.project),
+      user: { reference: 'User/' + crypto.randomUUID() },
+      profile: { reference: 'Practitioner/' + crypto.randomUUID() },
+      admin: true,
+    };
+    await expect(systemRepo.restoreResourceVersions('ProjectMembership', b.project.id, [membership])).rejects.toThrow(
+      'does not belong to'
+    );
+    const jwk: JsonWebKey = { resourceType: 'JsonWebKey', id: crypto.randomUUID(), meta, active: true, alg: 'RS256' };
+    await expect(systemRepo.restoreResourceVersions('JsonWebKey', b.project.id, [jwk])).rejects.toThrow('Forbidden');
+
+    await systemRepo.restoreResourceVersions('Project', b.project.id, [{ ...b.project, meta, superAdmin: true }]);
+    expect(await systemRepo.readResource<Project>('Project', b.project.id)).not.toHaveProperty('superAdmin');
   });
 });

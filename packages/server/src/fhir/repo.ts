@@ -1328,17 +1328,18 @@ export class Repository extends FhirRepository implements Disposable {
    */
   async restoreResourceVersions(resourceType: ResourceType, projectId: string, versions: Resource[]): Promise<void> {
     this.assertUsable();
-    if (!this.isSuperAdmin()) {
+    // Protected types are server-wide (e.g. JsonWebKey signing keys), so an archive must never contain them
+    if (!this.isSuperAdmin() || protectedResourceTypes.includes(resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
-    for (const v of versions) {
-      // Older tombstones have no meta.project; the conflict check below still protects other projects
-      if (v.resourceType !== resourceType || (v.meta?.project ?? (v.meta?.deleted && projectId)) !== projectId) {
+    const restored = versions.map((v) => {
+      if (v.resourceType !== resourceType || !isRestorableToProject(v, projectId)) {
         throw new OperationOutcomeError(
           badRequest(`${v.resourceType}/${v.id} does not belong to Project/${projectId}`)
         );
       }
-    }
+      return v.resourceType === 'Project' ? removeSuperAdminProjectFields(v) : v;
+    });
     const ids = [...new Set(versions.map((v) => v.id as string))];
 
     await this.withTransaction(
@@ -1355,7 +1356,7 @@ export class Repository extends FhirRepository implements Disposable {
         await txRepo.sqlWrite(
           new InsertQuery(
             resourceType + '_History',
-            versions.map((v) => ({
+            restored.map((v) => ({
               id: v.id,
               versionId: v.meta?.versionId,
               lastUpdated: v.meta?.lastUpdated,
@@ -2985,3 +2986,52 @@ const patchOperationDefinition: OperationDefinition = {
 };
 
 const SuperAdminProjectIdEditableResourceTypes = ['User', 'Subscription'];
+
+/**
+ * Returns true if an archived version belongs to the project being restored.
+ * Besides meta.project, checks the fields that login and access control use to resolve a project,
+ * so a crafted archive cannot grant itself access to another project.
+ * @param resource - The archived version.
+ * @param projectId - The project being restored.
+ * @returns True if the version belongs to the project.
+ */
+function isRestorableToProject(resource: Resource, projectId: string): boolean {
+  if (resource.meta?.deleted) {
+    // Older tombstones have no meta.project; the conflict check still protects other projects
+    return (resource.meta.project ?? projectId) === projectId;
+  }
+  if (resource.meta?.project !== projectId) {
+    return false;
+  }
+  switch (resource.resourceType) {
+    case 'Project':
+      return resource.id === projectId;
+    case 'ProjectMembership':
+    case 'User':
+      return resolveId(resource.project) === projectId;
+    default:
+      return true;
+  }
+}
+
+const superAdminProjectFields = [
+  'superAdmin',
+  'features',
+  'link',
+  'systemSetting',
+  'systemSecret',
+  'strictMode',
+] as const;
+
+/**
+ * Removes the Project fields that only super admins can set.
+ * @param project - The archived Project version.
+ * @returns The Project without super admin fields.
+ */
+function removeSuperAdminProjectFields(project: Project): Project {
+  const result = { ...project };
+  for (const field of superAdminProjectFields) {
+    delete result[field];
+  }
+  return result;
+}
