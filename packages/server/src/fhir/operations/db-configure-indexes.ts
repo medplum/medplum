@@ -108,13 +108,6 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
     await withLongRunningDatabaseClient(
       async (client) => {
         await configureGinIndexes(client, action, tableNames, config);
-
-        // Vacuum if the fastupdate is disabled to flush GIN pending lists
-        if (config.fastUpdate === false) {
-          for (const tableName of tableNames) {
-            await vacuumTable(client, action, tableName);
-          }
-        }
       },
       { shardId }
     );
@@ -216,9 +209,16 @@ export async function configureGinIndexes(
       actions.push({ sql: action.setSql });
     }
   }
+
+  // Vacuum if the fastupdate is disabled to flush GIN pending lists
+  if (config.fastUpdate === false) {
+    for (const tableName of tableNames) {
+      await vacuumTable(client, actions, tableName);
+    }
+  }
 }
 
-export async function vacuumTable(client: PgQueryable, actions: OutputAction[], tableName: string): Promise<void> {
+async function vacuumTable(client: PgQueryable, actions: OutputAction[], tableName: string): Promise<void> {
   const sql = `VACUUM ${escapeIdentifier(tableName)}`;
   const startTime = Date.now();
   await client.query(sql);
