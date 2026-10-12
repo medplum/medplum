@@ -88,6 +88,9 @@ export const ProviderOnLeave = (): JSX.Element => (
 /**
  * Exam Room C has no Schedule, so it offers nothing and there is no Schedule status switch. Offering a first
  * visit type creates its Schedule when you save, and not before.
+ *
+ * Ultrasound Imaging is held only at the main clinic, where the room is, so it can be offered. Any visit type
+ * held elsewhere is listed, but disabled, with the reason.
  * @returns The story.
  */
 export const RoomWithNoSchedule = (): JSX.Element => <StoredActor resourceType="Location" id={ExamRoomC.id} />;

@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Badge, Divider, Group, Menu, Stack, Text, Title } from '@mantine/core';
+import { ActionIcon, Alert, Badge, Divider, Group, Menu, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
-import { IconDots, IconTrash } from '@tabler/icons-react';
+import { IconAlertTriangle, IconDots, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useId } from 'react';
 import type { SchedulingParameterValues } from '../../parameterValues';
@@ -27,6 +27,8 @@ export interface OfferingSummaryProps {
   /** The duration in effect and where the hours come from. */
   readonly summary: string;
   readonly dirty: boolean;
+  /** Why the visit type can't be booked with this actor, when it can't. */
+  readonly notBookableReason?: string;
 }
 
 /**
@@ -36,7 +38,7 @@ export interface OfferingSummaryProps {
  * @returns The summary.
  */
 export function OfferingSummary(props: OfferingSummaryProps): JSX.Element {
-  const { service, value, summary, dirty } = props;
+  const { service, value, summary, dirty, notBookableReason } = props;
   const serviceName = service.name ?? 'this visit type';
   return (
     <Stack gap={2}>
@@ -48,6 +50,11 @@ export function OfferingSummary(props: OfferingSummaryProps): JSX.Element {
         {dirty && (
           <Badge size="xs" variant="light" color="orange">
             Unsaved
+          </Badge>
+        )}
+        {notBookableReason && (
+          <Badge size="xs" variant="light" color="orange">
+            Can't be booked
           </Badge>
         )}
       </Group>
@@ -95,6 +102,8 @@ export interface OfferingEditorProps {
   readonly errors: SchedulingParameterErrors;
   /** Why the hours can't be saved, once a save has been tried. */
   readonly availabilityError?: string;
+  /** Why the visit type can't be booked with this actor, when it can't. */
+  readonly notBookableReason?: string;
   /** The time zone the hours are read in, and where it comes from. Absent when none resolves. */
   readonly timezone?: { readonly zone: string; readonly source: string };
 }
@@ -105,7 +114,7 @@ export interface OfferingEditorProps {
  * @returns The editor.
  */
 export function OfferingEditor(props: OfferingEditorProps): JSX.Element {
-  const { service, value, initialParameters, onChange, errors, availabilityError } = props;
+  const { service, value, initialParameters, onChange, errors, availabilityError, notBookableReason } = props;
   const idPrefix = useId();
   const serviceName = service.name ?? 'this visit type';
   const serviceValues = getHealthcareServiceSchedulingParameterValues(service);
@@ -114,6 +123,12 @@ export function OfferingEditor(props: OfferingEditorProps): JSX.Element {
 
   return (
     <Stack gap="lg">
+      {notBookableReason && (
+        <Alert color="orange" variant="light" icon={<IconAlertTriangle size={16} />}>
+          Can't be booked here. {notBookableReason}.
+        </Alert>
+      )}
+
       <Stack gap="sm">
         <Title order={4} size="h5">
           Scheduling parameters

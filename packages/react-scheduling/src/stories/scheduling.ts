@@ -724,6 +724,16 @@ const CONFIGURED_SERVICES = new Map<string, Resource>([
   [UltrasoundImagingService.id, ConfiguredUltrasoundService],
 ]);
 
+/** Held only at the satellite clinic, so a room at the main clinic can't offer it. */
+export const SatelliteFollowUpService = buildSchedulableService({
+  id: 'satellite-follow-up',
+  name: 'Satellite Follow-up',
+  category: 'Office visit',
+  durationMinutes: 20,
+  alignmentMinutes: 20,
+  locationIds: ['satellite-clinic'],
+});
+
 export const DrNguyenPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'dr-nguyen',
@@ -832,8 +842,9 @@ const CatalogServices: WithId<HealthcareService>[] = (
 /**
  * The clinic as an administrator configuring it sees it: `SchedulingFixtures`, with its visit types filled out
  * the way a clinic would set them, more visit types covering service facilities, split hours, and group
- * capacity, and what booking hides. Visit types that have no duration or are turned off, a provider on leave
- * whose Schedule is switched off, a retired device, a room with no Schedule, and a provider with no time zone.
+ * capacity, and what booking hides. Visit types that have no duration or are turned off, one held only at the
+ * satellite clinic, a provider on leave whose Schedule is switched off, a retired device, a room with no Schedule,
+ * and a provider with no time zone.
  *
  * Kept out of `SchedulingFixtures`, whose tests read the whole list.
  */
@@ -843,6 +854,7 @@ export const ConfigFixtures = [
   GroupEducationService,
   UnconfiguredService,
   DiscontinuedService,
+  SatelliteFollowUpService,
   ...CatalogServices,
   DrNguyenPractitioner,
   DrNguyenSchedule,

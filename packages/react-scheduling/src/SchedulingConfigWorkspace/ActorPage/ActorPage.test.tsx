@@ -7,8 +7,17 @@ import {
   TimezoneExtensionURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
-import type { Bundle, HealthcareService, Location, Practitioner, Resource, Schedule } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  HealthcareService,
+  Location,
+  Practitioner,
+  PractitionerRole,
+  Resource,
+  Schedule,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import type { ReactNode } from 'react';
 import { describe, expect, test, vi } from 'vitest';
 import { setScheduleAvailability } from '../../availability';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
@@ -139,6 +148,7 @@ function syncedSchedule(onSynced: Setup['onSynced']): WithId<Schedule> {
 
 async function openOfferPicker(): Promise<void> {
   await userEvent.click(await screen.findByRole('button', { name: 'Offer visit types' }));
+  await waitFor(() => expect(screen.queryByLabelText('Checking service facilities')).not.toBeInTheDocument());
 }
 
 async function chooseStopOffering(name: string): Promise<void> {
@@ -402,6 +412,100 @@ describe('ActorPage', () => {
 
     await openOfferPicker();
     expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Follow-up', 'Cystoscopy']);
+  });
+
+  test("lists a visit type held away from a room's service facility as disabled, saying why", async () => {
+    await setup(room3);
+
+    await openOfferPicker();
+
+    expect(screen.getByRole('option', { name: 'Initial Visit' })).toHaveAttribute('aria-disabled', 'false');
+    const held = screen.getByRole('option', { name: /^Cystoscopy/ });
+    expect(held).toHaveAttribute('aria-disabled', 'true');
+    expect(held).toHaveTextContent('Held only at Northside');
+  });
+
+  const floor2: WithId<Location> = {
+    resourceType: 'Location',
+    id: 'floor-2',
+    name: 'Second Floor',
+    partOf: { reference: 'Location/downtown' },
+  };
+  const northsideRole: PractitionerRole = {
+    resourceType: 'PractitionerRole',
+    practitioner: { reference: 'Practitioner/dr-smith' },
+    location: [{ reference: 'Location/northside' }],
+  };
+  test.each<[string, ConfigurableActorResource, Resource[], string]>([
+    [
+      'a room, outermost first',
+      { ...room3, partOf: { reference: 'Location/floor-2' } },
+      [floor2],
+      'Downtown Clinic › Second Floor',
+    ],
+    ["a provider, by their roles' locations", drSmith, [northsideRole], 'Northside'],
+    ['an actor nothing places', drSmith, [], 'None recorded, so it can be booked at every service facility'],
+  ])('shows where %s is', async (_, actor, extra, where) => {
+    await setup(actor, [], extra);
+
+    expect(await screen.findByText(where)).toBeInTheDocument();
+  });
+
+  test('the offer button is ready at once, and only visit types held somewhere wait on where the actor is', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
+    for (const resource of [downtown, northside, ...services, drSmith]) {
+      await medplum.createResource(resource);
+    }
+    vi.spyOn(medplum, 'searchResources').mockReturnValue(new Promise(() => {}) as never);
+    renderWithMedplum(
+      <ActorPage actor={{ resource: drSmith, schedules: [] }} services={services} onSynced={vi.fn()} />,
+      medplum
+    );
+
+    const button = screen.getByRole('button', { name: 'Offer visit types' });
+    expect(button).not.toHaveAttribute('data-loading');
+    await userEvent.click(button);
+
+    expect(screen.getByRole('option', { name: 'Initial Visit' })).toHaveAttribute('aria-disabled', 'false');
+    const held = screen.getByRole('option', { name: /^Cystoscopy/ });
+    expect(held).toHaveAttribute('aria-disabled', 'true');
+    expect(within(held).getByLabelText('Checking service facilities')).toBeInTheDocument();
+  });
+
+  test('moving a room away from where an offered visit type is held marks it as not bookable, and keeps it offered', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
+    for (const resource of [downtown, northside, ...services]) {
+      await medplum.createResource(resource);
+    }
+    const atNorthside = await medplum.createResource<Location>({
+      ...room3,
+      partOf: { reference: 'Location/northside' },
+    });
+    const schedule = await medplum.createResource(makeSchedule('Location/room-3', [cystoscopy]));
+    const heldDowntown: WithId<HealthcareService> = {
+      resourceType: 'HealthcareService',
+      id: 'ultrasound',
+      name: 'Ultrasound',
+      location: [{ reference: 'Location/downtown' }],
+    };
+    const page = (resource: WithId<Location>): ReactNode => (
+      <ActorPage
+        actor={{ resource, schedules: [schedule] }}
+        services={[...services, heldDowntown]}
+        initialOpenServiceId={cystoscopy.id}
+        onSynced={vi.fn()}
+      />
+    );
+    const { rerender } = renderWithMedplum(page(atNorthside), medplum);
+    await openOfferPicker();
+    expect(screen.getByRole('option', { name: /^Ultrasound/ })).toHaveTextContent('Held only at Downtown Clinic');
+    await userEvent.keyboard('{Escape}');
+    expect(entry('Cystoscopy')).not.toHaveTextContent("Can't be booked");
+
+    rerender(page({ ...atNorthside, partOf: { reference: 'Location/downtown' } }));
+
+    await waitFor(() => expect(entry('Cystoscopy')).toHaveTextContent("Can't be booked"));
+    expect(within(panel('Cystoscopy')).getByText("Can't be booked here. Held only at Northside.")).toBeVisible();
   });
 
   test('offers several visit types at once, closed, and then says none are left to offer', async () => {

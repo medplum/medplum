@@ -3,7 +3,7 @@
 import { Group, Loader, Stack, Text, UnstyledButton } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
-import type { HealthcareService } from '@medplum/fhirtypes';
+import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
 import { IconChevronRight } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useId } from 'react';
@@ -11,11 +11,15 @@ import { scheduleHasOverrides } from '../ActorPage/scheduleDraft';
 import classes from '../ConfigPanel/ConfigRow.module.css';
 import { OverridesBadge } from '../OverridesBadge';
 import type { ConfigOffering, ConfigOfferingGroup } from '../SchedulingConfigWorkspace.utils';
+import { describeNoSharedFacility, isHeldEverywhere, sharesServiceFacility } from '../serviceFacilities';
+import { useActorFacilities } from '../useActorFacilities';
 
 export interface OfferingSchedulesSectionProps {
   /** The visit type as stored, which Customized compares each Schedule against. Absent for one not created yet. */
   readonly service?: WithId<HealthcareService>;
   readonly serviceName: string;
+  /** The service facilities the visit type is held at, as edited, which decide what can be booked. */
+  readonly location: readonly Reference<Location>[];
   /** What offers the visit type, by actor type, in the order the sidebar lists them. */
   readonly groups: readonly ConfigOfferingGroup[];
   readonly loading?: boolean;
@@ -29,17 +33,30 @@ export interface OfferingSchedulesSectionProps {
  * @returns The list.
  */
 export function OfferingSchedulesSection(props: OfferingSchedulesSectionProps): JSX.Element {
-  const { service, serviceName, groups, loading, onOpen } = props;
+  const { service, serviceName, location, groups, loading, onOpen } = props;
+  const listed = groups.filter((group) => group.offerings.length > 0);
+  const facilities = useActorFacilities(
+    isHeldEverywhere(location)
+      ? []
+      : listed.flatMap((group) => group.offerings.map((offering) => offering.actor.resource))
+  );
+
   if (loading) {
     return <Loader size="sm" aria-label="Loading what offers this visit type" />;
   }
-  const listed = groups.filter((group) => group.offerings.length > 0);
   if (!service || listed.length === 0) {
     return (
       <Text size="sm" c="dimmed">
         Nothing offers {serviceName} yet. Visit types are offered from a provider's, room's, or device's page.
       </Text>
     );
+  }
+
+  function notBookableReason(offering: ConfigOffering): string | undefined {
+    const placed = facilities?.get(getReferenceString(offering.actor.resource));
+    return placed && !sharesServiceFacility({ location: [...location] }, placed)
+      ? describeNoSharedFacility(serviceName, placed)
+      : undefined;
   }
 
   return (
@@ -52,6 +69,7 @@ export function OfferingSchedulesSection(props: OfferingSchedulesSectionProps): 
               service={service}
               serviceName={serviceName}
               offering={offering}
+              notBookableReason={notBookableReason(offering)}
               onOpen={onOpen}
             />
           ))}
@@ -77,19 +95,28 @@ function OfferingRow(props: {
   readonly service: WithId<HealthcareService>;
   readonly serviceName: string;
   readonly offering: ConfigOffering;
+  /** Why the visit type can't be booked with this actor, when it can't. */
+  readonly notBookableReason?: string;
   readonly onOpen?: (offering: ConfigOffering) => void;
 }): JSX.Element {
-  const { service, serviceName, offering, onOpen } = props;
+  const { service, serviceName, offering, notBookableReason, onOpen } = props;
   const { resource } = offering.actor;
   return (
     <UnstyledButton className={classes.row} onClick={() => onOpen?.(offering)}>
       <Group gap="sm" wrap="nowrap">
-        <Group gap="xs" wrap="nowrap" className={classes.label}>
-          <Text fw={500} truncate>
-            {getDisplayString(resource)}
-          </Text>
-          {scheduleHasOverrides(service, offering.schedule) && <OverridesBadge serviceName={serviceName} />}
-        </Group>
+        <Stack gap={2} className={classes.label}>
+          <Group gap="xs" wrap="nowrap">
+            <Text fw={500} truncate>
+              {getDisplayString(resource)}
+            </Text>
+            {scheduleHasOverrides(service, offering.schedule) && <OverridesBadge serviceName={serviceName} />}
+          </Group>
+          {notBookableReason && (
+            <Text size="sm" c="orange">
+              Can't be booked: {notBookableReason}.
+            </Text>
+          )}
+        </Stack>
         <IconChevronRight size={16} />
       </Group>
     </UnstyledButton>
