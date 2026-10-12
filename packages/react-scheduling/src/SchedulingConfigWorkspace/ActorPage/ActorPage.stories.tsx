@@ -13,10 +13,12 @@ import { searchConfigurableActors, searchConfigurableServices } from '../../conf
 import { withFixtures } from '../../stories/decorators';
 import {
   ConfigFixtures,
+  DrLindqvistPractitioner,
   DrNguyenPractitioner,
   DrPatelPractitioner,
   DrReyesPractitioner,
   ExamRoomC,
+  ManyVisitTypesFixtures,
 } from '../../stories/scheduling';
 import { ActorPage } from './ActorPage';
 
@@ -140,3 +142,13 @@ export const CreateRoom = (): JSX.Element => {
     </Box>
   );
 };
+
+/**
+ * Dr. Elin Lindqvist offers 70 visit types, listed twenty at a time. Filter them by name, tick several, or tick the
+ * box above the list to take every match, and stop offering them together. Cardiology Follow-up has custom hours.
+ * @returns The story.
+ */
+export const ProviderWithManyVisitTypes = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrLindqvistPractitioner.id} />
+);
+ProviderWithManyVisitTypes.decorators = [withFixtures(ManyVisitTypesFixtures)];

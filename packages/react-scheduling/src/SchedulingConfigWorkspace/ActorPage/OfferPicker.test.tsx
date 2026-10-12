@@ -75,6 +75,21 @@ describe('OfferPicker', () => {
     expect(screen.getByRole('button', { name: 'Offer 1 visit type' })).toBeEnabled();
   });
 
+  test('selects every match, only while searching', async () => {
+    const onOffer = vi.fn();
+    render(<OfferPicker services={services} onOffer={onOffer} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Offer visit types' }));
+    expect(screen.queryByRole('button', { name: /^Select all/ })).not.toBeInTheDocument();
+
+    await userEvent.type(search(), 'Visit 1');
+    await userEvent.click(screen.getByRole('button', { name: 'Select all 10 matching' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Offer 10 visit types' }));
+
+    expect(onOffer.mock.calls[0][0].map((service: HealthcareService) => service.id)).toEqual(
+      Array.from({ length: 10 }, (_, i) => `visit-${i + 10}`)
+    );
+  });
+
   test('finds a visit type with no name by the label it is shown with', async () => {
     render(
       <OfferPicker services={[...services, { resourceType: 'HealthcareService', id: 'unnamed' }]} onOffer={vi.fn()} />

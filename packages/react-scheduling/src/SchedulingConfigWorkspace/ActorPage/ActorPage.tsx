@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Accordion, Alert, Divider, Group, Stack, Text, Title } from '@mantine/core';
+import { Alert, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   deepEquals,
@@ -24,7 +24,6 @@ import {
 import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPage';
 import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
-import { ConfirmModal } from '../ConfirmModal';
 import { summarizeOffering } from '../offeringSummary';
 import { getActorStatus } from '../SchedulingConfigWorkspace.utils';
 import type { ConfigStatus } from '../StatusBadge';
@@ -32,8 +31,8 @@ import { StatusBadge } from '../StatusBadge';
 import type { ActorGeneralFields, ActorResource, NewActorType } from './actorDraft';
 import { actorGeneralFieldsOf, buildActorResource, hasEditableName, newActorResource } from './actorDraft';
 import { ActorGeneral } from './ActorGeneral';
-import { OfferingEditor, OfferingMenu, OfferingSummary } from './OfferingEditor';
-import { OfferPicker } from './OfferPicker';
+import { OfferingEditor, OfferingSummary } from './OfferingEditor';
+import { OfferingsList } from './OfferingsList';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
 import { buildScheduleDraft, newOfferingFields, scheduleFieldsOf, startingOfferingFields } from './scheduleDraft';
 
@@ -98,7 +97,6 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [open, setOpen] = useState<string | null>(() =>
     initialOpenServiceId && Object.hasOwn(initial.offerings, initialOpenServiceId) ? initialOpenServiceId : null
   );
-  const [stopping, setStopping] = useState<WithId<HealthcareService>>();
   const [saving, setSaving] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
   const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'>>();
@@ -121,7 +119,10 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const dirty = creating || actorDirty || !deepEquals(fields, initial);
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
-  const offered = Object.keys(fields.offerings).flatMap((id) => servicesById.get(id) ?? []);
+  const offered = useMemo(
+    () => services.filter((service) => Object.hasOwn(fields.offerings, service.id)),
+    [services, fields.offerings]
+  );
   const scheduleActive = schedule ? fields.active : undefined;
   const status = actorWithId && getActorStatus(actorWithId, scheduleActive);
   const alert = status && getBookingAlert(actorDraft, status);
@@ -174,16 +175,22 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     setFields((current) => ({ ...current, offerings: { ...current.offerings, ...added } }));
   }
 
-  function stopOffering(service: WithId<HealthcareService>): void {
-    const { [service.id]: _removed, ...offerings } = fields.offerings;
-    setFields({ ...fields, offerings });
-    setOpen(null);
-    setStopping(undefined);
+  function stopOffering(stopped: WithId<HealthcareService>[]): void {
+    const ids = new Set(stopped.map((service) => service.id));
+    setFields((current) => ({
+      ...current,
+      offerings: Object.fromEntries(Object.entries(current.offerings).filter(([id]) => !ids.has(id))),
+    }));
+    setOpen((current) => (current && ids.has(current) ? null : current));
   }
 
   async function handleSave(): Promise<void> {
     if (blockedReason) {
       setTriedToSave(true);
+      // Opening it also lists it when the filter or paging hides it, so what to fix is on screen.
+      if (blocking) {
+        setOpen(blocking.service.id);
+      }
       return;
     }
     setSaving(true);
@@ -307,72 +314,44 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
             Visit types can be offered once {actorName} is created.
           </Text>
         )}
-        {actorWithId && offered.length === 0 && (
-          <Text size="sm" c="dimmed">
-            {actorName} offers no visit types yet.
-          </Text>
-        )}
-        {actorWithId && offered.length > 0 && (
-          <Accordion variant="separated" value={open} onChange={setOpen}>
-            {checks.map(({ service, errors, availabilityError }) => {
+        {actorWithId && (
+          <OfferingsList
+            actorName={actorName}
+            offeredServices={offered}
+            openServiceId={open}
+            onOpenServiceIdChange={setOpen}
+            renderHeader={(service) => (
+              <OfferingSummary
+                service={service}
+                value={fields.offerings[service.id]}
+                summary={scheduleDraft ? summarizeOffering(service, scheduleDraft) : ''}
+                dirty={isOfferingDirty(service)}
+              />
+            )}
+            renderPanel={(service) => {
               const timezone = getSchedulingTimezone(service, scheduleDraft, actorWithId);
               return (
-                <Accordion.Item key={service.id} value={service.id}>
-                  {/* Beside the control rather than in it, which is itself a button. */}
-                  <Group gap={0} wrap="nowrap" pr="sm">
-                    <Accordion.Control>
-                      <OfferingSummary
-                        service={service}
-                        value={fields.offerings[service.id]}
-                        summary={scheduleDraft ? summarizeOffering(service, scheduleDraft) : ''}
-                        dirty={isOfferingDirty(service)}
-                      />
-                    </Accordion.Control>
-                    <OfferingMenu service={service} onStopOffering={() => setStopping(service)} />
-                  </Group>
-                  <Accordion.Panel>
-                    <Stack gap="lg">
-                      <Divider />
-                      <OfferingEditor
-                        service={service}
-                        value={fields.offerings[service.id]}
-                        initialParameters={startingOfferingFields(initial, service).parameters}
-                        onChange={(value) => updateOffering(service.id, value)}
-                        errors={errors}
-                        availabilityError={triedToSave ? availabilityError : undefined}
-                        timezone={
-                          timezone
-                            ? {
-                                zone: timezone,
-                                source: timezoneSource(fields.offerings[service.id], service, actorName),
-                              }
-                            : undefined
-                        }
-                      />
-                    </Stack>
-                  </Accordion.Panel>
-                </Accordion.Item>
+                <OfferingEditor
+                  service={service}
+                  value={fields.offerings[service.id]}
+                  initialParameters={startingOfferingFields(initial, service).parameters}
+                  onChange={(value) => updateOffering(service.id, value)}
+                  errors={errorsFor(service)}
+                  availabilityError={triedToSave ? availabilityErrorFor(service) : undefined}
+                  timezone={
+                    timezone
+                      ? { zone: timezone, source: timezoneSource(fields.offerings[service.id], service, actorName) }
+                      : undefined
+                  }
+                />
               );
-            })}
-          </Accordion>
+            }}
+            offerableServices={offerable}
+            onOffer={offer}
+            onStopOffering={stopOffering}
+          />
         )}
-
-        {actorWithId && <OfferPicker services={offerable} onOffer={offer} />}
       </ConfigSection>
-
-      <ConfirmModal
-        opened={stopping !== undefined}
-        title={stopping && `Stop offering ${stopping.name ?? 'this visit type'}?`}
-        cancelLabel="Keep offering"
-        confirmLabel="Stop offering"
-        destructive
-        onCancel={() => setStopping(undefined)}
-        onConfirm={() => stopping && stopOffering(stopping)}
-      >
-        {stopping &&
-          `${actorName} will no longer be offered for ${stopping.name ?? 'this visit type'} once you save. ` +
-            "Existing appointments aren't changed."}
-      </ConfirmModal>
 
       <SaveBar
         dirty={dirty}
