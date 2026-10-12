@@ -2,16 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest } from '@medplum/core';
-import type { AsyncJob } from '@medplum/fhirtypes';
+import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
+import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
-import { getConfig } from '../config/loader';
+import type { ShardConfig } from '../config/utils';
 import { DatabaseMode, getDatabasePool, withPoolClient } from '../database';
-import type { Repository, SystemRepository } from '../fhir/repo';
+import type { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
+import type { SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
-import { normalizeShardId, PLACEHOLDER_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
+import { getAllShards, getShardConfig, GLOBAL_SHARD_ID } from '../fhir/sharding';
 import type { PgQueryable } from '../fhir/sql';
 import { globalLogger } from '../logger';
-import { getPostDeployVersion } from '../migration-sql';
+import { getPostDeployVersion, markPostDeployMigrationCompleted } from '../migration-sql';
 import { getServerVersion } from '../util/version';
 import { addPostDeployMigrationJobData } from '../workers/post-deploy-migration';
 import { InProgressAsyncJobStatuses } from '../workers/utils';
@@ -97,8 +99,9 @@ export function getPostDeployManifestEntry(migrationNumber: number): {
   return manifest['v' + migrationNumber];
 }
 
-export async function upsertPostDeployMigrationAsyncJob(
-  repo: Repository,
+async function upsertPostDeployMigrationAsyncJob(
+  repo: SystemRepository,
+  shardId: string,
   migrationNumber: number,
   existingAsyncJob?: WithId<AsyncJob>
 ): Promise<WithId<AsyncJob>> {
@@ -106,7 +109,8 @@ export async function upsertPostDeployMigrationAsyncJob(
     resourceType: 'AsyncJob',
     type: 'data-migration',
     status: 'accepted',
-    request: `data-migration-v${migrationNumber}`,
+    request: `shardId=${shardId}&version=${migrationNumber}`,
+    meta: { tag: [{ system: ShardIdTagSystem, code: shardId }] },
     dataVersion: migrationNumber,
     output: undefined,
     requestTime: existingAsyncJob?.requestTime ?? new Date().toISOString(),
@@ -127,16 +131,22 @@ export function enforceStrictMigrationVersionChecks(): boolean {
   return process.env.NODE_ENV === 'production' || Boolean(process.env.MEDPLUM_ENABLE_STRICT_MIGRATION_VERSION_CHECKS);
 }
 
-export async function preparePostDeployMigrationAsyncJob(
-  systemRepo: SystemRepository,
-  version: number
-): Promise<WithId<AsyncJob>> {
+const ShardIdTagSystem = 'shardId';
+
+export async function preparePostDeployMigrationAsyncJob(shardId: string, version: number): Promise<WithId<AsyncJob>> {
+  const systemRepo = getShardSystemRepo(GLOBAL_SHARD_ID);
   return systemRepo.withTransaction(
     async (txRepo) => {
-      // Check if there is already a migration job in progress
+      // Check if there is already a migration job in progress. Jobs created before AsyncJobs were
+      // tagged with a shard ID belong to the global shard, so allow jobs with no tag with the shardId system
+      const shardTag = `${ShardIdTagSystem}|${shardId}`;
+      const tagParam =
+        shardId === GLOBAL_SHARD_ID
+          ? `_filter=_tag eq "${shardTag}" or _tag ne "${ShardIdTagSystem}|"`
+          : `_tag=${shardTag}`;
       const existingJobs = await txRepo.searchResources<AsyncJob>(
         parseSearchRequest(
-          `AsyncJob?status=${InProgressAsyncJobStatuses.join(',')}&type=data-migration&_count=2&_project:missing=true`
+          `AsyncJob?status=${InProgressAsyncJobStatuses.join(',')}&type=data-migration&${tagParam}&_count=2&_project:missing=true`
         )
       );
 
@@ -157,7 +167,7 @@ export async function preparePostDeployMigrationAsyncJob(
           )
         );
       }
-      const asyncJob = await upsertPostDeployMigrationAsyncJob(txRepo, version, existingJob);
+      const asyncJob = await upsertPostDeployMigrationAsyncJob(txRepo, shardId, version, existingJob);
 
       return asyncJob;
     },
@@ -165,27 +175,65 @@ export async function preparePostDeployMigrationAsyncJob(
   );
 }
 
-export async function queuePostDeployMigration(
-  systemRepo: SystemRepository,
-  version: number
-): Promise<WithId<AsyncJob>> {
+export async function queuePostDeployMigration(shardId: string, version: number): Promise<WithId<AsyncJob>> {
   const migration = getPostDeployMigration(version);
-  const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
+  const asyncJob = await preparePostDeployMigrationAsyncJob(shardId, version);
 
   // Previously, queueing the bullMQ job was done in the transaction above,
   // but that could lead to race conditions if the queued job happened to be
   // picked up before the transaction was committed.
-  // globalLogger.info('Adding post-deploy migration job', { version, asyncJob: getReferenceString(asyncJob) });
-  const jobData = migration.prepareJobData({ shardId: TODO_SHARD_ID, asyncJob });
-  const result = await addPostDeployMigrationJobData(jobData, { deduplication: { id: `v${version}` } });
-  if (!result) {
-    globalLogger.error('Unable to add post-deploy migration job', {
+  const jobData = migration.prepareJobData({ asyncJob, shardId });
+  // Each shard runs its own copy of a migration, so the deduplication ID is per shard. The global shard keeps the
+  // unprefixed ID used before sharding, so jobs queued by earlier versions still deduplicate during an upgrade.
+  const deduplicationId = shardId === GLOBAL_SHARD_ID ? `v${version}` : `${shardId}:v${version}`;
+  const jobId = randomUUID();
+  const job = await addPostDeployMigrationJobData(jobData, { jobId, deduplication: { id: deduplicationId } });
+  // A deduplicated add returns the job already queued under the deduplication ID instead of adding this one
+  if (job?.id !== jobId) {
+    globalLogger.info('Post-deploy migration job already queued', {
+      shardId,
       version,
+      jobId: job?.id,
       asyncJob: getReferenceString(asyncJob),
     });
   }
 
   return asyncJob;
+}
+
+/**
+ * Completes an AsyncJob run by a post-deploy worker. Data migration jobs also advance the migration
+ * version on their explicit target shard and trigger the next pending migration there. The executor's
+ * repository remains responsible only for storing the AsyncJob resource.
+ *
+ * @param exec - The executor bound to the repository that owns the AsyncJob.
+ * @param targetShardId - The shard where the post-deploy work ran.
+ * @param output - The final AsyncJob output.
+ * @returns The completed AsyncJob.
+ */
+export async function completePostDeployMigration(
+  exec: AsyncJobExecutor,
+  targetShardId: string,
+  output?: Parameters
+): Promise<WithId<AsyncJob>> {
+  const asyncJob = exec.getAsyncJob();
+  if (asyncJob.type !== 'data-migration' || !asyncJob.dataVersion) {
+    return exec.completeJob(output);
+  }
+
+  // dataVersion should be moved into post-deploy job data and pass it to this function alongside targetShardId.
+  // The queued job should be the source of truth for the migration it performed; AsyncJob.dataVersion should be
+  // retained as tracking metadata and validated against the queued value. Legacy payloads can continue falling
+  // back to AsyncJob.dataVersion until their compatibility path is removed.
+  const completedDataVersion = asyncJob.dataVersion;
+  globalLogger.info('Marking post-deploy migration complete', {
+    shardId: targetShardId,
+    version: `v${completedDataVersion}`,
+  });
+  await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER, targetShardId), completedDataVersion);
+  const updatedJob = await exec.completeJob(output);
+  await maybeAutoRunPendingPostDeployMigrationOnShard(targetShardId);
+  return updatedJob;
 }
 
 export async function withLongRunningDatabaseClient<TResult>(
@@ -201,11 +249,20 @@ export async function withLongRunningDatabaseClient<TResult>(
   );
 }
 
-export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<AsyncJob> | undefined> {
-  const config = getConfig();
-  const isDisabled = config.database.runMigrations === false || config.database.disableRunPostDeployMigrations;
+export async function maybeAutoRunPendingPostDeployMigrationOnAllShards(): Promise<void> {
+  for (const shardConfig of getAllShards()) {
+    await maybeAutoRunPendingPostDeployMigrationOnShard(shardConfig);
+  }
+}
+
+export async function maybeAutoRunPendingPostDeployMigrationOnShard(
+  shardIdOrConfig: string | ShardConfig
+): Promise<WithId<AsyncJob> | undefined> {
+  const shardConfig = typeof shardIdOrConfig === 'string' ? getShardConfig(shardIdOrConfig) : shardIdOrConfig;
+  const isDisabled =
+    shardConfig.database.runMigrations === false || shardConfig.database.disableRunPostDeployMigrations;
   const pendingPostDeployMigration = await getPendingPostDeployMigration(
-    getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID))
+    getDatabasePool(DatabaseMode.WRITER, shardConfig.id)
   );
 
   if (!isDisabled && pendingPostDeployMigration === MigrationVersion.UNKNOWN) {
@@ -226,9 +283,8 @@ export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<A
     return undefined;
   }
 
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will eventually be a parameter to this function
   globalLogger.debug('Auto-queueing pending post-deploy migration', { version: `v${pendingPostDeployMigration}` });
-  return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
+  return queuePostDeployMigration(shardConfig.id, pendingPostDeployMigration);
 }
 
 /**
@@ -237,20 +293,23 @@ export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<A
  * If pending post-deploy migrations were not assessed due to `config.runMigrations` being false,
  * this function throws
  *
+ * @param shardId - The shard ID to run the migration on.
  * @param requestedDataVersion - The data version requested to run.
  * @returns An `AsyncJob` if migration is started or already running, otherwise returns `undefined` if no migration to run.
  */
 export async function maybeStartPostDeployMigration(
+  shardId: string,
   requestedDataVersion?: number
 ): Promise<WithId<AsyncJob> | undefined> {
   // If schema migrations didn't run, we should not attempt to run data migrations
-  if (getConfig().database.runMigrations === false) {
+  const shardConfig = getShardConfig(shardId);
+  if (shardConfig.database.runMigrations === false) {
     throw new OperationOutcomeError(
       badRequest('Cannot run post-deploy migration since pre-deploy migrations are disabled')
     );
   }
 
-  const pool = getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID));
+  const pool = getDatabasePool(DatabaseMode.WRITER, shardId);
   const pendingPostDeployMigration = await getPendingPostDeployMigration(pool);
   // This should never happen unless there is something wrong with the state of the database but technically possible
   if (pendingPostDeployMigration === MigrationVersion.UNKNOWN) {
@@ -289,6 +348,5 @@ export async function maybeStartPostDeployMigration(
     return undefined;
   }
 
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will eventually be a parameter to this function
-  return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
+  return queuePostDeployMigration(shardId, pendingPostDeployMigration);
 }

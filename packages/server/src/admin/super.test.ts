@@ -1493,7 +1493,7 @@ describe('Super Admin routes with sharding enabled', () => {
       .set('Authorization', 'Bearer ' + adminAccessToken);
 
     expect(res).toHaveStatus(400);
-    expect(res.body.issue[0].details.text).toBe('shardId is required when sharding is enabled');
+    expect(res.body.issue[0].details.text).toBe('shardId is required');
   });
 
   test('Runs table settings on the requested shard', async () => {

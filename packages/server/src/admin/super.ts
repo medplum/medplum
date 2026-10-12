@@ -27,14 +27,7 @@ import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/as
 import { sendOutcome } from '../fhir/outcomes';
 import { getShardSystemRepo, Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
-import {
-  GLOBAL_SHARD_ID,
-  isConfiguredShardId,
-  isShardingEnabled,
-  normalizeShardId,
-  PLACEHOLDER_SHARD_ID,
-  TODO_SHARD_ID,
-} from '../fhir/sharding';
+import { GLOBAL_SHARD_ID, isConfiguredShardId, isShardingEnabled, PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { isValidPostgresIdentifier } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted, setPreDeployVersion } from '../migration-sql';
@@ -76,7 +69,7 @@ function shardIdValidator(source: 'body' | 'query' = 'body'): ValidationChain {
       if (!isShardingEnabled()) {
         return true;
       }
-      throw new Error('shardId is required when sharding is enabled');
+      throw new Error('shardId is required');
     }
     if (typeof value !== 'string') {
       throw new Error('shardId must be a string');
@@ -443,7 +436,7 @@ superAdminRouter.get('/migrations', [shardIdValidator('query')], async (req: Req
 // to run the pending post-deploy migration, if any.
 superAdminRouter.post(
   '/migrate',
-  [body('dataVersion').isInt().withMessage('dataVersion must be an integer').optional()],
+  [shardIdValidator(), body('dataVersion').isInt().withMessage('dataVersion must be an integer').optional()],
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
@@ -452,7 +445,10 @@ superAdminRouter.post(
     }
 
     const { baseUrl } = getConfig();
-    const dataMigrationJob = await maybeStartPostDeployMigration(req?.body?.dataVersion as number | undefined);
+    const dataMigrationJob = await maybeStartPostDeployMigration(
+      getShardId(req.body),
+      req?.body?.dataVersion as number | undefined
+    );
     // If there is no migration job to run, return allOk
     if (!dataMigrationJob) {
       sendOutcome(res, allOk);
@@ -463,27 +459,30 @@ superAdminRouter.post(
   }
 );
 
-superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Response) => {
+superAdminRouter.post('/reconcile-db-schema-drift', [shardIdValidator()], async (req: Request, res: Response) => {
   const ctx = requireSuperAdmin();
   requireAsync(req);
+  if (sendValidationErrors(req, res)) {
+    return;
+  }
 
   const migrationActions = await generateMigrationActions({
-    dbClient: getDatabasePool(DatabaseMode.WRITER, normalizeShardId(TODO_SHARD_ID)),
+    dbClient: getDatabasePool(DatabaseMode.WRITER, getShardId(req.body)),
     dropUnmatchedIndexes: true,
   });
 
   const allActions = [...migrationActions.preDeploy, ...migrationActions.postDeploy];
 
   if (allActions.length === 0) {
-    // Nothing to do
     sendOutcome(res, allOk);
     return;
   }
 
+  const shardId = getShardId(req.body);
   const exec = new AsyncJobExecutor(ctx.repo);
   await exec.init(req.originalUrl);
   await exec.run(async (asyncJob) => {
-    const jobData = prepareDynamicMigrationJobData({ shardId: TODO_SHARD_ID, asyncJob }, migrationActions);
+    const jobData = prepareDynamicMigrationJobData({ shardId, asyncJob }, migrationActions);
     await addPostDeployMigrationJobData(jobData);
   });
 
@@ -496,6 +495,7 @@ superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Re
 superAdminRouter.post(
   '/rebuild-index',
   [
+    shardIdValidator(),
     body('targets').isArray({ min: 1, max: 10 }).withMessage('targets must be an array containing 1 to 10 items'),
     body('targets.*')
       .isObject({ strict: true })
@@ -526,6 +526,7 @@ superAdminRouter.post(
       return;
     }
 
+    const shardId = getShardId(req.body);
     const targets = req.body.targets as RebuildIndexTarget[];
     const migrationActions = {
       preDeploy: [],
@@ -548,7 +549,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(ctx.systemRepo);
     await exec.init(`${req.originalUrl}?${requestParams}`);
     await exec.run(async (asyncJob) => {
-      const jobData = prepareDynamicMigrationJobData({ shardId: TODO_SHARD_ID, asyncJob }, migrationActions);
+      const jobData = prepareDynamicMigrationJobData({ shardId, asyncJob }, migrationActions);
       await addPostDeployMigrationJobData(jobData);
     });
 
@@ -564,6 +565,7 @@ type RebuildIndexTarget = { table: string } | { index: string };
 superAdminRouter.post(
   '/drop-invalid-indexes',
   [
+    shardIdValidator(),
     body('targets').isArray({ min: 1, max: 10 }).withMessage('targets must be an array containing 1 to 10 items'),
     body('targets.*')
       .isObject({ strict: true })
@@ -607,10 +609,11 @@ superAdminRouter.post(
       requestParams.append('index', `${target.schema}.${target.index}`);
     }
 
+    const shardId = getShardId(req.body);
     const exec = new AsyncJobExecutor(ctx.systemRepo);
     await exec.init(`${req.originalUrl}?${requestParams}`);
     await exec.run(async (asyncJob) => {
-      const jobData = prepareDynamicMigrationJobData({ shardId: TODO_SHARD_ID, asyncJob }, migrationActions);
+      const jobData = prepareDynamicMigrationJobData({ shardId, asyncJob }, migrationActions);
       await addPostDeployMigrationJobData(jobData);
     });
 

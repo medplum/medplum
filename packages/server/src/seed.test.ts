@@ -52,7 +52,7 @@ async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: System
 
 async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository, version: number): Promise<void> {
   const migration = getPostDeployMigration(version);
-  const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
+  const asyncJob = await preparePostDeployMigrationAsyncJob(normalizeShardId(shardId), version);
   const jobData = migration.prepareJobData({ shardId, asyncJob });
   globalLogger.write(`${new Date().toISOString()} - Starting post-deploy migration v${version}`);
   const result = await migration.run(systemRepo, undefined, jobData);

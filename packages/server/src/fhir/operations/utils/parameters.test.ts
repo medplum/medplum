@@ -576,7 +576,7 @@ describe('getShardIdParam', () => {
 
     const err = getShardIdParamError({});
     expect(err).toBeInstanceOf(OperationOutcomeError);
-    expect(err.outcome).toMatchObject(badRequest('shardId is required when sharding is enabled'));
+    expect(err.outcome).toMatchObject(badRequest('shardId is required'));
   });
 
   test.each([false, true])('Rejects an unknown shardId (sharded: %s)', async (sharded) => {

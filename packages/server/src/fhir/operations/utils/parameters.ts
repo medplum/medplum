@@ -349,7 +349,7 @@ export function makeOperationDefinitionParameter(
 export function getShardIdParam(params: { shardId?: string }): string {
   if (!params.shardId) {
     if (isShardingEnabled()) {
-      throw new OperationOutcomeError(badRequest('shardId is required when sharding is enabled'));
+      throw new OperationOutcomeError(badRequest('shardId is required'));
     }
     return GLOBAL_SHARD_ID;
   }
