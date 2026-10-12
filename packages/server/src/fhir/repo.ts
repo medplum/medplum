@@ -1777,7 +1777,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param resourceType - The resource type.
    * @returns The permitted project IDs or undefined if all projects are permitted
    */
-  getPermittedProjectIds(resourceType: string): string[] | undefined {
+  private getPermittedProjectIds(resourceType: string): string[] | undefined {
     return getPermittedProjectIds(this.context.projects, resourceType);
   }
 

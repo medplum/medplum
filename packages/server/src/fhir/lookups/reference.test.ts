@@ -59,6 +59,112 @@ describe('ReferenceTable', () => {
       expect(querySpy).not.toHaveBeenCalled();
       querySpy.mockRestore();
     });
+
+    test('overwrites the projectId of a conflicting leftover row', async () => {
+      const client = getReferenceTestClient('Observation');
+      const resourceId = randomUUID();
+      const targetId = randomUUID();
+      // Left behind by a resource purged before `projectId` was written; the v53 backfill never
+      // revisits a table it has completed, so the insert has to fix it
+      await client.query(
+        `INSERT INTO "Observation_References" ("resourceId", "targetId", "code") VALUES ($1, $2, 'subject')`,
+        [resourceId, targetId]
+      );
+
+      const obs: WithId<Observation> = {
+        resourceType: 'Observation',
+        id: resourceId,
+        meta: { project: randomUUID() },
+        status: 'final',
+        code: { text: 'test' },
+        subject: { reference: 'Patient/' + targetId },
+      };
+      try {
+        await expect(refTable.batchIndexResources(client, [obs], true)).resolves.toBeUndefined();
+
+        const rows = await refTable.getExistingRows(client, [obs]);
+        expect(rows).toContainEqual({ resourceId, code: 'subject', targetId, projectId: obs.meta?.project });
+      } finally {
+        await refTable.deleteValuesForResource(client, obs);
+      }
+    });
+
+    test('inserts a batch that contains the same resource twice', async () => {
+      const client = getReferenceTestClient('Observation');
+      const obs: WithId<Observation> = {
+        resourceType: 'Observation',
+        id: randomUUID(),
+        meta: { project: randomUUID() },
+        status: 'final',
+        code: { text: 'test' },
+        subject: { reference: 'Patient/' + randomUUID() },
+      };
+
+      try {
+        await expect(refTable.batchIndexResources(client, [obs, obs], true)).resolves.toBeUndefined();
+        const rows = await refTable.getExistingRows(client, [obs]);
+        expect(rows.filter((r) => r.code === 'subject')).toHaveLength(1);
+      } finally {
+        await refTable.deleteValuesForResource(client, obs);
+      }
+    });
+
+    test('replaces every leftover row when a purged resource is recreated by id', async () => {
+      const resourceId = randomUUID();
+      const kept = randomUUID();
+      const dropped = randomUUID();
+      const client = getReferenceTestClient('Observation');
+      // Left behind by a resource that was purged without its reference rows; only one collides
+      await client.query(
+        `INSERT INTO "Observation_References" ("resourceId", "targetId", "code", "projectId")
+         VALUES ($1, $2, 'subject', NULL), ($1, $3, 'performer', $4)`,
+        [resourceId, kept, dropped, randomUUID()]
+      );
+
+      // Clients can choose the id only through an update, which reads and replaces the existing rows
+      const obs = await systemRepo.updateResource<Observation>({
+        resourceType: 'Observation',
+        id: resourceId,
+        status: 'final',
+        code: { text: 'test' },
+        subject: { reference: 'Patient/' + kept },
+      });
+      try {
+        const project = await client.query<{ projectId: string }>(
+          `SELECT "projectId" FROM "Observation" WHERE id = $1`,
+          [resourceId]
+        );
+        const rows = await refTable.getExistingRows(client, [obs]);
+        expect(rows.map((r) => r.code).sort()).toEqual(['patient', 'subject']);
+        expect(rows.every((r) => r.targetId === kept && r.projectId === project.rows[0].projectId)).toBe(true);
+      } finally {
+        await refTable.deleteValuesForResource(client, obs);
+      }
+    });
+
+    test('inserts a resource that references the same target twice under one code', async () => {
+      const client = getReferenceTestClient('Observation');
+      const targetId = randomUUID();
+      const obs: WithId<Observation> = {
+        resourceType: 'Observation',
+        id: randomUUID(),
+        meta: { project: randomUUID() },
+        status: 'final',
+        code: { text: 'test' },
+        // Deduped before the insert, so the two references make one row
+        performer: [{ reference: 'Practitioner/' + targetId }, { reference: 'Practitioner/' + targetId }],
+      };
+
+      try {
+        await expect(refTable.batchIndexResources(client, [obs], true)).resolves.toBeUndefined();
+        const rows = await refTable.getExistingRows(client, [obs]);
+        expect(rows.filter((r) => r.code === 'performer')).toEqual([
+          { resourceId: obs.id, code: 'performer', targetId, projectId: obs.meta?.project },
+        ]);
+      } finally {
+        await refTable.deleteValuesForResource(client, obs);
+      }
+    });
   });
 
   describe('batchIndexResources', () => {

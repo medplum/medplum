@@ -184,12 +184,15 @@
     "requiredBefore": "5.2.0"
   },
   "v51": {
-    "serverVersion": "5.2.1"
+    "serverVersion": "5.2.1",
+    "requiredBefore": "5.3.0"
   },
   "v52": {
-    "serverVersion": "5.2.2"
+    "serverVersion": "5.2.2",
+    "requiredBefore": "5.3.0"
   },
   "v53": {
-    "serverVersion": "5.2.3"
+    "serverVersion": "5.2.5",
+    "requiredBefore": "5.3.0"
   }
 }

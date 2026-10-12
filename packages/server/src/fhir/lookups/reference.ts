@@ -226,9 +226,14 @@ export class ReferenceTable extends LookupTable {
     }
     const tableName = this.getTableName(resourceType);
 
-    for (let i = 0; i < values.length; i += 10_000) {
-      const batchedValues = values.slice(i, i + 10_000);
-      const insert = new InsertQuery(tableName, batchedValues).ignoreOnConflict();
+    // DO UPDATE fails if one statement hits the same row twice, e.g. a batch with a resource repeated
+    const uniqueValues = [...new Map(values.map((v) => [`${v.resourceId}|${v.targetId}|${v.code}`, v])).values()];
+
+    // A conflicting row was left behind by a resource purged before `projectId` was written, and
+    // the v53 backfill never revisits a table it has completed, so its NULL `projectId` is fixed here
+    for (let i = 0; i < uniqueValues.length; i += 10_000) {
+      const batchedValues = uniqueValues.slice(i, i + 10_000);
+      const insert = new InsertQuery(tableName, batchedValues).mergeOnConflict(['resourceId', 'targetId', 'code']);
       await insert.execute(client);
     }
   }

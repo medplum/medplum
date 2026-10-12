@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Job } from 'bullmq';
-import type { PoolClient } from 'pg';
-import { getConfig } from '../../config/loader';
+import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { isChainedSearchDisabled } from '../../fhir/lookups/reference';
 import { PostgresError } from '../../fhir/sql';
 import { globalLogger } from '../../logger';
+import { getTrackingAsyncJobExecutor } from '../../workers/base';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
-import { moveToDelayedAndThrow, queueRegistry } from '../../workers/utils';
+import { CancelledError, isJobActive, moveToDelayedAndThrow, queueRegistry } from '../../workers/utils';
 import * as fns from '../migrate-functions';
 import { withLongRunningDatabaseClient } from '../migration-utils';
 import type { MigrationActionResult } from '../types';
@@ -28,13 +28,18 @@ export type BackfillStep = 'backfill' | 'verify';
 
 export interface ProjectIdBackfillJobData extends CustomPostDeployMigrationJobData {
   readonly completedResourceTypes?: string[];
-  /** Resource types whose rows this job rewrote, and so must vacuum before building their index. */
-  readonly rewrittenResourceTypes?: string[];
   readonly resumeFromResourceType?: string;
   readonly resumeFromResourceId?: string;
   readonly resumeStep?: BackfillStep;
-  /** Times this job has been re-queued after losing its database connections. */
+  /** Consecutive re-queues after a transient failure; reset whenever a table completes. */
   readonly transientFailures?: number;
+  /**
+   * Ranges that timed out even with seq scans off, by resource type. A table's next attempt starts
+   * with just these, since its other ranges were already covered.
+   */
+  readonly timedOutRanges?: Record<string, ResourceIdRange[]>;
+  /** When the job first had to wait out an index build, in epoch ms; cleared once nothing is left to wait on. */
+  readonly deferredSince?: number;
 }
 
 interface ReferenceTableDefinition {
@@ -248,27 +253,46 @@ const SLOW_RANGE_WARN_MS = 30_000;
  *
  * Generous on purpose. A correctly planned range was measured at 462s on a 20M-row table under the
  * checkpoint pressure of a bulk load, and a migration generating this much WAL creates exactly
- * that pressure. Timing out is not a delay here: the range is abandoned, its rows stay NULL, and
- * the table fails to converge, which fails the job. The seq-scan-per-range case this guards
- * against is orders of magnitude slower still, so the wide margin costs nothing.
+ * that pressure. A range that times out is skipped for the rest of the attempt, which still covers
+ * every other range and builds every index; the job is then delayed to retry just the skipped
+ * ranges, counted as a transient failure.
  */
 const RANGE_STATEMENT_TIMEOUT = '20min';
+
+/**
+ * Ends a range transaction left idle by a process that died mid-range without its socket being
+ * closed, which would otherwise hold the range's row locks until TCP keepalive gives up. Matches
+ * the pool's default, which `disableConnectionConfiguration` turns off. A live range transaction
+ * is idle only between its statements.
+ */
+const RANGE_IDLE_IN_TRANSACTION_TIMEOUT = '30s';
 
 /** Fraction of the writer pool this migration is willing to occupy. */
 const MAX_POOL_SHARE = 0.25;
 
 /**
- * How often range progress is saved to the job while a step is in flight. A process killed outright
+ * How often range progress is saved to the job, and the AsyncJob checked for cancellation, while a
+ * step is in flight. A process killed outright
  * never reaches the graceful shutdown path, and BullMQ re-runs the stalled job with whatever data
  * was last saved, so this bounds the work redone after a crash.
  */
 const PROGRESS_INTERVAL_MS = 60_000;
 
 /**
- * Bound on re-queueing after lost connections, so an error misclassified as transient cannot
- * re-queue the job forever.
+ * Bound on consecutive re-queues after lost connections or range timeouts, so a failure that is
+ * not actually transient cannot re-queue the job forever.
  */
 const MAX_TRANSIENT_FAILURES = 5;
+
+/**
+ * How long the job waits out an index build it did not start before failing. Long enough for an
+ * orphaned build on the largest table to finish; one still running after this is most likely stuck
+ * behind a long-running transaction, which needs an operator.
+ */
+const MAX_DEFERRAL_MS = 12 * 60 * 60 * 1000;
+
+/** Concurrent index builds. Each reads and sorts its whole table, so more would compete with application IO. */
+const INDEX_CONCURRENCY = 2;
 
 export interface BackfillOverrides {
   readonly concurrency?: number;
@@ -315,17 +339,21 @@ export async function callback(
       const backfill = await backfillTables(client, workers, results, backfillable, control, data, overrides);
 
       // Phase C: Build indexes for all tables
-      await createReferenceIndexes(workers, results, tables, backfill.touched, control);
+      await createReferenceIndexes(workers, results, tables, control);
 
       if (backfill.unfinished.length > 0) {
-        throw new Error(
-          `Backfill of reference table projectId did not converge for: ${backfill.unfinished.join(', ')}`
-        );
+        const message = `Backfill of reference table projectId did not converge for: ${referenceTableList(backfill.unfinished)}`;
+        // Timed-out ranges can succeed on a later attempt; rows left NULL for any other reason will not
+        throw backfill.timedOut.length > 0
+          ? new RangeTimeoutError(`${message}; ranges timed out on: ${referenceTableList(backfill.timedOut)}`)
+          : new Error(message);
       }
+      // Only once nothing has failed: waiting would otherwise hide the failure, and redo the work, on every attempt
+      await control.delayIfDeferred();
     });
   } catch (err) {
     // Every worker has settled by the time an error reaches here
-    await control.delayIfConnectionLost(err);
+    await control.delayIfTransient(err);
     throw err;
   }
 }
@@ -347,12 +375,7 @@ async function withWorkers<T>(overrides: BackfillOverrides, fn: (workers: PoolCl
   }
 
   const pool = getDatabasePool(DatabaseMode.WRITER);
-  let maxConnections = 50;
-  try {
-    maxConnections = getConfig().database.maxConnections ?? 50;
-  } catch {
-    // Config not loaded; the conservative default already applies
-  }
+  const maxConnections = pool.options.max;
   const count = Math.max(
     1,
     Math.min(overrides.concurrency ?? BACKFILL_CONCURRENCY, Math.floor(maxConnections * MAX_POOL_SHARE))
@@ -400,7 +423,11 @@ class BackfillControl {
   /** The resume state as of the latest checkpoint, which is what gets saved to the job. */
   private state: ProjectIdBackfillJobData;
   private closing = false;
+  private cancelled = false;
+  private checkingCancellation: Promise<void> | undefined;
+  private lastCancellationCheckAt = Date.now();
   private error: unknown;
+  private readonly deferred: string[] = [];
   private saving: Promise<void> | undefined;
   private lastSavedAt = Date.now();
 
@@ -418,12 +445,55 @@ class BackfillControl {
     if (!this.closing && this.job && queueRegistry.isClosing(this.job.queueName)) {
       this.closing = true;
     }
-    return this.closing || this.error !== undefined;
+    this.pollCancellation();
+    return this.closing || this.cancelled || this.error !== undefined;
+  }
+
+  /**
+   * Starts a check of the AsyncJob's status, at most once per progress interval. A cancelled job is
+   * otherwise only noticed when the next attempt starts, which a run that never delays never reaches.
+   */
+  private pollCancellation(): void {
+    if (
+      !this.job ||
+      this.cancelled ||
+      this.checkingCancellation ||
+      Date.now() - this.lastCancellationCheckAt < this.progressIntervalMs
+    ) {
+      return;
+    }
+    this.lastCancellationCheckAt = Date.now();
+    this.checkingCancellation = getTrackingAsyncJobExecutor(this.state.tracking)
+      .then((exec) => {
+        if (!isJobActive(exec.getAsyncJob())) {
+          globalLogger.info('Reference projectId backfill stopping since its AsyncJob is no longer active');
+          this.cancelled = true;
+        }
+      })
+      .catch((err: unknown) => {
+        // The next check tries again; failing the migration over a status read is not worth it
+        globalLogger.warn('Could not check whether the reference projectId backfill was cancelled', { err });
+      })
+      .finally(() => {
+        this.checkingCancellation = undefined;
+      });
   }
 
   recordError(err: unknown): void {
     this.error ??= err ?? new Error('Reference projectId backfill failed');
     this.shouldStop();
+  }
+
+  /**
+   * Notes work skipped until a later attempt, without stopping the rest of the phase.
+   * @param reason - Why the work was skipped.
+   */
+  recordDeferred(reason: string): void {
+    this.deferred.push(reason);
+  }
+
+  get hasDeferred(): boolean {
+    return this.deferred.length > 0;
   }
 
   recordProgress(checkpoint: Partial<ProjectIdBackfillJobData>): void {
@@ -442,7 +512,12 @@ class BackfillControl {
   }
 
   async settlePhase(checkpoint: Partial<ProjectIdBackfillJobData>): Promise<void> {
+    await this.checkingCancellation;
     await this.persist(checkpoint);
+    if (this.cancelled) {
+      // `failJob` leaves a cancelled AsyncJob as it is, and the BullMQ job ends rather than delaying
+      throw new CancelledError('Reference projectId backfill cancelled');
+    }
     if (this.shouldStop() && this.closing && this.job) {
       await moveToDelayedAndThrow(this.job, 'Reference projectId backfill delayed since queue is closing');
     }
@@ -451,14 +526,34 @@ class BackfillControl {
     }
   }
 
-  async delayIfConnectionLost(err: unknown): Promise<void> {
-    const failures = this.state.transientFailures ?? 0;
-    if (!this.job || !isConnectionLost(err) || failures >= MAX_TRANSIENT_FAILURES) {
+  /**
+   * Delays the job to retry the work `recordDeferred` skipped, or fails it once the job has been
+   * waiting for longer than `MAX_DEFERRAL_MS`.
+   */
+  async delayIfDeferred(): Promise<void> {
+    if (this.deferred.length === 0) {
       return;
     }
-    globalLogger.warn('Reference projectId backfill lost its database connection', { err, failures });
+    const since = this.state.deferredSince ?? Date.now();
+    const message = `Reference projectId backfill deferred: ${this.deferred.join('; ')}`;
+    if (!this.job || Date.now() - since >= MAX_DEFERRAL_MS) {
+      throw new Error(`${message} (waiting since ${new Date(since).toISOString()})`);
+    }
+    globalLogger.info(message, { deferredSince: new Date(since).toISOString() });
+    await this.persist({ deferredSince: since });
+    await moveToDelayedAndThrow(this.job, message);
+  }
+
+  async delayIfTransient(err: unknown): Promise<void> {
+    const failures = this.state.transientFailures ?? 0;
+    const timedOut = err instanceof RangeTimeoutError;
+    if (!this.job || !(timedOut || isConnectionLost(err)) || failures >= MAX_TRANSIENT_FAILURES) {
+      return;
+    }
+    const cause = timedOut ? 'ranges timed out' : 'losing its database connection';
+    globalLogger.warn(`Reference projectId backfill delayed after ${cause}`, { err, failures });
     await this.persist({ transientFailures: failures + 1 });
-    await moveToDelayedAndThrow(this.job, 'Reference projectId backfill delayed after losing its database connection');
+    await moveToDelayedAndThrow(this.job, `Reference projectId backfill delayed after ${cause}`);
   }
 
   private async save(): Promise<void> {
@@ -478,13 +573,17 @@ class BackfillControl {
 interface RangeCounts {
   readonly updated: number;
   readonly orphansDeleted: number;
+  /** Rows the range left NULL, of which `rowsWithoutProject` belong to a resource with no project. */
+  readonly remaining: number;
+  readonly rowsWithoutProject: number;
 }
 
 interface RangeRunOutcome extends RangeCounts {
   readonly maxRangeMs: number;
-  readonly abandoned: number;
   readonly complete: boolean;
   readonly checkpoint?: string;
+  /** Ranges skipped after timing out, in key order. */
+  readonly timedOut: ResourceIdRange[];
 }
 
 export class AdaptiveConcurrency {
@@ -614,7 +713,7 @@ async function runRanges(
   ranges: ResourceIdRange[],
   control: BackfillControl,
   limiter: AdaptiveConcurrency,
-  task: (client: PoolClient, range: ResourceIdRange) => Promise<RangeCounts | undefined>,
+  task: (client: PoolClient, range: ResourceIdRange) => Promise<RangeCounts>,
   onProgress: (resumeFromResourceId: string | undefined) => void
 ): Promise<RangeRunOutcome> {
   const completed = new Array<boolean>(ranges.length).fill(false);
@@ -623,8 +722,10 @@ async function runRanges(
   let firstIncomplete = 0;
   let updated = 0;
   let orphansDeleted = 0;
+  let remaining = 0;
+  let rowsWithoutProject = 0;
   let maxRangeMs = 0;
-  let abandoned = 0;
+  const timedOut: number[] = [];
 
   await forEachOnWorkers(
     workers,
@@ -632,17 +733,27 @@ async function runRanges(
     control,
     async (client, range, index) => {
       const start = Date.now();
-      const counts = await task(client, range);
+      const counts = await task(client, range).catch((err: unknown) => {
+        // Skipped rather than stopping the run, so one stuck range cannot hold up every other
+        // range, table and index; it stays incomplete, holding the checkpoint below it
+        if (err instanceof RangeTimeoutError) {
+          globalLogger.error('Skipping reference backfill range after timeout', { range });
+          return undefined;
+        }
+        throw err;
+      });
       const end = Date.now();
       const durationMs = end - start;
       maxRangeMs = Math.max(maxRangeMs, durationMs);
-      // Abandoned ranges ran into the statement timeout, so they count as slow too
+      // Timed-out ranges count as slow too
       limiter.record(start, end);
       if (counts === undefined) {
-        abandoned++;
+        timedOut.push(index);
       } else {
         updated += counts.updated;
         orphansDeleted += counts.orphansDeleted;
+        remaining += counts.remaining;
+        rowsWithoutProject += counts.rowsWithoutProject;
         completed[index] = true;
         const previous = firstIncomplete;
         while (firstIncomplete < ranges.length && completed[firstIncomplete]) {
@@ -663,25 +774,15 @@ async function runRanges(
   return {
     updated,
     orphansDeleted,
+    remaining,
+    rowsWithoutProject,
     maxRangeMs,
-    abandoned,
     complete,
     checkpoint: complete ? undefined : ranges[firstIncomplete].lower,
+    timedOut: timedOut.sort((a, b) => a - b).map((index) => ranges[index]),
   };
 }
 
-/**
- * Runs `task` once per table across the workers, keeping each table's action results local and
- * splicing them back in table order.
- *
- * Pushing to the shared array from concurrent tasks would make the order of `results` depend on
- * which table finished first.
- * @param workers - Connections to fan out across.
- * @param tables - Tables to process.
- * @param results - Shared action results, appended to in table order once all tables settle.
- * @param control - Stop/error latch.
- * @param task - Runs one table, pushing to its own local results array.
- */
 async function runPerTable(
   workers: PoolClient[],
   tables: ReferenceTableDefinition[],
@@ -704,7 +805,7 @@ async function analyzeMissingProjectIdStats(
   control: BackfillControl
 ): Promise<void> {
   const existing = await client.query<{ tablename: string }>(
-    `SELECT tablename FROM pg_stats WHERE tablename = ANY($1::text[]) AND attname = 'projectId'`,
+    `SELECT tablename FROM pg_stats WHERE schemaname = 'public' AND tablename = ANY($1::text[]) AND attname = 'projectId'`,
     [tables.map((t) => `${t.resourceType}_References`)]
   );
   const hasStats = new Set(existing.rows.map((row) => row.tablename));
@@ -733,15 +834,11 @@ async function backfillTables(
   control: BackfillControl,
   data: ProjectIdBackfillJobData,
   overrides: BackfillOverrides
-): Promise<{ touched: Set<string>; unfinished: string[] }> {
+): Promise<{ unfinished: string[]; timedOut: string[] }> {
   const completed = new Set(data.completedResourceTypes ?? []);
-  // Seeded from earlier attempts: a table skipped now may still be bloated from being rewritten then.
-  // A table they were partway through was rewritten even if no NULL rows are left for this one to find.
-  const touched = new Set(data.rewrittenResourceTypes ?? []);
-  if (data.resumeFromResourceType) {
-    touched.add(data.resumeFromResourceType);
-  }
+  const timedOutRanges = { ...data.timedOutRanges };
   const unfinished: string[] = [];
+  const timedOut: string[] = [];
   // Shared across tables, which run smallest first, so the limit is warm when the large ones start
   const targetMs = overrides.rangeTargetMs ?? RANGE_TARGET_MS;
   const limiter = new AdaptiveConcurrency(workers.length, targetMs, targetMs * RANGE_BACKOFF_FACTOR);
@@ -756,32 +853,39 @@ async function backfillTables(
       completedResourceTypes: [...completed],
       resumeFromResourceId: resuming ? data.resumeFromResourceId : undefined,
       resumeStep: resuming ? data.resumeStep : undefined,
+      timedOutRanges: timedOutRanges[table.resourceType],
       overrides,
     });
-    if (outcome.touched) {
-      touched.add(table.resourceType);
-    }
-    if (outcome.unfinished > 0) {
-      unfinished.push(`${table.resourceType}_References`);
+    if (!outcome.converged) {
+      unfinished.push(table.resourceType);
     } else {
       completed.add(table.resourceType);
     }
-    // Without the `projectId` index, re-proving a finished table after a crash costs a full scan
+    if (!outcome.converged && outcome.timedOut.length > 0) {
+      timedOut.push(table.resourceType);
+      timedOutRanges[table.resourceType] = outcome.timedOut;
+    } else {
+      delete timedOutRanges[table.resourceType];
+    }
+    // Without the `projectId` index, re-proving a finished table after a crash costs a full scan.
+    // Only a completed table is progress: one that did not converge is re-run on every attempt.
     await control.persist({
       completedResourceTypes: [...completed],
-      rewrittenResourceTypes: [...touched],
+      timedOutRanges,
       resumeFromResourceType: undefined,
       resumeFromResourceId: undefined,
       resumeStep: undefined,
+      ...(outcome.converged ? { transientFailures: 0 } : {}),
     });
   }
-  return { touched, unfinished };
+  return { unfinished, timedOut };
 }
 
 interface BackfillTableContext {
   readonly completedResourceTypes: string[];
   readonly resumeFromResourceId?: string;
   readonly resumeStep?: BackfillStep;
+  readonly timedOutRanges?: ResourceIdRange[];
   readonly overrides: BackfillOverrides;
 }
 
@@ -793,13 +897,13 @@ async function backfillTable(
   control: BackfillControl,
   limiter: AdaptiveConcurrency,
   context: BackfillTableContext
-): Promise<{ touched: boolean; unfinished: number }> {
+): Promise<{ converged: boolean; timedOut: ResourceIdRange[] }> {
   const { resourceType } = table;
   const tableName = `${resourceType}_References`;
 
   if (!(await hasNullProjectId(client, tableName))) {
     // Already backfilled, either by a previous run of this migration or by ordinary writes
-    return { touched: false, unfinished: 0 };
+    return { converged: true, timedOut: [] };
   }
 
   const start = Date.now();
@@ -815,71 +919,77 @@ async function backfillTable(
     resumeStep,
     resumeFromResourceId,
   });
-  // Saved before the first range, so a process killed before any later checkpoint still resumes
-  // knowing this table was rewritten and has to be vacuumed
-  await control.persist(checkpoint(context.resumeStep ?? 'backfill', context.resumeFromResourceId));
 
   let orphansDeleted = 0;
   let updated = 0;
   let remaining = 0;
   let rowsWithoutProject = 0;
   let maxRangeMs = 0;
-  let abandoned = 0;
+  let timedOut: ResourceIdRange[] = [];
   let passes = 0;
   for (let pass = 0; pass < MAX_BACKFILL_PASSES; pass++) {
     passes++;
     // Only the first pass picks up where a previous attempt left off
     const step = pass === 0 ? (context.resumeStep ?? 'backfill') : 'backfill';
     const resumeFrom = pass === 0 ? context.resumeFromResourceId : undefined;
+    // Ranges that timed out before already needed the fallback plan, so they start with it
+    const retrying = pass === 0 && context.timedOutRanges !== undefined;
 
+    // Whether this pass's range counts cover the whole table, sparing a full scan to count it
+    let counted = false;
     if (step === 'backfill') {
       const outcome = await runRanges(
         workers,
-        rangesFrom(ranges, resumeFrom),
+        rangesFrom(retrying ? context.timedOutRanges : ranges, resumeFrom),
         control,
         limiter,
-        (worker, range) => backfillRange(worker, resourceType, tableName, range, seqscanDisabled),
+        (worker, range) => backfillRange(worker, resourceType, tableName, range, retrying || seqscanDisabled),
         (from) => control.recordProgress(checkpoint('backfill', from))
       );
       updated += outcome.updated;
       orphansDeleted += outcome.orphansDeleted;
       maxRangeMs = Math.max(maxRangeMs, outcome.maxRangeMs);
-      abandoned += outcome.abandoned;
+      timedOut = outcome.timedOut;
       await control.settlePhase(outcome.complete ? checkpoint('verify') : checkpoint('backfill', outcome.checkpoint));
+      // A resumed or retried pass skipped ranges an earlier attempt ran, and a timed-out range was not counted
+      if (outcome.complete && resumeFrom === undefined && !retrying) {
+        ({ remaining, rowsWithoutProject } = outcome);
+        counted = true;
+      }
     }
 
-    ({ remaining, rowsWithoutProject } = await countNullProjectIds(client, resourceType, tableName));
+    if (timedOut.length > 0) {
+      // The skipped ranges would only time out again; they are left for a later attempt. Counting
+      // what they left is a full scan, without an index, of a database too loaded to finish a range.
+      break;
+    }
+    if (!counted) {
+      ({ remaining, rowsWithoutProject } = await countNullProjectIds(client, resourceType, tableName));
+    }
     if (remaining === rowsWithoutProject) {
       // Every row this migration can reach has been backfilled; another pass would find nothing
       break;
     }
-    if (abandoned > 0) {
-      // An abandoned range has already been given its fallback plan and would time out the same
-      // way again, so another pass would only add a full read of the table to a failed outcome
-      break;
-    }
   }
 
-  const unfinished = remaining - rowsWithoutProject;
-  const result: MigrationActionResult = {
+  // Left uncounted, but the timed-out ranges still hold the rows they did not backfill
+  const counts = timedOut.length > 0 ? undefined : { remaining, rowsWithoutProject };
+  const converged = counts !== undefined && remaining === rowsWithoutProject;
+  results.push({
     name: `Backfill "${tableName}"."projectId"`,
     durationMs: Date.now() - start,
     updated,
     orphansDeleted,
-    remaining,
-    rowsWithoutProject,
+    ...counts,
     ranges: ranges.length,
     passes,
     maxRangeMs,
     concurrency: limiter.limit,
-  };
-  if (abandoned > 0) {
-    result.abandonedRanges = abandoned;
-  }
-  results.push(result);
+    ...(timedOut.length > 0 ? { timedOutRanges: timedOut.length } : {}),
+  });
 
-  const details = { tableName, updated, orphansDeleted, remaining, rowsWithoutProject };
-  if (unfinished > 0) {
+  const details = { tableName, updated, orphansDeleted, ...counts };
+  if (!converged) {
     globalLogger.warn('Backfill of reference table projectId did not converge', details);
   } else if (rowsWithoutProject > 0) {
     // Nothing more can be done for these here, but they will block the NOT NULL constraint in a
@@ -889,16 +999,9 @@ async function backfillTable(
     globalLogger.info('Backfilled reference table projectId', details);
   }
 
-  return { touched: true, unfinished };
+  return { converged, timedOut };
 }
 
-/**
- * Drops the ranges wholly below a resume point. The range containing it is kept whole, since only
- * the ranges below it are proven complete.
- * @param ranges - Ranges in ascending key order.
- * @param resumeFrom - The resume point, or undefined to keep every range.
- * @returns The ranges still to be run.
- */
 function rangesFrom(ranges: ResourceIdRange[], resumeFrom: string | undefined): ResourceIdRange[] {
   if (resumeFrom === undefined) {
     return ranges;
@@ -906,16 +1009,6 @@ function rangesFrom(ranges: ResourceIdRange[], resumeFrom: string | undefined): 
   return ranges.filter((range) => range.upper === undefined || range.upper > resumeFrom);
 }
 
-/**
- * Splits the `resourceId` key space into contiguous ranges of roughly `targetRows` rows each.
- *
- * The ranges must tile the space exactly: an overlap hands two workers the same rows in opposite
- * orders, and a gap silently leaves rows NULL. Hence `ranges[i].upper === ranges[i + 1].lower`,
- * with the outermost bounds left open rather than clamped to a representable uuid.
- * @param rowEstimate - Estimated rows in the table; 0 or negative yields a single range.
- * @param targetRows - Rows each range aims to cover.
- * @returns The ranges, in ascending key order.
- */
 export function computeRanges(rowEstimate: number, targetRows = TARGET_ROWS_PER_RANGE): ResourceIdRange[] {
   const rows = Number.isFinite(rowEstimate) ? rowEstimate : 0;
   const rangeCount = Math.min(MAX_RANGES_PER_TABLE, Math.max(1, Math.ceil(rows / targetRows) || 1));
@@ -943,38 +1036,29 @@ interface RangeStatement {
   readonly params: string[];
 }
 
-/**
- * Backfills one range, then sweeps its orphans.
- *
- * The sweep runs right behind the backfill, on the same range, while its pages are still cached:
- * with no index on `projectId` yet, a separate sweep pass would be a second full read of the table.
- * Backfilling first leaves NULL only the rows whose resource no longer exists, so the range counts
- * as complete only once both statements have run.
- * @param client - The worker connection.
- * @param resourceType - The resource type owning the table.
- * @param tableName - The reference table name.
- * @param range - The key range to cover.
- * @param seqscanDisabled - Whether to run the range with `enable_seqscan` off.
- * @returns The range's counts, or undefined if either statement was abandoned.
- */
 async function backfillRange(
   client: PoolClient,
   resourceType: string,
   tableName: string,
   range: ResourceIdRange,
   seqscanDisabled: boolean
-): Promise<RangeCounts | undefined> {
+): Promise<RangeCounts> {
   // Shared so that a fallback the backfill needed carries over to the sweep, which reads the same rows
   const plan = { seqscanDisabled };
   const updated = await runRangeStatement(client, backfillSql(resourceType, tableName, range), range, plan);
-  if (updated === undefined) {
-    return undefined;
-  }
   const orphansDeleted = await runRangeStatement(client, orphanSweepSql(resourceType, tableName, range), range, plan);
-  if (orphansDeleted === undefined) {
-    return undefined;
-  }
-  return { updated, orphansDeleted };
+  const count = await runRangeStatement<{ remaining: string; rows_without_project: string }>(
+    client,
+    remainingSql(resourceType, tableName, range),
+    range,
+    plan
+  );
+  return {
+    updated: updated.rowCount ?? 0,
+    orphansDeleted: orphansDeleted.rowCount ?? 0,
+    remaining: Number.parseInt(count.rows[0].remaining, 10),
+    rowsWithoutProject: Number.parseInt(count.rows[0].rows_without_project, 10),
+  };
 }
 
 function backfillSql(resourceType: string, tableName: string, range: ResourceIdRange): RangeStatement {
@@ -991,19 +1075,10 @@ function backfillSql(resourceType: string, tableName: string, range: ResourceIdR
   };
 }
 
-/**
- * Builds the orphan sweep for one key range.
- *
- * The sweep must be range-scoped: with no index on `projectId` during the backfill, a whole-table
- * `WHERE "projectId" IS NULL` degrades to a sequential scan.
- * @param resourceType - The resource type owning the table.
- * @param tableName - The reference table name.
- * @param range - The key range to cover.
- * @returns The statement and its parameters.
- */
 function orphanSweepSql(resourceType: string, tableName: string, range: ResourceIdRange): RangeStatement {
   const bounds = rangePredicate(range, ['r."resourceId"']);
   // Same parameters, so the subquery's bounds repeat the outer ones rather than adding their own
+  // Sweep must be range-bounded to avod a sequential scan while the backfill is in progress
   const resourceBounds = rangePredicate(range, ['p.id']);
   return {
     sql: `DELETE FROM ${escapeTableName(tableName)} r
@@ -1019,15 +1094,28 @@ function orphanSweepSql(resourceType: string, tableName: string, range: Resource
 }
 
 /**
- * Renders a range as simple `>=` / `<` bounds on each of `columns`, sharing one parameter per bound.
- *
- * Emitting the bounds that exist rather than `($1 IS NULL OR ...)` keeps the predicate a simple
- * bound the planner can turn into a primary key range scan. The planner does not carry a range
- * across a join equality, so each side of the join has to be bounded explicitly.
- * @param range - The range to render.
- * @param columns - Columns to bound, all equal to `r."resourceId"` in the statement.
- * @returns The SQL fragment and its parameters.
+ * Counts the rows of one key range still NULL, and how many of them belong to a resource that has
+ * no project to copy. The rest are rows another pass could still fix.
+ * @param resourceType - The resource type owning the table.
+ * @param tableName - The reference table name.
+ * @param range - The key range to cover.
+ * @returns The statement and its parameters.
  */
+function remainingSql(resourceType: string, tableName: string, range: ResourceIdRange): RangeStatement {
+  const bounds = rangePredicate(range, ['r."resourceId"']);
+  const resourceBounds = rangePredicate(range, ['p.id']);
+  return {
+    sql: `SELECT count(*) AS remaining,
+      count(*) FILTER (WHERE p.id IS NOT NULL AND p."projectId" IS NULL) AS rows_without_project
+    FROM ${escapeTableName(tableName)} r
+    LEFT JOIN ${escapeTableName(resourceType)} p ON p.id = r."resourceId"
+      ${resourceBounds.sql}
+    WHERE r."projectId" IS NULL
+      ${bounds.sql}`,
+    params: bounds.params,
+  };
+}
+
 function rangePredicate(range: ResourceIdRange, columns: string[]): RangeStatement {
   const clauses: string[] = [];
   const params: string[] = [];
@@ -1058,27 +1146,28 @@ const retryableCodes = [
  * @param range - The range being covered, for diagnostics.
  * @param plan - Planner settings, shared by the statements of one range.
  * @param plan.seqscanDisabled - Whether to run with `enable_seqscan` off
- * @returns Rows affected, or undefined if the range was abandoned after timing out.
+ * @returns The statement's result.
  */
-async function runRangeStatement(
+async function runRangeStatement<R extends QueryResultRow = QueryResultRow>(
   client: PoolClient,
   statement: RangeStatement,
   range: ResourceIdRange,
   plan: { seqscanDisabled: boolean }
-): Promise<number | undefined> {
+): Promise<QueryResult<R>> {
   for (let attempt = 1; ; attempt++) {
     // One simple query, so opening the transaction costs a single round trip
     const preamble = [
       'BEGIN ISOLATION LEVEL READ COMMITTED',
       `SET LOCAL statement_timeout TO '${RANGE_STATEMENT_TIMEOUT}'`,
+      `SET LOCAL idle_in_transaction_session_timeout TO '${RANGE_IDLE_IN_TRANSACTION_TIMEOUT}'`,
       ...(plan.seqscanDisabled ? ['SET LOCAL enable_seqscan = off'] : []),
     ];
     try {
       // Inside the try: a setting can fail after BEGIN has already opened the transaction
       await client.query(preamble.join('; '));
-      const result = await client.query(statement.sql, statement.params);
+      const result = await client.query<R>(statement.sql, statement.params);
       await client.query('COMMIT');
-      return result.rowCount ?? 0;
+      return result;
     } catch (err) {
       try {
         await client.query('ROLLBACK');
@@ -1093,8 +1182,7 @@ async function runRangeStatement(
           plan.seqscanDisabled = true;
           continue;
         }
-        globalLogger.error('Abandoning reference backfill range after timeout', { range });
-        return undefined;
+        throw new RangeTimeoutError('Reference backfill range timed out', { cause: err });
       }
       if (attempt >= retryAttempts || sqlState === undefined || !retryableCodes.includes(sqlState)) {
         throw err;
@@ -1104,15 +1192,18 @@ async function runRangeStatement(
   }
 }
 
+/** Range statements timed out even with sequential scans off. */
+class RangeTimeoutError extends Error {}
+
 function getSqlState(err: unknown): string | undefined {
   return err instanceof Error && 'code' in err && typeof err.code === 'string' ? err.code : undefined;
 }
 
-/** SQLSTATEs and socket errors that mean the connection failed, not the statement. */
 const connectionLostCodes = [
   '57P01', // admin_shutdown
   '57P02', // crash_shutdown
   '57P03', // cannot_connect_now
+  '25P03', // idle_in_transaction_session_timeout, which ends the session
   'ECONNRESET',
   'ECONNREFUSED',
   'EPIPE',
@@ -1130,35 +1221,37 @@ function isConnectionLost(err: unknown): boolean {
 }
 
 /**
- * Builds the `projectId` index on every table, and vacuums the ones the backfill rewrote.
+ * Vacuums each table whose `projectId` index is missing or invalid, then builds the index.
  *
- * Deferring index creation to here is most of the speedup: creating it first makes every UPDATE
- * maintain a wide, randomly ordered index that is then rebuilt anyway. Running it across tables
- * concurrently is safe on PG>=14, where `CREATE INDEX CONCURRENTLY` sets `PROC_IN_SAFE_IC` and
- * `VACUUM` sets `PROC_IN_VACUUM`, so neither is waited on by the other's snapshot wait. Both take
- * SHARE UPDATE EXCLUSIVE, so they conflict only on the same table, which the sequence below
- * orders. A multi-second range UPDATE is a locker of its table and would stall that table's
- * build, which is exactly why this is a separate phase rather than part of the per-table work.
+ * A table with an index build already in progress is left to a later attempt, for up to
+ * `MAX_DEFERRAL_MS`. Postgres keeps running a build whose process was killed, and nothing else
+ * builds indexes on these tables, so that build is most likely this migration's own from an
+ * earlier attempt.
  * @param workers - Connections to fan out across.
  * @param results - Shared action results.
  * @param tables - All reference tables.
- * @param touched - Resource types whose rows this job rewrote, in this attempt or an earlier one.
  * @param control - Stop/error latch.
  */
 async function createReferenceIndexes(
   workers: PoolClient[],
   results: MigrationActionResult[],
   tables: ReferenceTableDefinition[],
-  touched: Set<string>,
   control: BackfillControl
 ): Promise<void> {
-  await runPerTable(workers, tables, results, control, async (client, table, localResults) => {
+  const builders = workers.slice(0, INDEX_CONCURRENCY);
+  await runPerTable(builders, tables, results, control, async (client, table, localResults) => {
     const indexValid = await isIndexValid(client, table.indexName);
-    // A valid index means an earlier attempt already vacuumed and indexed this table
-    if (touched.has(table.resourceType) && !indexValid) {
-      // Fix the NULL-dominated page structure and refresh the visibility map before the build
-      await fns.query(client, localResults, `VACUUM (ANALYZE) ${escapeTableName(table.resourceType + '_References')}`);
+    if (indexValid) {
+      // An earlier attempt already vacuumed and indexed this table
+      return;
     }
+    const tableName = table.resourceType + '_References';
+    if (await isIndexBuildInProgress(client, tableName)) {
+      control.recordDeferred(`index build in progress on ${tableName}`);
+      return;
+    }
+    // Fix the NULL-dominated page structure and refresh the visibility map before the build
+    await fns.query(client, localResults, `VACUUM (ANALYZE) ${escapeTableName(tableName)}`);
     // `idempotentCreateIndex` drops a leftover invalid index with a plain DROP INDEX, which takes
     // ACCESS EXCLUSIVE on a hot table; do it concurrently instead.
     if (indexValid === false) {
@@ -1166,7 +1259,19 @@ async function createReferenceIndexes(
     }
     await fns.idempotentCreateIndex(client, localResults, table.indexName, table.createIndexSql);
   });
-  await control.settlePhase({});
+  // A wait that has ended does not count toward the next one
+  await control.settlePhase(control.hasDeferred ? {} : { deferredSince: undefined });
+}
+
+async function isIndexBuildInProgress(client: PoolClient, tableName: string): Promise<boolean> {
+  const result = await client.query(
+    `SELECT 1 FROM pg_stat_progress_create_index p
+     JOIN pg_class c ON c.oid = p.relid
+     JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE n.nspname = 'public' AND c.relname = $1`,
+    [tableName]
+  );
+  return Boolean(result.rowCount);
 }
 
 /**
@@ -1247,6 +1352,10 @@ async function sortBySize(client: PoolClient, tables: ReferenceTableDefinition[]
       (sizes.get(`${a.resourceType}_References`) ?? 0) - (sizes.get(`${b.resourceType}_References`) ?? 0) ||
       a.resourceType.localeCompare(b.resourceType)
   );
+}
+
+function referenceTableList(resourceTypes: string[]): string {
+  return resourceTypes.map((t) => t + '_References').join(', ');
 }
 
 function escapeTableName(tableName: string): string {

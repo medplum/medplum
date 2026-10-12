@@ -1883,8 +1883,7 @@ function withProjectFilter(
   tableAlias: string,
   resourceType: string
 ): Expression {
-  // No compartment restrictions for admins.
-  const projectIds = repo.isSuperAdmin() ? undefined : repo.getPermittedProjectIds(resourceType);
+  const projectIds = repo.getSearchProjectIds(resourceType);
   if (!projectIds) {
     return condition;
   }
@@ -1913,6 +1912,8 @@ function lookupTableJoinCondition(currentTable: string, link: ChainedSearchLink,
   // PENDING{5.3}: add `repo: Repository` as the first parameter, then wrap the result:
   // const referenceOwnerType = link.direction === Direction.FORWARD ? link.originType : link.targetType;
   // return withProjectFilter(repo, <the Conjunction below>, nextTable, referenceOwnerType);
+  // Before also making "projectId" NOT NULL, sweep the rows still NULL: v53 cannot see rows written
+  // after a rollback to a server that predates it, nor those of types with chained search disabled.
   const column = link.direction === Direction.FORWARD ? 'resourceId' : 'targetId';
   return new Conjunction([
     new Condition(new Column(nextTable, column), '=', new Column(currentTable, 'id')),

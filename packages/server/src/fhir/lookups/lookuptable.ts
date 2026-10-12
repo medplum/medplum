@@ -303,7 +303,7 @@ abstract class LookupTable {
       tableName: resourceType,
       joinCondition: new Conjunction([
         new Condition(new Column(resourceType, 'id'), '=', new Column(lookupTableName, 'resourceId')),
-        new Condition(new Column(resourceType, 'lastUpdated'), '<', before),
+        new Condition(new Column(resourceType, 'lastUpdated'), '<=', before),
       ]),
     });
   }

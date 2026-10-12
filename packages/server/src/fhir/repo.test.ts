@@ -33,6 +33,7 @@ import type {
   Questionnaire,
   Reference,
   ResearchDefinition,
+  Resource,
   ResourceType,
   ServiceRequest,
   Subscription,
@@ -1825,6 +1826,76 @@ describe('FHIR Repo', () => {
       });
       expect(bundle.total).toStrictEqual(0);
     }));
+
+  test.each([
+    {
+      resourceType: 'Patient',
+      resource: {
+        resourceType: 'Patient',
+        name: [{ given: ['Purge'], family: 'Cutoff' }],
+        address: [{ city: 'Purgeville' }],
+        generalPractitioner: [{ reference: 'Practitioner/' + randomUUID() }],
+      },
+      lookups: [
+        { table: 'Patient_References', column: 'resourceId' },
+        { table: 'HumanName', column: 'resourceId' },
+        { table: 'Address', column: 'resourceId' },
+      ],
+    },
+    {
+      resourceType: 'CodeSystem',
+      resource: {
+        resourceType: 'CodeSystem',
+        url: 'http://example.com/purge-cutoff/' + randomUUID(),
+        status: 'active',
+        content: 'complete',
+        concept: [{ code: 'a', display: 'A' }],
+      },
+      lookups: [{ table: 'Coding', column: 'system' }],
+    },
+    {
+      resourceType: 'ConceptMap',
+      resource: {
+        resourceType: 'ConceptMap',
+        url: 'http://example.com/purge-cutoff/' + randomUUID(),
+        status: 'active',
+        group: [
+          {
+            source: 'http://example.com/source',
+            target: 'http://example.com/target',
+            element: [{ code: 'a', target: [{ code: 'b', equivalence: 'equivalent' }] }],
+          },
+        ],
+      },
+      lookups: [{ table: 'ConceptMapping', column: 'conceptMap' }],
+    },
+  ] as { resourceType: ResourceType; resource: Resource; lookups: { table: string; column: string }[] }[])(
+    'Purge removes the lookup rows of a $resourceType last updated exactly at the cutoff',
+    ({ resourceType, resource, lookups }) =>
+      withTestContext(async () => {
+        // Unique to this test, since the purge removes every backdated resource of the type
+        const cutoff = new Date(Date.UTC(1971, 0, 1) + Math.floor(Math.random() * 1e10)).toISOString();
+        const created = await systemRepo.createResource({ ...resource, meta: { lastUpdated: cutoff } });
+        expect(created.meta?.lastUpdated).toBe(cutoff);
+
+        const db = getDatabasePool(DatabaseMode.WRITER);
+        const countRows = async (): Promise<Record<string, number>> => {
+          const counts: Record<string, number> = {};
+          for (const { table, column } of lookups) {
+            const result = await db.query(`SELECT 1 FROM "${table}" WHERE "${column}" = $1`, [created.id]);
+            counts[table] = result.rowCount ?? 0;
+          }
+          return counts;
+        };
+        expect(Object.values(await countRows()).every((count) => count > 0)).toBe(true);
+
+        await systemRepo.purgeResources(resourceType, cutoff);
+
+        const purged = await db.query(`SELECT 1 FROM "${resourceType}" WHERE id = $1`, [created.id]);
+        expect(purged.rowCount).toBe(0);
+        expect(await countRows()).toEqual(Object.fromEntries(lookups.map(({ table }) => [table, 0])));
+      })
+  );
 
   test('Malformed client assigned ID', async () => {
     await expect(systemRepo.updateResource({ resourceType: 'Patient', id: '123' })).rejects.toThrow('Invalid id');

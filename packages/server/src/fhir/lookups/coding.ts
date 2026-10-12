@@ -110,7 +110,7 @@ export class CodingTable extends LookupTable {
       return;
     }
 
-    const resourceOlderThanCutoff = new Condition(new Column(resourceType, 'lastUpdated'), '<', before);
+    const resourceOlderThanCutoff = new Condition(new Column(resourceType, 'lastUpdated'), '<=', before);
 
     await LookupTable.purge(client, 'CodeSystem_Property', {
       tableName: resourceType,

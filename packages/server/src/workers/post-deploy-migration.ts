@@ -3,7 +3,7 @@
 import { capitalize, getReferenceString, normalizeErrorString, PropertyType, toTypedValue } from '@medplum/core';
 import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import type { Job, JobsOptions } from 'bullmq';
-import { Queue, Worker } from 'bullmq';
+import { DelayedError, Queue, Worker } from 'bullmq';
 import type { PoolClient } from 'pg';
 import * as semver from 'semver';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
@@ -69,6 +69,28 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config, options
       async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
       getWorkerBullmqConfig(config, 'post-deploy-migration', queueOptions, { concurrency: 1 })
     );
+
+    // Errors the migration itself throws fail the AsyncJob where they are caught, so this sees a
+    // job that stalled more than `maxStalledCount` times, which would otherwise stay active forever
+    worker.on('failed', async (job, err) => {
+      if (!job || err instanceof DelayedError) {
+        return;
+      }
+      // EventEmitter does not await listeners, so a rejection here would go unhandled
+      try {
+        const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
+        if (isJobActive(exec.getAsyncJob())) {
+          await exec.failJob(err);
+        }
+      } catch (failErr) {
+        globalLogger.error('Failed to mark stalled post-deploy migration AsyncJob as failed', {
+          ...getJobDataLoggingFields(job),
+          jobId: job.id,
+          error: normalizeErrorString(failErr),
+          jobError: normalizeErrorString(err),
+        });
+      }
+    });
     addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);
   }
   return { queue, worker, name: PostDeployMigrationQueueName };

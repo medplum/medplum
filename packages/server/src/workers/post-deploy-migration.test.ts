@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { randomUUID } from 'node:crypto';
 import { getReferenceString } from '@medplum/core';
 import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError, Job, Queue } from 'bullmq';
@@ -700,5 +701,58 @@ describe('Post-Deploy Migration Worker', () => {
 
     const updatedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
     expect(updatedJob.status).toBe('accepted');
+  });
+
+  describe('failed handler', () => {
+    type FailedHandler = (job: Job<PostDeployJobData> | undefined, err: Error) => Promise<void>;
+
+    function captureFailedHandler(): FailedHandler {
+      const { worker } = initPostDeployMigrationWorker(config);
+      const onCalls = vi.mocked(worker?.on as (...args: unknown[]) => unknown).mock.calls;
+      return onCalls.find((call) => call[0] === 'failed')?.[1] as FailedHandler;
+    }
+
+    async function createJob(status: AsyncJob['status']): Promise<{ asyncJob: AsyncJob; job: Job<PostDeployJobData> }> {
+      const asyncJob = await systemRepo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status,
+        dataVersion: 123,
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/migrate',
+      });
+      const data: CustomPostDeployMigrationJobData = {
+        type: 'custom',
+        target: { kind: 'shard', shardId: TODO_SHARD_ID },
+        tracking: getAsyncJobTracking(asyncJob),
+      };
+      return { asyncJob, job: { id: '1', data } as Job<PostDeployJobData> };
+    }
+
+    test('does nothing without a job', async () => {
+      await expect(captureFailedHandler()(undefined, new Error('stalled'))).resolves.toBeUndefined();
+    });
+
+    test.each<[string, AsyncJob['status'], Error, AsyncJob['status']]>([
+      ['fails an active AsyncJob', 'accepted', new Error('job stalled more than allowable limit'), 'error'],
+      ['ignores a delayed job', 'accepted', new DelayedError(), 'accepted'],
+      ['leaves an AsyncJob that is no longer active', 'cancelled', new Error('stalled'), 'cancelled'],
+    ])('%s', async (_name, status, err, expected) => {
+      const { asyncJob, job } = await createJob(status);
+      await captureFailedHandler()(job, err);
+      expect((await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id as string)).status).toBe(expected);
+    });
+
+    test('logs rather than rejects when the AsyncJob cannot be failed', async () => {
+      const { job: created } = await createJob('accepted');
+      const tracking = { ...created.data.tracking, asyncJobId: randomUUID() };
+      const job = { ...created, data: { ...created.data, tracking } } as Job<PostDeployJobData>;
+
+      // EventEmitter does not await listeners, so a rejection here would go unhandled
+      await expect(captureFailedHandler()(job, new Error('stalled'))).resolves.toBeUndefined();
+      expect(globalLogger.error).toHaveBeenCalledWith(
+        'Failed to mark stalled post-deploy migration AsyncJob as failed',
+        expect.objectContaining({ asyncJob: 'AsyncJob/' + job.data.tracking.asyncJobId, jobType: 'custom' })
+      );
+    });
   });
 });

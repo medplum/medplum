@@ -97,7 +97,7 @@ export class ConceptMappingTable extends LookupTable {
 
     const resourceOlderThanCutoff = new Conjunction([
       new Condition(new Column('ConceptMapping', 'conceptMap'), '=', new Column(resourceType, 'id')),
-      new Condition(new Column(resourceType, 'lastUpdated'), '<', before),
+      new Condition(new Column(resourceType, 'lastUpdated'), '<=', before),
     ]);
 
     await LookupTable.purge(
