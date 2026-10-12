@@ -29,9 +29,9 @@ import {
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { GeneratedComponent, UseSpacesConversationResult } from '../../hooks/useSpacesConversation';
+import type { UseSpacesConversationResult } from '../../hooks/useSpacesConversation';
 import { PromptComposer } from '../../pages/spaces/PromptComposer';
-import type { Message } from '../../types/spaces';
+import type { GeneratedComponent, Message } from '../../types/spaces';
 import { ComponentPreview } from './ComponentPreview';
 import { Markdown } from './Markdown';
 import { ResourceBox } from './ResourceBox';
@@ -40,15 +40,15 @@ import classes from './SpacesInbox.module.css';
 
 export interface ConversationPaneProps extends Omit<
   UseSpacesConversationResult,
-  'topicId' | 'topics' | 'topicsLoading'
+  'topicId' | 'conversationKey' | 'topics' | 'topicsLoading'
 > {
   sidebarOpen: boolean;
   onShowSidebar: () => void;
   onAdd?: () => void;
 }
 
-// One conversation's chat, composer and side panels. Mounted with key={topicId}, so a topic
-// change starts from fresh view state.
+// One conversation's chat, composer and side panels. Mounted with key={conversationKey}, so a
+// change of conversation starts from fresh view state.
 export function ConversationPane(props: ConversationPaneProps): JSX.Element {
   const {
     status,

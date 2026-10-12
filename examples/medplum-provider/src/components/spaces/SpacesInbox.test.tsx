@@ -41,6 +41,7 @@ describe('SpacesInbox', () => {
       status: 'idle',
       messages: [],
       topicId: undefined,
+      conversationKey: 0,
       hasStarted: false,
       topics: [],
       topicsLoading: false,

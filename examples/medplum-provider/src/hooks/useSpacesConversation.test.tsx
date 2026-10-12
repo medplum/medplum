@@ -149,9 +149,11 @@ describe('useSpacesConversation', () => {
       mockSearch({ messages: [{ role: 'user', content: 'Earlier question' }] });
       const { result, rerender } = setup('topic-123');
       await waitFor(() => expect(result.current.messages).toHaveLength(1));
+      const keyBefore = result.current.conversationKey;
 
       rerender({ topicId: undefined, onNewTopic });
 
+      expect(result.current.conversationKey).not.toBe(keyBefore);
       expect(result.current.messages).toEqual([]);
       expect(result.current.hasStarted).toBe(false);
       expect(result.current.topicId).toBeUndefined();
@@ -439,9 +441,11 @@ describe('useSpacesConversation', () => {
       });
       await waitFor(() => expect(onNewTopic).toHaveBeenCalledWith(mockTopic));
       await waitFor(() => expect(result.current.status).toBe('idle'));
+      const keyBefore = result.current.conversationKey;
 
       rerender({ topicId: mockTopic.id, onNewTopic });
 
+      expect(result.current.conversationKey).toBe(keyBefore);
       expect(result.current.status).toBe('idle');
       expect(result.current.messages.map((m) => m.content)).toEqual(['Hello AI', 'Bot response']);
       const messageLoads = vi

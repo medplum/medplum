@@ -5,7 +5,7 @@ import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { useStabilizedCallback } from '@medplum/react-hooks';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Message } from '../types/spaces';
+import type { GeneratedComponent, Message } from '../types/spaces';
 import { showErrorNotification } from '../utils/notifications';
 import { processMessage } from '../utils/spaceMessaging';
 import type { ReasoningEffort, SpaceModelOption } from '../utils/spaceModels';
@@ -15,11 +15,6 @@ import { loadConversationMessages, loadRecentTopics, touchConversationTopic } fr
 const RECENT_TOPICS_LIMIT = 20;
 
 export type ConversationStatus = 'idle' | 'loading' | 'sending';
-
-export interface GeneratedComponent {
-  code: string;
-  resources?: string[];
-}
 
 export interface UseSpacesConversationOptions {
   /** The topic selected by the route, or undefined for a new conversation. */
@@ -33,6 +28,11 @@ export interface UseSpacesConversationResult {
   messages: Message[];
   /** The topic the conversation belongs to, once loaded or created. */
   topicId: string | undefined;
+  /**
+   * Changes when a different conversation is shown. topicId also changes when the first message
+   * creates the topic, so key view state on this instead.
+   */
+  conversationKey: number;
   /** False only for a new conversation with nothing sent yet. */
   hasStarted: boolean;
   topics: Communication[];
@@ -85,6 +85,7 @@ export function useSpacesConversation(options: UseSpacesConversationOptions): Us
   const [streamingContent, setStreamingContent] = useState<string | undefined>();
   const [streamingComponentCode, setStreamingComponentCode] = useState<string | undefined>();
   const [generatedComponent, setGeneratedComponent] = useState<GeneratedComponent | undefined>();
+  const [conversationKey, setConversationKey] = useState(0);
 
   // statusRef mirrors status synchronously so send() can refuse re-entry within the same tick
   const statusRef = useRef<ConversationStatus>(routeTopicId ? 'loading' : 'idle');
@@ -100,6 +101,7 @@ export function useSpacesConversation(options: UseSpacesConversationOptions): Us
     setMemoizedRouteTopicId(routeTopicId);
     if (routeTopicId !== topicId) {
       setTopicId(routeTopicId);
+      setConversationKey((prev) => prev + 1);
       setMessages([]);
       setGeneratedComponent(undefined);
       setCurrentFhirRequest(undefined);
@@ -282,6 +284,7 @@ export function useSpacesConversation(options: UseSpacesConversationOptions): Us
     status,
     messages,
     topicId,
+    conversationKey,
     hasStarted: messages.length > 0 || topicId !== undefined,
     topics,
     topicsLoading,

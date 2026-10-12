@@ -22,7 +22,7 @@ export interface SpacesInboxProps extends UseSpacesConversationResult {
 }
 
 export function SpacesInbox(props: SpacesInboxProps): JSX.Element {
-  const { topics, topicsLoading, topicId, onSelectedItem, onAdd, ...conversation } = props;
+  const { topics, topicsLoading, topicId, conversationKey, onSelectedItem, onAdd, ...conversation } = props;
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -47,7 +47,7 @@ export function SpacesInbox(props: SpacesInboxProps): JSX.Element {
       renderItem={(item) => <TopicListItem topic={item} uri={onSelectedItem(item)} />}
       renderDetail={() => (
         <ConversationPane
-          key={topicId}
+          key={conversationKey}
           {...conversation}
           sidebarOpen={sidebarOpen}
           onShowSidebar={() => setSidebarOpen(true)}
