@@ -5,7 +5,7 @@ import type { HealthcareService, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { BookableActorType } from '../actors';
-import { BOOKABLE_ACTOR_TYPES } from '../actors';
+import { BOOKABLE_ACTOR_TYPES, isBookableActorType } from '../actors';
 import type { ConfigurableActor } from '../configSearch';
 import { searchConfigurableActors, searchConfigurableServices } from '../configSearch';
 import { withStoredActorResource, withStoredService } from './SchedulingConfigWorkspace.utils';
@@ -85,16 +85,23 @@ export function useConfigurableResources(): ConfigurableResources {
       (list, resource) => (resource.resourceType === 'HealthcareService' ? withStoredService(list, resource) : list),
       services.items
     );
-    const withSaved = (list: ResourceList<ConfigurableActor>): ResourceList<ConfigurableActor> => ({
-      ...list,
-      items: saved.reduce((actorItems, resource) => withStoredActorResource(actorItems, resource), list.items),
+    // Each list takes the actors of its own type, and every Schedule.
+    const withSaved = (resourceType: BookableActorType): ResourceList<ConfigurableActor> => ({
+      ...actors[resourceType],
+      items: saved.reduce(
+        (list, resource) =>
+          isBookableActorType(resource.resourceType) && resource.resourceType !== resourceType
+            ? list
+            : withStoredActorResource(list, resource),
+        actors[resourceType].items
+      ),
     });
     return {
       services: { ...services, items },
       actors: {
-        Practitioner: withSaved(actors.Practitioner),
-        Location: withSaved(actors.Location),
-        Device: withSaved(actors.Device),
+        Practitioner: withSaved('Practitioner'),
+        Location: withSaved('Location'),
+        Device: withSaved('Device'),
       },
       store,
     };

@@ -11,6 +11,7 @@ import { getActorTypeLabel } from '../../actors';
 import { NPI_SYSTEM, SERVICE_FACILITY_SEARCH_CRITERIA } from '../../constants';
 import { getTimezoneOptions } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
 import type { ActorGeneralFields, ActorResource } from './actorDraft';
+import { hasEditableName } from './actorDraft';
 
 export interface ActorGeneralProps {
   /** The actor as the page would store it. */
@@ -84,14 +85,14 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
     <>
       {statuses}
       <FieldGrid>
-        {isRoom ? (
+        {hasEditableName(resource) ? (
           <TextInput
             label="Name"
             required
             value={value.name}
             onChange={(event) => update({ name: event.currentTarget.value })}
             error={nameError}
-            placeholder="e.g. Exam Room 3"
+            placeholder={isRoom ? 'e.g. Exam Room 3' : 'e.g. Ultrasound 2'}
           />
         ) : (
           <ReadOnlyField label="Name" value={getDisplayString(resource)} />
