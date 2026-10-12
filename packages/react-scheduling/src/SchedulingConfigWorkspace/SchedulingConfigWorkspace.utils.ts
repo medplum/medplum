@@ -13,18 +13,19 @@ import type { HealthcareService, Resource, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType } from '../actors';
 import { isBookableActorType } from '../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../configSearch';
-import type { ActorResource } from './ActorPage/actorDraft';
+import type { ActorResource, NewActorType } from './ActorPage/actorDraft';
 import type { ConfigPanelItem } from './ConfigPanel/ConfigPanel';
 import type { ConfigStatus } from './StatusBadge';
 
 /**
  * What the detail pane shows: a stored visit type or actor, kept by id so it survives a save replacing it in
- * the list, or a visit type being created, which has no id until it is saved. An actor's page may be opened on
- * one of the visit types it offers.
+ * the list, or a visit type, room, or device being created, which has no id until it is saved. An actor's page
+ * may be opened on one of the visit types it offers.
  */
 export type ConfigSelection =
   | { readonly kind: 'service'; readonly id: string }
   | { readonly kind: 'new-service'; readonly key: number }
+  | { readonly kind: 'new-actor'; readonly resourceType: NewActorType; readonly key: number }
   | {
       readonly kind: 'actor';
       readonly resourceType: BookableActorType;
@@ -43,8 +44,8 @@ export function isSameSelection(a: ConfigSelection, b: ConfigSelection | undefin
   if (a.kind === 'service') {
     return b?.kind === 'service' && b.id === a.id;
   }
-  if (a.kind === 'new-service') {
-    return b?.kind === 'new-service' && b.key === a.key;
+  if (a.kind === 'new-service' || a.kind === 'new-actor') {
+    return b?.kind === a.kind && b.key === a.key;
   }
   return b?.kind === 'actor' && b.resourceType === a.resourceType && b.id === a.id;
 }
@@ -101,10 +102,11 @@ export function withStoredService(
   services: readonly WithId<HealthcareService>[],
   stored: WithId<HealthcareService>
 ): WithId<HealthcareService>[] {
-  const others = services.filter((service) => service.id !== stored.id);
-  const name = stored.name ?? '';
-  const index = others.findIndex((service) => (service.name ?? '').localeCompare(name) > 0);
-  return index < 0 ? [...others, stored] : [...others.slice(0, index), stored, ...others.slice(index)];
+  return withNameSorted(
+    services.filter((service) => service.id !== stored.id),
+    stored,
+    (service) => service.name ?? ''
+  );
 }
 
 /**
@@ -206,8 +208,9 @@ function isActorSelected(actor: ConfigurableActor, selection: ConfigSelection | 
 
 /**
  * Puts a stored resource into the actors listed, so a save shows at once without refetching: an actor replaces
- * the version it was loaded as, and a Schedule replaces or joins the Schedules of its only actor. Anything
- * else, or anything about an actor not listed, leaves the list as it was.
+ * the version it was loaded as, an actor not listed yet joins where its name sorts, and a Schedule replaces or
+ * joins the Schedules of its only actor. Anything else, or a Schedule of an actor not listed, leaves the list as
+ * it was.
  * @param actors - The actors listed.
  * @param stored - The resource as the server now holds it.
  * @returns The new list.
@@ -216,12 +219,13 @@ export function withStoredActorResource(
   actors: readonly ConfigurableActor[],
   stored: WithId<Resource>
 ): readonly ConfigurableActor[] {
-  if (isBookableActorType(stored.resourceType)) {
-    return actors.map((actor) =>
-      actor.resource.resourceType === stored.resourceType && actor.resource.id === stored.id
-        ? { ...actor, resource: stored }
-        : actor
+  if (isActorResource(stored)) {
+    const index = actors.findIndex(
+      (actor) => actor.resource.resourceType === stored.resourceType && actor.resource.id === stored.id
     );
+    return index < 0
+      ? withNameSorted(actors, { resource: stored, schedules: [] }, (actor) => getDisplayString(actor.resource))
+      : actors.with(index, { ...actors[index], resource: stored });
   }
   if (stored.resourceType !== 'Schedule' || stored.actor.length !== 1) {
     return actors;
@@ -270,4 +274,15 @@ export function getOfferings(
     }
     return serviceTypeOffersService(schedule.serviceType, service) ? [{ actor, schedule }] : [];
   });
+}
+
+function isActorResource(resource: WithId<Resource>): resource is ConfigurableActorResource {
+  return isBookableActorType(resource.resourceType);
+}
+
+// Where its name sorts, as the search lists them.
+function withNameSorted<T>(items: readonly T[], item: T, nameOf: (item: T) => string): T[] {
+  const name = nameOf(item);
+  const index = items.findIndex((other) => nameOf(other).localeCompare(name) > 0);
+  return index < 0 ? [...items, item] : items.toSpliced(index, 0, item);
 }

@@ -36,9 +36,9 @@ function Workspace(): JSX.Element {
  * still active, with the Schedule switched off. Exam Room C is listed though it has no Schedule.
  *
  * Pick one to edit it in place. Switching to another with unsaved changes asks first. The **+** beside Visit
- * types starts a new one, which is listed once it is saved. Providers are edited here, never created: set a time
- * zone for Dr. Anika Patel, who has none. A visit type's page lists the Schedules offering it, each opening its
- * provider's, room's, or device's page.
+ * types, Rooms, or Devices starts a new one, which is listed once it is saved. Providers can't be created here,
+ * only edited: set a time zone for Dr. Anika Patel, who has none. A visit type's page lists the Schedules offering
+ * it, each opening its provider's, room's, or device's page.
  *
  * @returns The story.
  */

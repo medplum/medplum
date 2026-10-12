@@ -2,14 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import { deepClone, deepEquals, getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
 import type { Device, Location, Practitioner, Reference } from '@medplum/fhirtypes';
+import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM } from '../../constants';
 import { isActorInactive } from '../SchedulingConfigWorkspace.utils';
 
 /** A provider, room, or device, as stored or as the page would store it. */
 export type ActorResource = Practitioner | Location | Device;
 
+/** The kinds of actor the workspace creates. Providers come from elsewhere. */
+export type NewActorType = 'Location' | 'Device';
+
 /** What the page holds for the actor itself. */
 export interface ActorGeneralFields {
-  /** A room's name. Unused for a provider or device, whose names are read-only. */
+  /** A room's name, or a new device's. Unused for a provider or a stored device, whose names are read-only. */
   readonly name: string;
   /** Whether the actor is on: `Practitioner.active`, or a room's or device's `status` not being `inactive`. */
   readonly active: boolean;
@@ -20,8 +24,37 @@ export interface ActorGeneralFields {
 }
 
 /**
+ * A room or device that hasn't been saved yet. Rooms are typed `ro`, so the service facility pickers never
+ * offer one as a service facility.
+ * @param resourceType - What to create.
+ * @returns The resource to start from.
+ */
+export function newActorResource(resourceType: NewActorType): Location | Device {
+  if (resourceType === 'Location') {
+    return {
+      resourceType: 'Location',
+      status: 'active',
+      physicalType: {
+        coding: [{ system: LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, code: 'ro', display: 'Room' }],
+      },
+    };
+  }
+  return { resourceType: 'Device', status: 'active' };
+}
+
+/**
+ * Whether the page edits the actor's name: a room's, or a new device's. A stored device can carry several names,
+ * and which one an edit should replace isn't settled, but a new one has none.
+ * @param resource - The actor as the page would store it.
+ * @returns True when the name is edited.
+ */
+export function hasEditableName(resource: ActorResource): resource is Location | Device {
+  return resource.resourceType === 'Location' || (resource.resourceType === 'Device' && !resource.id);
+}
+
+/**
  * Seeds the page's General fields from the actor.
- * @param resource - The provider, room, or device, as stored.
+ * @param resource - The provider, room, or device, as stored or as newly started.
  * @returns What the page opens with.
  */
 export function actorGeneralFieldsOf(resource: ActorResource): ActorGeneralFields {
@@ -39,7 +72,7 @@ export function actorGeneralFieldsOf(resource: ActorResource): ActorGeneralField
 /**
  * Builds the actor to store from what the page holds. Only what was edited is rewritten, so a provider's
  * save changes its time zone and nothing an external system maintains.
- * @param base - The actor as stored.
+ * @param base - The actor as stored, or as newly started.
  * @param fields - What the page holds.
  * @param initial - What the page opened with.
  * @returns The actor to store.
@@ -60,8 +93,8 @@ export function buildActorResource<T extends ActorResource>(
   if (draft.resourceType === 'Practitioner') {
     return draft;
   }
-  if (draft.resourceType === 'Location' && fields.name !== initial.name) {
-    draft.name = fields.name.trim();
+  if (hasEditableName(draft) && fields.name !== initial.name) {
+    setName(draft, fields.name.trim());
   }
   if (!deepEquals(fields.location, initial.location)) {
     setLocation(draft, fields.location);
@@ -87,6 +120,14 @@ function setTimezone(resource: ActorResource, timezone: string | undefined): voi
     resource.extension = extension;
   } else {
     delete resource.extension;
+  }
+}
+
+function setName(resource: Location | Device, name: string): void {
+  if (resource.resourceType === 'Location') {
+    resource.name = name;
+  } else {
+    resource.deviceName = [{ name, type: 'user-friendly-name' }];
   }
 }
 

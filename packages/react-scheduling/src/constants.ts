@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG } from '@medplum/core';
 
+export const LOCATION_PHYSICAL_TYPE_CODE_SYSTEM = HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/location-physical-type';
+
 /** The identifier system for a US National Provider Identifier. */
 export const NPI_SYSTEM = HTTP_HL7_ORG + '/fhir/sid/us-npi';
 
