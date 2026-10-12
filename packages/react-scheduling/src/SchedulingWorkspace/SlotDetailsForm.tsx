@@ -22,7 +22,8 @@ export interface SlotDetailsFormProps {
 /**
  * Edits when a slot starts and ends, and its comment.
  *
- * Times are typed on the browser's clock, as the calendar draws them. Saving is a plain update.
+ * Times are typed on the browser's clock, as the calendar draws them. Saving is a plain update,
+ * made only if no one else has changed the slot since it was loaded.
  *
  * @param props - The React props.
  * @returns The fields and the button saving them.
@@ -52,13 +53,16 @@ export function SlotDetailsForm(props: SlotDetailsFormProps): JSX.Element {
     setSaving(true);
     setSaveError(undefined);
     try {
-      await medplum.updateResource<Slot>({
-        ...slot,
-        start: start.toISOString(),
-        end: end.toISOString(),
-        // FHIR has no empty strings, so a cleared comment is left off.
-        comment: comment.trim() || undefined,
-      });
+      await medplum.updateResource<Slot>(
+        {
+          ...slot,
+          start: start.toISOString(),
+          end: end.toISOString(),
+          // FHIR has no empty strings, so a cleared comment is left off.
+          comment: comment.trim() || undefined,
+        },
+        slot.meta?.versionId ? { headers: { 'If-Match': `W/"${slot.meta.versionId}"` } } : undefined
+      );
       onUpdated();
     } catch (error) {
       setSaveError(error);
