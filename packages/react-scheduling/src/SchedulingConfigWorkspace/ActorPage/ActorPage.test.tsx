@@ -125,6 +125,10 @@ function saveBar(): HTMLElement | null {
   return screen.queryByRole('region', { name: 'Unsaved changes' });
 }
 
+function general(): HTMLElement {
+  return screen.getByRole('region', { name: 'General' });
+}
+
 async function save(): Promise<void> {
   await userEvent.click(within(saveBar() as HTMLElement).getByRole('button', { name: 'Save' }));
 }
@@ -576,5 +580,28 @@ describe('ActorPage', () => {
 
     await waitFor(() => expect(onSynced).toHaveBeenCalled());
     expect(syncedSchedule(onSynced).id).toBe(elsewhere.id);
+  });
+
+  describe('General', () => {
+    test("a provider's NPIs are shown read-only, and other identifiers aren't", async () => {
+      await setup({
+        ...drSmith,
+        identifier: [
+          { system: 'http://hl7.org/fhir/sid/us-npi', value: '1234567893' },
+          { system: 'http://example.org/employee-id', value: 'E-42' },
+          { system: 'http://hl7.org/fhir/sid/us-npi', value: '1245319599' },
+        ],
+      });
+
+      expect(within(general()).getByText('NPIs').nextSibling).toHaveTextContent('1234567893, 1245319599');
+      expect(within(general()).queryByText(/E-42/)).not.toBeInTheDocument();
+      expect(within(general()).queryByRole('textbox', { name: /NPI/ })).not.toBeInTheDocument();
+    });
+
+    test('a provider without an NPI shows it as not set', async () => {
+      await setup(drSmith);
+
+      expect(within(general()).getByText('NPI').nextSibling).toHaveTextContent('Not set');
+    });
   });
 });

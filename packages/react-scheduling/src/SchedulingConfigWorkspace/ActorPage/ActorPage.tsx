@@ -23,12 +23,13 @@ import {
   getSchedulingTimezone,
   normalizeErrorString,
 } from '@medplum/core';
-import type { HealthcareService, Resource } from '@medplum/fhirtypes';
+import type { HealthcareService, Practitioner, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { getActorTypeLabel } from '../../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
+import { NPI_SYSTEM } from '../../constants';
 import { getAvailabilityFieldsError } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
 import {
   getBlockingErrors,
@@ -361,6 +362,7 @@ function ActorGeneral(props: {
   const active = !isActorInactive(resource);
   // Only turning off is allowed while the actor is inactive, so a Schedule stored on can still be switched off.
   const scheduleLocked = !active && !scheduleActive;
+  const npis = resource.resourceType === 'Practitioner' ? getNpis(resource) : undefined;
   return (
     <>
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
@@ -383,7 +385,16 @@ function ActorGeneral(props: {
         )}
       </SimpleGrid>
       <ReadOnlyField label="Name" value={getDisplayString(resource)} />
+      {npis && (
+        <ReadOnlyField label={npis.length > 1 ? 'NPIs' : 'NPI'} value={npis.length > 0 ? npis.join(', ') : undefined} />
+      )}
     </>
+  );
+}
+
+function getNpis(practitioner: Practitioner): string[] {
+  return (practitioner.identifier ?? []).flatMap((identifier) =>
+    identifier.system === NPI_SYSTEM && identifier.value ? [identifier.value] : []
   );
 }
 
@@ -434,13 +445,16 @@ function withActorActive(resource: ConfigurableActorResource, active: boolean): 
   return { ...resource, status: active ? 'active' : 'inactive' };
 }
 
-function ReadOnlyField(props: { readonly label: string; readonly value: string }): JSX.Element {
+// A label over a value, or over "Not set" when there is none.
+function ReadOnlyField(props: { readonly label: string; readonly value?: string }): JSX.Element {
   return (
     <Stack gap={2}>
       <Text size="sm" fw={500}>
         {props.label}
       </Text>
-      <Text size="sm">{props.value}</Text>
+      <Text size="sm" c={props.value === undefined ? 'dimmed' : undefined}>
+        {props.value ?? 'Not set'}
+      </Text>
     </Stack>
   );
 }
