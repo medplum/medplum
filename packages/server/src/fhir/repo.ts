@@ -131,6 +131,7 @@ import {
   getResourceCacheEntry,
   setResourceCacheEntry,
 } from './repository/resource-cache';
+import type { HistoryRow } from './repository/row-builder';
 import {
   buildDeletedResourceRow,
   buildDeleteHistoryContent,
@@ -1367,7 +1368,7 @@ export class Repository extends FhirRepository implements Disposable {
         );
 
         // Latest per id from the database, so reruns and versions split across batches resolve correctly
-        const rows = await txRepo.sqlRead<{ id: string; lastUpdated: Date; content: string }>(
+        const rows = await txRepo.sqlRead<Omit<HistoryRow, 'versionId'>>(
           new SelectQuery(resourceType + '_History')
             .column('id')
             .column('lastUpdated')
@@ -1382,7 +1383,7 @@ export class Repository extends FhirRepository implements Disposable {
         const current: WithId<Resource>[] = [];
         const deleted: { id: string; lastUpdated: Date }[] = [];
         for (const row of latest.values()) {
-          const resource = JSON.parse(row.content) as WithId<Resource>;
+          const resource = parseHistoryContent(row.content) as WithId<Resource>;
           if (resource.meta?.deleted) {
             deleted.push(row);
           } else {

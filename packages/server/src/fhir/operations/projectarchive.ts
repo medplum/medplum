@@ -16,6 +16,7 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { queueProjectArchive } from '../../workers/bulk-export';
 import type { Repository } from '../repo';
+import type { HistoryRow } from '../repository/row-builder';
 import { parseHistoryContent } from '../repository/row-builder';
 import { SelectQuery } from '../sql';
 import { makeOperationDefinition } from './definitions';
@@ -100,13 +101,6 @@ export async function archiveProject(
     { name: 'project', valueReference: createReference(project) },
     { name: 'medplumVersion', valueString: MEDPLUM_VERSION },
   ]);
-}
-
-interface HistoryRow {
-  id: string;
-  versionId: string;
-  lastUpdated: Date;
-  content: string | null;
 }
 
 async function archiveResourceType(
