@@ -13,7 +13,7 @@ export type NewActorType = 'Location' | 'Device';
 
 /** What the page holds for the actor itself. */
 export interface ActorGeneralFields {
-  /** A room's name. Unused for a provider or device, whose names are read-only. */
+  /** A room's name, or a new device's. Unused for a provider or a stored device, whose names are read-only. */
   readonly name: string;
   /** Whether the actor is on: `Practitioner.active`, or a room's or device's `status` not being `inactive`. */
   readonly active: boolean;
@@ -40,6 +40,16 @@ export function newActorResource(resourceType: NewActorType): Location | Device 
     };
   }
   return { resourceType: 'Device', status: 'active' };
+}
+
+/**
+ * Whether the page edits the actor's name: a room's, or a new device's. A stored device can carry several names,
+ * and which one an edit should replace isn't settled, but a new one has none.
+ * @param resource - The actor as the page would store it.
+ * @returns True when the name is edited.
+ */
+export function hasEditableName(resource: ActorResource): resource is Location | Device {
+  return resource.resourceType === 'Location' || (resource.resourceType === 'Device' && !resource.id);
 }
 
 /**
@@ -83,8 +93,8 @@ export function buildActorResource<T extends ActorResource>(
   if (draft.resourceType === 'Practitioner') {
     return draft;
   }
-  if (draft.resourceType === 'Location' && fields.name !== initial.name) {
-    draft.name = fields.name.trim();
+  if (hasEditableName(draft) && fields.name !== initial.name) {
+    setName(draft, fields.name.trim());
   }
   if (!deepEquals(fields.location, initial.location)) {
     setLocation(draft, fields.location);
@@ -110,6 +120,14 @@ function setTimezone(resource: ActorResource, timezone: string | undefined): voi
     resource.extension = extension;
   } else {
     delete resource.extension;
+  }
+}
+
+function setName(resource: Location | Device, name: string): void {
+  if (resource.resourceType === 'Location') {
+    resource.name = name;
+  } else {
+    resource.deviceName = [{ name, type: 'user-friendly-name' }];
   }
 }
 

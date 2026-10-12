@@ -30,7 +30,7 @@ import { getActorStatus } from '../SchedulingConfigWorkspace.utils';
 import type { ConfigStatus } from '../StatusBadge';
 import { StatusBadge } from '../StatusBadge';
 import type { ActorGeneralFields, ActorResource, NewActorType } from './actorDraft';
-import { actorGeneralFieldsOf, buildActorResource, newActorResource } from './actorDraft';
+import { actorGeneralFieldsOf, buildActorResource, hasEditableName, newActorResource } from './actorDraft';
 import { ActorGeneral } from './ActorGeneral';
 import { OfferingEditor, OfferingMenu, OfferingSummary } from './OfferingEditor';
 import { OfferPicker } from './OfferPicker';
@@ -153,7 +153,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     availabilityError: availabilityErrorFor(service),
   }));
   const blocking = checks.find(({ errors, availabilityError }) => Object.keys(errors).length > 0 || availabilityError);
-  const nameError = actorDraft.resourceType === 'Location' && !general.name.trim() ? 'A name is required.' : undefined;
+  const nameError = hasEditableName(actorDraft) && !general.name.trim() ? 'A name is required.' : undefined;
   const blockedReason = nameError ?? getOfferingBlockedReason(blocking);
 
   function handleGeneralChange(next: ActorGeneralFields): void {

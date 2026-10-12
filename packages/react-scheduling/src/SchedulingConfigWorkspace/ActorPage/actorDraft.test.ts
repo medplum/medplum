@@ -72,7 +72,11 @@ describe('buildActorResource', () => {
   });
 
   test("writes a device's location and leaves its names alone", () => {
-    const device: Device = { resourceType: 'Device', deviceName: [{ name: 'US-2000', type: 'model-name' }] };
+    const device: Device = {
+      resourceType: 'Device',
+      id: 'ultrasound-2',
+      deviceName: [{ name: 'US-2000', type: 'model-name' }],
+    };
     expect(edit(device, { name: 'Ultrasound 2', location: { reference: 'Location/downtown' } })).toEqual({
       ...device,
       location: { reference: 'Location/downtown' },
