@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button } from '@mantine/core';
+import { Alert, Button, Loader } from '@mantine/core';
+import { normalizeErrorString } from '@medplum/core';
 import type { JSX } from 'react';
-import { useEffect, useRef, useState } from 'react';
-import { exportJsonFile, sendCommand } from '../utils/dom';
+import { useEffect, useState } from 'react';
+import { CcdaViewer } from '../CcdaViewer/CcdaViewer';
+import { exportJsonFile } from '../utils/dom';
 
-const CCDA_VIEWER_URL = 'https://ccda.medplum.com';
 const BASE_VALIDATION_URL = 'https://ccda-validator.medplum.com/';
 
 export interface CcdaDisplayProps {
@@ -33,36 +34,52 @@ interface ValidationResult {
 
 export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
   const { url } = props;
-  const [shouldSend, setShouldSend] = useState(false);
-  const iframeRef = useRef(null);
+  const [loaded, setLoaded] = useState<{ url: string; xml?: string; error?: string }>();
+  const current = loaded?.url === url ? loaded : undefined;
+  const xml = current?.xml;
+  const loadError = current?.error;
   const [validationResult, setValidationResult] = useState<ValidationResult>();
   const [validating, setValidating] = useState(false);
 
   useEffect(() => {
     if (!url) {
-      return;
+      return undefined;
     }
-    if (shouldSend && iframeRef.current) {
-      sendCommand(iframeRef.current, { command: 'loadCcdaXml', value: url }).catch(console.error);
-      setShouldSend(false);
-    }
-  }, [url, shouldSend]);
+    let cancelled = false;
+    // Plain fetch: the URL is a presigned Binary URL or a data: URI, so no auth header is needed
+    fetch(url)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to load C-CDA: ${response.status} ${response.statusText}`);
+        }
+        return response.text();
+      })
+      .then((text) => {
+        if (!cancelled) {
+          setLoaded({ url, xml: text });
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setLoaded({ url, error: normalizeErrorString(err) });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
 
   const validateCcda = async (): Promise<void> => {
-    if (!url) {
+    if (!xml) {
       return;
     }
 
     try {
       setValidating(true);
 
-      // Download the CCDA from the URL using plain fetch to avoid CORS issues
-      const response = await fetch(url);
-      const ccdaContent = await response.text();
-
       // Prepare form data for submission
       const formData = new FormData();
-      formData.append('ccdaFile', new Blob([ccdaContent], { type: 'text/xml' }), 'ccda.xml');
+      formData.append('ccdaFile', new Blob([xml], { type: 'text/xml' }), 'ccda.xml');
 
       // Submit to validation API using direct fetch to avoid CORS issues
       const validationUrl = `${BASE_VALIDATION_URL}referenceccdaservice/?validationObjective=C-CDA_IG_Plus_Vocab&referenceFileName=No%20scenario%20File&curesUpdate=true&severityLevel=WARNING`;
@@ -113,23 +130,16 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
   }
 
   return (
-    <div data-testid="ccda-iframe" style={{ maxWidth: props.maxWidth }}>
-      <div style={{ minHeight: 400 }}>
-        <iframe
-          title="C-CDA Viewer"
-          width="100%"
-          height="400"
-          ref={iframeRef}
-          src={CCDA_VIEWER_URL}
-          allowFullScreen={true}
-          frameBorder={0}
-          seamless={true}
-          onLoad={() => setShouldSend(true)}
-        />
-      </div>
+    <div data-testid="ccda-display" style={{ maxWidth: props.maxWidth }}>
+      {loadError && (
+        <Alert color="red" title="Unable to load C-CDA">
+          {loadError}
+        </Alert>
+      )}
+      {!loadError && (xml === undefined ? <Loader /> : <CcdaViewer xml={xml} />)}
 
       <div style={{ marginTop: '10px', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
-        <Button type="button" onClick={validateCcda} disabled={validating}>
+        <Button type="button" onClick={validateCcda} disabled={validating || !xml}>
           {validating ? 'Validating...' : 'Validate'}
         </Button>
 

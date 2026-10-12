@@ -1,0 +1,92 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  gap: var(--mantine-spacing-sm);
+  align-items: start;
+}
+
+.sectionTitle {
+  color: var(--mantine-color-blue-filled);
+}
+
+.narrative {
+  font-size: var(--mantine-font-size-sm);
+  overflow-wrap: anywhere;
+}
+
+.narrative p {
+  margin: 0 0 var(--mantine-spacing-xs);
+}
+
+.narrative ul,
+.narrative ol {
+  margin: 0 0 var(--mantine-spacing-xs);
+  padding-left: var(--mantine-spacing-lg);
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  margin-bottom: var(--mantine-spacing-xs);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--mantine-font-size-xs);
+}
+
+.table caption {
+  font-weight: 700;
+  text-align: left;
+  padding-bottom: 4px;
+}
+
+.table th,
+.table td {
+  padding: 4px 6px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.table th {
+  background: light-dark(var(--mantine-color-blue-0), var(--mantine-color-dark-6));
+}
+
+.duplicate {
+  opacity: 0.6;
+}
+
+.potential {
+  background: light-dark(var(--mantine-color-yellow-0), var(--mantine-color-dark-5));
+}
+
+.image {
+  display: block;
+  max-width: 100%;
+}
+
+.bold {
+  font-weight: 700;
+}
+
+.italics {
+  font-style: italic;
+}
+
+.underline {
+  text-decoration: underline;
+}
+
+.emphasis {
+  font-style: italic;
+  font-weight: 600;
+}
+
+.headerTable th {
+  white-space: nowrap;
+  vertical-align: top;
+  color: var(--mantine-color-dimmed);
+  font-weight: 600;
+  padding-right: var(--mantine-spacing-sm);
+}
