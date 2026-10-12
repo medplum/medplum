@@ -8,7 +8,7 @@ import { IconAlertTriangle } from '@tabler/icons-react';
 import type { CSSProperties, JSX, ReactNode } from 'react';
 import { useId, useMemo } from 'react';
 import { getActorTypeLabel } from '../../actors';
-import { LOCATION_SEARCH_CRITERIA, NPI_SYSTEM } from '../../constants';
+import { NPI_SYSTEM, SERVICE_FACILITY_SEARCH_CRITERIA } from '../../constants';
 import { getTimezoneOptions } from '../../SchedulingParametersEditor/SchedulingParametersEditor.utils';
 import type { ActorGeneralFields, ActorResource } from './actorDraft';
 
@@ -223,7 +223,7 @@ function ServiceFacilityField(props: ServiceFacilityFieldProps): JSX.Element {
       name="service-facility"
       label="Service facility"
       placeholder={placeholder}
-      searchCriteria={LOCATION_SEARCH_CRITERIA}
+      searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
       defaultValue={value}
       onChange={(location) => onChange(location && createReference(location))}
     />
