@@ -74,6 +74,7 @@ import { patientMatchHandler } from './operations/patientmatch';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectRateLimitsHandler } from './operations/project-rate-limits';
+import { projectArchiveHandler } from './operations/projectarchive';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
 import { rebuildBaseDefinitionsOperation } from './operations/rebuild-base-definitions';
@@ -246,6 +247,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Project $clone
   router.add('POST', '/Project/:id/$clone', projectCloneHandler);
+
+  // Project $archive
+  router.add('POST', '/Project/:id/$archive', projectArchiveHandler);
 
   // Project $rate-limits
   router.add('GET', '/Project/:id/$rate-limits', projectRateLimitsHandler);
