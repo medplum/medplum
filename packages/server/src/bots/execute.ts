@@ -40,7 +40,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
 
     const context: BotExecutionContext = {
       ...request,
-      accessToken: await getBotAccessToken(runAs),
+      accessToken: await getBotAccessToken(bot, runAs),
       secrets: await getBotSecrets(bot, runAs),
     };
 

@@ -10,7 +10,7 @@ import type { JSX, ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { AppointmentServiceSelect } from '../AppointmentFinder/AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
-import { LOCATION_SEARCH_CRITERIA } from '../constants';
+import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 import { VisitTypeIcon } from '../VisitTypeIcon';
 import classes from './CalendarFilters.module.css';
 import { SectionHeader } from './CalendarsPanel/SectionHeader';
@@ -134,7 +134,7 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
               name="location"
               label={<VisuallyHidden>Location</VisuallyHidden>}
               placeholder={locations.length > 0 ? 'Add a location' : 'All locations'}
-              searchCriteria={LOCATION_SEARCH_CRITERIA}
+              searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
               onChange={addLocation}
               clearable={false}
             />
