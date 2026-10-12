@@ -1368,21 +1368,23 @@ export class Repository extends FhirRepository implements Disposable {
         );
 
         // Latest per id from the database, so reruns and versions split across batches resolve correctly
-        const rows = await txRepo.sqlRead<Omit<HistoryRow, 'versionId'>>(
+        const latest = await txRepo.sqlRead<Omit<HistoryRow, 'versionId'>>(
           new SelectQuery(resourceType + '_History')
+            .distinctOn('id')
             .column('id')
             .column('lastUpdated')
             .column('content')
             .where('id', 'IN', ids)
-            .orderBy('lastUpdated'),
+            .orderBy('id')
+            .orderBy('lastUpdated', true)
+            .orderBy('versionId', true),
           resourceType,
           { mode: DatabaseMode.WRITER }
         );
-        const latest = new Map(rows.map((r) => [r.id, r]));
 
         const current: WithId<Resource>[] = [];
         const deleted: { id: string; lastUpdated: Date }[] = [];
-        for (const row of latest.values()) {
+        for (const row of latest) {
           const resource = parseHistoryContent(row.content) as WithId<Resource>;
           if (resource.meta?.deleted) {
             deleted.push(row);
