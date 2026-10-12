@@ -7,14 +7,17 @@ import { MultiResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
+import { normalizeReference } from './ActorPage/roleDraft';
 import { ConfirmModal } from './ConfirmModal';
 
 export interface ServiceFacilitiesFieldProps {
-  /** The service facilities named. Empty means every service facility. */
+  /** The service facilities named. Empty means every service facility, unless `linked` names some. */
   readonly value: readonly Reference<Location>[];
   readonly onChange: (value: Reference<Location>[]) => void;
   /** The visit type's or provider's name, for the confirmation text. */
   readonly name: string;
+  /** Service facilities it is also at, which this field can't edit, so an empty field doesn't mean every one. */
+  readonly linked?: readonly Reference<Location>[];
   readonly description?: string;
 }
 
@@ -31,12 +34,13 @@ interface PendingChange {
  * @returns The field.
  */
 export function ServiceFacilitiesField(props: ServiceFacilitiesFieldProps): JSX.Element {
-  const { value, onChange, name, description } = props;
+  const { value, onChange, name, linked = [], description } = props;
   const [pending, setPending] = useState<PendingChange>();
   // The input holds its own selection, so it is remounted on `value` whenever the two part: a change the viewer
   // declines, or `value` reset from outside, as Discard does.
   const [inputKey, setInputKey] = useState(0);
   const reported = useRef(value);
+  const everywhere = value.length === 0 && linked.length === 0;
 
   useEffect(() => {
     if (!deepEquals(value, reported.current)) {
@@ -51,10 +55,17 @@ export function ServiceFacilitiesField(props: ServiceFacilitiesFieldProps): JSX.
   }
 
   function handleChange(locations: Location[]): void {
-    const next = locations.map((location) => createReference(location));
-    if (value.length === 0 && next.length > 0) {
-      setPending({ next, added: getDisplayString(locations[0]) });
-    } else if (value.length > 0 && next.length === 0) {
+    const linkedReferences = new Set(linked.flatMap((facility) => normalizeReference(facility.reference) ?? []));
+    const picked = locations.filter((location) => !linkedReferences.has(`Location/${location.id}`));
+    if (picked.length < locations.length) {
+      // A linked service facility is already listed beside the field, so picking it here changes nothing.
+      setInputKey((key) => key + 1);
+      return;
+    }
+    const next = picked.map((location) => createReference(location));
+    if (linked.length === 0 && value.length === 0 && next.length > 0) {
+      setPending({ next, added: getDisplayString(picked[0]) });
+    } else if (linked.length === 0 && value.length > 0 && next.length === 0) {
       setPending({ next });
     } else {
       report(next);
@@ -73,7 +84,7 @@ export function ServiceFacilitiesField(props: ServiceFacilitiesFieldProps): JSX.
         resourceType="Location"
         name="service-facilities"
         label="Service facilities"
-        placeholder={value.length === 0 ? 'Offered at every service facility' : 'Add a service facility'}
+        placeholder={everywhere ? 'Offered at every service facility' : 'Add a service facility'}
         searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
         defaultValue={[...value]}
         onChange={handleChange}
