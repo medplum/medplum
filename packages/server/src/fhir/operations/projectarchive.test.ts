@@ -10,6 +10,7 @@ import type {
   Project,
   ProjectMembership,
   Resource,
+  ResourceType,
   User,
 } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
@@ -94,7 +95,7 @@ describe('Project $archive and $restore', () => {
   });
 
   test('Round trip', async () => {
-    const { project, accessToken, repo, client } = await createTestProject({
+    const { project, accessToken, repo, client, membership } = await createTestProject({
       withClient: true,
       withAccessToken: true,
       withRepo: true,
@@ -150,10 +151,18 @@ describe('Project $archive and $restore', () => {
     expect(await readOutput(job, 'Binary')).toHaveLength(0);
     expect(await readOutput(job, 'AsyncJob')).toHaveLength(0);
 
-    // Simulate an empty target server
-    const ids = [patient.id, deleted.id];
-    await systemRepo.sqlWrite(new DeleteQuery('Patient').where('id', 'IN', ids), 'Patient');
-    await systemRepo.sqlWrite(new DeleteQuery('Patient_History').where('id', 'IN', ids), 'Patient');
+    // Simulate an empty target server, including the project and the client used to log in
+    const removed: [ResourceType, string[]][] = [
+      ['Patient', [patient.id, deleted.id]],
+      ['Project', [project.id]],
+      ['ProjectMembership', [membership.id]],
+      ['User', [user.id]],
+      ['ClientApplication', [client.id]],
+    ];
+    for (const [resourceType, ids] of removed) {
+      await systemRepo.sqlWrite(new DeleteQuery(resourceType).where('id', 'IN', ids), resourceType);
+      await systemRepo.sqlWrite(new DeleteQuery(resourceType + '_History').where('id', 'IN', ids), resourceType);
+    }
 
     expect(await post('$restore', superAdmin.accessToken)).toHaveStatus(400);
 
@@ -173,12 +182,20 @@ describe('Project $archive and $restore', () => {
       parameter: [
         ...(job.output?.parameter?.filter((p) => p.name !== 'medplumVersion') ?? []),
         { name: 'medplumVersion', valueString: '1.0.0' },
-        { name: 'output', part: [{ name: 'type', valueCode: 'FutureResource' }] },
+        {
+          name: 'output',
+          part: [
+            { name: 'type', valueCode: 'FutureResource' },
+            { name: 'url', valueUri: 'Binary/' + crypto.randomUUID() },
+          ],
+        },
       ],
     };
     for (const manifest of [job.output, skewed]) {
       const restoreJob = await runJob('$restore', superAdmin.accessToken, manifest);
-      expect(restoreJob.output?.parameter?.length ?? 0).toBe(manifest === skewed ? 2 : 0);
+      const warnings = restoreJob.output?.parameter?.map((p) => p.valueString);
+      expect(warnings).toContain('Project features not enabled on this server: archive');
+      expect(warnings).toHaveLength(manifest === skewed ? 3 : 1);
 
       expect(await repo.readResource<Patient>('Patient', patient.id)).toMatchObject({ meta: updated.meta });
       expect((await repo.readHistory('Patient', patient.id)).entry).toHaveLength(2);
@@ -189,6 +206,17 @@ describe('Project $archive and $restore', () => {
       expect(bundle.entry?.map((e) => e.resource?.id)).toStrictEqual([patient.id]);
       await expect(repo.readResource('Patient', deleted.id)).rejects.toThrow('Gone');
     }
+
+    // Existing clients keep working with their original credentials
+    const tokenRes = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .send({ grant_type: 'client_credentials', client_id: client.id, client_secret: client.secret });
+    expect(tokenRes).toHaveStatus(200);
+    const readRes = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + tokenRes.body.access_token);
+    expect(readRes).toHaveStatus(200);
   });
 
   test('Restore rejects resources outside the project', async () => {
@@ -220,7 +248,12 @@ describe('Project $archive and $restore', () => {
     const jwk: JsonWebKey = { resourceType: 'JsonWebKey', id: crypto.randomUUID(), meta, active: true, alg: 'RS256' };
     await expect(systemRepo.restoreResourceVersions('JsonWebKey', b.project.id, [jwk])).rejects.toThrow('Forbidden');
 
-    await systemRepo.restoreResourceVersions('Project', b.project.id, [{ ...b.project, meta, superAdmin: true }]);
-    expect(await systemRepo.readResource<Project>('Project', b.project.id)).not.toHaveProperty('superAdmin');
+    // Super admin fields come from the existing target Project, not the archive
+    await systemRepo.restoreResourceVersions('Project', b.project.id, [
+      { ...b.project, meta, superAdmin: true, features: ['ai'] },
+    ]);
+    const restored = await systemRepo.readResource<Project>('Project', b.project.id);
+    expect(restored).not.toHaveProperty('superAdmin');
+    expect(restored.features).toStrictEqual(b.project.features);
   });
 });

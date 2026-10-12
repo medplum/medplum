@@ -18,7 +18,8 @@ import { queueProjectArchive } from '../../workers/bulk-export';
 import type { Repository } from '../repo';
 import type { HistoryRow } from '../repository/row-builder';
 import { parseHistoryContent } from '../repository/row-builder';
-import { SelectQuery } from '../sql';
+import type { Expression } from '../sql';
+import { Condition, Conjunction, Disjunction, SelectQuery } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import { BulkExporter } from './utils/bulkexporter';
 import { parseInputParameters } from './utils/parameters';
@@ -121,32 +122,70 @@ async function archiveResourceType(
       idQuery.where('id', '>', ids.at(-1));
     }
     ids = (await repo.sqlRead<{ id: string }>(idQuery, resourceType)).map((r) => r.id);
-    if (!ids.length) {
-      break;
-    }
-
-    const rows = await repo.sqlRead<HistoryRow>(
-      new SelectQuery(resourceType + '_History')
-        .column('id')
-        .column('versionId')
-        .column('lastUpdated')
-        .column('content')
-        .where('id', 'IN', ids)
-        .orderBy('id')
-        .orderBy('lastUpdated'),
-      resourceType
-    );
-    for (const row of rows) {
-      const resource = archiveVersion(repo, resourceType, row);
-      if (resource) {
-        await exporter.writeResource(resource, { skipDedupe: true });
-      }
+    if (ids.length) {
+      await archiveVersions(exporter, repo, projectId, resourceType, ids);
     }
   } while (ids.length === archivePageSize);
   await exporter.closeWriter(resourceType);
 }
 
-function archiveVersion(repo: Repository, resourceType: ResourceType, row: HistoryRow): WithId<Resource> | undefined {
+async function archiveVersions(
+  exporter: BulkExporter,
+  repo: Repository,
+  projectId: string,
+  resourceType: ResourceType,
+  ids: string[]
+): Promise<void> {
+  // Page versions too, so resources with long histories cannot load unbounded rows
+  let rows: HistoryRow[] = [];
+  do {
+    const query = new SelectQuery(resourceType + '_History')
+      .column('id')
+      .column('versionId')
+      .column('lastUpdated')
+      .column('content')
+      .where('id', 'IN', ids)
+      .orderBy('id')
+      .orderBy('lastUpdated')
+      .orderBy('versionId')
+      .limit(archivePageSize);
+    const last = rows.at(-1);
+    if (last) {
+      query.whereExpr(afterHistoryRow(last));
+    }
+    rows = await repo.sqlRead<HistoryRow>(query, resourceType);
+    for (const row of rows) {
+      const resource = archiveVersion(repo, projectId, resourceType, row);
+      if (resource) {
+        await exporter.writeResource(resource, { skipDedupe: true });
+      }
+    }
+  } while (rows.length === archivePageSize);
+}
+
+/**
+ * Keyset condition for rows after the given row in (id, lastUpdated, versionId) order.
+ * @param row - The last row of the previous page.
+ * @returns The keyset condition.
+ */
+function afterHistoryRow(row: HistoryRow): Expression {
+  return new Disjunction([
+    new Condition('id', '>', row.id),
+    new Conjunction([new Condition('id', '=', row.id), new Condition('lastUpdated', '>', row.lastUpdated)]),
+    new Conjunction([
+      new Condition('id', '=', row.id),
+      new Condition('lastUpdated', '=', row.lastUpdated),
+      new Condition('versionId', '>', row.versionId),
+    ]),
+  ]);
+}
+
+function archiveVersion(
+  repo: Repository,
+  projectId: string,
+  resourceType: ResourceType,
+  row: HistoryRow
+): WithId<Resource> | undefined {
   const resource = parseHistoryContent(row.content) as WithId<Resource>;
   if (resource.meta?.deleted) {
     // Older tombstones have empty content, so rebuild from the row
@@ -157,8 +196,9 @@ function archiveVersion(repo: Repository, resourceType: ResourceType, row: Histo
   if (resource.resourceType === 'Binary' && resource.securityContext?.reference?.startsWith('AsyncJob/')) {
     return undefined;
   }
-  // An older version may belong to another project; hidden fields are removed like the _history API
-  if (!repo.canPerformInteraction(AccessPolicyInteraction.READ, resource)) {
+  // An older version of a moved User or Subscription may belong to another (possibly linked) project.
+  // Hidden fields are removed like the _history API.
+  if (resource.meta?.project !== projectId || !repo.canPerformInteraction(AccessPolicyInteraction.READ, resource)) {
     return undefined;
   }
   return repo.removeHiddenFields(resource);

@@ -10,10 +10,11 @@ import {
   resolveId,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Binary, Parameters, Resource } from '@medplum/fhirtypes';
+import type { Binary, Parameters, Project, Resource } from '@medplum/fhirtypes';
 import { createInterface } from 'node:readline';
 import { getConfig } from '../../config/loader';
 import { requireSuperAdmin } from '../../context';
+import { DatabaseMode } from '../../database';
 import { getBinaryStorage } from '../../storage/loader';
 import type { Repository } from '../repo';
 import { SelectQuery } from '../sql';
@@ -38,7 +39,11 @@ export async function projectRestoreHandler(req: FhirRequest): Promise<FhirRespo
   if (!projectId) {
     return [badRequest('Missing project')];
   }
-  await checkExistingProject(ctx.repo, projectId, getOutputs(manifest));
+  const outputs = getOutputs(manifest);
+  if (outputs.some((o) => !o.type || !o.url)) {
+    return [badRequest('Every output requires a type and url')];
+  }
+  await checkExistingProject(ctx.repo, projectId, outputs);
 
   const { baseUrl } = getConfig();
   const exec = new AsyncJobExecutor(ctx.repo);
@@ -51,8 +56,10 @@ async function restoreProject(repo: Repository, projectId: string, manifest: Par
   const warnings: string[] = [];
   const archiveVersion = manifest.parameter?.find((p) => p.name === 'medplumVersion')?.valueString;
   if (archiveVersion !== MEDPLUM_VERSION) {
-    warnings.push(`Archive created by Medplum ${archiveVersion}, restored into ${MEDPLUM_VERSION}`);
+    warnings.push(`Archive created by Medplum ${archiveVersion ?? '(unknown)'}, restored into ${MEDPLUM_VERSION}`);
   }
+
+  let archivedFeatures: NonNullable<Project['features']> = [];
 
   for (const { type, url } of getOutputs(manifest)) {
     if (!isResourceType(type)) {
@@ -62,6 +69,10 @@ async function restoreProject(repo: Repository, projectId: string, manifest: Par
 
     let batch: Resource[] = [];
     for await (const resource of readArchiveFile(repo, url)) {
+      if (resource.resourceType === 'Project') {
+        // Versions are in lastUpdated order, so the last one is current
+        archivedFeatures = resource.features ?? [];
+      }
       batch.push(resource);
       if (batch.length === restoreBatchSize) {
         await repo.restoreResourceVersions(type, projectId, batch);
@@ -70,6 +81,15 @@ async function restoreProject(repo: Repository, projectId: string, manifest: Par
     }
     if (batch.length) {
       await repo.restoreResourceVersions(type, projectId, batch);
+    }
+  }
+
+  // Project.features is set by this server's super admin, never the archive
+  if (archivedFeatures.length) {
+    const project = await repo.readResource<Project>('Project', projectId);
+    const missing = archivedFeatures.filter((f) => !project.features?.includes(f));
+    if (missing.length) {
+      warnings.push(`Project features not enabled on this server: ${missing.join(', ')}`);
     }
   }
 
@@ -109,7 +129,8 @@ async function checkExistingProject(
 ): Promise<void> {
   const history = await repo.sqlRead<{ versionId: string }>(
     new SelectQuery('Project_History').column('versionId').where('id', '=', projectId),
-    'Project'
+    'Project',
+    { mode: DatabaseMode.WRITER }
   );
   if (!history.length) {
     return;

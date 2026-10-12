@@ -1333,13 +1333,23 @@ export class Repository extends FhirRepository implements Disposable {
     if (!this.isSuperAdmin() || protectedResourceTypes.includes(resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
+    // Super admin Project fields come from the target, never the archive, so reruns keep what the operator set
+    let existingProject: Project | undefined;
+    if (resourceType === 'Project') {
+      const [row] = await this.sqlRead<{ content: string }>(
+        new SelectQuery('Project').column('content').where('id', '=', projectId),
+        'Project',
+        { mode: DatabaseMode.WRITER }
+      );
+      existingProject = row ? (parseHistoryContent(row.content) as Project) : undefined;
+    }
     const restored = versions.map((v) => {
       if (v.resourceType !== resourceType || !isRestorableToProject(v, projectId)) {
         throw new OperationOutcomeError(
           badRequest(`${v.resourceType}/${v.id} does not belong to Project/${projectId}`)
         );
       }
-      return v.resourceType === 'Project' ? removeSuperAdminProjectFields(v) : v;
+      return v.resourceType === 'Project' ? replaceSuperAdminProjectFields(v, existingProject) : v;
     });
     const ids = [...new Set(versions.map((v) => v.id as string))];
 
@@ -3035,14 +3045,19 @@ const superAdminProjectFields = [
 ] as const;
 
 /**
- * Removes the Project fields that only super admins can set.
+ * Replaces the Project fields that only super admins can set with the target's current values.
  * @param project - The archived Project version.
- * @returns The Project without super admin fields.
+ * @param existing - The target's current Project, if any.
+ * @returns The Project with the target's super admin fields.
  */
-function removeSuperAdminProjectFields(project: Project): Project {
+function replaceSuperAdminProjectFields(project: Project, existing: Project | undefined): Project {
   const result = { ...project };
   for (const field of superAdminProjectFields) {
-    delete result[field];
+    if (existing?.[field] === undefined) {
+      delete result[field];
+    } else {
+      Object.assign(result, { [field]: existing[field] });
+    }
   }
   return result;
 }
