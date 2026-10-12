@@ -39,16 +39,6 @@
   cursor: pointer;
 }
 
-.patientSummaryAddButton {
-  opacity: 0;
-  transition: opacity 0.2s;
-  position: absolute;
-  right: 0;
-  top: 0;
-  transform: none;
-  stroke-width: 1;
-}
-
 .patientSummaryHeader {
   width: 100%;
   cursor: default;
