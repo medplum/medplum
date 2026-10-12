@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  ActionIcon,
   Box,
   Button,
   Container,
@@ -12,6 +11,7 @@ import {
   Paper,
   Stack,
   Text,
+  ThemeIcon,
   Title,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
@@ -168,7 +168,7 @@ export function GetStartedPage(): JSX.Element {
           <Title order={2} fw={800}>
             Get Started with Medplum Provider
           </Title>
-          <Text size="lg" mt=".25rem" className={classes.textSecondary}>
+          <Text size="lg" mt="sm" className={classes.textSecondary}>
             Below are our recommended first steps to get set up and familiar with the available features and workflows
             in Provider. Please note: if you are using the free version of Provider, some services may not be
             available—lab ordering, prescriptions, billing, and access to code systems (such as CPT and ICD-10) require
@@ -195,9 +195,9 @@ export function GetStartedPage(): JSX.Element {
           {/* Sample Data */}
           <Box>
             <Group mb="xl" gap="sm" align="center">
-              <ActionIcon size={48} radius="xl" variant="light" className={classes.sectionIcon}>
+              <ThemeIcon size={48} radius="xl" color="yellow.8">
                 <IconDatabase size={24} color="white" />
-              </ActionIcon>
+              </ThemeIcon>
               <Stack gap={0} className={classes.flexOne}>
                 <Text fw={800} size="xl">
                   Import Sample Data
@@ -387,9 +387,9 @@ export function GetStartedPage(): JSX.Element {
           {/* Integrate Your Services */}
           <Box>
             <Group mb="xl" gap="sm" align="center">
-              <ActionIcon size={48} radius="xl" variant="light" className={classes.sectionIcon}>
+              <ThemeIcon size={48} radius="xl" color="yellow.8">
                 <IconApps size={24} color="white" />
-              </ActionIcon>
+              </ThemeIcon>
               <Stack gap={0} className={classes.flexOne}>
                 <Text fw={800} size="xl">
                   Integrate Your Services
@@ -468,9 +468,9 @@ export function GetStartedPage(): JSX.Element {
           {/* How to Use Provider */}
           <Box>
             <Group mb="xl" gap="sm" align="center">
-              <ActionIcon size={48} radius="xl" variant="light" className={classes.sectionIcon}>
+              <ThemeIcon size={48} radius="xl" color="yellow.8">
                 <IconBook size={24} color="white" />
-              </ActionIcon>
+              </ThemeIcon>
               <Stack gap={0} className={classes.flexOne}>
                 <Text fw={800} size="xl">
                   View Our User Guide
@@ -678,9 +678,9 @@ export function GetStartedPage(): JSX.Element {
           {/* Further Support */}
           <Box>
             <Group mb="xl" gap="sm" align="center">
-              <ActionIcon size={48} radius="xl" variant="light" className={classes.sectionIcon}>
+              <ThemeIcon size={48} radius="xl" color="yellow.8">
                 <IconHelpCircle size={24} color="white" />
-              </ActionIcon>
+              </ThemeIcon>
               <Stack gap={0} className={classes.flexOne}>
                 <Text fw={800} size="xl">
                   Get Help
