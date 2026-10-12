@@ -48,19 +48,28 @@ const scope = {
 };
 
 /**
- * Finds the component to render: the default export when it is named, otherwise the last
- * top-level PascalCase `function`/`const` declaration so helpers declared before the
- * component are skipped.
+ * Finds the component to render: the default export when it names one (directly, as a
+ * function declaration, or wrapped as in `memo(Foo)`), otherwise the last top-level
+ * PascalCase `function`/`const` declaration so helpers declared before the component
+ * are skipped. All-caps names are constants, not components.
  * @param code - The generated source, before imports and exports are stripped.
  * @returns The component name, or undefined when none can be identified.
  */
 function findComponentName(code: string): string | undefined {
-  const defaultExport = code.match(/^export\s+default\s+(?:function\s+)?([A-Za-z_$][\w$]*)\b/m);
-  if (defaultExport && defaultExport[1] !== 'function') {
-    return defaultExport[1];
+  const defaultExport = code.match(/^export\s+default\s+(.+)$/m)?.[1];
+  if (defaultExport) {
+    const named =
+      defaultExport.match(/^function\s+([A-Za-z_$][\w$]*)/) ??
+      defaultExport.match(/^[A-Za-z_$][\w$]*\s*\(\s*([A-Za-z_$][\w$]*)\s*\)/) ??
+      defaultExport.match(/^([A-Za-z_$][\w$]*)\s*;?\s*$/);
+    if (named) {
+      return named[1];
+    }
   }
-  const declarations = [...code.matchAll(/^(?:export\s+)?(?:function|const)\s+([A-Z][\w$]*)\b/gm)];
-  return declarations.at(-1)?.[1];
+  const declarations = [...code.matchAll(/^(?:export\s+)?(?:function|const)\s+([A-Z][\w$]*)\b/gm)]
+    .map((m) => m[1])
+    .filter((name) => /[a-z]/.test(name));
+  return declarations.at(-1);
 }
 
 function transformCode(code: string): string {
@@ -71,7 +80,10 @@ function transformCode(code: string): string {
     .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];?[ \t]*$/gm, '')
     .replace(/^import\s+['"][^'"]+['"];?[ \t]*$/gm, '');
 
-  // Remove export statements but keep the component definition
+  // Remove export statements but keep the component definition. A bare default export
+  // (`export default Foo`, `export default memo(Foo)`) goes entirely: the render call
+  // below names the component, and wrappers like memo are not in scope.
+  transformed = transformed.replace(/^export\s+default\s+(?!function\b|class\b).*$/gm, '');
   transformed = transformed.replace(/^export\s+default\s+/gm, '');
   transformed = transformed.replace(/^export\s+/gm, '');
 
