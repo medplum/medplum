@@ -5,6 +5,7 @@ import { formatDate } from '@medplum/core';
 import type { DiagnosticReport } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay } from '@medplum/react';
 import type { JSX } from 'react';
+import { LabDetectedIssueAlert, useLabDetectedIssues } from './LabDetectedIssueAlert';
 import { LabReportContent } from './LabReportContent';
 
 interface LabResultDetailsProps {
@@ -13,6 +14,7 @@ interface LabResultDetailsProps {
 
 export function LabResultDetails(props: LabResultDetailsProps): JSX.Element {
   const { result } = props;
+  const { issues: detectedIssues, acknowledgeIssue } = useLabDetectedIssues([result.id]);
 
   return (
     <ScrollArea h="100%">
@@ -37,6 +39,7 @@ export function LabResultDetails(props: LabResultDetailsProps): JSX.Element {
           </Stack>
 
           <Stack gap="xs" p="md">
+            <LabDetectedIssueAlert issues={detectedIssues} onAcknowledge={acknowledgeIssue} />
             <LabReportContent report={result} />
           </Stack>
         </Stack>
