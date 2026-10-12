@@ -70,7 +70,7 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
             label={npis.length > 1 ? 'NPIs' : 'NPI'}
             value={npis.length > 0 ? npis.join(', ') : undefined}
           />
-          <TimezoneField recommended value={value.timezone} onChange={(timezone) => update({ timezone })} />
+          <TimezoneField value={value.timezone} onChange={(timezone) => update({ timezone })} />
         </FieldGrid>
       </>
     );
@@ -149,14 +149,13 @@ const WARNING_INPUT = { '--input-bd': 'var(--mantine-color-yellow-6)' } as CSSPr
 
 function TimezoneField(props: {
   readonly description?: string;
-  /** Left empty, the field is marked with a warning that does not block saving. */
-  readonly recommended?: boolean;
   readonly value: string | undefined;
   readonly onChange: (value: string | undefined) => void;
 }): JSX.Element {
-  const { description, recommended, value, onChange } = props;
+  const { description, value, onChange } = props;
   const options = useMemo(() => getTimezoneOptions([value]), [value]);
-  const warn = recommended && !value;
+  // Left empty, the field is marked with a warning that does not block saving.
+  const warn = !value;
   return (
     <Select
       label="Time zone"

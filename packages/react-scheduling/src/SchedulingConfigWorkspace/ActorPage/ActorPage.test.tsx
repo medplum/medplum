@@ -662,10 +662,10 @@ describe('ActorPage', () => {
       expect(timezoneWarning()).not.toBeInTheDocument();
     });
 
-    test('a room without a time zone is not warned', async () => {
+    test('a room without a time zone is warned too', async () => {
       await setup(room3);
 
-      expect(timezoneWarning()).not.toBeInTheDocument();
+      expect(timezoneWarning()).toBeInTheDocument();
     });
 
     test("the provider's time zone is read for hours as soon as it is set, before it is saved", async () => {
