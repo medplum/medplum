@@ -43,6 +43,30 @@ describe('ComponentPreview', () => {
     await waitFor(() => expect(screen.getByRole('tabpanel')).toHaveTextContent('Arrow preview'));
   });
 
+  test('Renders a default export wrapped in memo', async () => {
+    const memoCode = `function Demo(): JSX.Element {
+  return <Text>Memo preview</Text>;
+}
+
+export default memo(Demo);
+`;
+    setup(<ComponentPreview code={memoCode} />);
+
+    await waitFor(() => expect(screen.getByRole('tabpanel')).toHaveTextContent('Memo preview'));
+  });
+
+  test('Skips an all-caps constant declared after the component', async () => {
+    const constantCode = `function Demo(): JSX.Element {
+  return <Text>{LABEL}</Text>;
+}
+
+const LABEL = 'Constant preview';
+`;
+    setup(<ComponentPreview code={constantCode} />);
+
+    await waitFor(() => expect(screen.getByRole('tabpanel')).toHaveTextContent('Constant preview'));
+  });
+
   test('Resolves Tooltip inside a chart to the Recharts tooltip', async () => {
     const chartCode = `function Chart() {
   const data = [{ x: 1, y: 2 }, { x: 2, y: 3 }];
