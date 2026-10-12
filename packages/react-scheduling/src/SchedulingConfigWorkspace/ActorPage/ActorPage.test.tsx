@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  allServiceTypesCodeableConcept,
   badRequest,
   getScheduleSchedulingParameters,
   OperationOutcomeError,
+  serviceTypeIncludesAllServices,
   serviceTypeIncludesService,
   TimezoneExtensionURI,
   toServiceTypeCodeableConcepts,
@@ -177,6 +179,22 @@ async function openOfferPicker(): Promise<void> {
 async function chooseStopOffering(name: string): Promise<void> {
   await userEvent.click(screen.getByRole('button', { name: `Actions for ${name}` }));
   await userEvent.click(await screen.findByRole('menuitem', { name: 'Stop offering' }));
+}
+
+function offeringAll(actor: string, customized?: WithId<HealthcareService>): Schedule {
+  const schedule = { ...makeSchedule(actor, []), serviceType: [allServiceTypesCodeableConcept()] };
+  return customized ? setScheduleSchedulingParameterValues(schedule, customized, { bufferAfter: 10 }) : schedule;
+}
+
+function entryNames(): string[] {
+  return [...document.querySelectorAll('.mantine-Accordion-control')].map(
+    (control) => control.querySelector('p')?.textContent ?? ''
+  );
+}
+
+async function flipOfferAll(dialogName: string): Promise<HTMLElement> {
+  await userEvent.click(screen.getByRole('switch', { name: /^Offer all visit types/ }));
+  return screen.findByRole('dialog', { name: dialogName });
 }
 
 async function offer(...names: string[]): Promise<void> {
@@ -518,6 +536,68 @@ describe('ActorPage', () => {
       true,
       false,
     ]);
+  });
+
+  test("a Schedule offering every visit type lists each active one, and can't stop or offer one on its own", async () => {
+    await setup(drSmith, [offeringAll('Practitioner/dr-smith', followUp)], [], followUp.id);
+
+    expect(screen.getByRole('switch', { name: /^Offer all visit types/ })).toBeChecked();
+    expect(entryNames()).toEqual(['Initial Visit', 'Follow-up', 'Cystoscopy']);
+    expect(entry('Follow-up')).toHaveAttribute('aria-expanded', 'true');
+    expect(entry('Follow-up')).not.toHaveTextContent('Unsaved');
+    expect(screen.queryByRole('button', { name: 'Offer visit types' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Select Initial Visit' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Actions for Initial Visit' }));
+    expect(await screen.findByRole('menuitem', { name: 'Stop offering' })).toBeDisabled();
+  });
+
+  test('offering all warns of what becomes bookable, then saves the marker beside the visit types named', async () => {
+    const { onSynced } = await setup(room3, [makeSchedule('Location/room-3', [initialVisit])]);
+
+    const dialog = await flipOfferAll('Offer all visit types?');
+
+    expect(dialog).toHaveTextContent('Room 3 will be bookable for all 3 active visit types, and any added later');
+    expect(dialog).toHaveTextContent("2 of them have no hours of their own, so they're bookable around the clock");
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Offer all' }));
+    expect(entryNames()).toEqual(['Initial Visit', 'Follow-up', 'Cystoscopy']);
+    await save();
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    const saved = syncedSchedule(onSynced).serviceType;
+    expect(serviceTypeIncludesAllServices(saved)).toBe(true);
+    expect(serviceTypeIncludesService(saved, initialVisit)).toBe(true);
+  });
+
+  test('no longer offering all keeps only the visit types customized here, after warning', async () => {
+    const { onSynced } = await setup(drSmith, [offeringAll('Practitioner/dr-smith', followUp)]);
+
+    const dialog = await flipOfferAll('Stop offering all visit types?');
+
+    expect(dialog).toHaveTextContent(
+      'Dr. Jane Smith will keep offering the 1 visit type customized here, and stop offering the other 2 once you save.'
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Stop offering all' }));
+    expect(entryNames()).toEqual(['Follow-up']);
+    await save();
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    const saved = syncedSchedule(onSynced);
+    expect(saved.serviceType).toEqual(toServiceTypeCodeableConcepts(followUp));
+    expect(getScheduleSchedulingParameterValues(saved, followUp).bufferAfter).toBe(10);
+  });
+
+  test('offering all and undoing it before saving leaves the page as it opened', async () => {
+    await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+
+    await userEvent.click(
+      within(await flipOfferAll('Offer all visit types?')).getByRole('button', { name: 'Offer all' })
+    );
+    await userEvent.click(
+      within(await flipOfferAll('Stop offering all visit types?')).getByRole('button', { name: 'Stop offering all' })
+    );
+
+    expect(entryNames()).toEqual(['Initial Visit']);
+    expect(saveBar()).toBeNull();
   });
 
   test("custom hours start from the visit type's, and save as this Schedule's hours for it", async () => {

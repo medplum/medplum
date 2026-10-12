@@ -61,6 +61,8 @@ export function OfferingSummary(props: OfferingSummaryProps): JSX.Element {
 export interface OfferingMenuProps {
   readonly service: WithId<HealthcareService>;
   readonly onStopOffering: () => void;
+  /** Why the visit type can't be stopped on its own, which disables Stop offering and says why. */
+  readonly stopDisabledReason?: string;
 }
 
 /**
@@ -78,9 +80,19 @@ export function OfferingMenu(props: OfferingMenuProps): JSX.Element {
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown>
-        <Menu.Item color="red" leftSection={<IconTrash size={14} />} onClick={props.onStopOffering}>
+        <Menu.Item
+          color="red"
+          leftSection={<IconTrash size={14} />}
+          onClick={props.onStopOffering}
+          disabled={!!props.stopDisabledReason}
+        >
           Stop offering
         </Menu.Item>
+        {props.stopDisabledReason && (
+          <Text size="xs" c="dimmed" px="sm" pb={4} maw={240}>
+            {props.stopDisabledReason}
+          </Text>
+        )}
       </Menu.Dropdown>
     </Menu>
   );

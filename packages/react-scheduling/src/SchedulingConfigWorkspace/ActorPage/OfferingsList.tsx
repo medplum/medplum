@@ -12,11 +12,17 @@ import { OfferPicker } from './OfferPicker';
 import { pageOfServices, serviceLabel } from './serviceList';
 
 const ENTRY_PAGE_SIZE = 20;
+const STOP_WHILE_ALL = 'Offered as one of all visit types. Turn off Offer all visit types to stop offering it.';
 
 export interface OfferingsListProps {
   readonly actorName: string;
   /** The visit types offered, in the order they're listed. */
   readonly offeredServices: readonly WithId<HealthcareService>[];
+  /**
+   * Whether the Schedule offers every active visit type, so none can be stopped, or offered, on its own. Each
+   * can still be customized.
+   */
+  readonly offersAllServices?: boolean;
   readonly openServiceId: string | null;
   readonly onOpenServiceIdChange: (id: string | null) => void;
   readonly renderHeader: (service: WithId<HealthcareService>) => ReactNode;
@@ -39,6 +45,7 @@ export function OfferingsList(props: OfferingsListProps): JSX.Element {
   const {
     actorName,
     offeredServices,
+    offersAllServices,
     openServiceId,
     onOpenServiceIdChange,
     renderHeader,
@@ -118,7 +125,9 @@ export function OfferingsList(props: OfferingsListProps): JSX.Element {
     setServicesToStop([]);
   }
 
-  const offerPicker = <OfferPicker services={offerableServices} onOffer={handleOffer} />;
+  const offerPicker = offersAllServices ? undefined : (
+    <OfferPicker services={offerableServices} onOffer={handleOffer} />
+  );
 
   if (offeredServices.length === 0) {
     return (
@@ -134,14 +143,16 @@ export function OfferingsList(props: OfferingsListProps): JSX.Element {
   return (
     <>
       <Group gap="sm" wrap="nowrap">
-        <Checkbox
-          aria-label={filterText.trim() ? 'Select all matching visit types' : 'Select all visit types'}
-          checked={allMatchesSelected}
-          indeterminate={selectedMatches.length > 0 && !allMatchesSelected}
-          disabled={page.matches.length === 0}
-          onChange={toggleAllMatchesSelected}
-          pl="md"
-        />
+        {!offersAllServices && (
+          <Checkbox
+            aria-label={filterText.trim() ? 'Select all matching visit types' : 'Select all visit types'}
+            checked={allMatchesSelected}
+            indeterminate={selectedMatches.length > 0 && !allMatchesSelected}
+            disabled={page.matches.length === 0}
+            onChange={toggleAllMatchesSelected}
+            pl="md"
+          />
+        )}
         <TextInput
           aria-label="Filter visit types"
           placeholder="Filter visit types"
@@ -150,7 +161,7 @@ export function OfferingsList(props: OfferingsListProps): JSX.Element {
           onChange={(event) => handleFilterChange(event.currentTarget.value)}
           style={{ flex: 1 }}
         />
-        {selectedServices.length > 0 && (
+        {!offersAllServices && selectedServices.length > 0 && (
           <Button
             variant="light"
             color="red"
@@ -173,14 +184,20 @@ export function OfferingsList(props: OfferingsListProps): JSX.Element {
             <Accordion.Item key={service.id} value={service.id}>
               {/* Beside the control rather than in it, which is itself a button. */}
               <Group gap={0} wrap="nowrap" pr="sm">
-                <Checkbox
-                  aria-label={`Select ${serviceLabel(service)}`}
-                  checked={selectedIds.has(service.id)}
-                  onChange={() => toggleSelected(service.id)}
-                  pl="md"
-                />
+                {!offersAllServices && (
+                  <Checkbox
+                    aria-label={`Select ${serviceLabel(service)}`}
+                    checked={selectedIds.has(service.id)}
+                    onChange={() => toggleSelected(service.id)}
+                    pl="md"
+                  />
+                )}
                 <Accordion.Control>{renderHeader(service)}</Accordion.Control>
-                <OfferingMenu service={service} onStopOffering={() => setServicesToStop([service])} />
+                <OfferingMenu
+                  service={service}
+                  onStopOffering={() => setServicesToStop([service])}
+                  stopDisabledReason={offersAllServices ? STOP_WHILE_ALL : undefined}
+                />
               </Group>
               <Accordion.Panel>
                 {everOpenedIds.has(service.id) && (

@@ -7,7 +7,8 @@ import {
   getReferenceString,
   isDefined,
   resolveId,
-  serviceTypeOffersService,
+  serviceTypeIncludesAllServices,
+  serviceTypeIncludesService,
 } from '@medplum/core';
 import type { HealthcareService, Resource, Schedule } from '@medplum/fhirtypes';
 import type { BookableActorType } from '../actors';
@@ -272,7 +273,11 @@ export function getOfferings(
     if (!schedule || isActorTurnedOff(actor)) {
       return [];
     }
-    return serviceTypeOffersService(schedule.serviceType, service) ? [{ actor, schedule }] : [];
+    // The marker covers only active visit types, as booking does.
+    const offered =
+      serviceTypeIncludesService(schedule.serviceType, service) ||
+      (service.active !== false && serviceTypeIncludesAllServices(schedule.serviceType));
+    return offered ? [{ actor, schedule }] : [];
   });
 }
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
+  allServiceTypesCodeableConcept,
   clearHealthcareServiceSchedulingParameter,
   CPT,
   createReference,
@@ -921,11 +922,37 @@ export const DrLindqvistSchedule = setScheduleAvailability(
   [{ daysOfWeek: ['mon', 'wed'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
 ) as WithId<Schedule>;
 
+const NeurologyNewPatient = SpecialtyServices.find(
+  (service) => service.id === 'neurology-new-patient'
+) as WithId<HealthcareService>;
+
+export const DrMensahPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-mensah',
+  name: [{ given: ['Kwame'], family: 'Mensah', prefix: ['Dr.'] }],
+  extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
+};
+
+export const DrMensahSchedule = setScheduleAvailability(
+  {
+    ...buildSchedule('schedule-dr-mensah', 'Practitioner/dr-mensah', 'Dr. Kwame Mensah'),
+    serviceType: [allServiceTypesCodeableConcept()],
+  },
+  NeurologyNewPatient,
+  [{ daysOfWeek: ['fri'], availableStartTime: '13:00:00', availableEndTime: '17:00:00' }]
+) as WithId<Schedule>;
+
 /**
- * A specialty group's 84 visit types and a provider offering most of them, more than fit on a page. Kept out of
- * `ConfigFixtures`, whose tests count its visit types.
+ * A specialty group's 84 visit types, a provider offering most of them, and one offering all of them, more than fit
+ * on a page. Kept out of `ConfigFixtures`, whose tests count its visit types.
  */
-export const ManyVisitTypesFixtures = [...SpecialtyServices, DrLindqvistPractitioner, DrLindqvistSchedule];
+export const ManyVisitTypesFixtures = [
+  ...SpecialtyServices,
+  DrLindqvistPractitioner,
+  DrLindqvistSchedule,
+  DrMensahPractitioner,
+  DrMensahSchedule,
+];
 
 /**
  * Moves a set of fixtures onto the viewer's own clock.

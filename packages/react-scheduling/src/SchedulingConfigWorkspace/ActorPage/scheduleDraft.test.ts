@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  allServiceTypesCodeableConcept,
   getScheduleSchedulingParameters,
   serviceTypeIncludesService,
   ServiceTypeReferenceURI,
@@ -37,6 +38,18 @@ const stored: WithId<Schedule> = setScheduleAvailability(
   ),
   initialVisit,
   [{ daysOfWeek: ['tue'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
+) as WithId<Schedule>;
+
+const offeringAll = setScheduleSchedulingParameterValues(
+  {
+    resourceType: 'Schedule',
+    id: 'schedule-2',
+    active: true,
+    actor: [{ reference: 'Location/room-3' }],
+    serviceType: [allServiceTypesCodeableConcept()],
+  },
+  initialVisit,
+  { bufferAfter: 10 }
 ) as WithId<Schedule>;
 
 describe('buildScheduleDraft', () => {
@@ -95,6 +108,48 @@ describe('buildScheduleDraft', () => {
     ) as Schedule;
 
     expect(getScheduleSchedulingParameters(draft, initialVisit, 'availability')).toEqual([]);
+    expect(getScheduleSchedulingParameters(draft, initialVisit, 'bufferAfter')).toHaveLength(1);
+  });
+
+  test('a Schedule offering every visit type lists each active one, and saves an edit to one without naming it', () => {
+    const discontinued: WithId<HealthcareService> = { ...followUp, id: 'discontinued', active: false };
+    const withInactive = new Map([...servicesById, [discontinued.id, discontinued]]);
+    const initial = scheduleFieldsOf(offeringAll, withInactive);
+    expect(initial.allServices).toBe(true);
+    expect(Object.keys(initial.offerings).sort()).toEqual([followUp.id, initialVisit.id]);
+    expect(initial.offerings[initialVisit.id].parameters).toEqual({ bufferAfter: 10 });
+
+    const edited = {
+      ...initial,
+      offerings: {
+        ...initial.offerings,
+        [initialVisit.id]: { ...initial.offerings[initialVisit.id], parameters: { bufferAfter: 15 } },
+      },
+    };
+    const draft = buildScheduleDraft(offeringAll, room, edited, initial, withInactive) as Schedule;
+
+    expect(draft.serviceType).toEqual([allServiceTypesCodeableConcept()]);
+    expect(getScheduleSchedulingParameters(draft, initialVisit, 'bufferAfter')).toHaveLength(1);
+  });
+
+  test('offering all keeps the visit types named, and creates a Schedule for an actor that has none', () => {
+    const initial = scheduleFieldsOf(stored, servicesById);
+    const draft = buildScheduleDraft(stored, room, { ...initial, allServices: true }, initial, servicesById);
+    expect(draft?.serviceType).toEqual([...(stored.serviceType ?? []), allServiceTypesCodeableConcept()]);
+
+    const none = scheduleFieldsOf(undefined, servicesById);
+    expect(
+      buildScheduleDraft(undefined, room, { ...none, allServices: true }, none, servicesById)?.serviceType
+    ).toEqual([allServiceTypesCodeableConcept()]);
+  });
+
+  test('no longer offering all names the visit types kept, overrides and all, and drops the rest', () => {
+    const initial = scheduleFieldsOf(offeringAll, servicesById);
+    const kept = { allServices: false, offerings: { [initialVisit.id]: initial.offerings[initialVisit.id] } };
+
+    const draft = buildScheduleDraft(offeringAll, room, { ...initial, ...kept }, initial, servicesById) as Schedule;
+
+    expect(draft.serviceType).toEqual(toServiceTypeCodeableConcepts(initialVisit));
     expect(getScheduleSchedulingParameters(draft, initialVisit, 'bufferAfter')).toHaveLength(1);
   });
 
