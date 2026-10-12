@@ -1108,12 +1108,12 @@ describe('ActorPage', () => {
       expect(sent.resource).not.toHaveProperty('active');
     });
 
-    test('removing the last service facility asks first, then offers the provider everywhere', async () => {
+    test('saving with the last service facility removed asks, then offers the provider everywhere', async () => {
       const { medplum, onSynced } = await setup(drSmith, [], [role('r1', [northside])]);
 
       await removeFacility('Northside');
-      await confirm('Offer Dr. Jane Smith at every service facility?');
       await saveNow();
+      await confirm('Offer Dr. Jane Smith at every service facility?');
 
       await waitFor(() => expect(onSynced).toHaveBeenCalled());
       expect(sentRoles(medplum)?.[0].resource).toMatchObject({ id: 'r1', active: false });
@@ -1170,7 +1170,6 @@ describe('ActorPage', () => {
       );
 
       await removeFacility('Northside');
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       await saveNow();
 
       await waitFor(() => expect(onSynced).toHaveBeenCalled());
@@ -1211,14 +1210,14 @@ describe('ActorPage', () => {
       expect(await findChips(['Downtown Clinic'])).not.toHaveTextContent('Northside');
     });
 
-    test('adding a first service facility asks, then creates an active role holding only the practitioner and that location', async () => {
+    test('saving a first service facility asks, then creates an active role holding only the practitioner and that location', async () => {
       const { medplum, onSynced } = await setup(drSmith);
       vi.spyOn(medplum, 'deleteResource');
 
       await add('Northside');
-      await confirm('Offer Dr. Jane Smith only at Northside?');
-      expect(chips()).toHaveTextContent('Northside');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       await saveNow();
+      await confirm('Offer Dr. Jane Smith only at Northside?');
 
       await waitFor(() => expect(onSynced).toHaveBeenCalled());
       const [sent] = sentRoles(medplum) ?? [];
@@ -1237,18 +1236,19 @@ describe('ActorPage', () => {
       expectNothingDeleted(medplum);
     });
 
-    test('cancelling the first service facility changes nothing', async () => {
-      await setup(drSmith);
+    test('cancelling the question on save writes nothing and keeps the edit', async () => {
+      const { medplum } = await setup(drSmith);
 
       await add('Northside');
+      await saveNow();
       const dialog = await screen.findByRole('dialog', { name: 'Offer Dr. Jane Smith only at Northside?' });
       await act(async () => {
         fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
       });
-      await settleAutocomplete();
 
-      expect(chips()).not.toHaveTextContent('Northside');
-      expect(saveBar()).toBeNull();
+      expect(medplum.executeBatch).not.toHaveBeenCalled();
+      expect(chips()).toHaveTextContent('Northside');
+      expect(saveBar()).not.toBeNull();
     });
 
     test('adding a service facility back reactivates the inactive role for it', async () => {
@@ -1256,8 +1256,8 @@ describe('ActorPage', () => {
       const stored = await medplum.readResource('PractitionerRole', 'r1');
 
       await add('Northside');
-      await confirm('Offer Dr. Jane Smith only at Northside?');
       await saveNow();
+      await confirm('Offer Dr. Jane Smith only at Northside?');
 
       await waitFor(() => expect(onSynced).toHaveBeenCalled());
       expect(sentRoles(medplum)).toEqual([
@@ -1272,7 +1272,6 @@ describe('ActorPage', () => {
       const { medplum, onSynced } = await setup(drSmith, [], [role('theirs', [downtown], { linked: true })]);
 
       await add('Northside');
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       await saveNow();
 
       await waitFor(() => expect(onSynced).toHaveBeenCalled());

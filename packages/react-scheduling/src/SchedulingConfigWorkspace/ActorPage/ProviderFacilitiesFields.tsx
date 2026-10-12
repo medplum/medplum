@@ -9,7 +9,6 @@ import { useId } from 'react';
 import { ServiceFacilitiesField } from '../ServiceFacilitiesField';
 
 export interface ProviderFacilitiesFieldsProps {
-  readonly actorName: string;
   /** The service facilities the workspace may edit, as edited. Absent while the provider's roles are read. */
   readonly value?: readonly Reference<Location>[];
   /** The service facilities another system linked, each named, which can't be removed here. */
@@ -25,7 +24,7 @@ export interface ProviderFacilitiesFieldsProps {
  * @returns The fields.
  */
 export function ProviderFacilitiesFields(props: ProviderFacilitiesFieldsProps): JSX.Element {
-  const { actorName, value, linked, error, onChange } = props;
+  const { value, linked, error, onChange } = props;
   if (error) {
     return <Alert color="red">Service facilities could not be loaded: {normalizeErrorString(error)}</Alert>;
   }
@@ -34,7 +33,7 @@ export function ProviderFacilitiesFields(props: ProviderFacilitiesFieldsProps): 
   }
   return (
     <>
-      <ServiceFacilitiesField value={value} onChange={onChange} name={actorName} linked={linked} />
+      <ServiceFacilitiesField value={value} onChange={onChange} linked={linked} />
       {linked.length > 0 && <LinkedFacilities facilities={linked} />}
     </>
   );

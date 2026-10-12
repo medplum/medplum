@@ -41,9 +41,10 @@ one, which is listed once it is saved. Providers can't be created here.
 
 - **General:** whether it is active, its name, the service facilities it is offered at
   (`HealthcareService.location`), and its booking requirements. With no service facilities, it is offered at
-  every one, so adding a first one or removing the last asks first. Booking requirements are what schedulers must
-  enter to book it, such as for prior authorization: procedure codes, diagnosis codes, and confirmation of medical
-  necessity, each ticked on its own. They are the `scheduling-eligibility` codes on `HealthcareService.eligibility` that the booking form
+  every one, so a save that adds the first one, or removes the last, asks first. A new visit type isn't offered
+  anywhere yet, so creating it doesn't. Booking requirements are what schedulers must enter to book it, such as
+  for prior authorization: procedure codes, diagnosis codes, and confirmation of medical necessity, each ticked on
+  its own. They are the `scheduling-eligibility` codes on `HealthcareService.eligibility` that the booking form
   reads. Unticking one removes only its code, and any other eligibility the visit type records is left as it is.
 - **Scheduling parameters:** duration, buffers, start interval, and capacity, with the same validation and
   warnings as `SchedulingParametersEditor`.
@@ -84,12 +85,12 @@ at once, asks first, then removes the settings the Schedule holds for those visi
 
 A provider's General also has **Service facilities**, the same field a visit type has, filled from the service
 facility Locations the provider's active `PractitionerRole`s name. With none, booking filtered to a service
-facility offers the provider at every one, so adding a first one or removing the last asks first. Adding a
-service facility turns an inactive role for it back on, or creates a role holding only `practitioner`, that
-`location`, and `active`. Removing one turns off the role naming only it, or takes it off a role naming others.
+facility offers the provider at every one, so a save that adds the first one, or removes the last, asks first.
+Adding a service facility turns an inactive role for it back on, or creates a role holding only `practitioner`,
+that `location`, and `active`. Removing one turns off the role naming only it, or takes it off a role naming others.
 A role carrying an `identifier` was written by another system and is never changed, so a service facility it
 links is listed apart, under **Linked by another system**, and can't be removed. When there is one, the provider
-is already limited to it, so neither edit asks.
+is already limited to it, so neither save asks.
 
 A new room is typed as a room (`physicalType` `ro`), so the service facility pickers never offer it as a service
 facility. A new room or device starts active, unless switched off before Create, and is created with a Schedule

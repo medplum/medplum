@@ -25,8 +25,10 @@ import {
 import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPage';
 import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
+import { ConfirmModal } from '../ConfirmModal';
 import { summarizeOffering } from '../offeringSummary';
 import { getActorStatus } from '../SchedulingConfigWorkspace.utils';
+import { getServiceFacilitiesConfirmation } from '../serviceFacilitiesConfirmation';
 import type { ConfigStatus } from '../StatusBadge';
 import { StatusBadge } from '../StatusBadge';
 import type { ActorGeneralFields, ActorResource, NewActorType } from './actorDraft';
@@ -101,6 +103,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [open, setOpen] = useState<string | null>(() =>
     initialOpenServiceId && Object.hasOwn(initial.offerings, initialOpenServiceId) ? initialOpenServiceId : null
   );
+  const [confirmingFacilities, setConfirmingFacilities] = useState(false);
   const [saving, setSaving] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
   const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'> & { change?: ConfigChange }>();
@@ -137,6 +140,13 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           ...editableFacilities.map(named),
         ])
       : [];
+  const facilitiesConfirmation =
+    storedFacilities &&
+    editableFacilities &&
+    getServiceFacilitiesConfirmation(actorName, storedFacilities.facilities, [
+      ...linkedFacilities,
+      ...editableFacilities,
+    ]);
 
   const scheduleDraft = actorWithId && buildScheduleDraft(schedule, actorWithId, fields, initial, servicesById);
   const actorDirty = !deepEquals(general, initialGeneral);
@@ -221,6 +231,19 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       }
       return;
     }
+    if (facilitiesConfirmation) {
+      setConfirmingFacilities(true);
+      return;
+    }
+    await save();
+  }
+
+  async function handleConfirmFacilities(): Promise<void> {
+    setConfirmingFacilities(false);
+    await save();
+  }
+
+  async function save(): Promise<void> {
     setSaving(true);
     setFailure(undefined);
     try {
@@ -347,7 +370,6 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
         />
         {providerRoles && (
           <ProviderFacilitiesFields
-            actorName={actorName}
             value={editableFacilities}
             linked={linkedFacilities}
             error={providerRoles.error}
@@ -405,6 +427,17 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           />
         )}
       </ConfigSection>
+
+      <ConfirmModal
+        opened={confirmingFacilities}
+        title={facilitiesConfirmation?.title}
+        cancelLabel="Cancel"
+        confirmLabel={facilitiesConfirmation?.confirmLabel ?? 'Save'}
+        onCancel={() => setConfirmingFacilities(false)}
+        onConfirm={handleConfirmFacilities}
+      >
+        {facilitiesConfirmation?.body}
+      </ConfirmModal>
 
       <SaveBar
         dirty={dirty}
