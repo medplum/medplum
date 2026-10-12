@@ -187,6 +187,11 @@ function archiveVersion(
   row: HistoryRow
 ): WithId<Resource> | undefined {
   const resource = parseHistoryContent(row.content) as WithId<Resource>;
+  // An older version of a moved User or Subscription may belong to another (possibly linked) project.
+  // Older tombstones have no meta.project and are kept, matching restore.
+  if ((resource.meta?.project ?? (resource.meta?.deleted && projectId)) !== projectId) {
+    return undefined;
+  }
   if (resource.meta?.deleted) {
     // Older tombstones have empty content, so rebuild from the row
     const meta = { ...resource.meta, versionId: row.versionId, lastUpdated: new Date(row.lastUpdated).toISOString() };
@@ -196,9 +201,8 @@ function archiveVersion(
   if (resource.resourceType === 'Binary' && resource.securityContext?.reference?.startsWith('AsyncJob/')) {
     return undefined;
   }
-  // An older version of a moved User or Subscription may belong to another (possibly linked) project.
-  // Hidden fields are removed like the _history API.
-  if (resource.meta?.project !== projectId || !repo.canPerformInteraction(AccessPolicyInteraction.READ, resource)) {
+  // Hidden fields are removed like the _history API
+  if (!repo.canPerformInteraction(AccessPolicyInteraction.READ, resource)) {
     return undefined;
   }
   return repo.removeHiddenFields(resource);
