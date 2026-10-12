@@ -135,7 +135,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   }));
   const blocking = checks.find(({ errors, availabilityError }) => Object.keys(errors).length > 0 || availabilityError);
   const nameError =
-    actorDraft.resourceType !== 'Practitioner' && !general.name.trim() ? 'A name is required.' : undefined;
+    actorDraft.resourceType === 'Location' && !general.name.trim() ? 'A name is required.' : undefined;
   const blockedReason = nameError ?? getOfferingBlockedReason(blocking);
 
   function handleGeneralChange(next: ActorGeneralFields): void {

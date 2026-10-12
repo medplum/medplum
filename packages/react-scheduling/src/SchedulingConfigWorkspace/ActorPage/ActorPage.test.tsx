@@ -751,7 +751,7 @@ describe('ActorPage', () => {
         expect((sentResources(medplum)[0] as Location).partOf?.reference).toBe('Location/downtown');
       });
 
-      test("a device's name and location are stored on the Device", async () => {
+      test("a device's name is read-only and its location is stored on the Device", async () => {
         const device: WithId<Device> = {
           resourceType: 'Device',
           id: 'ultrasound-2',
@@ -763,15 +763,14 @@ describe('ActorPage', () => {
           'placeholder',
           'Shown at every service facility'
         );
-        fireEvent.change(within(general()).getByRole('textbox', { name: /Name/ }), {
-          target: { value: 'Ultrasound 2' },
-        });
+        expect(within(general()).getByText('US-2000')).toBeInTheDocument();
+        expect(within(general()).queryByRole('textbox', { name: /Name/ })).not.toBeInTheDocument();
         await pick('Service facility', 'Northside');
         await saveNow();
 
         await waitFor(() => expect(onSynced).toHaveBeenCalled());
         const sent = sentResources(medplum)[0] as Device;
-        expect(sent.deviceName?.[0]).toEqual({ name: 'Ultrasound 2', type: 'user-friendly-name' });
+        expect(sent.deviceName).toEqual(device.deviceName);
         expect(sent.location?.reference).toBe('Location/northside');
       });
 

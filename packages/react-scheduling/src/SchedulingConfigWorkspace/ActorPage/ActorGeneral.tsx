@@ -84,14 +84,18 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
     <>
       {statuses}
       <FieldGrid>
-        <TextInput
-          label="Name"
-          required
-          value={value.name}
-          onChange={(event) => update({ name: event.currentTarget.value })}
-          error={nameError}
-          placeholder={isRoom ? 'e.g. Exam Room 3' : 'e.g. Ultrasound 2'}
-        />
+        {isRoom ? (
+          <TextInput
+            label="Name"
+            required
+            value={value.name}
+            onChange={(event) => update({ name: event.currentTarget.value })}
+            error={nameError}
+            placeholder="e.g. Exam Room 3"
+          />
+        ) : (
+          <ReadOnlyField label="Name" value={getDisplayString(resource)} />
+        )}
         <LocationField
           placeholder={isRoom ? 'Hidden when booking by service facility' : 'Shown at every service facility'}
           value={value.location}

@@ -9,7 +9,7 @@ export type ActorResource = Practitioner | Location | Device;
 
 /** What the page holds for the actor itself. */
 export interface ActorGeneralFields {
-  /** A room's or device's name. Unused for a provider, whose name is read-only. */
+  /** A room's name. Unused for a provider or device, whose names are read-only. */
   readonly name: string;
   /** Whether the actor is on: `Practitioner.active`, or a room's or device's `status` not being `inactive`. */
   readonly active: boolean;
@@ -18,8 +18,6 @@ export interface ActorGeneralFields {
   /** The actor's `timezone` extension. */
   readonly timezone?: string;
 }
-
-const USER_FRIENDLY_NAME = 'user-friendly-name';
 
 /**
  * Seeds the page's General fields from the actor.
@@ -35,7 +33,7 @@ export function actorGeneralFieldsOf(resource: ActorResource): ActorGeneralField
   if (resource.resourceType === 'Location') {
     return { name: resource.name ?? '', active, location: resource.partOf, timezone };
   }
-  return { name: resource.deviceName?.[0]?.name ?? '', active, location: resource.location, timezone };
+  return { name: '', active, location: resource.location, timezone };
 }
 
 /**
@@ -62,8 +60,8 @@ export function buildActorResource<T extends ActorResource>(
   if (draft.resourceType === 'Practitioner') {
     return draft;
   }
-  if (fields.name !== initial.name) {
-    setName(draft, fields.name.trim());
+  if (draft.resourceType === 'Location' && fields.name !== initial.name) {
+    draft.name = fields.name.trim();
   }
   if (!deepEquals(fields.location, initial.location)) {
     setLocation(draft, fields.location);
@@ -98,17 +96,4 @@ function setLocation(resource: Location | Device, location: Reference<Location> 
   } else {
     resource.location = location;
   }
-}
-
-function setName(resource: Location | Device, name: string): void {
-  if (resource.resourceType === 'Location') {
-    resource.name = name;
-    return;
-  }
-  // The name shown for a device is its first `deviceName`, so the edited name goes first.
-  const [first, ...rest] = resource.deviceName ?? [];
-  resource.deviceName =
-    first?.type === USER_FRIENDLY_NAME
-      ? [{ ...first, name }, ...rest]
-      : [{ name, type: USER_FRIENDLY_NAME }, ...(resource.deviceName ?? [])];
 }

@@ -71,23 +71,11 @@ describe('buildActorResource', () => {
     expect(edit(room3, { location: undefined })).toEqual(unplaced);
   });
 
-  test("writes a device's name as its first user-friendly name, and its location", () => {
-    const modelOnly: Device = { resourceType: 'Device', deviceName: [{ name: 'US-2000', type: 'model-name' }] };
-    expect(edit(modelOnly, { name: 'Ultrasound 2', location: { reference: 'Location/downtown' } })).toEqual({
-      ...modelOnly,
-      deviceName: [
-        { name: 'Ultrasound 2', type: 'user-friendly-name' },
-        { name: 'US-2000', type: 'model-name' },
-      ],
+  test("writes a device's location and leaves its names alone", () => {
+    const device: Device = { resourceType: 'Device', deviceName: [{ name: 'US-2000', type: 'model-name' }] };
+    expect(edit(device, { name: 'Ultrasound 2', location: { reference: 'Location/downtown' } })).toEqual({
+      ...device,
       location: { reference: 'Location/downtown' },
     });
-
-    const named: Device = {
-      resourceType: 'Device',
-      deviceName: [{ name: 'Ultrasound 2', type: 'user-friendly-name' }],
-    };
-    expect(edit(named, { name: 'Ultrasound 3' }).deviceName).toEqual([
-      { name: 'Ultrasound 3', type: 'user-friendly-name' },
-    ]);
   });
 });
