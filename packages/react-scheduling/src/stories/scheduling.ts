@@ -1263,7 +1263,7 @@ export const ChenInfusionAppointment: WithId<Appointment> = {
   serviceType: [...toServiceTypeCodeableConcepts(InfusionService), { coding: [ProcedureCodes[0]] }],
   reasonCode: [{ coding: [DiagnosisCodes[0]] }],
   extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
-  slot: [createReference(ChenInfusionHeldSlot)],
+  slot: [createReference(ChenInfusionHeldSlot), createReference(ChenInfusionBufferSlot)],
   participant: setPrimaryProvider(
     [
       { status: 'accepted', actor: createReference(ElderJordanPatient) },
