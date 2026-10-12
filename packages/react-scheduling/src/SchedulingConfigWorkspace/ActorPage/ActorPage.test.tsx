@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  badRequest,
   getScheduleSchedulingParameters,
+  OperationOutcomeError,
   serviceTypeIncludesService,
   TimezoneExtensionURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
-import type { Bundle, HealthcareService, Location, Practitioner, Resource, Schedule } from '@medplum/fhirtypes';
+import type { Bundle, Device, HealthcareService, Location, Practitioner, Resource, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
 import { setScheduleAvailability } from '../../availability';
@@ -17,7 +19,14 @@ import {
   setHealthcareServiceSchedulingParameterValues,
   setScheduleSchedulingParameterValues,
 } from '../../parameterValues';
-import { renderWithMedplum, screen, userEvent, waitFor, within } from '../../test-utils/render';
+import {
+  clickAutocompleteOption,
+  installAutocompleteTimers,
+  removePill,
+  settleAutocomplete,
+  typeInAutocomplete,
+} from '../../test-utils/asyncAutocomplete';
+import { act, fireEvent, renderWithMedplum, screen, userEvent, waitFor, within } from '../../test-utils/render';
 import { ActorPage } from './ActorPage';
 
 const downtown: WithId<Location> = { resourceType: 'Location', id: 'downtown', name: 'Downtown Clinic' };
@@ -91,16 +100,18 @@ async function setup(
   initialOpenServiceId?: string
 ): Promise<Setup> {
   const medplum = new MockClient({ seedDefaultData: false });
-  for (const resource of [downtown, northside, ...services, actor, ...extra]) {
+  for (const resource of [downtown, northside, ...services, ...extra]) {
     await medplum.createResource(resource);
   }
+  // Loaded as stored, with its version, as the workspace hands it over.
+  const storedActor = await medplum.createResource(actor);
   const stored: WithId<Schedule>[] = [];
   for (const schedule of schedules) {
     stored.push(await medplum.createResource(schedule));
   }
   const onSynced = vi.fn();
   vi.spyOn(medplum, 'executeBatch');
-  const configurable: ConfigurableActor = { resource: actor, schedules: stored };
+  const configurable: ConfigurableActor = { resource: storedActor, schedules: stored };
   renderWithMedplum(
     <ActorPage
       actor={configurable}
@@ -125,10 +136,6 @@ function saveBar(): HTMLElement | null {
   return screen.queryByRole('region', { name: 'Unsaved changes' });
 }
 
-function general(): HTMLElement {
-  return screen.getByRole('region', { name: 'General' });
-}
-
 async function save(): Promise<void> {
   await userEvent.click(within(saveBar() as HTMLElement).getByRole('button', { name: 'Save' }));
 }
@@ -139,6 +146,28 @@ function sentBundle(medplum: MockClient): Bundle {
 
 function syncedSchedule(onSynced: Setup['onSynced']): WithId<Schedule> {
   return onSynced.mock.calls.at(-1)?.[0].find((resource: Resource) => resource.resourceType === 'Schedule');
+}
+
+function general(): HTMLElement {
+  return screen.getByRole('region', { name: 'General' });
+}
+
+function timezoneField(): HTMLElement {
+  return within(general()).getByRole('textbox', { name: 'Time zone' });
+}
+
+function timezoneWarning(): HTMLElement | null {
+  return within(general()).queryByText(/Recommended for scheduling/);
+}
+
+function pickTimezone(zone: string): void {
+  fireEvent.focus(timezoneField());
+  fireEvent.change(timezoneField(), { target: { value: zone } });
+  fireEvent.click(screen.getByText(zone));
+}
+
+function sentResources(medplum: MockClient): Resource[] {
+  return sentBundle(medplum).entry?.map((item) => item.resource as Resource) ?? [];
 }
 
 async function openOfferPicker(): Promise<void> {
@@ -581,8 +610,36 @@ describe('ActorPage', () => {
     await waitFor(() => expect(onSynced).toHaveBeenCalled());
     expect(syncedSchedule(onSynced).id).toBe(elsewhere.id);
   });
-
   describe('General', () => {
+    const drSmithSynced: WithId<Practitioner> = {
+      ...drSmith,
+      active: true,
+      address: [{ state: 'IL' }, { state: 'WI' }],
+      extension: [{ url: 'http://example.org/source', valueString: 'kept' }],
+    };
+
+    test("a provider's time zone is edited, and saving it sends the extension and nothing else", async () => {
+      const { medplum, onSynced } = await setup(drSmithSynced, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+      const stored = await medplum.readResource('Practitioner', 'dr-smith');
+
+      expect(within(general()).queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument();
+      pickTimezone('America/Chicago');
+      await save();
+
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      const bundle = sentBundle(medplum);
+      expect(bundle.entry?.map((item) => item.request)).toEqual([
+        { method: 'PUT', url: 'Practitioner/dr-smith', ifMatch: `W/"${stored.meta?.versionId}"` },
+      ]);
+      expect(bundle.entry?.[0].resource).toEqual({
+        ...stored,
+        extension: [
+          { url: 'http://example.org/source', valueString: 'kept' },
+          { url: TimezoneExtensionURI, valueCode: 'America/Chicago' },
+        ],
+      });
+    });
+
     test("a provider's NPIs are shown read-only, and other identifiers aren't", async () => {
       await setup({
         ...drSmith,
@@ -602,6 +659,179 @@ describe('ActorPage', () => {
       await setup(drSmith);
 
       expect(within(general()).getByText('NPI').nextSibling).toHaveTextContent('Not set');
+    });
+
+    test('a provider without a time zone is warned it is recommended, until one is picked', async () => {
+      await setup(drSmith);
+
+      expect(timezoneWarning()).toBeInTheDocument();
+      pickTimezone('America/Chicago');
+      expect(timezoneWarning()).not.toBeInTheDocument();
+    });
+
+    test('a room without a time zone is warned too', async () => {
+      await setup(room3);
+
+      expect(timezoneWarning()).toBeInTheDocument();
+    });
+
+    test("the provider's time zone is read for hours as soon as it is set, before it is saved", async () => {
+      const walkIn: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'walk-in', name: 'Walk-in' };
+      services.push(walkIn);
+      try {
+        await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [walkIn])]);
+        await userEvent.click(entry('Walk-in'));
+        await userEvent.click(within(panel('Walk-in')).getByTestId('schedule-availability-enable'));
+        expect(within(panel('Walk-in')).queryByText(/The time zone comes from/)).not.toBeInTheDocument();
+
+        pickTimezone('America/Chicago');
+
+        await waitFor(() =>
+          expect(within(panel('Walk-in')).getByText('The time zone comes from Dr. Jane Smith.')).toBeVisible()
+        );
+      } finally {
+        services.pop();
+      }
+    });
+
+    test('a room is retired by switching its status off, and nothing deletes it', async () => {
+      const { medplum, onSynced } = await setup(room3);
+      const remove = vi.spyOn(medplum, 'deleteResource');
+
+      expect(screen.queryByRole('button', { name: /delete|remove/i })).not.toBeInTheDocument();
+      await userEvent.click(within(general()).getByRole('switch', { name: 'Room status' }));
+      await save();
+
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      expect(sentBundle(medplum).entry?.map((item) => item.request?.method)).toEqual(['PUT']);
+      expect((sentResources(medplum)[0] as Location).status).toBe('inactive');
+      expect(remove).not.toHaveBeenCalled();
+    });
+
+    test("a room's name is required", async () => {
+      const { medplum } = await setup(room3);
+
+      await userEvent.clear(within(general()).getByRole('textbox', { name: /Name/ }));
+      await save();
+
+      expect(within(general()).getByText('A name is required.')).toBeInTheDocument();
+      expect(within(saveBar() as HTMLElement).getByRole('button', { name: 'Save' })).toHaveAttribute(
+        'aria-disabled',
+        'true'
+      );
+      expect(medplum.executeBatch).not.toHaveBeenCalled();
+    });
+
+    describe('service facility', () => {
+      installAutocompleteTimers();
+
+      async function pick(label: string, name: string): Promise<void> {
+        await typeInAutocomplete(within(general()).getByRole('searchbox', { name: label }), name.split(' ')[0]);
+        await clickAutocompleteOption(name);
+      }
+
+      async function saveNow(): Promise<void> {
+        await act(async () => {
+          fireEvent.click(within(saveBar() as HTMLElement).getByRole('button', { name: 'Save' }));
+        });
+      }
+
+      test("assigning a room to a service facility stores it as the room's partOf", async () => {
+        const { partOf: _partOf, ...unplaced } = room3;
+        const { medplum, onSynced } = await setup(unplaced);
+
+        expect(within(general()).getByRole('searchbox', { name: 'Service facility' })).toHaveAttribute(
+          'placeholder',
+          'Hidden when booking by service facility'
+        );
+        await pick('Service facility', 'Downtown Clinic');
+        await saveNow();
+
+        await waitFor(() => expect(onSynced).toHaveBeenCalled());
+        expect((sentResources(medplum)[0] as Location).partOf?.reference).toBe('Location/downtown');
+      });
+
+      test("a device's name is read-only and its location is stored on the Device", async () => {
+        const device: WithId<Device> = {
+          resourceType: 'Device',
+          id: 'ultrasound-2',
+          deviceName: [{ name: 'US-2000', type: 'model-name' }],
+        };
+        const { medplum, onSynced } = await setup(device);
+
+        expect(within(general()).getByRole('searchbox', { name: 'Service facility' })).toHaveAttribute(
+          'placeholder',
+          'Shown at every service facility'
+        );
+        expect(within(general()).getByText('US-2000')).toBeInTheDocument();
+        expect(within(general()).queryByRole('textbox', { name: /Name/ })).not.toBeInTheDocument();
+        await pick('Service facility', 'Northside');
+        await saveNow();
+
+        await waitFor(() => expect(onSynced).toHaveBeenCalled());
+        const sent = sentResources(medplum)[0] as Device;
+        expect(sent.deviceName).toEqual(device.deviceName);
+        expect(sent.location?.reference).toBe('Location/northside');
+      });
+
+      test('moving a room to another service facility keeps what it offers', async () => {
+        const atNorthside = { ...room3, partOf: { reference: 'Location/northside', display: 'Northside' } };
+        await setup(atNorthside, [makeSchedule('Location/room-3', [cystoscopy])], [], cystoscopy.id);
+        await settleAutocomplete();
+
+        await removePill('Northside');
+        await pick('Service facility', 'Downtown Clinic');
+        await settleAutocomplete();
+
+        expect(entry('Cystoscopy')).toBeInTheDocument();
+        expect(saveBar()).not.toBeNull();
+      });
+    });
+  });
+
+  describe('saving the provider and the Schedule together', () => {
+    async function editBoth(): Promise<Setup> {
+      const result = await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+      pickTimezone('America/Chicago');
+      await userEvent.click(entry('Initial Visit'));
+      await userEvent.type(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter'), '15');
+      return result;
+    }
+
+    test('a refused transaction changes neither, keeps every edit, and shows the reason', async () => {
+      const { medplum, onSynced } = await editBoth();
+      vi.mocked(medplum.executeBatch).mockRejectedValueOnce(
+        new OperationOutcomeError(badRequest('Rejected by policy'))
+      );
+
+      await save();
+
+      expect(await screen.findByText('Rejected by policy')).toBeInTheDocument();
+      expect(sentResources(medplum).map((resource) => resource.resourceType)).toEqual(['Practitioner', 'Schedule']);
+      expect(onSynced).not.toHaveBeenCalled();
+      expect(timezoneField()).toHaveValue('America/Chicago');
+      expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter')).toHaveValue('15 min');
+      expect(saveBar()).not.toBeNull();
+    });
+
+    test('a provider an external sync changed since it was loaded is not written over, and can be reloaded', async () => {
+      const { medplum, onSynced } = await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+      const stored = await medplum.readResource('Practitioner', 'dr-smith');
+      await medplum.updateResource({ ...stored, name: [{ given: ['Janet'], family: 'Smith' }] });
+
+      pickTimezone('America/Chicago');
+      await save();
+
+      expect(await screen.findByText('Dr. Jane Smith or its Schedule changed since you opened it')).toBeInTheDocument();
+      expect(onSynced).not.toHaveBeenCalled();
+      const current = await medplum.readResource('Practitioner', 'dr-smith');
+      expect(current.extension).toBeUndefined();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Reload' }));
+
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      const reloaded = onSynced.mock.calls[0][0].find((r: Resource) => r.resourceType === 'Practitioner');
+      expect((reloaded as Practitioner).name?.[0].given).toEqual(['Janet']);
     });
   });
 });

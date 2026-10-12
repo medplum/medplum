@@ -6,7 +6,7 @@ import type { Location, Reference } from '@medplum/fhirtypes';
 import { MultiResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { LOCATION_SEARCH_CRITERIA } from '../../constants';
+import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../../constants';
 import { ConfirmModal } from '../ConfirmModal';
 
 export interface ServiceFacilitiesFieldProps {
@@ -73,7 +73,7 @@ export function ServiceFacilitiesField(props: ServiceFacilitiesFieldProps): JSX.
         name="service-facilities"
         label="Service facilities"
         placeholder={value.length === 0 ? 'Offered at every service facility' : 'Add a service facility'}
-        searchCriteria={LOCATION_SEARCH_CRITERIA}
+        searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
         defaultValue={[...value]}
         onChange={handleChange}
       />

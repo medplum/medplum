@@ -8,7 +8,7 @@ import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { AppointmentServiceSelect } from '../AppointmentFinder/AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
-import { LOCATION_SEARCH_CRITERIA } from '../constants';
+import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 
 /**
  * What the two filters currently narrow calendars to, for `searchScheduleCandidates`.
@@ -91,7 +91,7 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
         name="location"
         label="Location"
         placeholder="All locations"
-        searchCriteria={LOCATION_SEARCH_CRITERIA}
+        searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
         defaultValue={location as WithId<Location> | Reference<WithId<Location>> | undefined}
         onChange={selectLocation}
         clearable={false}

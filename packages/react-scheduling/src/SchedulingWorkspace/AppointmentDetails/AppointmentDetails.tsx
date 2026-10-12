@@ -16,16 +16,17 @@ import type { Appointment, CodeableConcept, Parameters } from '@medplum/fhirtype
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconArrowLeft, IconCalendarEvent } from '@tabler/icons-react';
-import type { JSX, ReactNode } from 'react';
+import type { JSX } from 'react';
 import { Fragment, useCallback, useState } from 'react';
 import { getNonPatientActors, getPatientParticipant } from '../../actors';
-import { formatDayHeading, formatZonedTime } from '../../AppointmentFinder/AppointmentFinder.times';
 import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentStatusBadge } from '../../AppointmentStatusBadge';
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../../serviceTypes';
+import { Detail } from '../Detail';
+import { formatWhen } from '../SchedulingWorkspace.utils';
 import classes from './AppointmentDetails.module.css';
 import { AppointmentDetailsForm } from './AppointmentDetailsForm';
 
@@ -360,47 +361,6 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       )}
     </Stack>
   );
-}
-
-interface DetailProps {
-  readonly label: string;
-  /** Left out entirely when there is nothing on file for it. */
-  readonly value?: ReactNode;
-}
-
-/**
- * One labelled line of what is on file, or nothing at all when it is not.
- * @param props - The React props.
- * @returns The line, or null.
- */
-function Detail(props: DetailProps): JSX.Element | null {
-  if (!props.value) {
-    return null;
-  }
-  return (
-    <Stack gap={0}>
-      <Text size="xs" c="dimmed">
-        {props.label}
-      </Text>
-      <Text size="sm">{props.value}</Text>
-    </Stack>
-  );
-}
-
-/**
- * Says when the visit is, as far as it is known.
- * @param appointment - The appointment being described.
- * @returns The day and the times, or undefined for an appointment holding no time.
- */
-function formatWhen(appointment: Appointment): string | undefined {
-  if (!appointment.start) {
-    return undefined;
-  }
-  const start = new Date(appointment.start);
-  const times = [formatZonedTime(start), appointment.end && formatZonedTime(new Date(appointment.end))]
-    .filter(Boolean)
-    .join(' – ');
-  return `${formatDayHeading(start)} · ${times}`;
 }
 
 /**
