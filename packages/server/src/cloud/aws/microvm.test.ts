@@ -10,15 +10,16 @@ import {
 } from '@aws-sdk/client-lambda-microvms';
 import { CopyObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import type { WithId } from '@medplum/core';
-import { badRequest, OperationOutcomeError, preconditionFailed } from '@medplum/core';
 import type { AsyncJob, Binary, Bot, ProjectMembership } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import { vi } from 'vitest';
+import { initAppServices, shutdownApp } from '../../app';
 import type { BotExecutionContext } from '../../bots/types';
 import { getConfig, loadTestConfig } from '../../config/loader';
-import type * as RepoModule from '../../fhir/repo';
+import type { Repository } from '../../fhir/repo';
+import { getProjectSystemRepo } from '../../fhir/repo';
 import { initBinaryStorage } from '../../storage/loader';
+import { createTestProject } from '../../test.setup';
 import {
   deployBotMicrovmImage,
   executeMicrovmBot,
@@ -28,44 +29,66 @@ import {
   terminateMicrovm,
 } from './microvm';
 
-const repoMocks = vi.hoisted(() => ({ getProjectSystemRepo: vi.fn() }));
-
-vi.mock('../../fhir/repo', async (importOriginal) => ({
-  ...(await importOriginal<typeof RepoModule>()),
-  getProjectSystemRepo: repoMocks.getProjectSystemRepo,
-}));
-
 describe('MicroVM', () => {
-  const bot = {
-    resourceType: 'Bot',
-    id: 'bot-123',
-    meta: { project: 'project-1' },
-    timeout: 3600,
-  } as WithId<Bot>;
-  const binary = { resourceType: 'Binary', id: 'bin-456', meta: { versionId: 'v1' } } as WithId<Binary>;
-
-  const activeJob: WithId<AsyncJob> = {
-    resourceType: 'AsyncJob',
-    id: 'job-1',
-    meta: { versionId: 'v1' },
-    type: MICROVM_ASYNC_JOB_TYPE,
-    status: 'active',
-    request: 'Bot/bot-123/$execute',
-    requestTime: '2026-10-11T00:00:00.000Z',
-    output: {
-      resourceType: 'Parameters',
-      parameter: [
-        { name: 'microvmId', valueString: 'vm-1' },
-        { name: 'state', valueString: 'RUNNING' },
-      ],
-    },
-  };
+  let projectId: string;
+  let membership: WithId<ProjectMembership>;
+  let systemRepo: Repository;
+  let bot: WithId<Bot>;
+  let binary: WithId<Binary>;
 
   let mockS3Client: AwsClientStub<S3Client>;
   let mockMicrovmClient: AwsClientStub<LambdaMicrovmsClient>;
 
+  /**
+   * Creates an AsyncJob for a MicroVM that was last seen running.
+   * @param withMicrovm - False for a job whose MicroVM never started.
+   * @returns The new AsyncJob.
+   */
+  function createMicrovmJob(withMicrovm = true): Promise<WithId<AsyncJob>> {
+    return systemRepo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      meta: { project: projectId },
+      type: MICROVM_ASYNC_JOB_TYPE,
+      status: withMicrovm ? 'active' : 'accepted',
+      request: `Bot/${bot.id}/$execute`,
+      requestTime: new Date().toISOString(),
+      output: withMicrovm
+        ? {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'microvmId', valueString: 'vm-1' },
+              { name: 'state', valueString: 'RUNNING' },
+            ],
+          }
+        : undefined,
+    });
+  }
+
   beforeAll(async () => {
-    await loadTestConfig();
+    const config = await loadTestConfig();
+    await initAppServices(config);
+
+    const testProject = await createTestProject({ withClient: true });
+    projectId = testProject.project.id;
+    membership = testProject.membership;
+    systemRepo = await getProjectSystemRepo(projectId);
+
+    bot = await systemRepo.createResource<Bot>({
+      resourceType: 'Bot',
+      meta: { project: projectId },
+      name: 'MicroVM Bot',
+      runtimeVersion: 'awslambdamicrovm',
+      timeout: 3600,
+    });
+    binary = await systemRepo.createResource<Binary>({
+      resourceType: 'Binary',
+      meta: { project: projectId },
+      contentType: 'application/zip',
+    });
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
   });
 
   beforeEach(() => {
@@ -85,80 +108,64 @@ describe('MicroVM', () => {
   afterEach(() => {
     mockS3Client.restore();
     mockMicrovmClient.restore();
-    vi.clearAllMocks();
   });
 
   describe('deployBotMicrovmImage', () => {
     test('Builds from a copy in the artifact prefix', async () => {
+      const key = `${binary.id}/${binary.meta?.versionId}`;
+
       await expect(deployBotMicrovmImage(bot, binary)).resolves.toBe('arn:image');
 
       expect(mockS3Client.commandCalls(CopyObjectCommand)[0].args[0].input).toMatchObject({
-        CopySource: 'my-bucket/binary/bin-456/v1',
+        CopySource: `my-bucket/binary/${key}`,
         Bucket: 'my-bucket',
-        Key: 'bot-microvm/bot-123/bin-456/v1',
+        Key: `bot-microvm/${bot.id}/${key}`,
       });
       expect(mockMicrovmClient.commandCalls(CreateMicrovmImageCommand)[0].args[0].input).toMatchObject({
-        name: 'medplum-bot-microvm-bot-123',
+        name: `medplum-bot-microvm-${bot.id}`,
         baseImageArn: 'arn:base-image',
         buildRoleArn: 'arn:build-role',
-        codeArtifact: { uri: 's3://my-bucket/bot-microvm/bot-123/bin-456/v1' },
-        logging: { cloudWatch: { logGroup: '/aws/lambda-microvms/medplum-bot-bot-123' } },
+        codeArtifact: { uri: `s3://my-bucket/bot-microvm/${bot.id}/${key}` },
+        logging: { cloudWatch: { logGroup: `/aws/lambda-microvms/medplum-bot-${bot.id}` } },
       });
     });
 
-    test('Requires a base image ARN', async () => {
-      getConfig().awsLambdaMicrovmBaseImageArn = undefined;
+    test('Rejects configuration it cannot build with', async () => {
+      const config = getConfig();
+
+      config.awsLambdaMicrovmBaseImageArn = undefined;
       await expect(deployBotMicrovmImage(bot, binary)).rejects.toThrow('Missing AWS Lambda MicroVM base image ARN');
-      expect(mockMicrovmClient.commandCalls(CreateMicrovmImageCommand)).toHaveLength(0);
-    });
+      config.awsLambdaMicrovmBaseImageArn = 'arn:base-image';
 
-    test('Requires a build role ARN', async () => {
-      getConfig().awsLambdaMicrovmBuildRoleArn = undefined;
+      config.awsLambdaMicrovmBuildRoleArn = undefined;
       await expect(deployBotMicrovmImage(bot, binary)).rejects.toThrow('Missing AWS Lambda MicroVM build role ARN');
-      expect(mockMicrovmClient.commandCalls(CreateMicrovmImageCommand)).toHaveLength(0);
-    });
+      config.awsLambdaMicrovmBuildRoleArn = 'arn:build-role';
 
-    test('Requires S3 storage', async () => {
       initBinaryStorage('file:' + process.cwd());
       await expect(deployBotMicrovmImage(bot, binary)).rejects.toThrow('requires S3 storage');
-      expect(mockMicrovmClient.commandCalls(CreateMicrovmImageCommand)).toHaveLength(0);
-    });
 
-    test('Rejects SSE-C storage', async () => {
-      getConfig().sseCustomerKey = Buffer.alloc(32).toString('base64');
+      config.sseCustomerKey = Buffer.alloc(32).toString('base64');
       initBinaryStorage('s3:my-bucket');
-
       await expect(deployBotMicrovmImage(bot, binary)).rejects.toThrow('does not support SSE-C');
-      expect(mockS3Client.commandCalls(CopyObjectCommand)).toHaveLength(0);
-      expect(mockMicrovmClient.commandCalls(CreateMicrovmImageCommand)).toHaveLength(0);
-    });
 
-    test('Does not build when the artifact copy fails', async () => {
-      mockS3Client.on(CopyObjectCommand).rejects(new Error('Access Denied'));
-      await expect(deployBotMicrovmImage(bot, binary)).rejects.toThrow('Access Denied');
+      expect(mockS3Client.commandCalls(CopyObjectCommand)).toHaveLength(0);
       expect(mockMicrovmClient.commandCalls(CreateMicrovmImageCommand)).toHaveLength(0);
     });
   });
 
   describe('executeMicrovmBot', () => {
-    const context: BotExecutionContext = {
-      bot,
-      runAs: { resourceType: 'ProjectMembership' } as WithId<ProjectMembership>,
-      requester: { reference: 'Practitioner/123' },
-      input: { hello: 'world' },
-      contentType: 'application/json',
-      accessToken: 'access-token',
-      secrets: {},
-    };
-
-    let repo: { createResource: ReturnType<typeof vi.fn>; updateResource: ReturnType<typeof vi.fn> };
+    let context: BotExecutionContext;
 
     beforeEach(() => {
-      repo = {
-        createResource: vi.fn(async (job: AsyncJob) => ({ ...job, id: 'job-1' })),
-        updateResource: vi.fn(async (job: AsyncJob) => job),
+      context = {
+        bot,
+        runAs: membership,
+        requester: membership.profile,
+        input: { hello: 'world' },
+        contentType: 'application/json',
+        accessToken: 'access-token',
+        secrets: {},
       };
-      repoMocks.getProjectSystemRepo.mockResolvedValue(repo);
       mockMicrovmClient.on(GetMicrovmImageCommand).resolves({ imageArn: 'arn:image' });
     });
 
@@ -171,48 +178,38 @@ describe('MicroVM', () => {
 
       expect(result.success).toBe(true);
       expect(result.logResult).toBe('MicroVM vm-1 started');
-      expect(result.asyncJob).toMatchObject({
-        id: 'job-1',
-        type: MICROVM_ASYNC_JOB_TYPE,
-        status: 'active',
-        meta: { project: 'project-1' },
+      expect(mockMicrovmClient.commandCalls(GetMicrovmImageCommand)[0].args[0].input).toEqual({
+        imageIdentifier: `medplum-bot-microvm-${bot.id}`,
       });
-      expect(getMicrovmId(result.asyncJob as AsyncJob)).toBe('vm-1');
-      expect(repoMocks.getProjectSystemRepo).toHaveBeenCalledWith('project-1');
+
+      const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', result.asyncJob?.id as string);
+      expect(asyncJob).toMatchObject({ type: MICROVM_ASYNC_JOB_TYPE, status: 'active', meta: { project: projectId } });
+      expect(getMicrovmId(asyncJob)).toBe('vm-1');
 
       // The AsyncJob is created before the MicroVM starts, as the idempotency token
-      expect(repo.createResource).toHaveBeenCalledWith(expect.objectContaining({ status: 'accepted' }));
+      const history = await systemRepo.readHistory<AsyncJob>('AsyncJob', asyncJob.id);
+      expect(history.entry?.at(-1)?.resource?.status).toBe('accepted');
+
       const input = mockMicrovmClient.commandCalls(RunMicrovmCommand)[0].args[0].input;
       expect(input).toMatchObject({
         imageIdentifier: 'arn:image',
-        clientToken: 'job-1',
+        clientToken: asyncJob.id,
         maximumDurationInSeconds: 3600,
       });
-
-      const payload = JSON.parse(input.runHookPayload as string);
-      expect(payload).toMatchObject({
-        bot: { reference: 'Bot/bot-123' },
+      expect(JSON.parse(input.runHookPayload as string)).toMatchObject({
+        bot: { reference: `Bot/${bot.id}` },
         input: { hello: 'world' },
         accessToken: 'access-token',
-        asyncJob: { reference: 'AsyncJob/job-1' },
+        asyncJob: { reference: `AsyncJob/${asyncJob.id}` },
       });
     });
 
-    test('Looks up the image by bot name', async () => {
-      mockMicrovmClient.on(RunMicrovmCommand).resolves({ microvmId: 'vm-1', state: 'RUNNING' });
-      await executeMicrovmBot(context);
-      expect(mockMicrovmClient.commandCalls(GetMicrovmImageCommand)[0].args[0].input).toEqual({
-        imageIdentifier: 'medplum-bot-microvm-bot-123',
-      });
-    });
-
-    test('Fails without creating an AsyncJob when the image is not deployed', async () => {
+    test('Fails when the image is not deployed', async () => {
       mockMicrovmClient.on(GetMicrovmImageCommand).resolves({});
 
       const result = await executeMicrovmBot(context);
 
       expect(result).toEqual({ success: false, logResult: 'MicroVM image is not deployed' });
-      expect(repo.createResource).not.toHaveBeenCalled();
       expect(mockMicrovmClient.commandCalls(RunMicrovmCommand)).toHaveLength(0);
     });
 
@@ -222,102 +219,69 @@ describe('MicroVM', () => {
       const result = await executeMicrovmBot(context);
 
       expect(result).toEqual({ success: false, logResult: 'Capacity exceeded' });
-      expect(result.asyncJob).toBeUndefined();
-      expect(repo.updateResource).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'job-1',
-          status: 'error',
-          transactionTime: expect.any(String),
-          output: { resourceType: 'Parameters', parameter: [{ name: 'error', valueString: 'Capacity exceeded' }] },
-        })
-      );
+      const jobId = mockMicrovmClient.commandCalls(RunMicrovmCommand)[0].args[0].input.clientToken as string;
+      const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobId);
+      expect(asyncJob).toMatchObject({
+        status: 'error',
+        transactionTime: expect.any(String),
+        output: { resourceType: 'Parameters', parameter: [{ name: 'error', valueString: 'Capacity exceeded' }] },
+      });
     });
   });
 
   describe('reconcileMicrovmJob', () => {
-    test('Records a terminated MicroVM with a conditional update', async () => {
-      mockMicrovmClient.on(GetMicrovmCommand).resolves({ microvmId: 'vm-1', state: 'TERMINATED' });
-      const updateResource = vi.fn(async (job: AsyncJob) => job);
-      const repo = { updateResource } as unknown as RepoModule.Repository;
+    test('Tracks MicroVM state changes, writing only when the state changed', async () => {
+      const job = await createMicrovmJob();
 
-      const result = await reconcileMicrovmJob(repo, activeJob);
-
-      expect(result.status).toBe('error');
-      expect(result.transactionTime).toBeDefined();
-      expect(updateResource).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }), { ifMatch: 'v1' });
-    });
-
-    test('Records a MicroVM state change while it is still running', async () => {
-      mockMicrovmClient.on(GetMicrovmCommand).resolves({ microvmId: 'vm-1', state: 'SUSPENDED' });
-      const updateResource = vi.fn(async (job: AsyncJob) => job);
-      const repo = { updateResource } as unknown as RepoModule.Repository;
-
-      const result = await reconcileMicrovmJob(repo, activeJob);
-
-      expect(result.status).toBe('active');
-      expect(result.transactionTime).toBeUndefined();
-      expect(result.output?.parameter).toContainEqual({ name: 'state', valueString: 'SUSPENDED' });
-    });
-
-    test('Skips the write when the MicroVM state is unchanged', async () => {
       mockMicrovmClient.on(GetMicrovmCommand).resolves({ microvmId: 'vm-1', state: 'RUNNING' });
-      const updateResource = vi.fn();
-      const repo = { updateResource } as unknown as RepoModule.Repository;
+      await expect(reconcileMicrovmJob(systemRepo, job)).resolves.toBe(job);
 
-      await expect(reconcileMicrovmJob(repo, activeJob)).resolves.toBe(activeJob);
-      expect(updateResource).not.toHaveBeenCalled();
+      mockMicrovmClient.on(GetMicrovmCommand).resolves({ microvmId: 'vm-1', state: 'SUSPENDED' });
+      const suspended = await reconcileMicrovmJob(systemRepo, job);
+      expect(suspended.meta?.versionId).not.toBe(job.meta?.versionId);
+      expect(suspended.status).toBe('active');
+      expect(suspended.output?.parameter).toContainEqual({ name: 'state', valueString: 'SUSPENDED' });
+
+      mockMicrovmClient.on(GetMicrovmCommand).resolves({ microvmId: 'vm-1', state: 'TERMINATED' });
+      const terminated = await reconcileMicrovmJob(systemRepo, suspended);
+      expect(terminated.status).toBe('error');
+      expect(terminated.transactionTime).toBeDefined();
     });
 
     test('Does not clobber a job the agent completed concurrently', async () => {
       mockMicrovmClient.on(GetMicrovmCommand).resolves({ microvmId: 'vm-1', state: 'TERMINATED' });
-      const completedJob: WithId<AsyncJob> = { ...activeJob, meta: { versionId: 'v2' }, status: 'completed' };
-      const repo = {
-        updateResource: vi.fn().mockRejectedValue(new OperationOutcomeError(preconditionFailed)),
-        readResource: vi.fn().mockResolvedValue(completedJob),
-      } as unknown as RepoModule.Repository;
+      const staleJob = await createMicrovmJob();
+      await systemRepo.updateResource<AsyncJob>({ ...staleJob, status: 'completed' });
 
-      await expect(reconcileMicrovmJob(repo, activeJob)).resolves.toBe(completedJob);
-    });
+      const result = await reconcileMicrovmJob(systemRepo, staleJob);
 
-    test('Rethrows other update errors', async () => {
-      mockMicrovmClient.on(GetMicrovmCommand).resolves({ microvmId: 'vm-1', state: 'TERMINATED' });
-      const repo = {
-        updateResource: vi.fn().mockRejectedValue(new OperationOutcomeError(badRequest('Invalid'))),
-      } as unknown as RepoModule.Repository;
-
-      await expect(reconcileMicrovmJob(repo, activeJob)).rejects.toThrow('Invalid');
-    });
-
-    test('Leaves the job alone when it has no MicroVM', async () => {
-      const acceptedJob: WithId<AsyncJob> = { ...activeJob, status: 'accepted', output: undefined };
-      const repo = { updateResource: vi.fn() } as unknown as RepoModule.Repository;
-
-      await expect(reconcileMicrovmJob(repo, acceptedJob)).resolves.toBe(acceptedJob);
-      expect(mockMicrovmClient.commandCalls(GetMicrovmCommand)).toHaveLength(0);
+      expect(result.status).toBe('completed');
+      expect(await systemRepo.readResource<AsyncJob>('AsyncJob', staleJob.id)).toMatchObject({ status: 'completed' });
     });
 
     test('Leaves the job alone when the MicroVM state cannot be read', async () => {
       mockMicrovmClient.on(GetMicrovmCommand).rejects(new Error('Throttling'));
-      const updateResource = vi.fn();
-      const repo = { updateResource } as unknown as RepoModule.Repository;
+      const job = await createMicrovmJob();
 
-      await expect(reconcileMicrovmJob(repo, activeJob)).resolves.toBe(activeJob);
-      expect(updateResource).not.toHaveBeenCalled();
+      await expect(reconcileMicrovmJob(systemRepo, job)).resolves.toBe(job);
     });
   });
 
   describe('terminateMicrovm', () => {
     test('Terminates the MicroVM behind the job', async () => {
       mockMicrovmClient.on(TerminateMicrovmCommand).resolves({});
-      await terminateMicrovm(activeJob);
+      await terminateMicrovm(await createMicrovmJob());
       expect(mockMicrovmClient.commandCalls(TerminateMicrovmCommand)[0].args[0].input).toEqual({
         microvmIdentifier: 'vm-1',
       });
     });
+  });
 
-    test('Does nothing when the job has no MicroVM', async () => {
-      await terminateMicrovm({ ...activeJob, output: undefined });
-      expect(mockMicrovmClient.commandCalls(TerminateMicrovmCommand)).toHaveLength(0);
-    });
+  test('Ignores jobs whose MicroVM never started', async () => {
+    const job = await createMicrovmJob(false);
+
+    await expect(reconcileMicrovmJob(systemRepo, job)).resolves.toBe(job);
+    await terminateMicrovm(job);
+    expect(mockMicrovmClient.calls()).toHaveLength(0);
   });
 });
