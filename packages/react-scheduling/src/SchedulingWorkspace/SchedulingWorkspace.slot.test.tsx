@@ -136,6 +136,36 @@ describe('SchedulingWorkspace blocked time details', () => {
     await waitFor(() => expect(pane.queryByText('Long lunch')).not.toBeInTheDocument());
     expect(pane.queryByText('Notes')).not.toBeInTheDocument();
     expect((await medplum.readResource('Slot', BLOCKED_SLOT.id)).comment).toBeUndefined();
+
+    // A change made elsewhere since the slot was loaded is refused rather than overwritten.
+    const current = await medplum.repo.readResource<Slot>('Slot', BLOCKED_SLOT.id);
+    await medplum.repo.updateResource<Slot>({ ...current, comment: 'Staff meeting' });
+    await userEvent.click(pane.getByRole('button', { name: 'Edit' }));
+    await retype(pane.getByLabelText('Notes'), 'Dentist');
+    await userEvent.click(save());
+    expect(await pane.findByText('This blocked time changed since you opened it')).toBeInTheDocument();
+    expect((await medplum.repo.readResource<Slot>('Slot', BLOCKED_SLOT.id)).comment).toBe('Staff meeting');
+
+    // Reloading shows the newer version, which can then be edited.
+    await userEvent.click(pane.getByRole('button', { name: 'Reload' }));
+    expect(await pane.findByText('Staff meeting')).toBeInTheDocument();
+    await userEvent.click(pane.getByRole('button', { name: 'Edit' }));
+    await retype(pane.getByLabelText('Notes'), 'Dentist');
+    await userEvent.click(save());
+    expect(await pane.findByText('Dentist')).toBeInTheDocument();
+    expect((await medplum.readResource('Slot', BLOCKED_SLOT.id)).comment).toBe('Dentist');
+
+    // Reloading one deleted elsewhere takes it off the calendar.
+    const latest = await medplum.repo.readResource<Slot>('Slot', BLOCKED_SLOT.id);
+    await medplum.repo.updateResource<Slot>({ ...latest, comment: 'Out sick' });
+    await userEvent.click(pane.getByRole('button', { name: 'Edit' }));
+    await retype(pane.getByLabelText('Notes'), 'Dentist again');
+    await userEvent.click(save());
+    await pane.findByText('This blocked time changed since you opened it');
+    await medplum.repo.deleteResource('Slot', BLOCKED_SLOT.id);
+    await userEvent.click(pane.getByRole('button', { name: 'Reload' }));
+    await waitFor(() => expect(slotDetails()).not.toBeInTheDocument());
+    expect(screen.queryByText('Blocked')).not.toBeInTheDocument();
   });
 
   test('deleting blocked time takes it off the calendar, once confirmed', async () => {
