@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Stack, Textarea, TextInput } from '@mantine/core';
+import { Alert, Button, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { normalizeErrorString } from '@medplum/core';
+import { getStatus, isGone, isNotFound, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -37,6 +37,7 @@ export function SlotDetailsForm(props: SlotDetailsFormProps): JSX.Element {
   const [comment, setComment] = useState(slot.comment ?? '');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<unknown>();
+  const [reloading, setReloading] = useState(false);
 
   const start = parseZonedDateTimeInput(startInput);
   const end = parseZonedDateTimeInput(endInput);
@@ -71,6 +72,26 @@ export function SlotDetailsForm(props: SlotDetailsFormProps): JSX.Element {
     }
   }
 
+  // Puts the slot as the server now holds it into the calendar, discarding the edits made here.
+  async function reload(): Promise<void> {
+    setReloading(true);
+    try {
+      const latest = await medplum.readResource('Slot', slot.id, { cache: 'no-cache' });
+      medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'update', id: latest.id, resource: latest });
+      onCancel();
+    } catch (error) {
+      if (error instanceof OperationOutcomeError && (isNotFound(error.outcome) || isGone(error.outcome))) {
+        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'delete', id: slot.id });
+        return;
+      }
+      setSaveError(error);
+    } finally {
+      setReloading(false);
+    }
+  }
+
+  const conflict = saveError instanceof OperationOutcomeError && getStatus(saveError.outcome) === 412;
+
   return (
     <Stack gap="sm">
       <TextInput
@@ -93,7 +114,20 @@ export function SlotDetailsForm(props: SlotDetailsFormProps): JSX.Element {
         value={comment}
         onChange={(e) => setComment(e.currentTarget.value)}
       />
-      {saveError !== undefined && (
+      {conflict && (
+        <Alert color="orange" title="This blocked time changed since you opened it">
+          <Stack gap="sm" align="flex-start">
+            <Text size="sm">
+              A newer version was saved somewhere else, so nothing here was written over it. Reload to see the latest
+              version. Your changes here will be discarded.
+            </Text>
+            <Button size="xs" variant="light" color="orange" loading={reloading} onClick={reload}>
+              Reload
+            </Button>
+          </Stack>
+        </Alert>
+      )}
+      {saveError !== undefined && !conflict && (
         <Alert color="red" title="Could not save this slot">
           {normalizeErrorString(saveError)}
         </Alert>
