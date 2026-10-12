@@ -34,8 +34,8 @@ Locations typed as a room or a bed, and any Location with a Schedule, which book
 type.
 
 Each section reads one page of up to 1000, and says so when there are more. A section that can't be read is
-named above the page, and the others still list. The **+** beside Visit types starts a new visit type, which is
-listed once it is saved.
+named above the page, and the others still list. The **+** beside Visit types, Rooms, or Devices starts a new
+one, which is listed once it is saved. Providers can't be created here.
 
 ## A visit type's page
 
@@ -58,11 +58,11 @@ listed once it is saved.
   without losing anything. A note says when it can't be booked: because it is inactive, or because its Schedule
   is switched off. A provider's name and NPIs (`Practitioner.identifier` with the `us-npi` system) are read-only,
   since they are kept by the system providers come from, and where a provider works is recorded on their roles
-  rather than here. A device's name is read-only too. A room's name is edited, and so is a room's or device's
-  service facility (`Location.partOf`, or `Device.location`), picked from the same Locations booking filters by.
-  The time zone (the `timezone`
-  extension) is the one hours are read in for any visit type that sets none of its own. A provider, room, or
-  device without one is warned that it is recommended, without blocking Save.
+  rather than here. A device's name is read-only too, once it is created. A room's name is edited, and so is a
+  room's or device's service facility (`Location.partOf`, or `Device.location`), picked from the same Locations
+  booking filters by. The time zone (the `timezone` extension) is the one hours are read in for any visit type
+  that sets none of its own. A provider, room, or device without one is warned that it is recommended, without
+  blocking Save.
 - **Visit types offered:** what its Schedule offers. Each visit type offered is an entry showing its duration in
   effect and where its hours come from; opening one shows the Schedule's own scheduling parameters and hours for
   it, each empty field showing what it inherits. At most one entry is open at a time, and an entry with unsaved
@@ -72,6 +72,11 @@ listed once it is saved.
 **Offer visit types** opens a searchable list of every active visit type not offered yet. Tick any number to offer
 them together. Offering an actor's first visit type creates its Schedule when the page is saved, and not before.
 **Stop offering** asks first, then removes the settings the Schedule holds for that visit type with it.
+
+A new room is typed as a room (`physicalType` `ro`), so the service facility pickers never offer it as a service
+facility. A new room or device starts active, unless switched off before Create, and is created with a Schedule
+that offers nothing yet and is on or off with it. It can offer visit types once it is created. Unlike a new visit
+type, it doesn't start off: it can't be booked until it offers one anyway.
 
 ## Saving
 
