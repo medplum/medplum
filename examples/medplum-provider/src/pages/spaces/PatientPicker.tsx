@@ -20,9 +20,12 @@ export function PatientPicker({ onSelect }: PatientPickerProps): JSX.Element {
   const [search, setSearch] = useState('');
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
+  // A slow response from an earlier query must not overwrite the current results
+  const requestIdRef = useRef(0);
 
   const loadPatients = useCallback(
     async (query: string) => {
+      const requestId = ++requestIdRef.current;
       setLoading(true);
       try {
         const params = new URLSearchParams();
@@ -33,11 +36,15 @@ export function PatientPicker({ onSelect }: PatientPickerProps): JSX.Element {
           params.set('name', trimmed);
         }
         const results = await medplum.searchResources('Patient', params);
-        setPatients(results);
+        if (requestId === requestIdRef.current) {
+          setPatients(results);
+        }
       } catch (err) {
         showErrorNotification(err);
       } finally {
-        setLoading(false);
+        if (requestId === requestIdRef.current) {
+          setLoading(false);
+        }
       }
     },
     [medplum]

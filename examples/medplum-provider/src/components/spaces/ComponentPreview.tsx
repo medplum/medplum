@@ -47,24 +47,33 @@ const scope = {
   MantineTooltip: Mantine.Tooltip,
 };
 
+/**
+ * Finds the component to render: the default export when it is named, otherwise the last
+ * top-level PascalCase `function`/`const` declaration so helpers declared before the
+ * component are skipped.
+ * @param code - The generated source, before imports and exports are stripped.
+ * @returns The component name, or undefined when none can be identified.
+ */
+function findComponentName(code: string): string | undefined {
+  const defaultExport = code.match(/^export\s+default\s+(?:function\s+)?([A-Za-z_$][\w$]*)\b/m);
+  if (defaultExport && defaultExport[1] !== 'function') {
+    return defaultExport[1];
+  }
+  const declarations = [...code.matchAll(/^(?:export\s+)?(?:function|const)\s+([A-Z][\w$]*)\b/gm)];
+  return declarations.at(-1)?.[1];
+}
+
 function transformCode(code: string): string {
-  // Remove import statements
-  let transformed = code.replace(/^import\s+.*?;?\s*$/gm, '');
+  const componentName = findComponentName(code);
+
+  // Imports may span multiple lines
+  let transformed = code
+    .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];?[ \t]*$/gm, '')
+    .replace(/^import\s+['"][^'"]+['"];?[ \t]*$/gm, '');
 
   // Remove export statements but keep the component definition
   transformed = transformed.replace(/^export\s+default\s+/gm, '');
   transformed = transformed.replace(/^export\s+/gm, '');
-
-  // Find the component name (assumes format like "function ComponentName" or "const ComponentName")
-  const funcMatch = transformed.match(/function\s+(\w+)/);
-  const constMatch = transformed.match(/const\s+(\w+)\s*=\s*(?:\([^)]*\)|[^=]*)\s*=>/);
-
-  let componentName = '';
-  if (funcMatch) {
-    componentName = funcMatch[1];
-  } else if (constMatch) {
-    componentName = constMatch[1];
-  }
 
   // Add render call at the end if we found a component
   if (componentName) {
@@ -91,7 +100,8 @@ export function ComponentPreview({ code, resources, onResourceClick }: Component
         <LiveProvider code={transformedCode} scope={scope} noInline>
           <Box p="md">
             <LiveError />
-            <ComponentErrorBoundary>
+            {/* Keyed on the code so a failure in one component does not stick to the next */}
+            <ComponentErrorBoundary key={code}>
               <LivePreview />
             </ComponentErrorBoundary>
           </Box>
