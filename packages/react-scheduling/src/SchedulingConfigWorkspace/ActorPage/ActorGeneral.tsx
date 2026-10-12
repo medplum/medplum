@@ -96,7 +96,7 @@ export function ActorGeneral(props: ActorGeneralProps): JSX.Element {
         ) : (
           <ReadOnlyField label="Name" value={getDisplayString(resource)} />
         )}
-        <LocationField
+        <ServiceFacilityField
           placeholder={isRoom ? 'Hidden when booking by service facility' : 'Shown at every service facility'}
           value={value.location}
           onChange={(location) => update({ location })}
@@ -204,7 +204,7 @@ function TimezoneField(props: {
   );
 }
 
-interface LocationFieldProps {
+interface ServiceFacilityFieldProps {
   readonly placeholder: string;
   readonly value: Reference<Location> | undefined;
   readonly onChange: (value: Reference<Location> | undefined) => void;
@@ -215,7 +215,7 @@ interface LocationFieldProps {
  * @param props - What to show when blank, the Location referenced, and a change handler.
  * @returns The field.
  */
-function LocationField(props: LocationFieldProps): JSX.Element {
+function ServiceFacilityField(props: ServiceFacilityFieldProps): JSX.Element {
   const { placeholder, value, onChange } = props;
   return (
     <ResourceInput<Location>
