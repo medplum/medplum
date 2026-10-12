@@ -1380,17 +1380,25 @@ export class Repository extends FhirRepository implements Disposable {
         const latest = new Map(rows.map((r) => [r.id, r]));
 
         const current: WithId<Resource>[] = [];
+        const deleted: { id: string; lastUpdated: Date }[] = [];
         for (const row of latest.values()) {
           const resource = JSON.parse(row.content) as WithId<Resource>;
           if (resource.meta?.deleted) {
-            const deletedRow = buildDeletedResourceRow(
-              { resourceType, id: row.id, meta: { project: projectId } } as WithId<Resource>,
-              row.lastUpdated
-            );
-            await txRepo.sqlWrite(new InsertQuery(resourceType, [deletedRow]).mergeOnConflict(), resourceType);
-            await txRepo.deleteFromLookupTables(resource);
+            deleted.push(row);
           } else {
             current.push(resource);
+          }
+        }
+        if (deleted.length) {
+          const deletedRows = deleted.map((row) =>
+            buildDeletedResourceRow(
+              { resourceType, id: row.id, meta: { project: projectId } } as WithId<Resource>,
+              row.lastUpdated
+            )
+          );
+          await txRepo.sqlWrite(new InsertQuery(resourceType, deletedRows).mergeOnConflict(), resourceType);
+          for (const row of deleted) {
+            await txRepo.deleteFromLookupTables({ resourceType, id: row.id } as WithId<Resource>);
           }
         }
         await txRepo.reindexResources(current);

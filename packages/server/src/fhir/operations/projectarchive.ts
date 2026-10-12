@@ -35,7 +35,7 @@ interface ArchiveInput {
   includeAuditEvents?: boolean;
 }
 
-const unarchivedResourceTypes = ['AsyncJob', 'BulkDataExport'];
+const unarchivedResourceTypes = new Set(['AsyncJob', 'BulkDataExport']);
 
 const archivePageSize = 1000;
 
@@ -77,7 +77,7 @@ export async function projectArchiveHandler(req: FhirRequest): Promise<FhirRespo
  * @returns True if the caller can read every resource in the project.
  */
 function hasUnrestrictedReadAccess(accessPolicy: Readonly<AccessPolicy> | undefined): boolean {
-  return !accessPolicy || !!accessPolicy.resource?.some((r) => r.resourceType === '*' && !r.criteria && !r.compartment);
+  return !accessPolicy || !!accessPolicy.resource?.some((r) => r.resourceType === '*' && !r.criteria);
 }
 
 export async function archiveProject(
@@ -89,7 +89,7 @@ export async function archiveProject(
   const repo = exporter.repo.withOverrideConfig({ extendedMode: true });
   for (const resourceType of getResourceTypes()) {
     if (
-      !unarchivedResourceTypes.includes(resourceType) &&
+      !unarchivedResourceTypes.has(resourceType) &&
       (resourceType !== 'AuditEvent' || includeAuditEvents) &&
       repo.supportsInteraction(AccessPolicyInteraction.HISTORY, resourceType)
     ) {
@@ -124,7 +124,7 @@ async function archiveResourceType(
       .orderBy('id')
       .limit(archivePageSize);
     if (ids.length) {
-      idQuery.where('id', '>', ids[ids.length - 1]);
+      idQuery.where('id', '>', ids.at(-1));
     }
     ids = (await repo.sqlRead<{ id: string }>(idQuery, resourceType)).map((r) => r.id);
     if (!ids.length) {
