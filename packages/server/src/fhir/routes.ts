@@ -77,6 +77,7 @@ import { projectRateLimitsHandler } from './operations/project-rate-limits';
 import { projectArchiveHandler } from './operations/projectarchive';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
+import { projectRestoreHandler } from './operations/projectrestore';
 import { rebuildBaseDefinitionsOperation } from './operations/rebuild-base-definitions';
 import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
 import { appointmentRescheduleHandler } from './operations/reschedule';
@@ -248,8 +249,9 @@ function initInternalFhirRouter(): FhirRouter {
   // Project $clone
   router.add('POST', '/Project/:id/$clone', projectCloneHandler);
 
-  // Project $archive
+  // Project $archive and $restore
   router.add('POST', '/Project/:id/$archive', projectArchiveHandler);
+  router.add('POST', '/$restore', projectRestoreHandler);
 
   // Project $rate-limits
   router.add('GET', '/Project/:id/$rate-limits', projectRateLimitsHandler);

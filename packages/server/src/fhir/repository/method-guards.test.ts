@@ -242,6 +242,11 @@ const guardedInvocations: MethodInvocation[] = [
   },
   { name: 'reindexResources', kind: 'method', invoke: (repo) => repo.reindexResources<Patient>([]) },
   {
+    name: 'restoreResourceVersions',
+    kind: 'method',
+    invoke: (repo) => repo.restoreResourceVersions('Patient', NIL, []),
+  },
+  {
     name: 'resendSubscriptions',
     kind: 'method',
     invoke: (repo) => repo.resendSubscriptions('Patient', guardedPatient.id),

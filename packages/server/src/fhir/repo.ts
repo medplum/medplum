@@ -1318,6 +1318,88 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
+   * Restores archived versions of one resource type, preserving ids, version ids, and meta.
+   * Inserts each version into history, then rebuilds the current row from the latest stored version.
+   * Idempotent, and does not trigger subscriptions or bots.
+   * This is only available to super admins.
+   * @param resourceType - The FHIR resource type.
+   * @param projectId - The project being restored. Every version must belong to it.
+   * @param versions - The archived versions.
+   */
+  async restoreResourceVersions(resourceType: ResourceType, projectId: string, versions: Resource[]): Promise<void> {
+    this.assertUsable();
+    if (!this.isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+    for (const v of versions) {
+      // Older tombstones have no meta.project; the conflict check below still protects other projects
+      if (v.resourceType !== resourceType || (v.meta?.project ?? (v.meta?.deleted && projectId)) !== projectId) {
+        throw new OperationOutcomeError(
+          badRequest(`${v.resourceType}/${v.id} does not belong to Project/${projectId}`)
+        );
+      }
+    }
+    const ids = [...new Set(versions.map((v) => v.id as string))];
+
+    await this.withTransaction(
+      async (txRepo) => {
+        const conflicts = await txRepo.sqlRead<{ id: string }>(
+          new SelectQuery(resourceType).column('id').where('id', 'IN', ids).where('projectId', '!=', projectId),
+          resourceType,
+          { mode: DatabaseMode.WRITER }
+        );
+        if (conflicts.length) {
+          throw new OperationOutcomeError(badRequest(`${resourceType}/${conflicts[0].id} belongs to another project`));
+        }
+
+        await txRepo.sqlWrite(
+          new InsertQuery(
+            resourceType + '_History',
+            versions.map((v) => ({
+              id: v.id,
+              versionId: v.meta?.versionId,
+              lastUpdated: v.meta?.lastUpdated,
+              content: stringify(v),
+            }))
+          ).ignoreOnConflict(),
+          resourceType
+        );
+
+        // Latest per id from the database, so reruns and versions split across batches resolve correctly
+        const rows = await txRepo.sqlRead<{ id: string; lastUpdated: Date; content: string }>(
+          new SelectQuery(resourceType + '_History')
+            .column('id')
+            .column('lastUpdated')
+            .column('content')
+            .where('id', 'IN', ids)
+            .orderBy('lastUpdated'),
+          resourceType,
+          { mode: DatabaseMode.WRITER }
+        );
+        const latest = new Map(rows.map((r) => [r.id, r]));
+
+        const current: WithId<Resource>[] = [];
+        for (const row of latest.values()) {
+          const resource = JSON.parse(row.content) as WithId<Resource>;
+          if (resource.meta?.deleted) {
+            const deletedRow = buildDeletedResourceRow(
+              { resourceType, id: row.id, meta: { project: projectId } } as WithId<Resource>,
+              row.lastUpdated
+            );
+            await txRepo.sqlWrite(new InsertQuery(resourceType, [deletedRow]).mergeOnConflict(), resourceType);
+            await txRepo.deleteFromLookupTables(resource);
+          } else {
+            current.push(resource);
+          }
+        }
+        await txRepo.reindexResources(current);
+      },
+      { resourceTypes: resourceType, source: 'repo.restoreResourceVersions' }
+    );
+    await this.deleteCacheEntries(resourceType, ids);
+  }
+
+  /**
    * Resends subscriptions for the resource.
    * This is only available to the admin accounts.
    * This should not result in any change to the resource or its history.
