@@ -1,35 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Accordion,
-  Alert,
-  Box,
-  Divider,
-  Group,
-  SimpleGrid,
-  Stack,
-  Switch,
-  Text,
-  Title,
-  Tooltip,
-  VisuallyHidden,
-} from '@mantine/core';
+import { Accordion, Alert, Divider, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
-  capitalize,
   deepEquals,
   getDisplayString,
   getReferenceString,
   getSchedulingTimezone,
   normalizeErrorString,
 } from '@medplum/core';
-import type { HealthcareService, Practitioner, Resource } from '@medplum/fhirtypes';
+import type { HealthcareService, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getActorTypeLabel } from '../../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
-import { NPI_SYSTEM } from '../../constants';
 import { getAvailabilityFieldsError } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
 import {
   getBlockingErrors,
@@ -40,9 +25,12 @@ import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { ConfirmModal } from '../ConfirmModal';
 import { summarizeOffering } from '../offeringSummary';
-import { getActorStatus, isActorInactive } from '../SchedulingConfigWorkspace.utils';
+import { getActorStatus } from '../SchedulingConfigWorkspace.utils';
 import type { ConfigStatus } from '../StatusBadge';
 import { StatusBadge } from '../StatusBadge';
+import type { ActorGeneralFields } from './actorDraft';
+import { actorGeneralFieldsOf, buildActorResource } from './actorDraft';
+import { ActorGeneral } from './ActorGeneral';
 import { OfferingEditor, OfferingMenu, OfferingSummary } from './OfferingEditor';
 import { OfferPicker } from './OfferPicker';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
@@ -80,15 +68,14 @@ export interface ActorPageProps {
 export function ActorPage(props: ActorPageProps): JSX.Element {
   const { actor, services, initialOpenServiceId, onSynced, onDirtyChange } = props;
   const medplum = useMedplum();
-  const resource = actor.resource;
+  const stored = actor.resource;
   const [schedule] = actor.schedules;
-  const actorName = getDisplayString(resource);
-  const typeLabel = getActorTypeLabel(resource.resourceType);
 
   const servicesById = useMemo(() => new Map(services.map((service) => [service.id, service])), [services]);
+  const [initialGeneral] = useState(() => actorGeneralFieldsOf(stored));
+  const [general, setGeneral] = useState(initialGeneral);
   const [initial] = useState<ScheduleFields>(() => scheduleFieldsOf(schedule, servicesById));
   const [fields, setFields] = useState(initial);
-  const [actorDraft, setActorDraft] = useState<ConfigurableActorResource>(resource);
   const [open, setOpen] = useState<string | null>(() =>
     initialOpenServiceId && Object.hasOwn(initial.offerings, initialOpenServiceId) ? initialOpenServiceId : null
   );
@@ -98,8 +85,16 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'>>();
   const [reloading, setReloading] = useState(false);
 
-  const draft = buildScheduleDraft(schedule, actorDraft, fields, initial, servicesById);
-  const actorDirty = !deepEquals(actorDraft, resource);
+  const actorDraft = useMemo(
+    () => buildActorResource(stored, general, initialGeneral),
+    [stored, general, initialGeneral]
+  );
+  const resource = actorDraft;
+  const typeLabel = getActorTypeLabel(resource.resourceType);
+  const actorName = getDisplayString(stored);
+
+  const draft = buildScheduleDraft(schedule, resource, fields, initial, servicesById);
+  const actorDirty = !deepEquals(general, initialGeneral);
   // Compares the fields rather than the draft, so edits the draft can't store yet, like an emptied week, still
   // count and the save bar can say why it refuses.
   const dirty = actorDirty || !deepEquals(fields, initial);
@@ -107,8 +102,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
   const offered = Object.keys(fields.offerings).flatMap((id) => servicesById.get(id) ?? []);
   const scheduleActive = schedule ? fields.active : undefined;
-  const status = getActorStatus(actorDraft, scheduleActive);
-  const alert = getBookingAlert(actorDraft, status);
+  const status = getActorStatus(resource, scheduleActive);
+  const alert = getBookingAlert(resource, status);
 
   function errorsFor(service: WithId<HealthcareService>): ReturnType<typeof getBlockingErrors> {
     const current = fields.offerings[service.id];
@@ -137,16 +132,15 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     availabilityError: availabilityErrorFor(service),
   }));
   const blocking = checks.find(({ errors, availabilityError }) => Object.keys(errors).length > 0 || availabilityError);
-  const blockedReason =
-    blocking && Object.keys(blocking.errors).length > 0
-      ? `Fix the highlighted fields for ${blocking.service.name ?? 'this visit type'} before saving.`
-      : blocking?.availabilityError;
+  const blockedReason = getOfferingBlockedReason(blocking);
 
-  // An inactive actor can't keep an active Schedule, so switching the actor off switches its Schedule off too.
-  // Switching it back on puts the Schedule back as stored.
-  function handleActorActiveChange(active: boolean): void {
-    setActorDraft(active === !isActorInactive(resource) ? resource : withActorActive(resource, active));
-    setFields((current) => ({ ...current, active: active && initial.active }));
+  function handleGeneralChange(next: ActorGeneralFields): void {
+    if (next.active !== general.active) {
+      // An inactive actor can't keep an active Schedule, so switching the actor off switches its Schedule off
+      // too. Switching it back on puts the Schedule back as stored.
+      setFields((current) => ({ ...current, active: next.active && initial.active }));
+    }
+    setGeneral(next);
   }
 
   function updateOffering(id: string, value: OfferingFields): void {
@@ -173,7 +167,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     setSaving(true);
     setFailure(undefined);
     try {
-      const changes: ConfigChange[] = [{ stored: resource, draft: actorDraft }];
+      const changes: ConfigChange[] = [{ stored, draft: actorDraft }];
       if (draft) {
         // Conditional, so two pages offering this actor's first visit type at once can't each create a Schedule.
         changes.push({ stored: schedule, draft, ifNoneExist: `actor=${getReferenceString(resource)}` });
@@ -196,8 +190,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   }
 
   function handleDiscard(): void {
+    setGeneral(initialGeneral);
     setFields(initial);
-    setActorDraft(resource);
     setOpen((current) => (current && Object.hasOwn(initial.offerings, current) ? current : null));
     setTriedToSave(false);
     setFailure(undefined);
@@ -206,13 +200,13 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   async function handleReload(): Promise<void> {
     setReloading(true);
     try {
-      const [actor, reloadedSchedule] = await Promise.all([
-        medplum.readResource(resource.resourceType, resource.id, { cache: 'no-cache' }),
+      const [reloadedActor, reloadedSchedule] = await Promise.all([
+        medplum.readResource(stored.resourceType, stored.id, { cache: 'no-cache' }),
         schedule
           ? medplum.readResource('Schedule', schedule.id, { cache: 'no-cache' })
-          : medplum.searchOne('Schedule', { actor: getReferenceString(resource) }, { cache: 'no-cache' }),
+          : medplum.searchOne('Schedule', { actor: getReferenceString(stored) }, { cache: 'no-cache' }),
       ]);
-      onSynced(reloadedSchedule ? [actor, reloadedSchedule] : [actor], open ?? undefined);
+      onSynced(reloadedSchedule ? [reloadedActor, reloadedSchedule] : [reloadedActor], open ?? undefined);
     } catch (err) {
       setFailure({ conflict: false, message: `Could not reload it: ${normalizeErrorString(err)}` });
     } finally {
@@ -248,7 +242,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       <ConfigSection title="General">
         <ActorGeneral
           resource={actorDraft}
-          onActiveChange={handleActorActiveChange}
+          value={general}
+          onChange={handleGeneralChange}
           scheduleActive={scheduleActive}
           onScheduleActiveChange={(active) => setFields((current) => ({ ...current, active }))}
         />
@@ -337,6 +332,17 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   );
 }
 
+function getOfferingBlockedReason(
+  blocking:
+    | { service: WithId<HealthcareService>; errors: ReturnType<typeof getBlockingErrors>; availabilityError?: string }
+    | undefined
+): string | undefined {
+  if (blocking && Object.keys(blocking.errors).length > 0) {
+    return `Fix the highlighted fields for ${blocking.service.name ?? 'this visit type'} before saving.`;
+  }
+  return blocking?.availabilityError;
+}
+
 function getBookingAlert(resource: ConfigurableActorResource, status: ConfigStatus): string | undefined {
   const noun = getActorTypeLabel(resource.resourceType).toLowerCase();
   if (status === 'inactive') {
@@ -347,116 +353,6 @@ function getBookingAlert(resource: ConfigurableActorResource, status: ConfigStat
     return `This ${noun}'s Schedule is switched off, so ${pronoun} can't be booked until it's switched back on. Appointments already booked stay booked.`;
   }
   return undefined;
-}
-
-function ActorGeneral(props: {
-  /** The provider, room, or device, as edited. */
-  readonly resource: ConfigurableActorResource;
-  readonly onActiveChange: (active: boolean) => void;
-  /** Whether the actor's Schedule is active, as edited, or undefined when it has none. */
-  readonly scheduleActive: boolean | undefined;
-  readonly onScheduleActiveChange: (active: boolean) => void;
-}): JSX.Element {
-  const { resource, onActiveChange, scheduleActive, onScheduleActiveChange } = props;
-  const typeLabel = getActorTypeLabel(resource.resourceType);
-  const active = !isActorInactive(resource);
-  // Only turning off is allowed while the actor is inactive, so a Schedule stored on can still be switched off.
-  const scheduleLocked = !active && !scheduleActive;
-  const npis = resource.resourceType === 'Practitioner' ? getNpis(resource) : undefined;
-  return (
-    <>
-      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-        <StatusSwitch
-          label={`${typeLabel} status`}
-          value={statusLabel(resource)}
-          checked={active}
-          onChange={onActiveChange}
-        />
-        {scheduleActive !== undefined && (
-          <StatusSwitch
-            label="Schedule status"
-            value={scheduleActive ? 'Active' : 'Inactive'}
-            checked={scheduleActive}
-            onChange={onScheduleActiveChange}
-            disabledReason={
-              scheduleLocked ? `Can't be switched on while the ${typeLabel.toLowerCase()} is inactive.` : undefined
-            }
-          />
-        )}
-      </SimpleGrid>
-      <ReadOnlyField label="Name" value={getDisplayString(resource)} />
-      {npis && (
-        <ReadOnlyField label={npis.length > 1 ? 'NPIs' : 'NPI'} value={npis.length > 0 ? npis.join(', ') : undefined} />
-      )}
-    </>
-  );
-}
-
-function getNpis(practitioner: Practitioner): string[] {
-  return (practitioner.identifier ?? []).flatMap((identifier) =>
-    identifier.system === NPI_SYSTEM && identifier.value ? [identifier.value] : []
-  );
-}
-
-function StatusSwitch(props: {
-  readonly label: string;
-  readonly value: string;
-  readonly checked: boolean;
-  readonly onChange: (checked: boolean) => void;
-  /** Why the switch can't be used. Given, the switch is disabled and the reason shows on hover. */
-  readonly disabledReason?: string;
-}): JSX.Element {
-  const reasonId = useId();
-  return (
-    <Stack gap={2}>
-      <Text size="sm" fw={500}>
-        {props.label}
-      </Text>
-      <Tooltip label={props.disabledReason} disabled={!props.disabledReason} multiline w={280} withArrow>
-        {/* A disabled input emits no pointer events, so the tooltip hangs on a wrapper instead. */}
-        <Box w="fit-content">
-          <Switch
-            aria-label={props.label}
-            aria-describedby={props.disabledReason ? reasonId : undefined}
-            label={props.value}
-            checked={props.checked}
-            disabled={!!props.disabledReason}
-            onChange={(event) => props.onChange(event.currentTarget.checked)}
-          />
-        </Box>
-      </Tooltip>
-      {props.disabledReason && <VisuallyHidden id={reasonId}>{props.disabledReason}</VisuallyHidden>}
-    </Stack>
-  );
-}
-
-// A room's or device's other statuses, like suspended, read as on and are kept until switched.
-function statusLabel(resource: ConfigurableActorResource): string {
-  if (resource.resourceType === 'Practitioner') {
-    return resource.active === false ? 'Inactive' : 'Active';
-  }
-  return resource.status ? capitalize(resource.status) : 'Active';
-}
-
-function withActorActive(resource: ConfigurableActorResource, active: boolean): ConfigurableActorResource {
-  if (resource.resourceType === 'Practitioner') {
-    return { ...resource, active };
-  }
-  return { ...resource, status: active ? 'active' : 'inactive' };
-}
-
-// A label over a value, or over "Not set" when there is none.
-function ReadOnlyField(props: { readonly label: string; readonly value?: string }): JSX.Element {
-  return (
-    <Stack gap={2}>
-      <Text size="sm" fw={500}>
-        {props.label}
-      </Text>
-      <Text size="sm" c={props.value === undefined ? 'dimmed' : undefined}>
-        {props.value ?? 'Not set'}
-      </Text>
-    </Stack>
-  );
 }
 
 function timezoneSource(offering: OfferingFields, service: WithId<HealthcareService>, actorName: string): string {
