@@ -254,7 +254,9 @@ async function conditionalUpdate(
 // Delete resource
 async function deleteResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
-  await repo.deleteResource(resourceType, id);
+  await repo.deleteResource(resourceType, id, {
+    ifMatch: parseIfMatchHeader(req.headers?.['if-match']),
+  });
   return [allOk];
 }
 
