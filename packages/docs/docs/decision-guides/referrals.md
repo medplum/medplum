@@ -7,9 +7,9 @@ download_slug: referrals
 
 # Referrals Decision Guide
 
-_Companion to the [Referrals](/docs/careplans/referrals) docs._
-
 A referral needs more than a send button. Use this guide with your clinical and operations teams to decide who owns each step, what the receiving team needs, and how you will know the loop is closed.
+
+_Companion to the [Referrals](/docs/careplans/referrals) docs._
 
 ## Section 1: Use Case & Participants
 

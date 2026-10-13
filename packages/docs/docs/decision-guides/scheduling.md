@@ -7,9 +7,9 @@ download_slug: scheduling
 
 # Scheduling Decision Guide
 
-_Companion to the [Scheduling](/docs/scheduling) docs._
-
 Use this guide to decide what can be booked, who can book it, and how appointments move through your workflow. Section 1 establishes the use case, Section 2 scopes additional requirements, and Section 3 maps those requirements to modeling and implementation choices.
+
+_Companion to the [Scheduling](/docs/scheduling) docs._
 
 Medplum provides availability calculation and atomic booking operations. Your application supplies business rules such as licensure checks, patient preferences, approval workflows, and integrations. The scheduling APIs are in [beta](/docs/compliance/alpha-beta); check the [beta changelog](/docs/scheduling/beta-changelog) when upgrading an existing implementation.
 

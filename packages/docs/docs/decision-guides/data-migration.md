@@ -7,9 +7,9 @@ download_slug: data-migration
 
 # Data Migration Decision Guide
 
-_Companion to the [Migrating to Medplum](/docs/migration) docs._
+Use this guide to plan a migration to Medplum and decide what moves, which system owns each domain, and how the transition will be validated. Work through identity mapping, import operations, cutover, and exception handling to define an approach with clear acceptance criteria and owners.
 
-Section 1 describes your current state and goals. Section 2 identifies the factors that change your migration approach. Section 3 helps you make and document the resulting decisions.
+_Companion to the [Migrating to Medplum](/docs/migration) docs._
 
 ## Section 1: Migration Context & Participants
 

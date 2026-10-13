@@ -7,6 +7,8 @@ download_slug: access-control
 
 # Access Control Decision Guide
 
+Use this guide to define who can access which data and how organizational boundaries are enforced in Medplum. Work through tenancy, patient and practitioner sharing, role permissions, and administration to produce a membership and access-policy model. Use the [Authentication Decision Guide](/docs/decision-guides/authentication) for login and identity-provider choices.
+
 _Companion to the [Authorization and Access Control](/docs/access) docs._
 
 ## Section 1: Use Case & Participants

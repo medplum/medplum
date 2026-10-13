@@ -7,6 +7,8 @@ download_slug: charting
 
 # Charting Decision Guide
 
+Use this guide to design how clinicians document care in your application. Work through encounter types, Visit Templates, structured data, signing, and template ownership to decide what the chart captures and how that information becomes usable FHIR resources.
+
 _Companion to the [Charting](/docs/charting) docs (SOAP notes, diagnoses, vitals, allergies), plus [Provider Visits](/docs/provider/visits), [Structured Data Capture](/docs/questionnaires/parsing-questionnaire-responses), [`PlanDefinition $apply`](/docs/api/fhir/operations/plandefinition-apply), and [`QuestionnaireResponse $extract`](/docs/api/fhir/operations/extract)._
 
 ---

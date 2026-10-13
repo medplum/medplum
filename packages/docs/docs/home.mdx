@@ -13,8 +13,8 @@ import { Feature, FeatureGrid } from '@site/src/components/landing/FeatureGrid.t
     <Feature title="Get Started" linkText="Read more" linkRef="./docs#get-started">
       Set up and run your medical application in 5 minutes
     </Feature>
-    <Feature title="Plan your Workflows" linkText="Read more" linkRef="./docs#plan-your-workflows">
-      Learn FHIR and plan your workflows
+    <Feature title="Plan Your Application and Workflows" linkText="Read more" linkRef="./docs#plan-your-workflows">
+      Learn FHIR and choose your application architecture and clinical workflows
     </Feature>
     <Feature title="Build in Medplum" linkText="Read more" linkRef="./docs#build-in-medplum">
       Medplum tools for full-stack apps with authentication
@@ -38,11 +38,13 @@ Medplum is a **headless EHR**. Using [Medplum products](./products) you can buil
 2. Use our [provider app](/docs/provider) by logging in to our [out-of-the-box EHR experience](https://provider.medplum.com/).
 3. [Build your own application](/docs/tutorials/medplum-hello-world) against our APIs.
 
-## Plan your Workflows
+## Plan Your Application and Workflows {/* #plan-your-workflows */}
 
 1. [Learn FHIR basics](./docs/fhir-basics) to understand the structure of FHIR resources, the healthcare standard on which Medplum is built.
 2. [Learn workflow patterns](./blog/fhir-workflow-patterns-to-simplify-your-life) to understand how resources are used to place requests, record events, and store information.
-3. [Design your workflows](./docs/decision-guides) using our decision guides to scope intake, charting, referrals, messaging, access control, billing, e-prescribing, and data migration before you build.
+3. Use our [Decision Guides](/docs/decision-guides) to compare approaches and make design choices before you build:
+   - [Designing Your Workflows](/docs/decision-guides#designing-your-workflows) covers clinical and operational processes, including intake, scheduling, diagnostic orders, and follow-up.
+   - [Designing Your Application](/docs/decision-guides#designing-your-application) covers authentication, tenancy, and access control across those workflows.
 4. Explore our clinical workflow guides! Popular workflows are included below. Step through specific use cases. Don't see a how-to guide you need? Reach out on our [Discord](https://discord.gg/medplum) or send us an email at [support@medplum.com](mailto:support@medplum.com).
    1. [Charting patient data](./docs/charting)
    2. [Creating and automating clinical operations](/docs/careplans/tasks)
