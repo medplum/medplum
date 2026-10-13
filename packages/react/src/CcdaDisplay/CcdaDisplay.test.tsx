@@ -117,6 +117,19 @@ describe('CcdaDisplay', () => {
     expect(fetchSpy).toHaveBeenCalledWith(EXAMPLE_CCDA_URL);
   });
 
+  test.each([
+    ['presigned storage URL', 'https://storage.medplum.com/binary/abc-123/def-456?Expires=1&Signature=sig'],
+    ['Binary reference', 'Binary/abc-123'],
+  ])('Downloads a %s through the FHIR API', async (_name, url) => {
+    const downloadSpy = vi
+      .spyOn(medplum, 'downloadResponse')
+      .mockResolvedValue({ ok: true, text: async () => EXAMPLE_CCDA_XML } as Response);
+    setup(url);
+    expect(await screen.findByText('Example CCDA')).toBeInTheDocument();
+    expect(downloadSpy).toHaveBeenCalledWith('Binary/abc-123');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   test('Shows an error when the C-CDA cannot be loaded', async () => {
     fetchSpy.mockResolvedValueOnce({ ok: false, status: 404, statusText: 'Not Found' });
     setup(EXAMPLE_CCDA_URL);

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Button, Loader } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
+import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { CcdaViewer } from '../CcdaViewer/CcdaViewer';
@@ -33,6 +34,7 @@ interface ValidationResult {
 }
 
 export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
+  const medplum = useMedplum();
   const { url } = props;
   const [loaded, setLoaded] = useState<{ url: string; xml?: string; error?: string }>();
   const current = loaded?.url === url ? loaded : undefined;
@@ -46,8 +48,9 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
       return undefined;
     }
     let cancelled = false;
-    // Plain fetch: the URL is a presigned Binary URL or a data: URI, so no auth header is needed
-    fetch(url)
+    // Storage only allows CORS from the app domain, so read Binaries through the FHIR API instead
+    const binaryId = getBinaryId(url);
+    (binaryId ? medplum.downloadResponse(`Binary/${binaryId}`) : fetch(url))
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Failed to load C-CDA: ${response.status} ${response.statusText}`);
@@ -67,7 +70,7 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
     return () => {
       cancelled = true;
     };
-  }, [url]);
+  }, [medplum, url]);
 
   const validateCcda = async (): Promise<void> => {
     if (!xml) {
@@ -164,4 +167,18 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
       </div>
     </div>
   );
+}
+
+/**
+ * Extracts the Binary ID from a `Binary/{id}` reference or a presigned storage URL
+ * (`https://storage.example.com/binary/{id}/{versionId}?...`).
+ * @param url - The attachment URL.
+ * @returns The Binary ID, or undefined for any other URL.
+ */
+function getBinaryId(url: string): string | undefined {
+  if (url.startsWith('data:')) {
+    return undefined;
+  }
+  const path = url.split(/[?#]/)[0];
+  return /(?:^|\/)binary\/([\w.-]+)(?:\/[^/]*)?$/i.exec(path)?.[1];
 }
