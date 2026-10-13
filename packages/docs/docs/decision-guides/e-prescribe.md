@@ -13,6 +13,8 @@ _Companion to the [E-Prescribe (eRx)](/docs/medications/e-prescibe) docs._
 
 E-prescribing in Medplum runs through an integration with an e-prescribing vendor connected to the SureScripts network.
 
+---
+
 ## Section 1: Use Case & Participants
 
 *Two of these — what you prescribe (1.1) and how much you build (1.2) — cascade into most of Section 3. Land them first.*

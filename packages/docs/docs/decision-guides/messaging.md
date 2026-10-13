@@ -11,6 +11,8 @@ Use this guide to design communication among patients, care teams, and external 
 
 _Companion to the [Messaging & Communications](/docs/communications) docs._
 
+---
+
 ## Section 1: Use Case & Participants
 
 These questions establish the "who and why" before scoping any features. The answers should shape how you frame the rest of the conversation.

@@ -11,6 +11,8 @@ Use this guide to plan a migration to Medplum and decide what moves, which syste
 
 _Companion to the [Migrating to Medplum](/docs/migration) docs._
 
+---
+
 ## Section 1: Migration Context & Participants
 
 These questions establish what is moving, why it is moving, and who owns each decision before implementation begins.

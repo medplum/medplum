@@ -11,6 +11,8 @@ Use this guide to design how patients, caregivers, and staff complete intake and
 
 _Companion to the [Intake & Registration](/docs/intake) docs._
 
+---
+
 ## Section 1: Use Case & Participants
 
 **1.1 Who completes intake, and in what setting?**

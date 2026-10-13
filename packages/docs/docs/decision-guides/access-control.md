@@ -11,6 +11,8 @@ Use this guide to define who can access which data and how organizational bounda
 
 _Companion to the [Authorization and Access Control](/docs/access) docs._
 
+---
+
 ## Section 1: Use Case & Participants
 
 **1.1 Who are the users?**

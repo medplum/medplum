@@ -13,6 +13,8 @@ _Companion to the [Scheduling](/docs/scheduling) docs._
 
 Medplum provides availability calculation and atomic booking operations. Your application supplies business rules such as licensure checks, patient preferences, approval workflows, and integrations. The scheduling APIs are in [beta](/docs/compliance/alpha-beta); check the [beta changelog](/docs/scheduling/beta-changelog) when upgrading an existing implementation.
 
+---
+
 ## Section 1: Use Case & Participants
 
 **1.1 Who books, and on whose behalf?**

@@ -11,6 +11,8 @@ Use this guide with your clinical and operations teams to decide what work needs
 
 _Companion to the [Care Coordination](/docs/careplans) docs._
 
+---
+
 ## Section 1: Use Case & Participants
 
 **1.1 Which operational problems are you trying to solve first?**

@@ -11,6 +11,8 @@ A referral needs more than a send button. Use this guide with your clinical and 
 
 _Companion to the [Referrals](/docs/careplans/referrals) docs._
 
+---
+
 ## Section 1: Use Case & Participants
 
 **1.1 Which side(s) of the referral lifecycle do you build for?**

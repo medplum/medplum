@@ -11,6 +11,8 @@ Use this guide to decide which parts of the revenue cycle your application owns 
 
 _Companion to the [Billing](/docs/billing) docs._
 
+---
+
 ## Section 1: Use Case & Participants
 
 **1.1 What is your reimbursement model?**

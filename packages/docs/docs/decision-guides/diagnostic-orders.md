@@ -13,6 +13,8 @@ _Companion to [Labs and Imaging](/docs/labs-imaging), [Order Labs and Imaging](/
 
 This guide covers laboratory and imaging workflows. Use the integration-specific docs for vendor setup and supported operations. The review queues and follow-up rules below are application design recommendations to implement with Medplum resources.
 
+---
+
 ## Section 1: Use Case and Participants
 
 ### 1.1 Which diagnostic services are in scope?
