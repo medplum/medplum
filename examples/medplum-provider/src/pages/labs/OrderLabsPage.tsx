@@ -144,6 +144,15 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
       return;
     }
     appliedDraftRef.current = draftDefaults;
+    if (draftDefaults.unresolvedTests.length > 0) {
+      showNotification({
+        color: 'yellow',
+        title: 'Some tests could not be resumed',
+        message: `Not found in the lab's compendium, add them again: ${draftDefaults.unresolvedTests
+          .map((test) => test.display ?? test.code)
+          .join(', ')}`,
+      });
+    }
     if (draftDefaults.patient) {
       setPatient(draftDefaults.patient);
     }

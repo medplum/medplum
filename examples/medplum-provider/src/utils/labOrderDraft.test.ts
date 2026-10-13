@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Organization, Practitioner, ServiceRequest, Specimen } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { getLabOrderDraftDefaults } from './labOrderDraft';
 
 describe('getLabOrderDraftDefaults', () => {
@@ -15,7 +15,11 @@ describe('getLabOrderDraftDefaults', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     requester = await medplum.createResource<Practitioner>({ resourceType: 'Practitioner', name: [{ family: 'Who' }] });
-    lab = await medplum.createResource<Organization>({ resourceType: 'Organization', name: 'Test Lab' });
+    lab = await medplum.createResource<Organization>({
+      resourceType: 'Organization',
+      name: 'Test Lab',
+      identifier: [{ system: 'https://www.healthgorilla.com', value: 'f-lab' }],
+    });
     specimen = await medplum.createResource<Specimen>({
       resourceType: 'Specimen',
       collection: { collectedDateTime: '2024-03-01T10:00:00.000Z' },
@@ -30,8 +34,9 @@ describe('getLabOrderDraftDefaults', () => {
       specimen: [{ reference: `Specimen/${specimen.id}` }],
       code: {
         coding: [
-          { code: 'CBC', display: 'Complete Blood Count' },
-          { code: 'BMP', display: 'Basic Metabolic' },
+          { system: 'http://snomed.info/sct', code: '108252007', display: 'Laboratory procedure (procedure)' },
+          { system: 'urn:uuid:f:lab', code: 'CBC', display: 'Complete Blood Count' },
+          { system: 'urn:uuid:f:lab', code: 'BMP', display: 'Basic Metabolic' },
         ],
       },
       reasonCode: [
@@ -63,7 +68,9 @@ describe('getLabOrderDraftDefaults', () => {
     expect(defaults.requester?.id).toBe(requester.id);
     expect(defaults.performingLab?.id).toBe(lab.id);
     expect(defaults.performingLabAccountNumber).toBe('ACCT-1');
+    // The SNOMED "Laboratory procedure" marker coding is not a test
     expect(defaults.tests.map((t) => t.code)).toEqual(['CBC', 'BMP']);
+    expect(defaults.unresolvedTests).toEqual([]);
     expect(defaults.testMetadata).toEqual({ CBC: { priority: 'stat', notes: 'Run first' } });
     expect(defaults.diagnoses).toEqual([
       { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9', display: 'Diabetes' }] },
@@ -71,6 +78,44 @@ describe('getLabOrderDraftDefaults', () => {
     expect(defaults.billTo).toBe('insurance');
     expect(defaults.orderNotes).toBe('Fasting');
     expect(defaults.specimenCollectedDateTime?.toISOString()).toBe('2024-03-01T10:00:00.000Z');
+  });
+
+  test('resolves terminology-coded tests from a care plan draft against the lab compendium', async () => {
+    const compendiumCoding = { system: 'urn:uuid:f:lab', code: '303756', display: 'Lipid Panel' };
+    const executeBot = vi.spyOn(medplum, 'executeBot').mockImplementation(async (_bot, params) => {
+      const { query } = params as { query: string };
+      // Only the name search finds it, and the first hit is a different test with a similar name
+      const result = query === 'Lipid panel' ? [{ ...compendiumCoding, code: '303757' }, compendiumCoding] : [];
+      return { type: 'test', result };
+    });
+    order.code = {
+      coding: [
+        { system: 'http://snomed.info/sct', code: '303756', display: 'Lipid panel (procedure)' },
+        { system: 'http://loinc.org', code: '24323-8', display: 'Comprehensive metabolic 2000 panel' },
+        { system: 'urn:uuid:f:lab', code: 'CBC', display: 'Complete Blood Count' },
+      ],
+    };
+
+    const defaults = await getLabOrderDraftDefaults(medplum, order);
+
+    expect(defaults.tests).toEqual([
+      compendiumCoding,
+      { system: 'urn:uuid:f:lab', code: 'CBC', display: 'Complete Blood Count' },
+    ]);
+    expect(defaults.unresolvedTests).toEqual([
+      { system: 'http://loinc.org', code: '24323-8', display: 'Comprehensive metabolic 2000 panel' },
+    ]);
+    expect(executeBot).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 'health-gorilla-labs/autocomplete' }),
+      { type: 'test', query: '303756', labId: 'f-lab' },
+      expect.anything()
+    );
+    // Compendium-coded tests are not looked up
+    expect(executeBot).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ query: 'CBC' }),
+      expect.anything()
+    );
   });
 
   test('tolerates a minimal draft with no references or extensions', async () => {
@@ -88,6 +133,7 @@ describe('getLabOrderDraftDefaults', () => {
       performingLab: undefined,
       performingLabAccountNumber: undefined,
       tests: [],
+      unresolvedTests: [],
       testMetadata: {},
       diagnoses: [],
       billTo: undefined,

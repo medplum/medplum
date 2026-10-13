@@ -400,6 +400,7 @@ describe('OrderLabsPage', () => {
         performingLab: { resourceType: 'Organization', id: 'lab-123', name: 'Test Lab' },
         performingLabAccountNumber: 'ACCT-1',
         tests: [mockTest],
+        unresolvedTests: [{ system: 'http://loinc.org', code: '24323-8', display: 'Metabolic panel' }],
         testMetadata: { TEST001: { priority: 'stat', notes: 'Run first' } },
         diagnoses: [{ coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9', display: 'Diabetes' }] }],
         billTo: 'insurance',
@@ -446,6 +447,9 @@ describe('OrderLabsPage', () => {
       expect(screen.getByLabelText('Order notes')).toHaveValue('Fasting');
       expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       expect(screen.getByText('Dr Who')).toBeInTheDocument();
+      expect(showNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ color: 'yellow', message: expect.stringContaining('Metabolic panel') })
+      );
       // The draft is applied once, not on every re-render
       expect(
         vi.mocked(mockLabOrderReturn.updateBillingInformation).mock.calls.filter(([info]) => info.billTo)
