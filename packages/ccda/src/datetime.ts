@@ -7,15 +7,15 @@ import type { CcdaEffectiveTime } from './types';
 /*
  * C-CDA date/time formats:
  *   1. YYYY
- *   2. YYYYMMDD
- *   3. YYYYMMDDHHMM
- *   4. YYYYMMDDHHMMSS
- *   5. YYYYMMDDHHMM-TZ
- *   6. YYYYMMDDHHMMSS-TZ
+ *   2. YYYYMM
+ *   3. YYYYMMDD
+ *   4. YYYYMMDDHH[MM[SS[.fraction]]]
+ *   5. Timezone offset (±HHMM) may follow the time
  *
  * FHIR date formats:
  *   1. YYYY
- *   2. YYYY-MM-DD
+ *   2. YYYY-MM
+ *   3. YYYY-MM-DD
  *
  * FHIR date/time formats:
  *   1. YYYY-MM-DDTHH:MM:SS-TZ
@@ -32,15 +32,14 @@ export function mapCcdaToFhirDate(date: string | undefined): string | undefined 
   }
 
   const year = date.substring(0, 4);
-  let month = '01';
-  let day = '01';
-
-  if (date.length >= 8) {
-    month = date.substring(4, 6);
-    day = date.substring(6, 8);
+  if (date.length < 6) {
+    return year;
   }
-
-  return `${year}-${month}-${day}`;
+  const month = date.substring(4, 6);
+  if (date.length < 8) {
+    return `${year}-${month}`;
+  }
+  return `${year}-${month}-${date.substring(6, 8)}`;
 }
 
 /**
@@ -53,46 +52,38 @@ export function mapCcdaToFhirDateTime(dateTime: string | undefined): string | un
     return undefined;
   }
 
-  // C-CDA timezone format: ±HHMM (e.g., -0500, +0530)
-  const CCDA_TIMEZONE_PATTERN = /^[+-]\d{4}$/;
+  const timezoneMatch = dateTime.match(/([+-]\d{4})$/);
+  const tz = timezoneMatch?.[1];
+  const value = tz ? dateTime.substring(0, dateTime.length - tz.length) : dateTime;
+  const fractionMatch = value.match(/\.(\d+)$/);
+  const fraction = fractionMatch?.[1];
+  const dateAndTime = fractionMatch ? value.substring(0, value.length - fractionMatch[0].length) : value;
 
-  const year = dateTime.substring(0, 4);
-  let month = '01';
-  let day = '01';
-  let hour = '00';
-  let minute = '00';
-  let second = '00';
-  let tz = 'Z';
-
-  if (dateTime.length >= 8) {
-    month = dateTime.substring(4, 6);
-    day = dateTime.substring(6, 8);
+  const year = dateAndTime.substring(0, 4);
+  if (dateAndTime.length < 6) {
+    return year;
+  }
+  const month = dateAndTime.substring(4, 6);
+  if (dateAndTime.length < 8) {
+    return `${year}-${month}`;
   }
 
-  if (dateTime.length >= 12) {
-    hour = dateTime.substring(8, 10);
-    minute = dateTime.substring(10, 12);
+  const date = `${year}-${month}-${dateAndTime.substring(6, 8)}`;
+  if (dateAndTime.length < 10) {
+    return date;
   }
 
-  // Check if position 12 is a timezone sign or seconds digit
-  const char12 = dateTime.charAt(12);
-  if (dateTime.length >= 14 && char12 !== '+' && char12 !== '-') {
-    second = dateTime.substring(12, 14);
+  const hour = dateAndTime.substring(8, 10);
+  const minute = dateAndTime.length >= 12 ? dateAndTime.substring(10, 12) : '00';
+  const second = dateAndTime.length >= 14 ? dateAndTime.substring(12, 14) : '00';
+  let timezone = tz ?? 'Z';
+  if (timezone === '+0000' || timezone === '-0000') {
+    timezone = 'Z';
+  } else if (tz) {
+    timezone = `${timezone.substring(0, 3)}:${timezone.substring(3)}`;
   }
 
-  // Find timezone: starts at position 12 if no seconds, or position 14 if seconds present
-  const tzStart = char12 === '+' || char12 === '-' ? 12 : 14;
-  if (dateTime.length > tzStart) {
-    tz = dateTime.substring(tzStart);
-    if (tz === '+0000' || tz === '-0000') {
-      tz = 'Z';
-    } else if (CCDA_TIMEZONE_PATTERN.test(tz)) {
-      // Format timezone with colon separator: ±HHMM → ±HH:MM
-      tz = `${tz.substring(0, 3)}:${tz.substring(3)}`;
-    }
-  }
-
-  return `${year}-${month}-${day}T${hour}:${minute}:${second}${tz}`;
+  return `${date}T${hour}:${minute}:${second}${fraction ? `.${fraction}` : ''}${timezone}`;
 }
 
 /**
