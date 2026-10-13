@@ -6,7 +6,7 @@ import type { HealthcareService } from '@medplum/fhirtypes';
 import { IconChevronDown } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
-import { matchingServices, pageOfServices, serviceLabel } from './serviceList';
+import { pageOfServices, serviceLabel } from './serviceList';
 
 const PAGE_SIZE = 10;
 
@@ -58,7 +58,7 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
 
   const chosen = services.filter((service) => checked.has(service.id));
   // Only while searching, so ticking every visit type at once is never a single click away.
-  const tickable = search.trim() ? matchingServices(services, search) : [];
+  const tickable = search.trim() ? options.matches : [];
   const untickedMatch = tickable.some((service) => !checked.has(service.id));
 
   function toggle(id: string): void {

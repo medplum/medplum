@@ -885,7 +885,6 @@ const SPECIALTY_VISITS = [
   ['pre-op', 'Pre-op Visit', 30],
 ] as const;
 
-/** Every visit type a specialty group's clinics book: seven kinds of visit for each of twelve specialties. */
 const SpecialtyServices: WithId<HealthcareService>[] = SPECIALTY_CLINICS.flatMap((specialty) =>
   SPECIALTY_VISITS.map(([kind, visit, durationMinutes]) => ({
     ...buildSchedulableService({
@@ -903,7 +902,6 @@ const CardiologyFollowUp = SpecialtyServices.find(
   (service) => service.id === 'cardiology-follow-up'
 ) as WithId<HealthcareService>;
 
-/** A hospitalist covering every specialty's clinic but Oncology's and Pediatrics'. */
 export const DrLindqvistPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'dr-lindqvist',
@@ -924,8 +922,8 @@ export const DrLindqvistSchedule = setScheduleAvailability(
 ) as WithId<Schedule>;
 
 /**
- * A specialty group with 84 visit types, and a provider offering most of them, for showing the config workspace
- * with more visit types than fit on a page. Kept out of `ConfigFixtures`, whose tests count its visit types.
+ * A specialty group's 84 visit types and a provider offering most of them, more than fit on a page. Kept out of
+ * `ConfigFixtures`, whose tests count its visit types.
  */
 export const ManyVisitTypesFixtures = [...SpecialtyServices, DrLindqvistPractitioner, DrLindqvistSchedule];
 

@@ -148,14 +148,16 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     return !deepEquals(fields.offerings[service.id], before);
   }
 
-  const checks = offered.map((service) => ({
-    service,
-    errors: errorsFor(service),
-    availabilityError: availabilityErrorFor(service),
-  }));
-  const blocking = checks.find(({ errors, availabilityError }) => Object.keys(errors).length > 0 || availabilityError);
+  function blockedReasonFor(service: WithId<HealthcareService>): string | undefined {
+    if (Object.keys(errorsFor(service)).length > 0) {
+      return `Fix the highlighted fields for ${service.name ?? 'this visit type'} before saving.`;
+    }
+    return availabilityErrorFor(service);
+  }
+
+  const blocking = offered.find((service) => blockedReasonFor(service));
   const nameError = hasEditableName(actorDraft) && !general.name.trim() ? 'A name is required.' : undefined;
-  const blockedReason = nameError ?? getOfferingBlockedReason(blocking);
+  const blockedReason = nameError ?? (blocking && blockedReasonFor(blocking));
 
   function handleGeneralChange(next: ActorGeneralFields): void {
     if (next.active !== general.active) {
@@ -189,7 +191,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       setTriedToSave(true);
       // Opening it also lists it when the filter or paging hides it, so what to fix is on screen.
       if (blocking) {
-        setOpen(blocking.service.id);
+        setOpen(blocking.id);
       }
       return;
     }
@@ -364,17 +366,6 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       />
     </Stack>
   );
-}
-
-function getOfferingBlockedReason(
-  blocking:
-    | { service: WithId<HealthcareService>; errors: ReturnType<typeof getBlockingErrors>; availabilityError?: string }
-    | undefined
-): string | undefined {
-  if (blocking && Object.keys(blocking.errors).length > 0) {
-    return `Fix the highlighted fields for ${blocking.service.name ?? 'this visit type'} before saving.`;
-  }
-  return blocking?.availabilityError;
 }
 
 function getBookingAlert(resource: ActorResource, status: ConfigStatus): string | undefined {
