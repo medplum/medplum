@@ -69,7 +69,7 @@ function PatientCard(props: { readonly patientRole: Element | undefined }): JSX.
         </tbody>
       </table>
       <Anchor component="button" size="xs" onClick={() => setShowDetail((s) => !s)}>
-        {showDetail ? 'Hide patient detail' : 'Patient detail'}
+        {showDetail ? 'Fewer patient details' : 'More patient details'}
       </Anchor>
     </Paper>
   );

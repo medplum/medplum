@@ -72,8 +72,10 @@ describe('CcdaViewer', () => {
     render(<CcdaViewer xml={THREE_SECTIONS} />);
     expect(screen.getByText('Thomas Manfred')).toBeInTheDocument();
     expect(screen.queryByText('Patient IDs')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText('Patient detail'));
+    fireEvent.click(screen.getByText('More patient details'));
     expect(screen.getByText('112233334 (2.16.840.1.113883.4.1)')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Fewer patient details'));
+    expect(screen.queryByText('112233334 (2.16.840.1.113883.4.1)')).not.toBeInTheDocument();
   });
 
   test('Hide and show sections', async () => {
