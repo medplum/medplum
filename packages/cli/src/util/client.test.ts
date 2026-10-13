@@ -152,7 +152,7 @@ describe('createMedplumClient', () => {
     });
 
     const fetch = vi.fn(async () => ({ status: 401 }));
-    console.error = vi.fn();
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
     const medplumClient = await createMedplumClient({ fetch, profile: testProfile }, false);
     await new Promise((resolve) => {
@@ -160,10 +160,30 @@ describe('createMedplumClient', () => {
     });
 
     expect(fetch).not.toHaveBeenCalled();
-    expect(console.error).not.toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
     expect(console.log).not.toHaveBeenCalledWith('Unauthenticated: run `npx medplum login` to sign in');
     expect(medplumClient.getActiveLogin()).toBeUndefined();
     expect(storage.getObject('options')).toMatchObject({ name: testProfile });
+    errorSpy.mockRestore();
+  });
+
+  test('Login keeps active login when base URL validation fails', async () => {
+    const testProfile = 'invalidBaseUrlProfile';
+    const storage = new FileSystemStorage(testProfile);
+    const activeLogin = {
+      accessToken: 'test-access-token',
+      profile: { reference: 'Practitioner/123' },
+      project: { reference: 'Project/123' },
+    };
+    storage.setObject('options', { name: testProfile });
+    storage.setObject('activeLogin', activeLogin);
+
+    const fetch = vi.fn(async () => ({ status: 404, ok: false }));
+
+    await expect(
+      createMedplumClient({ fetch, profile: testProfile, baseUrl: 'https://typo.example.com/' }, false)
+    ).rejects.toThrow('Failed to validate base URL');
+    expect(storage.getObject('activeLogin')).toEqual(activeLogin);
   });
 
   test('validates base URL healthcheck on non-default URL', async () => {

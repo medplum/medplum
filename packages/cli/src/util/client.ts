@@ -25,15 +25,15 @@ export async function createMedplumClient(
   );
   const fetchApi = options.fetch ?? fetch;
 
+  // Validate base URL if non-default is specified
+  if (options.baseUrl && options.baseUrl !== 'https://api.medplum.com/') {
+    await validateBaseUrl(options.baseUrl, fetchApi);
+  }
+
   // When logging in, discard any stored session so MedplumClient does not try to resume it.
   // Resuming an expired session fails in the background and clears the profile storage.
   if (!setupCredentials) {
     storage.setObject('activeLogin', undefined);
-  }
-
-  // Validate base URL if non-default is specified
-  if (options.baseUrl && options.baseUrl !== 'https://api.medplum.com/') {
-    await validateBaseUrl(options.baseUrl, fetchApi);
   }
 
   const medplumClient = new MedplumClient({
