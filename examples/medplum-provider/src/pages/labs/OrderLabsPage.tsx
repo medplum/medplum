@@ -83,8 +83,8 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
   const [draftDefaults, setDraftDefaults] = useState<LabOrderDraftDefaults | undefined>();
   const tests = defaultTests ?? draftDefaults?.tests;
   const performingLab = defaultPerformingLab ?? draftDefaults?.performingLab;
-  const encounterResource = useResource(encounter);
-  const taskResource = useResource(task);
+  const encounterResource = useResource(encounter ?? draftDefaults?.encounter);
+  const taskResource = useResource(task ?? draftDefaults?.task);
   const labOrderReturn = useHealthGorillaLabOrder({
     patient,
     requester,
@@ -99,6 +99,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     setSpecimenCollectedDateTime,
     setOrderNotes,
     setPerformingLabAccountNumber,
+    setPerformingLabPhysicianAccountNumber,
     updateTestMetadata,
     createOrderBundle,
   } = labOrderReturn;
@@ -133,6 +134,8 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
         setDraftDefaults(await getLabOrderDraftDefaults(medplum, draftOrder));
       } catch (error) {
         showErrorNotification(error);
+        // Still show the form, so the order can be filled in by hand
+        setDraftDefaults({ tests: [], unresolvedTests: [], testMetadata: {}, diagnoses: [] });
       }
     };
     loadDraftDefaults().catch(console.error);
@@ -170,6 +173,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
       updateBillingInformation({ billTo: draftDefaults.billTo });
     }
     setPerformingLabAccountNumber(draftDefaults.performingLabAccountNumber);
+    setPerformingLabPhysicianAccountNumber(draftDefaults.performingLabPhysicianAccountNumber);
     setOrderNotes(draftDefaults.orderNotes);
     setSpecimenCollectedDateTime(draftDefaults.specimenCollectedDateTime);
   }, [
@@ -178,6 +182,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     setDiagnoses,
     updateBillingInformation,
     setPerformingLabAccountNumber,
+    setPerformingLabPhysicianAccountNumber,
     setOrderNotes,
     setSpecimenCollectedDateTime,
   ]);

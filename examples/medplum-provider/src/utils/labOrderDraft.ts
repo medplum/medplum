@@ -2,7 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
 import { getExtensionValue, getIdentifier, isReference, SNOMED } from '@medplum/core';
-import type { Organization, Patient, Practitioner, Reference, ServiceRequest, Specimen } from '@medplum/fhirtypes';
+import type {
+  Encounter,
+  Organization,
+  Patient,
+  Practitioner,
+  QuestionnaireResponse,
+  Reference,
+  ServiceRequest,
+  Specimen,
+  Task,
+} from '@medplum/fhirtypes';
 import type {
   BillTo,
   DiagnosisCodeableConcept,
@@ -15,6 +25,7 @@ import {
   isBillTo,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_PHYSICIAN_AN,
 } from '@medplum/health-gorilla-core';
 import type { TestSearch } from '@medplum/health-gorilla-react';
 import { getAutocompleteSearchFunction } from '@medplum/health-gorilla-react';
@@ -33,12 +44,16 @@ const AUTOCOMPLETE_BOT = {
 export interface LabOrderDraftDefaults {
   patient?: Patient;
   requester?: Practitioner;
+  encounter?: Reference<Encounter>;
+  /** The Task whose focus is the draft, so the task can be pointed at the new order. */
+  task?: Task;
   performingLab?: LabOrganization;
   performingLabAccountNumber?: string;
+  performingLabPhysicianAccountNumber?: string;
   tests: TestCoding[];
   /** Tests on the draft that could not be matched to the performing lab's compendium. */
   unresolvedTests: TestCoding[];
-  testMetadata: Record<string, Pick<LabOrderTestMetadata, 'priority' | 'notes'>>;
+  testMetadata: Record<string, Pick<LabOrderTestMetadata, 'priority' | 'notes' | 'aoeResponses'>>;
   diagnoses: DiagnosisCodeableConcept[];
   billTo?: BillTo;
   orderNotes?: string;
@@ -49,7 +64,7 @@ export interface LabOrderDraftDefaults {
  * Reads the resources referenced by a draft lab order so the order form can be re-populated with it.
  *
  * A lab order is a top-level `ServiceRequest` (holding the selected tests, diagnoses, billing and notes)
- * plus one child `ServiceRequest` per test (holding that test's priority and notes).
+ * plus one child `ServiceRequest` per test (holding that test's priority, notes and AOE answers).
  * @param medplum - The Medplum client.
  * @param order - The draft lab order to resume.
  * @returns The values to pre-fill the lab order form with.
@@ -65,12 +80,13 @@ export async function getLabOrderDraftDefaults(
   const performerRef = order.performer?.find((ref): ref is Reference<Organization> => isReference(ref, 'Organization'));
   const specimenRef = order.specimen?.find((ref): ref is Reference<Specimen> => isReference(ref, 'Specimen'));
 
-  const [patient, requester, performingLab, specimen, childRequests] = await Promise.all([
+  const [patient, requester, performingLab, specimen, childRequests, task] = await Promise.all([
     subjectRef ? medplum.readReference(subjectRef) : undefined,
     requesterRef ? medplum.readReference(requesterRef) : undefined,
     performerRef ? medplum.readReference(performerRef) : undefined,
     specimenRef ? medplum.readReference(specimenRef) : undefined,
     order.id ? medplum.searchResources('ServiceRequest', { 'based-on': `ServiceRequest/${order.id}` }) : [],
+    order.id ? medplum.searchOne('Task', { focus: `ServiceRequest/${order.id}` }) : undefined,
   ]);
 
   const { tests, unresolvedTests } = await resolveTests(
@@ -83,25 +99,43 @@ export async function getLabOrderDraftDefaults(
   );
 
   const testMetadata: LabOrderDraftDefaults['testMetadata'] = {};
-  for (const child of childRequests) {
-    const code = child.code?.coding?.[0]?.code;
-    if (code) {
-      testMetadata[code] = { priority: child.priority, notes: child.note?.[0]?.text };
-    }
-  }
+  await Promise.all(
+    childRequests.map(async (child) => {
+      const code = child.code?.coding?.[0]?.code;
+      if (!code) {
+        return;
+      }
+      const aoeRef = child.supportingInfo?.find((ref): ref is Reference<QuestionnaireResponse> =>
+        isReference(ref, 'QuestionnaireResponse')
+      );
+      testMetadata[code] = {
+        priority: child.priority,
+        notes: child.note?.[0]?.text,
+        aoeResponses: aoeRef ? await medplum.readReference(aoeRef) : undefined,
+      };
+    })
+  );
 
   const billTo = getExtensionValue(order, MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO);
   const performingLabAccountNumber = getExtensionValue(
     order,
     MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN
   );
+  const performingLabPhysicianAccountNumber = getExtensionValue(
+    order,
+    MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_PHYSICIAN_AN
+  );
   const collectedDateTime = specimen?.collection?.collectedDateTime;
 
   return {
     patient,
     requester,
+    encounter: isReference(order.encounter, 'Encounter') ? order.encounter : undefined,
+    task,
     performingLab,
     performingLabAccountNumber: typeof performingLabAccountNumber === 'string' ? performingLabAccountNumber : undefined,
+    performingLabPhysicianAccountNumber:
+      typeof performingLabPhysicianAccountNumber === 'string' ? performingLabPhysicianAccountNumber : undefined,
     tests,
     unresolvedTests,
     testMetadata,
@@ -130,25 +164,32 @@ async function resolveTests(
   performingLab: Organization | undefined
 ): Promise<Pick<LabOrderDraftDefaults, 'tests' | 'unresolvedTests'>> {
   const labId = performingLab && getIdentifier(performingLab, HEALTH_GORILLA_SYSTEM);
-  if (!labId) {
-    return { tests, unresolvedTests: [] };
-  }
-
-  const search = getAutocompleteSearchFunction(medplum, AUTOCOMPLETE_BOT);
+  const search = labId ? getAutocompleteSearchFunction(medplum, AUTOCOMPLETE_BOT) : undefined;
   const resolved = await Promise.all(
     tests.map(async (test): Promise<TestCoding | undefined> => {
       if (isCompendiumCoding(test)) {
         return test;
       }
-      for (const query of [test.code, test.display?.replace(/\s*\(procedure\)$/i, '')]) {
-        if (!query) {
-          continue;
+      if (!search || !labId) {
+        return undefined;
+      }
+      // The compendium is searched by the draft's code and then by its name, but a hit only counts
+      // when the lab's code is the same string. Terminology codes rarely coincide with a lab's own
+      // codes, so most terminology-coded tests end up unresolved; that is preferred over guessing a
+      // different test by name on a clinical order.
+      try {
+        for (const query of [test.code, test.display?.replace(/\s*\(procedure\)$/i, '')]) {
+          if (!query) {
+            continue;
+          }
+          const { result } = await search<TestSearch>({ type: 'test', query, labId });
+          const match = result.find((candidate) => candidate.code === test.code);
+          if (match) {
+            return match;
+          }
         }
-        const { result } = await search<TestSearch>({ type: 'test', query, labId });
-        const match = result.find((candidate) => candidate.code === test.code);
-        if (match) {
-          return match;
-        }
+      } catch {
+        // A failed lookup is reported as an unresolved test rather than blocking the whole draft
       }
       return undefined;
     })

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Patient, ServiceRequest } from '@medplum/fhirtypes';
+import type { Patient, QuestionnaireResponse, ServiceRequest } from '@medplum/fhirtypes';
 import type { LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -392,16 +392,26 @@ describe('OrderLabsPage', () => {
 
   describe('Resuming a draft', () => {
     const mockTest: TestCoding = { code: 'TEST001', display: 'Complete Blood Count', system: 'http://loinc.org' };
+    const aoeResponse: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'completed' };
 
-    beforeEach(() => {
+    beforeEach(async () => {
+      await medplum.createResource({
+        resourceType: 'Encounter',
+        id: 'enc-1',
+        status: 'finished',
+        class: { code: 'AMB' },
+      });
       vi.mocked(getLabOrderDraftDefaults).mockResolvedValue({
         patient: HomerSimpson,
         requester: { resourceType: 'Practitioner', id: 'req-1', name: [{ given: ['Dr'], family: 'Who' }] },
         performingLab: { resourceType: 'Organization', id: 'lab-123', name: 'Test Lab' },
+        encounter: { reference: 'Encounter/enc-1' },
+        task: { resourceType: 'Task', id: 'task-1', status: 'requested', intent: 'order' },
         performingLabAccountNumber: 'ACCT-1',
+        performingLabPhysicianAccountNumber: 'PHY-1',
         tests: [mockTest],
         unresolvedTests: [{ system: 'http://loinc.org', code: '24323-8', display: 'Metabolic panel' }],
-        testMetadata: { TEST001: { priority: 'stat', notes: 'Run first' } },
+        testMetadata: { TEST001: { priority: 'stat', notes: 'Run first', aoeResponses: aoeResponse } },
         diagnoses: [{ coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9', display: 'Diabetes' }] }],
         billTo: 'insurance',
         orderNotes: 'Fasting',
@@ -422,6 +432,7 @@ describe('OrderLabsPage', () => {
 
     test('seeds the form from the draft and revokes it after the new order is sent', async () => {
       vi.spyOn(medplum, 'patchResource').mockResolvedValue({ ...draftOrder, status: 'revoked' });
+      const updateResource = vi.spyOn(medplum, 'updateResource');
       setup({ draftOrder });
 
       expect(await screen.findByRole('button', { name: 'Submit Order' })).toBeInTheDocument();
@@ -431,7 +442,9 @@ describe('OrderLabsPage', () => {
       expect(mockLabOrderReturn.updateTestMetadata).toHaveBeenCalledWith(mockTest, {
         priority: 'stat',
         notes: 'Run first',
+        aoeResponses: aoeResponse,
       });
+      expect(mockLabOrderReturn.setPerformingLabPhysicianAccountNumber).toHaveBeenCalledWith('PHY-1');
       expect(mockLabOrderReturn.setPerformingLab).toHaveBeenCalledWith(
         expect.objectContaining({ resourceType: 'Organization', id: 'lab-123' })
       );
@@ -461,10 +474,30 @@ describe('OrderLabsPage', () => {
       await waitFor(() => {
         expect(mockOnSubmitLabOrder).toHaveBeenCalled();
       });
-      expect(medplum.executeBot).toHaveBeenCalled();
+      // The new order is linked to the draft's encounter and its task now points at the new order
+      expect(medplum.executeBot).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ encounter: { reference: 'Encounter/enc-1' } }),
+        expect.anything()
+      );
+      expect(updateResource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceType: 'Task',
+          id: 'task-1',
+          focus: { reference: 'ServiceRequest/order-123' },
+        })
+      );
       expect(medplum.patchResource).toHaveBeenCalledWith('ServiceRequest', 'draft-123', [
         { op: 'replace', path: '/status', value: 'revoked' },
       ]);
+    });
+
+    test('still shows the form when the draft cannot be loaded', async () => {
+      vi.mocked(getLabOrderDraftDefaults).mockRejectedValue(new Error('Forbidden'));
+      setup({ draftOrder });
+
+      expect(await screen.findByRole('button', { name: 'Submit Order' })).toBeInTheDocument();
+      expect(notifications.showErrorNotification).toHaveBeenCalled();
     });
 
     test('does not revoke the draft when sending fails', async () => {
