@@ -5,7 +5,7 @@ import type { WithId } from '@medplum/core';
 import {
   createReference,
   getReferenceString,
-  SchedulingScheduleColorURI,
+  SchedulingColorURI,
   ServiceTypeReferenceURI,
   setPrimaryProvider,
 } from '@medplum/core';
@@ -295,7 +295,7 @@ describe('MultiCalendar', () => {
     test('falls back to the schedule color extension when no source color is given', () => {
       const schedule: WithId<Schedule> = {
         ...DrAliceSmithSchedule,
-        extension: [{ url: SchedulingScheduleColorURI, valueString: 'grape' }],
+        extension: [{ url: SchedulingColorURI, valueString: 'grape' }],
       };
       const sources: MultiCalendarSource[] = [
         { schedule, appointments: [createAppointment('a1', 'John Doe')], slots: [] },
@@ -307,7 +307,7 @@ describe('MultiCalendar', () => {
     test('prefers the source color over the schedule color extension', () => {
       const schedule: WithId<Schedule> = {
         ...DrAliceSmithSchedule,
-        extension: [{ url: SchedulingScheduleColorURI, valueString: 'grape' }],
+        extension: [{ url: SchedulingColorURI, valueString: 'grape' }],
       };
       const sources: MultiCalendarSource[] = [
         { schedule, appointments: [createAppointment('a1', 'John Doe')], slots: [], color: 'teal' },

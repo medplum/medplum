@@ -8,7 +8,7 @@ import {
   createReference,
   RecurrenceIdExtensionURI,
   RecurringAppointmentSeriesIdentifierSystem,
-  SchedulingScheduleColorURI,
+  SchedulingColorURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
@@ -49,6 +49,7 @@ import {
   PatientFixtures,
   PROCEDURE_VALUE_SET,
   SchedulingFixtures,
+  TelehealthService,
 } from '../stories/scheduling';
 import colorStatesClasses from './ColorAndStates.module.css';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
@@ -69,8 +70,18 @@ const ELSEWHERE_FIXTURES = [
   ...AppointmentPatientFixtures,
 ];
 
-/** The same clinic, moved onto whatever clock the reader is on. */
-const LOCAL_FIXTURES = inViewerTimezone(ELSEWHERE_FIXTURES);
+/**
+ * The same clinic, moved onto whatever clock the reader is on, with Telehealth Consult naming the
+ * color it is drawn in.
+ */
+const LOCAL_FIXTURES = inViewerTimezone(ELSEWHERE_FIXTURES).map((resource) =>
+  resource.resourceType === 'HealthcareService' && resource.id === TelehealthService.id
+    ? {
+        ...resource,
+        extension: [...(resource.extension ?? []), { url: SchedulingColorURI, valueString: 'grape' }],
+      }
+    : resource
+);
 
 // Fixtures are per story rather than shared here: the two stories differ in nothing but
 // the zones theirs declare, and a set installed for both would decide that for both.
@@ -141,6 +152,9 @@ export default {
  * Blocked time opens in that pane too: click Exam Room A's "Blocked" block on Thursday to
  * see whose time it holds, when, and why. "Edit" moves it or changes its notes, and
  * "Delete" takes it off the calendar.
+ *
+ * Appointments are colored by visit type. Telehealth Consult names its color, grape, on its
+ * HealthcareService; the others are given one picked from their reference.
  *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
@@ -264,7 +278,7 @@ const PALETTE_COLORS: Record<string, MantineColorsTuple> = Object.fromEntries(
 );
 
 function colorExtension(index: number): Extension {
-  return { url: SchedulingScheduleColorURI, valueString: `palette${index}` };
+  return { url: SchedulingColorURI, valueString: `palette${index}` };
 }
 
 const PROVIDER_NAMES: readonly (readonly [string, string])[] = [
@@ -455,7 +469,7 @@ const GRAY_CALENDAR_FIXTURES: Resource[] = [
   ...providerResources,
   ...[...providerSchedules, ...roomSchedules, ...deviceSchedules].map((schedule) => ({
     ...schedule,
-    extension: [{ url: SchedulingScheduleColorURI, valueString: 'gray' }],
+    extension: [{ url: SchedulingColorURI, valueString: 'gray' }],
   })),
   ...roomResources,
   ...deviceResources,
@@ -576,8 +590,8 @@ const colorStatesClinic: Resource[] = LOCAL_FIXTURES.filter(
             .findIndex((other) => other.id === resource.id)
         ).flatMap((i) => toServiceTypeCodeableConcepts(colorStatesServices[i])),
         extension: [
-          ...(resource.extension ?? []).filter((extension) => extension.url !== SchedulingScheduleColorURI),
-          { url: SchedulingScheduleColorURI, valueString: 'gray' },
+          ...(resource.extension ?? []).filter((extension) => extension.url !== SchedulingColorURI),
+          { url: SchedulingColorURI, valueString: 'gray' },
         ],
       }
     : resource

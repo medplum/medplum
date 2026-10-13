@@ -50,27 +50,19 @@ export async function createConversationTopic(
  * @param medplum - The Medplum client instance
  * @param topicId - The ID of the conversation topic
  * @param message - The message to save
- * @param sequenceNumber - The sequence number of the message
  * @returns The created Communication resource
  */
-export async function saveMessage(
-  medplum: MedplumClient,
-  topicId: string,
-  message: Message,
-  sequenceNumber: number
-): Promise<Communication> {
-  const communication = buildMessageCommunication(topicId, message, sequenceNumber);
-  return medplum.createResource(communication);
+export async function saveMessage(medplum: MedplumClient, topicId: string, message: Message): Promise<Communication> {
+  return medplum.createResource(buildMessageCommunication(topicId, message));
 }
 
 /**
  * Builds a Communication resource for a message (without saving)
  * @param topicId - The ID of the conversation topic
  * @param message - The message to convert
- * @param sequenceNumber - The sequence number of the message
  * @returns The Communication resource (not saved)
  */
-function buildMessageCommunication(topicId: string, message: Message, sequenceNumber: number): Communication {
+function buildMessageCommunication(topicId: string, message: Message): Communication {
   return {
     resourceType: 'Communication',
     status: 'completed',
@@ -94,7 +86,6 @@ function buildMessageCommunication(topicId: string, message: Message, sequenceNu
           tool_call_id: message.tool_call_id,
           resources: message.resources,
           componentCode: message.componentCode,
-          sequenceNumber,
         }),
       },
     ],
@@ -115,35 +106,42 @@ export async function touchConversationTopic(medplum: MedplumClient, topicId: st
   ]);
 }
 
+const MESSAGE_WINDOW_SIZE = 100;
+
 /**
- * Loads the last messages for a conversation topic
+ * Loads the most recent messages for a conversation topic, oldest first.
+ *
+ * Messages are saved one at a time in conversation order and never updated, so creation
+ * time is their order. Only the newest MESSAGE_WINDOW_SIZE Communications are fetched. The
+ * window is then trimmed to start at a user message, because a window that starts mid-turn
+ * would hand the model tool replies with no preceding tool_calls message, which it rejects.
  * @param medplum - The Medplum client instance
  * @param topicId - The ID of the conversation topic
- * @returns Array of messages
+ * @returns Array of messages in conversation order
  */
 export async function loadConversationMessages(medplum: MedplumClient, topicId: string): Promise<Message[]> {
   const communications = await medplum.searchResources('Communication', {
     'part-of': `Communication/${topicId}`,
-    _sort: '_lastUpdated',
-    _count: '100',
+    _sort: '-_lastUpdated',
+    _count: String(MESSAGE_WINDOW_SIZE),
   });
 
-  const messages: { message: Message; sequenceNumber: number }[] = [];
+  const byCreation = (a: Communication, b: Communication): number =>
+    (a.meta?.lastUpdated ?? '').localeCompare(b.meta?.lastUpdated ?? '');
 
-  for (const comm of communications) {
+  const messages: Message[] = [];
+
+  for (const comm of [...communications].sort(byCreation)) {
     if (comm.payload?.[0]?.contentString) {
       try {
         const data = JSON.parse(comm.payload[0].contentString);
         messages.push({
-          message: {
-            role: data.role,
-            content: data.content,
-            tool_calls: data.tool_calls,
-            tool_call_id: data.tool_call_id,
-            resources: data.resources,
-            componentCode: data.componentCode,
-          },
-          sequenceNumber: data.sequenceNumber || 0,
+          role: data.role,
+          content: data.content,
+          tool_calls: data.tool_calls,
+          tool_call_id: data.tool_call_id,
+          resources: data.resources,
+          componentCode: data.componentCode,
         });
       } catch (error) {
         if (error instanceof Error) {
@@ -154,10 +152,11 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
     }
   }
 
-  // Sort by sequenceNumber to ensure correct message order for OpenAI
-  messages.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
-
-  return messages.map((m) => m.message);
+  const firstUserIndex = messages.findIndex((m) => m.role === 'user');
+  if (firstUserIndex === -1) {
+    return [];
+  }
+  return messages.slice(firstUserIndex);
 }
 
 /**

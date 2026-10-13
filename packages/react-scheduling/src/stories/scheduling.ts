@@ -42,7 +42,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { getBrowserTimezone } from '../AppointmentFinder/AppointmentFinder.times';
 import { setScheduleAvailability } from '../availability';
-import { NPI_SYSTEM } from '../constants';
+import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, NPI_SYSTEM } from '../constants';
 import {
   getHealthcareServiceSchedulingParameterValues,
   setHealthcareServiceSchedulingParameterValues,
@@ -72,7 +72,7 @@ export const APPOINTMENT_TYPE_SYSTEM = 'http://example.org/appointment-types';
  * @returns The concept to record it as.
  */
 function physicalType(code: 'ro' | 'bd'): CodeableConcept {
-  return { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/location-physical-type', code }] };
+  return { coding: [{ system: LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, code }] };
 }
 
 export const MainClinic: WithId<Location> = {
@@ -847,6 +847,7 @@ export const ConfigFixtures = [
   GroupEducationService,
   UnconfiguredService,
   DiscontinuedService,
+  IronInfusionService,
   ...CatalogServices,
   DrNguyenPractitioner,
   DrNguyenSchedule,

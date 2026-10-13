@@ -104,8 +104,7 @@ Content-Type: application/fhir+json
   "resourceType": "Parameters",
   "parameter": [
     { "name": "STEDI_CLAIM_API_KEY", "valueString": "<YOUR_STEDI_CLAIM_API_KEY>" },
-    { "name": "STEDI_INSURANCE_API_KEY", "valueString": "<YOUR_STEDI_INSURANCE_API_KEY>" },
-    { "name": "STEDI_CLAIM_TEST_MODE", "valueBoolean": false }
+    { "name": "STEDI_INSURANCE_API_KEY", "valueString": "<YOUR_STEDI_INSURANCE_API_KEY>" }
   ]
 }
 ```
@@ -257,7 +256,7 @@ When a report was linked to a `ClaimResponse`, you can also reach it from the `C
 
 ## Test workflow
 
-Use Stedi's [test claims workflow](https://www.stedi.com/docs/healthcare/test-claims-workflow): submit a claim to payer `STEDITEST` with `STEDI_CLAIM_TEST_MODE=true`. Stedi generates test 277CA and 835 responses that you can ingest via either the webhook or `$stedi-poll-responses`.
+Use Stedi's [test claims workflow](https://www.stedi.com/docs/healthcare/test-claims-workflow): submit a claim to payer `STEDITEST` using a Stedi test API key (prefix `test_`) as `STEDI_CLAIM_API_KEY`. Stedi generates test 277CA and 835 responses that you can ingest via either the webhook or `$stedi-poll-responses`.
 
 ## Limitations
 

@@ -14,8 +14,10 @@
    */
   position: relative;
   flex-shrink: 0;
-  width: 300px;
+  width: calc(300px + var(--mantine-spacing-sm));
   padding-block: var(--mantine-spacing-md);
+  /* Room for an overlay scrollbar, which takes no layout space and would cover the + buttons. */
+  padding-right: var(--mantine-spacing-sm);
   overflow-y: auto;
 }
 
