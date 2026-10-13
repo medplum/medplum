@@ -8,9 +8,9 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # On-Behalf-Of
 
-The Medplum API supports an "On-Behalf-Of" feature to enable a Customer Server Side App to act on behalf of a Medplum user.
+On-Behalf-Of lets your backend authenticate as a privileged `ClientApplication` and supply a user's membership context for each Medplum request. Medplum applies the delegated membership's access policy and can record both the application and the user in resource metadata.
 
-This feature is designed to enable a common Medplum architectural pattern where the Customer Server Side App is the only system component that interacts with Medplum Server.
+This is application authentication with user delegation. A backend using [server-held token exchange](/docs/auth/token-exchange#server-held-medplum-tokens) instead authenticates its Medplum requests with the user's exchanged token, without an On-Behalf-Of header.
 
 ## Overview
 
@@ -18,30 +18,30 @@ Consider this common Medplum architectural pattern:
 
 ![On-Behalf-Of](./on-behalf-of.webp)
 
-Here, the Medplum "Customer" has a custom End User App and a Server Side App to enable their business requirements.
-
-In this model, the Customer Server Side App is the only system component that interacts with Medplum Server. In this model, the Medplum Server is more like an internal data store.
-
-Historically, it was difficult to use this model and take advantage of many Medplum features related to Medplum authentication (author tracking, access policies, etc).
-
-Now, with the "On-Behalf-Of" feature, the Customer Server Side App can act on behalf of a Medplum user.
+Your backend authenticates the person using your application's login system, resolves the corresponding Medplum membership, and attaches that context to outgoing Medplum requests. The delegation header identifies the user context; it does not authenticate the person to your backend.
 
 ## How to Use
 
-First, the Customer Server Side App must authenticate with Medplum Server as a `ClientApplication`. This is the same as any other Medplum `ClientApplication`.
+### Authenticate the application
 
-The only requirement for the `ClientApplication` is that it has [Project Admin](/docs/access/admin#project-admin) rights. This is because the `ClientApplication` will be acting on behalf of a Medplum ProjectMembership.
+Authenticate your backend as a `ClientApplication` with [Project Admin](/docs/access/admin#project-admin) rights. Follow [Client Credentials](/docs/auth/client-credentials) to obtain an application access token. On-Behalf-Of also supports Basic Authentication. Keep these application credentials on the trusted backend.
 
-Then, when making API requests, the Customer Server Side App must include an `X-Medplum-On-Behalf-Of` HTTP header. The value of this header can be either:
+### Resolve and attach user context
 
-1. A `ProjectMembership` ID - This is the most direct and explicit way to specify the Medplum user. The Customer Server Side App would presumably store this id in its own database.
-2. A profile ID such as `Patient` or `Practitioner` - This is a more natural value for the Customer Server Side App to use, but requires a lookup to find the corresponding `ProjectMembership`.
+Authenticate the incoming user request and resolve its Medplum membership using a mapping controlled by your backend. Include the `X-Medplum-On-Behalf-Of` header on each outgoing request. The value can be either:
+
+1. A membership reference, `ProjectMembership/{id}`. This explicitly selects the membership stored in your backend's mapping.
+2. A profile reference, such as `Patient/{id}` or `Practitioner/{id}`. Medplum looks up the corresponding `ProjectMembership` in the application's project.
 
 For more information on `ProjectMemberships` and profile resources, see the [User Management Guide](/docs/user-management).
 
 The `X-Medplum-On-Behalf-Of` header is only valid for the current request. It is not stored or persisted in any way.
 
-The `X-Medplum-On-Behalf-Of` feature is compatible with both JWT access tokens and Basic Authentication.
+### Handle missing or invalid context
+
+Without the header, Medplum uses the application's own access. A valid header for a different user can delegate to that user. Reject requests with missing or inconsistent user context before calling Medplum, and do not forward an arbitrary delegation header supplied by the caller.
+
+Treat a rejected delegation request as a failure; do not retry it without the header. Keep privileged application operations separate from handlers serving user requests.
 
 ## How it Works
 
@@ -69,7 +69,7 @@ Here is the same example using the Medplum SDK:
   {ExampleCode}
 </MedplumCodeBlock>
 
-If you want to apply the header to all requests, set a default header when constructing the client:
+For a client dedicated to one delegated membership, you can set the header at construction. Do not reuse that client for requests from other users or mutate a shared client's delegation context:
 
 <MedplumCodeBlock language="ts" selectBlocks="defaultHeadersOnBehalfOf">
   {ExampleCode}

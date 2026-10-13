@@ -7,7 +7,16 @@ import TabItem from '@theme/TabItem';
 
 ## Overview
 
-Medplum supports the [OAuth 2.0 Token Exchange](https://datatracker.ietf.org/doc/html/rfc8693) proposed standard. Token exchange provides a mechanism exchange an external access token for a Medplum access token without redirecting the user. This is useful when your application has already authenticated the user with an external identity provider, such as [Auth0](https://auth0.com/), and would access the medplum api services without requiring the user to log in again.
+Medplum supports [OAuth 2.0 Token Exchange](https://datatracker.ietf.org/doc/html/rfc8693). Your application supplies an external user access token, and Medplum validates it with the configured IDP and issues a user-scoped Medplum token. The exchange itself does not redirect the user.
+
+Use the shared setup and request format below, then follow the [client-held](#client-held-medplum-tokens) or [server-held](#server-held-medplum-tokens) implementation steps. Both use the same exchange endpoint. If Medplum should handle the external IDP callback during login, follow the [external IDP authorization-code flow](/docs/auth/external-identity-providers#authorization-code-flow).
+
+## Prerequisites
+
+- Obtain an external **access token** for the user through your application's login flow. An ID token or application session cookie is not a substitute for this input.
+- Configure an IDP UserInfo endpoint that accepts that access token.
+- Provision the Medplum user, profile, and project membership. A clinical `Patient` or `Practitioner` record alone is not a login; see [User Management](/docs/user-management).
+- Choose email matching or external ID matching consistently with your provisioning process. See [Using External IDs](/docs/user-management/external-ids).
 
 ## Set up your ClientApplication
 
@@ -61,6 +70,39 @@ The client makes a token exchange request to the token endpoint with an extensio
 :::
 
 The response will include a Medplum access token, which you can use to access the Medplum API. The Medplum SDK also provides the [`exchangeExternalAccessToken()`](/docs/sdk/core.medplumclient.exchangeexternalaccesstoken) helper method.
+
+## Client-held Medplum tokens
+
+In this implementation, your browser or native application performs the exchange and calls Medplum directly.
+
+1. Complete the external IDP login and obtain the user's access token.
+2. Call `exchangeExternalAccessToken(externalAccessToken, clientId, membershipId)` on the `MedplumClient` used by that user's application session. `clientId` selects the configured provider; `membershipId` is optional, but should be supplied when the user has more than one candidate membership.
+3. Await the exchange before making Medplum requests or rendering components that require an authenticated Medplum client. The SDK stores the resulting login state on that client and uses its Medplum token for subsequent requests.
+4. Manage the external and Medplum sessions separately. Apply platform-appropriate credential storage and use the [token management](/docs/auth/session-management) and [logout](/docs/auth/logout) documentation for the Medplum session.
+
+Use the SDK example in [Exchanging tokens](#exchanging-tokens). Keep the external token for APIs that accept it; use the resulting Medplum token for Medplum API calls. Do not include an application client secret in browser or native code.
+
+## Server-held Medplum tokens
+
+In this implementation, your backend performs the exchange and makes Medplum requests using the resulting **user-scoped token**. The client continues to authenticate to your backend through your application's existing session mechanism.
+
+1. Authenticate the incoming application request and obtain the external user access token associated with that session. If your application only has a session cookie, retrieve the external access token through your existing IDP integration; do not send the cookie as `subject_token`.
+2. Resolve the intended Medplum membership from your trusted identity-to-membership mapping. Check that the requested application context is authorized for that identity.
+3. Exchange the external access token using the same endpoint or SDK method as the client-held implementation. Use a `MedplumClient` and credential storage isolated to that user and session context; do not change the active login on a singleton shared across users.
+4. Make the user's Medplum requests with that authenticated client. Return the application's response to the caller while retaining the Medplum credentials on the backend. The resolved membership's access policy applies to these requests; an On-Behalf-Of header is not needed.
+
+The existing [Node.js token exchange example](https://github.com/medplum/medplum/tree/main/examples/medplum-token-exchange-demo) demonstrates the exchange call, with hosted `ClientApplication` configuration and self-hosted provider configuration documented in its README. It is a command-line example, not a complete session store or application proxy.
+
+### Backend session handling
+
+When incorporating the exchange into a running application:
+
+- **Token reuse:** If you cache credentials, bind entries to the authenticated identity, provider/client, membership, and application session. Reject inconsistent mappings and isolate any cached FHIR responses as well as tokens.
+- **Expiry and renewal:** Handle expiration and failed renewal explicitly. If no usable Medplum credential remains, obtain a valid external user token and exchange again, or require login. Never substitute an application token when a user-token request fails.
+- **Logout:** Revoke the relevant Medplum session using the [logout instructions](/docs/auth/logout), remove cached credentials, and end the application session according to your policy. External IDP logout is a separate integration concern.
+- **Live updates:** If the client never receives Medplum credentials, implement an authenticated backend-to-client delivery path. A server-held token does not give the browser a directly authenticated Medplum connection.
+
+**Server-held tokens and server-scoped users are different concepts.** Keeping the token on your backend works with a project-scoped user and a hosted `ClientApplication`. The configuration below concerns which memberships a provider can resolve, not where your application stores the token.
 
 ## Server-scoped users and the `membership_id` parameter (self hosted only)
 
@@ -127,7 +169,7 @@ The external IdP token only carries the external identity (email or `sub`). It h
 
 :::tip[Example]
 
-The [server-side token exchange example](https://github.com/medplum/medplum/tree/main/examples/medplum-token-exchange-demo) demonstrates this end to end: it configures a server-level `externalAuthProviders` entry, obtains an external token, and exchanges it for a Medplum token while optionally targeting a specific `membership_id`.
+The [Node.js token exchange example](https://github.com/medplum/medplum/tree/main/examples/medplum-token-exchange-demo) includes self-hosted provider configuration and an optional `membership_id`. Its hosted configuration remains limited to the `ClientApplication`'s project.
 
 :::
 

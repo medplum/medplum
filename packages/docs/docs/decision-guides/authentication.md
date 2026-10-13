@@ -98,7 +98,7 @@ Configure an external identity provider on the Medplum `ClientApplication`. The 
   - If users of the same application need different upstream IDPs, define how that routing will happen, such as through an identity broker.
 - **Best fit:** The application selects a known IDP or identity broker for its users.
 
-Implementation: [External Identity Providers](/docs/auth/external-identity-providers).
+Implementation: [Application-based routing](/docs/auth/external-identity-providers#application-based-routing).
 
 ### Option C: External IDP with domain-based routing
 
@@ -151,7 +151,7 @@ Often called **three-legged OAuth**, this flow lets Medplum handle the external 
   - A Medplum logout does not by itself define what happens to the external IDP's SSO session; choose whether users should be signed out there too.
 - **Best fit:** A redirect login fits the application and Medplum is the primary client API.
 
-Implementation: [External Identity Providers](/docs/auth/external-identity-providers).
+Implementation: [External IDP authorization-code flow](/docs/auth/external-identity-providers#authorization-code-flow).
 
 ### Option B: Token exchange
 
@@ -204,7 +204,7 @@ Your backend exchanges the authenticated user's external token, retains the resu
 
 For server storage, bind cached tokens to the authenticated identity, membership, and session context. Validate incoming requests and reject inconsistent mappings. Never reuse another user's token or silently fall back to an application credential when user authentication fails.
 
-Implementation: [Token Exchange](/docs/auth/token-exchange).
+Implementation: [Shared token exchange setup](/docs/auth/token-exchange#set-up-your-clientapplication), [client-held tokens](/docs/auth/token-exchange#client-held-medplum-tokens), and [server-held tokens](/docs/auth/token-exchange#server-held-medplum-tokens).
 
 ### Option C: On-Behalf-Of
 
