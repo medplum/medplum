@@ -36,7 +36,15 @@ const sidebars: SidebarsConfig = {
       items: [
         {
           type: 'category',
-          label: 'Designing Your Workflows',
+          label: 'Application Design',
+          items: [
+            'decision-guides/authentication',
+            { type: 'doc', id: 'decision-guides/access-control', label: 'Access Control and Tenancy' },
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Clinical and Operational Workflows',
           items: [
             'decision-guides/intake',
             'decision-guides/scheduling',
@@ -51,13 +59,9 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: 'Designing Your Application',
-          items: [
-            'decision-guides/authentication',
-            { type: 'doc', id: 'decision-guides/access-control', label: 'Access Control and Tenancy' },
-          ],
+          label: 'Implementation and Rollout',
+          items: ['decision-guides/data-migration'],
         },
-        'decision-guides/data-migration',
       ],
     },
     {

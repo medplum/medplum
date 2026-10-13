@@ -5,11 +5,29 @@ sidebar_position: 3
 
 # Decision Guides
 
-Use these guides to choose an approach before implementing a workflow or application architecture. Each guide connects your requirements to recommended approaches, alternatives, and tradeoffs.
+Use these guides to make application design, workflow, and rollout decisions before implementation. Each guide connects your requirements to recommended approaches, alternatives, and tradeoffs.
 
 Decision guides help you decide what to build and why. The linked technical docs explain configuration, data models, APIs, and implementation examples.
 
-## Designing Your Workflows
+## Application Design
+
+Define the identity, tenancy, and access rules shared across your workflows.
+
+### Authentication
+
+Choose account matching, identity providers, and token-flow architecture, including client or server token storage and user-scoped access versus On-Behalf-Of.
+
+- **[Decision Guide →](/docs/decision-guides/authentication)**
+- **Docs:** [Authentication](/docs/auth)
+
+### Access Control and Tenancy
+
+Scope your authorization model – user types and organizational structure, multi-tenancy and patient/practitioner sharing, role inventory and permission mechanics, admin structure, and optional patterns like SMART on FHIR and IP access rules.
+
+- **[Decision Guide →](/docs/decision-guides/access-control)**
+- **Docs:** [Authorization and Access Control](/docs/access)
+
+## Clinical and Operational Workflows
 
 Decide how people and systems carry out a clinical or operational process, including ownership, handoffs, and exceptions.
 
@@ -76,25 +94,11 @@ Scope your billing workflow – charge capture, claims and clearinghouse integra
 - **[Decision Guide →](/docs/decision-guides/rcm-billing)**
 - **Docs:** [Billing and Payments](/docs/billing)
 
-## Designing Your Application
+## Implementation and Rollout
 
-Define the identity, tenancy, and access rules shared across your workflows.
+Plan the transition to Medplum and how your team will validate and introduce the application into use.
 
-### Authentication
-
-Choose account matching, identity providers, and token-flow architecture, including client or server token storage and user-scoped access versus On-Behalf-Of.
-
-- **[Decision Guide →](/docs/decision-guides/authentication)**
-- **Docs:** [Authentication](/docs/auth)
-
-### Access Control and Tenancy
-
-Scope your authorization model – user types and organizational structure, multi-tenancy and patient/practitioner sharing, role inventory and permission mechanics, admin structure, and optional patterns like SMART on FHIR and IP access rules.
-
-- **[Decision Guide →](/docs/decision-guides/access-control)**
-- **Docs:** [Authorization and Access Control](/docs/access)
-
-## Data Migration
+### Data Migration
 
 Scope a migration to Medplum – source-system inventory, data ownership, identity and mapping governance, import operations, validation, testing, cutover, and acceptance.
 
