@@ -5,6 +5,7 @@ import { createReference, getDateProperty, Operator } from '@medplum/core';
 import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { URL } from 'node:url';
+import { getLoginProject } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
@@ -12,7 +13,7 @@ import { getProjectScopedUrl } from '../util/url';
 import { getClientRedirectUri } from './clients';
 import type { MedplumIdTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
-import { getClientApplication } from './utils';
+import { getClientApplication, isLoginReasonRequired } from './utils';
 
 /*
  * Handles the OAuth/OpenID Authorization Endpoint.
@@ -221,6 +222,11 @@ async function getExistingLogin(req: Request, client: ClientApplication): Promis
   const age = (Date.now() - authTime.getTime()) / 1000;
   const maxAge = req.query.max_age ? Number.parseInt(req.query.max_age as string, 10) : 3600;
   if (age > maxAge) {
+    return undefined;
+  }
+
+  // Projects that require a login reason must authenticate and enter a new reason every time
+  if (isLoginReasonRequired(await getLoginProject(login))) {
     return undefined;
   }
 

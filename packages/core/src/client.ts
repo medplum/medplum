@@ -553,6 +553,8 @@ export interface LoginAuthenticationResponse {
   readonly email?: string;
   readonly code?: string;
   readonly memberships?: ProjectMembership[];
+  /** True when the project requires the user to enter a reason before the login is granted. */
+  readonly reasonRequired?: boolean;
 }
 
 export interface LoginProfileResponse {

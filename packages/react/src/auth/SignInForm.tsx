@@ -12,6 +12,7 @@ import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
 import type { ChooseScopeFormProps } from './ChooseScopeForm';
 import { ChooseScopeForm } from './ChooseScopeForm';
+import { LoginReasonForm } from './LoginReasonForm';
 import { MfaEnrollForm } from './MfaEnrollForm';
 import type { MfaMethod } from './MfaForm';
 import { MfaVerificationForm } from './MfaVerificationForm';
@@ -37,8 +38,9 @@ export interface SignInFormProps extends BaseLoginRequest {
  * 1) Authentication - identify the user
  * 2) MFA - If MFA is enabled, prompt for MFA code
  * 3) Choose profile - If the user has multiple profiles, prompt to choose one
- * 4) Choose scope - If the user has multiple scopes, prompt to choose one
- * 5) Success - Return to the caller with either a code or a redirect
+ * 4) Login reason - If the project requires a login reason, prompt for one
+ * 5) Choose scope - If the user has multiple scopes, prompt to choose one
+ * 6) Success - Return to the caller with either a code or a redirect
  * @param props - The SignInForm React props.
  * @returns The SignInForm React node.
  */
@@ -64,6 +66,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
   const [mfaEmail, setMfaEmail] = useState<string>();
   const [mfaEmailMode, setMfaEmailMode] = useState(false);
   const [memberships, setMemberships] = useState<ProjectMembership[]>();
+  const [reasonRequired, setReasonRequired] = useState(false);
 
   const handleCode = useCallback(
     (code: string): void => {
@@ -89,6 +92,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
       setEnrollQrCode(response.enrollQrCode);
       setEnrollMethods(response.allowedMfaMethods);
       setMfaRequired(!!response.mfaRequired);
+      setReasonRequired(!!response.reasonRequired);
 
       if (response.mfaRequired) {
         const methods = response.mfaMethods;
@@ -214,6 +218,8 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
           );
         } else if (props.projectId === 'new') {
           return <NewProjectForm login={login} handleAuthResponse={handleAuthResponse} />;
+        } else if (reasonRequired) {
+          return <LoginReasonForm login={login} handleAuthResponse={handleAuthResponse} />;
         } else if (memberships) {
           return <ChooseProfileForm login={login} memberships={memberships} handleAuthResponse={handleAuthResponse} />;
         } else if (props.chooseScopes) {

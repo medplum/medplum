@@ -3464,6 +3464,21 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "Login.reason",
+            "path" : "Login.reason",
+            "definition" : "The user-provided reason for this login. Required when the project has the loginReasonRequired setting enabled.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Login.reason",
+              "min" : 0,
+              "max" : "1"
+            }
           }
         ]
       }

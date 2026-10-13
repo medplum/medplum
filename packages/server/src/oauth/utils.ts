@@ -432,6 +432,15 @@ export function getClientApplicationMembership(
 }
 
 /**
+ * Returns true if the project requires users to enter a reason before a token is granted.
+ * @param project - The project.
+ * @returns True if a login reason is required.
+ */
+export function isLoginReasonRequired(project: Project | undefined): boolean {
+  return Boolean(project?.setting?.find((s) => s.name === 'loginReasonRequired')?.valueBoolean);
+}
+
+/**
  * Sets the login membership.
  * Ensures that the login satisfies the project requirements.
  * Most users will only have one membership, so this happens immediately after login.
@@ -518,8 +527,8 @@ export async function setLoginMembership(
     membership: createReference(membership),
   };
 
-  if (project.superAdmin) {
-    // Disable refresh tokens for super admins
+  if (project.superAdmin || isLoginReasonRequired(project)) {
+    // Disable refresh tokens for super admins, and for projects that require a reason for every login
     updatedLogin.refreshSecret = undefined;
   }
 
@@ -627,6 +636,14 @@ export async function getAuthTokens(
 
   if (!login.membership) {
     throw new OperationOutcomeError(badRequest('Login missing profile'));
+  }
+
+  if (user.resourceType === 'User' && login.project) {
+    // A login reason grants exactly one token: no refreshes, no reuse
+    const project = await getGlobalSystemRepo().readReference<Project>(login.project);
+    if (isLoginReasonRequired(project) && (login.granted || !login.reason)) {
+      throw new OperationOutcomeError(badRequest('Login reason required'));
+    }
   }
 
   if (!login.granted) {
