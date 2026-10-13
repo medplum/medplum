@@ -1,8 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, OperationOutcomeError } from '@medplum/core';
-import type { Bundle, HealthcareService, Location } from '@medplum/fhirtypes';
+import {
+  badRequest,
+  OperationOutcomeError,
+  REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_MEDICAL_NECESSITY_CODE,
+  REQUIRES_PROCEDURE_CODE,
+  SCHEDULING_ELIGIBILITY_SYSTEM,
+} from '@medplum/core';
+import type { Bundle, Coding, HealthcareService, HealthcareServiceEligibility, Location } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
   getHealthcareServiceSchedulingParameterValues,
@@ -253,6 +260,46 @@ describe('VisitTypePage', () => {
     expect(onSynced).not.toHaveBeenCalled();
     expect(screen.getByLabelText(/Name/)).toHaveValue('Initial Visit (mine)');
     expect(saveBar()).toBeInTheDocument();
+  });
+
+  describe('booking requirements', () => {
+    const requirement = (code: string): Coding => ({ system: SCHEDULING_ELIGIBILITY_SYSTEM, code });
+    const asks = (code: string): HealthcareServiceEligibility => ({ code: { coding: [requirement(code)] } });
+
+    test('ticking one stores it beside what the visit type already asks for, leaving other eligibility alone', async () => {
+      const adultsOnly: HealthcareServiceEligibility = { code: { text: 'Adults only' }, comment: 'From intake' };
+      const { onSynced } = await setup({ ...initialVisit, eligibility: [adultsOnly, asks(REQUIRES_DIAGNOSIS_CODE)] });
+      expect(screen.getByRole('checkbox', { name: 'Require diagnosis code(s)' })).toBeChecked();
+      expect(screen.getByRole('checkbox', { name: 'Require procedure code(s)' })).not.toBeChecked();
+
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Require procedure code(s)' }));
+      await userEvent.click(saveButton());
+
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      expect(lastSynced(onSynced).eligibility).toEqual([
+        adultsOnly,
+        asks(REQUIRES_DIAGNOSIS_CODE),
+        asks(REQUIRES_PROCEDURE_CODE),
+      ]);
+    });
+
+    test('unticking one removes only its code, keeping anything else its entry holds', async () => {
+      const referral: Coding = { system: 'http://example.org/eligibility', code: 'referral' };
+      const { onSynced } = await setup({
+        ...initialVisit,
+        eligibility: [
+          { code: { coding: [referral, requirement(REQUIRES_DIAGNOSIS_CODE)] } },
+          asks(REQUIRES_MEDICAL_NECESSITY_CODE),
+        ],
+      });
+
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Require diagnosis code(s)' }));
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Require medical necessity confirmation' }));
+      await userEvent.click(saveButton());
+
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      expect(lastSynced(onSynced).eligibility).toEqual([{ code: { coding: [referral] } }]);
+    });
   });
 
   describe('creating', () => {

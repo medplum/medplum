@@ -847,6 +847,7 @@ export const ConfigFixtures = [
   GroupEducationService,
   UnconfiguredService,
   DiscontinuedService,
+  IronInfusionService,
   ...CatalogServices,
   DrNguyenPractitioner,
   DrNguyenSchedule,

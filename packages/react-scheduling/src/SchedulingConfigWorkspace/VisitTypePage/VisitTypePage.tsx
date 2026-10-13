@@ -1,9 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Group, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
-import type { WithId } from '@medplum/core';
-import { deepClone, deepEquals, normalizeErrorString } from '@medplum/core';
-import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
+import { Alert, Checkbox, Group, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
+import type { SchedulingRequirement, WithId } from '@medplum/core';
+import {
+  deepClone,
+  deepEquals,
+  getSchedulingRequirements,
+  isSchedulingRequirement,
+  normalizeErrorString,
+  REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_MEDICAL_NECESSITY_CODE,
+  REQUIRES_PROCEDURE_CODE,
+  SCHEDULING_ELIGIBILITY_SYSTEM,
+  SCHEDULING_REQUIREMENT_CODES,
+} from '@medplum/core';
+import type { Coding, HealthcareService, HealthcareServiceEligibility, Location, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useId, useState } from 'react';
@@ -61,6 +72,8 @@ interface VisitTypeFields {
   readonly location: Reference<Location>[];
   readonly parameters: SchedulingParameterValues;
   readonly availability: AvailabilityFieldsValue;
+  /** What booking must collect for it, in `SCHEDULING_REQUIREMENT_CODES` order so equal sets compare equal. */
+  readonly requirements: SchedulingRequirement[];
 }
 
 const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri'] as const;
@@ -73,7 +86,14 @@ function fieldsOf(service: WithId<HealthcareService> | undefined): VisitTypeFiel
     for (const day of WEEKDAYS) {
       weekly[day] = { available: true, ranges: [{ ...DEFAULT_RANGE }] };
     }
-    return { name: '', active: false, location: [], parameters: {}, availability: { overriding: true, weekly } };
+    return {
+      name: '',
+      active: false,
+      location: [],
+      parameters: {},
+      availability: { overriding: true, weekly },
+      requirements: [],
+    };
   }
   return {
     name: service.name ?? '',
@@ -81,7 +101,49 @@ function fieldsOf(service: WithId<HealthcareService> | undefined): VisitTypeFiel
     location: service.location ?? [],
     parameters: getHealthcareServiceSchedulingParameterValues(service),
     availability: initialAvailabilityFieldsValue(service),
+    requirements: inRequirementOrder(getSchedulingRequirements(service)),
   };
+}
+
+function inRequirementOrder(requirements: Iterable<string>): SchedulingRequirement[] {
+  const named = new Set(requirements);
+  return SCHEDULING_REQUIREMENT_CODES.filter((code) => named.has(code));
+}
+
+/**
+ * Sets which requirements a visit type's eligibility names. Only requirement codings are added or removed, and an
+ * entry is dropped only when it held nothing but requirements no longer wanted, so eligibility another tool
+ * recorded is kept as it was.
+ * @param eligibility - The visit type's eligibility as stored.
+ * @param requirements - The requirements it should name.
+ * @returns The eligibility to store, or undefined when none is left.
+ */
+function withRequirements(
+  eligibility: HealthcareServiceEligibility[] | undefined,
+  requirements: readonly SchedulingRequirement[]
+): HealthcareServiceEligibility[] | undefined {
+  const unwanted = (coding: Coding): boolean =>
+    coding.system === SCHEDULING_ELIGIBILITY_SYSTEM &&
+    isSchedulingRequirement(coding.code) &&
+    !requirements.includes(coding.code);
+  const kept: HealthcareServiceEligibility[] = [];
+  for (const entry of eligibility ?? []) {
+    const { code, ...rest } = entry;
+    const { coding = [], ...concept } = code ?? {};
+    const remaining = coding.filter((c) => !unwanted(c));
+    if (remaining.length === coding.length) {
+      kept.push(entry);
+    } else if (remaining.length > 0 || Object.keys(concept).length > 0 || Object.keys(rest).length > 0) {
+      kept.push({ ...rest, code: { ...concept, ...(remaining.length > 0 && { coding: remaining }) } });
+    }
+  }
+  const named = getSchedulingRequirements({ resourceType: 'HealthcareService', eligibility: kept });
+  for (const code of requirements) {
+    if (!named.has(code)) {
+      kept.push({ code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code }] } });
+    }
+  }
+  return kept.length > 0 ? kept : undefined;
 }
 
 /**
@@ -118,12 +180,21 @@ function buildVisitType(
   if (creating || !deepEquals(fields.availability, initial.availability)) {
     draft.availableTime = fromWeeklyAvailability(fields.availability.weekly);
   }
+  if (!deepEquals(fields.requirements, initial.requirements)) {
+    const eligibility = withRequirements(draft.eligibility, fields.requirements);
+    if (eligibility) {
+      draft.eligibility = eligibility;
+    } else {
+      delete draft.eligibility;
+    }
+  }
   return draft;
 }
 
 /**
  * The page for one visit type (`HealthcareService`): its name, whether it is active, the service facilities
- * it is offered at, its scheduling parameters, and its default weekly hours, edited in place and saved together.
+ * it is offered at, its scheduling parameters, its default weekly hours, and what booking must collect for it,
+ * edited in place and saved together.
  *
  * It opens on what is stored and is not reset by a change of props, so the caller remounts it with a `key`
  * when the visit type it shows is replaced.
@@ -283,6 +354,18 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
           onChange={(location) => update({ location })}
           serviceName={serviceName}
         />
+        <Checkbox.Group
+          label="Booking requirements"
+          description="What schedulers must enter to book this visit type, e.g. for prior authorization."
+          value={fields.requirements}
+          onChange={(value) => update({ requirements: inRequirementOrder(value) })}
+        >
+          <Stack gap="sm" mt="xs">
+            <Checkbox value={REQUIRES_PROCEDURE_CODE} label="Require procedure code(s)" />
+            <Checkbox value={REQUIRES_DIAGNOSIS_CODE} label="Require diagnosis code(s)" />
+            <Checkbox value={REQUIRES_MEDICAL_NECESSITY_CODE} label="Require medical necessity confirmation" />
+          </Stack>
+        </Checkbox.Group>
       </ConfigSection>
 
       <ConfigSection
