@@ -200,8 +200,13 @@ describe('CcdaViewer', () => {
       <paragraph styleCode="Bold">Bold text</paragraph>
       <content revised="delete">Deleted text</content>
       <list listType="ordered"><caption>Steps</caption><item>First</item><item>Second</item></list>
-      <paragraph>H<sub>2</sub>O and x<sup>2</sup><br/>Next line</paragraph>`;
-    render(<CcdaViewer xml={ccda(`<structuredBody>${section('1', 'Notes', text)}</structuredBody>`)} />);
+      <paragraph>H<sub>2</sub>O and x<sup>2</sup><br/>Next line</paragraph>
+      <pre>col1  col2
+val1  val2</pre>`;
+    const { container } = render(
+      <CcdaViewer xml={ccda(`<structuredBody>${section('1', 'Notes', text)}</structuredBody>`)} />
+    );
+    expect(container.querySelector('pre')?.textContent).toBe('col1  col2\nval1  val2');
     expect(screen.getByText('Bold text')).toHaveClass('bold');
     expect(screen.queryByText('Deleted text')).not.toBeInTheDocument();
     expect(screen.getByText('Steps')).toBeInTheDocument();

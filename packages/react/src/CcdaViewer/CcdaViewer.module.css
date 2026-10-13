@@ -1,3 +1,8 @@
+/* Hosts like Timeline set pre-wrap, which would render the document's indentation */
+.root {
+  white-space: normal;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
@@ -30,7 +35,7 @@
 
 .narrative {
   font-size: var(--mantine-font-size-sm);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .narrative p {

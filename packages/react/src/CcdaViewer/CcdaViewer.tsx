@@ -143,7 +143,7 @@ function CcdaDocument(props: { readonly document: Element }): JSX.Element {
   const isCollapsed = (key: string): boolean => collapsed[key] ?? collapseAll;
 
   return (
-    <Stack gap="sm">
+    <Stack gap="sm" className={classes.root}>
       <Title order={3}>
         {textOf(childEl(document, 'title')) || formatCdaCode(childEl(document, 'code')) || 'Clinical Document'}
       </Title>

@@ -43,7 +43,7 @@ function renderNode(node: ChildNode, key: number): ReactNode {
         </p>
       );
     case 'pre':
-      return <pre key={key}>{textOf(el)}</pre>;
+      return <pre key={key}>{el.textContent}</pre>;
     case 'content':
       if (attr(el, 'revised') === 'delete') {
         return null;
