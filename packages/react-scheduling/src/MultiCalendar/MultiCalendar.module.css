@@ -2,9 +2,20 @@
   /* Appointments are drawn as a light tint of their calendar color, with a bar of the full color
    * down the leading edge. The tint is opaque, so the grid and other events don't show through,
    * and a ring of the background keeps neighboring events of one color apart.
+   * `--appointment-bar`, `--appointment-tint` and `--appointment-text` are worked out from
+   * `--fc-event-color`; a color can set its own in their place.
    * `--emphasis` fades the bar and text toward the background, as hovering does; `--past-fade`
    * fades the bar, text, tint and outline, for events that have ended. */
   :global(.appointment) {
+    --appointment-bar: var(--fc-event-color);
+    --appointment-tint: light-dark(
+      color-mix(in oklab, var(--fc-event-color) 10%, var(--fc-classic-background)),
+      color-mix(in oklab, var(--fc-event-color) 22%, var(--fc-classic-background))
+    );
+    --appointment-text: light-dark(
+      color-mix(in oklch, var(--fc-event-color), black 40%),
+      color-mix(in oklch, var(--fc-event-color), white 55%)
+    );
     --emphasis: 100%;
     --past-fade: 1;
 
@@ -16,26 +27,19 @@
         to right,
         color-mix(
             in oklab,
-            var(--fc-event-color) calc(var(--emphasis) * var(--past-fade)),
+            var(--appointment-bar) calc(var(--emphasis) * var(--past-fade)),
             var(--fc-classic-background)
           )
           4px,
         transparent 4px
       ),
-      light-dark(
-        color-mix(in oklab, var(--fc-event-color) calc(10% * var(--past-fade)), var(--fc-classic-background)),
-        color-mix(in oklab, var(--fc-event-color) calc(22% * var(--past-fade)), var(--fc-classic-background))
-      );
+      color-mix(in oklab, var(--appointment-tint) calc(100% * var(--past-fade)), var(--fc-classic-background));
 
     .eventInner,
     .eventTime {
       color: color-mix(
         in oklab,
-        light-dark(
-            color-mix(in oklch, var(--fc-event-color), black 40%),
-            color-mix(in oklch, var(--fc-event-color), white 55%)
-          )
-          calc(var(--emphasis) * var(--past-fade)),
+        var(--appointment-text) calc(var(--emphasis) * var(--past-fade)),
         var(--fc-classic-background)
       );
     }
@@ -64,7 +68,7 @@
      * would. Skipped while focused so FullCalendar's focus ring still shows. */
     &:not(:focus-visible) {
       outline: 2px dashed
-        color-mix(in oklab, var(--fc-event-color) calc(100% * var(--past-fade)), var(--fc-classic-background));
+        color-mix(in oklab, var(--appointment-bar) calc(100% * var(--past-fade)), var(--fc-classic-background));
       outline-offset: -2px;
     }
   }
