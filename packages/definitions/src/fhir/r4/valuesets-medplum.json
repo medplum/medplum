@@ -327,6 +327,11 @@
             "code": "async-batch",
             "display": "Async Batch",
             "definition": "Asynchronous processing of FHIR Batch requests for bulk data import"
+          },
+          {
+            "code": "archive",
+            "display": "Archive",
+            "definition": "Allow project admins to export a history-preserving archive of the project with Project/$archive"
           }
         ]
       }
