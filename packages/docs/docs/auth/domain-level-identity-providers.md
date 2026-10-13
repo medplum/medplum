@@ -9,6 +9,8 @@ A Domain-level Identity Provider (DL-IDP) is a server-level configuration that s
 
 Once a DL-IDP is enabled for mydomain.com, any user that attempts to sign in with an email on that domain (name@mydomain.com) will be prompted to authenticate using the configured provider. Enabling DL-IDPs will apply to _all_ emails at that domain, including dev accounts and name+text@mydomain.com type emails.
 
+This is **domain-based routing**: it selects the provider from the user's email domain. For an IDP selected by a particular application, see [application-based routing](/docs/auth/external-identity-providers#application-based-routing). The [authorization-code flow](/docs/auth/external-identity-providers#authorization-code-flow) describes how Medplum handles the external provider's callback.
+
 This guide demonstrates how to set up a DL-IDP, using Okta as an example provider.
 
 :::caution[Note]
