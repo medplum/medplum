@@ -5,7 +5,7 @@ sidebar_position: 3
 
 # Designing Your Workflows
 
-Decision guides are companion documents to the Medplum docs. Each one walks through the requirements questions and FHIR modeling decisions for a specific workflow area – _who_ uses it, _what_ data flows through it, _how_ it integrates with other systems, and which Medplum primitives best fit each requirement.
+Decision guides are companion documents to the Medplum docs. Each one walks through the requirements questions and FHIR modeling decisions for a workflow or application architecture area – _who_ uses it, _what_ data flows through it, _how_ it integrates with other systems, and which Medplum primitives best fit each requirement.
 
 The guides and the technical docs are designed to be used together:
 
@@ -78,6 +78,13 @@ Scope a migration to Medplum – source-system inventory, data ownership, identi
 
 - **[Decision Guide →](/docs/decision-guides/data-migration)**
 - **Docs:** [Migrating to Medplum](/docs/migration)
+
+### Authentication
+
+Choose account matching, identity providers, and token-flow architecture, including client or server token storage and user-scoped access versus On-Behalf-Of.
+
+- **[Decision Guide →](/docs/decision-guides/authentication)**
+- **Docs:** [Authentication](/docs/auth)
 
 ### Access Control
 

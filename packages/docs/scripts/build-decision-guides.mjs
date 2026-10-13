@@ -68,7 +68,15 @@ function buildDocx(slug, markdownBody, tmpDir) {
   fs.writeFileSync(tmpMd, content);
 
   const tmpDocx = path.join(tmpDir, `${slug}.docx`);
-  sh('pandoc', [tmpMd, '--from=markdown-implicit_figures', `--reference-doc=${REFERENCE_DOCX}`, '-o', tmpDocx]);
+  // Resolve guide-local images even though the temporary Markdown lives elsewhere.
+  sh('pandoc', [
+    tmpMd,
+    '--from=markdown-implicit_figures',
+    `--resource-path=${DOCS_DIR}`,
+    `--reference-doc=${REFERENCE_DOCX}`,
+    '-o',
+    tmpDocx,
+  ]);
   return tmpDocx;
 }
 
