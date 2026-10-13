@@ -30,6 +30,12 @@ export async function createMedplumClient(
     await validateBaseUrl(options.baseUrl, fetchApi);
   }
 
+  // When logging in, discard any stored session so MedplumClient does not try to resume it.
+  // Resuming an expired session fails in the background and clears the profile storage.
+  if (!setupCredentials) {
+    storage.setObject('activeLogin', undefined);
+  }
+
   const medplumClient = new MedplumClient({
     fetch: fetchApi,
     baseUrl,
