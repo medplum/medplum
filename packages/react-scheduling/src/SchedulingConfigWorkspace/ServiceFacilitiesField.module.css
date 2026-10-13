@@ -1,0 +1,9 @@
+/* ServiceFacilitiesField.module.css */
+
+/*
+ * The input's own label is visually hidden under the field's visible one. As a block it takes no space, where as
+ * Mantine's inline-block it still held a line of its own.
+ */
+.sharedLabel :global(.mantine-InputWrapper-label) {
+  display: block;
+}

@@ -1145,7 +1145,7 @@ describe('ActorPage', () => {
       expect(saveBar()).toBeNull();
     });
 
-    test('a service facility linked by another system is listed apart from the field, locked', async () => {
+    test('a service facility linked by another system is shown locked, outside the input', async () => {
       await setup(drSmith, [], [role('theirs', [downtown], { linked: true })]);
 
       expect(await linkedFacilities()).toEqual([

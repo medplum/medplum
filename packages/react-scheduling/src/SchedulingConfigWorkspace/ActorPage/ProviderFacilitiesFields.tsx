@@ -1,11 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Group, Loader, Pill, Stack, Text, Tooltip, VisuallyHidden } from '@mantine/core';
+import { Alert, Loader } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { Location, Reference } from '@medplum/fhirtypes';
-import { IconLock } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useId } from 'react';
 import { ServiceFacilitiesField } from '../ServiceFacilitiesField';
 
 export interface ProviderFacilitiesFieldsProps {
@@ -31,39 +29,5 @@ export function ProviderFacilitiesFields(props: ProviderFacilitiesFieldsProps): 
   if (!value) {
     return <Loader size="sm" aria-label="Loading service facilities" />;
   }
-  return (
-    <>
-      {/* Above the field, so its open dropdown can't cover them. */}
-      {linked.length > 0 && <LinkedFacilities facilities={linked} />}
-      <ServiceFacilitiesField value={value} onChange={onChange} linked={linked} />
-    </>
-  );
-}
-
-function LinkedFacilities(props: { readonly facilities: readonly Reference<Location>[] }): JSX.Element {
-  const labelId = useId();
-  return (
-    <Stack gap={4}>
-      <Text size="sm" fw={500} id={labelId}>
-        Linked by another system
-      </Text>
-      <Group gap={6} role="list" aria-labelledby={labelId}>
-        {props.facilities.map((facility) => {
-          const name = facility.display ?? facility.reference ?? 'Unnamed service facility';
-          const description = `Another system linked ${name}, so it can't be removed here.`;
-          return (
-            <Tooltip key={facility.reference} label={description} multiline maw={280} withArrow>
-              <Pill role="listitem">
-                <Group gap={4} wrap="nowrap">
-                  <IconLock size={12} aria-hidden />
-                  {name}
-                  <VisuallyHidden>: {description}</VisuallyHidden>
-                </Group>
-              </Pill>
-            </Tooltip>
-          );
-        })}
-      </Group>
-    </Stack>
-  );
+  return <ServiceFacilitiesField value={value} onChange={onChange} linked={linked} />;
 }
