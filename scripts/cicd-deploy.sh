@@ -65,7 +65,7 @@ if [[ "$FILES_CHANGED" =~ deploy-introspection-schema.sh ]]; then
   DEPLOY_GRAPHIQL=true
 fi
 
-if [[ "$FILES_CHANGED" =~ examples/foomedical ]]; then
+if [[ "$FILES_CHANGED" =~ examples/foomedical ]] || [[ "$FILES_CHANGED" =~ deploy-foomedical.sh ]]; then
   DEPLOY_FOOMEDICAL=true
 fi
 
@@ -206,21 +206,24 @@ if [[ "$DEPLOY_STORYBOOK" = true ]]; then
   source ./scripts/deploy-storybook.sh
 fi
 
-if [[ "$DEPLOY_FOOMEDICAL" = true ]]; then
-  echo "Deploy foomedical"
-
-  # Unset the app's deploy env so Vite falls back to examples/foomedical/.env.defaults
-  (
-    unset MEDPLUM_BASE_URL MEDPLUM_CLIENT_ID MEDPLUM_REGISTER_ENABLED GOOGLE_CLIENT_ID RECAPTCHA_SITE_KEY
-    npm run build:all -- --force --filter=foomedical
-  )
-
-  source ./scripts/deploy-foomedical.sh
-fi
-
-# Deploy docs last since it is the slowest
+# Deploy docs near the end since it is the slowest
 if [[ "$DEPLOY_DOCS" = true ]]; then
   echo "Deploy docs"
   npm run build:docs
   source ./scripts/deploy-docs.sh
+fi
+
+# After docs so a foomedical failure can't block docs
+if [[ "$DEPLOY_FOOMEDICAL" = true ]]; then
+  echo "Deploy foomedical"
+
+  # Unset every var foomedical reads so Vite takes .env.defaults over the app's deploy env;
+  # --only because build:fast already built its dependencies
+  (
+    # shellcheck disable=SC2046
+    unset $(sed -n 's/^\([A-Z_][A-Z0-9_]*\)=.*/\1/p' examples/foomedical/.env.defaults)
+    npm run build:all -- --only --filter=foomedical
+  ) || exit 1
+
+  source ./scripts/deploy-foomedical.sh
 fi
