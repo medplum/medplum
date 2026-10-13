@@ -61,7 +61,7 @@ export function OfferingSummary(props: OfferingSummaryProps): JSX.Element {
 export interface OfferingMenuProps {
   readonly service: WithId<HealthcareService>;
   readonly onStopOffering: () => void;
-  /** Why the visit type can't be stopped on its own, which disables Stop offering and says why. */
+  /** Disables Stop offering, showing this as the reason. */
   readonly stopDisabledReason?: string;
 }
 

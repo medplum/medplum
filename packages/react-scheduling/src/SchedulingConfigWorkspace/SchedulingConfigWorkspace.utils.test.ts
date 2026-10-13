@@ -243,6 +243,17 @@ describe('getOfferings', () => {
     expect(found.map((item) => item.schedule.id)).toEqual(['s']);
   });
 
+  test('lists an actor whose Schedule offers every visit type, for an active visit type only', () => {
+    const everything = {
+      ...makeSchedule('s', 'Practitioner/dr-smith', []),
+      serviceType: [allServiceTypesCodeableConcept()],
+    };
+    const actors = [{ resource: drSmith, schedules: [everything] }];
+
+    expect(getOfferings(actors, configured).map((item) => item.schedule.id)).toEqual(['s']);
+    expect(getOfferings(actors, { ...configured, active: false })).toEqual([]);
+  });
+
   test('leaves out an actor that is turned off, or whose Schedule is, as booking skips both', () => {
     const left = makeSchedule('s', 'Practitioner/dr-left', [configured]);
     const paused = makeSchedule('t', 'Practitioner/dr-smith', [configured], { active: false });
@@ -274,17 +285,6 @@ describe('getOfferedServices', () => {
     };
 
     expect(getOfferedServices(versioned, new Map([[configured.id, configured]]))).toEqual([configured]);
-  });
-
-  test('lists an actor whose Schedule offers every visit type, for an active visit type only', () => {
-    const everything = {
-      ...makeSchedule('s', 'Practitioner/dr-smith', []),
-      serviceType: [allServiceTypesCodeableConcept()],
-    };
-    const actors = [{ resource: drSmith, schedules: [everything] }];
-
-    expect(getOfferings(actors, configured).map((item) => item.schedule.id)).toEqual(['s']);
-    expect(getOfferings(actors, { ...configured, active: false })).toEqual([]);
   });
 });
 

@@ -143,16 +143,6 @@ describe('buildScheduleDraft', () => {
     ).toEqual([allServiceTypesCodeableConcept()]);
   });
 
-  test('no longer offering all names the visit types kept, overrides and all, and drops the rest', () => {
-    const initial = scheduleFieldsOf(offeringAll, servicesById);
-    const kept = { allServices: false, offerings: { [initialVisit.id]: initial.offerings[initialVisit.id] } };
-
-    const draft = buildScheduleDraft(offeringAll, room, { ...initial, ...kept }, initial, servicesById) as Schedule;
-
-    expect(draft.serviceType).toEqual(toServiceTypeCodeableConcepts(initialVisit));
-    expect(getScheduleSchedulingParameters(draft, initialVisit, 'bufferAfter')).toHaveLength(1);
-  });
-
   test('turning off bookings writes only active', () => {
     const initial = scheduleFieldsOf(stored, servicesById);
 

@@ -157,6 +157,15 @@ export function getOfferedServices(
 }
 
 /**
+ * Whether offering every visit type covers this one, which it does only while the visit type is active.
+ * @param service - The visit type.
+ * @returns True when the marker makes it bookable.
+ */
+export function isCovered(service: HealthcareService): boolean {
+  return service.active !== false;
+}
+
+/**
  * What still needs finishing on an actor, as the sidebar marks it.
  * @param actor - The actor and its Schedules. The first Schedule is the one the workspace edits.
  * @returns The notices to show on its row.
@@ -273,10 +282,9 @@ export function getOfferings(
     if (!schedule || isActorTurnedOff(actor)) {
       return [];
     }
-    // The marker covers only active visit types, as booking does.
     const offered =
       serviceTypeIncludesService(schedule.serviceType, service) ||
-      (service.active !== false && serviceTypeIncludesAllServices(schedule.serviceType));
+      (isCovered(service) && serviceTypeIncludesAllServices(schedule.serviceType));
     return offered ? [{ actor, schedule }] : [];
   });
 }

@@ -181,9 +181,9 @@ async function chooseStopOffering(name: string): Promise<void> {
   await userEvent.click(await screen.findByRole('menuitem', { name: 'Stop offering' }));
 }
 
-function offeringAll(actor: string, customized?: WithId<HealthcareService>): Schedule {
+function offeringAll(actor: string, customized: WithId<HealthcareService>): Schedule {
   const schedule = { ...makeSchedule(actor, []), serviceType: [allServiceTypesCodeableConcept()] };
-  return customized ? setScheduleSchedulingParameterValues(schedule, customized, { bufferAfter: 10 }) : schedule;
+  return setScheduleSchedulingParameterValues(schedule, customized, { bufferAfter: 10 });
 }
 
 function entryNames(): string[] {

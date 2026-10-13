@@ -18,10 +18,7 @@ export interface OfferingsListProps {
   readonly actorName: string;
   /** The visit types offered, in the order they're listed. */
   readonly offeredServices: readonly WithId<HealthcareService>[];
-  /**
-   * Whether the Schedule offers every active visit type, so none can be stopped, or offered, on its own. Each
-   * can still be customized.
-   */
+  /** Whether the Schedule offers every active visit type, so none can be offered or stopped on its own. */
   readonly offersAllServices?: boolean;
   readonly openServiceId: string | null;
   readonly onOpenServiceIdChange: (id: string | null) => void;

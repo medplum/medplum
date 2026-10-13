@@ -5,7 +5,7 @@ import type { JSX } from 'react';
 import { useState } from 'react';
 import { ConfirmModal } from '../ConfirmModal';
 
-/** What offering every visit type would make bookable, to warn of before it's switched on. */
+/** What switching it on would make bookable. */
 export interface OfferAllCoverage {
   /** The active visit types it covers. */
   readonly total: number;
@@ -15,9 +15,7 @@ export interface OfferAllCoverage {
 
 /** What switching it off keeps. */
 export interface OfferAllKeeping {
-  /** The visit types still offered after. */
   readonly kept: number;
-  /** The visit types no longer offered after. */
   readonly dropped: number;
   /** Whether the visit types offered before it was switched on this time are among those kept. */
   readonly restoresEarlier: boolean;
@@ -32,8 +30,8 @@ export interface OfferAllSwitchProps {
 }
 
 /**
- * Switches an actor's Schedule between offering every active visit type and offering the ones it names, asking
- * first either way: on, saying what becomes bookable; off, saying what stops being offered.
+ * Switches an actor's Schedule between offering every active visit type and offering the ones it names, confirming
+ * either way.
  * @param props - The actor, whether it offers every visit type, and what switching would do.
  * @returns The switch.
  */
