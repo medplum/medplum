@@ -37,6 +37,7 @@ export interface FhirEventSource {
   slots: Slot[];
   appointments: Appointment[];
   color?: string;
+  className?: string;
 }
 
 export type ExtendedEvent =

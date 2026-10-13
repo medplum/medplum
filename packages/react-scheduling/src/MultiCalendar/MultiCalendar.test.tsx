@@ -336,6 +336,8 @@ describe('MultiCalendar', () => {
       renderWithMedplum(<MultiCalendar sources={sources} />, medplum);
       expect(getEventColor(/John Doe/)).toBe(DEFAULT_THEME.colors.indigo[7]);
       expect(getEventColor(/Jane Williams/)).toBe(DEFAULT_THEME.colors.teal[7]);
+      expect(screen.getByText(/John Doe/).closest('.event')).toHaveClass('color-indigo');
+      expect(screen.getByText(/Jane Williams/).closest('.event')).toHaveClass('color-teal');
     });
   });
 });
