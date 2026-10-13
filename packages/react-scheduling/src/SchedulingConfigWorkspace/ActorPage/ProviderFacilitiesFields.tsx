@@ -33,8 +33,9 @@ export function ProviderFacilitiesFields(props: ProviderFacilitiesFieldsProps): 
   }
   return (
     <>
-      <ServiceFacilitiesField value={value} onChange={onChange} linked={linked} />
+      {/* Above the field, so its open dropdown can't cover them. */}
       {linked.length > 0 && <LinkedFacilities facilities={linked} />}
+      <ServiceFacilitiesField value={value} onChange={onChange} linked={linked} />
     </>
   );
 }
