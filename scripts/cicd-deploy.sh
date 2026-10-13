@@ -36,6 +36,7 @@ echo "$FILES_CHANGED"
 
 DEPLOY_APP=false
 DEPLOY_DOCS=false
+DEPLOY_FOOMEDICAL=false
 DEPLOY_GRAPHIQL=false
 DEPLOY_SERVER=false
 DEPLOY_STORYBOOK=false
@@ -55,12 +56,17 @@ fi
 if [[ "$FILES_CHANGED" =~ cicd-deploy.sh ]]; then
   DEPLOY_APP=true
   DEPLOY_DOCS=true
+  DEPLOY_FOOMEDICAL=true
   DEPLOY_GRAPHIQL=true
   DEPLOY_SERVER=true
 fi
 
 if [[ "$FILES_CHANGED" =~ deploy-introspection-schema.sh ]]; then
   DEPLOY_GRAPHIQL=true
+fi
+
+if [[ "$FILES_CHANGED" =~ examples/foomedical ]]; then
+  DEPLOY_FOOMEDICAL=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/app ]]; then
@@ -74,6 +80,7 @@ fi
 if [[ "$FILES_CHANGED" =~ packages/core ]]; then
   DEPLOY_APP=true
   DEPLOY_DOCS=true
+  DEPLOY_FOOMEDICAL=true
   DEPLOY_SERVER=true
 fi
 
@@ -111,11 +118,13 @@ fi
 # we need to be careful not to use a matching prefix here.
 if [[ "$FILES_CHANGED" =~ packages/react/ ]]; then
   DEPLOY_APP=true
+  DEPLOY_FOOMEDICAL=true
   DEPLOY_STORYBOOK=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/react-hooks ]]; then
   DEPLOY_APP=true
+  DEPLOY_FOOMEDICAL=true
   DEPLOY_STORYBOOK=true
 fi
 
@@ -126,6 +135,7 @@ fi
 if [[ "$FORCE" = true ]]; then
   DEPLOY_APP=true
   DEPLOY_DOCS=true
+  DEPLOY_FOOMEDICAL=true
   DEPLOY_GRAPHIQL=true
   DEPLOY_SERVER=true
   DEPLOY_STORYBOOK=true
@@ -145,7 +155,7 @@ read -r -d '' PAYLOAD <<- EOM
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": "Deploying ${ESCAPED_COMMIT_MESSAGE}\\n\\n* Deploy app: ${DEPLOY_APP}\\n\\n* Deploy docs: ${DEPLOY_DOCS}\\n\\n* Deploy graphiql: ${DEPLOY_GRAPHIQL}\\n\\n* Deploy server: ${DEPLOY_SERVER}\\n\\n* Deploy storybook: ${DEPLOY_STORYBOOK}"
+        "text": "Deploying ${ESCAPED_COMMIT_MESSAGE}\\n\\n* Deploy app: ${DEPLOY_APP}\\n\\n* Deploy docs: ${DEPLOY_DOCS}\\n\\n* Deploy foomedical: ${DEPLOY_FOOMEDICAL}\\n\\n* Deploy graphiql: ${DEPLOY_GRAPHIQL}\\n\\n* Deploy server: ${DEPLOY_SERVER}\\n\\n* Deploy storybook: ${DEPLOY_STORYBOOK}"
       }
     }
   ]
@@ -194,6 +204,18 @@ if [[ "$DEPLOY_STORYBOOK" = true ]]; then
   echo "Deploy storybook"
   npm run build:all -- --filter=@medplum/storybook
   source ./scripts/deploy-storybook.sh
+fi
+
+if [[ "$DEPLOY_FOOMEDICAL" = true ]]; then
+  echo "Deploy foomedical"
+
+  # Unset the app's deploy env so Vite falls back to examples/foomedical/.env.defaults
+  (
+    unset MEDPLUM_BASE_URL MEDPLUM_CLIENT_ID MEDPLUM_REGISTER_ENABLED GOOGLE_CLIENT_ID RECAPTCHA_SITE_KEY
+    npm run build:all -- --force --filter=foomedical
+  )
+
+  source ./scripts/deploy-foomedical.sh
 fi
 
 # Deploy docs last since it is the slowest

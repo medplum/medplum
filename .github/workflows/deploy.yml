@@ -82,6 +82,7 @@ jobs:
           GITHUB_BEFORE: ${{ github.event.before }}
           APP_BUCKET: ${{ secrets.APP_BUCKET }}
           DOCS_DESTINATION: www.medplum.com
+          FOOMEDICAL_BUCKET: foomedical.com
           GRAPHIQL_BUCKET: graphiql.medplum.com
           GRAPHIQL_AWS_REGION: us-east-1
           AWS_REGION: ${{ secrets.AWS_REGION }}
