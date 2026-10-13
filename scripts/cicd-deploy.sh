@@ -38,6 +38,7 @@ DEPLOY_APP=false
 DEPLOY_DOCS=false
 DEPLOY_FOOMEDICAL=false
 DEPLOY_GRAPHIQL=false
+DEPLOY_PROVIDER=false
 DEPLOY_SERVER=false
 DEPLOY_STORYBOOK=false
 
@@ -58,6 +59,7 @@ if [[ "$FILES_CHANGED" =~ cicd-deploy.sh ]]; then
   DEPLOY_DOCS=true
   DEPLOY_FOOMEDICAL=true
   DEPLOY_GRAPHIQL=true
+  DEPLOY_PROVIDER=true
   DEPLOY_SERVER=true
 fi
 
@@ -67,6 +69,10 @@ fi
 
 if [[ "$FILES_CHANGED" =~ examples/foomedical ]] || [[ "$FILES_CHANGED" =~ deploy-foomedical.sh ]]; then
   DEPLOY_FOOMEDICAL=true
+fi
+
+if [[ "$FILES_CHANGED" =~ examples/medplum-provider ]] || [[ "$FILES_CHANGED" =~ deploy-provider-app.sh ]]; then
+  DEPLOY_PROVIDER=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/app ]]; then
@@ -81,12 +87,17 @@ if [[ "$FILES_CHANGED" =~ packages/core ]]; then
   DEPLOY_APP=true
   DEPLOY_DOCS=true
   DEPLOY_FOOMEDICAL=true
+  DEPLOY_PROVIDER=true
   DEPLOY_SERVER=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/definitions ]]; then
   DEPLOY_APP=true
   DEPLOY_SERVER=true
+fi
+
+if [[ "$FILES_CHANGED" =~ packages/dosespot ]]; then
+  DEPLOY_PROVIDER=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/docs ]]; then
@@ -106,6 +117,14 @@ if [[ "$FILES_CHANGED" =~ packages/graphiql ]]; then
   DEPLOY_GRAPHIQL=true
 fi
 
+if [[ "$FILES_CHANGED" =~ packages/health-gorilla ]]; then
+  DEPLOY_PROVIDER=true
+fi
+
+if [[ "$FILES_CHANGED" =~ packages/scriptsure ]]; then
+  DEPLOY_PROVIDER=true
+fi
+
 if [[ "$FILES_CHANGED" =~ packages/server ]]; then
   DEPLOY_SERVER=true
 fi
@@ -119,16 +138,19 @@ fi
 if [[ "$FILES_CHANGED" =~ packages/react/ ]]; then
   DEPLOY_APP=true
   DEPLOY_FOOMEDICAL=true
+  DEPLOY_PROVIDER=true
   DEPLOY_STORYBOOK=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/react-hooks ]]; then
   DEPLOY_APP=true
   DEPLOY_FOOMEDICAL=true
+  DEPLOY_PROVIDER=true
   DEPLOY_STORYBOOK=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/react-scheduling ]]; then
+  DEPLOY_PROVIDER=true
   DEPLOY_STORYBOOK=true
 fi
 
@@ -137,6 +159,7 @@ if [[ "$FORCE" = true ]]; then
   DEPLOY_DOCS=true
   DEPLOY_FOOMEDICAL=true
   DEPLOY_GRAPHIQL=true
+  DEPLOY_PROVIDER=true
   DEPLOY_SERVER=true
   DEPLOY_STORYBOOK=true
 fi
@@ -155,7 +178,7 @@ read -r -d '' PAYLOAD <<- EOM
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": "Deploying ${ESCAPED_COMMIT_MESSAGE}\\n\\n* Deploy app: ${DEPLOY_APP}\\n\\n* Deploy docs: ${DEPLOY_DOCS}\\n\\n* Deploy foomedical: ${DEPLOY_FOOMEDICAL}\\n\\n* Deploy graphiql: ${DEPLOY_GRAPHIQL}\\n\\n* Deploy server: ${DEPLOY_SERVER}\\n\\n* Deploy storybook: ${DEPLOY_STORYBOOK}"
+        "text": "Deploying ${ESCAPED_COMMIT_MESSAGE}\\n\\n* Deploy app: ${DEPLOY_APP}\\n\\n* Deploy docs: ${DEPLOY_DOCS}\\n\\n* Deploy foomedical: ${DEPLOY_FOOMEDICAL}\\n\\n* Deploy graphiql: ${DEPLOY_GRAPHIQL}\\n\\n* Deploy provider: ${DEPLOY_PROVIDER}\\n\\n* Deploy server: ${DEPLOY_SERVER}\\n\\n* Deploy storybook: ${DEPLOY_STORYBOOK}"
       }
     }
   ]
@@ -213,17 +236,30 @@ if [[ "$DEPLOY_DOCS" = true ]]; then
   source ./scripts/deploy-docs.sh
 fi
 
-# After docs so a foomedical failure can't block docs
-if [[ "$DEPLOY_FOOMEDICAL" = true ]]; then
-  echo "Deploy foomedical"
+# Examples deploy after docs so their failures can't block docs
 
-  # Unset every var foomedical reads so Vite takes .env.defaults over the app's deploy env;
-  # --only because build:fast already built its dependencies
+# Builds an example with its own .env.defaults: Vite ranks process.env above .env, so the app's deploy
+# env would otherwise override the example's config. Remaining args are passed to turbo.
+build_example() {
+  local example="$1"
+  shift
   (
     # shellcheck disable=SC2046
-    unset $(sed -n 's/^\([A-Z_][A-Z0-9_]*\)=.*/\1/p' examples/foomedical/.env.defaults)
-    npm run build:all -- --only --filter=foomedical
+    unset $(sed -n 's/^\([A-Z_][A-Z0-9_]*\)=.*/\1/p' "examples/${example}/.env.defaults")
+    npm run build:all -- "$@"
   ) || exit 1
+}
 
+if [[ "$DEPLOY_FOOMEDICAL" = true ]]; then
+  echo "Deploy foomedical"
+  # --only: build:fast already built all of its dependencies
+  build_example foomedical --only --filter=foomedical
   source ./scripts/deploy-foomedical.sh
+fi
+
+if [[ "$DEPLOY_PROVIDER" = true ]]; then
+  echo "Deploy provider"
+  # Not --only: it depends on packages build:fast skips (react-scheduling, dosespot, etc.)
+  build_example medplum-provider --filter=medplum-provider
+  source ./scripts/deploy-provider-app.sh
 fi
