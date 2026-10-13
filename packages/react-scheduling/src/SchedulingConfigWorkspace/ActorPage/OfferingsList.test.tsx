@@ -21,7 +21,8 @@ function props(overrides: Partial<OfferingsListProps> = {}): OfferingsListProps 
     onOpenServiceIdChange: vi.fn(),
     renderHeader: (service) => service.name,
     renderPanel: (service) => `Panel for ${service.name}`,
-    offerPickerProps: { services: [], onOffer: vi.fn() },
+    offerableServices: [],
+    onOffer: vi.fn(),
     onStopOffering: vi.fn(),
     ...overrides,
   };
@@ -43,7 +44,10 @@ describe('OfferingsList', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Show more (5 not shown)' }));
     expect(entryNames()).toHaveLength(25);
 
-    await userEvent.type(filterInput(), 'Visit 1');
+    await userEvent.type(filterInput(), 'V');
+    expect(entryNames()).toHaveLength(20);
+
+    await userEvent.type(filterInput(), 'isit 1');
     expect(entryNames()).toEqual(services.slice(9, 19).map((service) => service.name));
 
     await userEvent.type(filterInput(), 'x');
@@ -78,16 +82,14 @@ describe('OfferingsList', () => {
     expect(entryNames()).toEqual(['Visit 03', 'Visit 02', 'Visit 12', ...services.slice(19).map((s) => s.name)]);
   });
 
-  test('stopping several asks first, naming five and counting the rest, then hands them all over', async () => {
+  test('stopping several asks first, then hands them all over', async () => {
     const onStopOffering = vi.fn();
     render(<OfferingsList {...props({ onStopOffering })} />);
 
     await userEvent.click(screen.getByRole('checkbox', { name: 'Select all visit types' }));
     await userEvent.click(screen.getByRole('button', { name: 'Stop offering 25' }));
     const dialog = await screen.findByRole('dialog', { name: 'Stop offering 25 visit types?' });
-    expect(dialog).toHaveTextContent(
-      'Dr. Jane Smith will no longer be offered for Visit 01, Visit 02, Visit 03, Visit 04, Visit 05, and 20 more once you save.'
-    );
+    expect(dialog).toHaveTextContent('Dr. Jane Smith will no longer be offered for 25 visit types once you save.');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Stop offering' }));
 
     expect(onStopOffering).toHaveBeenCalledWith(services);
@@ -106,9 +108,11 @@ describe('OfferingsList', () => {
     expect(screen.getByText('Panel for Visit 02')).toBeInTheDocument();
   });
 
-  test('lists an entry opened from outside the list, even when the page stops short of it', () => {
-    render(<OfferingsList {...props({ openServiceId: 'visit-25' })} />);
+  test('lists an entry opened from outside the list, even when the page stops short of it, and keeps it once closed', () => {
+    const { rerender } = render(<OfferingsList {...props({ openServiceId: 'visit-25' })} />);
+    expect(entryNames()).toContain('Visit 25');
 
+    rerender(<OfferingsList {...props({ openServiceId: null })} />);
     expect(entryNames()).toContain('Visit 25');
   });
 });

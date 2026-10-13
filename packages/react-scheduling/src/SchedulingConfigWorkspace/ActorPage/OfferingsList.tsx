@@ -8,27 +8,23 @@ import type { JSX, ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { ConfirmModal } from '../ConfirmModal';
 import { OfferingMenu } from './OfferingEditor';
-import type { OfferPickerProps } from './OfferPicker';
 import { OfferPicker } from './OfferPicker';
-import { matchingServices, pageOfServices, serviceLabel } from './serviceList';
+import { pageOfServices, serviceLabel } from './serviceList';
 
 const ENTRY_PAGE_SIZE = 20;
-const STOP_CONFIRM_MAX_NAMES = 5;
-
-const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
 
 export interface OfferingsListProps {
   readonly actorName: string;
   /** The visit types offered, in the order they're listed. */
   readonly offeredServices: readonly WithId<HealthcareService>[];
-  /** The id of the open entry's visit type, if any. */
   readonly openServiceId: string | null;
   readonly onOpenServiceIdChange: (id: string | null) => void;
-  /** An entry's header, shown while it's closed and open. */
   readonly renderHeader: (service: WithId<HealthcareService>) => ReactNode;
   /** An entry's panel, rendered once the entry is first opened. */
   readonly renderPanel: (service: WithId<HealthcareService>) => ReactNode;
-  readonly offerPickerProps: OfferPickerProps;
+  /** The active visit types not offered yet. */
+  readonly offerableServices: readonly WithId<HealthcareService>[];
+  readonly onOffer: (services: WithId<HealthcareService>[]) => void;
   /** Called with the visit types to stop offering, once confirmed. */
   readonly onStopOffering: (services: WithId<HealthcareService>[]) => void;
 }
@@ -47,36 +43,38 @@ export function OfferingsList(props: OfferingsListProps): JSX.Element {
     onOpenServiceIdChange,
     renderHeader,
     renderPanel,
-    offerPickerProps,
+    offerableServices,
+    onOffer,
     onStopOffering,
   } = props;
   const [filterText, setFilterText] = useState('');
   const [matchLimit, setMatchLimit] = useState(ENTRY_PAGE_SIZE);
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
-  // What was selected when the filter last changed, and what was offered since, listed first so a filter or the
-  // page size can't hide it. One selected since stays where it is, so the list doesn't move under the pointer.
+  // What was selected when the filter last changed, what was offered since, and an entry opened while hidden, listed
+  // first so a filter or the page size can't hide it. One selected since stays where it is, so the list doesn't
+  // move under the pointer.
   const [pinnedIds, setPinnedIds] = useState<ReadonlySet<string>>(new Set());
   const [servicesToStop, setServicesToStop] = useState<WithId<HealthcareService>[]>([]);
   // An entry's panel stays mounted once opened, so it can animate shut, and the rest are never built.
-  const [everOpenedIds, setEverOpenedIds] = useState<ReadonlySet<string>>(
-    () => new Set(openServiceId ? [openServiceId] : [])
-  );
+  const [everOpenedIds, setEverOpenedIds] = useState<ReadonlySet<string>>(new Set());
   if (openServiceId && !everOpenedIds.has(openServiceId)) {
     setEverOpenedIds(new Set([...everOpenedIds, openServiceId]));
   }
 
-  const page = useMemo(() => {
-    const pageWithoutOpen = pageOfServices(offeredServices, filterText, matchLimit, pinnedIds);
-    // An entry opened from outside the list, like the one a blocked save points at, is listed wherever it is.
-    return !openServiceId || pageWithoutOpen.rows.some((service) => service.id === openServiceId)
-      ? pageWithoutOpen
-      : pageOfServices(offeredServices, filterText, matchLimit, new Set([...pinnedIds, openServiceId]));
-  }, [offeredServices, filterText, matchLimit, pinnedIds, openServiceId]);
-  const filterMatches = useMemo(() => matchingServices(offeredServices, filterText), [offeredServices, filterText]);
+  const page = useMemo(
+    () => pageOfServices(offeredServices, filterText, matchLimit, pinnedIds),
+    [offeredServices, filterText, matchLimit, pinnedIds]
+  );
+  // An entry opened from outside the list, like the one a blocked save points at, is listed even when the filter or
+  // page would hide it.
+  if (openServiceId && !pinnedIds.has(openServiceId) && !page.rows.some((service) => service.id === openServiceId)) {
+    setPinnedIds(new Set([...pinnedIds, openServiceId]));
+  }
 
   const selectedServices = offeredServices.filter((service) => selectedIds.has(service.id));
-  const selectedMatches = filterMatches.filter((service) => selectedIds.has(service.id));
-  const allMatchesSelected = filterMatches.length > 0 && selectedMatches.length === filterMatches.length;
+  const selectedMatches = page.matches.filter((service) => selectedIds.has(service.id));
+  const allMatchesSelected = page.matches.length > 0 && selectedMatches.length === page.matches.length;
+  const stopSubject = stopConfirmSubject(servicesToStop);
 
   function handleFilterChange(value: string): void {
     setFilterText(value);
@@ -97,7 +95,7 @@ export function OfferingsList(props: OfferingsListProps): JSX.Element {
   function toggleAllMatchesSelected(): void {
     setSelectedIds((current) => {
       const next = new Set(current);
-      for (const service of filterMatches) {
+      for (const service of page.matches) {
         if (allMatchesSelected) {
           next.delete(service.id);
         } else {
@@ -110,7 +108,7 @@ export function OfferingsList(props: OfferingsListProps): JSX.Element {
 
   function handleOffer(services: WithId<HealthcareService>[]): void {
     setPinnedIds((current) => new Set([...current, ...services.map((service) => service.id)]));
-    offerPickerProps.onOffer(services);
+    onOffer(services);
   }
 
   function confirmStop(): void {
@@ -120,7 +118,7 @@ export function OfferingsList(props: OfferingsListProps): JSX.Element {
     setServicesToStop([]);
   }
 
-  const offerPicker = <OfferPicker {...offerPickerProps} onOffer={handleOffer} />;
+  const offerPicker = <OfferPicker services={offerableServices} onOffer={handleOffer} />;
 
   if (offeredServices.length === 0) {
     return (
@@ -140,7 +138,7 @@ export function OfferingsList(props: OfferingsListProps): JSX.Element {
           aria-label={filterText.trim() ? 'Select all matching visit types' : 'Select all visit types'}
           checked={allMatchesSelected}
           indeterminate={selectedMatches.length > 0 && !allMatchesSelected}
-          disabled={filterMatches.length === 0}
+          disabled={page.matches.length === 0}
           onChange={toggleAllMatchesSelected}
           pl="md"
         />
@@ -207,35 +205,24 @@ export function OfferingsList(props: OfferingsListProps): JSX.Element {
 
       <ConfirmModal
         opened={servicesToStop.length > 0}
-        title={stopConfirmTitle(servicesToStop)}
+        title={stopSubject && `Stop offering ${stopSubject}?`}
         cancelLabel="Keep offering"
         confirmLabel="Stop offering"
         destructive
         onCancel={() => setServicesToStop([])}
         onConfirm={confirmStop}
       >
-        {servicesToStop.length > 0 &&
-          `${actorName} will no longer be offered for ${stopConfirmNames(servicesToStop)} once you save. ` +
+        {stopSubject &&
+          `${actorName} will no longer be offered for ${stopSubject} once you save. ` +
             "Existing appointments aren't changed."}
       </ConfirmModal>
     </>
   );
 }
 
-function stopConfirmTitle(services: readonly WithId<HealthcareService>[]): string | undefined {
+function stopConfirmSubject(services: readonly WithId<HealthcareService>[]): string | undefined {
   if (services.length === 0) {
     return undefined;
   }
-  return services.length === 1
-    ? `Stop offering ${services[0].name ?? 'this visit type'}?`
-    : `Stop offering ${services.length} visit types?`;
-}
-
-function stopConfirmNames(services: readonly WithId<HealthcareService>[]): string {
-  if (services.length === 1) {
-    return services[0].name ?? 'this visit type';
-  }
-  const names = services.slice(0, STOP_CONFIRM_MAX_NAMES).map(serviceLabel);
-  const unnamedCount = services.length - names.length;
-  return listAll.format(unnamedCount > 0 ? [...names, `${unnamedCount} more`] : names);
+  return services.length === 1 ? (services[0].name ?? 'this visit type') : `${services.length} visit types`;
 }

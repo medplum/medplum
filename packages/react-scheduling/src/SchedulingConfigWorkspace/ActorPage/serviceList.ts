@@ -33,21 +33,19 @@ export function matchingServices(
  * @param filterText - What was typed.
  * @param matchLimit - How many matches to list after the pinned ones.
  * @param pinnedIds - The ids listed first, so a filter can't hide them.
- * @returns The rows to list, and how many matches are left out.
+ * @returns The rows to list, how many matches are left out, and every match, listed or not.
  */
 export function pageOfServices(
   services: readonly WithId<HealthcareService>[],
   filterText: string,
   matchLimit: number,
   pinnedIds: ReadonlySet<string>
-): { rows: WithId<HealthcareService>[]; hiddenCount: number } {
-  const pinned = services.filter((service) => pinnedIds.has(service.id));
-  const unpinnedMatches = matchingServices(
-    services.filter((service) => !pinnedIds.has(service.id)),
-    filterText
-  );
+): { rows: WithId<HealthcareService>[]; hiddenCount: number; matches: WithId<HealthcareService>[] } {
+  const matches = matchingServices(services, filterText);
+  const unpinnedMatches = matches.filter((service) => !pinnedIds.has(service.id));
   return {
-    rows: [...pinned, ...unpinnedMatches.slice(0, matchLimit)],
+    rows: [...services.filter((service) => pinnedIds.has(service.id)), ...unpinnedMatches.slice(0, matchLimit)],
     hiddenCount: Math.max(unpinnedMatches.length - matchLimit, 0),
+    matches,
   };
 }
