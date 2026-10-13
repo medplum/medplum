@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
+import type { WithId } from '@medplum/core';
 import type { Patient, ServiceRequest } from '@medplum/fhirtypes';
 import type { LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
@@ -34,8 +35,13 @@ vi.mock('../../utils/notifications', () => ({
   showErrorNotification: vi.fn(),
 }));
 
+vi.mock('../../utils/labOrderDraft', () => ({
+  getLabOrderDraftDefaults: vi.fn(),
+}));
+
 import { useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { MemoryRouter, useParams } from 'react-router';
+import { getLabOrderDraftDefaults } from '../../utils/labOrderDraft';
 
 describe('OrderLabsPage', () => {
   let medplum: MockClient;
@@ -111,7 +117,7 @@ describe('OrderLabsPage', () => {
     vi.spyOn(medplum, 'executeBot').mockResolvedValue({});
   });
 
-  function setup(props: { patientId?: string; patient?: Patient } = {}): void {
+  function setup(props: { patientId?: string; patient?: Patient; draftOrder?: ServiceRequest } = {}): void {
     vi.mocked(useParams).mockReturnValue({ patientId: props.patientId });
 
     if (props.patientId) {
@@ -121,11 +127,23 @@ describe('OrderLabsPage', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <OrderLabsPage patient={props.patient} onSubmitLabOrder={mockOnSubmitLabOrder} />
+          <OrderLabsPage
+            patient={props.patient}
+            draftOrder={props.draftOrder}
+            onSubmitLabOrder={mockOnSubmitLabOrder}
+          />
         </MedplumProvider>
       </MemoryRouter>
     );
   }
+
+  const draftOrder: WithId<ServiceRequest> = {
+    resourceType: 'ServiceRequest',
+    id: 'draft-123',
+    status: 'draft',
+    intent: 'order',
+    subject: { reference: `Patient/${HomerSimpson.id}` },
+  };
 
   test('Renders form fields', async () => {
     setup();
@@ -370,5 +388,81 @@ describe('OrderLabsPage', () => {
     expect(screen.getByText('Specimen collection time')).toBeInTheDocument();
     // Drain pending async state updates (e.g. ResourceInput defaultValue resolution)
     await act(async () => {});
+  });
+
+  describe('Resuming a draft', () => {
+    const mockTest: TestCoding = { code: 'TEST001', display: 'Complete Blood Count', system: 'http://loinc.org' };
+
+    beforeEach(() => {
+      vi.mocked(getLabOrderDraftDefaults).mockResolvedValue({
+        patient: HomerSimpson,
+        requester: { resourceType: 'Practitioner', id: 'req-1', name: [{ given: ['Dr'], family: 'Who' }] },
+        performingLab: { resourceType: 'Organization', id: 'lab-123', name: 'Test Lab' },
+        performingLabAccountNumber: 'ACCT-1',
+        tests: [mockTest],
+        testMetadata: { TEST001: { priority: 'stat', notes: 'Run first' } },
+        diagnoses: [{ coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9', display: 'Diabetes' }] }],
+        billTo: 'insurance',
+        orderNotes: 'Fasting',
+        specimenCollectedDateTime: new Date('2024-03-01T10:00:00.000Z'),
+      });
+    });
+
+    test('seeds the form from the draft', async () => {
+      setup({ draftOrder });
+
+      expect(await screen.findByRole('button', { name: 'Submit Order' })).toBeInTheDocument();
+      expect(getLabOrderDraftDefaults).toHaveBeenCalledWith(medplum, draftOrder);
+
+      expect(mockLabOrderReturn.setTests).toHaveBeenCalledWith([mockTest]);
+      expect(mockLabOrderReturn.updateTestMetadata).toHaveBeenCalledWith(mockTest, {
+        priority: 'stat',
+        notes: 'Run first',
+      });
+      expect(mockLabOrderReturn.setPerformingLab).toHaveBeenCalledWith(
+        expect.objectContaining({ resourceType: 'Organization', id: 'lab-123' })
+      );
+      expect(mockLabOrderReturn.setPerformingLabAccountNumber).toHaveBeenCalledWith('ACCT-1');
+      expect(mockLabOrderReturn.setDiagnoses).toHaveBeenCalledWith([
+        expect.objectContaining({ coding: [expect.objectContaining({ code: 'E11.9' })] }),
+      ]);
+      expect(mockLabOrderReturn.updateBillingInformation).toHaveBeenCalledWith({ billTo: 'insurance' });
+      expect(mockLabOrderReturn.setOrderNotes).toHaveBeenCalledWith('Fasting');
+      expect(mockLabOrderReturn.setSpecimenCollectedDateTime).toHaveBeenCalledWith(
+        new Date('2024-03-01T10:00:00.000Z')
+      );
+      expect(screen.getByLabelText('Order notes')).toHaveValue('Fasting');
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+      expect(screen.getByText('Dr Who')).toBeInTheDocument();
+    });
+
+    test('revokes the draft after the new order is sent', async () => {
+      vi.spyOn(medplum, 'patchResource').mockResolvedValue({ ...draftOrder, status: 'revoked' });
+      setup({ draftOrder });
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Submit Order' }));
+
+      await waitFor(() => {
+        expect(mockOnSubmitLabOrder).toHaveBeenCalled();
+      });
+      expect(medplum.executeBot).toHaveBeenCalled();
+      expect(medplum.patchResource).toHaveBeenCalledWith('ServiceRequest', 'draft-123', [
+        { op: 'replace', path: '/status', value: 'revoked' },
+      ]);
+    });
+
+    test('does not revoke the draft when sending fails', async () => {
+      vi.spyOn(medplum, 'executeBot').mockRejectedValue(new Error('Bot execution failed'));
+      vi.spyOn(medplum, 'patchResource');
+      setup({ draftOrder });
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Submit Order' }));
+
+      await waitFor(() => {
+        expect(notifications.showErrorNotification).toHaveBeenCalled();
+      });
+      expect(medplum.patchResource).not.toHaveBeenCalled();
+      expect(mockOnSubmitLabOrder).not.toHaveBeenCalled();
+    });
   });
 });

@@ -37,6 +37,8 @@ import { LabReportContent } from './LabReportContent';
 interface LabOrderDetailsProps {
   order: ServiceRequest;
   onChange?: (order: WithId<ServiceRequest>) => void;
+  /** Called when "Active" is picked for a draft; the caller opens the order form rather than patching the status. */
+  onResume?: () => void;
 }
 
 interface ProgressStep {
@@ -49,7 +51,7 @@ interface ProgressStep {
 }
 
 export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
-  const { order, onChange } = props;
+  const { order, onChange, onResume } = props;
   const medplum = useMedplum();
   const patient = useResource(order.subject);
   const requester = useResource(order.requester);
@@ -66,9 +68,11 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
 
   const canRevoke = order.status === 'draft' || order.status === 'active' || order.status === 'on-hold';
 
-  // A revoked order has no progress to track, so only Order Details is shown.
-  const isRevoked = order.status === 'revoked';
-  const detailTab = isRevoked ? 'order' : activeDetailTab;
+  // A draft has not been sent to the lab yet, and a revoked order has no
+  // progress to track, so for both only Order Details is shown.
+  const isDraft = order.status === 'draft';
+  const hideProgress = isDraft || order.status === 'revoked';
+  const detailTab = hideProgress ? 'order' : activeDetailTab;
 
   const handleRevoke = useCallback(async (): Promise<void> => {
     try {
@@ -409,7 +413,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
                 className="pill-tabs"
               >
                 <Tabs.List>
-                  {!isRevoked && (
+                  {!hideProgress && (
                     <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
                       {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
                     </Tabs.Tab>
@@ -431,6 +435,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
                 </Menu.Target>
                 {canRevoke && (
                   <Menu.Dropdown>
+                    {isDraft && onResume && <Menu.Item onClick={onResume}>Active</Menu.Item>}
                     <Menu.Item onClick={() => handleRevoke().catch(console.error)}>Revoked</Menu.Item>
                   </Menu.Dropdown>
                 )}
