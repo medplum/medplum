@@ -13,7 +13,11 @@ _Companion to the [Authentication](/docs/auth) and [User Management](/docs/user-
 
 Authentication establishes **who a user is**. Authorization determines **what that user can access**. This guide focuses on authentication; use the [Access Control Decision Guide](/docs/decision-guides/access-control) for tenancy and permissions.
 
-Your staff, partner clinicians, patients, and caregivers may need different approaches. Identify those populations and any existing identity systems before making the three decisions below.
+Your staff, partner clinicians, patients, and caregivers may need different approaches. Identify those populations and any existing identity systems, then work through these three decisions in order for each population:
+
+1. **[User identification](#decision-1-what-is-your-user-identification-strategy):** What identifier connects the login to the correct Medplum account: email or an external ID?
+2. **[Identity provider](#decision-2-what-is-your-identity-provider-strategy):** Who manages credentials, and how do users reach the correct provider?
+3. **[Token flow](#decision-3-what-is-your-token-flow-architecture):** How does the application obtain Medplum credentials, and will it use them in the client or backend?
 
 ## Decision 1: What is your user identification strategy?
 
@@ -111,7 +115,7 @@ Implementation: [Domain-level Identity Providers](/docs/auth/domain-level-identi
 
 Use Medplum-managed authentication when it meets the product's requirements. If an external IDP is required, use application-based routing when the application selects the provider and domain-based routing when the user's email domain should select it across Medplum applications.
 
-If an existing identity broker already routes among customer IDPs, retain that routing and evaluate token exchange in Decision 3. Customer-controlled routing is separate from Medplum's domain-level configuration.
+If an existing identity broker already routes among customer IDPs, it can remain the upstream provider. In Decision 3, choose whether Medplum handles its authentication callback or your application obtains an external access token to exchange. Customer-controlled routing is separate from Medplum's domain-level configuration.
 
 Domain routing selects where a user authenticates. It does not establish tenant isolation or grant access to patient records.
 
@@ -121,13 +125,11 @@ Domain routing selects where a user authenticates. It does not establish tenant 
 
 Choose how your application obtains a token for Medplum and where it uses that token. An external IDP access token and a Medplum access token serve different APIs; do not assume they are interchangeable.
 
-**Questions:** Does your application already authenticate users? Does the client need an external token for other services? Must it call Medplum directly, or should all Medplum access pass through your backend?
+**Questions:** Will Medplum handle the external IDP callback, or will your application obtain an external access token through its own login flow? Does the client need an external token for other services? Must it call Medplum directly, or should all Medplum access pass through your backend?
 
 “Client” below means your browser or native application. “Server” means your trusted application backend. The options below primarily address external or existing authentication. If you chose Medplum-managed authentication, choose [redirect login](/docs/auth/medplum-as-idp) or [embedded login](/docs/auth/embedded-login), then resolve the additional decisions below.
 
-Use this tree as a starting point for external-IDP user authentication. The options below explain the tradeoffs; specialized flows such as self-hosted direct external authentication are covered under Additional Decisions.
-
-![External-IDP token-flow decision tree: start with authorization-code login when the app does not need to retain its existing login or external API credentials. Otherwise, evaluate token exchange and choose client or server token storage. If supported exchange is unavailable, evaluate On-Behalf-Of.](./authentication-token-flow.png)
+**Both the authorization-code flow and token exchange use an external IDP.** The difference is how your application obtains its Medplum token: in Option A, Medplum handles the IDP callback and returns a Medplum authorization code to your application; in Option B, your application obtains an external access token through its own login flow and submits that token to Medplum for exchange. Keeping your existing IDP does not by itself favor either flow.
 
 ### Option A: External IDP authorization-code flow
 
@@ -143,7 +145,7 @@ Often called **three-legged OAuth**, this flow lets Medplum handle the external 
   - Fits direct SDK and authenticated component use without a proxy for Medplum requests.
 - **Tradeoffs:**
   - Requires a redirect/callback flow and coordination of redirect settings with the IDP.
-  - Does not give the client an external access token to reuse with other services. An application with an established external login may fit token exchange better.
+  - Does not give the client an external access token to reuse with other services. If your application needs to obtain and manage that token through its own login flow, evaluate token exchange.
   - A Medplum logout does not by itself define what happens to the external IDP's SSO session; choose whether users should be signed out there too.
 - **Best fit:** A redirect login fits the application and Medplum is the primary client API.
 
@@ -155,13 +157,13 @@ Your application already has an external access token. Medplum validates it thro
 
 - **Advantages:**
   - Reuses a valid external login without a second interactive login to Medplum.
-  - Lets your application retain its existing login and IDP-routing logic.
+  - Lets your application continue handling the external IDP callback, token acquisition, and IDP-routing logic itself.
   - Produces a user-scoped Medplum token that can be used in either the client or backend.
 - **Tradeoffs:**
   - Requires a supported external access token and configured UserInfo validation. An ID token or arbitrary application session cookie is not an interchangeable input.
   - You must coordinate external and Medplum credential lifecycles and select the intended membership.
   - Other APIs must accept the appropriate credentials for their own audience and scopes; token exchange does not make one external token valid for every service.
-- **Best fit:** An existing application owns login, or its client also needs external authentication for other services.
+- **Best fit:** Your application obtains a supported external access token through its own login flow and needs to add Medplum access, potentially alongside other services.
 
 The presence of other integrations alone does not require token exchange. If those integrations run in Bots or your backend using service credentials, the client may still need only Medplum authentication.
 
@@ -223,9 +225,9 @@ Obtain the backend's application token with [Client Credentials](/docs/auth/clie
 
 | Situation | Approach |
 | --- | --- |
-| External IDP, redirect login, and primarily Medplum client access | Start with the authorization-code flow. |
-| Existing external login and direct Medplum client access | Use token exchange with Medplum tokens in the client. |
-| Existing external login and backend-mediated Medplum access | Use token exchange with Medplum tokens on the server. |
+| Medplum can handle the external IDP callback, and the client primarily needs Medplum access | Start with the authorization-code flow. |
+| Application obtains a supported external access token through its own login flow and needs direct Medplum client access | Use token exchange with Medplum tokens in the client. |
+| Application obtains a supported external access token through its own login flow and mediates Medplum access through its backend | Use token exchange with Medplum tokens on the server. |
 | Backend can use either user-scoped exchange or On-Behalf-Of | Prefer user-scoped exchange to avoid depending on a privileged application credential and a delegation header. |
 | Legacy authentication prevents supported token exchange | Evaluate On-Behalf-Of with explicit ownership of authentication, mapping, and delegation controls. |
 
