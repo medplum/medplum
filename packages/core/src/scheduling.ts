@@ -161,7 +161,7 @@ export const RecurrenceIdExtensionURI =
 
 /**
  * R5's `Appointment.occurrenceChanged`, as the R4 cross-version extension: set (valueBoolean) on an
- * occurrence of a recurring series that `Appointment/$reschedule` has moved off the series' pattern.
+ * occurrence of a recurring series that has been rescheduled off the series' pattern.
  */
 export const OccurrenceChangedExtensionURI =
   'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.occurrenceChanged';

@@ -4,9 +4,12 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import {
   createReference,
   extractServiceTypeReferences,
+  getExtension,
   getReferenceString,
   isDefined,
   isValidDate,
+  OccurrenceChangedExtensionURI,
+  RecurrenceIdExtensionURI,
   serviceTypeIncludesService,
   setPrimaryProvider,
 } from '@medplum/core';
@@ -53,7 +56,9 @@ export function getProposedSchedules(proposal: Appointment): string[] {
 /**
  * Moves an existing appointment without checking availability, start alignment, or length.
  * Rebuilds geometry from current schedules at the proposal's start and length, preserving the
- * stored appointment's metadata and marking it with `SchedulingUnvalidatedReschedule`.
+ * stored appointment's metadata and marking it with `SchedulingUnvalidatedReschedule`. As
+ * `$reschedule` does, an occurrence of a recurring series moved to a new start is also marked
+ * with R5's `occurrenceChanged`.
  *
  * Writes in order: creates the new Slots, moves the appointment onto them with one
  * conditional update, then deletes the old Slots. The appointment is only ever wholly at its
@@ -142,14 +147,27 @@ export async function writeElevatedReschedule(
     throw failedCreate.reason;
   }
 
+  // Replace any earlier reschedule marker, whether from $reschedule or a manual move
+  let extension = [
+    ...(existing.extension ?? []).filter(
+      (ext) => ext.url !== SchedulingRescheduledByOperationURI && ext.url !== SchedulingUnvalidatedRescheduleURI
+    ),
+    { url: SchedulingUnvalidatedRescheduleURI, valueBoolean: true },
+  ];
+
+  // An occurrence of a recurring series moved to a new start no longer follows the series' pattern
+  const isRecurring = Boolean(getExtension(existing, RecurrenceIdExtensionURI));
+  const startChanged = Date.parse(geometry.start as string) !== Date.parse(existing.start as string);
+  if (isRecurring && startChanged) {
+    extension = [
+      ...extension.filter((ext) => ext.url !== OccurrenceChangedExtensionURI),
+      { url: OccurrenceChangedExtensionURI, valueBoolean: true },
+    ];
+  }
+
   const updated: WithId<Appointment> = {
     ...existing,
-    extension: [
-      ...(existing.extension ?? []).filter(
-        (ext) => ext.url !== SchedulingRescheduledByOperationURI && ext.url !== SchedulingUnvalidatedRescheduleURI
-      ),
-      { url: SchedulingUnvalidatedRescheduleURI, valueBoolean: true },
-    ],
+    extension,
     start: geometry.start,
     end: geometry.end,
     slot: newSlots.map((slot) => createReference(slot)),
