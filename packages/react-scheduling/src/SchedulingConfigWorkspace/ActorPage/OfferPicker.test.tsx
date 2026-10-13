@@ -75,6 +75,19 @@ describe('OfferPicker', () => {
     expect(screen.getByRole('button', { name: 'Offer 1 visit type' })).toBeEnabled();
   });
 
+  test('selects every match, not just the ones listed, only while searching', async () => {
+    const onOffer = vi.fn();
+    render(<OfferPicker services={services} onOffer={onOffer} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Offer visit types' }));
+    expect(screen.queryByRole('button', { name: /^Select all/ })).not.toBeInTheDocument();
+
+    await userEvent.type(search(), '1');
+    await userEvent.click(screen.getByRole('button', { name: 'Select all 12 matching' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Offer 12 visit types' }));
+
+    expect(onOffer).toHaveBeenCalledWith([services[0], ...services.slice(9, 19), services[20]]);
+  });
+
   test('finds a visit type with no name by the label it is shown with', async () => {
     render(
       <OfferPicker services={[...services, { resourceType: 'HealthcareService', id: 'unnamed' }]} onOffer={vi.fn()} />

@@ -860,6 +860,73 @@ export const ConfigFixtures = [
   DrPatelSchedule,
 ];
 
+const SPECIALTY_CLINICS = [
+  'Allergy',
+  'Cardiology',
+  'Dermatology',
+  'Endocrinology',
+  'Gastroenterology',
+  'Nephrology',
+  'Neurology',
+  'Oncology',
+  'Orthopedics',
+  'Pediatrics',
+  'Pulmonology',
+  'Rheumatology',
+] as const;
+
+const SPECIALTY_VISITS = [
+  ['new-patient', 'New Patient Visit', 60],
+  ['follow-up', 'Follow-up', 20],
+  ['telehealth', 'Telehealth Follow-up', 20],
+  ['procedure-consult', 'Procedure Consult', 45],
+  ['results-review', 'Results Review', 15],
+  ['annual-review', 'Annual Review', 30],
+  ['pre-op', 'Pre-op Visit', 30],
+] as const;
+
+const SpecialtyServices: WithId<HealthcareService>[] = SPECIALTY_CLINICS.flatMap((specialty) =>
+  SPECIALTY_VISITS.map(([kind, visit, durationMinutes]) => ({
+    ...buildSchedulableService({
+      id: `${specialty.toLowerCase()}-${kind}`,
+      name: `${specialty} ${visit}`,
+      category: specialty,
+      durationMinutes,
+      alignmentMinutes: 15,
+    }),
+    availableTime: [weeklyHours(WEEKDAYS, '08:00:00', '17:00:00')],
+  }))
+);
+
+const CardiologyFollowUp = SpecialtyServices.find(
+  (service) => service.id === 'cardiology-follow-up'
+) as WithId<HealthcareService>;
+
+export const DrLindqvistPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-lindqvist',
+  name: [{ given: ['Elin'], family: 'Lindqvist', prefix: ['Dr.'] }],
+  extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
+};
+
+/** Offers 70 of the 84 specialty visit types, and sees cardiology follow-ups only on Monday and Wednesday. */
+export const DrLindqvistSchedule = setScheduleAvailability(
+  {
+    ...buildSchedule('schedule-dr-lindqvist', 'Practitioner/dr-lindqvist', 'Dr. Elin Lindqvist'),
+    serviceType: SpecialtyServices.filter(
+      (service) => !service.id.startsWith('oncology-') && !service.id.startsWith('pediatrics-')
+    ).flatMap((service) => toServiceTypeCodeableConcepts(service)),
+  },
+  CardiologyFollowUp,
+  [{ daysOfWeek: ['mon', 'wed'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
+) as WithId<Schedule>;
+
+/**
+ * A specialty group's 84 visit types and a provider offering most of them, more than fit on a page. Kept out of
+ * `ConfigFixtures`, whose tests count its visit types.
+ */
+export const ManyVisitTypesFixtures = [...SpecialtyServices, DrLindqvistPractitioner, DrLindqvistSchedule];
+
 /**
  * Moves a set of fixtures onto the viewer's own clock.
  *

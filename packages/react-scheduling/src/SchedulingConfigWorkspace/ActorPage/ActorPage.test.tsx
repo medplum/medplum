@@ -357,6 +357,7 @@ describe('ActorPage', () => {
     const { onSynced } = await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
 
     await userEvent.click(screen.getByRole('switch', { name: 'Schedule status' }));
+    await userEvent.click(entry('Initial Visit'));
 
     expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter')).toBeEnabled();
     await save();
@@ -370,6 +371,7 @@ describe('ActorPage', () => {
       makeSchedule('Practitioner/dr-smith', [initialVisit]),
     ]);
 
+    await userEvent.click(entry('Initial Visit'));
     await userEvent.type(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter'), '15');
     await save();
 
@@ -494,8 +496,33 @@ describe('ActorPage', () => {
     expect(saveBar()).toBeNull();
   });
 
+  test('stopping several at once drops them all on save, and keeps the rest', async () => {
+    const { onSynced } = await setup(drSmith, [
+      makeSchedule('Practitioner/dr-smith', [initialVisit, followUp, cystoscopy]),
+    ]);
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select Initial Visit' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select Cystoscopy' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Stop offering 2' }));
+    await userEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Stop offering 2 visit types?' })).getByRole('button', {
+        name: 'Stop offering',
+      })
+    );
+    await save();
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    const saved = syncedSchedule(onSynced).serviceType;
+    expect([initialVisit, followUp, cystoscopy].map((service) => serviceTypeIncludesService(saved, service))).toEqual([
+      false,
+      true,
+      false,
+    ]);
+  });
+
   test("custom hours start from the visit type's, and save as this Schedule's hours for it", async () => {
     const { onSynced } = await setup(drSmith, [makeSchedule('Practitioner/dr-smith', [initialVisit])]);
+    await userEvent.click(entry('Initial Visit'));
     const initial = panel('Initial Visit');
 
     await userEvent.click(within(initial).getByTestId('schedule-availability-enable'));
@@ -526,6 +553,20 @@ describe('ActorPage', () => {
     expect(medplum.executeBatch).not.toHaveBeenCalled();
   });
 
+  test('a blocked save opens the entry it is blocked on', async () => {
+    const overriding = setScheduleAvailability(makeSchedule('Practitioner/dr-smith', [initialVisit]), initialVisit, [
+      { daysOfWeek: ['tue'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' },
+    ]);
+    await setup(drSmith, [overriding]);
+    await userEvent.click(entry('Initial Visit'));
+    await userEvent.click(within(panel('Initial Visit')).getByTestId('schedule-availability-switch-tue'));
+    await userEvent.click(entry('Initial Visit'));
+
+    await save();
+
+    expect(entry('Initial Visit')).toHaveAttribute('aria-expanded', 'true');
+  });
+
   test('a stored alignment interval is shown, so it can be cleared', async () => {
     const aligned = setScheduleSchedulingParameterValues(
       makeSchedule('Practitioner/dr-smith', [initialVisit]),
@@ -535,6 +576,7 @@ describe('ActorPage', () => {
       }
     );
     await setup(drSmith, [aligned]);
+    await userEvent.click(entry('Initial Visit'));
 
     expect(within(panel('Initial Visit')).getByTestId('scheduling-parameters-alignmentInterval')).toHaveValue('30 min');
   });
@@ -583,6 +625,7 @@ describe('ActorPage', () => {
     ]);
     await medplum.updateResource({ ...schedules[0], comment: 'Changed elsewhere' });
 
+    await userEvent.click(entry('Initial Visit'));
     await userEvent.type(within(panel('Initial Visit')).getByTestId('scheduling-parameters-bufferAfter'), '15');
     await save();
 
