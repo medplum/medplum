@@ -54,6 +54,70 @@
     }
   }
 
+  /* In light mode, Mantine's named colors are tinted with their lightest shade and written in their
+   * darkest, darkened further where that is hard to read on the tint. */
+  :global([data-color-scheme='light']) {
+    :global(.appointment.color-red) {
+      --appointment-tint: var(--mantine-color-red-0);
+      --appointment-text: color-mix(in oklch, var(--mantine-color-red-9), black 5%);
+    }
+
+    :global(.appointment.color-pink) {
+      --appointment-tint: var(--mantine-color-pink-0);
+      --appointment-text: var(--mantine-color-pink-9);
+    }
+
+    :global(.appointment.color-grape) {
+      --appointment-tint: var(--mantine-color-grape-0);
+      --appointment-text: var(--mantine-color-grape-9);
+    }
+
+    :global(.appointment.color-violet) {
+      --appointment-tint: var(--mantine-color-violet-0);
+      --appointment-text: var(--mantine-color-violet-9);
+    }
+
+    :global(.appointment.color-indigo) {
+      --appointment-tint: var(--mantine-color-indigo-0);
+      --appointment-text: var(--mantine-color-indigo-9);
+    }
+
+    :global(.appointment.color-blue) {
+      --appointment-tint: var(--mantine-color-blue-0);
+      --appointment-text: var(--mantine-color-blue-9);
+    }
+
+    :global(.appointment.color-cyan) {
+      --appointment-tint: var(--mantine-color-cyan-0);
+      --appointment-text: var(--mantine-color-cyan-9);
+    }
+
+    :global(.appointment.color-teal) {
+      --appointment-tint: var(--mantine-color-teal-0);
+      --appointment-text: color-mix(in oklch, var(--mantine-color-teal-9), black 6%);
+    }
+
+    :global(.appointment.color-green) {
+      --appointment-tint: var(--mantine-color-green-0);
+      --appointment-text: color-mix(in oklch, var(--mantine-color-green-9), black 12%);
+    }
+
+    :global(.appointment.color-lime) {
+      --appointment-tint: var(--mantine-color-lime-0);
+      --appointment-text: color-mix(in oklch, var(--mantine-color-lime-9), black 16%);
+    }
+
+    :global(.appointment.color-yellow) {
+      --appointment-tint: var(--mantine-color-yellow-0);
+      --appointment-text: color-mix(in oklch, var(--mantine-color-yellow-9), black 30%);
+    }
+
+    :global(.appointment.color-orange) {
+      --appointment-tint: var(--mantine-color-orange-0);
+      --appointment-text: color-mix(in oklch, var(--mantine-color-orange-9), black 13%);
+    }
+  }
+
   /* Booked and its successor states are tinted; everything else is a dashed outline over the
    * plain background. */
   :global(.appointment.pending),
