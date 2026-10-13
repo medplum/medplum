@@ -39,7 +39,7 @@ Scope your charting workflow – care setting and visit types, how structured th
 
 ### E-Prescribe
 
-Scope your e-prescribing workflow – iframe vs. integrated prescribing UI, controlled substances, prescriber enrollment and identity verification, and vendor integration approach.
+Scope your e-prescribing workflow – hosted iframe vs. custom workflow, controlled substances, prescriber enrollment and identity verification, and vendor integration approach.
 
 - **[Decision Guide →](/docs/decision-guides/e-prescribe)**
 - **Docs:** [Medications](/docs/medications)
