@@ -1,20 +1,35 @@
 ---
-sidebar_label: Designing Your Workflows
+sidebar_label: Decision Guides
 sidebar_position: 3
 ---
 
-# Designing Your Workflows
+# Decision Guides
 
-Decision guides are companion documents to the Medplum docs. Each one walks through the requirements questions and FHIR modeling decisions for a workflow or application architecture area – _who_ uses it, _what_ data flows through it, _how_ it integrates with other systems, and which Medplum primitives best fit each requirement.
+Use these guides to make application design, workflow, and rollout decisions before implementation. Each guide connects your requirements to recommended approaches, alternatives, and tradeoffs.
 
-The guides and the technical docs are designed to be used together:
+Decision guides help you decide what to build and why. The linked technical docs explain configuration, data models, APIs, and implementation examples.
 
-- **The decision guide** structures a scoping conversation – it asks discovery questions about your use case (who's involved, when the workflow runs, what systems it touches), then walks through FHIR modeling decisions for the relevant features, covering trade-offs and which Medplum primitive fits when.
-- **The technical docs** are the implementation reference – data model, APIs, React components, and worked examples that apply across scenarios.
+## Application Design
 
-You'll move back and forth between them. The decision guide gives scenario-specific recommendations ("if intake happens before the patient record exists, do X"); the technical docs explain the general capabilities in depth. For some modeling questions the guide is the more direct answer; for implementation details the docs go further.
+Define the identity, tenancy, and access rules shared across your workflows.
 
-## Available Guides
+### Authentication
+
+Choose account matching, identity providers, and token-flow architecture, including client or server token storage and user-scoped access versus On-Behalf-Of.
+
+- **[Decision Guide →](/docs/decision-guides/authentication)**
+- **Docs:** [Authentication](/docs/auth)
+
+### Access Control and Tenancy
+
+Scope your authorization model – user types and organizational structure, multi-tenancy and patient/practitioner sharing, role inventory and permission mechanics, admin structure, and optional patterns like SMART on FHIR and IP access rules.
+
+- **[Decision Guide →](/docs/decision-guides/access-control)**
+- **Docs:** [Authorization and Access Control](/docs/access)
+
+## Clinical and Operational Workflows
+
+Decide how people and systems carry out a clinical or operational process, including ownership, handoffs, and exceptions.
 
 ### Intake & Registration
 
@@ -36,6 +51,13 @@ Scope your charting workflow – care setting and visit types, how structured th
 
 - **[Decision Guide →](/docs/decision-guides/charting)**
 - **Docs:** [Charting](/docs/charting)
+
+### Diagnostic Orders
+
+Choose how to order labs and imaging, coordinate fulfillment, match incoming results, and assign review and follow-up. Compare external interfaces, internal testing, and results-only workflows, including imaging storage and viewer choices.
+
+- **[Decision Guide →](/docs/decision-guides/diagnostic-orders)**
+- **Docs:** [Labs and Imaging](/docs/labs-imaging)
 
 ### E-Prescribe
 
@@ -72,27 +94,13 @@ Scope your billing workflow – charge capture, claims and clearinghouse integra
 - **[Decision Guide →](/docs/decision-guides/rcm-billing)**
 - **Docs:** [Billing and Payments](/docs/billing)
 
+## Implementation and Rollout
+
+Plan the transition to Medplum and how your team will validate and introduce the application into use.
+
 ### Data Migration
 
 Scope a migration to Medplum – source-system inventory, data ownership, identity and mapping governance, import operations, validation, testing, cutover, and acceptance.
 
 - **[Decision Guide →](/docs/decision-guides/data-migration)**
 - **Docs:** [Migrating to Medplum](/docs/migration)
-
-### Authentication
-
-Choose account matching, identity providers, and token-flow architecture, including client or server token storage and user-scoped access versus On-Behalf-Of.
-
-- **[Decision Guide →](/docs/decision-guides/authentication)**
-- **Docs:** [Authentication](/docs/auth)
-
-### Access Control
-
-Scope your authorization model – user types and organizational structure, multi-tenancy and patient/practitioner sharing, role inventory and permission mechanics, admin structure, and optional patterns like SMART on FHIR and IP access rules.
-
-- **[Decision Guide →](/docs/decision-guides/access-control)**
-- **Docs:** [Authorization and Access Control](/docs/access)
-
----
-
-More guides will be added as additional workflow areas are scoped. If you'd like a guide for a workflow not listed here, reach out on our [Discord](https://discord.gg/medplum) or email [support@medplum.com](mailto:support@medplum.com).

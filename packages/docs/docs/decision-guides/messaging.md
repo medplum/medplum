@@ -7,7 +7,11 @@ download_slug: messaging
 
 # Messaging & Communications Decision Guide
 
+Use this guide to design communication among patients, care teams, and external participants. Work through thread structure, routing, read state, attachments, automation, and delivery channels to choose the FHIR model and responsibilities for each messaging workflow.
+
 _Companion to the [Messaging & Communications](/docs/communications) docs._
+
+---
 
 ## Section 1: Use Case & Participants
 
