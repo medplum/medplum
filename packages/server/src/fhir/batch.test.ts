@@ -927,6 +927,54 @@ describe('Batch and Transaction processing', () => {
     expect((reread.body as Patient).gender).toBeUndefined();
   });
 
+  test('Batch DELETE with ifMatch', async () => {
+    const created = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', active: false });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    const updated = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...patient, active: true });
+    expect(updated).toHaveStatus(200);
+
+    const deleteBatch = (versionId: string | undefined): Bundle => ({
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [{ request: { method: 'DELETE', url: 'Patient/' + patient.id, ifMatch: `W/"${versionId}"` } }],
+    });
+
+    // A stale version leaves the resource in place
+    const res1 = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(deleteBatch(patient.meta?.versionId));
+    expect(res1).toHaveStatus(200);
+    expect((res1.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('412');
+    const reread = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(reread).toHaveStatus(200);
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(deleteBatch((updated.body as Patient).meta?.versionId));
+    expect(res2).toHaveStatus(200);
+    expect((res2.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('200');
+    const gone = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(gone).toHaveStatus(410);
+  });
+
   test('Batch FHIRPath PATCH with current ifMatch succeeds and persists', async () => {
     const created = await request(app)
       .post('/fhir/R4/Patient')
