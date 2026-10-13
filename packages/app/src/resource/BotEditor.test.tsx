@@ -6,9 +6,31 @@ import { allOk, badRequest } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
+import { useImperativeHandle } from 'react';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
+import type { MonacoEditorProps } from '../monaco/MonacoEditor';
 import { act, fireEvent, render, screen } from '../test-utils/render';
+import type { CodeEditorHandle } from './CodeEditor';
+
+// Monaco cannot run in jsdom, so replace the lazily loaded editor with a stub
+const mockEditor = vi.hoisted(() => ({
+  loaded: true,
+  getValue: vi.fn<() => string>(),
+  getOutput: vi.fn<() => Promise<string>>(),
+}));
+
+vi.mock('../monaco/MonacoEditor', () => ({
+  default: function MockMonacoEditor(props: MonacoEditorProps) {
+    // While "loading", the ref is never set, like the real editor before its chunk arrives
+    useImperativeHandle(
+      mockEditor.loaded ? props.ref : undefined,
+      (): CodeEditorHandle => ({ getValue: mockEditor.getValue, getOutput: mockEditor.getOutput }),
+      []
+    );
+    return <div data-testid={props.testId} />;
+  },
+}));
 
 describe('BotEditor', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
@@ -46,6 +68,12 @@ describe('BotEditor', () => {
     };
   });
 
+  beforeEach(() => {
+    mockEditor.loaded = true;
+    mockEditor.getValue.mockReset().mockReturnValue('console.log("foo");');
+    mockEditor.getOutput.mockReset().mockResolvedValue('console.log("foo");');
+  });
+
   afterEach(async () => {
     await act(async () => notifications.clean());
   });
@@ -55,24 +83,11 @@ describe('BotEditor', () => {
     expect(await screen.findByText('Editor')).toBeInTheDocument();
     expect(await screen.findByTestId('code-frame')).toBeInTheDocument();
     expect(screen.getByText('Editor')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.load(screen.getByTestId<HTMLIFrameElement>('code-frame'));
-    });
   });
 
   test('Save success', async () => {
     await setup('/Bot/123/editor');
-    expect(await screen.findByText('Save')).toBeInTheDocument();
-
-    // Mock the code frame
-    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
-      _message: any,
-      _targetOrigin: any,
-      transfer?: Transferable[]
-    ) => {
-      (transfer?.[0] as MessagePort).postMessage({ result: 'console.log("foo");' });
-    };
+    expect(await screen.findByTestId('code-frame')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
@@ -83,22 +98,30 @@ describe('BotEditor', () => {
 
   test('Save error', async () => {
     await setup('/Bot/123/editor');
-    expect(await screen.findByText('Save')).toBeInTheDocument();
-
-    // Mock the code frame
-    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
-      _message: any,
-      _targetOrigin: any,
-      transfer?: Transferable[]
-    ) => {
-      (transfer?.[0] as MessagePort).postMessage({ error: badRequest('Error') });
-    };
+    expect(await screen.findByTestId('code-frame')).toBeInTheDocument();
+    mockEditor.getOutput.mockRejectedValue(badRequest('Error'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
     expect(screen.getByText('Error')).toBeInTheDocument();
+  });
+
+  test('Save before editor loaded', async () => {
+    mockEditor.loaded = false;
+    const medplum = new MockClient();
+    const patchResource = vi.spyOn(medplum, 'patchResource');
+
+    await setup('/Bot/123/editor', medplum);
+    expect(await screen.findByTestId('code-frame')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(screen.getByText('Editor is still loading')).toBeInTheDocument();
+    expect(patchResource).not.toHaveBeenCalled();
   });
 
   test('Deploy success', async () => {
@@ -178,16 +201,7 @@ describe('BotEditor', () => {
     });
 
     await setup(`/Bot/${legacyBot.id}/editor`, medplum);
-    expect(await screen.findByText('Save')).toBeInTheDocument();
-
-    // Mock the code frame
-    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
-      _message: any,
-      _targetOrigin: any,
-      transfer?: Transferable[]
-    ) => {
-      (transfer?.[0] as MessagePort).postMessage({ result: 'console.log("foo");' });
-    };
+    expect(await screen.findByTestId('code-frame')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));

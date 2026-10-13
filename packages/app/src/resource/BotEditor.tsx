@@ -33,6 +33,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import classes from './BotEditor.module.css';
 import { BotRunner } from './BotRunner';
+import type { CodeEditorHandle } from './CodeEditor';
 import { CodeEditor } from './CodeEditor';
 
 const DEFAULT_FHIR_INPUT = `{
@@ -69,7 +70,7 @@ export function BotEditor(): JSX.Element | null {
   const [fhirInput, setFhirInput] = useState(DEFAULT_FHIR_INPUT);
   const [hl7Input, setHl7Input] = useState(DEFAULT_HL7_INPUT);
   const [contentType, setContentType] = useState(ContentType.FHIR_JSON as string);
-  const codeFrameRef = useRef<HTMLIFrameElement>(null);
+  const editorRef = useRef<CodeEditorHandle>(null);
   const outputFrameRef = useRef<HTMLIFrameElement>(null);
   const [loading, setLoading] = useState(false);
   const [executeSSEAvailable, setExecuteSSEAvailable] = useState(false);
@@ -92,15 +93,18 @@ export function BotEditor(): JSX.Element | null {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum, id]);
 
-  // Gets the uncompiled TS code
-  const getCode = useCallback(async () => {
-    return sendCommand<undefined, string>(codeFrameRef.current as HTMLIFrameElement, { command: 'getValue' });
+  const getEditor = useCallback((): CodeEditorHandle => {
+    if (!editorRef.current) {
+      throw new Error('Editor is still loading');
+    }
+    return editorRef.current;
   }, []);
 
+  // Gets the uncompiled TS code
+  const getCode = useCallback(async () => getEditor().getValue(), [getEditor]);
+
   // Gets the compiled JS output
-  const getCodeOutput = useCallback(async () => {
-    return sendCommand<undefined, string>(codeFrameRef.current as HTMLIFrameElement, { command: 'getOutput' });
-  }, []);
+  const getCodeOutput = useCallback(async () => getEditor().getOutput(), [getEditor]);
 
   const getSampleInput = useCallback(async () => {
     if (contentType === ContentType.FHIR_JSON) {
@@ -270,14 +274,15 @@ export function BotEditor(): JSX.Element | null {
     <Grid m={0} gutter={0} style={{ overflow: 'hidden' }}>
       <Grid.Col span={8}>
         <Paper m={2} pb="xs" pr="xs" pt="xs" shadow="md" mih={400}>
-          <CodeEditor
-            iframeRef={codeFrameRef}
-            language="typescript"
-            module={module}
-            testId="code-frame"
-            defaultValue={defaultCode}
-            minHeight="528px"
-          />
+          {module && (
+            <CodeEditor
+              ref={editorRef}
+              module={module}
+              testId="code-frame"
+              defaultValue={defaultCode}
+              minHeight="528px"
+            />
+          )}
           <Group justify="flex-end" gap="xs">
             <Button type="button" onClick={saveBot} loading={loading} leftSection={<IconDeviceFloppy size="1rem" />}>
               Save
