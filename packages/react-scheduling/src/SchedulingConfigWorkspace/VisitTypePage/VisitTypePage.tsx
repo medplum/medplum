@@ -5,6 +5,7 @@ import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   deepClone,
   deepEquals,
+  getReferenceString,
   getSchedulingRequirements,
   isSchedulingRequirement,
   normalizeErrorString,
@@ -13,11 +14,13 @@ import {
   REQUIRES_PROCEDURE_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
+  SchedulingColorURI,
 } from '@medplum/core';
 import type { Coding, HealthcareService, HealthcareServiceEligibility, Location, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useId, useState } from 'react';
+import { getSchedulingColor } from '../../colors';
 import type { SchedulingParameterValues } from '../../parameterValues';
 import {
   getHealthcareServiceSchedulingParameterValues,
@@ -47,6 +50,7 @@ import { ParameterWarnings } from '../ConfigPage/ParameterWarnings';
 import type { ConfigOffering, ConfigOfferingGroup } from '../SchedulingConfigWorkspace.utils';
 import { StatusBadge } from '../StatusBadge';
 import { OfferingSchedulesSection } from './OfferingSchedulesSection';
+import { ServiceColorField } from './ServiceColorField';
 import { ServiceFacilitiesField } from './ServiceFacilitiesField';
 
 export interface VisitTypePageProps {
@@ -70,6 +74,7 @@ interface VisitTypeFields {
   readonly name: string;
   readonly active: boolean;
   readonly location: Reference<Location>[];
+  readonly color?: string;
   readonly parameters: SchedulingParameterValues;
   readonly availability: AvailabilityFieldsValue;
   /** What booking must collect for it, in `SCHEDULING_REQUIREMENT_CODES` order so equal sets compare equal. */
@@ -99,6 +104,7 @@ function fieldsOf(service: WithId<HealthcareService> | undefined): VisitTypeFiel
     name: service.name ?? '',
     active: service.active !== false,
     location: service.location ?? [],
+    color: getSchedulingColor(service),
     parameters: getHealthcareServiceSchedulingParameterValues(service),
     availability: initialAvailabilityFieldsValue(service),
     requirements: inRequirementOrder(getSchedulingRequirements(service)),
@@ -188,13 +194,24 @@ function buildVisitType(
       delete draft.eligibility;
     }
   }
+  if (fields.color !== initial.color) {
+    const extension = draft.extension?.filter((ext) => ext.url !== SchedulingColorURI) ?? [];
+    if (fields.color) {
+      extension.push({ url: SchedulingColorURI, valueString: fields.color });
+    }
+    if (extension.length > 0) {
+      draft.extension = extension;
+    } else {
+      delete draft.extension;
+    }
+  }
   return draft;
 }
 
 /**
  * The page for one visit type (`HealthcareService`): its name, whether it is active, the service facilities
- * it is offered at, its scheduling parameters, its default weekly hours, and what booking must collect for it,
- * edited in place and saved together.
+ * it is offered at, its calendar color, its scheduling parameters, its default weekly hours, and what booking
+ * must collect for it, edited in place and saved together.
  *
  * It opens on what is stored and is not reset by a change of props, so the caller remounts it with a `key`
  * when the visit type it shows is replaced.
@@ -353,6 +370,11 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
           value={fields.location}
           onChange={(location) => update({ location })}
           serviceName={serviceName}
+        />
+        <ServiceColorField
+          value={fields.color}
+          onChange={(color) => update({ color })}
+          serviceReference={service && getReferenceString(service)}
         />
         <Checkbox.Group
           label="Booking requirements"
