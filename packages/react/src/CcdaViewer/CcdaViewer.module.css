@@ -108,6 +108,7 @@
 }
 
 .headerTable th {
+  text-align: left;
   white-space: nowrap;
   vertical-align: top;
   color: var(--mantine-color-dimmed);
