@@ -555,31 +555,27 @@ describe('LabOrderDetails', () => {
   });
 
   describe('Resume', () => {
-    test('choosing Active for a draft calls onResume without changing the status', async () => {
+    test('Active is offered only for drafts and calls onResume without changing the status', async () => {
       const user = userEvent.setup();
       const onResume = vi.fn();
       medplum.patchResource = vi.fn();
 
+      const { unmount } = await act(async () => {
+        return setup({ order: { ...mockActiveServiceRequest, status: 'on-hold' }, onResume });
+      });
+      await user.click(screen.getByRole('button', { name: 'On Hold' }));
+      expect(await screen.findByText('Revoked')).toBeInTheDocument();
+      expect(screen.queryByText('Active')).not.toBeInTheDocument();
+      unmount();
+
       await act(async () => {
         setup({ order: { ...mockActiveServiceRequest, status: 'draft' }, onResume });
       });
-
       await user.click(screen.getByRole('button', { name: 'Draft' }));
       await user.click(await screen.findByText('Active'));
 
       expect(onResume).toHaveBeenCalled();
       expect(medplum.patchResource).not.toHaveBeenCalled();
-    });
-
-    test('Active is not offered for non-draft orders or without onResume', async () => {
-      const user = userEvent.setup();
-
-      await act(async () => {
-        setup({ order: { ...mockActiveServiceRequest, status: 'on-hold' }, onResume: vi.fn() });
-      });
-      await user.click(screen.getByRole('button', { name: 'On Hold' }));
-      expect(await screen.findByText('Revoked')).toBeInTheDocument();
-      expect(screen.queryByText('Active')).not.toBeInTheDocument();
     });
   });
 

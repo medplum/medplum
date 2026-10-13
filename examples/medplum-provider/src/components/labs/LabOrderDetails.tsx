@@ -37,7 +37,6 @@ import { LabReportContent } from './LabReportContent';
 interface LabOrderDetailsProps {
   order: ServiceRequest;
   onChange?: (order: WithId<ServiceRequest>) => void;
-  /** Called when "Active" is picked for a draft; the caller opens the order form rather than patching the status. */
   onResume?: () => void;
 }
 
@@ -67,9 +66,6 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   );
 
   const canRevoke = order.status === 'draft' || order.status === 'active' || order.status === 'on-hold';
-
-  // A draft has not been sent to the lab yet, and a revoked order has no
-  // progress to track, so for both only Order Details is shown.
   const isDraft = order.status === 'draft';
   const hideProgress = isDraft || order.status === 'revoked';
   const detailTab = hideProgress ? 'order' : activeDetailTab;

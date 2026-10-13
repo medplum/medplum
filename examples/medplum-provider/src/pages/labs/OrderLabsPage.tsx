@@ -128,7 +128,14 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
       setDraftDefaults(undefined);
       return;
     }
-    getLabOrderDraftDefaults(medplum, draftOrder).then(setDraftDefaults).catch(showErrorNotification);
+    const loadDraftDefaults = async (): Promise<void> => {
+      try {
+        setDraftDefaults(await getLabOrderDraftDefaults(medplum, draftOrder));
+      } catch (error) {
+        showErrorNotification(error);
+      }
+    };
+    loadDraftDefaults().catch(console.error);
   }, [medplum, draftOrder]);
 
   useEffect(() => {

@@ -408,7 +408,8 @@ describe('OrderLabsPage', () => {
       });
     });
 
-    test('seeds the form from the draft', async () => {
+    test('seeds the form from the draft and revokes it after the new order is sent', async () => {
+      vi.spyOn(medplum, 'patchResource').mockResolvedValue({ ...draftOrder, status: 'revoked' });
       setup({ draftOrder });
 
       expect(await screen.findByRole('button', { name: 'Submit Order' })).toBeInTheDocument();
@@ -434,13 +435,8 @@ describe('OrderLabsPage', () => {
       expect(screen.getByLabelText('Order notes')).toHaveValue('Fasting');
       expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       expect(screen.getByText('Dr Who')).toBeInTheDocument();
-    });
 
-    test('revokes the draft after the new order is sent', async () => {
-      vi.spyOn(medplum, 'patchResource').mockResolvedValue({ ...draftOrder, status: 'revoked' });
-      setup({ draftOrder });
-
-      fireEvent.click(await screen.findByRole('button', { name: 'Submit Order' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Submit Order' }));
 
       await waitFor(() => {
         expect(mockOnSubmitLabOrder).toHaveBeenCalled();
