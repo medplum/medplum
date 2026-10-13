@@ -6,6 +6,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import { render, screen, waitFor } from '../../test-utils/render';
 import { LabResultDetails } from './LabResultDetails';
 
@@ -306,5 +307,92 @@ describe('LabResultDetails', () => {
     expect(screen.getByText('Final')).toBeInTheDocument();
     expect(await screen.findByText('Lab Document')).toBeInTheDocument();
     expect(screen.getByText('Diagnostic Report')).toBeInTheDocument();
+  });
+
+  test('Displays an unsolicited-report warning when a DetectedIssue implicates this report', async () => {
+    const diagnosticReport = createMockDiagnosticReport();
+    await medplum.createResource({
+      resourceType: 'DetectedIssue',
+      status: 'final',
+      code: {
+        coding: [
+          {
+            system: 'https://www.medplum.com/integrations/health-gorilla/issue-type',
+            code: 'unsolicited-diagnostic-report',
+          },
+        ],
+      },
+      implicated: [{ reference: `DiagnosticReport/${diagnosticReport.id}` }],
+    });
+
+    setup(diagnosticReport);
+
+    expect(await screen.findByText(/could not be matched to an order/)).toBeInTheDocument();
+  });
+
+  test('Does not display a warning when no DetectedIssue implicates this report', () => {
+    const diagnosticReport = createMockDiagnosticReport();
+
+    setup(diagnosticReport);
+
+    expect(screen.queryByText(/could not be matched to an order/)).not.toBeInTheDocument();
+  });
+
+  test('Still displays the warning, marked Confirmed, for a DetectedIssue that already has a mitigation', async () => {
+    const diagnosticReport = createMockDiagnosticReport();
+    await medplum.createResource({
+      resourceType: 'DetectedIssue',
+      status: 'final',
+      code: {
+        coding: [
+          {
+            system: 'https://www.medplum.com/integrations/health-gorilla/issue-type',
+            code: 'unsolicited-diagnostic-report',
+          },
+        ],
+      },
+      implicated: [{ reference: `DiagnosticReport/${diagnosticReport.id}` }],
+      mitigation: [{ action: { text: 'Reviewed by staff' } }],
+    });
+
+    setup(diagnosticReport);
+
+    expect(await screen.findByText(/could not be matched to an order/)).toBeInTheDocument();
+    expect(screen.getByText('Confirmed')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Mark reviewed' })).not.toBeInTheDocument();
+  });
+
+  test('Marking a detected issue as reviewed keeps the banner visible and shows Confirmed', async () => {
+    const diagnosticReport = createMockDiagnosticReport();
+    const issue = await medplum.createResource({
+      resourceType: 'DetectedIssue',
+      status: 'final',
+      code: {
+        coding: [
+          {
+            system: 'https://www.medplum.com/integrations/health-gorilla/issue-type',
+            code: 'unsolicited-diagnostic-report',
+          },
+        ],
+      },
+      implicated: [{ reference: `DiagnosticReport/${diagnosticReport.id}` }],
+    });
+
+    setup(diagnosticReport);
+
+    expect(await screen.findByText(/could not be matched to an order/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mark reviewed' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Confirmed')).toBeInTheDocument();
+    });
+    // The message stays visible — results should never just disappear from the chart.
+    expect(screen.getByText(/could not be matched to an order/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Mark reviewed' })).not.toBeInTheDocument();
+
+    const updated = await medplum.readResource('DetectedIssue', issue.id);
+    expect(updated.mitigation).toHaveLength(1);
+    expect(updated.mitigation?.[0].action.text).toBe('Reviewed by staff');
   });
 });

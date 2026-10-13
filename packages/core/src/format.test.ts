@@ -20,6 +20,8 @@ import {
   formatTime,
   formatTiming,
   formatWallTime,
+  getHealthGorillaObservationUnit,
+  getPreservedValuePrecision,
   typedValueToString,
 } from './format';
 
@@ -445,6 +447,31 @@ test('Format Observation value', () => {
   expect(formatObservationValue({} as Observation)).toBe('');
   expect(formatObservationValue({ resourceType: 'Observation', valueString: 'foo' } as Observation)).toBe('foo');
   expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueString: '&lt;OBX.5.1&gt;&gt;=32&lt;/OBX.5.1&gt;&lt;OBX.5.1&gt;R&lt;/OBX.5.1&gt;',
+    } as Observation)
+  ).toBe('>=32 (Resistant)');
+  expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueString: '<OBX.5.1><1</OBX.5.1><OBX.5.1>S</OBX.5.1>',
+    } as Observation)
+  ).toBe('<1 (Susceptible)');
+  expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueString: '<OBX.5.1>4</OBX.5.1><OBX.5.1>I</OBX.5.1>',
+    } as Observation)
+  ).toBe('4 (Intermediate)');
+  expect(
+    // Unrecognized second value: falls back to joining both, same as before.
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueString: '<OBX.5.1>4</OBX.5.1><OBX.5.1>Q</OBX.5.1>',
+    } as Observation)
+  ).toBe('4 / Q');
+  expect(
     formatObservationValue({ resourceType: 'Observation', valueCodeableConcept: { text: 'foo' } } as Observation)
   ).toBe('foo');
   expect(
@@ -499,4 +526,77 @@ test('Format Observation value', () => {
       ],
     })
   ).toBe('36.7 C / Oral');
+});
+
+test('getHealthGorillaObservationUnit', () => {
+  expect(getHealthGorillaObservationUnit({ resourceType: 'Observation' } as Observation)).toBeUndefined();
+  expect(
+    getHealthGorillaObservationUnit({
+      resourceType: 'Observation',
+      extension: [{ url: 'https://example.com/other-extension', valueString: 'ignored' }],
+    } as Observation)
+  ).toBeUndefined();
+  expect(
+    getHealthGorillaObservationUnit({
+      resourceType: 'Observation',
+      extension: [
+        { url: 'https://www.healthgorilla.com/fhir/StructureDefinition/observation-unit', valueString: 'titer' },
+      ],
+    } as Observation)
+  ).toBe('titer');
+});
+
+test('getPreservedValuePrecision', () => {
+  expect(getPreservedValuePrecision(undefined)).toBeUndefined();
+  expect(getPreservedValuePrecision({})).toBeUndefined();
+  expect(getPreservedValuePrecision({ value: 1.3 })).toBeUndefined();
+  expect(
+    getPreservedValuePrecision({
+      value: 1.3,
+      // @ts-expect-error _value isn't in the generated Quantity type, but is valid FHIR JSON
+      _value: { extension: [{ url: 'https://example.com/other-extension', valueString: 'ignored' }] },
+    })
+  ).toBeUndefined();
+  expect(
+    getPreservedValuePrecision({
+      value: 1.3,
+      // @ts-expect-error _value isn't in the generated Quantity type, but is valid FHIR JSON
+      _value: {
+        extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/quantity-precision', valueInteger: 2 }],
+      },
+    })
+  ).toBe(2);
+  expect(
+    getPreservedValuePrecision({
+      value: 100,
+      // @ts-expect-error _value isn't in the generated Quantity type, but is valid FHIR JSON
+      _value: {
+        extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/quantity-precision', valueInteger: 0 }],
+      },
+    })
+  ).toBe(0);
+});
+
+test('formatObservationValue preserves original decimal precision when present', () => {
+  expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueQuantity: { value: 1.3, unit: 'mg/dL' },
+    } as Observation)
+  ).toBe('1.3 mg/dL');
+  expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      valueQuantity: {
+        value: 1.3,
+        unit: 'mg/dL',
+        _value: {
+          extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/quantity-precision', valueInteger: 2 }],
+        },
+      },
+      // _value isn't in the generated Quantity type (valid FHIR JSON regardless - see
+      // getPreservedValuePrecision's doc comment), which makes this object literal too dissimilar
+      // from Observation for a direct `as` cast; go through `unknown` first.
+    } as unknown as Observation)
+  ).toBe('1.30 mg/dL');
 });
