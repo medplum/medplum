@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box } from '@mantine/core';
+import { SchedulingColorURI } from '@medplum/core';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { withFixtures } from '../stories/decorators';
-import { ConfigFixtures } from '../stories/scheduling';
+import { ConfigFixtures, TelehealthService } from '../stories/scheduling';
 import { SchedulingConfigWorkspace } from './SchedulingConfigWorkspace';
 
 export default {
@@ -15,6 +16,16 @@ export default {
     skipDefaultSeeding: true,
   },
 } as Meta;
+
+/** The clinic, with Telehealth Consult naming the color the scheduling calendar draws it in. */
+const BASIC_FIXTURES = ConfigFixtures.map((resource) =>
+  resource.resourceType === 'HealthcareService' && resource.id === TelehealthService.id
+    ? {
+        ...resource,
+        extension: [...(resource.extension ?? []), { url: SchedulingColorURI, valueString: 'grape' }],
+      }
+    : resource
+);
 
 function Workspace(): JSX.Element {
   // The workspace fills whatever it is given, so the story hands it the rest of the viewport.
@@ -30,7 +41,7 @@ function Workspace(): JSX.Element {
  *
  * Initial Consultation is offered at both clinics, with prep and turnover time and a lunch break in its hours.
  * Group Education Class books eight patients into one weekly session. Telehealth Consult names no service facility,
- * so it is offered at every one. Unconfigured Visit and Walk-in Clinic have no duration, so booking never offers
+ * so it is offered at every one; it also names the color the calendar draws it in. Unconfigured Visit and Walk-in Clinic have no duration, so booking never offers
  * them, but they are listed here to be finished. Discontinued Consult and Ultrasound 3 are turned off, so they
  * are hidden until **Show inactive** is ticked under the filters button. So is Dr. Sofia Reyes, who is on leave:
  * still active, with the Schedule switched off. Exam Room C is listed though it has no Schedule.
@@ -43,4 +54,4 @@ function Workspace(): JSX.Element {
  * @returns The story.
  */
 export const Basic = (): JSX.Element => <Workspace />;
-Basic.decorators = [withFixtures(ConfigFixtures)];
+Basic.decorators = [withFixtures(BASIC_FIXTURES)];

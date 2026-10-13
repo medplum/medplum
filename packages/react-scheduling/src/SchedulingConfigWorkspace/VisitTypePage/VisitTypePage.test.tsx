@@ -1,8 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, OperationOutcomeError } from '@medplum/core';
-import type { Bundle, HealthcareService, Location } from '@medplum/fhirtypes';
+import {
+  badRequest,
+  getExtensionValue,
+  OperationOutcomeError,
+  REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_MEDICAL_NECESSITY_CODE,
+  REQUIRES_PROCEDURE_CODE,
+  SCHEDULING_ELIGIBILITY_SYSTEM,
+  SchedulingColorURI,
+} from '@medplum/core';
+import type { Bundle, Coding, HealthcareService, HealthcareServiceEligibility, Location } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
   getHealthcareServiceSchedulingParameterValues,
@@ -138,6 +147,36 @@ describe('VisitTypePage', () => {
     });
   });
 
+  test('a chosen calendar color is stored beside the scheduling parameters', async () => {
+    const { onSynced } = await setup();
+    expect(screen.getByRole('radio', { name: 'Automatic' })).toBeChecked();
+
+    await userEvent.click(screen.getByRole('radio', { name: 'grape' }));
+    await userEvent.clear(parameter('duration'));
+    await userEvent.type(parameter('duration'), '45');
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(getExtensionValue(lastSynced(onSynced), SchedulingColorURI)).toBe('grape');
+    expect(getHealthcareServiceSchedulingParameterValues(lastSynced(onSynced))).toMatchObject({ duration: 45 });
+  });
+
+  test('a stored color outside the palette is shown as chosen, and Automatic takes it off', async () => {
+    const stored: HealthcareService = initialVisit;
+    const { onSynced } = await setup({
+      ...stored,
+      extension: [...(stored.extension ?? []), { url: SchedulingColorURI, valueString: 'green' }],
+    });
+    expect(screen.getByRole('radio', { name: 'green' })).toBeChecked();
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Automatic' }));
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(getExtensionValue(lastSynced(onSynced), SchedulingColorURI)).toBeUndefined();
+    expect(getHealthcareServiceSchedulingParameterValues(lastSynced(onSynced))).toMatchObject({ duration: 60 });
+  });
+
   test('turning Active off stores active false, and the badge beside the name follows the switch', async () => {
     const { onSynced } = await setup();
     const header = screen.getByRole('heading', { level: 2 }).parentElement as HTMLElement;
@@ -253,6 +292,46 @@ describe('VisitTypePage', () => {
     expect(onSynced).not.toHaveBeenCalled();
     expect(screen.getByLabelText(/Name/)).toHaveValue('Initial Visit (mine)');
     expect(saveBar()).toBeInTheDocument();
+  });
+
+  describe('booking requirements', () => {
+    const requirement = (code: string): Coding => ({ system: SCHEDULING_ELIGIBILITY_SYSTEM, code });
+    const asks = (code: string): HealthcareServiceEligibility => ({ code: { coding: [requirement(code)] } });
+
+    test('ticking one stores it beside what the visit type already asks for, leaving other eligibility alone', async () => {
+      const adultsOnly: HealthcareServiceEligibility = { code: { text: 'Adults only' }, comment: 'From intake' };
+      const { onSynced } = await setup({ ...initialVisit, eligibility: [adultsOnly, asks(REQUIRES_DIAGNOSIS_CODE)] });
+      expect(screen.getByRole('checkbox', { name: 'Require diagnosis code(s)' })).toBeChecked();
+      expect(screen.getByRole('checkbox', { name: 'Require procedure code(s)' })).not.toBeChecked();
+
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Require procedure code(s)' }));
+      await userEvent.click(saveButton());
+
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      expect(lastSynced(onSynced).eligibility).toEqual([
+        adultsOnly,
+        asks(REQUIRES_DIAGNOSIS_CODE),
+        asks(REQUIRES_PROCEDURE_CODE),
+      ]);
+    });
+
+    test('unticking one removes only its code, keeping anything else its entry holds', async () => {
+      const referral: Coding = { system: 'http://example.org/eligibility', code: 'referral' };
+      const { onSynced } = await setup({
+        ...initialVisit,
+        eligibility: [
+          { code: { coding: [referral, requirement(REQUIRES_DIAGNOSIS_CODE)] } },
+          asks(REQUIRES_MEDICAL_NECESSITY_CODE),
+        ],
+      });
+
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Require diagnosis code(s)' }));
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Require medical necessity confirmation' }));
+      await userEvent.click(saveButton());
+
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      expect(lastSynced(onSynced).eligibility).toEqual([{ code: { coding: [referral] } }]);
+    });
   });
 
   describe('creating', () => {

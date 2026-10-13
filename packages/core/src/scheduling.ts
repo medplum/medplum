@@ -29,7 +29,9 @@ import {
 export const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 export const SchedulingEncounterCodingURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingEncounterCoding';
 export const SchedulingPlanDefinitionURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingPlanDefinition';
-export const SchedulingScheduleColorURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingColor';
+export const SchedulingColorURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingColor';
+/** @deprecated Use SchedulingColorURI instead. */
+export const SchedulingScheduleColorURI = SchedulingColorURI;
 
 /** Code system for scheduling requirements, recorded on `HealthcareService.eligibility.code`. */
 export const SCHEDULING_ELIGIBILITY_SYSTEM = 'https://medplum.com/fhir/CodeSystem/scheduling-eligibility';

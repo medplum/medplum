@@ -139,6 +139,53 @@ describe('createMedplumClient', () => {
     }
   });
 
+  test('Login does not resume expired active login', async () => {
+    const testProfile = 'expiredProfile';
+    const storage = new FileSystemStorage(testProfile);
+    storage.setObject('options', { name: testProfile, baseUrl: 'https://api.medplum.com/' });
+    storage.setObject('activeLogin', {
+      accessToken:
+        'header.' + Buffer.from(JSON.stringify({ login_id: 'login-123', exp: 1 })).toString('base64') + '.signature',
+      refreshToken: 'expired-refresh-token',
+      profile: { reference: 'Practitioner/123' },
+      project: { reference: 'Project/123' },
+    });
+
+    const fetch = vi.fn(async () => ({ status: 401 }));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const medplumClient = await createMedplumClient({ fetch, profile: testProfile }, false);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 10);
+    });
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(console.log).not.toHaveBeenCalledWith('Unauthenticated: run `npx medplum login` to sign in');
+    expect(medplumClient.getActiveLogin()).toBeUndefined();
+    expect(storage.getObject('options')).toMatchObject({ name: testProfile });
+    errorSpy.mockRestore();
+  });
+
+  test('Login keeps active login when base URL validation fails', async () => {
+    const testProfile = 'invalidBaseUrlProfile';
+    const storage = new FileSystemStorage(testProfile);
+    const activeLogin = {
+      accessToken: 'test-access-token',
+      profile: { reference: 'Practitioner/123' },
+      project: { reference: 'Project/123' },
+    };
+    storage.setObject('options', { name: testProfile });
+    storage.setObject('activeLogin', activeLogin);
+
+    const fetch = vi.fn(async () => ({ status: 404, ok: false }));
+
+    await expect(
+      createMedplumClient({ fetch, profile: testProfile, baseUrl: 'https://typo.example.com/' }, false)
+    ).rejects.toThrow('Failed to validate base URL');
+    expect(storage.getObject('activeLogin')).toEqual(activeLogin);
+  });
+
   test('validates base URL healthcheck on non-default URL', async () => {
     const fetch = vi.fn(async (url: string) => {
       if (url.includes('healthcheck')) {

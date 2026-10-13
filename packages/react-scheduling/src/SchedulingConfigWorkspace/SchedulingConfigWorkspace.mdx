@@ -39,9 +39,12 @@ one, which is listed once it is saved. Providers can't be created here.
 
 ## A visit type's page
 
-- **General:** whether it is active, its name, and the service facilities it is offered at
-  (`HealthcareService.location`). With none, it is offered at every service facility, so adding a first one or
-  removing the last asks first.
+- **General:** whether it is active, its name, the service facilities it is offered at
+  (`HealthcareService.location`), and its booking requirements. With no service facilities, it is offered at
+  every one, so adding a first one or removing the last asks first. Booking requirements are what schedulers must
+  enter to book it, such as for prior authorization: procedure codes, diagnosis codes, and confirmation of medical
+  necessity, each ticked on its own. They are the `scheduling-eligibility` codes on `HealthcareService.eligibility` that the booking form
+  reads. Unticking one removes only its code, and any other eligibility the visit type records is left as it is.
 - **Scheduling parameters:** duration, buffers, start interval, and capacity, with the same validation and
   warnings as `SchedulingParametersEditor`.
 - **Default availability:** the weekly hours every calendar offering it follows unless it sets its own, edited
@@ -63,15 +66,21 @@ one, which is listed once it is saved. Providers can't be created here.
   booking filters by. The time zone (the `timezone` extension) is the one hours are read in for any visit type
   that sets none of its own. A provider, room, or device without one is warned that it is recommended, without
   blocking Save.
-- **Visit types offered:** what its Schedule offers. Each visit type offered is an entry showing its duration in
-  effect and where its hours come from; opening one shows the Schedule's own scheduling parameters and hours for
-  it, each empty field showing what it inherits. At most one entry is open at a time, and an entry with unsaved
-  edits is marked **Unsaved**. Every entry starts closed, including a visit type just offered, unless the page was
-  opened from a visit type's page, which opens that visit type's entry.
+- **Visit types offered:** what its Schedule offers, by name. Each visit type offered is an entry showing its
+  duration in effect and where its hours come from; opening one shows the Schedule's own scheduling parameters and
+  hours for it, each empty field showing what it inherits. At most one entry is open at a time, and an entry with
+  unsaved edits is marked **Unsaved**. Every entry starts closed, including a visit type just offered, unless the
+  page was opened from a visit type's page, which opens that visit type's entry. A save blocked by an entry's
+  fields opens that entry.
+
+The entries are listed twenty at a time, with **Show more** for the rest, and the filter above them narrows them by
+name. A visit type just offered, the entry open, and whatever is ticked stay listed whatever the filter or page.
+The box above the list ticks every visit type the filter matches, not only those shown.
 
 **Offer visit types** opens a searchable list of every active visit type not offered yet. Tick any number to offer
-them together. Offering an actor's first visit type creates its Schedule when the page is saved, and not before.
-**Stop offering** asks first, then removes the settings the Schedule holds for that visit type with it.
+them together, or, while searching, **Select all** that match. Offering an actor's first visit type creates its
+Schedule when the page is saved, and not before. **Stop offering**, from an entry's menu or for every ticked entry
+at once, asks first, then removes the settings the Schedule holds for those visit types with them.
 
 A new room is typed as a room (`physicalType` `ro`), so the service facility pickers never offer it as a service
 facility. A new room or device starts active, unless switched off before Create, and is created with a Schedule
