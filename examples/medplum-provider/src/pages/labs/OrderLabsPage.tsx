@@ -138,10 +138,12 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     loadDraftDefaults().catch(console.error);
   }, [medplum, draftOrder]);
 
+  const appliedDraftRef = useRef<LabOrderDraftDefaults | undefined>(undefined);
   useEffect(() => {
-    if (!draftDefaults) {
+    if (!draftDefaults || appliedDraftRef.current === draftDefaults) {
       return;
     }
+    appliedDraftRef.current = draftDefaults;
     if (draftDefaults.patient) {
       setPatient(draftDefaults.patient);
     }

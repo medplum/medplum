@@ -406,6 +406,17 @@ describe('OrderLabsPage', () => {
         orderNotes: 'Fasting',
         specimenCollectedDateTime: new Date('2024-03-01T10:00:00.000Z'),
       });
+      // Like the real hook, hand out new setter identities on every render so the
+      // draft must not be re-applied whenever the page re-renders.
+      vi.mocked(useHealthGorillaLabOrder).mockImplementation(() => ({
+        ...mockLabOrderReturn,
+        updateTestMetadata: (...args) => mockLabOrderReturn.updateTestMetadata(...args),
+        setDiagnoses: (...args) => mockLabOrderReturn.setDiagnoses(...args),
+        updateBillingInformation: (...args) => mockLabOrderReturn.updateBillingInformation(...args),
+        setPerformingLabAccountNumber: (...args) => mockLabOrderReturn.setPerformingLabAccountNumber(...args),
+        setOrderNotes: (...args) => mockLabOrderReturn.setOrderNotes(...args),
+        setSpecimenCollectedDateTime: (...args) => mockLabOrderReturn.setSpecimenCollectedDateTime(...args),
+      }));
     });
 
     test('seeds the form from the draft and revokes it after the new order is sent', async () => {
@@ -435,6 +446,11 @@ describe('OrderLabsPage', () => {
       expect(screen.getByLabelText('Order notes')).toHaveValue('Fasting');
       expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       expect(screen.getByText('Dr Who')).toBeInTheDocument();
+      // The draft is applied once, not on every re-render
+      expect(
+        vi.mocked(mockLabOrderReturn.updateBillingInformation).mock.calls.filter(([info]) => info.billTo)
+      ).toHaveLength(1);
+      expect(mockLabOrderReturn.updateTestMetadata).toHaveBeenCalledTimes(1);
 
       fireEvent.click(screen.getByRole('button', { name: 'Submit Order' }));
 
