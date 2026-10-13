@@ -1,35 +1,41 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { sendCommand } from '@medplum/react';
+import { Center, Loader } from '@mantine/core';
+import { ErrorBoundary } from '@medplum/react';
 import type { JSX, Ref } from 'react';
+import { lazy, Suspense } from 'react';
+
+// Monaco and the Bot type declarations are large, so load them only when an editor is shown.
+// Only type imports from ../monaco are allowed in this file, or Monaco ends up in the main bundle.
+const MonacoEditor = lazy(() => import('../monaco/MonacoEditor'));
+
+export interface CodeEditorHandle {
+  /** Returns the TypeScript source code. */
+  getValue(): string;
+  /** Returns the compiled JavaScript output. */
+  getOutput(): Promise<string>;
+}
 
 export interface CodeEditorProps {
-  readonly language: 'typescript' | 'json';
-  readonly module?: 'commonjs' | 'esnext';
+  readonly module: 'commonjs' | 'esnext';
   readonly defaultValue?: string;
-  readonly iframeRef: Ref<HTMLIFrameElement> | undefined;
   readonly testId?: string;
   readonly minHeight?: string;
+  readonly ref?: Ref<CodeEditorHandle>;
 }
 
 export function CodeEditor(props: CodeEditorProps): JSX.Element {
-  const code = props.defaultValue;
-  const url = new URL(`https://codeeditor.medplum.com/${props.language}-editor.html`);
-  if (props.module) {
-    url.searchParams.set('module', props.module);
-  }
-
   return (
-    <iframe
-      title="Code Editor"
-      frameBorder="0"
-      src={url.toString()}
-      style={{ width: '100%', height: '100%', minHeight: props.minHeight }}
-      ref={props.iframeRef}
-      data-testid={props.testId}
-      onLoad={(e) => {
-        sendCommand(e.currentTarget, { command: 'setValue', value: code }).catch(console.error);
-      }}
-    />
+    <ErrorBoundary>
+      <Suspense
+        fallback={
+          <Center mih={props.minHeight}>
+            <Loader />
+          </Center>
+        }
+      >
+        <MonacoEditor {...props} />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
