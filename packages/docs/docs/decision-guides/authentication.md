@@ -19,6 +19,8 @@ Your staff, partner clinicians, patients, and caregivers may need different appr
 2. **[Identity provider](#decision-2-what-is-your-identity-provider-strategy):** Who manages credentials, and how do users reach the correct provider?
 3. **[Token flow](#decision-3-what-is-your-token-flow-architecture):** How does the application obtain Medplum credentials, and will it use them in the client or backend?
 
+---
+
 ## Decision 1: What is your user identification strategy?
 
 Choose the identifier that connects a login to the correct Medplum account. This is separate from choosing an identity provider: an external IDP can still use email matching.
