@@ -20,19 +20,20 @@
   /* Appointments are drawn as a light tint of their calendar color, with a bar of the full color
    * down the leading edge. The tint is opaque, so the grid and other events don't show through,
    * and a ring of the background keeps neighboring events of one color apart.
-   * `--appointment-bar`, `--appointment-tint` and `--appointment-text` are worked out from
-   * `--fc-event-color`; a color can set its own in their place.
+   * `--appointment-bar` is `--fc-event-color`, and `--appointment-tint` and `--appointment-text` are
+   * worked out from it; a color can set its own in their place.
    * Hovering fades the bar and text, and leaves the tint. */
   :global(.appointment) {
     --appointment-bar: var(--fc-event-color);
     --appointment-tint: light-dark(
-      color-mix(in oklab, var(--fc-event-color) 10%, var(--fc-classic-background)),
-      color-mix(in oklab, var(--fc-event-color) 22%, var(--fc-classic-background))
+      color-mix(in oklab, var(--appointment-bar) 10%, var(--fc-classic-background)),
+      color-mix(in oklab, var(--appointment-bar) 22%, var(--fc-classic-background))
     );
     --appointment-text: light-dark(
-      color-mix(in oklch, var(--fc-event-color), black 40%),
-      color-mix(in oklch, var(--fc-event-color), white 55%)
+      color-mix(in oklch, var(--appointment-bar), black 40%),
+      color-mix(in oklch, var(--appointment-bar), white 55%)
     );
+    --appointment-selected-text: var(--mantine-color-white);
 
     border: 0;
     padding-inline-start: 4px;
@@ -136,8 +137,27 @@
     }
   }
 
+  /* A hex color can be as light or as dark as the background, so its bar is kept from blending into
+   * it; colors.ts's `colorFill` holds a legend swatch to the same bounds. Selected, it is written in
+   * white or black, whichever reads on the bar: white below a luminance (XYZ `y`) of 0.179, where
+   * the two contrast with it equally. */
+  :global([data-color-scheme='light']) :global(.appointment.hex-color) {
+    --appointment-bar: oklch(from var(--fc-event-color) min(l, 0.9) c h);
+  }
+
+  :global([data-color-scheme='dark']) :global(.appointment.hex-color) {
+    --appointment-bar: oklch(from var(--fc-event-color) max(l, 0.4) c h);
+  }
+
+  :global(.appointment.hex-color) {
+    --appointment-selected-text: color(
+      from var(--appointment-bar) xyz-d65 calc(0.95047 * clamp(0, (0.179 - y) * infinity, 1))
+        clamp(0, (0.179 - y) * infinity, 1) calc(1.08883 * clamp(0, (0.179 - y) * infinity, 1))
+    );
+  }
+
   /* The selected appointment, such as the one open in a details pane, is filled with its bar
-   * color and written in white. */
+   * color and written in `--appointment-selected-text`, white unless the color sets its own. */
   :global(.appointment.selected) {
     background: color-mix(in oklab, var(--appointment-bar) calc(100% * var(--past-fade)), var(--fc-classic-background));
 
@@ -145,7 +165,7 @@
     .eventTime {
       color: color-mix(
         in oklab,
-        var(--mantine-color-white) calc(100% * var(--past-fade)),
+        var(--appointment-selected-text) calc(100% * var(--past-fade)),
         var(--fc-classic-background)
       );
     }

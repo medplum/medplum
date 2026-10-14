@@ -11,7 +11,7 @@ import { AppointmentEvent } from '../CalendarBase/AppointmentEvent';
 import type { ExtendedEvent, FhirEventSource } from '../CalendarBase/CalendarBase';
 import { CalendarBase } from '../CalendarBase/CalendarBase';
 import { SlotEvent } from '../CalendarBase/SlotEvent';
-import { getSchedulingColor, resolveThemeColor } from '../colors';
+import { colorClass, colorValue, getSchedulingColor, isSchedulingColor, resolveSchedulingColor } from '../colors';
 import type { DateTimeRange } from '../types';
 import classes from './MultiCalendar.module.css';
 
@@ -19,7 +19,8 @@ export interface MultiCalendarSource {
   schedule?: WithId<Schedule>;
   slots: Slot[];
   appointments: Appointment[];
-  color?: keyof MantineThemeColors;
+  /** A theme color name, or a hex code such as `#2f9e44`. */
+  color?: keyof MantineThemeColors | `#${string}`;
   /** False draws the source's events as not clickable, whatever click handlers the calendar has. */
   interactive?: boolean;
   /**
@@ -51,7 +52,7 @@ export interface MultiCalendarProps {
  *
  * If you pass a Schedule as an attribute of a source, it will be passed back
  * to event handlers alongside the interacted Appointment/Slot resources. It may also
- * specify a color override via a Extension
+ * specify a color override, a theme color name or a hex code, via a Extension
  * ("https://medplum.com/fhir/StructureDefinition/SchedulingColor").
  *
  * @param props - Component props
@@ -64,13 +65,17 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
 
   const eventSources = useMemo((): FhirEventSource[] => {
     return sources.map(({ draft, ...source }, i) => {
-      let colorName = source.color && Object.hasOwn(theme.colors, source.color) ? source.color : undefined;
+      let colorName = source.color && isSchedulingColor(theme, source.color) ? source.color : undefined;
       colorName ||= getSchedulingColor(source.schedule);
 
-      // Convert color name into a concrete color value we can pass to FullCalendar, and a class
-      // that styles can pick the color out by.
-      const resolved = resolveThemeColor(theme, colorName, i);
-      return { ...source, color: theme.colors[resolved][7], className: cx(`color-${resolved}`, draft && 'draft') };
+      // Convert color name into a concrete color value we can pass to FullCalendar, and a class that
+      // styles can pick the color out by.
+      const resolved = resolveSchedulingColor(theme, colorName, i);
+      return {
+        ...source,
+        color: colorValue(theme, resolved),
+        className: cx(colorClass(theme, resolved), draft && 'draft'),
+      };
     });
   }, [sources, theme]);
 

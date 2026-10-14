@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { CheckIcon, ColorSwatch, getContrastColor, Group, Radio, Text, useMantineTheme } from '@mantine/core';
 import type { JSX } from 'react';
-import { FALLBACK_COLORS, fallbackColorIndex, resolveThemeColor } from '../../colors';
+import { FALLBACK_COLORS, fallbackColorIndex, resolveSchedulingColor } from '../../colors';
 
 export interface ServiceColorFieldProps {
   /** The Mantine color the visit type names, or undefined to leave the calendar to pick one. */
@@ -21,7 +21,8 @@ export function ServiceColorField(props: ServiceColorFieldProps): JSX.Element {
   const { value, onChange, serviceReference } = props;
   const theme = useMantineTheme();
   // Resolve the "automatic" color to display inside that button
-  const automaticColor = serviceReference && resolveThemeColor(theme, undefined, fallbackColorIndex(serviceReference));
+  const automaticColor =
+    serviceReference && resolveSchedulingColor(theme, undefined, fallbackColorIndex(serviceReference));
   // A color stored by another tool that the palette doesn't hold is offered too, so it isn't read as Automatic.
   const palette: readonly string[] = FALLBACK_COLORS;
   const colors = value && !palette.includes(value) ? [...palette, value] : palette;

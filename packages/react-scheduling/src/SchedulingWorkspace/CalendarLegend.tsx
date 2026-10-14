@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MantineThemeColors } from '@mantine/core';
 import { ColorSwatch, Divider, Group, Popover, Stack, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
+import { colorFill } from '../colors';
 import { ServiceTypeDisplay } from '../ServiceTypeDisplay';
 
 /** A service type the calendar draws appointments for, and the color it draws them in. */
@@ -12,7 +12,8 @@ export interface ServiceTypeLegendItem {
   readonly id: string;
   /** An appointment of the service type, which it is named by. */
   readonly appointment: Appointment;
-  readonly color: keyof MantineThemeColors;
+  /** A theme color name or a hex code. */
+  readonly color: string;
 }
 
 export interface CalendarLegendProps {
@@ -23,15 +24,6 @@ export interface CalendarLegendProps {
 
 /** How many service types' colors the trigger hints at. */
 const PREVIEW_COUNT = 4;
-
-/**
- * The shade MultiCalendar draws the bar down an appointment's edge in.
- * @param color - The service type's color.
- * @returns The CSS color.
- */
-function fill(color: keyof MantineThemeColors): string {
-  return `var(--mantine-color-${color}-7)`;
-}
 
 /** The gray MultiCalendar fills slots with, which here are all blocked time. */
 const BLOCKED_FILL = 'light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-4))';
@@ -67,7 +59,7 @@ export function CalendarLegend(props: CalendarLegendProps): JSX.Element {
               {serviceTypes.slice(0, PREVIEW_COUNT).map((serviceType, index) => (
                 <ColorSwatch
                   key={serviceType.id}
-                  color={fill(serviceType.color)}
+                  color={colorFill(serviceType.color)}
                   size={10}
                   withShadow={false}
                   ml={index > 0 ? -3 : 0}
@@ -90,7 +82,7 @@ export function CalendarLegend(props: CalendarLegendProps): JSX.Element {
               </Text>
               {serviceTypes.map((serviceType) => (
                 <Group key={serviceType.id} gap="xs" wrap="nowrap">
-                  <ColorSwatch color={fill(serviceType.color)} size={14} radius="sm" withShadow={false} />
+                  <ColorSwatch color={colorFill(serviceType.color)} size={14} radius="sm" withShadow={false} />
                   <Text size="sm">
                     <ServiceTypeDisplay appointment={serviceType.appointment} inherit />
                   </Text>
