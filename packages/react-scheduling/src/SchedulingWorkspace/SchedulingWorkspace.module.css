@@ -44,8 +44,9 @@
 }
 
 /*
- * The pane beside the calendar, holding either the booking form or the details of
- * the appointment that is open. Never both — one takes the other's place.
+ * The pane beside the calendar, holding the booking form, or the details of the
+ * appointment or blocked time that is open. Only one at a time — each takes the
+ * others' place.
  */
 .pane {
   flex-shrink: 0;

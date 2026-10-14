@@ -2,15 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
+  allServiceTypesCodeableConcept,
   clearHealthcareServiceSchedulingParameter,
   CPT,
   createReference,
   deepClone,
   getReferenceString,
   HL7_V2_0203,
+  RecurrenceIdExtensionURI,
+  RecurrenceTemplateExtensionURI,
+  RecurringAppointmentSeriesIdentifierSystem,
   REQUIRES_DIAGNOSIS_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
+  SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
@@ -42,6 +47,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { getBrowserTimezone } from '../AppointmentFinder/AppointmentFinder.times';
 import { setScheduleAvailability } from '../availability';
+import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, NPI_SYSTEM, SERVICE_FACILITY_ROLE_SYSTEM } from '../constants';
 import {
   getHealthcareServiceSchedulingParameterValues,
   setHealthcareServiceSchedulingParameterValues,
@@ -71,7 +77,7 @@ export const APPOINTMENT_TYPE_SYSTEM = 'http://example.org/appointment-types';
  * @returns The concept to record it as.
  */
 function physicalType(code: 'ro' | 'bd'): CodeableConcept {
-  return { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/location-physical-type', code }] };
+  return { coding: [{ system: LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, code }] };
 }
 
 export const MainClinic: WithId<Location> = {
@@ -253,6 +259,7 @@ export const DrRiveraPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'dr-rivera',
   name: [{ given: ['Maya'], family: 'Rivera', prefix: ['Dr.'] }],
+  identifier: [{ system: NPI_SYSTEM, value: '1538294608' }],
   // The zone a calendar is drawn in is read off its actor, so the provider carries it too.
   extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
 };
@@ -261,6 +268,7 @@ export const DrOkaforPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'dr-okafor',
   name: [{ given: ['Tunde'], family: 'Okafor', prefix: ['Dr.'] }],
+  identifier: [{ system: NPI_SYSTEM, value: '1947168237' }],
   // Central, matching the override on his Schedule: a second zone for the notice to name.
   extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/Chicago' }],
 };
@@ -728,6 +736,7 @@ export const DrNguyenPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'dr-nguyen',
   name: [{ given: ['Linh'], family: 'Nguyen', prefix: ['Dr.'] }],
+  identifier: [{ system: NPI_SYSTEM, value: '1625483718' }],
   extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
 };
 
@@ -797,6 +806,36 @@ export const DrPatelSchedule = buildSchedule('schedule-dr-patel', 'Practitioner/
   name: 'Walk-in Clinic',
 });
 
+/** Works at both clinics: the main clinic as another system linked her, the satellite as the workspace did. */
+export const DrBrooksPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-brooks',
+  name: [{ given: ['Elena'], family: 'Brooks', prefix: ['Dr.'] }],
+  extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
+};
+
+/** Written by a sync rather than the workspace, so the workspace won't change it. */
+export const DrBrooksLinkedRole: WithId<PractitionerRole> = {
+  resourceType: 'PractitionerRole',
+  id: 'role-dr-brooks-main-clinic',
+  identifier: [{ system: 'http://example.org/provider-location-link', value: 'dr-brooks|main-clinic' }],
+  practitioner: { reference: 'Practitioner/dr-brooks' },
+  location: [{ reference: 'Location/main-clinic' }],
+  active: true,
+};
+
+/** The workspace's own role for her, so the satellite can be removed from her page. */
+export const DrBrooksRole: WithId<PractitionerRole> = {
+  resourceType: 'PractitionerRole',
+  id: 'role-dr-brooks-satellite',
+  identifier: [{ system: SERVICE_FACILITY_ROLE_SYSTEM, value: 'dr-brooks' }],
+  practitioner: { reference: 'Practitioner/dr-brooks' },
+  location: [{ reference: 'Location/satellite-clinic' }],
+  active: true,
+};
+
+export const DrBrooksSchedule = buildSchedule('schedule-dr-brooks', 'Practitioner/dr-brooks', 'Dr. Elena Brooks');
+
 /**
  * Visit types nobody offers, so the config workspace has enough to page through and search when offering from an
  * actor's page.
@@ -843,6 +882,7 @@ export const ConfigFixtures = [
   GroupEducationService,
   UnconfiguredService,
   DiscontinuedService,
+  IronInfusionService,
   ...CatalogServices,
   DrNguyenPractitioner,
   DrNguyenSchedule,
@@ -853,6 +893,103 @@ export const ConfigFixtures = [
   ExamRoomC,
   DrPatelPractitioner,
   DrPatelSchedule,
+  DrBrooksPractitioner,
+  DrBrooksLinkedRole,
+  DrBrooksRole,
+  DrBrooksSchedule,
+];
+
+const SPECIALTY_CLINICS = [
+  'Allergy',
+  'Cardiology',
+  'Dermatology',
+  'Endocrinology',
+  'Gastroenterology',
+  'Nephrology',
+  'Neurology',
+  'Oncology',
+  'Orthopedics',
+  'Pediatrics',
+  'Pulmonology',
+  'Rheumatology',
+] as const;
+
+const SPECIALTY_VISITS = [
+  ['new-patient', 'New Patient Visit', 60],
+  ['follow-up', 'Follow-up', 20],
+  ['telehealth', 'Telehealth Follow-up', 20],
+  ['procedure-consult', 'Procedure Consult', 45],
+  ['results-review', 'Results Review', 15],
+  ['annual-review', 'Annual Review', 30],
+  ['pre-op', 'Pre-op Visit', 30],
+] as const;
+
+const SpecialtyServices: WithId<HealthcareService>[] = SPECIALTY_CLINICS.flatMap((specialty) =>
+  SPECIALTY_VISITS.map(([kind, visit, durationMinutes]) => ({
+    ...buildSchedulableService({
+      id: `${specialty.toLowerCase()}-${kind}`,
+      name: `${specialty} ${visit}`,
+      category: specialty,
+      durationMinutes,
+      alignmentMinutes: 15,
+    }),
+    availableTime: [weeklyHours(WEEKDAYS, '08:00:00', '17:00:00')],
+  }))
+);
+
+const CardiologyFollowUp = SpecialtyServices.find(
+  (service) => service.id === 'cardiology-follow-up'
+) as WithId<HealthcareService>;
+
+export const DrLindqvistPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-lindqvist',
+  name: [{ given: ['Elin'], family: 'Lindqvist', prefix: ['Dr.'] }],
+  extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
+};
+
+/** Offers 70 of the 84 specialty visit types, and sees cardiology follow-ups only on Monday and Wednesday. */
+export const DrLindqvistSchedule = setScheduleAvailability(
+  {
+    ...buildSchedule('schedule-dr-lindqvist', 'Practitioner/dr-lindqvist', 'Dr. Elin Lindqvist'),
+    serviceType: SpecialtyServices.filter(
+      (service) => !service.id.startsWith('oncology-') && !service.id.startsWith('pediatrics-')
+    ).flatMap((service) => toServiceTypeCodeableConcepts(service)),
+  },
+  CardiologyFollowUp,
+  [{ daysOfWeek: ['mon', 'wed'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
+) as WithId<Schedule>;
+
+const NeurologyNewPatient = SpecialtyServices.find(
+  (service) => service.id === 'neurology-new-patient'
+) as WithId<HealthcareService>;
+
+export const DrMensahPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-mensah',
+  name: [{ given: ['Kwame'], family: 'Mensah', prefix: ['Dr.'] }],
+  extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
+};
+
+export const DrMensahSchedule = setScheduleAvailability(
+  {
+    ...buildSchedule('schedule-dr-mensah', 'Practitioner/dr-mensah', 'Dr. Kwame Mensah'),
+    serviceType: [allServiceTypesCodeableConcept()],
+  },
+  NeurologyNewPatient,
+  [{ daysOfWeek: ['fri'], availableStartTime: '13:00:00', availableEndTime: '17:00:00' }]
+) as WithId<Schedule>;
+
+/**
+ * A specialty group's 84 visit types, a provider offering most of them, and one offering all of them, more than fit
+ * on a page. Kept out of `ConfigFixtures`, whose tests count its visit types.
+ */
+export const ManyVisitTypesFixtures = [
+  ...SpecialtyServices,
+  DrLindqvistPractitioner,
+  DrLindqvistSchedule,
+  DrMensahPractitioner,
+  DrMensahSchedule,
 ];
 
 /**
@@ -1036,6 +1173,8 @@ export const AppointmentPatientFixtures = [
   buildPatient('pt-jones', 'Liam', 'Jones', '2001-01-17'),
   buildPatient('pt-garcia', 'Eliana', 'Garcia', '1990-07-22'),
   buildPatient('pt-miller', 'Elijah', 'Miller', '1958-12-05'),
+  buildPatient('pt-patel', 'Anika', 'Patel', '1983-03-19'),
+  buildPatient('pt-novak', 'Theo', 'Novak', '1967-10-08'),
 ];
 
 /**
@@ -1121,6 +1260,12 @@ export const OkaforImagingAppointment: WithId<Appointment> = {
   start: '2020-05-06T18:00:00Z',
   end: '2020-05-06T18:30:00Z',
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
+  extension: [
+    {
+      url: SchedulingExternalUrlURI,
+      valueUrl: 'https://foomedical.com/appointments?date=05%2F06%2F2020&mrn=456',
+    },
+  ],
   participant: setPrimaryProvider(
     [
       { status: 'accepted', actor: { reference: 'Patient/pt-alvarez', display: 'Renee Alvarez' } },
@@ -1224,7 +1369,130 @@ export const DrBrownAppointments: WithId<Appointment>[] = DrBrownSlots.map((slot
     ],
     createReference(DrBrownPractitioner)
   ),
+  ...(idx === 1 && garciaSeriesOccurrence(2)),
 }));
+
+/**
+ * A time on Monday morning, on the viewer's clock as the pinned "now" (12:05 that day) is, so
+ * it falls before then in any timezone.
+ * @param hour - The hour, 0 to 23.
+ * @param minute - The minute.
+ * @returns The time, as an instant.
+ */
+function mondayMorningAt(hour: number, minute = 0): string {
+  return new Date(2020, 4, 4, hour, minute).toISOString();
+}
+
+/** The times {@link MondayImagingAppointment} held, one per schedule it was held on. */
+export const MondayImagingHeldSlots: WithId<Slot>[] = (
+  [
+    ['slot-rivera-imaging-mon', DrRiveraSchedule],
+    ['slot-ultrasound-1-imaging-mon', Ultrasound1Schedule],
+    ['slot-exam-room-a-imaging-mon', ExamRoomASchedule],
+  ] as const
+).map(([id, schedule]) => ({
+  resourceType: 'Slot',
+  id,
+  status: 'busy',
+  start: mondayMorningAt(9),
+  end: mondayMorningAt(9, 30),
+  schedule: createReference(schedule),
+}));
+
+/** An imaging visit seen earlier on the pinned "today", so drawn as past. */
+export const MondayImagingAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-rivera-imaging-mon',
+  status: 'fulfilled',
+  start: mondayMorningAt(9),
+  end: mondayMorningAt(9, 30),
+  serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
+  slot: MondayImagingHeldSlots.map(createReference),
+  participant: setPrimaryProvider(
+    [
+      { status: 'accepted', actor: { reference: 'Patient/pt-patel', display: 'Anika Patel' } },
+      { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
+      { status: 'accepted', actor: createReference(Ultrasound1Device) },
+      { status: 'accepted', actor: createReference(ExamRoomA) },
+    ],
+    createReference(DrRiveraPractitioner)
+  ),
+};
+
+export const MondayTelehealthHeldSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'brown-mon',
+  status: 'busy',
+  schedule: createReference(DrBrownSchedule),
+  start: mondayMorningAt(10),
+  end: mondayMorningAt(10, 30),
+};
+
+/** A telehealth visit the patient missed earlier on the pinned "today", so drawn as past. */
+export const MondayTelehealthAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appointment-brown-mon',
+  status: 'noshow',
+  start: MondayTelehealthHeldSlot.start,
+  end: MondayTelehealthHeldSlot.end,
+  serviceType: toServiceTypeCodeableConcepts(TelehealthService),
+  slot: [createReference(MondayTelehealthHeldSlot)],
+  participant: setPrimaryProvider(
+    [
+      { status: 'accepted', actor: createReference(DrBrownPractitioner) },
+      { status: 'accepted', actor: { reference: 'Patient/pt-novak', display: 'Theo Novak' } },
+    ],
+    createReference(DrBrownPractitioner)
+  ),
+};
+
+/**
+ * Eliana Garcia sees Dr. Brown weekly, three times: this week's visit is the second, and
+ * the first and third are a week either side, each holding its own Slot.
+ */
+const GarciaSeriesOtherWeeks = (
+  [
+    [1, -1],
+    [3, 1],
+  ] as const
+).map(([position, weeks]) => {
+  const slot: WithId<Slot> = {
+    ...DrBrownSlots[1],
+    id: `brown-garcia-${position}`,
+    start: addMinutes(new Date(DrBrownSlots[1].start), weeks * 7 * 24 * 60).toISOString(),
+    end: addMinutes(new Date(DrBrownSlots[1].end), weeks * 7 * 24 * 60).toISOString(),
+  };
+  const appointment: WithId<Appointment> = {
+    ...DrBrownAppointments[1],
+    id: `appointment-${slot.id}`,
+    start: slot.start,
+    end: slot.end,
+    slot: [createReference(slot)],
+    ...garciaSeriesOccurrence(position),
+  };
+  return { slot, appointment };
+});
+
+export const GarciaSeriesSlots = GarciaSeriesOtherWeeks.map(({ slot }) => slot);
+export const GarciaSeriesAppointments = GarciaSeriesOtherWeeks.map(({ appointment }) => appointment);
+
+/**
+ * Tags an occurrence of Eliana Garcia's series as `$book` does, keeping the template on the
+ * first occurrence alone.
+ * @param position - Which occurrence it is, counting from 1.
+ * @returns The appointment's identifier and extensions.
+ */
+function garciaSeriesOccurrence(position: number): Pick<Appointment, 'identifier' | 'extension'> {
+  return {
+    identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'garcia-weekly-telehealth' }],
+    extension: [
+      ...(position === 1
+        ? [{ url: RecurrenceTemplateExtensionURI, extension: [{ url: 'occurrenceCount', valuePositiveInt: 3 }] }]
+        : []),
+      { url: RecurrenceIdExtensionURI, valuePositiveInt: position },
+    ],
+  };
+}
 
 export const ChenInfusionHeldSlot: WithId<Slot> = {
   resourceType: 'Slot',
@@ -1258,7 +1526,7 @@ export const ChenInfusionAppointment: WithId<Appointment> = {
   serviceType: [...toServiceTypeCodeableConcepts(InfusionService), { coding: [ProcedureCodes[0]] }],
   reasonCode: [{ coding: [DiagnosisCodes[0]] }],
   extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
-  slot: [createReference(ChenInfusionHeldSlot)],
+  slot: [createReference(ChenInfusionHeldSlot), createReference(ChenInfusionBufferSlot)],
   participant: setPrimaryProvider(
     [
       { status: 'accepted', actor: createReference(ElderJordanPatient) },
@@ -1295,6 +1563,12 @@ export const CalendarWeekFixtures = [
   DrBrownSchedule,
   ...DrBrownSlots,
   ...DrBrownAppointments,
+  MondayImagingAppointment,
+  ...MondayImagingHeldSlots,
+  MondayTelehealthHeldSlot,
+  MondayTelehealthAppointment,
+  ...GarciaSeriesSlots,
+  ...GarciaSeriesAppointments,
   DrChenPractitioner,
   InfusionService,
   DrChenInfusionSchedule,

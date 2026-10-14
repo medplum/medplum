@@ -9,7 +9,8 @@ import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
-import { isBookableActorType } from '../actors';
+import { getActorTypeLabel, isBookableActorType } from '../actors';
+import type { NewActorType } from './ActorPage/actorDraft';
 import { ActorPage } from './ActorPage/ActorPage';
 import { ConfigEmptyState } from './ConfigPage/ConfigEmptyState';
 import type { ConfigPanelSection } from './ConfigPanel/ConfigPanel';
@@ -81,8 +82,8 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     open(next);
   }
 
-  function startNew(): void {
-    select({ kind: 'new-service', key: nextNewKey });
+  function startNew(next: { kind: 'new-service' } | { kind: 'new-actor'; resourceType: NewActorType }): void {
+    select({ ...next, key: nextNewKey });
     setNextNewKey((key) => key + 1);
   }
 
@@ -102,13 +103,21 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
   );
 
   // Dirty is left to the page, which remounts on what it stored and reports itself clean. A save landing after
-  // the viewer moved on must not touch the page now shown.
+  // the viewer moved on must not touch the page now shown. A room or device just created is selected by its new
+  // id, so its page remounts on what was stored.
   const handleActorSynced = useCallback(
     (syncedFor: ConfigSelection, resources: WithId<Resource>[], openServiceId: string | undefined): void => {
       store(resources);
-      setSelection((current) =>
-        current?.kind === 'actor' && isSameSelection(current, syncedFor) ? { ...current, openServiceId } : current
-      );
+      setSelection((current) => {
+        if (!isSameSelection(syncedFor, current)) {
+          return current;
+        }
+        if (syncedFor.kind === 'new-actor') {
+          const created = resources.find((resource) => resource.resourceType === syncedFor.resourceType);
+          return created ? { kind: 'actor', resourceType: syncedFor.resourceType, id: created.id } : current;
+        }
+        return current?.kind === 'actor' ? { ...current, openServiceId } : current;
+      });
     },
     [store]
   );
@@ -149,6 +158,17 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     ) : (
       <ConfigEmptyState notFound />
     );
+  } else if (selection?.kind === 'new-actor') {
+    detail = (
+      <ActorPage
+        key={`new-${selection.key}`}
+        newActorType={selection.resourceType}
+        services={services.items}
+        onSynced={(resources) => handleActorSynced(selection, resources, undefined)}
+        onDiscardNew={handleDiscardNew}
+        onDirtyChange={setDirty}
+      />
+    );
   } else if (selection?.kind === 'actor') {
     const list = actors[selection.resourceType];
     const actor = list.items.find((item) => item.resource.id === selection.id);
@@ -188,7 +208,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       incomplete: !services.complete,
       icon: <IconCalendarEvent size={12} />,
       createLabel: 'New visit type',
-      onCreate: startNew,
+      onCreate: () => startNew({ kind: 'new-service' }),
     },
     ...ACTOR_SECTIONS.map(({ resourceType, ...section }): ConfigPanelSection => ({
       key: resourceType,
@@ -196,6 +216,11 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       items: buildActorItems(actors[resourceType].items, selection, filter, showInactive),
       loading: actors[resourceType].loading,
       incomplete: !actors[resourceType].complete,
+      // Providers come from elsewhere, so only rooms and devices are created here.
+      ...(resourceType !== 'Practitioner' && {
+        createLabel: `New ${getActorTypeLabel(resourceType).toLowerCase()}`,
+        onCreate: () => startNew({ kind: 'new-actor', resourceType }),
+      }),
     })),
   ];
 

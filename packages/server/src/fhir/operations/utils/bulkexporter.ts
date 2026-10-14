@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { AsyncJob, Binary, Parameters, Project, Resource } from '@medplum/fhirtypes';
+import type { AsyncJob, Binary, Parameters, ParametersParameter, Project, Resource } from '@medplum/fhirtypes';
 import { once } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { getBinaryStorage } from '../../../storage/loader';
@@ -130,7 +130,7 @@ export class BulkExporter {
     }
   }
 
-  async close(project: Project): Promise<AsyncJob> {
+  async close(project: Project, parameters: ParametersParameter[] = []): Promise<AsyncJob> {
     if (!this.resource) {
       throw new Error('Export must be started before calling close()');
     }
@@ -156,22 +156,25 @@ export class BulkExporter {
         },
         status: 'completed',
         transactionTime: new Date().toISOString(),
-        output: this.formatOutput(),
+        output: this.formatOutput(parameters),
       });
     }
     return this.resource;
   }
 
-  formatOutput(): Parameters {
+  formatOutput(parameters: ParametersParameter[]): Parameters {
     return {
       resourceType: 'Parameters',
-      parameter: Object.entries(this.writers).map(([resourceType, writer]) => ({
-        name: 'output',
-        part: [
-          { name: 'type', valueCode: resourceType },
-          { name: 'url', valueUri: getReferenceString(writer.binary) },
-        ],
-      })),
+      parameter: [
+        ...parameters,
+        ...Object.entries(this.writers).map(([resourceType, writer]) => ({
+          name: 'output',
+          part: [
+            { name: 'type', valueCode: resourceType },
+            { name: 'url', valueUri: getReferenceString(writer.binary) },
+          ],
+        })),
+      ],
     };
   }
 }

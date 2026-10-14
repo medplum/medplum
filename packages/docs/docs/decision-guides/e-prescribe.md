@@ -9,11 +9,11 @@ download_slug: e-prescribe
 
 _Companion to the [E-Prescribe (eRx)](/docs/medications/e-prescibe) docs._
 
-E-prescribing in Medplum runs through an integration with an e-prescribing vendor connected to the SureScripts network. This space is less about the FHIR data model than a sequence of **integration and enrollment decisions**: how much prescribing UI you build, whether you send controlled substances, and how prescribers get enrolled and verified. This guide moves from those high-level decisions down to feature detail.
+E-prescribing in Medplum is part of the [Medplum EHR](/solutions/medplum-ehr), not a standalone product. It runs through an integration with an e-prescribing vendor connected to the SureScripts network. This space is less about the FHIR data model than a sequence of **integration and enrollment decisions**: whether prescribing uses the vendor's hosted flow or a custom workflow, whether you send controlled substances, and how prescribers get enrolled and verified. This guide moves from those high-level decisions down to feature detail.
 
 ## Section 1: Use Case & Participants
 
-*Two of these — what you prescribe (1.1) and how much you build (1.2) — cascade into most of Section 3. Land them first.*
+*Two of these — what you prescribe (1.1) and which workflow you use (1.2) — cascade into most of Section 3. Land them first.*
 
 **1.1 What are you prescribing?**
 
@@ -23,13 +23,13 @@ E-prescribing in Medplum runs through an integration with an e-prescribing vendo
 
 *Why: controlled substances require **EPCS**, which adds a per-prescriber enrollment path (DEA, identity proofing, two-factor auth). If you never prescribe them, skip the entire Controlled Substances lane (3.4) and enrollment shrinks substantially.*
 
-**1.2 How much of the prescribing experience do you want to build?**
+**1.2 Do you want the hosted flow, or a custom workflow?**
 
-- **Hosted iframe** — embed the vendor's prescribing UI. Minimal build; drug search, dosing, pharmacy, and send all happen inside the vendor's screens.
-- **Integrated (API-driven)** — build your own prescribing UI on Medplum's FHIR operations and bots; only the final, regulation-required **review-and-send** step stays a hosted widget.
+- **Hosted iframe** — embed the vendor's prescribing screens. Drug search, dosing, pharmacy, and send all happen inside the vendor's flow.
+- **Custom workflow** — prescribe from the chart using Medplum's FHIR operations and bots. Only the final, regulation-required **review-and-send** step stays a hosted widget.
 - Not sure
 
-*Why: the core build-vs-UX trade-off. The iframe is fastest to live but UX is fixed and you generally can't prescribe from inside your own chart. Integrated lets you own the workflow and prescribe in context, at the cost of building it. See 3.1.*
+*Why: the iframe is fastest to live, and the steps stay the vendor's. A custom workflow keeps prescribing in the chart. Presets — clinic favorites and order sets — standardize repeat orders on either path. Either way, transmission stays on the vendor's review-and-send step. See 3.1.*
 
 **1.3 New build or replacing an existing e-Rx system?**
 
@@ -44,9 +44,9 @@ E-prescribing in Medplum runs through an integration with an e-prescribing vendo
 - Prescribers (sign and send)
 - Prescribing agents / proxies (stage but can't send)
 - Administrators (enroll prescribers, manage practices, configure favorites)
-- Any offshore or non-US staff using the prescribing UI?
+- Any offshore or non-US staff using e-prescribing?
 
-*Why: prescriber vs. agent vs. admin map to distinct enrollment roles (3.3), and only fully-enrolled prescribers can transmit. Non-prescribing roles don't need an NPI. Offshore and non-US staff matter here because e-prescribing is only available to professionals **authorized to prescribe in the United States** — a SureScripts-network constraint, not a Medplum one — so non-US staff can only hold non-prescribing roles, and even those must be enrolled with the vendor to call pharmacy or medication-history operations (3.3). Confirm your vendor's policy on non-US users before designing an offshore-staffing model around the prescribing UI.*
+*Why: prescriber vs. agent vs. admin map to distinct enrollment roles (3.3), and only fully-enrolled prescribers can transmit. Non-prescribing roles don't need an NPI. Offshore and non-US staff matter here because e-prescribing is only available to professionals **authorized to prescribe in the United States** — a SureScripts-network constraint, not a Medplum one — so non-US staff can only hold non-prescribing roles, and even those must be enrolled with the vendor to call pharmacy or medication-history operations (3.3). Confirm your vendor's policy on non-US users before designing an offshore-staffing model around e-prescribing.*
 
 ---
 
@@ -56,7 +56,7 @@ E-prescribing in Medplum runs through an integration with an e-prescribing vendo
 
 | \# | Feature | § | Yes | No | Nice-to-have | Not sure |
 | :---- | :---- | :---- | :---- | :---- | :---- | :---- |
-| 1 | Integration model (hosted iframe vs. integrated/API) | 3.1 |  |  |  |  |
+| 1 | Custom workflow | 3.1 |  |  |  |  |
 | 2 | Prescriber enrollment & identity proofing | 3.2 |  |  |  |  |
 | 3 | Provider & practice identity data (NPI, DEA, roles) | 3.3 |  |  |  |  |
 | 4 | Non-prescriber staff access (pharmacy / history ops) | 3.3 |  |  |  |  |
@@ -88,24 +88,24 @@ E-prescribing in Medplum runs through an integration with an e-prescribing vendo
 
 ### Foundations
 
-#### 3.1 Integration Model
+#### 3.1 Custom Workflow
 
-How much of the prescribing UI you build — the decision that shapes almost every section below.
+Whether prescribing follows the vendor's hosted flow or a custom workflow in the chart. This choice shapes almost every section below.
 
 **Questions:**
 
-- Do prescribers need to write prescriptions *in context* (from inside your chart), or is a standalone screen fine?
-- How much engineering do you want to invest in the prescribing UI, now and ongoing?
-- Do you need to control the look and steps of the flow, or is a vendor-standard flow acceptable?
+- Do prescribers write prescriptions from inside the chart, or is the vendor's hosted flow enough?
+- Do you want presets — clinic favorites and order sets — for medications the practice sends often?
+- Is the vendor's standard sequence of steps acceptable?
 
 | Situation | Approach |
 | :---- | :---- |
-| Standalone screen fine; minimal build | **Hosted iframe** — the vendor's prescribing UI, embedded. Fastest to live; UX is fixed and not customizable. |
-| Must prescribe from within your own chart | **Integrated (API-driven)** — build the pre-approval flow on FHIR operations and bots; the prescriber stays in your UI until the final send. |
-| Own the branding and steps | **Integrated** — you control everything up to the vendor-hosted review-and-send widget (stylable; transmitted content is not). |
-| Either model | The final review-and-send step is always vendor-hosted and compliance-controlled — neither model replaces the moment of transmission with your own code. |
+| Hosted flow is enough | **Hosted iframe** — the vendor's screens, embedded. Fastest to live; the steps are the vendor's. |
+| Prescribe from the chart | **Custom workflow** — stage the order with FHIR operations and bots; the prescriber stays in the chart until the final send. |
+| Repeat medications | **Presets** — clinic favorites and order sets (3.7). These are configuration, not a separate prescribing interface. |
+| Either path | The final review-and-send step is always vendor-hosted and compliance-controlled. A custom workflow does not replace transmission. |
 
-> **⚠ Choose deliberately.** This is expensive to reverse — it determines whether you build a prescribing UI at all, whether "prescribe from the chart" is possible, and how enrollment and favorites surface. Align on 1.2 before committing engineering.
+> **⚠ Choose deliberately.** This is expensive to reverse — it determines whether prescribers stay in the chart, and how enrollment and presets surface. Align on 1.2 before you commit to a workflow.
 
 #### 3.2 Prescriber Enrollment & Identity Proofing
 
@@ -272,7 +272,7 @@ Read when one Medplum project serves multiple **downstream clients** that prescr
 | Platform serving independent clients | Model each downstream client as its own practice/tenant so prescribers, patients, and rosters are scoped per client rather than pooled. |
 | Roster / patient isolation required | Scope prescriber pickers and patient lists to the client's tenant — a single shared tenant can expose one client's prescribers or patients to another. Decide isolation before onboarding the second client. |
 | Origin branding at the pharmacy | If the medication must reach the pharmacy carrying the originating clinic's identity/branding, model a distinct tenant per client rather than one shared tenant. |
-| Scoped admin access | The **integrated** path can grant client admins access scoped to their own tenant (cross-tenant admin access is blocked for HIPAA); the **hosted-iframe** path generally cannot expose a scoped admin portal — a factor in the 3.1 decision. |
+| Scoped admin access | The **custom workflow** can grant client admins access scoped to their own tenant (cross-tenant admin access is blocked for HIPAA); the **hosted-iframe** path generally cannot expose a scoped admin portal — a factor in the 3.1 decision. |
 | Shared vs. per-client tenant | A single shared tenant is simplest but limits isolation and branding; a tenant-per-client isolates cleanly but adds enrollment and ops overhead (prescribers may need enrolling in each). Choose based on how much the clients must be kept apart. |
 
 ---
@@ -301,5 +301,5 @@ Read only when replacing an existing EHR or e-Rx vendor (1.3).
 
 The e-prescribing vendors Medplum integrates with first-party:
 
-- **[ScriptSure](/docs/integration/scriptsure)** — full API surface with custom FHIR operations and bots, plus an authenticated iframe. The option behind the **integrated (API-driven)** model in 3.1.
+- **[ScriptSure](/docs/integration/scriptsure)** — FHIR operations and bots, plus an authenticated iframe. The option behind the **custom workflow** in 3.1.
 - **[DoseSpot](/docs/integration/dosespot)** — embedded iFrame prescribing, including clinic favorites (3.7) and [prescriber enrollment](/docs/integration/dosespot/enroll-user) (3.2).

@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG } from '@medplum/core';
 
+export const LOCATION_PHYSICAL_TYPE_CODE_SYSTEM = HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/location-physical-type';
+
+/** The identifier system for a US National Provider Identifier. */
+export const NPI_SYSTEM = HTTP_HL7_ORG + '/fhir/sid/us-npi';
+
+/** Marks the PractitionerRole the scheduling configuration keeps for a provider, valued with the provider's id. */
+export const SERVICE_FACILITY_ROLE_SYSTEM = 'https://medplum.com/fhir/scheduling-service-facility-role';
+
 // Note that these are used by the `Appointment.cancelationReason` field (one
 // "L" in that field name in R4).
 export const APPOINTMENT_CANCELLATION_REASON_VALUE_SET =
@@ -15,4 +23,4 @@ export const APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM =
  * Excludes what a room is rather than admitting what a site is: `physicalType` is
  * optional, so `physical-type=si,bu` would hide a Location that never declared one.
  */
-export const LOCATION_SEARCH_CRITERIA = { _count: '25', _sort: 'name', 'physical-type:not': 'ro,bd' };
+export const SERVICE_FACILITY_SEARCH_CRITERIA = { _count: '25', _sort: 'name', 'physical-type:not': 'ro,bd' };

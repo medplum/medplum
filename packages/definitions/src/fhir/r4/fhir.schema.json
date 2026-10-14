@@ -61498,7 +61498,8 @@
               "validate-terminology",
               "range-search",
               "log-streaming",
-              "async-batch"
+              "async-batch",
+              "archive"
             ]
           },
           "type": "array"

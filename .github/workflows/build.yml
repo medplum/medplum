@@ -100,6 +100,8 @@ jobs:
         #   - packages/app                  -> app preview
         #   - packages/docs                 -> docs preview
         #   - examples/medplum-provider     -> provider preview
+        #   - packages/{storybook,mock}     -> storybook preview
+        #   - packages/react-scheduling     -> provider + storybook previews
         #   - packages/{core,react,react-hooks} -> all previews (shared deps)
         run: |
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
@@ -113,30 +115,37 @@ jobs:
           deploy_app=false
           deploy_docs=false
           deploy_provider=false
+          deploy_storybook=false
 
           # Shared packages force all previews.
           if changed '^packages/(core|react|react-hooks)/'; then
             deploy_app=true
             deploy_docs=true
             deploy_provider=true
+            deploy_storybook=true
           fi
 
           if changed '^packages/app/'; then deploy_app=true; fi
           if changed '^packages/docs/'; then deploy_docs=true; fi
           if changed '^examples/medplum-provider/'; then deploy_provider=true; fi
-          if changed '^packages/react-scheduling/'; then deploy_provider=true; fi
+          if changed '^packages/(storybook|mock)/'; then deploy_storybook=true; fi
+          if changed '^packages/react-scheduling/'; then
+            deploy_provider=true
+            deploy_storybook=true
+          fi
 
           deploy_any=false
-          if [ "$deploy_app" = true ] || [ "$deploy_docs" = true ] || [ "$deploy_provider" = true ]; then
+          if [ "$deploy_app" = true ] || [ "$deploy_docs" = true ] || [ "$deploy_provider" = true ] || [ "$deploy_storybook" = true ]; then
             deploy_any=true
           fi
 
-          echo "Decision: app=$deploy_app docs=$deploy_docs provider=$deploy_provider any=$deploy_any"
+          echo "Decision: app=$deploy_app docs=$deploy_docs provider=$deploy_provider storybook=$deploy_storybook any=$deploy_any"
 
           {
             echo "deploy_app=$deploy_app"
             echo "deploy_docs=$deploy_docs"
             echo "deploy_provider=$deploy_provider"
+            echo "deploy_storybook=$deploy_storybook"
             echo "deploy_any=$deploy_any"
           } >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -200,6 +209,12 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
           RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
+      - name: Deploy storybook preview
+        if: steps.changes.outputs.deploy_storybook == 'true'
+        run: './scripts/deploy-storybook.sh'
+        env:
+          AWS_REGION: 'us-east-1'
+          STORYBOOK_BUCKET: preview.medplum.dev/previews/storybook-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
       - name: Comment preview URLs
         if: steps.changes.outputs.deploy_any == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
@@ -207,6 +222,7 @@ jobs:
           DEPLOY_APP: ${{ steps.changes.outputs.deploy_app }}
           DEPLOY_DOCS: ${{ steps.changes.outputs.deploy_docs }}
           DEPLOY_PROVIDER: ${{ steps.changes.outputs.deploy_provider }}
+          DEPLOY_STORYBOOK: ${{ steps.changes.outputs.deploy_storybook }}
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -222,6 +238,9 @@ jobs:
             }
             if (process.env.DEPLOY_PROVIDER === 'true') {
               rows.push(`| Provider  | https://provider-${login}-${n}.preview.medplum.dev |`);
+            }
+            if (process.env.DEPLOY_STORYBOOK === 'true') {
+              rows.push(`| Storybook | https://storybook-${login}-${n}.preview.medplum.dev |`);
             }
 
             const body = [

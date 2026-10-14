@@ -682,6 +682,44 @@ describe('Infra', () => {
     });
   });
 
+  test('storageBotInputExpirationDays expires only the bot input prefix', async () => {
+    const config = await normalizeInfraConfig({
+      ...baseConfig,
+      stackName: 'MedplumBotInputExpirationStack',
+      storageBotInputExpirationDays: 30,
+    } as unknown as MedplumSourceInfraConfig);
+    const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
+
+    template.hasResourceProperties('AWS::S3::Bucket', {
+      BucketName: 'medplum-storage',
+      LifecycleConfiguration: {
+        Rules: [
+          {
+            Id: 'ExpireBotInput',
+            Prefix: 'bot/',
+            Status: 'Enabled',
+            ExpirationInDays: 30,
+            NoncurrentVersionExpiration: { NoncurrentDays: 1 },
+          },
+          { Id: 'ExpireBotInputDeleteMarkers', Prefix: 'bot/', Status: 'Enabled', ExpiredObjectDeleteMarker: true },
+        ],
+      },
+    });
+  });
+
+  test('No storage lifecycle rules without storageBotInputExpirationDays', async () => {
+    const config = await normalizeInfraConfig({
+      ...baseConfig,
+      stackName: 'MedplumNoBotInputExpirationStack',
+    } as unknown as MedplumSourceInfraConfig);
+    const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
+
+    template.hasResourceProperties('AWS::S3::Bucket', {
+      BucketName: 'medplum-storage',
+      LifecycleConfiguration: Match.absent(),
+    });
+  });
+
   // Regression test for https://github.com/medplum/medplum/issues/8985:
   // The default ElastiCache node type was `cache.t2.medium`, but AWS no longer
   // allows creating new ElastiCache clusters on T2 instances, so fresh deploys

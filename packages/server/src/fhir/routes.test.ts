@@ -437,6 +437,25 @@ describe('FHIR Routes', () => {
     expect(res3).toHaveStatus(410);
   });
 
+  test('Delete resource with failed precondition', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res).toHaveStatus(201);
+    const patient = res.body;
+    const res2 = await request(app)
+      .delete(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('If-Match', 'W/"bad-id"');
+    expect(res2).toHaveStatus(412);
+    const res3 = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3).toHaveStatus(200);
+  });
+
   test('Delete resource invalid UUID', async () => {
     const res = await request(app)
       .delete(`/fhir/R4/Patient/123`)
