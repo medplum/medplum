@@ -11,6 +11,7 @@ import {
   REQUIRES_DIAGNOSIS_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
+  SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
@@ -1195,6 +1196,12 @@ export const OkaforImagingAppointment: WithId<Appointment> = {
   start: '2020-05-06T18:00:00Z',
   end: '2020-05-06T18:30:00Z',
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
+  extension: [
+    {
+      url: SchedulingExternalUrlURI,
+      valueUrl: 'https://foomedical.com/appointments?date=05%2F06%2F2020&mrn=456',
+    },
+  ],
   participant: setPrimaryProvider(
     [
       { status: 'accepted', actor: { reference: 'Patient/pt-alvarez', display: 'Renee Alvarez' } },
