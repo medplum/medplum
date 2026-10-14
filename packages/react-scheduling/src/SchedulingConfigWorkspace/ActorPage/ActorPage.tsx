@@ -31,10 +31,12 @@ import { StatusBadge } from '../StatusBadge';
 import type { ActorGeneralFields, ActorResource, NewActorType } from './actorDraft';
 import { actorGeneralFieldsOf, buildActorResource, hasEditableName, newActorResource } from './actorDraft';
 import { ActorGeneral } from './ActorGeneral';
+import { OfferAllSwitch } from './OfferAllSwitch';
 import { OfferingEditor, OfferingSummary } from './OfferingEditor';
 import { OfferingsList } from './OfferingsList';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
 import { buildScheduleDraft, newOfferingFields, scheduleFieldsOf, startingOfferingFields } from './scheduleDraft';
+import { useOfferAll } from './useOfferAll';
 
 export interface ActorPageProps {
   /**
@@ -97,6 +99,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const [open, setOpen] = useState<string | null>(() =>
     initialOpenServiceId && Object.hasOwn(initial.offerings, initialOpenServiceId) ? initialOpenServiceId : null
   );
+  const offerAll = useOfferAll({ servicesById, schedule, fields, setFields, setOpenServiceId: setOpen });
   const [saving, setSaving] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
   const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'>>();
@@ -236,6 +239,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     setGeneral(initialGeneral);
     setDiscards((count) => count + 1);
     setFields(initial);
+    offerAll.reset();
     setOpen((current) => (current && Object.hasOwn(initial.offerings, current) ? current : null));
     setTriedToSave(false);
     setFailure(undefined);
@@ -316,10 +320,12 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
             Visit types can be offered once {actorName} is created.
           </Text>
         )}
+        {actorWithId && <OfferAllSwitch actorName={actorName} {...offerAll.switchProps} />}
         {actorWithId && (
           <OfferingsList
             actorName={actorName}
             offeredServices={offered}
+            offersAllServices={fields.allServices}
             openServiceId={open}
             onOpenServiceIdChange={setOpen}
             renderHeader={(service) => (

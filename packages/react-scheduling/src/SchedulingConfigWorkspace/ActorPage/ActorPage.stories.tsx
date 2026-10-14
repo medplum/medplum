@@ -14,6 +14,7 @@ import { withFixtures } from '../../stories/decorators';
 import {
   ConfigFixtures,
   DrLindqvistPractitioner,
+  DrMensahPractitioner,
   DrNguyenPractitioner,
   DrPatelPractitioner,
   DrReyesPractitioner,
@@ -152,3 +153,13 @@ export const ProviderWithManyVisitTypes = (): JSX.Element => (
   <StoredActor resourceType="Practitioner" id={DrLindqvistPractitioner.id} />
 );
 ProviderWithManyVisitTypes.decorators = [withFixtures(ManyVisitTypesFixtures)];
+
+/**
+ * Dr. Kwame Mensah offers every visit type, so none can be stopped on its own, but each can be customized:
+ * Neurology New Patient Visit has custom hours. Switching Offer all visit types off keeps only that one.
+ * @returns The story.
+ */
+export const ProviderOfferingAllVisitTypes = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrMensahPractitioner.id} />
+);
+ProviderOfferingAllVisitTypes.decorators = [withFixtures(ManyVisitTypesFixtures)];

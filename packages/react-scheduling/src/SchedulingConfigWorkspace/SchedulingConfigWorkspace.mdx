@@ -50,8 +50,9 @@ one, which is listed once it is saved. Providers can't be created here.
 - **Default availability:** the weekly hours every calendar offering it follows unless it sets its own, edited
   with the same fields as `ScheduleAvailabilityEditor`.
 - **Schedules offering this visit type:** every provider, room, and device whose Schedule offers it, grouped as the
-  sidebar lists them, and marked **Customized** when the Schedule sets anything of its own for it. One that is turned
-  off, or whose Schedule is, is left out, as booking skips both. Picking one opens that actor's page on this visit type.
+  sidebar lists them, and marked **Customized** when the Schedule sets anything of its own for it. One offering every
+  visit type is listed for each active one, marked **All visit types**. One that is turned off, or whose Schedule
+  is, is left out, as booking skips both. Picking one opens that actor's page on this visit type.
 
 ## A provider's, room's, or device's page
 
@@ -76,6 +77,15 @@ one, which is listed once it is saved. Providers can't be created here.
 The entries are listed twenty at a time, with **Show more** for the rest, and the filter above them narrows them by
 name. A visit type just offered, the entry open, and whatever is ticked stay listed whatever the filter or page.
 The box above the list ticks every visit type the filter matches, not only those shown.
+
+**Offer all visit types** switches the Schedule to offering every active visit type, including ones added later,
+through the marker described in [Offering All Service Types](https://www.medplum.com/docs/scheduling/defining-availability#offering-all-service-types),
+rather than naming each one. Switching it on asks first, saying how many visit types become bookable, and naming
+any with no hours of their own, which would be bookable around the clock. While it is on, every active visit type is
+listed and can still be customized, but none can be offered or stopped on its own. An inactive one the Schedule still
+names is listed too, and can be stopped. Switching it off asks first, then
+keeps only the visit types customized here and the ones the Schedule names. The visit types the Schedule already
+named stay named while it is on, so a client that doesn't know the marker still books them.
 
 **Offer visit types** opens a searchable list of every active visit type not offered yet. Tick any number to offer
 them together, or, while searching, **Select all** that match. Offering an actor's first visit type creates its

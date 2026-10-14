@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  allServiceTypesCodeableConcept,
   clearScheduleSchedulingParameter,
   createReference,
   deepClone,
@@ -9,6 +10,7 @@ import {
   extractServiceTypeReferences,
   resolveId,
   SchedulingParametersURI,
+  serviceTypeIncludesAllServices,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
@@ -27,7 +29,7 @@ import {
   initialAvailabilityFieldsValue,
   toWeeklyAvailability,
 } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
-import { getOfferedServices, isActorInactive } from '../SchedulingConfigWorkspace.utils';
+import { getOfferedServices, isActorInactive, isCoveredByAllServices } from '../SchedulingConfigWorkspace.utils';
 
 /** What a Schedule sets for one visit type it offers. */
 export interface OfferingFields {
@@ -39,7 +41,9 @@ export interface OfferingFields {
 /** What the page holds for an actor's Schedule. */
 export interface ScheduleFields {
   readonly active: boolean;
-  /** Keyed by visit type id, for each one offered, in the order they are listed. */
+  /** Whether `Schedule.serviceType` carries the marker for offering every active visit type. */
+  readonly allServices: boolean;
+  /** Keyed by visit type id, for each one offered: every active one when it offers all of them. */
   readonly offerings: Readonly<Record<string, OfferingFields>>;
 }
 
@@ -53,14 +57,41 @@ export function scheduleFieldsOf(
   schedule: WithId<Schedule> | undefined,
   servicesById: ReadonlyMap<string, WithId<HealthcareService>>
 ): ScheduleFields {
-  const services = getOfferedServices(schedule, servicesById);
-  const offerings: Record<string, OfferingFields> = {};
-  if (schedule) {
-    for (const service of services) {
-      offerings[service.id] = offeringFieldsOf(service, schedule);
+  const allServices = serviceTypeIncludesAllServices(schedule?.serviceType);
+  const named = Object.fromEntries(
+    getOfferedServices(schedule, servicesById).map((service) => [service.id, storedOfferingFields(service, schedule)])
+  );
+  return {
+    active: schedule?.active !== false,
+    allServices,
+    offerings: allServices ? withCoveredOfferings(named, servicesById.values(), schedule) : named,
+  };
+}
+
+/**
+ * Adds each visit type the marker covers that isn't listed yet, seeded from what the Schedule holds for it, which
+ * the marker puts in effect.
+ * @param offerings - The offerings listed.
+ * @param services - Every visit type loaded.
+ * @param schedule - The Schedule as stored, if the actor has one.
+ * @returns The offerings with every covered visit type.
+ */
+export function withCoveredOfferings(
+  offerings: Readonly<Record<string, OfferingFields>>,
+  services: Iterable<WithId<HealthcareService>>,
+  schedule: Schedule | undefined
+): Record<string, OfferingFields> {
+  const result = { ...offerings };
+  for (const service of services) {
+    if (isCoveredByAllServices(service) && !Object.hasOwn(result, service.id)) {
+      result[service.id] = storedOfferingFields(service, schedule);
     }
   }
-  return { active: schedule?.active !== false, offerings };
+  return result;
+}
+
+function storedOfferingFields(service: WithId<HealthcareService>, schedule: Schedule | undefined): OfferingFields {
+  return schedule ? offeringFieldsOf(service, schedule) : newOfferingFields(service);
 }
 
 function offeringFieldsOf(service: WithId<HealthcareService>, schedule: Schedule): OfferingFields {
@@ -94,7 +125,9 @@ export function startingOfferingFields(initial: ScheduleFields, service: WithId<
  * Builds the Schedule to store from what the page holds. Only what was edited is rewritten, so saving one field
  * leaves the rest of the Schedule as another tool wrote it.
  *
- * A Schedule is created only once a visit type is offered, never on its own.
+ * A Schedule is created only once a visit type is offered, or all of them are, never on its own. A visit type the
+ * marker covers gets no reference of its own, but references already there are kept, so a client that doesn't
+ * know the marker still books what they name.
  * @param stored - The Schedule as stored, if the actor has one.
  * @param actor - The actor as edited, which a new Schedule is held on alone, and active only while it is.
  * @param fields - What the page holds.
@@ -109,7 +142,7 @@ export function buildScheduleDraft(
   initial: ScheduleFields,
   servicesById: ReadonlyMap<string, WithId<HealthcareService>>
 ): Schedule | undefined {
-  if (!stored && Object.keys(fields.offerings).length === 0) {
+  if (!stored && !fields.allServices && Object.keys(fields.offerings).length === 0) {
     return undefined;
   }
   let draft: Schedule = stored
@@ -119,6 +152,14 @@ export function buildScheduleDraft(
   if (stored && fields.active !== initial.active) {
     draft.active = fields.active;
   }
+  if (fields.allServices !== serviceTypeIncludesAllServices(draft.serviceType)) {
+    draft.serviceType = fields.allServices
+      ? [...(draft.serviceType ?? []), allServiceTypesCodeableConcept()]
+      : draft.serviceType?.filter((concept) => !serviceTypeIncludesAllServices([concept]));
+    if (!draft.serviceType?.length) {
+      delete draft.serviceType;
+    }
+  }
 
   for (const id of Object.keys(initial.offerings)) {
     const service = servicesById.get(id);
@@ -127,10 +168,12 @@ export function buildScheduleDraft(
     }
   }
 
+  const named = new Set(getOfferedServices(draft, servicesById).map((service) => service.id));
   for (const [id, current] of Object.entries(fields.offerings)) {
     const service = servicesById.get(id);
     if (service) {
-      draft = withOfferingEdits(draft, service, current, initial);
+      const offered = named.has(id) || (fields.allServices && isCoveredByAllServices(service));
+      draft = withOfferingEdits(draft, service, current, initial, offered);
     }
   }
   return draft;
@@ -140,11 +183,15 @@ function withOfferingEdits(
   schedule: Schedule,
   service: WithId<HealthcareService>,
   current: OfferingFields,
-  initial: ScheduleFields
+  initial: ScheduleFields,
+  offered: boolean
 ): Schedule {
   let draft = schedule;
-  if (!Object.hasOwn(initial.offerings, service.id)) {
-    draft = withoutService(draft, service);
+  // One offered already, by name or by the marker, keeps what the Schedule holds for it: that is in effect.
+  if (!offered) {
+    if (!Object.hasOwn(initial.offerings, service.id)) {
+      draft = withoutService(draft, service);
+    }
     draft.serviceType = [...(draft.serviceType ?? []), ...toServiceTypeCodeableConcepts(service)];
   }
   const before = startingOfferingFields(initial, service);
