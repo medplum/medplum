@@ -5,6 +5,7 @@ import type { WithId } from '@medplum/core';
 import {
   createReference,
   RecurrenceIdExtensionURI,
+  SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
@@ -76,6 +77,17 @@ const RecurringAppointment: WithId<Appointment> = {
   ...RiveraImagingAppointment,
   id: 'appt-rivera-imaging-tue-recurring',
   extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: 2 }],
+};
+
+const ExternalAppointment: WithId<Appointment> = {
+  ...RiveraImagingAppointment,
+  id: 'appt-rivera-imaging-tue-external',
+  extension: [
+    {
+      url: SchedulingExternalUrlURI,
+      valueUrl: 'https://foomedical.com/appointments?date=05%2F05%2F2020&mrn=123',
+    },
+  ],
 };
 
 // The schedules, the visit type and the actors as well as the visits themselves: moving
@@ -183,6 +195,17 @@ export const AuthorizationDetails = (): JSX.Element => {
   );
 };
 AuthorizationDetails.decorators = [withValueSets(AuthorizationValueSets)];
+
+/**
+ * A visit synced with an external system, which links to it there in a new tab.
+ *
+ * @returns The story.
+ */
+export const ExternalLink = (): JSX.Element => (
+  <Paper withBorder p="md" maw={320}>
+    <AppointmentDetails appointment={ExternalAppointment} />
+  </Paper>
+);
 
 /**
  * One visit of a weekly series booked through `$book`, which says where it falls in it.

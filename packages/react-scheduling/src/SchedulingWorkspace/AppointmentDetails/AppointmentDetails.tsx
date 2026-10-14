@@ -10,12 +10,13 @@ import {
   RecurrenceIdExtensionURI,
   RecurrenceTemplateExtensionURI,
   resolveId,
+  SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
 } from '@medplum/core';
 import type { Appointment, CodeableConcept, Parameters } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconArrowLeft, IconCalendarEvent } from '@tabler/icons-react';
+import { IconArrowLeft, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useState } from 'react';
 import { getNonPatientActors, getPatientParticipant } from '../../actors';
@@ -268,6 +269,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const cancelable = isCancelable(appointment);
   const { visitType, procedures } = partitionServiceTypes(appointment);
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
+  const externalUrl = getExternalUrl(appointment);
 
   // Both pages fill the pane the same way, so what can be done to the visit sits at the
   // foot of either.
@@ -324,6 +326,18 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       {!editing && (
         <Stack gap="sm" className={classes.actions}>
           <Divider />
+          {externalUrl && (
+            <Button
+              component="a"
+              href={externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="outline"
+              rightSection={<IconExternalLink size={16} stroke={1.8} />}
+            >
+              View details
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setEditing(true)}>
             Edit
           </Button>
@@ -350,6 +364,19 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       )}
     </Stack>
   );
+}
+
+/**
+ * Reads the link to this visit in an external system.
+ * @param appointment - The appointment being described.
+ * @returns The link, or undefined when there is none or it is not `https`.
+ */
+function getExternalUrl(appointment: Appointment): string | undefined {
+  const value = getExtensionValue(appointment, SchedulingExternalUrlURI);
+  if (typeof value !== 'string' || !URL.canParse(value)) {
+    return undefined;
+  }
+  return new URL(value).protocol === 'https:' ? value : undefined;
 }
 
 /**

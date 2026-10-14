@@ -9,6 +9,7 @@ import {
   REQUIRES_PROCEDURE_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
+  SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
   ServiceTypeReferenceURI,
 } from '@medplum/core';
@@ -497,6 +498,26 @@ describe('AppointmentDetails', () => {
     expect(cancelButton()).toHaveAttribute('disabled');
     expect(screen.getByText("An appointment in 'fulfilled' status cannot be cancelled.")).toBeInTheDocument();
   });
+
+  test('links to the visit in the external system in a new tab', async () => {
+    const url = 'https://foomedical.com/appointments?date=05%2F05%2F2020&mrn=123';
+    renderDetails({ ...BOOKED_APPOINTMENT, extension: [{ url: SchedulingExternalUrlURI, valueUrl: url }] });
+    await screen.findByText('Miles Cooper');
+
+    const link = screen.getByRole('link', { name: 'View details' });
+    expect(link).toHaveAttribute('href', url);
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
+  test.each(['javascript:alert(1)', 'http://foomedical.com/appointments', 'not a url'])(
+    'offers no external link to %s',
+    async (url) => {
+      renderDetails({ ...BOOKED_APPOINTMENT, extension: [{ url: SchedulingExternalUrlURI, valueUrl: url }] });
+      await screen.findByText('Miles Cooper');
+
+      expect(screen.queryByRole('link', { name: 'View details' })).not.toBeInTheDocument();
+    }
+  );
 
   test('offers to reschedule a visit $reschedule would accept', async () => {
     renderDetails(BOOKED_APPOINTMENT);
