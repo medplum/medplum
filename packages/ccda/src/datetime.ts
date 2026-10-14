@@ -52,10 +52,10 @@ export function mapCcdaToFhirDateTime(dateTime: string | undefined): string | un
     return undefined;
   }
 
-  const timezoneMatch = dateTime.match(/([+-]\d{4})$/);
+  const timezoneMatch = /([+-]\d{4})$/.exec(dateTime);
   const tz = timezoneMatch?.[1];
   const value = tz ? dateTime.substring(0, dateTime.length - tz.length) : dateTime;
-  const fractionMatch = value.match(/\.(\d+)$/);
+  const fractionMatch = /\.(\d+)$/.exec(value);
   const fraction = fractionMatch?.[1];
   const dateAndTime = fractionMatch ? value.substring(0, value.length - fractionMatch[0].length) : value;
 
@@ -83,7 +83,8 @@ export function mapCcdaToFhirDateTime(dateTime: string | undefined): string | un
     timezone = `${timezone.substring(0, 3)}:${timezone.substring(3)}`;
   }
 
-  return `${date}T${hour}:${minute}:${second}${fraction ? `.${fraction}` : ''}${timezone}`;
+  const fractionalSeconds = fraction ? `.${fraction}` : '';
+  return `${date}T${hour}:${minute}:${second}${fractionalSeconds}${timezone}`;
 }
 
 /**
