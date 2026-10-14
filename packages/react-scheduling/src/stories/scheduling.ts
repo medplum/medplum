@@ -9,6 +9,9 @@ import {
   deepClone,
   getReferenceString,
   HL7_V2_0203,
+  RecurrenceIdExtensionURI,
+  RecurrenceTemplateExtensionURI,
+  RecurringAppointmentSeriesIdentifierSystem,
   REQUIRES_DIAGNOSIS_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
@@ -1332,6 +1335,7 @@ export const DrBrownAppointments: WithId<Appointment>[] = DrBrownSlots.map((slot
     ],
     createReference(DrBrownPractitioner)
   ),
+  ...(idx === 1 && garciaSeriesOccurrence(2)),
 }));
 
 /**
@@ -1408,6 +1412,54 @@ export const MondayTelehealthAppointment: WithId<Appointment> = {
   ),
 };
 
+/**
+ * Eliana Garcia sees Dr. Brown weekly, three times: this week's visit is the second, and
+ * the first and third are a week either side, each holding its own Slot.
+ */
+const GarciaSeriesOtherWeeks = (
+  [
+    [1, -1],
+    [3, 1],
+  ] as const
+).map(([position, weeks]) => {
+  const slot: WithId<Slot> = {
+    ...DrBrownSlots[1],
+    id: `brown-garcia-${position}`,
+    start: addMinutes(new Date(DrBrownSlots[1].start), weeks * 7 * 24 * 60).toISOString(),
+    end: addMinutes(new Date(DrBrownSlots[1].end), weeks * 7 * 24 * 60).toISOString(),
+  };
+  const appointment: WithId<Appointment> = {
+    ...DrBrownAppointments[1],
+    id: `appointment-${slot.id}`,
+    start: slot.start,
+    end: slot.end,
+    slot: [createReference(slot)],
+    ...garciaSeriesOccurrence(position),
+  };
+  return { slot, appointment };
+});
+
+export const GarciaSeriesSlots = GarciaSeriesOtherWeeks.map(({ slot }) => slot);
+export const GarciaSeriesAppointments = GarciaSeriesOtherWeeks.map(({ appointment }) => appointment);
+
+/**
+ * Tags an occurrence of Eliana Garcia's series as `$book` does, keeping the template on the
+ * first occurrence alone.
+ * @param position - Which occurrence it is, counting from 1.
+ * @returns The appointment's identifier and extensions.
+ */
+function garciaSeriesOccurrence(position: number): Pick<Appointment, 'identifier' | 'extension'> {
+  return {
+    identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'garcia-weekly-telehealth' }],
+    extension: [
+      ...(position === 1
+        ? [{ url: RecurrenceTemplateExtensionURI, extension: [{ url: 'occurrenceCount', valuePositiveInt: 3 }] }]
+        : []),
+      { url: RecurrenceIdExtensionURI, valuePositiveInt: position },
+    ],
+  };
+}
+
 export const ChenInfusionHeldSlot: WithId<Slot> = {
   resourceType: 'Slot',
   id: 'slot-chen-infusion-thu',
@@ -1481,6 +1533,8 @@ export const CalendarWeekFixtures = [
   ...MondayImagingHeldSlots,
   MondayTelehealthHeldSlot,
   MondayTelehealthAppointment,
+  ...GarciaSeriesSlots,
+  ...GarciaSeriesAppointments,
   DrChenPractitioner,
   InfusionService,
   DrChenInfusionSchedule,

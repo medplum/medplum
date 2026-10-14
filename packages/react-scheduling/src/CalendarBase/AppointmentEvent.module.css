@@ -33,6 +33,13 @@
   flex-shrink: 0;
 }
 
+/* Floated, so a title cut short with an ellipsis gives way to it. */
+.recurring {
+  float: right;
+  margin-inline-start: 0.25em;
+  margin-top: 0.125em;
+}
+
 /* Set apart from the service types named by their HealthcareService. */
 .untyped {
   opacity: 0.75;

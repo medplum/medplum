@@ -129,6 +129,9 @@ export default {
  * see whose time it holds, when, and why. "Edit" moves it or changes its notes, and
  * "Delete" takes it off the calendar.
  *
+ * Eliana Garcia's Tuesday telehealth visit with Dr. Brown is the second of three, weekly, and is
+ * marked as recurring; page a week back or forward for the first and third.
+ *
  * Appointments are colored by visit type. Telehealth Consult names its color, grape, on its
  * HealthcareService; the others are given one picked from their reference.
  *
