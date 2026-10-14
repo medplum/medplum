@@ -2,15 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
+  allServiceTypesCodeableConcept,
   clearHealthcareServiceSchedulingParameter,
   CPT,
   createReference,
   deepClone,
   getReferenceString,
   HL7_V2_0203,
+  RecurrenceIdExtensionURI,
+  RecurrenceTemplateExtensionURI,
+  RecurringAppointmentSeriesIdentifierSystem,
   REQUIRES_DIAGNOSIS_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
+  SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
@@ -955,11 +960,37 @@ export const DrLindqvistSchedule = setScheduleAvailability(
   [{ daysOfWeek: ['mon', 'wed'], availableStartTime: '08:00:00', availableEndTime: '12:00:00' }]
 ) as WithId<Schedule>;
 
+const NeurologyNewPatient = SpecialtyServices.find(
+  (service) => service.id === 'neurology-new-patient'
+) as WithId<HealthcareService>;
+
+export const DrMensahPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-mensah',
+  name: [{ given: ['Kwame'], family: 'Mensah', prefix: ['Dr.'] }],
+  extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
+};
+
+export const DrMensahSchedule = setScheduleAvailability(
+  {
+    ...buildSchedule('schedule-dr-mensah', 'Practitioner/dr-mensah', 'Dr. Kwame Mensah'),
+    serviceType: [allServiceTypesCodeableConcept()],
+  },
+  NeurologyNewPatient,
+  [{ daysOfWeek: ['fri'], availableStartTime: '13:00:00', availableEndTime: '17:00:00' }]
+) as WithId<Schedule>;
+
 /**
- * A specialty group's 84 visit types and a provider offering most of them, more than fit on a page. Kept out of
- * `ConfigFixtures`, whose tests count its visit types.
+ * A specialty group's 84 visit types, a provider offering most of them, and one offering all of them, more than fit
+ * on a page. Kept out of `ConfigFixtures`, whose tests count its visit types.
  */
-export const ManyVisitTypesFixtures = [...SpecialtyServices, DrLindqvistPractitioner, DrLindqvistSchedule];
+export const ManyVisitTypesFixtures = [
+  ...SpecialtyServices,
+  DrLindqvistPractitioner,
+  DrLindqvistSchedule,
+  DrMensahPractitioner,
+  DrMensahSchedule,
+];
 
 /**
  * Moves a set of fixtures onto the viewer's own clock.
@@ -1229,6 +1260,12 @@ export const OkaforImagingAppointment: WithId<Appointment> = {
   start: '2020-05-06T18:00:00Z',
   end: '2020-05-06T18:30:00Z',
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
+  extension: [
+    {
+      url: SchedulingExternalUrlURI,
+      valueUrl: 'https://foomedical.com/appointments?date=05%2F06%2F2020&mrn=456',
+    },
+  ],
   participant: setPrimaryProvider(
     [
       { status: 'accepted', actor: { reference: 'Patient/pt-alvarez', display: 'Renee Alvarez' } },
@@ -1332,6 +1369,7 @@ export const DrBrownAppointments: WithId<Appointment>[] = DrBrownSlots.map((slot
     ],
     createReference(DrBrownPractitioner)
   ),
+  ...(idx === 1 && garciaSeriesOccurrence(2)),
 }));
 
 /**
@@ -1408,6 +1446,54 @@ export const MondayTelehealthAppointment: WithId<Appointment> = {
   ),
 };
 
+/**
+ * Eliana Garcia sees Dr. Brown weekly, three times: this week's visit is the second, and
+ * the first and third are a week either side, each holding its own Slot.
+ */
+const GarciaSeriesOtherWeeks = (
+  [
+    [1, -1],
+    [3, 1],
+  ] as const
+).map(([position, weeks]) => {
+  const slot: WithId<Slot> = {
+    ...DrBrownSlots[1],
+    id: `brown-garcia-${position}`,
+    start: addMinutes(new Date(DrBrownSlots[1].start), weeks * 7 * 24 * 60).toISOString(),
+    end: addMinutes(new Date(DrBrownSlots[1].end), weeks * 7 * 24 * 60).toISOString(),
+  };
+  const appointment: WithId<Appointment> = {
+    ...DrBrownAppointments[1],
+    id: `appointment-${slot.id}`,
+    start: slot.start,
+    end: slot.end,
+    slot: [createReference(slot)],
+    ...garciaSeriesOccurrence(position),
+  };
+  return { slot, appointment };
+});
+
+export const GarciaSeriesSlots = GarciaSeriesOtherWeeks.map(({ slot }) => slot);
+export const GarciaSeriesAppointments = GarciaSeriesOtherWeeks.map(({ appointment }) => appointment);
+
+/**
+ * Tags an occurrence of Eliana Garcia's series as `$book` does, keeping the template on the
+ * first occurrence alone.
+ * @param position - Which occurrence it is, counting from 1.
+ * @returns The appointment's identifier and extensions.
+ */
+function garciaSeriesOccurrence(position: number): Pick<Appointment, 'identifier' | 'extension'> {
+  return {
+    identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'garcia-weekly-telehealth' }],
+    extension: [
+      ...(position === 1
+        ? [{ url: RecurrenceTemplateExtensionURI, extension: [{ url: 'occurrenceCount', valuePositiveInt: 3 }] }]
+        : []),
+      { url: RecurrenceIdExtensionURI, valuePositiveInt: position },
+    ],
+  };
+}
+
 export const ChenInfusionHeldSlot: WithId<Slot> = {
   resourceType: 'Slot',
   id: 'slot-chen-infusion-thu',
@@ -1481,6 +1567,8 @@ export const CalendarWeekFixtures = [
   ...MondayImagingHeldSlots,
   MondayTelehealthHeldSlot,
   MondayTelehealthAppointment,
+  ...GarciaSeriesSlots,
+  ...GarciaSeriesAppointments,
   DrChenPractitioner,
   InfusionService,
   DrChenInfusionSchedule,
