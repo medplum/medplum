@@ -3,8 +3,8 @@
 import type { WithId } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
 import type { Dispatch, SetStateAction } from 'react';
-import { useState } from 'react';
-import { isCovered } from '../SchedulingConfigWorkspace.utils';
+import { useMemo, useState } from 'react';
+import { getOfferedServices, isCovered } from '../SchedulingConfigWorkspace.utils';
 import type { OfferAllSwitchProps } from './OfferAllSwitch';
 import type { ScheduleFields } from './scheduleDraft';
 import { hasOverrides, withCoveredOfferings } from './scheduleDraft';
@@ -12,7 +12,7 @@ import { serviceLabel } from './serviceList';
 
 export interface UseOfferAllOptions {
   /** Every visit type loaded. */
-  readonly services: readonly WithId<HealthcareService>[];
+  readonly servicesById: ReadonlyMap<string, WithId<HealthcareService>>;
   /** The Schedule as stored, if the actor has one. */
   readonly schedule: Schedule | undefined;
   readonly fields: ScheduleFields;
@@ -24,21 +24,25 @@ export interface UseOfferAllOptions {
 export interface UseOfferAllResult {
   /** Spread onto `OfferAllSwitch` with the actor's name. */
   readonly switchProps: Omit<OfferAllSwitchProps, 'actorName'>;
-  /** Forgets what was offered before switching on, for Discard. */
+  /** Puts back the visit types the Schedule names as the ones offered before switching on, for Discard. */
   readonly reset: () => void;
 }
 
 /**
  * Switches an actor's page between offering every active visit type and offering the ones it names. Switching off
- * keeps the ones customized here, and those offered before switching on, if that was since the page opened.
+ * keeps the ones customized here, and the ones named before switching on.
  * @param options - The visit types, the stored Schedule, and the page's fields with how to change them.
  * @returns The switch's props, and how to reset it.
  */
 export function useOfferAll(options: UseOfferAllOptions): UseOfferAllResult {
-  const { services, schedule, fields, setFields, setOpenServiceId } = options;
-  const [offeredBeforeAll, setOfferedBeforeAll] = useState<ReadonlySet<string>>();
+  const { servicesById, schedule, fields, setFields, setOpenServiceId } = options;
+  const named = useMemo(
+    () => new Set(getOfferedServices(schedule, servicesById).map((service) => service.id)),
+    [schedule, servicesById]
+  );
+  const [offeredBeforeAll, setOfferedBeforeAll] = useState<ReadonlySet<string>>(named);
   const kept = Object.fromEntries(
-    Object.entries(fields.offerings).filter(([id, value]) => hasOverrides(value) || offeredBeforeAll?.has(id))
+    Object.entries(fields.offerings).filter(([id, value]) => hasOverrides(value) || offeredBeforeAll.has(id))
   );
 
   function offerAll(): void {
@@ -46,17 +50,16 @@ export function useOfferAll(options: UseOfferAllOptions): UseOfferAllResult {
     setFields((current) => ({
       ...current,
       allServices: true,
-      offerings: withCoveredOfferings(current.offerings, services, schedule),
+      offerings: withCoveredOfferings(current.offerings, servicesById.values(), schedule),
     }));
   }
 
   function stopOfferingAll(): void {
     setFields((current) => ({ ...current, allServices: false, offerings: kept }));
     setOpenServiceId((current) => (current && Object.hasOwn(kept, current) ? current : null));
-    setOfferedBeforeAll(undefined);
   }
 
-  const coverable = services.filter(isCovered);
+  const coverable = [...servicesById.values()].filter(isCovered);
   const keptCount = Object.keys(kept).length;
   const offeredCount = Object.keys(fields.offerings).length;
 
@@ -69,9 +72,9 @@ export function useOfferAll(options: UseOfferAllOptions): UseOfferAllResult {
           .filter((service) => !service.availableTime?.length && !fields.offerings[service.id]?.availability.overriding)
           .map(serviceLabel),
       },
-      keeping: { kept: keptCount, dropped: offeredCount - keptCount, restoresEarlier: !!offeredBeforeAll },
+      keeping: { kept: keptCount, dropped: offeredCount - keptCount, restoresEarlier: offeredBeforeAll.size > 0 },
       onChange: (checked) => (checked ? offerAll() : stopOfferingAll()),
     },
-    reset: () => setOfferedBeforeAll(undefined),
+    reset: () => setOfferedBeforeAll(named),
   };
 }

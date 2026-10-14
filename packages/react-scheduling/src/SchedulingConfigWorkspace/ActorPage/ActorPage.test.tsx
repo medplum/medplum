@@ -181,9 +181,17 @@ async function chooseStopOffering(name: string): Promise<void> {
   await userEvent.click(await screen.findByRole('menuitem', { name: 'Stop offering' }));
 }
 
-function offeringAll(actor: string, customized: WithId<HealthcareService>): Schedule {
-  const schedule = { ...makeSchedule(actor, []), serviceType: [allServiceTypesCodeableConcept()] };
-  return setScheduleSchedulingParameterValues(schedule, customized, { bufferAfter: 10 });
+function offeringAll(
+  actor: string,
+  customized: WithId<HealthcareService>,
+  named: WithId<HealthcareService>[] = []
+): Schedule {
+  const schedule = makeSchedule(actor, named);
+  return setScheduleSchedulingParameterValues(
+    { ...schedule, serviceType: [...(schedule.serviceType ?? []), allServiceTypesCodeableConcept()] },
+    customized,
+    { bufferAfter: 10 }
+  );
 }
 
 function entryNames(): string[] {
@@ -586,6 +594,25 @@ describe('ActorPage', () => {
     const saved = syncedSchedule(onSynced);
     expect(saved.serviceType).toEqual(toServiceTypeCodeableConcepts(followUp));
     expect(getScheduleSchedulingParameterValues(saved, followUp).bufferAfter).toBe(10);
+  });
+
+  test('no longer offering all keeps the visit types the Schedule names, too', async () => {
+    const { onSynced } = await setup(drSmith, [offeringAll('Practitioner/dr-smith', followUp, [initialVisit])]);
+
+    const dialog = await flipOfferAll('Stop offering all visit types?');
+
+    expect(dialog).toHaveTextContent(
+      'keep offering the 2 visit types offered before, or customized here, and stop offering the other 1 once you save.'
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Stop offering all' }));
+    expect(entryNames()).toEqual(['Initial Visit', 'Follow-up']);
+    await save();
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(syncedSchedule(onSynced).serviceType).toEqual([
+      ...toServiceTypeCodeableConcepts(initialVisit),
+      ...toServiceTypeCodeableConcepts(followUp),
+    ]);
   });
 
   test('offering all and undoing it before saving leaves the page as it opened', async () => {

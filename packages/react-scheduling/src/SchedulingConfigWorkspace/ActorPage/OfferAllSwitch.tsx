@@ -20,7 +20,7 @@ export interface OfferAllCoverage {
 export interface OfferAllKeeping {
   readonly kept: number;
   readonly dropped: number;
-  /** Whether the visit types offered before it was switched on this time are among those kept. */
+  /** Whether visit types named before it was switched on are among those kept. */
   readonly restoresEarlier: boolean;
 }
 
