@@ -3,11 +3,13 @@
 import type { WithId } from '@medplum/core';
 import {
   badRequest,
+  getExtensionValue,
   OperationOutcomeError,
   REQUIRES_DIAGNOSIS_CODE,
   REQUIRES_MEDICAL_NECESSITY_CODE,
   REQUIRES_PROCEDURE_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
+  SchedulingColorURI,
 } from '@medplum/core';
 import type { Bundle, Coding, HealthcareService, HealthcareServiceEligibility, Location } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -143,6 +145,36 @@ describe('VisitTypePage', () => {
       bufferAfter: 10,
       slotCapacity: 2,
     });
+  });
+
+  test('a chosen calendar color is stored beside the scheduling parameters', async () => {
+    const { onSynced } = await setup();
+    expect(screen.getByRole('radio', { name: 'Automatic' })).toBeChecked();
+
+    await userEvent.click(screen.getByRole('radio', { name: 'grape' }));
+    await userEvent.clear(parameter('duration'));
+    await userEvent.type(parameter('duration'), '45');
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(getExtensionValue(lastSynced(onSynced), SchedulingColorURI)).toBe('grape');
+    expect(getHealthcareServiceSchedulingParameterValues(lastSynced(onSynced))).toMatchObject({ duration: 45 });
+  });
+
+  test('a stored color outside the palette is shown as chosen, and Automatic takes it off', async () => {
+    const stored: HealthcareService = initialVisit;
+    const { onSynced } = await setup({
+      ...stored,
+      extension: [...(stored.extension ?? []), { url: SchedulingColorURI, valueString: 'green' }],
+    });
+    expect(screen.getByRole('radio', { name: 'green' })).toBeChecked();
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Automatic' }));
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(onSynced).toHaveBeenCalled());
+    expect(getExtensionValue(lastSynced(onSynced), SchedulingColorURI)).toBeUndefined();
+    expect(getHealthcareServiceSchedulingParameterValues(lastSynced(onSynced))).toMatchObject({ duration: 60 });
   });
 
   test('turning Active off stores active false, and the badge beside the name follows the switch', async () => {

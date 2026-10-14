@@ -291,6 +291,8 @@ When updating resources in a transaction bundle, you can prevent **lost updates*
 
 If any resource in the transaction has been modified by another user (the version doesn't match), the transaction will fail with a `412 Precondition Failed` error, allowing you to retry after re-reading the current state.
 
+`ifMatch` works the same way on `DELETE` entries, so a delete only succeeds if the resource is still at the version you read.
+
 ## Performing Upserts
 
 Previously, performing an "upsert" (i.e. either creating or updating a resource based on whether it already exists)

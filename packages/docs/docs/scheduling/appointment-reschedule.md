@@ -79,14 +79,15 @@ Unlike `$find`, `$reschedule` takes no `service-type-reference`. The service who
 
 ### What the operation writes
 
-`$reschedule` is not an update of the whole resource. It changes exactly four attributes of the stored Appointment:
+`$reschedule` is not an update of the whole resource. It changes only these attributes of the stored Appointment:
 
-| Attribute     | Effect                                                                                      |
-| ------------- | ------------------------------------------------------------------------------------------- |
-| `start`       | Set from the `start` parameter                                                              |
-| `end`         | Derived from `start` plus the `duration` in the scheduling parameters — not an input        |
-| `participant` | Reconciled, see below                                                                       |
-| `slot`        | Set to references to the newly created Slots                                                |
+| Attribute     | Effect                                                                                                                                              |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `start`       | Set from the `start` parameter                                                                                                                      |
+| `end`         | Derived from `start` plus the `duration` in the scheduling parameters — not an input                                                                |
+| `participant` | Reconciled, see below                                                                                                                               |
+| `slot`        | Set to references to the newly created Slots                                                                                                        |
+| `extension`   | On an occurrence of a [recurring series](/docs/scheduling/appointment-book#booking-a-recurring-series) whose time changes, R5's `occurrenceChanged` |
 
 Everything else is left exactly as it was — `serviceType`, `reasonCode`, `comment`, `basedOn`, `supportingInformation`, and anything else you have set. To change any of those, use a normal FHIR update on the Appointment.
 

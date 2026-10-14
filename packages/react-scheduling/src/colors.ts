@@ -1,8 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MantineTheme, MantineThemeColors } from '@mantine/core';
+import { getExtensionValue, SchedulingColorURI } from '@medplum/core';
+import type { Resource } from '@medplum/fhirtypes';
 
-/** A cycling palette used when nothing more specific names a color. */
+/**
+ * A cycling palette used when nothing more specific names a color, and the palette a visit type's color is
+ * chosen from.
+ */
 export const FALLBACK_COLORS = [
   'indigo',
   'teal',
@@ -49,4 +54,14 @@ export function fallbackColorIndex(key: string): number {
     hash = Math.imul(hash ^ key.charCodeAt(i), 0x01000193);
   }
   return hash >>> 0;
+}
+
+/**
+ * Reads the color a resource names for the scheduling calendar, as stored: it may not be a theme color.
+ * @param resource - A Schedule or HealthcareService.
+ * @returns The color name, if the resource names one.
+ */
+export function getSchedulingColor(resource: Resource | undefined): string | undefined {
+  const color = getExtensionValue(resource, SchedulingColorURI);
+  return typeof color === 'string' ? color : undefined;
 }

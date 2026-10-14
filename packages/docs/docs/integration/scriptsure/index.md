@@ -5,10 +5,10 @@ sidebar_position: 0
 # ScriptSure
 
 :::tip[Planning this integration?]
-The [E-Prescribe Decision Guide](/docs/decision-guides/e-prescribe) walks through the integration and enrollment decisions behind an e-prescribing build — iframe vs. integrated UI, controlled substances, and prescriber enrollment — use it alongside these docs.
+The [E-Prescribe Decision Guide](/docs/decision-guides/e-prescribe) walks through the integration and enrollment decisions for e-prescribing in the Medplum EHR — hosted iframe vs. custom workflow, controlled substances, and prescriber enrollment — use it alongside these docs.
 :::
 
-Medplum has partnered with [DAW Systems](https://www.dawsystems.com/) to offer e-prescribing via ScriptSure. The integration exposes a full API surface, including custom FHIR operations and Medplum bots. Providers can have access to features such as:
+Medplum has partnered with [DAW Systems](https://www.dawsystems.com/) to offer e-prescribing via ScriptSure, as part of the Medplum EHR. FHIR operations and bots support a custom workflow in the chart, and an authenticated iframe covers the hosted flow. Providers can have access to features such as:
 
 - Electronic prescriptions including controlled substances (EPCS)
 - Medication history via SureScripts
