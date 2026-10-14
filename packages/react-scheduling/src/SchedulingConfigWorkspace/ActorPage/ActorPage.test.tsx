@@ -23,6 +23,7 @@ import { MockClient } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
 import { setScheduleAvailability } from '../../availability';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
+import { SERVICE_FACILITY_ROLE_SYSTEM } from '../../constants';
 import {
   getScheduleSchedulingParameterValues,
   setHealthcareServiceSchedulingParameterValues,
@@ -199,7 +200,7 @@ async function offer(...names: string[]): Promise<void> {
 function role(
   id: string,
   locations: WithId<Location>[],
-  options: { active?: boolean; linked?: boolean } = {}
+  options: { active?: boolean; own?: boolean; linked?: boolean } = {}
 ): WithId<PractitionerRole> {
   return {
     resourceType: 'PractitionerRole',
@@ -207,6 +208,7 @@ function role(
     practitioner: { reference: 'Practitioner/dr-smith' },
     location: locations.map((location) => ({ reference: `Location/${location.id}` })),
     ...(options.active !== undefined && { active: options.active }),
+    ...(options.own && { identifier: [{ system: SERVICE_FACILITY_ROLE_SYSTEM, value: 'dr-smith' }] }),
     ...(options.linked && { identifier: [{ system: 'http://example.org/provider-location-link', value: id }] }),
   };
 }
@@ -1063,21 +1065,21 @@ describe('ActorPage', () => {
       expect(screen.queryByRole('searchbox', { name: 'Service facilities' })).not.toBeInTheDocument();
     });
 
-    test('lists each service facility of the active roles once', async () => {
+    test("lists the workspace role's service facilities, and none of an inactive role", async () => {
       await setup(
         drSmith,
         [],
-        [role('r1', [downtown, northside]), role('r2', [downtown]), role('r3', [room3], { active: false })]
+        [role('own', [downtown, northside], { own: true }), role('r3', [room3], { active: false })]
       );
 
       expect(await findChips(['Downtown Clinic', 'Northside'])).toBeInTheDocument();
       expect(chips()).not.toHaveTextContent('Room 3');
     });
 
-    test('removing a service facility turns its role off on save, deleting nothing and writing nothing else', async () => {
-      const { medplum, onSynced } = await setup(drSmith, [], [role('r1', [northside]), role('r2', [downtown])]);
+    test('removing a service facility takes it off the workspace role on save, deleting nothing and writing nothing else', async () => {
+      const { medplum, onSynced } = await setup(drSmith, [], [role('own', [northside, downtown], { own: true })]);
       vi.spyOn(medplum, 'deleteResource');
-      const stored = await medplum.readResource('PractitionerRole', 'r1');
+      const stored = await medplum.readResource('PractitionerRole', 'own');
 
       await removeFacility('Northside');
       expect(chips()).not.toHaveTextContent('Northside');
@@ -1086,41 +1088,26 @@ describe('ActorPage', () => {
       await waitFor(() => expect(onSynced).toHaveBeenCalled());
       expect(sentRoles(medplum)).toEqual([
         {
-          resource: { ...stored, active: false },
-          request: { method: 'PUT', url: 'PractitionerRole/r1', ifMatch: `W/"${stored.meta?.versionId}"` },
+          resource: { ...stored, active: true, location: [{ reference: 'Location/downtown' }] },
+          request: { method: 'PUT', url: 'PractitionerRole/own', ifMatch: `W/"${stored.meta?.versionId}"` },
         },
       ]);
-      expect(await medplum.readResource('PractitionerRole', 'r1', { cache: 'no-cache' })).toMatchObject({
-        active: false,
-      });
       expectNothingDeleted(medplum);
     });
 
-    test('removing a service facility takes it off a role naming others', async () => {
-      const { medplum, onSynced } = await setup(drSmith, [], [role('r1', [downtown, northside])]);
-
-      await removeFacility('Northside');
-      await saveNow();
-
-      await waitFor(() => expect(onSynced).toHaveBeenCalled());
-      const [sent] = sentRoles(medplum) ?? [];
-      expect(sent.resource).toMatchObject({ location: [{ reference: 'Location/downtown' }] });
-      expect(sent.resource).not.toHaveProperty('active');
-    });
-
     test('saving with the last service facility removed asks, then offers the provider everywhere', async () => {
-      const { medplum, onSynced } = await setup(drSmith, [], [role('r1', [northside])]);
+      const { medplum, onSynced } = await setup(drSmith, [], [role('own', [northside], { own: true })]);
 
       await removeFacility('Northside');
       await saveNow();
       await confirm('Offer Dr. Jane Smith at every service facility?');
 
       await waitFor(() => expect(onSynced).toHaveBeenCalled());
-      expect(sentRoles(medplum)?.[0].resource).toMatchObject({ id: 'r1', active: false });
+      expect(sentRoles(medplum)?.[0].resource).toMatchObject({ id: 'own', active: false });
     });
 
     test('a save changing only roles leaves the page clean, showing what was stored', async () => {
-      const { onSynced } = await setup(drSmith, [], [role('r1', [northside]), role('r2', [downtown])]);
+      const { onSynced } = await setup(drSmith, [], [role('own', [northside, downtown], { own: true })]);
 
       await removeFacility('Northside');
       await saveNow();
@@ -1134,7 +1121,7 @@ describe('ActorPage', () => {
     });
 
     test('Discard puts a removed service facility back', async () => {
-      await setup(drSmith, [], [role('r1', [northside]), role('r2', [downtown])]);
+      await setup(drSmith, [], [role('own', [northside, downtown], { own: true })]);
 
       await removeFacility('Northside');
       await act(async () => {
@@ -1145,18 +1132,19 @@ describe('ActorPage', () => {
       expect(saveBar()).toBeNull();
     });
 
-    test('a service facility linked by another system is shown locked, outside the input', async () => {
-      await setup(drSmith, [], [role('theirs', [downtown], { linked: true })]);
+    test('a service facility on any role but the workspace one is shown locked, outside the input', async () => {
+      await setup(drSmith, [], [role('theirs', [downtown], { linked: true }), role('handmade', [northside])]);
 
       expect(await linkedFacilities()).toEqual([
         "Downtown Clinic: Another system linked Downtown Clinic, so it can't be removed here.",
+        "Northside: Another system linked Northside, so it can't be removed here.",
       ]);
       expect(chips()).not.toHaveTextContent('Downtown Clinic');
       expect(await facilityPicker()).toHaveAttribute('placeholder', 'Add a service facility');
     });
 
     test('a service facility linked both by another system and here is listed once, locked', async () => {
-      await setup(drSmith, [], [role('mine', [downtown]), role('theirs', [downtown], { linked: true })]);
+      await setup(drSmith, [], [role('own', [downtown], { own: true }), role('theirs', [downtown], { linked: true })]);
 
       expect(await linkedFacilities()).toHaveLength(1);
       expect(chips()).not.toHaveTextContent('Downtown Clinic');
@@ -1166,14 +1154,14 @@ describe('ActorPage', () => {
       const { medplum, onSynced } = await setup(
         drSmith,
         [],
-        [role('theirs', [downtown], { linked: true }), role('r1', [northside])]
+        [role('theirs', [downtown], { linked: true }), role('own', [northside], { own: true })]
       );
 
       await removeFacility('Northside');
       await saveNow();
 
       await waitFor(() => expect(onSynced).toHaveBeenCalled());
-      expect(sentRoles(medplum)?.map((item) => item.resource)).toMatchObject([{ id: 'r1', active: false }]);
+      expect(sentRoles(medplum)?.map((item) => item.resource)).toMatchObject([{ id: 'own', active: false }]);
     });
 
     test('says so when the roles cannot be read', async () => {
@@ -1191,9 +1179,9 @@ describe('ActorPage', () => {
     });
 
     test('a role another user changed since it was loaded is not written over, and reload discards the draft', async () => {
-      const { medplum, onSynced } = await setup(drSmith, [], [role('r1', [northside]), role('r2', [downtown])]);
+      const { medplum, onSynced } = await setup(drSmith, [], [role('own', [northside, downtown], { own: true })]);
       await removeFacility('Northside');
-      const changed = await medplum.readResource('PractitionerRole', 'r1');
+      const changed = await medplum.readResource('PractitionerRole', 'own');
       await medplum.updateResource({ ...changed, location: [{ reference: 'Location/downtown' }] });
 
       await saveNow();
@@ -1210,7 +1198,7 @@ describe('ActorPage', () => {
       expect(await findChips(['Downtown Clinic'])).not.toHaveTextContent('Northside');
     });
 
-    test('saving a first service facility asks, then creates an active role holding only the practitioner and that location', async () => {
+    test('saving a first service facility asks, then creates the workspace role holding only its identifier, the practitioner, and that location', async () => {
       const { medplum, onSynced } = await setup(drSmith);
       vi.spyOn(medplum, 'deleteResource');
 
@@ -1221,14 +1209,20 @@ describe('ActorPage', () => {
 
       await waitFor(() => expect(onSynced).toHaveBeenCalled());
       const [sent] = sentRoles(medplum) ?? [];
-      expect(sent.request).toEqual({ method: 'POST', url: 'PractitionerRole' });
+      expect(sent.request).toEqual({
+        method: 'POST',
+        url: 'PractitionerRole',
+        ifNoneExist: `identifier=${SERVICE_FACILITY_ROLE_SYSTEM}|dr-smith`,
+      });
       expect(Object.keys(sent.resource as PractitionerRole).sort()).toEqual([
         'active',
+        'identifier',
         'location',
         'practitioner',
         'resourceType',
       ]);
       expect(sent.resource).toMatchObject({
+        identifier: [{ system: SERVICE_FACILITY_ROLE_SYSTEM, value: 'dr-smith' }],
         practitioner: { reference: 'Practitioner/dr-smith' },
         location: [{ reference: 'Location/northside' }],
         active: true,
@@ -1251,21 +1245,23 @@ describe('ActorPage', () => {
       expect(saveBar()).not.toBeNull();
     });
 
-    test('adding a service facility back reactivates the inactive role for it', async () => {
-      const { medplum, onSynced } = await setup(drSmith, [], [role('r1', [northside], { active: false })]);
-      const stored = await medplum.readResource('PractitionerRole', 'r1');
+    test('adding a service facility turns an inactive workspace role back on rather than creating another', async () => {
+      const { medplum, onSynced } = await setup(drSmith, [], [role('own', [northside], { own: true, active: false })]);
+      const stored = await medplum.readResource('PractitionerRole', 'own');
 
       await add('Northside');
       await saveNow();
       await confirm('Offer Dr. Jane Smith only at Northside?');
 
       await waitFor(() => expect(onSynced).toHaveBeenCalled());
-      expect(sentRoles(medplum)).toEqual([
-        {
-          resource: { ...stored, active: true },
-          request: { method: 'PUT', url: 'PractitionerRole/r1', ifMatch: `W/"${stored.meta?.versionId}"` },
-        },
-      ]);
+      const [sent, ...rest] = sentRoles(medplum) ?? [];
+      expect(rest).toEqual([]);
+      expect(sent.request).toEqual({
+        method: 'PUT',
+        url: 'PractitionerRole/own',
+        ifMatch: `W/"${stored.meta?.versionId}"`,
+      });
+      expect(sent.resource).toMatchObject({ id: 'own', active: true, location: [{ reference: 'Location/northside' }] });
     });
 
     test('beside a linked service facility, adding one does not ask', async () => {

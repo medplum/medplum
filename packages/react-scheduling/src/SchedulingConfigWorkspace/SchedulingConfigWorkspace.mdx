@@ -86,11 +86,12 @@ at once, asks first, then removes the settings the Schedule holds for those visi
 A provider's General also has **Service facilities**, the same field a visit type has, filled from the service
 facility Locations the provider's active `PractitionerRole`s name. With none, booking filtered to a service
 facility offers the provider at every one, so a save that adds the first one, or removes the last, asks first.
-Adding a service facility turns an inactive role for it back on, or creates a role holding only `practitioner`,
-that `location`, and `active`. Removing one turns off the role naming only it, or takes it off a role naming others.
-A role carrying an `identifier` was written by another system and is never changed, so a service facility it
-links is shown locked above the field's input, marked **Linked by another system**, and can't be removed. When
-there is one, the provider is already limited to it, so neither save asks.
+The workspace writes one role per provider, its own, marked by an `identifier` with the provider's id. Adding a
+service facility puts it on that role, which is created on the first save that adds one, or turned back on if it
+was off. Removing one takes it off that role, or turns the role off when it was the last. Every other role, such
+as one a sync wrote, still places the provider for booking but is never changed, so a service facility it links
+is shown locked above the field's input, marked **Linked by another system**, and can't be removed. When there is
+one, the provider is already limited to it, so neither save asks.
 
 A new room is typed as a room (`physicalType` `ro`), so the service facility pickers never offer it as a service
 facility. A new room or device starts active, unless switched off before Create, and is created with a Schedule

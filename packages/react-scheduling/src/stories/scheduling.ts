@@ -42,7 +42,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { getBrowserTimezone } from '../AppointmentFinder/AppointmentFinder.times';
 import { setScheduleAvailability } from '../availability';
-import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, NPI_SYSTEM } from '../constants';
+import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, NPI_SYSTEM, SERVICE_FACILITY_ROLE_SYSTEM } from '../constants';
 import {
   getHealthcareServiceSchedulingParameterValues,
   setHealthcareServiceSchedulingParameterValues,
@@ -809,7 +809,7 @@ export const DrBrooksPractitioner: WithId<Practitioner> = {
   extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
 };
 
-/** Carries an identifier, which marks it as another system's, so the workspace won't change it. */
+/** Written by a sync rather than the workspace, so the workspace won't change it. */
 export const DrBrooksLinkedRole: WithId<PractitionerRole> = {
   resourceType: 'PractitionerRole',
   id: 'role-dr-brooks-main-clinic',
@@ -819,10 +819,11 @@ export const DrBrooksLinkedRole: WithId<PractitionerRole> = {
   active: true,
 };
 
-/** Holds only what the workspace writes, so the satellite can be removed from her page. */
+/** The workspace's own role for her, so the satellite can be removed from her page. */
 export const DrBrooksRole: WithId<PractitionerRole> = {
   resourceType: 'PractitionerRole',
   id: 'role-dr-brooks-satellite',
+  identifier: [{ system: SERVICE_FACILITY_ROLE_SYSTEM, value: 'dr-brooks' }],
   practitioner: { reference: 'Practitioner/dr-brooks' },
   location: [{ reference: 'Location/satellite-clinic' }],
   active: true,

@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference } from '@medplum/core';
 import type { Location, PractitionerRole, Reference, Resource } from '@medplum/fhirtypes';
 import { useState } from 'react';
 import type { ConfigurableActorResource } from '../../configSearch';
@@ -59,9 +58,7 @@ export function useProviderFacilities(
   return {
     field: providerRoles && { value: editable, linked, error: providerRoles.error, onChange: setEdits },
     changes:
-      actor?.resourceType === 'Practitioner' && read && wanted
-        ? buildRoleChanges(read.roles, createReference(actor), wanted)
-        : [],
+      actor?.resourceType === 'Practitioner' && read && wanted ? buildRoleChanges(read.roles, actor, wanted) : [],
     confirmation: stored && wanted && getServiceFacilitiesConfirmation(actorName, stored.facilities, wanted),
     discard: () => setEdits(undefined),
     store: (saved) => {
