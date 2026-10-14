@@ -2507,7 +2507,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         const beforeReindex = await repo.search(searchRequest);
         expect(beforeReindex.entry).toHaveLength(0);
 
-        await systemRepo.reindexResources([obs]);
+        await systemRepo.reindexResource('Observation', obs.id);
         const afterReindex = await repo.search(searchRequest);
         expect(afterReindex.entry?.map((e) => e.resource?.id)).toStrictEqual([patient.id]);
       }));
@@ -2583,6 +2583,144 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(result.entry).toHaveLength(1);
       expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
+
+  describe('Chained search project scoping', () => {
+    let linkedRepo: Repository;
+    let linkedToRepo: Repository;
+    let projectRepo: Repository;
+
+    beforeAll(async () => {
+      const { project: linkedProject, repo } = await createTestProject({
+        project: { exportedResourceType: ['Patient'] },
+        withRepo: true,
+      });
+      linkedRepo = repo;
+      ({ repo: linkedToRepo } = await createTestProject({
+        project: { link: [{ project: createReference(linkedProject) }] },
+        withRepo: true,
+      }));
+      ({ repo: projectRepo } = await createTestProject({ withRepo: true }));
+    });
+
+    test('Reverse chain does not match through a resource type the linked project does not export', () =>
+      withTestContext(async () => {
+        const code = randomUUID();
+
+        // Patient is exported by the linked project, so it is visible; Observation is not
+        const linkedPatient = await linkedRepo.createResource<Patient>({ resourceType: 'Patient' });
+        await linkedRepo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ code }] },
+          subject: createReference(linkedPatient),
+        });
+
+        // Control: the same chain within the searching repo's own project
+        const ownPatient = await linkedToRepo.createResource<Patient>({ resourceType: 'Patient' });
+        await linkedToRepo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ code }] },
+          subject: createReference(ownPatient),
+        });
+
+        expect(await linkedToRepo.readResource<Patient>('Patient', linkedPatient.id)).toMatchObject({
+          id: linkedPatient.id,
+        });
+
+        const result = await linkedToRepo.search(parseSearchRequest(`Patient?_has:Observation:subject:code=${code}`));
+        expect(result.entry?.map((e) => e.resource?.id)).toStrictEqual([ownPatient.id]);
+      }));
+
+    test('Forward chain does not match through a resource type the linked project does not export', () =>
+      withTestContext(async () => {
+        const orgName = randomUUID();
+
+        const linkedOrg = await linkedRepo.createResource<Organization>({
+          resourceType: 'Organization',
+          name: orgName,
+        });
+        await linkedRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          managingOrganization: createReference(linkedOrg),
+        });
+
+        // Control: the same chain within the searching repo's own project
+        const ownOrg = await linkedToRepo.createResource<Organization>({
+          resourceType: 'Organization',
+          name: orgName,
+        });
+        const ownPatient = await linkedToRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          managingOrganization: createReference(ownOrg),
+        });
+
+        const result = await linkedToRepo.search(parseSearchRequest(`Patient?organization.name=${orgName}`));
+        expect(result.entry?.map((e) => e.resource?.id)).toStrictEqual([ownPatient.id]);
+      }));
+
+    test('Forward chain does not match through a reference to another project', () =>
+      withTestContext(async () => {
+        const { repo: attackerRepo } = await createTestProject({ withRepo: true });
+        const { repo: victimRepo } = await createTestProject({ withRepo: true });
+        const orgName = randomUUID();
+
+        const victimOrg = await victimRepo.createResource<Organization>({
+          resourceType: 'Organization',
+          name: orgName,
+        });
+        // The attacker can write a reference to a resource they cannot read
+        await attackerRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          managingOrganization: { reference: getReferenceString(victimOrg) },
+        });
+
+        // Control: the same chain within the searching repo's own project
+        const ownOrg = await attackerRepo.createResource<Organization>({
+          resourceType: 'Organization',
+          name: orgName,
+        });
+        const ownPatient = await attackerRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          managingOrganization: createReference(ownOrg),
+        });
+
+        const result = await attackerRepo.search(parseSearchRequest(`Patient?organization.name=${orgName}`));
+        expect(result.entry?.map((e) => e.resource?.id)).toStrictEqual([ownPatient.id]);
+      }));
+
+    test('Super admin chained search is not project filtered', () =>
+      withTestContext(async () => {
+        const { repo: superAdminRepo } = await createTestProject({ withRepo: true, superAdmin: true });
+
+        const code = randomUUID();
+        const patient = await projectRepo.createResource<Patient>({ resourceType: 'Patient' });
+        await projectRepo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ code }] },
+          subject: createReference(patient),
+        });
+
+        const result = await superAdminRepo.search(parseSearchRequest(`Patient?_has:Observation:subject:code=${code}`));
+        expect(result.entry?.map((e) => e.resource?.id)).toStrictEqual([patient.id]);
+      }));
+
+    test('System repository chained search is not project filtered', () =>
+      withTestContext(async () => {
+        const code = randomUUID();
+        const patient = await projectRepo.createResource<Patient>({ resourceType: 'Patient' });
+        await projectRepo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ code }] },
+          subject: createReference(patient),
+        });
+
+        const result = await systemRepo.search(parseSearchRequest(`Patient?_has:Observation:subject:code=${code}`));
+        expect(result.entry?.map((e) => e.resource?.id)).toStrictEqual([patient.id]);
+      }));
+  });
 
   test('Token search deduplication', () =>
     withTestContext(async () => {
