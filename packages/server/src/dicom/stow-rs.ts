@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, isString, Operator } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { createReference, getReferenceString, isString, Operator } from '@medplum/core';
 import type { Binary, DicomInstance, DicomSeries, DicomStudy } from '@medplum/fhirtypes';
 import type { DcmjsDicomDict } from 'dcmjs';
 import dcmjs from 'dcmjs';
@@ -9,6 +10,7 @@ import type { Request, Response } from 'express';
 import { PassThrough } from 'node:stream';
 import { getAuthenticatedContext } from '../context';
 import { uploadBinaryData } from '../fhir/binary';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { cleanDicomJsonDict, dcmjsSeriesToMedplumSeries, dcmjsStudyToMedplumStudy } from './utils';
 
@@ -37,7 +39,11 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
   const repo = ctx.repo;
 
   /** One entry per instance, resolving once its bytes are stored and its metadata parsed. */
-  const parsedInstances: Promise<[Binary, DcmjsDicomDict]>[] = [];
+  const parsedInstances: Promise<[WithId<Binary>, DcmjsDicomDict]>[] = [];
+  /** Every upload, kept apart from `parsedInstances` so a part whose header fails to parse is still found. */
+  const uploads: Promise<WithId<Binary>>[] = [];
+  /** Binaries referenced by a stored instance; any other upload from this request is expunged. */
+  const usedBinaryIds = new Set<string>();
 
   async function parseDicomMetadata(stream: PassThrough): Promise<DcmjsDicomDict> {
     const listener = new DicomMetadataListener({
@@ -50,7 +56,7 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
     return cleanDicomJsonDict({ ...result.meta, ...result.dict });
   }
 
-  async function processInstance([binary, dict]: [Binary, DcmjsDicomDict]): Promise<DicomInstance> {
+  async function processInstance([binary, dict]: [WithId<Binary>, DcmjsDicomDict]): Promise<DicomInstance> {
     const naturalized = DicomMetaDictionary.naturalizeDataset(dict) as Record<string, unknown>;
 
     const studyResult = await repo.conditionalCreate<DicomStudy>(dcmjsStudyToMedplumStudy(naturalized), {
@@ -114,10 +120,38 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
   async function storeInstances(): Promise<DicomInstance[]> {
     const parsed = await Promise.all(parsedInstances);
     const instances: DicomInstance[] = [];
-    for (const instance of parsed) {
-      instances.push(await processInstance(instance));
+    for (const [binary, dict] of parsed) {
+      const instance = await processInstance([binary, dict]);
+      // A re-sent instance resolves to the stored one, which still references the original upload.
+      if (instance.raw?.reference === getReferenceString(binary)) {
+        usedBinaryIds.add(binary.id);
+      }
+      instances.push(instance);
     }
     return instances;
+  }
+
+  /**
+   * Expunges the Binaries this request uploaded that no stored instance references: the copy of a
+   * re-sent instance, and every part of a request that failed. Best effort, so it never changes the
+   * response; a failure here only leaves behind what was already orphaned.
+   */
+  async function expungeUnusedBinaries(): Promise<void> {
+    const unusedIds = (await Promise.allSettled(uploads))
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value.id)
+      .filter((id) => !usedBinaryIds.has(id));
+    if (unusedIds.length === 0) {
+      return;
+    }
+    try {
+      // The uploader cannot expunge, but these Binaries were created by this request and nothing
+      // references them.
+      const systemRepo = await getProjectSystemRepo(ctx.project);
+      await systemRepo.expungeResources('Binary', unusedIds);
+    } catch (err) {
+      getLogger().warn('Failed to expunge unused DICOM uploads', { err, binaryIds: unusedIds });
+    }
   }
 
   function sendStowResponse(instances: DicomInstance[]): void {
@@ -180,13 +214,22 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
       parseStream.destroy(err);
     });
 
+    uploads.push(uploadPromise);
     parsedInstances.push(Promise.all([uploadPromise, parsePromise]));
   });
 
   dicomwebMultipartParser.on('error', handleError);
 
   dicomwebMultipartParser.on('finish', () => {
-    storeInstances().then(sendStowResponse).catch(handleError);
+    storeInstances()
+      .then(async (instances) => {
+        await expungeUnusedBinaries();
+        sendStowResponse(instances);
+      })
+      .catch(async (err: unknown) => {
+        await expungeUnusedBinaries();
+        handleError(err);
+      });
   });
 
   req.pipe(dicomwebMultipartParser);

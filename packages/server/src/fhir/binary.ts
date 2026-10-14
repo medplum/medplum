@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType, allOk, badRequest, created, isResource, singularize } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
@@ -144,7 +145,7 @@ export async function uploadBinaryData(
   repo: Repository,
   source: BinarySource,
   options?: { id?: string; contentType?: string; filename?: string; securityContext?: string }
-): Promise<Binary> {
+): Promise<WithId<Binary>> {
   const resource: Binary = {
     resourceType: 'Binary',
     id: options?.id,

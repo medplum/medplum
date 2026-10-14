@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference } from '@medplum/core';
+import { ContentType, createReference, Operator } from '@medplum/core';
 import type { Binary, DicomInstance, DicomSeries, DicomStudy } from '@medplum/fhirtypes';
 import dcmjs from 'dcmjs';
 import type { Request, Response } from 'express';
@@ -11,6 +11,7 @@ import type { Response as SuperAgentResponse } from 'superagent';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import type { Repository } from '../fhir/repo';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject } from '../test.setup';
@@ -25,6 +26,7 @@ const { DicomDict, DicomMetaDictionary } = data;
 describe('DICOM Routes', () => {
   const app = express();
   let accessToken: string;
+  let repo: Repository;
   let projectId: string;
   let issuer: string;
   let getProjectScopedAccessToken: (projectId: string) => Promise<string>;
@@ -40,7 +42,7 @@ describe('DICOM Routes', () => {
       withRepo: true,
     });
 
-    const repo = testProject.repo;
+    repo = testProject.repo;
 
     const binary = await repo.createResource<Binary>({
       resourceType: 'Binary',
@@ -125,6 +127,28 @@ describe('DICOM Routes', () => {
   afterAll(async () => {
     await shutdownApp();
   });
+
+  /**
+   * Runs `fn` and returns the Binaries it wrote to storage, so a test can check which survived.
+   * @param fn - The request to run.
+   * @returns The response and the uploaded Binaries.
+   */
+  async function trackUploads<T>(fn: () => Promise<T>): Promise<[T, Binary[]]> {
+    const writeBinary = vi.spyOn(getBinaryStorage(), 'writeBinary');
+    try {
+      const result = await fn();
+      return [result, writeBinary.mock.calls.map(([binary]) => binary)];
+    } finally {
+      writeBinary.mockRestore();
+    }
+  }
+
+  async function binaryExists(binary: Binary): Promise<boolean> {
+    return repo.readReference(createReference(binary)).then(
+      () => true,
+      () => false
+    );
+  }
 
   test('Get studies', async () => {
     const res = await request(app)
@@ -377,12 +401,16 @@ describe('DICOM Routes', () => {
       dicom,
       Buffer.from(`\r\n--${boundary}--\r\n`),
     ]);
-    const res = await request(app)
-      .post(`/dicomweb/studies`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', contentType)
-      .send(body);
+    const [res, uploads] = await trackUploads(() =>
+      request(app)
+        .post(`/dicomweb/studies`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', contentType)
+        .send(body)
+    );
     expect(res).toHaveStatus(200);
+    expect(uploads).toHaveLength(1);
+    expect(await binaryExists(uploads[0])).toBe(true);
     expect(JSON.stringify(res.body)).toContain('1.2.840.10008.5.1.4.1.1.7');
     expect(JSON.stringify(res.body)).toContain('1.2.826.0.1.3680043.10.543.1');
 
@@ -490,8 +518,20 @@ describe('DICOM Routes', () => {
     }
 
     // Store the same SOP instance twice, in two separate requests
-    expect(await upload()).toHaveStatus(200);
-    expect(await upload()).toHaveStatus(200);
+    const [first, [original]] = await trackUploads(upload);
+    expect(first).toHaveStatus(200);
+    const [second, [copy]] = await trackUploads(upload);
+    expect(second).toHaveStatus(200);
+
+    // The instance still references the first upload, so the second copy is expunged.
+    const instance = await repo.searchOne<DicomInstance>({
+      resourceType: 'DicomInstance',
+      filters: [{ code: 'sop-instance-uid', operator: Operator.EXACT, value: sopInstanceUid }],
+    });
+    expect(instance?.raw?.reference).toBe(`Binary/${original.id}`);
+    expect(await binaryExists(original)).toBe(true);
+    expect(await binaryExists(copy)).toBe(false);
+    await expect(getBinaryStorage().readBinary(copy)).rejects.toThrow();
 
     await execPendingDicomStudyJobs();
 
@@ -516,6 +556,36 @@ describe('DICOM Routes', () => {
     const storedSeries = series.body as Record<string, { Value?: unknown[] }>[];
     expect(storedSeries).toHaveLength(1);
     expect(storedSeries[0]['00201209'].Value).toStrictEqual(['1']);
+  });
+
+  test('A failed upload keeps none of its Binaries', async () => {
+    const boundary = `medplum-${Date.now()}`;
+    const contentType = `multipart/related; type=application/dicom; boundary=${boundary}`;
+    const body = Buffer.concat([
+      Buffer.from(`--${boundary}\r\nContent-Type: application/dicom\r\n\r\n`),
+      createDicomBuffer({
+        sopInstanceUid: '1.2.826.0.1.3680043.10.543.40',
+        studyInstanceUid: '1.2.826.0.1.3680043.10.543.41',
+        seriesInstanceUid: '1.2.826.0.1.3680043.10.543.42',
+      }),
+      Buffer.from(`\r\n--${boundary}\r\nContent-Type: application/dicom\r\n\r\n`),
+      Buffer.from('not a DICOM file'),
+      Buffer.from(`\r\n--${boundary}--\r\n`),
+    ]);
+
+    const [res, uploads] = await trackUploads(() =>
+      request(app)
+        .post(`/dicomweb/studies`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', contentType)
+        .send(body)
+    );
+    expect(res).toHaveStatus(400);
+    // Both parts were uploaded, including the valid one, but nothing was stored to reference them.
+    expect(uploads).toHaveLength(2);
+    for (const binary of uploads) {
+      expect(await binaryExists(binary)).toBe(false);
+    }
   });
 
   test('Direct handler validation errors', async () => {
