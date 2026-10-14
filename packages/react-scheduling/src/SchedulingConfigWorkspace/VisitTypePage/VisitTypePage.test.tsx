@@ -201,21 +201,27 @@ describe('VisitTypePage', () => {
   test('Custom starts from the color shown, previews it, and stores the hex code typed', async () => {
     const { onSynced } = await setup();
     expect(screen.queryByRole('textbox', { name: 'Custom color' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('img', { name: 'Appointment preview' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /Appointment preview/ })).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('radio', { name: 'grape' }));
     await userEvent.click(screen.getByRole('radio', { name: 'Custom' }));
     const input = screen.getByRole('textbox', { name: 'Custom color' });
     expect(input).toHaveValue(DEFAULT_THEME.colors.grape[7]);
-    const preview = screen.getByRole('img', { name: 'Appointment preview' });
-    expect(preview).toHaveTextContent('Initial Visit');
-    expect(preview.style.getPropertyValue('--fc-event-color')).toBe(DEFAULT_THEME.colors.grape[7]);
+    const previews = [
+      screen.getByRole('img', { name: 'Appointment preview, light mode' }),
+      screen.getByRole('img', { name: 'Appointment preview, dark mode' }),
+    ];
+    const previewColors = (): string[] => previews.map((p) => p.style.getPropertyValue('--fc-event-color'));
+    expect(previews[0]).toHaveTextContent('Initial Visit');
+    expect(previewColors()).toEqual([DEFAULT_THEME.colors.grape[7], DEFAULT_THEME.colors.grape[7]]);
+    // Still grape's own shade, so drawn as grape is.
+    expect(previews[0].querySelector('.appointment')).toHaveClass('color-grape');
 
     // Typing passes through partial codes; the whole one is stored.
     await userEvent.clear(input);
     await userEvent.type(input, '#228b22');
     expect(input).toHaveValue('#228b22');
-    expect(preview.style.getPropertyValue('--fc-event-color')).toBe('#228b22');
+    expect(previewColors()).toEqual(['#228b22', '#228b22']);
     expect(screen.getByRole('radio', { name: 'Custom' })).toBeChecked();
 
     // An unfinished code is dropped when the input is left, even one that reads as a shorter code.

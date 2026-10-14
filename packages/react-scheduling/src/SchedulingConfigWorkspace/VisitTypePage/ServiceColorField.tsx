@@ -138,7 +138,8 @@ export function ServiceColorField(props: ServiceColorFieldProps): JSX.Element {
             }}
             onBlur={() => setTyped(undefined)}
           />
-          <AppointmentColorPreview color={custom} title={serviceName} />
+          <AppointmentColorPreview color={custom} title={serviceName} colorScheme="light" />
+          <AppointmentColorPreview color={custom} title={serviceName} colorScheme="dark" />
         </Group>
       )}
     </Radio.Group>
