@@ -10,8 +10,9 @@
       --past-fade: 0.5;
     }
 
-    /* Only events that can be clicked answer to the pointer. */
-    &[role='button']:hover {
+    /* Only events that can be clicked answer to the pointer, and the selected one already stands
+     * out. */
+    &[role='button']:not(:global(.selected)):hover {
       --emphasis: 80%;
     }
   }
@@ -123,6 +124,21 @@
     }
   }
 
+  /* The selected appointment, such as the one open in a details pane, is filled with its bar
+   * color and written in white. */
+  :global(.appointment.selected) {
+    background: color-mix(in oklab, var(--appointment-bar) calc(100% * var(--past-fade)), var(--fc-classic-background));
+
+    .eventInner,
+    .eventTime {
+      color: color-mix(
+        in oklab,
+        var(--mantine-color-white) calc(100% * var(--past-fade)),
+        var(--fc-classic-background)
+      );
+    }
+  }
+
   /* Booked and its successor states are tinted; everything else is a dashed outline over the
    * plain background. */
   :global(.appointment.pending),
@@ -132,6 +148,20 @@
   :global(.appointment.noshow),
   :global(.appointment.entered-in-error) {
     background: var(--fc-classic-background);
+
+    /* Selected, one is tinted and written as a booked one is, keeping its outline. */
+    &:global(.selected) {
+      background: color-mix(
+        in oklab,
+        var(--appointment-tint) calc(100% * var(--past-fade)),
+        var(--fc-classic-background)
+      );
+
+      .eventInner,
+      .eventTime {
+        color: color-mix(in oklab, var(--appointment-text) calc(100% * var(--past-fade)), var(--fc-classic-background));
+      }
+    }
 
     /* An outline drawn inside the event doesn't change its size the way a border
      * would. Skipped while focused so FullCalendar's focus ring still shows. */

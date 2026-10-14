@@ -150,6 +150,31 @@ describe('CalendarBase', () => {
       }
     });
 
+    test('marks the selected appointment', async () => {
+      const homer = createAppointment({
+        id: 'apt-homer',
+        participant: [{ actor: { reference: 'Patient/1', display: 'Homer Simpson' }, status: 'accepted' }],
+      });
+      const bob = createAppointment({
+        id: 'apt-bob',
+        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
+        participant: [{ actor: { reference: 'Patient/2', display: 'Bob Jones' }, status: 'accepted' }],
+      });
+      const eventSources = [{ schedule: DrAliceSmithSchedule, appointments: [homer, bob], slots: [] }];
+
+      const { container, rerender } = setup({ eventSources, selectedId: 'apt-homer' });
+      expect(screen.getByText(/Homer Simpson/).closest('.appointment')).toHaveClass('selected');
+      expect(screen.getByText(/Bob Jones/).closest('.appointment')).not.toHaveClass('selected');
+
+      rerender(<CalendarBase eventSources={eventSources} selectedId="apt-bob" />);
+      expect(screen.getByText(/Homer Simpson/).closest('.appointment')).not.toHaveClass('selected');
+      expect(screen.getByText(/Bob Jones/).closest('.appointment')).toHaveClass('selected');
+
+      rerender(<CalendarBase eventSources={eventSources} />);
+      expect(container.querySelector('.selected')).toBeNull();
+    });
+
     test('renders "free" slots', async () => {
       const source = {
         schedule: DrAliceSmithSchedule,
