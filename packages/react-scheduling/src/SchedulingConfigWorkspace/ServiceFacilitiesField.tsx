@@ -8,7 +8,6 @@ import { IconLock } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
-import { normalizeReference } from './ActorPage/roleDraft';
 import classes from './ServiceFacilitiesField.module.css';
 
 export interface ServiceFacilitiesFieldProps {
@@ -45,7 +44,7 @@ export function ServiceFacilitiesField(props: ServiceFacilitiesFieldProps): JSX.
   }, [value]);
 
   function handleChange(locations: Location[]): void {
-    const linkedReferences = new Set(linked.flatMap((facility) => normalizeReference(facility.reference) ?? []));
+    const linkedReferences = new Set(linked.flatMap((facility) => facility.reference ?? []));
     if (locations.some((location) => linkedReferences.has(`Location/${location.id}`))) {
       // A linked service facility is already listed above the input, so picking it here changes nothing.
       setInputKey((key) => key + 1);

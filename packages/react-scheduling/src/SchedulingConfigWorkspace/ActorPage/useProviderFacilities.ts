@@ -8,7 +8,7 @@ import type { ConfigChange } from '../ConfigPage/configSave';
 import type { ServiceFacilitiesConfirmation } from '../serviceFacilitiesConfirmation';
 import { getServiceFacilitiesConfirmation } from '../serviceFacilitiesConfirmation';
 import type { ProviderFacilitiesFieldsProps } from './ProviderFacilitiesFields';
-import { buildRoleChanges, normalizeReference, providerFacilitiesOf } from './roleDraft';
+import { buildRoleChanges, providerFacilitiesOf } from './roleDraft';
 import { useProviderRoles } from './useProviderRoles';
 
 export interface ProviderFacilitiesState {
@@ -45,11 +45,10 @@ export function useProviderFacilities(
   const read = providerRoles?.value;
   const stored = read && providerFacilitiesOf(read.roles);
 
-  const isLinked = (facility: Reference<Location>): boolean =>
-    !!stored?.locked.has(normalizeReference(facility.reference) ?? '');
+  const isLinked = (facility: Reference<Location>): boolean => !!stored?.locked.has(facility.reference ?? '');
   const named = (facility: Reference<Location>): Reference<Location> => ({
     ...facility,
-    display: read?.names.get(normalizeReference(facility.reference) ?? '') ?? facility.display ?? facility.reference,
+    display: read?.names.get(facility.reference ?? '') ?? facility.display ?? facility.reference,
   });
   const linked = (stored?.facilities.filter(isLinked) ?? []).map(named);
   const editable = edits ?? stored?.facilities.filter((facility) => !isLinked(facility));

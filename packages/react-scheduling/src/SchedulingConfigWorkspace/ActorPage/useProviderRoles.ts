@@ -6,7 +6,6 @@ import type { Location, PractitionerRole } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useEffect, useState } from 'react';
 import type { ConfigurableActorResource } from '../../configSearch';
-import { normalizeReference } from './roleDraft';
 
 /** A provider's roles as stored, and the names of the service facilities they name. */
 export interface ProviderRoles {
@@ -84,9 +83,7 @@ async function readProviderRoles(
     { signal, ...(cache && { cache }) }
   );
   const references = [
-    ...new Set(
-      roles.flatMap((role) => role.location ?? []).flatMap((location) => normalizeReference(location.reference) ?? [])
-    ),
+    ...new Set(roles.flatMap((role) => role.location ?? []).flatMap((location) => location.reference ?? [])),
   ];
   // A Location that can't be read is left unnamed, so the page falls back to the display the role carries.
   const names = await Promise.all(
