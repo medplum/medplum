@@ -23,6 +23,7 @@ import {
   medplumSeriesToDcmjsSeries,
   medplumStudyToDcmjsStudy,
   parseQueryInt,
+  scanStudy,
   stringToDicomPersonName,
   updateSeriesAggregates,
   updateStudyAggregates,
@@ -31,25 +32,25 @@ import {
 
 describe('DICOM utils', () => {
   test('converts DICOM study metadata to Medplum study', () => {
-    expect(
-      dcmjsStudyToMedplumStudy({
-        StudyInstanceUID: 'study-uid',
-        StudyID: 'study-id',
-        StudyDate: '20240102',
-        StudyTime: '030405',
-        AccessionNumber: 'A123',
-        InstanceAvailability: 'ONLINE',
-        ModalitiesInStudy: ['CT'],
-        ReferringPhysiciansName: 'Dr Test',
-        TimezoneOffsetFromUTC: '-0700',
-        PatientName: [{ Alphabetic: 'TEST^PATIENT ' }],
-        PatientID: 'P123',
-        PatientBirthDate: '20000101',
-        PatientSex: 'O',
-        NumberOfStudyRelatedSeries: 2,
-        NumberOfStudyRelatedInstances: 3,
-      })
-    ).toMatchObject({
+    const study = dcmjsStudyToMedplumStudy({
+      StudyInstanceUID: 'study-uid',
+      StudyID: 'study-id',
+      StudyDate: '20240102',
+      StudyTime: '030405',
+      AccessionNumber: 'A123',
+      InstanceAvailability: 'ONLINE',
+      ModalitiesInStudy: ['CT'],
+      ReferringPhysiciansName: 'Dr Test',
+      TimezoneOffsetFromUTC: '-0700',
+      PatientName: [{ Alphabetic: 'TEST^PATIENT ' }],
+      PatientID: 'P123',
+      PatientBirthDate: '20000101',
+      PatientSex: 'O',
+      NumberOfStudyRelatedSeries: 2,
+      NumberOfStudyRelatedInstances: 3,
+    });
+
+    expect(study).toMatchObject({
       resourceType: 'DicomStudy',
       studyInstanceUid: 'study-uid',
       studyId: 'study-id',
@@ -58,9 +59,12 @@ describe('DICOM utils', () => {
       accessionNumber: 'A123',
       patientName: 'TEST^PATIENT',
       patientBirthDate: '2000-01-01',
-      numberOfStudyRelatedSeries: 2,
-      numberOfStudyRelatedInstances: 3,
     });
+
+    // The sender's own NumberOfStudyRelated* are dropped rather than trusted; the study job
+    // recomputes them from what is actually stored.
+    expect(study.numberOfStudyRelatedSeries).toBeUndefined();
+    expect(study.numberOfStudyRelatedInstances).toBeUndefined();
   });
 
   test('converts Medplum study metadata to DICOM naturalized metadata', () => {
@@ -96,29 +100,31 @@ describe('DICOM utils', () => {
     const study = { resourceType: 'DicomStudy' as const, id: 'study-id', studyInstanceUid: 'study-uid' };
     const studyRef = { reference: 'DicomStudy/study-id' };
 
-    expect(
-      dcmjsSeriesToMedplumSeries(studyRef, {
-        SeriesInstanceUID: 'series-uid',
-        SeriesNumber: 7,
-        Modality: 'CT',
-        SeriesDescription: 'Head CT',
-        TimezoneOffsetFromUTC: '-0700',
-        NumberOfSeriesRelatedInstances: 4,
-        PerformedProcedureStepStartDate: '20240102',
-        PerformedProcedureStepStartTime: '030405',
-      })
-    ).toMatchObject({
+    const series = dcmjsSeriesToMedplumSeries(studyRef, {
+      SeriesInstanceUID: 'series-uid',
+      SeriesNumber: 7,
+      Modality: 'CT',
+      SeriesDescription: 'Head CT',
+      TimezoneOffsetFromUTC: '-0700',
+      NumberOfSeriesRelatedInstances: 4,
+      PerformedProcedureStepStartDate: '20240102',
+      PerformedProcedureStepStartTime: '030405',
+    });
+
+    expect(series).toMatchObject({
       resourceType: 'DicomSeries',
       study: studyRef,
       seriesInstanceUid: 'series-uid',
       seriesNumber: '7',
       modality: 'CT',
       seriesDescription: 'Head CT',
-      numberOfSeriesRelatedInstances: 4,
       // DICOM DA and TM, reformatted to the FHIR date and time the elements are typed as
       performedProcedureStepStartDate: '2024-01-02',
       performedProcedureStepStartTime: '03:04:05',
     });
+
+    // Dropped rather than trusted, as with the study level counts above.
+    expect(series.numberOfSeriesRelatedInstances).toBeUndefined();
 
     expect(
       medplumSeriesToDcmjsSeries(study, {
@@ -258,11 +264,14 @@ describe('DICOM utils', () => {
 describe('DICOM study aggregates', () => {
   const app = express();
   let repo: Repository;
+  let projectId: string;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    repo = (await createTestProject({ withRepo: true })).repo;
+    const testProject = await createTestProject({ withRepo: true });
+    repo = testProject.repo;
+    projectId = testProject.project.id;
   });
 
   afterAll(async () => {
@@ -306,7 +315,7 @@ describe('DICOM study aggregates', () => {
       await addSeries(study, 'CT', 1); // Duplicate modality, counted once
       await addSeries(study, undefined, 1); // Missing modality is skipped, but the series still counts
 
-      await updateStudyAggregates(repo, study.id);
+      await updateStudyAggregates(repo, study.id, await scanStudy(repo, projectId, study.id));
 
       expect(await repo.readResource<DicomStudy>('DicomStudy', study.id)).toMatchObject({
         modalitiesInStudy: ['CT', 'PT'],
@@ -320,7 +329,7 @@ describe('DICOM study aggregates', () => {
       const study = await createStudy();
       await addSeries(study, undefined, 1);
 
-      await updateStudyAggregates(repo, study.id);
+      await updateStudyAggregates(repo, study.id, await scanStudy(repo, projectId, study.id));
 
       const result = await repo.readResource<DicomStudy>('DicomStudy', study.id);
       expect(result.modalitiesInStudy).toBeUndefined();
@@ -332,10 +341,10 @@ describe('DICOM study aggregates', () => {
       const study = await createStudy();
       await addSeries(study, 'CT', 1);
 
-      await updateStudyAggregates(repo, study.id);
+      await updateStudyAggregates(repo, study.id, await scanStudy(repo, projectId, study.id));
       const first = await repo.readResource<DicomStudy>('DicomStudy', study.id);
 
-      await updateStudyAggregates(repo, study.id);
+      await updateStudyAggregates(repo, study.id, await scanStudy(repo, projectId, study.id));
       const second = await repo.readResource<DicomStudy>('DicomStudy', study.id);
 
       expect(second.meta?.versionId).toBe(first.meta?.versionId);
@@ -350,7 +359,7 @@ describe('DICOM study aggregates', () => {
         .spyOn(repo, 'updateResource')
         .mockRejectedValueOnce(new OperationOutcomeError(preconditionFailed));
 
-      await updateStudyAggregates(repo, study.id);
+      await updateStudyAggregates(repo, study.id, await scanStudy(repo, projectId, study.id));
 
       expect(updateResource).toHaveBeenCalledTimes(2);
       expect(await repo.readResource<DicomStudy>('DicomStudy', study.id)).toMatchObject({
@@ -364,11 +373,12 @@ describe('DICOM study aggregates', () => {
       const study = await createStudy();
       await addSeries(study, 'CT', 1);
 
+      const scan = await scanStudy(repo, projectId, study.id);
       const updateResource = vi
         .spyOn(repo, 'updateResource')
         .mockRejectedValue(new OperationOutcomeError(preconditionFailed));
 
-      await expect(updateStudyAggregates(repo, study.id)).resolves.toBeUndefined();
+      await expect(updateStudyAggregates(repo, study.id, scan)).resolves.toBeUndefined();
 
       expect(updateResource).toHaveBeenCalledTimes(3);
       updateResource.mockRestore();
@@ -379,9 +389,10 @@ describe('DICOM study aggregates', () => {
       const study = await createStudy();
       await addSeries(study, 'CT', 1);
 
+      const scan = await scanStudy(repo, projectId, study.id);
       const updateResource = vi.spyOn(repo, 'updateResource').mockRejectedValue(new Error('boom'));
 
-      await expect(updateStudyAggregates(repo, study.id)).rejects.toThrow('boom');
+      await expect(updateStudyAggregates(repo, study.id, scan)).rejects.toThrow('boom');
 
       expect(updateResource).toHaveBeenCalledTimes(1);
       updateResource.mockRestore();
@@ -393,8 +404,7 @@ describe('DICOM study aggregates', () => {
       const ct = await addSeries(study, 'CT', 3);
       const pt = await addSeries(study, 'PT', 2);
 
-      await updateSeriesAggregates(repo, ct.id);
-      await updateSeriesAggregates(repo, pt.id);
+      await updateSeriesAggregates(repo, await scanStudy(repo, projectId, study.id));
 
       expect(await repo.readResource<DicomSeries>('DicomSeries', ct.id)).toMatchObject({
         numberOfSeriesRelatedInstances: 3,
@@ -409,10 +419,10 @@ describe('DICOM study aggregates', () => {
       const study = await createStudy();
       const series = await addSeries(study, 'CT', 2);
 
-      await updateSeriesAggregates(repo, series.id);
+      await updateSeriesAggregates(repo, await scanStudy(repo, projectId, study.id));
       const first = await repo.readResource<DicomSeries>('DicomSeries', series.id);
 
-      await updateSeriesAggregates(repo, series.id);
+      await updateSeriesAggregates(repo, await scanStudy(repo, projectId, study.id));
       const second = await repo.readResource<DicomSeries>('DicomSeries', series.id);
 
       expect(second.meta?.versionId).toBe(first.meta?.versionId);
@@ -427,7 +437,7 @@ describe('DICOM study aggregates', () => {
         .spyOn(repo, 'updateResource')
         .mockRejectedValueOnce(new OperationOutcomeError(preconditionFailed));
 
-      await updateSeriesAggregates(repo, series.id);
+      await updateSeriesAggregates(repo, await scanStudy(repo, projectId, study.id));
 
       expect(updateResource).toHaveBeenCalledTimes(2);
       expect(await repo.readResource<DicomSeries>('DicomSeries', series.id)).toMatchObject({

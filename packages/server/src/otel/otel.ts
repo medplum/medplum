@@ -10,6 +10,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { heartbeat } from '../heartbeat';
 import { getBatchQueue } from '../workers/batch';
 import { getCronQueue } from '../workers/cron';
+import { getDicomQueue } from '../workers/dicom';
 import { getDownloadQueue } from '../workers/download';
 import { getSetAccountsQueue } from '../workers/set-accounts';
 import { getSubscriptionQueue } from '../workers/subscription';
@@ -37,7 +38,14 @@ export function getQueueMetricName(queueName: WorkerName, metric: QueueMetric): 
 let queueEntries: [WorkerName, Queue][] | undefined;
 function getQueueEntries(): [WorkerName, Queue][] {
   if (!queueEntries) {
-    if (!(getSubscriptionQueue() && getCronQueue() && getDownloadQueue() && getBatchQueue() && getSetAccountsQueue())) {
+    if (!(
+      getSubscriptionQueue() &&
+      getCronQueue() &&
+      getDownloadQueue() &&
+      getBatchQueue() &&
+      getSetAccountsQueue() &&
+      getDicomQueue()
+    )) {
       throw new Error('Queues not initialized');
     }
     queueEntries = [
@@ -46,6 +54,7 @@ function getQueueEntries(): [WorkerName, Queue][] {
       ['download', getDownloadQueue() as Queue],
       ['batch', getBatchQueue() as Queue],
       ['set-accounts', getSetAccountsQueue() as Queue],
+      ['dicom', getDicomQueue() as Queue],
     ];
   }
   return queueEntries;

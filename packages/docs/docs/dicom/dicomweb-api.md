@@ -70,7 +70,7 @@ Instance UID `(0008,1155)`, and a Retrieve URL `(0008,1190)`.
 
 :::caution
 
-The Retrieve URL returned in the response is currently a placeholder of the form `/instances/{id}/raw`, which is not a resolvable endpoint. Use the QIDO-RS and WADO-RS routes below to retrieve stored instances.
+The Retrieve URL returned in the response is currently a placeholder of the form `/instances/{id}/raw`, which is not a resolvable endpoint. Use the QIDO-RS and WADO-RS routes below to retrieve stored instances, or the `Endpoint` referenced by the study's [`ImagingStudy`](./data-model.md#relationship-to-fhir-imagingstudy).
 
 :::
 

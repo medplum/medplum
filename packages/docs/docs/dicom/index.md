@@ -51,7 +51,7 @@ the [OHIF Viewer](./ohif-viewer.md) makes.
 
 ## What gets stored
 
-A single DICOM instance arriving at Medplum produces four things:
+A single DICOM instance arriving at Medplum produces five things:
 
 | Resource                                                | Holds                                                                                   |
 | ------------------------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -59,12 +59,14 @@ A single DICOM instance arriving at Medplum produces four things:
 | [`DicomSeries`](/docs/api/fhir/medplum/dicomseries)     | Series-level attributes — series UID, modality, series description                      |
 | [`DicomInstance`](/docs/api/fhir/medplum/dicominstance) | Instance-level attributes, plus the full DICOM JSON metadata and references to binaries |
 | [`Binary`](/docs/api/fhir/resources/binary)             | The original, unmodified `.dcm` file                                                    |
+| [`ImagingStudy`](/docs/api/fhir/resources/imagingstudy) | A derived, chart-facing view of the study, with a WADO-RS endpoint to retrieve it from  |
 
 Studies and series are created conditionally on their DICOM UIDs, so the second instance of a series
 attaches to the study and series the first one created rather than duplicating them.
 
-A background worker then reads the raw file and extracts pixel data into one additional `Binary` per
-frame, which is what [WADO-RS frame retrieval](./dicomweb-api.md#wado-rs-retrieve-frames) serves.
+Background workers then read the raw file and extract pixel data into one additional `Binary` per
+frame, which is what [WADO-RS frame retrieval](./dicomweb-api.md#wado-rs-retrieve-frames) serves, and
+recompute the study's instance counts and its `ImagingStudy`.
 See the [Data Model](./data-model.md) for the full mapping from DICOM attributes to resource fields.
 
 Because these are ordinary Medplum resources, they are searchable with the standard FHIR search API,

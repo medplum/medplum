@@ -9,6 +9,7 @@ import * as databaseModule from '../database';
 import { heartbeat } from '../heartbeat';
 import * as batchModule from '../workers/batch';
 import * as cronModule from '../workers/cron';
+import * as dicomModule from '../workers/dicom';
 import * as downloadModule from '../workers/download';
 import * as setAccountsModule from '../workers/set-accounts';
 import * as subscriptionModule from '../workers/subscription';
@@ -57,6 +58,7 @@ function mockQueueGetters(queue: ReturnType<typeof createMockQueue> | undefined)
   vi.spyOn(downloadModule, 'getDownloadQueue').mockReturnValue(queue as never);
   vi.spyOn(batchModule, 'getBatchQueue').mockReturnValue(queue as never);
   vi.spyOn(setAccountsModule, 'getSetAccountsQueue').mockReturnValue(queue as never);
+  vi.spyOn(dicomModule, 'getDicomQueue').mockReturnValue(queue as never);
 }
 
 describe('OpenTelemetry', () => {
@@ -218,9 +220,9 @@ describe('OpenTelemetry', () => {
     expect(getDatabasePoolSpy).toHaveBeenCalled();
 
     // Every queue is read: subscription, cron, download, batch, set-accounts
-    expect(mockSharedQueue.getWaitingCount).toHaveBeenCalledTimes(5);
-    expect(mockSharedQueue.getDelayedCount).toHaveBeenCalledTimes(5);
-    expect(mockSharedQueue.getActiveCount).toHaveBeenCalledTimes(5);
+    expect(mockSharedQueue.getWaitingCount).toHaveBeenCalledTimes(6);
+    expect(mockSharedQueue.getDelayedCount).toHaveBeenCalledTimes(6);
+    expect(mockSharedQueue.getActiveCount).toHaveBeenCalledTimes(6);
 
     // Each count is published under its per-queue metric name, carrying the mocked value
     expect(gaugeRecorder('medplum.batch.waitingCount')).toHaveBeenCalledWith(5, undefined);
