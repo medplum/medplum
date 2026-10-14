@@ -9,7 +9,7 @@ import { useMedplum, useResource, useSearchOne } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { Fragment, useState } from 'react';
 import { Detail } from './Detail';
-import { formatWhen } from './SchedulingWorkspace.utils';
+import { formatWhen, isCancelable, isReschedulable } from './SchedulingWorkspace.utils';
 import classes from './SlotDetails.module.css';
 import { SlotDetailsForm } from './SlotDetailsForm';
 
@@ -79,7 +79,7 @@ export function SlotDetails(props: SlotDetailsProps): JSX.Element {
             {holder && (
               <Text size="sm">
                 This time is held by an appointment.
-                {(holder.status === 'pending' || holder.status === 'booked') &&
+                {(isReschedulable(holder) || isCancelable(holder)) &&
                   ' Reschedule or cancel the appointment to change it.'}
               </Text>
             )}
