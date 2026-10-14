@@ -557,7 +557,9 @@ describe('ActorPage', () => {
     const dialog = await flipOfferAll('Offer all visit types?');
 
     expect(dialog).toHaveTextContent('Room 3 will be bookable for all 3 active visit types, and any added later');
-    expect(dialog).toHaveTextContent("2 of them have no hours of their own, so they're bookable around the clock");
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(
+      "Follow-up and Cystoscopy have no hours of their own, so they're bookable around the clock"
+    );
     await userEvent.click(within(dialog).getByRole('button', { name: 'Offer all' }));
     expect(entryNames()).toEqual(['Initial Visit', 'Follow-up', 'Cystoscopy']);
     await save();

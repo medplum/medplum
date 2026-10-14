@@ -8,6 +8,7 @@ import { isCovered } from '../SchedulingConfigWorkspace.utils';
 import type { OfferAllSwitchProps } from './OfferAllSwitch';
 import type { ScheduleFields } from './scheduleDraft';
 import { hasOverrides, withCoveredOfferings } from './scheduleDraft';
+import { serviceLabel } from './serviceList';
 
 export interface UseOfferAllOptions {
   /** Every visit type loaded. */
@@ -64,9 +65,9 @@ export function useOfferAll(options: UseOfferAllOptions): UseOfferAllResult {
       checked: fields.allServices,
       coverage: {
         total: coverable.length,
-        withoutHours: coverable.filter(
-          (service) => !service.availableTime?.length && !fields.offerings[service.id]?.availability.overriding
-        ).length,
+        withoutHours: coverable
+          .filter((service) => !service.availableTime?.length && !fields.offerings[service.id]?.availability.overriding)
+          .map(serviceLabel),
       },
       keeping: { kept: keptCount, dropped: offeredCount - keptCount, restoresEarlier: !!offeredBeforeAll },
       onChange: (checked) => (checked ? offerAll() : stopOfferingAll()),

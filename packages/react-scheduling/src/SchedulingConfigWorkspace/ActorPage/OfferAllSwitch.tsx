@@ -5,12 +5,15 @@ import type { JSX } from 'react';
 import { useState } from 'react';
 import { ConfirmModal } from '../ConfirmModal';
 
+const NAMED_LIMIT = 5;
+const listAll = new Intl.ListFormat('en', { type: 'conjunction' });
+
 /** What switching it on would make bookable. */
 export interface OfferAllCoverage {
   /** The active visit types it covers. */
   readonly total: number;
-  /** Those with no hours of their own or here, which become bookable around the clock. */
-  readonly withoutHours: number;
+  /** The names of those with no hours of their own or here, which become bookable around the clock. */
+  readonly withoutHours: readonly string[];
 }
 
 /** What switching it off keeps. */
@@ -59,6 +62,7 @@ export function OfferAllSwitch(props: OfferAllSwitchProps): JSX.Element {
         confirmLabel="Offer all"
         onCancel={() => setAsking(undefined)}
         onConfirm={confirm}
+        warning={describeWithoutHours(coverage.withoutHours)}
       >
         {describeCoverage(actorName, coverage)}
       </ConfirmModal>
@@ -77,19 +81,20 @@ export function OfferAllSwitch(props: OfferAllSwitchProps): JSX.Element {
   );
 }
 
-function describeCoverage(actorName: string, { total, withoutHours }: OfferAllCoverage): string {
-  const sentences = [
-    `${actorName} will be bookable for ${total === 1 ? 'the 1 active visit type' : `all ${total} active visit types`}, and any added later, once you save.`,
-  ];
-  if (withoutHours > 0) {
-    sentences.push(
-      withoutHours === 1
-        ? "1 of them has no hours of its own, so it's bookable around the clock unless you set hours for it here."
-        : `${withoutHours} of them have no hours of their own, so they're bookable around the clock unless you set hours for them here.`
-    );
+function describeCoverage(actorName: string, { total }: OfferAllCoverage): string {
+  return `${actorName} will be bookable for ${total === 1 ? 'the 1 active visit type' : `all ${total} active visit types`}, and any added later, once you save.`;
+}
+
+function describeWithoutHours(names: readonly string[]): string | undefined {
+  if (names.length === 0) {
+    return undefined;
   }
-  sentences.push("Existing appointments aren't changed.");
-  return sentences.join(' ');
+  const listed =
+    names.length > NAMED_LIMIT ? [...names.slice(0, NAMED_LIMIT), `${names.length - NAMED_LIMIT} more`] : names;
+  const subject = listAll.format(listed);
+  return names.length === 1
+    ? `${subject} has no hours of its own, so it's bookable around the clock unless you set hours for it here.`
+    : `${subject} have no hours of their own, so they're bookable around the clock unless you set hours for them here.`;
 }
 
 function describeKeeping(actorName: string, { kept, dropped, restoresEarlier }: OfferAllKeeping): string {
