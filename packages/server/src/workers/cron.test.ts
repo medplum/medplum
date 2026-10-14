@@ -894,7 +894,9 @@ describe('Cron across linked projects', () => {
       await execBot({ data: buildCronJobData(cron) } as Job<CronJobData>);
 
       const [key, , body] = writeFileSpy.mock.calls[0];
-      expect(key).toStrictEqual(expect.stringContaining(`bot/${customer.project.id}/`));
+      // CDK's storageBotInputExpirationDays lifecycle rules only match keys under `bot/`
+      // The expect helps ensure CDK lifecycle rules stay in-sync with the key prefix used for bot inputs
+      expect(key).toMatch(new RegExp(`^bot/${customer.project.id}/`));
       expect(JSON.parse(body as string)).toMatchObject({
         botId: sharedBot.id,
         projectId: customer.project.id,
