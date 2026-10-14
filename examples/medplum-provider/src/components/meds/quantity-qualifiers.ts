@@ -148,7 +148,7 @@ const QUALIFIER_SYNONYMS_BY_NAME: Readonly<Record<string, SynonymGroup | null>> 
  * @returns The same string with regex metacharacters escaped.
  */
 function escapeRegexLiteral(text: string): string {
-  // RegExp.escape (ES2025) lands in Node 23+; CI still runs Node 22.
+  // RegExp.escape (ES2025) is missing from browsers older than Chrome 136 / Firefox 134 / Safari 18.2.
   if (typeof RegExp.escape === 'function') {
     return RegExp.escape(text);
   }

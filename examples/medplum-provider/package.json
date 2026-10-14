@@ -42,7 +42,7 @@
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.7",
-    "@types/node": "22.20.5",
+    "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
@@ -65,6 +65,6 @@
   },
   "packageManager": "npm@11.21.0",
   "engines": {
-    "node": "^22.18.0 || >=24.2.0"
+    "node": ">=24.2.0"
   }
 }

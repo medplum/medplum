@@ -57,7 +57,7 @@
     "test": "vitest run"
   },
   "engines": {
-    "node": "^22.18.0 || >=24.2.0"
+    "node": ">=24.2.0"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "5.2.4"

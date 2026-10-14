@@ -18,7 +18,7 @@ In this demo, there are three ways to launch a SMART on FHIR app:
 
 ## Prerequisites
 
-- **Node.js** `^22.18.0` or `>=24.2.0`
+- **Node.js** `>=24.2.0`
 - **npm** `10.9.4` or later (npm 11 is not supported by this project's lock file)
 - A Medplum account (only required for the Medplum launch flows)
 

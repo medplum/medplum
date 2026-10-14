@@ -497,7 +497,7 @@ concurrent, so MSH.13 may reach a downstream out of order.
 
 ## 5. SQLite Configuration (`node:sqlite`)
 
-`node:sqlite` is shipped stable in Node 24 and behind `--experimental-sqlite` in Node 22.18+; `package.json` already requires `^22.18.0 || >=24.2.0`. For Node 22 we'll set `NODE_OPTIONS=--experimental-sqlite` in the SEA bootstrap, or detect at runtime and surface a clear error.
+`node:sqlite` is available without a flag in every supported Node version (`package.json` requires `>=24.2.0`).
 
 ```ts
 import { DatabaseSync } from 'node:sqlite';
@@ -1053,7 +1053,7 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
   - Parse new `duplicateBehavior` query param (default `idempotent`).
   - `AgentHl7ChannelConnection.handleMessage()` becomes the §8 flow: persist → sendCommitAck → notify worker. `sendToRemote()` returns `boolean` so the worker can detect failure.
 - `packages/agent/src/channel.ts` (`BaseChannel`) — extend interface with `sendToRemote(msg): boolean` (returns success).
-- `packages/agent/package.json` — no new deps (Node built-in). Ensure SEA bootstrap passes `--experimental-sqlite` on Node 22.
+- `packages/agent/package.json` — no new deps (Node built-in).
 - `packages/agent/esbuild.mjs` — mark `node:sqlite` as external (it is by default for `node:` prefix).
 
 **Docs:**
@@ -1147,7 +1147,6 @@ Backward compatibility:
 
 | Risk                                                                  | Mitigation                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `node:sqlite` instability on Node 22 (experimental flag)              | Detect at startup; surface clear error if module is unavailable. Internal canary on Node 24 (stable) first. Document version requirement.                                                                                                                                                                                                                                                                                   |
 | Synchronous SQLite on main thread → tail latency under load           | Bench enqueue p99 in soak test. If unacceptable, move queue to a Worker Thread with a `MessagePort` interface (designed-in by keeping `DurableQueue` behind a narrow interface).                                                                                                                                                                                                                                            |
 | Disk fills with `rejected`/`failed`/`undelivered` rows                | Hard floor on errored retention + alert log when DB > 80% of `queueRetentionMaxMb`.                                                                                                                                                                                                                                                                                                                                         |
 | Source retries (same MSH.10) after legitimate prior success           | `duplicateBehavior=idempotent` (default) replays prior ACK; no double-forwarding. Also recovers a `processed`+`undelivered` row — the replay lands the missed ACK and flips it to `delivered`.                                                                                                                                                                                                                              |

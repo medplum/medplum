@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 30
     env:
       GITHUB_TOKEN: ${{ github.token }}
-      NODE_VERSION: '22'
+      NODE_VERSION: '24'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
@@ -63,6 +63,7 @@ jobs:
       # lacks it. `npm trust` (npm >= 11.10.0) is the closest public probe for that support.
       - name: Install npm from packageManager
         run: |
+          npm install -g corepack@0.36.0
           corepack enable npm
           if ! npm trust --help > /dev/null 2>&1; then
             echo "::error::npm $(npm -v) does not support trusted publishing (no 'npm trust' command)"
@@ -159,7 +160,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 45
     env:
-      NODE_VERSION: '24'
+      NODE_VERSION: '26'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
@@ -183,7 +184,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '24'
+          node-version: '26'
           registry-url: 'https://registry.npmjs.org'
           # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
           # See: https://github.com/actions/setup-node/issues/328
@@ -389,7 +390,7 @@ jobs:
     runs-on: ${{ matrix.arch.image }}
     timeout-minutes: 45
     env:
-      NODE_VERSION: '24'
+      NODE_VERSION: '26'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
@@ -405,7 +406,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '24'
+          node-version: '26'
           registry-url: 'https://registry.npmjs.org'
           # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
           # See: https://github.com/actions/setup-node/issues/328
@@ -490,7 +491,7 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 45
     env:
-      NODE_VERSION: '24'
+      NODE_VERSION: '26'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
@@ -506,7 +507,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '24'
+          node-version: '26'
           registry-url: 'https://registry.npmjs.org'
           # After v6, the default for `package-manager-cache` is true. We however, have historically used caching with a fallback which is not supported by the setup-node action
           # See: https://github.com/actions/setup-node/issues/328
