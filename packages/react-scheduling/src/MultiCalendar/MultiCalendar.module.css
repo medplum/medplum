@@ -49,13 +49,16 @@
       ),
       color-mix(in oklab, var(--appointment-tint) calc(100% * var(--past-fade)), var(--fc-classic-background));
 
+    /* Also draws CalendarBase's recurring icon. */
+    --event-text-color: color-mix(
+      in oklab,
+      var(--appointment-text) calc(var(--emphasis) * var(--past-fade)),
+      var(--fc-classic-background)
+    );
+
     .eventInner,
     .eventTime {
-      color: color-mix(
-        in oklab,
-        var(--appointment-text) calc(var(--emphasis) * var(--past-fade)),
-        var(--fc-classic-background)
-      );
+      color: var(--event-text-color);
     }
   }
 
