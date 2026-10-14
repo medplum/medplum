@@ -48,10 +48,10 @@ import type { ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { ParameterWarnings } from '../ConfigPage/ParameterWarnings';
 import type { ConfigOffering, ConfigOfferingGroup } from '../SchedulingConfigWorkspace.utils';
+import { ServiceFacilitiesField } from '../ServiceFacilitiesField';
 import { StatusBadge } from '../StatusBadge';
 import { OfferingSchedulesSection } from './OfferingSchedulesSection';
 import { ServiceColorField } from './ServiceColorField';
-import { ServiceFacilitiesField } from './ServiceFacilitiesField';
 
 export interface VisitTypePageProps {
   /** The visit type as stored. Omitted to create one. */
@@ -369,7 +369,12 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
         <ServiceFacilitiesField
           value={fields.location}
           onChange={(location) => update({ location })}
-          serviceName={serviceName}
+          name={serviceName}
+          description={
+            fields.location.length === 0
+              ? 'Available in all service facilities'
+              : 'Available in these service facilities'
+          }
         />
         <ServiceColorField
           value={fields.color}
