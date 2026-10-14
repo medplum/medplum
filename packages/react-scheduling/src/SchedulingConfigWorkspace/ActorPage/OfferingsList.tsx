@@ -7,6 +7,7 @@ import { IconSearch, IconTrash } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { ConfirmModal } from '../ConfirmModal';
+import { isCovered } from '../SchedulingConfigWorkspace.utils';
 import { OfferingMenu } from './OfferingEditor';
 import { OfferPicker } from './OfferPicker';
 import { pageOfServices, serviceLabel } from './serviceList';
@@ -18,7 +19,7 @@ export interface OfferingsListProps {
   readonly actorName: string;
   /** The visit types offered, in the order they're listed. */
   readonly offeredServices: readonly WithId<HealthcareService>[];
-  /** Whether the Schedule offers every active visit type, so none can be offered or stopped on its own. */
+  /** Whether the Schedule offers every active visit type, so none can be offered, or an active one stopped, alone. */
   readonly offersAllServices?: boolean;
   readonly openServiceId: string | null;
   readonly onOpenServiceIdChange: (id: string | null) => void;
@@ -193,7 +194,7 @@ export function OfferingsList(props: OfferingsListProps): JSX.Element {
                 <OfferingMenu
                   service={service}
                   onStopOffering={() => setServicesToStop([service])}
-                  stopDisabledReason={offersAllServices ? STOP_WHILE_ALL : undefined}
+                  stopDisabledReason={offersAllServices && isCovered(service) ? STOP_WHILE_ALL : undefined}
                 />
               </Group>
               <Accordion.Panel>

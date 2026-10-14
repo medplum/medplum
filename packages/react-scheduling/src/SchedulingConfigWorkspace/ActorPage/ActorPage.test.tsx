@@ -596,6 +596,19 @@ describe('ActorPage', () => {
     expect(getScheduleSchedulingParameterValues(saved, followUp).bufferAfter).toBe(10);
   });
 
+  test('an inactive visit type the Schedule names can still be stopped while it offers all', async () => {
+    await setup(drSmith, [offeringAll('Practitioner/dr-smith', followUp, [discontinued])]);
+
+    await chooseStopOffering('Discontinued');
+    await userEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Stop offering Discontinued?' })).getByRole('button', {
+        name: 'Stop offering',
+      })
+    );
+
+    expect(entryNames()).toEqual(['Initial Visit', 'Follow-up', 'Cystoscopy']);
+  });
+
   test('no longer offering all keeps the visit types the Schedule names, too', async () => {
     const { onSynced } = await setup(drSmith, [offeringAll('Practitioner/dr-smith', followUp, [initialVisit])]);
 
