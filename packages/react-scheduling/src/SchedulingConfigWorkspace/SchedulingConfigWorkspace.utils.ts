@@ -161,7 +161,7 @@ export function getOfferedServices(
  * @param service - The visit type.
  * @returns True when the marker makes it bookable.
  */
-export function isCovered(service: HealthcareService): boolean {
+export function isCoveredByAllServices(service: HealthcareService): boolean {
   return service.active !== false;
 }
 
@@ -284,7 +284,7 @@ export function getOfferings(
     }
     const offered =
       serviceTypeIncludesService(schedule.serviceType, service) ||
-      (isCovered(service) && serviceTypeIncludesAllServices(schedule.serviceType));
+      (isCoveredByAllServices(service) && serviceTypeIncludesAllServices(schedule.serviceType));
     return offered ? [{ actor, schedule }] : [];
   });
 }

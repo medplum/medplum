@@ -7,7 +7,7 @@ import { IconSearch, IconTrash } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { ConfirmModal } from '../ConfirmModal';
-import { isCovered } from '../SchedulingConfigWorkspace.utils';
+import { isCoveredByAllServices } from '../SchedulingConfigWorkspace.utils';
 import { OfferingMenu } from './OfferingEditor';
 import { OfferPicker } from './OfferPicker';
 import { pageOfServices, serviceLabel } from './serviceList';
@@ -194,7 +194,7 @@ export function OfferingsList(props: OfferingsListProps): JSX.Element {
                 <OfferingMenu
                   service={service}
                   onStopOffering={() => setServicesToStop([service])}
-                  stopDisabledReason={offersAllServices && isCovered(service) ? STOP_WHILE_ALL : undefined}
+                  stopDisabledReason={offersAllServices && isCoveredByAllServices(service) ? STOP_WHILE_ALL : undefined}
                 />
               </Group>
               <Accordion.Panel>

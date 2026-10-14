@@ -29,7 +29,7 @@ import {
   initialAvailabilityFieldsValue,
   toWeeklyAvailability,
 } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
-import { getOfferedServices, isActorInactive, isCovered } from '../SchedulingConfigWorkspace.utils';
+import { getOfferedServices, isActorInactive, isCoveredByAllServices } from '../SchedulingConfigWorkspace.utils';
 
 /** What a Schedule sets for one visit type it offers. */
 export interface OfferingFields {
@@ -83,7 +83,7 @@ export function withCoveredOfferings(
 ): Record<string, OfferingFields> {
   const result = { ...offerings };
   for (const service of services) {
-    if (isCovered(service) && !Object.hasOwn(result, service.id)) {
+    if (isCoveredByAllServices(service) && !Object.hasOwn(result, service.id)) {
       result[service.id] = storedOfferingFields(service, schedule);
     }
   }
@@ -172,7 +172,7 @@ export function buildScheduleDraft(
   for (const [id, current] of Object.entries(fields.offerings)) {
     const service = servicesById.get(id);
     if (service) {
-      const offered = named.has(id) || (fields.allServices && isCovered(service));
+      const offered = named.has(id) || (fields.allServices && isCoveredByAllServices(service));
       draft = withOfferingEdits(draft, service, current, initial, offered);
     }
   }

@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
 import type { Dispatch, SetStateAction } from 'react';
 import { useMemo, useState } from 'react';
-import { getOfferedServices, isCovered } from '../SchedulingConfigWorkspace.utils';
+import { getOfferedServices, isCoveredByAllServices } from '../SchedulingConfigWorkspace.utils';
 import type { OfferAllSwitchProps } from './OfferAllSwitch';
 import type { ScheduleFields } from './scheduleDraft';
 import { hasOverrides, withCoveredOfferings } from './scheduleDraft';
@@ -59,7 +59,7 @@ export function useOfferAll(options: UseOfferAllOptions): UseOfferAllResult {
     setOpenServiceId((current) => (current && Object.hasOwn(kept, current) ? current : null));
   }
 
-  const coverable = [...servicesById.values()].filter(isCovered);
+  const coverable = [...servicesById.values()].filter(isCoveredByAllServices);
   const keptCount = Object.keys(kept).length;
   const offeredCount = Object.keys(fields.offerings).length;
 
