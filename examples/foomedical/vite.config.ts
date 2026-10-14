@@ -19,6 +19,8 @@ export default defineConfig({
   test: {
     maxWorkers: process.env.TEST_MAX_WORKERS ?? '75%',
     environment: 'jsdom',
+    // Node 25+ defines a global localStorage that hides jsdom's under Vitest 4 (vitest-dev/vitest#10867)
+    execArgv: ['--no-experimental-webstorage'],
     setupFiles: ['./src/test.setup.ts'],
     globals: true,
     testTimeout: 120000,
