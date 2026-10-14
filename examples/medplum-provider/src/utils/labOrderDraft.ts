@@ -1,14 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient } from '@medplum/core';
-import { getExtensionValue, getIdentifier, isReference, SNOMED } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
+import {
+  createReference,
+  getExtensionValue,
+  getIdentifier,
+  getReferenceString,
+  isReference,
+  resolveId,
+  SNOMED,
+} from '@medplum/core';
 import type {
+  Bundle,
+  BundleEntry,
   Encounter,
   Organization,
   Patient,
   Practitioner,
   QuestionnaireResponse,
   Reference,
+  Resource,
   ServiceRequest,
   Specimen,
   Task,
@@ -18,14 +29,17 @@ import type {
   DiagnosisCodeableConcept,
   LabOrderTestMetadata,
   LabOrganization,
+  PartialLabOrderInputs,
   TestCoding,
 } from '@medplum/health-gorilla-core';
 import {
+  createLabOrderBundle,
   HEALTH_GORILLA_SYSTEM,
   isBillTo,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_PHYSICIAN_AN,
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
 } from '@medplum/health-gorilla-core';
 import type { TestSearch } from '@medplum/health-gorilla-react';
 import { getAutocompleteSearchFunction } from '@medplum/health-gorilla-react';
@@ -105,9 +119,7 @@ export async function getLabOrderDraftDefaults(
       if (!code) {
         return;
       }
-      const aoeRef = child.supportingInfo?.find((ref): ref is Reference<QuestionnaireResponse> =>
-        isReference(ref, 'QuestionnaireResponse')
-      );
+      const aoeRef = getAoeReference(child);
       testMetadata[code] = {
         priority: child.priority,
         notes: child.note?.[0]?.text,
@@ -208,4 +220,182 @@ async function resolveTests(
  */
 function isCompendiumCoding(coding: TestCoding): boolean {
   return !!coding.system?.startsWith('urn:uuid:');
+}
+
+/** Extensions the order form writes on a lab order. Any others on a resumed draft are kept. */
+const FORM_EXTENSION_URLS = new Set([
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_PHYSICIAN_AN,
+]);
+
+/**
+ * Saves the lab order form as a draft lab order, without sending it to the lab.
+ *
+ * Without `draft`, a new draft is created. With `draft`, that draft and its per-test requests, AOE
+ * answers and specimen are updated in place, so resuming it again shows what was saved. Unlike
+ * submitting, the bill-to and required AOE answers can still be missing.
+ * @param medplum - The Medplum client.
+ * @param inputs - The values entered in the lab order form.
+ * @param draft - The draft lab order to update, if any.
+ * @returns The saved draft lab order.
+ */
+export async function saveLabOrderDraft(
+  medplum: MedplumClient,
+  inputs: PartialLabOrderInputs,
+  draft?: ServiceRequest
+): Promise<WithId<ServiceRequest>> {
+  const bundle = createLabOrderDraftBundle(inputs);
+  const entries = bundle.entry ?? [];
+  const orderIndex = entries.findIndex(isLabOrderEntry);
+  if (draft?.id) {
+    await targetExistingDraft(medplum, entries, entries[orderIndex], draft.id);
+  }
+
+  const response = await medplum.executeBatch(bundle);
+  // executeBatch leaves the client cache alone, so drop what the save changed before the draft is resumed again
+  for (const resourceType of ['ServiceRequest', 'QuestionnaireResponse', 'Specimen'] as const) {
+    medplum.invalidateSearches(resourceType);
+  }
+  for (const entry of entries) {
+    if (entry.request?.method !== 'POST' && entry.request?.url) {
+      medplum.invalidateUrl(medplum.fhirUrl(entry.request.url));
+    }
+  }
+
+  const saved = response.entry?.[orderIndex]?.resource;
+  if (saved?.resourceType !== 'ServiceRequest') {
+    throw new Error('Lab order draft was not saved', { cause: response });
+  }
+  return saved as WithId<ServiceRequest>;
+}
+
+function createLabOrderDraftBundle(inputs: PartialLabOrderInputs): Bundle {
+  // Skip the builder's checks on AOE answers and billing, which only need to be complete on submit
+  const testMetadata = Object.fromEntries(
+    Object.entries(inputs.testMetadata ?? {}).map(([code, metadata]) => [
+      code,
+      metadata && { ...metadata, aoeQuestionnaire: undefined },
+    ])
+  );
+  const bundle = createLabOrderBundle({ ...inputs, testMetadata, billingInformation: { billTo: 'patient' } });
+
+  const order = bundle.entry?.find(isLabOrderEntry)?.resource as ServiceRequest;
+  const { billTo, patientCoverage } = inputs.billingInformation ?? {};
+  const extension = (order.extension ?? []).filter(
+    (ext) => ext.url !== MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO
+  );
+  if (billTo) {
+    extension.push({ url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: billTo });
+  }
+  order.extension = extension.length > 0 ? extension : undefined;
+  order.insurance =
+    billTo === 'insurance' && patientCoverage?.length
+      ? patientCoverage.map((coverage) => createReference(coverage))
+      : undefined;
+  return bundle;
+}
+
+/**
+ * Turns the creates in a new draft's bundle into updates of an existing draft's resources, and
+ * deletes the per-test requests, AOE answers and specimen the form no longer has.
+ * @param medplum - The Medplum client.
+ * @param entries - The entries of the bundle built from the form, which are modified in place.
+ * @param orderEntry - The entry for the top-level lab order.
+ * @param draftId - The ID of the draft lab order to update.
+ */
+async function targetExistingDraft(
+  medplum: MedplumClient,
+  entries: BundleEntry[],
+  orderEntry: BundleEntry,
+  draftId: string
+): Promise<void> {
+  const [current, currentTests] = await Promise.all([
+    medplum.readResource('ServiceRequest', draftId, { cache: 'no-cache' }),
+    medplum.searchResources('ServiceRequest', { 'based-on': `ServiceRequest/${draftId}` }, { cache: 'no-cache' }),
+  ]);
+  const currentSpecimenRef = current.specimen?.find((ref): ref is Reference<Specimen> => isReference(ref, 'Specimen'));
+  const currentSpecimen = currentSpecimenRef
+    ? await medplum.readReference(currentSpecimenRef, { cache: 'no-cache' })
+    : undefined;
+  const deletes: string[] = [];
+
+  const unmatchedTests = [...currentTests];
+  for (const entry of entries) {
+    const test = entry.resource as ServiceRequest | undefined;
+    if (test?.resourceType !== 'ServiceRequest' || test.basedOn?.[0]?.reference !== orderEntry.fullUrl) {
+      continue;
+    }
+    const index = unmatchedTests.findIndex(
+      (currentTest) => currentTest.code?.coding?.[0]?.code === test.code?.coding?.[0]?.code
+    );
+    if (index === -1) {
+      continue;
+    }
+    const [currentTest] = unmatchedTests.splice(index, 1);
+    const aoeEntry = entries.find((e) => !!e.fullUrl && e.fullUrl === test.supportingInfo?.[0]?.reference);
+    const currentAoeRef = getAoeReference(currentTest);
+    updateEntry(entry, getReferenceString(currentTest), currentTest);
+    if (currentAoeRef?.reference) {
+      if (aoeEntry) {
+        updateEntry(aoeEntry, currentAoeRef.reference);
+      } else {
+        deletes.push(currentAoeRef.reference);
+      }
+    }
+  }
+  for (const removedTest of unmatchedTests) {
+    deletes.push(getReferenceString(removedTest));
+    const aoeRef = getAoeReference(removedTest);
+    if (aoeRef?.reference) {
+      deletes.push(aoeRef.reference);
+    }
+  }
+
+  if (currentSpecimen) {
+    const specimenRef = (orderEntry.resource as ServiceRequest).specimen?.[0]?.reference;
+    const specimenEntry = entries.find((e) => !!e.fullUrl && e.fullUrl === specimenRef);
+    if (specimenEntry) {
+      updateEntry(specimenEntry, getReferenceString(currentSpecimen), currentSpecimen);
+    } else {
+      deletes.push(getReferenceString(currentSpecimen));
+    }
+  }
+
+  const formExtensions = (orderEntry.resource as ServiceRequest).extension ?? [];
+  updateEntry(orderEntry, getReferenceString(current), current);
+  const extension = [
+    ...(current.extension ?? []).filter((ext) => !FORM_EXTENSION_URLS.has(ext.url)),
+    ...formExtensions,
+  ];
+  (orderEntry.resource as ServiceRequest).extension = extension.length > 0 ? extension : undefined;
+
+  entries.push(...deletes.map((url): BundleEntry => ({ request: { method: 'DELETE', url } })));
+}
+
+/**
+ * Turns a create entry into an update of the resource at `reference`. Fields of `existing` that the
+ * form does not set, such as the draft's encounter, are kept. The entry's `fullUrl` is left as is,
+ * so other entries' references to it resolve to the updated resource.
+ * @param entry - The bundle entry to modify in place.
+ * @param reference - The reference string of the resource to update.
+ * @param existing - The current version of the resource, to keep the fields the form does not set.
+ */
+function updateEntry(entry: BundleEntry, reference: string, existing?: Resource): void {
+  const resource = entry.resource as Resource;
+  entry.request = { method: 'PUT', url: reference };
+  entry.resource = { ...existing, ...resource, id: resolveId({ reference }) } as Resource;
+  if (existing?.meta && resource.meta) {
+    entry.resource.meta = { ...existing.meta, ...resource.meta };
+  }
+}
+
+function isLabOrderEntry(entry: BundleEntry): boolean {
+  return !!entry.resource?.meta?.profile?.includes(MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE);
+}
+
+function getAoeReference(test: ServiceRequest): Reference<QuestionnaireResponse> | undefined {
+  return test.supportingInfo?.find((ref): ref is Reference<QuestionnaireResponse> =>
+    isReference(ref, 'QuestionnaireResponse')
+  );
 }

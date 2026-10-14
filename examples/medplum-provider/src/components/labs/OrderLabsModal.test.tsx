@@ -4,6 +4,7 @@ import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type { Patient, QuestionnaireResponse, ServiceRequest } from '@medplum/fhirtypes';
 import type { LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
+import { LabOrderValidationError } from '@medplum/health-gorilla-core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -37,11 +38,12 @@ vi.mock('../../utils/notifications', () => ({
 
 vi.mock('../../utils/labOrderDraft', () => ({
   getLabOrderDraftDefaults: vi.fn(),
+  saveLabOrderDraft: vi.fn(),
 }));
 
 import { useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { MemoryRouter, useParams } from 'react-router';
-import { getLabOrderDraftDefaults } from '../../utils/labOrderDraft';
+import { getLabOrderDraftDefaults, saveLabOrderDraft } from '../../utils/labOrderDraft';
 
 describe('OrderLabsModal', () => {
   let medplum: MockClient;
@@ -117,7 +119,14 @@ describe('OrderLabsModal', () => {
     vi.spyOn(medplum, 'executeBot').mockResolvedValue({});
   });
 
-  function setup(props: { patientId?: string; patient?: Patient; draftOrder?: ServiceRequest } = {}): void {
+  function setup(
+    props: {
+      patientId?: string;
+      patient?: Patient;
+      draftOrder?: ServiceRequest;
+      onSaveDraft?: (draft: WithId<ServiceRequest>) => void;
+    } = {}
+  ): void {
     vi.mocked(useParams).mockReturnValue({ patientId: props.patientId });
 
     if (props.patientId) {
@@ -133,6 +142,7 @@ describe('OrderLabsModal', () => {
             patient={props.patient}
             draftOrder={props.draftOrder}
             onSubmitLabOrder={mockOnSubmitLabOrder}
+            onSaveDraft={props.onSaveDraft}
           />
         </MedplumProvider>
       </MemoryRouter>
@@ -158,8 +168,41 @@ describe('OrderLabsModal', () => {
     expect(screen.getByText('Order notes')).toBeInTheDocument();
     expect(screen.getByText('Specimen collection time')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Submit Order' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save Draft' })).not.toBeInTheDocument();
     // Drain pending async state updates (e.g. ResourceInput defaultValue resolution)
     await act(async () => {});
+  });
+
+  test('Saves a new order as a draft without sending it', async () => {
+    const onSaveDraft = vi.fn();
+    vi.mocked(saveLabOrderDraft).mockResolvedValue(draftOrder);
+    setup({ patient: HomerSimpson, onSaveDraft });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
+
+    await waitFor(() => {
+      expect(onSaveDraft).toHaveBeenCalledWith(draftOrder);
+    });
+    expect(saveLabOrderDraft).toHaveBeenCalledWith(
+      medplum,
+      expect.objectContaining({ billingInformation: { billTo: 'patient' } }),
+      undefined
+    );
+    expect(showNotification).toHaveBeenCalledWith(expect.objectContaining({ title: 'Draft Saved' }));
+    expect(medplum.executeBot).not.toHaveBeenCalled();
+  });
+
+  test('Shows validation errors when the draft cannot be saved', async () => {
+    const onSaveDraft = vi.fn();
+    vi.mocked(saveLabOrderDraft).mockRejectedValue(
+      new LabOrderValidationError({ selectedTests: { message: 'At least one test must be selected' } })
+    );
+    setup({ onSaveDraft });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
+
+    expect(await screen.findByText('At least one test must be selected')).toBeInTheDocument();
+    expect(onSaveDraft).not.toHaveBeenCalled();
   });
 
   test('Loads patient when patientId is provided', async () => {
@@ -492,6 +535,19 @@ describe('OrderLabsModal', () => {
       expect(medplum.patchResource).toHaveBeenCalledWith('ServiceRequest', 'draft-123', [
         { op: 'replace', path: '/status', value: 'revoked' },
       ]);
+    });
+
+    test('saves edits back to the resumed draft', async () => {
+      const onSaveDraft = vi.fn();
+      vi.mocked(saveLabOrderDraft).mockResolvedValue(draftOrder);
+      setup({ draftOrder, onSaveDraft });
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Save Draft' }));
+
+      await waitFor(() => {
+        expect(onSaveDraft).toHaveBeenCalledWith(draftOrder);
+      });
+      expect(saveLabOrderDraft).toHaveBeenCalledWith(medplum, expect.anything(), draftOrder);
     });
 
     test('still shows the form when the draft cannot be loaded', async () => {

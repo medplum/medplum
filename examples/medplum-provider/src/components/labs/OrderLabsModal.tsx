@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Center, Group, Input, Loader, Radio, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import type { MedplumClient } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
 import type {
   Coding,
@@ -21,7 +21,7 @@ import type {
   LabOrganization,
   TestCoding,
 } from '@medplum/health-gorilla-core';
-import { NPI_SYSTEM } from '@medplum/health-gorilla-core';
+import { LabOrderValidationError, NPI_SYSTEM } from '@medplum/health-gorilla-core';
 import { HealthGorillaLabOrderProvider, useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import {
@@ -38,7 +38,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { addDiagnosesToEncounter } from '../../utils/encounter';
 import type { LabOrderDraftDefaults } from '../../utils/labOrderDraft';
-import { getLabOrderDraftDefaults } from '../../utils/labOrderDraft';
+import { getLabOrderDraftDefaults, saveLabOrderDraft } from '../../utils/labOrderDraft';
 import { showErrorNotification } from '../../utils/notifications';
 import { PerformingLabInput } from '../PerformingLabInput';
 import { CoverageInput } from './CoverageInput';
@@ -65,6 +65,8 @@ export interface OrderLabsModalProps {
   performingLab?: LabOrganization | undefined;
   draftOrder?: ServiceRequest | undefined;
   onSubmitLabOrder: (serviceRequest?: ServiceRequest) => void;
+  /** Called after the order is saved as a draft. Without it, the Save Draft button is hidden. */
+  onSaveDraft?: (draft: WithId<ServiceRequest>) => void;
 }
 
 /**
@@ -90,6 +92,7 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
     performingLab: defaultPerformingLab,
     draftOrder,
     onSubmitLabOrder,
+    onSaveDraft,
   } = props;
   const medplum = useMedplum();
   const { patientId } = useParams();
@@ -121,6 +124,7 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
   } = labOrderReturn;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [createError, setCreateError] = useState<{ generic?: unknown; validation?: LabOrderInputErrors } | undefined>();
   const prevTestsRef = useRef<TestCoding[] | undefined>(undefined);
 
@@ -276,6 +280,25 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
     }
   };
 
+  const saveDraft = async (): Promise<void> => {
+    try {
+      setIsSavingDraft(true);
+      setCreateError(undefined);
+      const saved = await saveLabOrderDraft(medplum, { ...state, patient, requester }, draftOrder);
+      showNotification({ title: 'Draft Saved', message: 'The lab order was saved as a draft.', color: 'green' });
+      onSaveDraft?.(saved);
+    } catch (error) {
+      if (error instanceof LabOrderValidationError) {
+        setCreateError({ validation: error.errors });
+      } else {
+        setCreateError({ generic: error });
+        showErrorNotification(error);
+      }
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
   const loadingDraft = !!draftOrder && !draftDefaults;
 
   return (
@@ -399,9 +422,19 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
               }}
             />
             <Group>
-              <Button onClick={submitOrder} loading={isSubmitting} disabled={isSubmitting}>
+              <Button onClick={submitOrder} loading={isSubmitting} disabled={isSubmitting || isSavingDraft}>
                 Submit Order
               </Button>
+              {onSaveDraft && (
+                <Button
+                  variant="outline"
+                  onClick={saveDraft}
+                  loading={isSavingDraft}
+                  disabled={isSubmitting || isSavingDraft}
+                >
+                  Save Draft
+                </Button>
+              )}
             </Group>
           </Stack>
         )}
