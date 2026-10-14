@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {
   CalendarRef,
+  DateTimeFormatPartWithWeek,
+  DayCellInfo,
+  DayHeaderInfo,
   EventApi,
   EventClickInfo,
   EventDisplayInfo,
@@ -93,6 +96,39 @@ function renderEventContent(info: EventDisplayInfo): JSX.Element | true {
       </div>
     </>
   );
+}
+
+function renderToday(textParts: DateTimeFormatPartWithWeek[], numberClassName: string): JSX.Element {
+  return (
+    <>
+      {textParts.map((part, i) => (
+        <span key={i} className={part.type === 'day' ? numberClassName : classes.todayText}>
+          {part.value}
+        </span>
+      ))}
+    </>
+  );
+}
+
+function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element | string {
+  if (info.inPopover || !info.dayNumberText || !info.isToday) {
+    return info.text;
+  }
+  return renderToday(info.textParts, classes.todayNumber);
+}
+
+function renderDayCellTopContent(info: DayCellInfo): JSX.Element | string {
+  if (!info.isToday) {
+    return info.text;
+  }
+  return renderToday(
+    info.textParts,
+    cx(classes.todayNumber, info.isNarrow ? classes.narrowTodayCellNumber : classes.todayCellNumber)
+  );
+}
+
+function dayHeaderInnerClass(info: DayHeaderInfo): string {
+  return cx(classes.dayHeaderInner, !info.isToday && classes.otherDayHeaderInner);
 }
 
 function slotTitle(slot: Slot): string {
@@ -349,6 +385,13 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
           onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end });
         }}
         eventContent={renderEventContent}
+        dayHeaderContent={renderDayHeaderContent}
+        dayHeaderInnerClass={dayHeaderInnerClass}
+        dayCellTopContent={renderDayCellTopContent}
+        slotHeaderInnerClass={classes.slotHeaderInner}
+        nowIndicatorLineClass={classes.nowIndicatorLine}
+        nowIndicatorDotClass={classes.nowIndicatorDot}
+        nowIndicatorHeaderClass={classes.nowIndicatorHeader}
         {...fullCalendarProps}
         ref={calendarRef}
         eventSources={eventSources}

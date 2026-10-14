@@ -203,6 +203,23 @@ describe('CalendarBase', () => {
       expect(screen.getByText(/Blocked/)).toBeInTheDocument();
     });
 
+    test("circles today's date in the day headers and in month view", async () => {
+      setup({ eventSources: [] });
+      const today = String(new Date().getDate());
+
+      const header = document.querySelector('.todayNumber');
+      expect(header).toHaveTextContent(today);
+      const others = document.querySelectorAll('.otherDayHeaderInner');
+      expect(others.length).toBeGreaterThan(0);
+      others.forEach((inner) => expect(inner.querySelector('.todayNumber')).toBeNull());
+
+      await userEvent.click(screen.getByText('Month'));
+      const cell = document.querySelector('.todayCellNumber, .narrowTodayCellNumber');
+      expect(cell).toHaveTextContent(today);
+      expect(cell).toHaveClass('todayNumber');
+      expect(document.querySelectorAll('.todayNumber')).toHaveLength(1);
+    });
+
     test('hides slots in the month view', async () => {
       const source = {
         schedule: DrAliceSmithSchedule,
