@@ -13,6 +13,7 @@ import { searchConfigurableActors, searchConfigurableServices } from '../../conf
 import { withFixtures } from '../../stories/decorators';
 import {
   ConfigFixtures,
+  DrBrooksPractitioner,
   DrLindqvistPractitioner,
   DrMensahPractitioner,
   DrNguyenPractitioner,
@@ -111,6 +112,19 @@ export const RoomWithNoSchedule = (): JSX.Element => <StoredActor resourceType="
  */
 export const ProviderTimeZone = (): JSX.Element => (
   <StoredActor resourceType="Practitioner" id={DrPatelPractitioner.id} />
+);
+
+/**
+ * Dr. Elena Brooks works at both clinics. Another system linked her to the main clinic, so it is shown locked,
+ * marked Linked by another system, and can't be removed. The satellite clinic was linked here, so it can be
+ * removed. Nothing asks when it is, since the main clinic still limits where she is offered.
+ *
+ * Saving turns the satellite's role off rather than deleting it, and adding the satellite back turns the same role
+ * on again.
+ * @returns The story.
+ */
+export const ProviderServiceFacilities = (): JSX.Element => (
+  <StoredActor resourceType="Practitioner" id={DrBrooksPractitioner.id} />
 );
 
 /**
