@@ -108,6 +108,6 @@ function confirmationTitle(pending: PendingChange, name: string): string {
 
 function confirmationBody(pending: PendingChange, name: string): string {
   return pending.added
-    ? `${name} is offered at every service facility now. Adding ${pending.added} limits it to ${pending.added} only, once you save.`
-    : `That leaves no service facilities listed, which means ${name} is offered at every one of them once you save.`;
+    ? `${name} is offered at every service facility now. Adding ${pending.added} limits it to ${pending.added} only.`
+    : `That leaves no service facilities listed, which means ${name} will be offered everywhere.`;
 }
