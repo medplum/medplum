@@ -21,10 +21,6 @@ function isActive(role: PractitionerRole): boolean {
   return role.active !== false;
 }
 
-function referencesOf(role: PractitionerRole): string[] {
-  return (role.location ?? []).flatMap((location) => location.reference ?? []);
-}
-
 /** A provider's service facilities, as their roles place them. */
 export interface ProviderFacilities {
   /** One per service facility any active role names, in the order the roles name them. */
@@ -75,7 +71,7 @@ export function buildRoleChanges(
   facilities: readonly Reference<Location>[]
 ): ConfigChange<PractitionerRole>[] {
   const wanted = new Set(facilities.flatMap((facility) => facility.reference ?? []));
-  const placedElsewhere = new Set(roles.filter((role) => isActive(role) && !isOwnRole(role)).flatMap(referencesOf));
+  const { locked } = providerFacilitiesOf(roles);
   const own = roles.find(isOwnRole);
   const stored = own && isActive(own) ? (own.location ?? []) : [];
 
@@ -83,7 +79,7 @@ export function buildRoleChanges(
   const held = new Set(kept.flatMap((location) => location.reference ?? []));
   const added = facilities.filter((facility) => {
     const reference = facility.reference;
-    if (!reference || held.has(reference) || placedElsewhere.has(reference)) {
+    if (!reference || held.has(reference) || locked.has(reference)) {
       return false;
     }
     held.add(reference);
