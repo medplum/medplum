@@ -12,7 +12,7 @@ import { OfferPicker } from './OfferPicker';
 import { pageOfServices, serviceLabel } from './serviceList';
 
 const ENTRY_PAGE_SIZE = 20;
-const STOP_WHILE_ALL = 'Offered as one of all visit types. Turn off Offer all visit types to stop offering it.';
+const STOP_WHILE_ALL = 'Offered as one of all visit types. Turn off "Offer all visit types" to stop offering it.';
 
 export interface OfferingsListProps {
   readonly actorName: string;
