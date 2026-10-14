@@ -1,11 +1,27 @@
 .wrapper {
+  /* `--emphasis` fades an event toward the background while it is hovered, and `--past-fade` once
+   * it has ended. */
+  :global(.appointment),
+  :global(.slot) {
+    --emphasis: 100%;
+    --past-fade: 1;
+
+    &:global(.past) {
+      --past-fade: 0.5;
+    }
+
+    /* Only events that can be clicked answer to the pointer. */
+    &[role='button']:hover {
+      --emphasis: 80%;
+    }
+  }
+
   /* Appointments are drawn as a light tint of their calendar color, with a bar of the full color
    * down the leading edge. The tint is opaque, so the grid and other events don't show through,
    * and a ring of the background keeps neighboring events of one color apart.
    * `--appointment-bar`, `--appointment-tint` and `--appointment-text` are worked out from
    * `--fc-event-color`; a color can set its own in their place.
-   * `--emphasis` fades the bar and text toward the background, as hovering does; `--past-fade`
-   * fades the bar, text, tint and outline, for events that have ended. */
+   * Hovering fades the bar and text, and leaves the tint. */
   :global(.appointment) {
     --appointment-bar: var(--fc-event-color);
     --appointment-tint: light-dark(
@@ -16,8 +32,6 @@
       color-mix(in oklch, var(--fc-event-color), black 40%),
       color-mix(in oklch, var(--fc-event-color), white 55%)
     );
-    --emphasis: 100%;
-    --past-fade: 1;
 
     border: 0;
     padding-inline-start: 6px;
@@ -42,15 +56,6 @@
         var(--appointment-text) calc(var(--emphasis) * var(--past-fade)),
         var(--fc-classic-background)
       );
-    }
-
-    &:global(.past) {
-      --past-fade: 0.5;
-    }
-
-    /* Only events that can be clicked answer to the pointer. */
-    &[role='button']:hover {
-      --emphasis: 80%;
     }
   }
 
@@ -140,8 +145,16 @@
   /* Slots are drawn in one gray, whichever source they come from, leaving color to the
    * appointments. */
   :global(.slot) {
-    background: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-4));
-    color: var(--mantine-color-white);
+    background: color-mix(
+      in oklab,
+      light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-4)) calc(var(--emphasis) * var(--past-fade)),
+      var(--fc-classic-background)
+    );
+    color: color-mix(
+      in oklab,
+      var(--mantine-color-white) calc(var(--emphasis) * var(--past-fade)),
+      var(--fc-classic-background)
+    );
 
     .eventTime,
     .eventInner {
