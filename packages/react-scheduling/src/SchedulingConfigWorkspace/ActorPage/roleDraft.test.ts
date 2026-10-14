@@ -36,7 +36,7 @@ describe('providerFacilitiesOf', () => {
   test('lists each service facility an active role names once, in order, and skips inactive roles', () => {
     const { facilities } = providerFacilitiesOf([
       role('own', ['downtown'], { own: true }),
-      role('synced', ['northside', 'downtown/_history/3'], { synced: true }),
+      role('synced', ['northside', 'downtown'], { synced: true }),
       role('retired', ['uptown'], { active: false }),
     ]);
 

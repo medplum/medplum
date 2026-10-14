@@ -13,19 +13,6 @@ import type { ConfigChange } from '../ConfigPage/configSave';
  * role is turned off rather than emptied, and never deleted.
  */
 
-/**
- * Reduces a reference to its type and id, since a stored reference may carry a version.
- * @param reference - The reference string.
- * @returns `ResourceType/id`, or undefined for one that isn't a relative reference.
- */
-export function normalizeReference(reference: string | undefined): string | undefined {
-  if (!reference) {
-    return undefined;
-  }
-  const [resourceType, id] = reference.split('/');
-  return id ? `${resourceType}/${id}` : undefined;
-}
-
 function isOwnRole(role: PractitionerRole): boolean {
   return !!role.identifier?.some((identifier) => identifier.system === SERVICE_FACILITY_ROLE_SYSTEM);
 }
@@ -35,7 +22,7 @@ function isActive(role: PractitionerRole): boolean {
 }
 
 function referencesOf(role: PractitionerRole): string[] {
-  return (role.location ?? []).flatMap((location) => normalizeReference(location.reference) ?? []);
+  return (role.location ?? []).flatMap((location) => location.reference ?? []);
 }
 
 /** A provider's service facilities, as their roles place them. */
@@ -50,14 +37,14 @@ export interface ProviderFacilities {
  * Reads a provider's service facilities off their roles. A service facility shows once however many roles name
  * it, and is locked when an active role other than the workspace's names it.
  * @param roles - Every role naming the provider, active or not.
- * @returns The service facilities, each reference carrying only type and id.
+ * @returns The service facilities.
  */
 export function providerFacilitiesOf(roles: readonly PractitionerRole[]): ProviderFacilities {
   const facilities = new Map<string, Reference<Location>>();
   const locked = new Set<string>();
   for (const role of roles.filter(isActive)) {
     for (const location of role.location ?? []) {
-      const reference = normalizeReference(location.reference);
+      const reference = location.reference;
       if (!reference) {
         continue;
       }
@@ -87,18 +74,15 @@ export function buildRoleChanges(
   practitioner: WithId<Practitioner>,
   facilities: readonly Reference<Location>[]
 ): ConfigChange<PractitionerRole>[] {
-  const wanted = new Set(facilities.flatMap((facility) => normalizeReference(facility.reference) ?? []));
+  const wanted = new Set(facilities.flatMap((facility) => facility.reference ?? []));
   const placedElsewhere = new Set(roles.filter((role) => isActive(role) && !isOwnRole(role)).flatMap(referencesOf));
   const own = roles.find(isOwnRole);
   const stored = own && isActive(own) ? (own.location ?? []) : [];
 
-  const kept = stored.filter((location) => {
-    const reference = normalizeReference(location.reference);
-    return reference === undefined || wanted.has(reference);
-  });
-  const held = new Set(kept.flatMap((location) => normalizeReference(location.reference) ?? []));
+  const kept = stored.filter((location) => !location.reference || wanted.has(location.reference));
+  const held = new Set(kept.flatMap((location) => location.reference ?? []));
   const added = facilities.filter((facility) => {
-    const reference = normalizeReference(facility.reference);
+    const reference = facility.reference;
     if (!reference || held.has(reference) || placedElsewhere.has(reference)) {
       return false;
     }
