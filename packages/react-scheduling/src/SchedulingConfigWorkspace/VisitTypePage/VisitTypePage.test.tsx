@@ -198,30 +198,35 @@ describe('VisitTypePage', () => {
     expect(getHealthcareServiceSchedulingParameterValues(lastSynced(onSynced))).toMatchObject({ duration: 60 });
   });
 
-  test('Custom starts from the color shown and stores the hex code typed', async () => {
+  test('Custom starts from the color shown, previews it, and stores the hex code typed', async () => {
     const { onSynced } = await setup();
     expect(screen.queryByRole('textbox', { name: 'Custom color' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Appointment preview' })).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('radio', { name: 'grape' }));
     await userEvent.click(screen.getByRole('radio', { name: 'Custom' }));
     const input = screen.getByRole('textbox', { name: 'Custom color' });
     expect(input).toHaveValue(DEFAULT_THEME.colors.grape[7]);
+    const preview = screen.getByRole('img', { name: 'Appointment preview' });
+    expect(preview).toHaveTextContent('Initial Visit');
+    expect(preview.style.getPropertyValue('--fc-event-color')).toBe(DEFAULT_THEME.colors.grape[7]);
 
     // Typing passes through partial codes; the whole one is stored.
     await userEvent.clear(input);
     await userEvent.type(input, '#228b22');
     expect(input).toHaveValue('#228b22');
+    expect(preview.style.getPropertyValue('--fc-event-color')).toBe('#228b22');
     expect(screen.getByRole('radio', { name: 'Custom' })).toBeChecked();
 
-    // An unfinished code is dropped when the input is left, rather than the part of it that reads as #rgb.
+    // An unfinished code is dropped when the input is left, even one that reads as a shorter code.
     await userEvent.clear(input);
-    await userEvent.type(input, '#e8590');
+    await userEvent.type(input, '#e859');
     await userEvent.tab();
     expect(input).toHaveValue('#228b22');
 
-    // A color in another form is read as hex when the input is left, here for Save.
+    // Spaces pasted around a code are dropped, and its # may be left off.
     await userEvent.clear(input);
-    await userEvent.type(input, 'rgb(232, 89, 12)');
+    await userEvent.type(input, ' e8590c ');
     await userEvent.click(saveButton());
 
     await waitFor(() => expect(onSynced).toHaveBeenCalled());

@@ -7,7 +7,6 @@ import {
   convertHsvaTo,
   getContrastColor,
   Group,
-  isColorValid,
   parseColor,
   Radio,
   Text,
@@ -23,6 +22,7 @@ import {
   isHexColor,
   resolveSchedulingColor,
 } from '../../colors';
+import { AppointmentColorPreview } from '../../MultiCalendar/AppointmentColorPreview';
 
 export interface ServiceColorFieldProps {
   /** The color the visit type names, a Mantine color or a hex code, or undefined to leave the calendar to pick one. */
@@ -30,6 +30,8 @@ export interface ServiceColorFieldProps {
   readonly onChange: (value: string | undefined) => void;
   /** The visit type's reference, which the calendar picks its color from when it names none. Absent until saved. */
   readonly serviceReference?: string;
+  /** The visit type's name, which a custom color's preview is titled with. */
+  readonly serviceName: string;
 }
 
 const CUSTOM = 'custom';
@@ -41,7 +43,7 @@ const CUSTOM = 'custom';
  * @returns The field.
  */
 export function ServiceColorField(props: ServiceColorFieldProps): JSX.Element {
-  const { value, onChange, serviceReference } = props;
+  const { value, onChange, serviceReference, serviceName } = props;
   const theme = useMantineTheme();
   // The calendar picks a color by the visit type's reference when it names none, or one it can't draw. A new
   // visit type has no reference yet, so the palette's first color stands in.
@@ -52,7 +54,7 @@ export function ServiceColorField(props: ServiceColorFieldProps): JSX.Element {
   const palette: readonly string[] = FALLBACK_COLORS;
   const custom = value && isHexColor(value) ? value : undefined;
   const colors = value && !custom && !palette.includes(value) ? [...palette, value] : palette;
-  // A partial code, or one in another form, held until it's a whole #rrggbb or the input blurs.
+  // A partial code, held until it's a whole #rrggbb, and dropped if the input blurs first.
   const [typed, setTyped] = useState<string>();
   const checkColor = (color: string): string =>
     getContrastColor({ color: colorValue(theme, color), theme, autoContrast: true });
@@ -114,33 +116,30 @@ export function ServiceColorField(props: ServiceColorFieldProps): JSX.Element {
         </Radio.Card>
       </Group>
       {custom && (
-        <ColorInput
-          aria-label="Custom color"
-          format="hex"
-          w={180}
-          mt="xs"
-          withEyeDropper={false}
-          // Mantine's own fix on blur would store the last code it could read along the way, such as #228 of
-          // #228b22, in place of an unfinished one.
-          fixOnBlur={false}
-          value={typed ?? custom}
-          onChange={(next) => {
-            // A shorter code may be the start of a #rrggbb.
-            if (/^#?[0-9a-f]{6}$/i.test(next)) {
-              setTyped(undefined);
-              onChange(next.startsWith('#') ? next : `#${next}`);
-            } else {
-              setTyped(next);
-            }
-          }}
-          onBlur={() => {
-            // Mantine reads other forms too, such as #rgb or rgb(); what it can't read is dropped.
-            if (typed && isColorValid(typed)) {
-              onChange(convertHsvaTo('hex', parseColor(typed)));
-            }
-            setTyped(undefined);
-          }}
-        />
+        <Group gap="md" mt="xs" align="center">
+          <ColorInput
+            aria-label="Custom color"
+            format="hex"
+            w={180}
+            withEyeDropper={false}
+            // Mantine's own fix on blur would store the last code it could read along the way, such as #228 of
+            // #228b22, in place of an unfinished one.
+            fixOnBlur={false}
+            value={typed ?? custom}
+            onChange={(next) => {
+              // Spaces pasted around a code are dropped, and a shorter code may be the start of a #rrggbb.
+              const code = next.trim();
+              if (/^#?[0-9a-f]{6}$/i.test(code)) {
+                setTyped(undefined);
+                onChange(code.startsWith('#') ? code : `#${code}`);
+              } else {
+                setTyped(next);
+              }
+            }}
+            onBlur={() => setTyped(undefined)}
+          />
+          <AppointmentColorPreview color={custom} title={serviceName} />
+        </Group>
       )}
     </Radio.Group>
   );
