@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type { Location, Practitioner, PractitionerRole, Reference } from '@medplum/fhirtypes';
+import { SERVICE_FACILITY_ROLE_SYSTEM } from '../../constants';
 import type { ConfigChange } from '../ConfigPage/configSave';
 
 /*
  * A provider's service facilities are the locations of their active PractitionerRoles, which is how booking
- * places them. The workspace edits only roles it could have written itself: a role carrying any identifier is
- * another system's, and is never changed. Of a role it does edit, it writes `practitioner`, `location`, and
- * `active`, and nothing else, and it never deletes one. A service facility is taken away by turning its role off.
+ * places them. The workspace writes one role per provider, its own, marked with `SERVICE_FACILITY_ROLE_SYSTEM`.
+ * Every other role, such as one a sync wrote, places the provider too but is never changed here. The workspace's
+ * role is turned off rather than emptied, and never deleted.
  */
 
 /**
@@ -24,13 +26,8 @@ export function normalizeReference(reference: string | undefined): string | unde
   return id ? `${resourceType}/${id}` : undefined;
 }
 
-/**
- * Whether a role was written by another system, which the workspace leaves alone.
- * @param role - The role.
- * @returns True when it carries an identifier.
- */
-export function isLinkedElsewhere(role: PractitionerRole): boolean {
-  return !!role.identifier?.length;
+function isOwnRole(role: PractitionerRole): boolean {
+  return !!role.identifier?.some((identifier) => identifier.system === SERVICE_FACILITY_ROLE_SYSTEM);
 }
 
 function isActive(role: PractitionerRole): boolean {
@@ -45,13 +42,13 @@ function referencesOf(role: PractitionerRole): string[] {
 export interface ProviderFacilities {
   /** One per service facility any active role names, in the order the roles name them. */
   readonly facilities: Reference<Location>[];
-  /** The service facilities an active role from another system names, which can't be removed here. */
+  /** The service facilities an active role other than the workspace's names, which can't be removed here. */
   readonly locked: ReadonlySet<string>;
 }
 
 /**
  * Reads a provider's service facilities off their roles. A service facility shows once however many roles name
- * it, and is locked when any active role naming it is another system's.
+ * it, and is locked when an active role other than the workspace's names it.
  * @param roles - Every role naming the provider, active or not.
  * @returns The service facilities, each reference carrying only type and id.
  */
@@ -67,7 +64,7 @@ export function providerFacilitiesOf(roles: readonly PractitionerRole[]): Provid
       if (!facilities.has(reference)) {
         facilities.set(reference, { reference, ...(location.display && { display: location.display }) });
       }
-      if (isLinkedElsewhere(role)) {
+      if (!isOwnRole(role)) {
         locked.add(reference);
       }
     }
@@ -76,63 +73,63 @@ export function providerFacilitiesOf(roles: readonly PractitionerRole[]): Provid
 }
 
 /**
- * Works out the role writes that leave a provider at exactly the service facilities given.
+ * Works out the write to the workspace's role that leaves a provider at exactly the service facilities given.
  *
- * A role the workspace may edit that names a service facility no longer wanted loses it from `location`, or is
- * turned off when that leaves it naming none. A wanted service facility no active role names reactivates an
- * inactive role that names only it, or else gets a new role. Roles from another system are never changed.
+ * The role keeps the service facilities it names that are still wanted, and takes on each wanted one no other
+ * active role names. It is created the first time it has one to hold.
  * @param roles - Every role naming the provider, active or not, as stored.
- * @param practitioner - The provider, which a new role names.
+ * @param practitioner - The provider.
  * @param facilities - The service facilities the provider should be at.
- * @returns A change per role to write, which is empty when the roles already place the provider there.
+ * @returns The change to the workspace's role, or none when the roles already place the provider there.
  */
 export function buildRoleChanges(
   roles: readonly WithId<PractitionerRole>[],
-  practitioner: Reference<Practitioner>,
+  practitioner: WithId<Practitioner>,
   facilities: readonly Reference<Location>[]
 ): ConfigChange<PractitionerRole>[] {
   const wanted = new Set(facilities.flatMap((facility) => normalizeReference(facility.reference) ?? []));
-  const changes: ConfigChange<PractitionerRole>[] = [];
-  const placed = new Set<string>();
+  const placedElsewhere = new Set(roles.filter((role) => isActive(role) && !isOwnRole(role)).flatMap(referencesOf));
+  const own = roles.find(isOwnRole);
+  const stored = own && isActive(own) ? (own.location ?? []) : [];
 
-  for (const role of roles.filter(isActive)) {
-    const references = referencesOf(role);
-    if (isLinkedElsewhere(role)) {
-      references.forEach((reference) => placed.add(reference));
-      continue;
-    }
-    const kept = (role.location ?? []).filter((location) => {
-      const reference = normalizeReference(location.reference);
-      return reference === undefined || wanted.has(reference);
-    });
-    kept.flatMap((location) => normalizeReference(location.reference) ?? []).forEach((ref) => placed.add(ref));
-    if (kept.length === (role.location ?? []).length) {
-      continue;
-    }
-    // Turned off rather than emptied, so it keeps naming the service facility it can be reactivated for.
-    const draft: PractitionerRole = kept.length === 0 ? { ...role, active: false } : { ...role, location: kept };
-    changes.push({ stored: role, draft });
-  }
-
-  for (const facility of facilities) {
+  const kept = stored.filter((location) => {
+    const reference = normalizeReference(location.reference);
+    return reference === undefined || wanted.has(reference);
+  });
+  const held = new Set(kept.flatMap((location) => normalizeReference(location.reference) ?? []));
+  const added = facilities.filter((facility) => {
     const reference = normalizeReference(facility.reference);
-    if (!reference || placed.has(reference)) {
-      continue;
+    if (!reference || held.has(reference) || placedElsewhere.has(reference)) {
+      return false;
     }
-    placed.add(reference);
-    const inactive = roles.find((role) => !isActive(role) && !isLinkedElsewhere(role) && namesOnly(role, reference));
-    if (inactive) {
-      changes.push({ stored: inactive, draft: { ...inactive, active: true } });
-    } else {
-      changes.push({
-        draft: { resourceType: 'PractitionerRole', practitioner, location: [facility], active: true },
-      });
-    }
-  }
-  return changes;
-}
+    held.add(reference);
+    return true;
+  });
+  const location = [...kept, ...added];
 
-function namesOnly(role: PractitionerRole, reference: string): boolean {
-  const references = referencesOf(role);
-  return references.length === 1 && references[0] === reference;
+  if (!own) {
+    if (location.length === 0) {
+      return [];
+    }
+    const identifier = { system: SERVICE_FACILITY_ROLE_SYSTEM, value: practitioner.id };
+    return [
+      {
+        draft: {
+          resourceType: 'PractitionerRole',
+          identifier: [identifier],
+          practitioner: createReference(practitioner),
+          location,
+          active: true,
+        },
+        ifNoneExist: `identifier=${identifier.system}|${identifier.value}`,
+      },
+    ];
+  }
+  if (location.length === 0) {
+    return isActive(own) ? [{ stored: own, draft: { ...own, active: false } }] : [];
+  }
+  if (isActive(own) && added.length === 0 && kept.length === stored.length) {
+    return [];
+  }
+  return [{ stored: own, draft: { ...own, active: true, location } }];
 }
