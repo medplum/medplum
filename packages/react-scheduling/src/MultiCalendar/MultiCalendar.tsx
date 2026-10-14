@@ -73,6 +73,7 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
       {...calendarBaseProps}
       eventInnerClass={classes.eventInner}
       eventTimeClass={classes.eventTime}
+      eventTitleClass={classes.eventTitle}
       availableTime={props.availableTime}
       eventContent={(info) => {
         const ext = info.event.extendedProps as ExtendedEvent;
