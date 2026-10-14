@@ -5,6 +5,7 @@ import type { WithId } from '@medplum/core';
 import {
   createReference,
   getReferenceString,
+  RecurrenceIdExtensionURI,
   SchedulingColorURI,
   ServiceTypeReferenceURI,
   setPrimaryProvider,
@@ -269,6 +270,34 @@ describe('MultiCalendar', () => {
     const rows = primary.closest('.mantine-Stack-root')?.querySelectorAll(':scope > .mantine-Group-root');
     expect(rows).toHaveLength(4);
     expect(screen.queryByText(/^(Practitioner|Device|Location)\//)).not.toBeInTheDocument();
+  });
+
+  test('marks occurrences of a recurring series', async () => {
+    const appointments: Appointment[] = [
+      {
+        resourceType: 'Appointment',
+        id: 'apt-recurring',
+        status: 'booked',
+        start: new Date(baseDate.getTime()).toISOString(),
+        end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+        extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: 2 }],
+        participant: [{ actor: createReference(HomerSimpson), status: 'accepted' }],
+      },
+      {
+        resourceType: 'Appointment',
+        id: 'apt-single',
+        status: 'booked',
+        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
+        participant: [{ actor: { reference: 'Patient/456', display: 'Jane Roe' }, status: 'accepted' }],
+      },
+    ];
+    renderWithMedplum(<MultiCalendar sources={[{ appointments, slots: [] }]} />, medplum);
+
+    const recurring = within((await screen.findByText('Homer Simpson')).closest('.event') as HTMLElement);
+    expect(recurring.getByRole('img', { name: 'Recurring' })).toBeInTheDocument();
+    const single = within(screen.getByText('Jane Roe').closest('.event') as HTMLElement);
+    expect(single.queryByRole('img', { name: 'Recurring' })).not.toBeInTheDocument();
   });
 
   describe('source color', () => {

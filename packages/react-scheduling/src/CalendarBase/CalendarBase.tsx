@@ -19,7 +19,7 @@ import timeGridPlugin from '@fullcalendar/react/timegrid';
 import { Button, Group, Loader, SegmentedControl, Text, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
-import { assertNever, getExtension, RecurrenceIdExtensionURI } from '@medplum/core';
+import { assertNever } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
@@ -62,7 +62,6 @@ function appointmentsToEvents(
     .map((appointment) => {
       const actor = getPatientParticipant(appointment)?.actor;
       const name = actor?.reference ? (actor.display ?? '') : 'No Patient';
-      const recurring = getExtension(appointment, RecurrenceIdExtensionURI) !== undefined;
 
       return {
         id: appointment.id,
@@ -70,7 +69,7 @@ function appointmentsToEvents(
         start: appointment.start,
         end: appointment.end,
         extendedProps: { type: 'appointment', appointment, schedule } satisfies ExtendedEvent,
-        className: cx('appointment', appointment.status, { recurring }),
+        className: `appointment ${appointment.status}`,
         ...extra,
       };
     });

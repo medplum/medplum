@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, RecurrenceIdExtensionURI, sleep } from '@medplum/core';
+import { createReference, sleep } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
@@ -148,24 +148,6 @@ describe('CalendarBase', () => {
       } finally {
         vi.useRealTimers();
       }
-    });
-
-    test('marks occurrences of a recurring series', async () => {
-      const recurring = createAppointment({
-        id: 'apt-recurring',
-        extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: 2 }],
-        participant: [{ actor: { reference: 'Patient/1', display: 'Homer Simpson' }, status: 'accepted' }],
-      });
-      const single = createAppointment({
-        id: 'apt-single',
-        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
-        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
-        participant: [{ actor: { reference: 'Patient/2', display: 'Bob Jones' }, status: 'accepted' }],
-      });
-
-      setup({ eventSources: [{ schedule: DrAliceSmithSchedule, appointments: [recurring, single], slots: [] }] });
-      expect(screen.getByText(/Homer Simpson/).closest('.appointment')).toHaveClass('recurring');
-      expect(screen.getByText(/Bob Jones/).closest('.appointment')).not.toHaveClass('recurring');
     });
 
     test('renders "free" slots', async () => {
