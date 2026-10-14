@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getExtension } from '@medplum/core';
-import type { AsyncJob, Parameters, Subscription } from '@medplum/fhirtypes';
+import { badRequest, getExtension, OperationOutcomeError } from '@medplum/core';
+import type { AsyncJob, Parameters, Project, Subscription } from '@medplum/fhirtypes';
 import type { ConnectionOptions, Job, Processor, Queue, QueueOptions, Worker, WorkerOptions } from 'bullmq';
 import { DelayedError } from 'bullmq';
 import * as semver from 'semver';
 import type { MedplumBullmqConfig, WorkerName } from '../config/types';
 import type { ServerConfig } from '../config/utils';
 import type { Repository } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { addToUpDownCounter, BASE_METRIC_OPTIONS, getQueueMetricName, incrementCounter } from '../otel/otel';
 import { reconnectOnError } from '../redis';
@@ -66,6 +67,17 @@ export const InProgressAsyncJobStatuses: AsyncJob['status'][] = ['accepted', 'ac
 
 export function isJobActive(asyncJob: WithId<AsyncJob>): boolean {
   return InProgressAsyncJobStatuses.includes(asyncJob.status);
+}
+
+/**
+ * Throws if the project has been deactivated, for jobs queued while it was still active.
+ * @param projectId - The project whose credentials queued the job.
+ */
+export async function assertProjectActive(projectId: string): Promise<void> {
+  const project = await getGlobalSystemRepo().readResource<Project>('Project', projectId);
+  if (project.active === false) {
+    throw new OperationOutcomeError(badRequest('Project not active'));
+  }
 }
 
 export function isJobCompatible(asyncJob: WithId<AsyncJob>): boolean {

@@ -3062,6 +3062,7 @@ function isRestorableToProject(resource: Resource, projectId: string): boolean {
 }
 
 const superAdminProjectFields = [
+  'active',
   'superAdmin',
   'features',
   'link',

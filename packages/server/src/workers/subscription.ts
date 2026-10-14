@@ -359,6 +359,11 @@ export async function addSubscriptionJobs(
     return;
   }
 
+  if (project.active === false) {
+    logFn('Project is not active, skipping subscriptions');
+    return;
+  }
+
   const requestTime = new Date().toISOString();
   const subscriptions = await getSubscriptions(resource, project);
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
@@ -641,6 +646,15 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
       // If the subscription has been disabled, then stop processing it.
       logFn(`Subscription ${subscriptionId} is not active`);
       return;
+    }
+
+    // Jobs queued before the project was deactivated are dropped, not delivered late.
+    if (!job.data.target.system) {
+      const project = await systemRepo.readResource<Project>('Project', job.data.target.projectId);
+      if (project.active === false) {
+        logFn(`Project ${project.id} is not active`);
+        return;
+      }
     }
 
     if (job.data.interaction !== 'delete') {

@@ -107,6 +107,9 @@ export function isPractitionerEmailDomainAllowed(
  * @returns An OperationOutcome describing the rejection, or undefined if registration is allowed.
  */
 export function projectRegistrationAllowed(project: Project): OperationOutcome | undefined {
+  if (project.active === false) {
+    return badRequest('Project not active');
+  }
   if (!project.defaultPatientAccessPolicy) {
     return badRequest('Project does not allow open registration');
   }

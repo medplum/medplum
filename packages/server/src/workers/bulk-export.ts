@@ -15,7 +15,14 @@ import type { AuthState } from '../oauth/middleware';
 import type { AsyncJobTracking } from './base';
 import { getAsyncJobTracking, getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer } from './utils';
-import { defaultQueueOptions, getWorkerBullmqConfig, isJobActive, queueRegistry, trackJobMetrics } from './utils';
+import {
+  assertProjectActive,
+  defaultQueueOptions,
+  getWorkerBullmqConfig,
+  isJobActive,
+  queueRegistry,
+  trackJobMetrics,
+} from './utils';
 
 export interface BulkExportJobData {
   readonly tracking: AsyncJobTracking;
@@ -99,6 +106,7 @@ export async function execBulkExportJob(job: Job<BulkExportJobData | ProjectArch
     return;
   }
   const { authState, requestId, traceId } = job.data;
+  await assertProjectActive(authState.project.id);
   await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, async () => {
     const { repo, project } = getAuthenticatedContext();
     const exporter = new BulkExporter(repo, exec.getAsyncJob());

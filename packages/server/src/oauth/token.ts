@@ -158,6 +158,11 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
   }
 
   const project = await systemRepo.readReference(membership.project);
+  if (project.active === false) {
+    sendTokenError(res, 'access_denied', 'Project not active');
+    return;
+  }
+
   const scope = (req.body.scope || 'openid') as string;
 
   if (scope.includes('patient/')) {
@@ -327,6 +332,12 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
     if (membership.active === false) {
       sendTokenError(res, 'access_denied', 'Profile not active');
+      return;
+    }
+
+    const project = await systemRepo.readReference(membership.project);
+    if (project.active === false) {
+      sendTokenError(res, 'access_denied', 'Project not active');
       return;
     }
   }

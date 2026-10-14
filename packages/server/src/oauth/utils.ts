@@ -403,7 +403,12 @@ export async function getMembershipsForLogin(login: Login): Promise<WithId<Proje
     memberships = memberships.filter((m) => m.profile?.reference?.startsWith(profileType));
   }
 
-  return memberships;
+  const projects = await systemRepo.readReferences<Project>(memberships.map((m) => m.project));
+  const activeMemberships = memberships.filter((_, i) => (projects[i] as Project).active !== false);
+  if (memberships.length > 0 && activeMemberships.length === 0) {
+    throw new OperationOutcomeError(badRequest('Project not active'));
+  }
+  return activeMemberships;
 }
 
 /**
@@ -467,6 +472,9 @@ export async function setLoginMembership(
   // Get the project
   const globalSystemRepo = getGlobalSystemRepo();
   const project = await globalSystemRepo.readReference<Project>(membership.project);
+  if (project.active === false) {
+    throw new OperationOutcomeError(badRequest('Project not active'));
+  }
   const projectSystemRepo = await getProjectSystemRepo(project);
 
   // Make sure the membership satisfies the project requirements
@@ -1071,6 +1079,9 @@ export async function getLoginForAccessToken(
     return undefined;
   }
   const project = await globalSystemRepo.readReference<Project>(membership.project);
+  if (project.active === false) {
+    return undefined;
+  }
   const systemRepo = await getProjectSystemRepo(project);
   return makeAuthResult(systemRepo, req, login, project, membership, { accessToken, remoteAddress: req?.ip });
 }
@@ -1111,6 +1122,10 @@ export async function getLoginForBasicAuth(req: Request, token: string): Promise
   }
 
   const project = await systemRepo.readReference<Project>(membership.project);
+  if (project.active === false) {
+    return undefined;
+  }
+
   const login: Login = {
     resourceType: 'Login',
     user: createReference(client),
@@ -1391,6 +1406,11 @@ async function tryExternalAuthLogin(
     return undefined;
   }
 
+  const project = await systemRepo.readReference<Project>(membership.project);
+  if (project.active === false) {
+    return undefined;
+  }
+
   const [profileType] = parseReference(membership.profile);
 
   const login = await systemRepo.createResource<Login>({
@@ -1406,8 +1426,6 @@ async function tryExternalAuthLogin(
     remoteAddress: req?.ip,
     userAgent: req?.get('User-Agent'),
   });
-
-  const project = await systemRepo.readReference<Project>(membership.project);
 
   logAuditEvent(
     createAuditEvent(

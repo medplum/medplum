@@ -344,11 +344,11 @@ async function resolveCronJob(
     return undefined;
   }
 
-  if (!project.features?.includes('cron')) {
+  if (!project.features?.includes('cron') || project.active === false) {
     // addCronJobs refuses to register without the feature, so a job that outlived it must not run.
-    // The schedule stays registered: the feature can come back, and nothing re-registers a dropped
-    // job, so unregistering would strand the Cron.
-    getLogger().info('Skipping cron job, project does not have the cron feature', {
+    // The schedule stays registered: the feature or the project can come back, and nothing
+    // re-registers a dropped job, so unregistering would strand the Cron.
+    getLogger().info('Skipping cron job, project is inactive or does not have the cron feature', {
       cronId: cron.id,
       projectId: project.id,
     });
