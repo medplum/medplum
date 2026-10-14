@@ -1,8 +1,28 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CheckIcon, ColorSwatch, getContrastColor, Group, Radio, Text, useMantineTheme } from '@mantine/core';
+import {
+  CheckIcon,
+  ColorInput,
+  ColorSwatch,
+  convertHsvaTo,
+  getContrastColor,
+  Group,
+  isColorValid,
+  parseColor,
+  Radio,
+  Text,
+  useMantineTheme,
+} from '@mantine/core';
 import type { JSX } from 'react';
-import { colorFill, colorValue, FALLBACK_COLORS, fallbackColorIndex, resolveSchedulingColor } from '../../colors';
+import { useState } from 'react';
+import {
+  colorFill,
+  colorValue,
+  FALLBACK_COLORS,
+  fallbackColorIndex,
+  isHexColor,
+  resolveSchedulingColor,
+} from '../../colors';
 
 export interface ServiceColorFieldProps {
   /** The color the visit type names, a Mantine color or a hex code, or undefined to leave the calendar to pick one. */
@@ -12,8 +32,11 @@ export interface ServiceColorFieldProps {
   readonly serviceReference?: string;
 }
 
+const CUSTOM = 'custom';
+
 /**
- * Picks the color the scheduling calendar draws a visit type's appointments in, from the calendar's palette.
+ * Picks the color the scheduling calendar draws a visit type's appointments in, from the calendar's palette
+ * or as a custom hex code.
  * @param props - The color named, a change handler, and the visit type's reference.
  * @returns The field.
  */
@@ -27,7 +50,10 @@ export function ServiceColorField(props: ServiceColorFieldProps): JSX.Element {
   const automaticColor = serviceReference && resolveSchedulingColor(theme, undefined, fallbackIndex);
   // A color stored by another tool that the palette doesn't hold is offered too, so it isn't read as Automatic.
   const palette: readonly string[] = FALLBACK_COLORS;
-  const colors = value && !palette.includes(value) ? [...palette, value] : palette;
+  const custom = value && isHexColor(value) ? value : undefined;
+  const colors = value && !custom && !palette.includes(value) ? [...palette, value] : palette;
+  // A partial code, or one in another form, held until it's a whole #rrggbb or the input blurs.
+  const [typed, setTyped] = useState<string>();
   const checkColor = (color: string): string =>
     getContrastColor({ color: colorValue(theme, color), theme, autoContrast: true });
 
@@ -35,8 +61,17 @@ export function ServiceColorField(props: ServiceColorFieldProps): JSX.Element {
     <Radio.Group
       label="Calendar color"
       description="What the scheduling calendar draws this visit type's appointments in."
-      value={value ?? ''}
-      onChange={(next) => onChange(next || undefined)}
+      value={custom ? CUSTOM : (value ?? '')}
+      onChange={(next) => {
+        if (next === CUSTOM) {
+          // Starts from the color shown now, as hex though a theme may write it in another form. Mantine reads a
+          // form it can't, such as oklch(), as black.
+          const shown = colorValue(theme, resolveSchedulingColor(theme, value, fallbackIndex));
+          onChange(convertHsvaTo('hex', parseColor(shown)));
+        } else {
+          onChange(next || undefined);
+        }
+      }}
     >
       <Group gap="xs" mt="xs">
         <Radio.Card value="" w="auto" radius="xl" px="sm" py={4}>
@@ -67,7 +102,46 @@ export function ServiceColorField(props: ServiceColorFieldProps): JSX.Element {
             </Radio.Card>
           );
         })}
+        <Radio.Card value={CUSTOM} w="auto" radius="xl" px="sm" py={4}>
+          <Group gap={6} wrap="nowrap">
+            {custom && (
+              <ColorSwatch color={custom} size={18} withShadow={false} c={checkColor(custom)}>
+                <CheckIcon size={8} />
+              </ColorSwatch>
+            )}
+            <Text size="sm">Custom</Text>
+          </Group>
+        </Radio.Card>
       </Group>
+      {custom && (
+        <ColorInput
+          aria-label="Custom color"
+          format="hex"
+          w={180}
+          mt="xs"
+          withEyeDropper={false}
+          // Mantine's own fix on blur would store the last code it could read along the way, such as #228 of
+          // #228b22, in place of an unfinished one.
+          fixOnBlur={false}
+          value={typed ?? custom}
+          onChange={(next) => {
+            // A shorter code may be the start of a #rrggbb.
+            if (/^#?[0-9a-f]{6}$/i.test(next)) {
+              setTyped(undefined);
+              onChange(next.startsWith('#') ? next : `#${next}`);
+            } else {
+              setTyped(next);
+            }
+          }}
+          onBlur={() => {
+            // Mantine reads other forms too, such as #rgb or rgb(); what it can't read is dropped.
+            if (typed && isColorValid(typed)) {
+              onChange(convertHsvaTo('hex', parseColor(typed)));
+            }
+            setTyped(undefined);
+          }}
+        />
+      )}
     </Radio.Group>
   );
 }

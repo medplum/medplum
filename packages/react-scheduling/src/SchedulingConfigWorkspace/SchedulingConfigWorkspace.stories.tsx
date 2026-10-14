@@ -5,7 +5,7 @@ import { SchedulingColorURI } from '@medplum/core';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { withFixtures } from '../stories/decorators';
-import { ConfigFixtures, TelehealthService } from '../stories/scheduling';
+import { ConfigFixtures, InitialConsultationService, TelehealthService } from '../stories/scheduling';
 import { SchedulingConfigWorkspace } from './SchedulingConfigWorkspace';
 
 export default {
@@ -17,15 +17,19 @@ export default {
   },
 } as Meta;
 
-/** The clinic, with Telehealth Consult naming the color the scheduling calendar draws it in. */
-const BASIC_FIXTURES = ConfigFixtures.map((resource) =>
-  resource.resourceType === 'HealthcareService' && resource.id === TelehealthService.id
-    ? {
-        ...resource,
-        extension: [...(resource.extension ?? []), { url: SchedulingColorURI, valueString: 'grape' }],
-      }
-    : resource
-);
+/** The colors visit types name for the scheduling calendar to draw them in: one from its palette, one custom. */
+const SERVICE_COLORS = new Map([
+  [TelehealthService.id, 'grape'],
+  [InitialConsultationService.id, '#ff00cc'],
+]);
+
+/** The clinic, with some visit types naming the color the scheduling calendar draws them in. */
+const BASIC_FIXTURES = ConfigFixtures.map((resource) => {
+  const color = resource.resourceType === 'HealthcareService' && resource.id && SERVICE_COLORS.get(resource.id);
+  return color
+    ? { ...resource, extension: [...(resource.extension ?? []), { url: SchedulingColorURI, valueString: color }] }
+    : resource;
+});
 
 function Workspace(): JSX.Element {
   // The workspace fills whatever it is given, so the story hands it the rest of the viewport.
@@ -39,9 +43,10 @@ function Workspace(): JSX.Element {
 /**
  * The clinic as an admin sees it, including what booking hides.
  *
- * Initial Consultation is offered at both clinics, with prep and turnover time and a lunch break in its hours.
- * Group Education Class books eight patients into one weekly session. Telehealth Consult names no service facility,
- * so it is offered at every one; it also names the color the calendar draws it in. Unconfigured Visit and Walk-in Clinic have no duration, so booking never offers
+ * Initial Consultation is offered at both clinics, with prep and turnover time and a lunch break in its hours, and
+ * names a custom color for the calendar to draw it in. Group Education Class books eight patients into one weekly
+ * session. Telehealth Consult names no service facility, so it is offered at every one; it also names a color from
+ * the calendar's palette. Unconfigured Visit and Walk-in Clinic have no duration, so booking never offers
  * them, but they are listed here to be finished. Discontinued Consult and Ultrasound 3 are turned off, so they
  * are hidden until **Show inactive** is ticked under the filters button. So is Dr. Sofia Reyes, who is on leave:
  * still active, with the Schedule switched off. Exam Room C is listed though it has no Schedule.
