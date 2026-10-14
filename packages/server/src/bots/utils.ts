@@ -187,6 +187,8 @@ export async function writeBotInputToStorage(request: BotExecutionRequest): Prom
   // partition. Its account compartments stay behind for the same reason -- they name another project.
   const projectId = resolveId(runAs.project) as string;
   const sameProject = bot.meta?.project === projectId;
+  // The `bot/` prefix is also the scope of the storageBotInputExpirationDays lifecycle rules in packages/cdk/src/storage.ts
+  // If the prefix changes, the corresponding lifecycle rules in packages/cdk/src/storage.ts must be updated accordingly.
   const key = `bot/${projectId}/${today}/${now.getTime()}-${randomUUID()}.json`;
   const row: Record<string, unknown> = {
     contentType,
