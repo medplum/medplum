@@ -150,7 +150,7 @@ describe('CalendarBase', () => {
       }
     });
 
-    test('marks the selected appointment', async () => {
+    test('marks the selected appointment or slot', async () => {
       const homer = createAppointment({
         id: 'apt-homer',
         participant: [{ actor: { reference: 'Patient/1', display: 'Homer Simpson' }, status: 'accepted' }],
@@ -161,7 +161,11 @@ describe('CalendarBase', () => {
         end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
         participant: [{ actor: { reference: 'Patient/2', display: 'Bob Jones' }, status: 'accepted' }],
       });
-      const eventSources = [{ schedule: DrAliceSmithSchedule, appointments: [homer, bob], slots: [] }];
+      const slot = createSlot({
+        start: new Date(baseDate.getTime() + 120 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 150 * 60 * 1000).toISOString(),
+      });
+      const eventSources = [{ schedule: DrAliceSmithSchedule, appointments: [homer, bob], slots: [slot] }];
 
       const { container, rerender } = setup({ eventSources, selectedId: 'apt-homer' });
       expect(screen.getByText(/Homer Simpson/).closest('.appointment')).toHaveClass('selected');
@@ -170,6 +174,10 @@ describe('CalendarBase', () => {
       rerender(<CalendarBase eventSources={eventSources} selectedId="apt-bob" />);
       expect(screen.getByText(/Homer Simpson/).closest('.appointment')).not.toHaveClass('selected');
       expect(screen.getByText(/Bob Jones/).closest('.appointment')).toHaveClass('selected');
+
+      rerender(<CalendarBase eventSources={eventSources} selectedId={slot.id} />);
+      expect(container.querySelector('.slot')).toHaveClass('selected');
+      expect(screen.getByText(/Bob Jones/).closest('.appointment')).not.toHaveClass('selected');
 
       rerender(<CalendarBase eventSources={eventSources} />);
       expect(container.querySelector('.selected')).toBeNull();

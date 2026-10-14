@@ -76,11 +76,14 @@ describe('SchedulingWorkspace blocked time details', () => {
     expect(await pane.findByText('Dr. Maya Rivera')).toBeInTheDocument();
     expect(pane.getByText(formatWhen(BLOCKED_SLOT) as string)).toBeInTheDocument();
     expect(pane.getByText('Lunch')).toBeInTheDocument();
+    expect(screen.getByText('Blocked').closest('.slot')).toHaveClass('selected');
 
-    // An appointment takes the pane over, and blocked time takes it back.
+    // An appointment takes the pane over, and the selection with it, and blocked time takes it back.
     await userEvent.click(screen.getByText('Miles Cooper'));
     expect(appointmentDetails()).toBeInTheDocument();
     expect(slotDetails()).not.toBeInTheDocument();
+    expect(screen.getByText('Miles Cooper').closest('.appointment')).toHaveClass('selected');
+    expect(screen.getByText('Blocked').closest('.slot')).not.toHaveClass('selected');
     await userEvent.click(screen.getByText('Blocked'));
     expect(slotDetails()).toBeInTheDocument();
     expect(appointmentDetails()).not.toBeInTheDocument();
@@ -95,7 +98,7 @@ describe('SchedulingWorkspace blocked time details', () => {
     await userEvent.click(screen.getByText('Blocked'));
     await userEvent.click(screen.getByRole('button', { name: 'Close blocked time details' }));
     await waitFor(() => expect(slotDetails()).not.toBeInTheDocument());
-    expect(screen.getByText('Blocked')).toBeInTheDocument();
+    expect(screen.getByText('Blocked').closest('.slot')).not.toHaveClass('selected');
   });
 
   test('editing moves blocked time and changes its notes', async () => {

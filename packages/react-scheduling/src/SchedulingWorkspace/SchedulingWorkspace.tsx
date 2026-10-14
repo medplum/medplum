@@ -454,7 +454,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onSelectAppointment={selectAppointment}
           onSelectSlot={selectSlot}
           selection={blocking ? blockHighlight : highlight}
-          selectedId={openAppointment?.id}
+          selectedId={openAppointment?.id ?? openSlot?.id}
         />
         <div className={classes.footer}>
           <CalendarTimezoneNotice timezones={timezones} anyUnknown={anyUnknown} />
