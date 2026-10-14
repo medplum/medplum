@@ -174,17 +174,14 @@ describe('CalendarBase', () => {
       setup({ eventSources: [] });
       const today = String(new Date().getDate());
 
-      const header = document.querySelector('.todayNumber');
-      expect(header).toHaveTextContent(today);
-      const others = document.querySelectorAll('.otherDayHeaderInner');
-      expect(others.length).toBeGreaterThan(0);
-      others.forEach((inner) => expect(inner.querySelector('.todayNumber')).toBeNull());
+      const headers = document.querySelectorAll('[aria-current=date] .dayNumber');
+      expect(headers).toHaveLength(1);
+      expect(headers[0]).toHaveTextContent(today);
 
       await userEvent.click(screen.getByText('Month'));
-      const cell = document.querySelector('.todayCellNumber, .narrowTodayCellNumber');
-      expect(cell).toHaveTextContent(today);
-      expect(cell).toHaveClass('todayNumber');
-      expect(document.querySelectorAll('.todayNumber')).toHaveLength(1);
+      const cells = document.querySelectorAll('[role=gridcell][aria-current=date] .dayCellTopInner');
+      expect(cells).toHaveLength(1);
+      expect(cells[0]).toHaveTextContent(today);
     });
 
     test('hides slots in the month view', async () => {

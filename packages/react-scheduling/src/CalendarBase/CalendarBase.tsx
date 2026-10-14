@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {
   CalendarRef,
-  DateTimeFormatPartWithWeek,
-  DayCellInfo,
   DayHeaderInfo,
   EventApi,
   EventClickInfo,
@@ -98,37 +96,17 @@ function renderEventContent(info: EventDisplayInfo): JSX.Element | true {
   );
 }
 
-function renderToday(textParts: DateTimeFormatPartWithWeek[], numberClassName: string): JSX.Element {
+// Wrap the day number in its own element so CSS can circle it on today's date
+function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element {
   return (
-    <>
-      {textParts.map((part, i) => (
-        <span key={i} className={part.type === 'day' ? numberClassName : classes.todayText}>
+    <span className={classes.dayHeaderText}>
+      {info.textParts.map((part, i) => (
+        <span key={i} className={part.type === 'day' ? classes.dayNumber : undefined}>
           {part.value}
         </span>
       ))}
-    </>
+    </span>
   );
-}
-
-function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element | string {
-  if (info.inPopover || !info.dayNumberText || !info.isToday) {
-    return info.text;
-  }
-  return renderToday(info.textParts, classes.todayNumber);
-}
-
-function renderDayCellTopContent(info: DayCellInfo): JSX.Element | string {
-  if (!info.isToday) {
-    return info.text;
-  }
-  return renderToday(
-    info.textParts,
-    cx(classes.todayNumber, info.isNarrow ? classes.narrowTodayCellNumber : classes.todayCellNumber)
-  );
-}
-
-function dayHeaderInnerClass(info: DayHeaderInfo): string {
-  return cx(classes.dayHeaderInner, !info.isToday && classes.otherDayHeaderInner);
 }
 
 function slotTitle(slot: Slot): string {
@@ -383,8 +361,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         }}
         eventContent={renderEventContent}
         dayHeaderContent={renderDayHeaderContent}
-        dayHeaderInnerClass={dayHeaderInnerClass}
-        dayCellTopContent={renderDayCellTopContent}
+        dayCellTopInnerClass={classes.dayCellTopInner}
         slotHeaderInnerClass={classes.slotHeaderInner}
         nowIndicatorLineClass={classes.nowIndicatorLine}
         nowIndicatorDotClass={classes.nowIndicatorDot}
