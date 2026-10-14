@@ -370,7 +370,11 @@ export function VisitTypePage(props: VisitTypePageProps): JSX.Element {
           value={fields.location}
           onChange={(location) => update({ location })}
           name={serviceName}
-          description="Booking filtered to a service facility offers this visit type only if it's listed here, or if none are."
+          description={
+            fields.location.length === 0
+              ? 'Available in all service facilities'
+              : 'Available in these service facilities'
+          }
         />
         <ServiceColorField
           value={fields.color}
