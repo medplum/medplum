@@ -1,4 +1,14 @@
 .wrapper {
+  /* `light-dark()` follows FullCalendar's scheme rather than the page's, so a sample drawn outside
+   * the calendar can take either. */
+  :global([data-color-scheme='light']) {
+    color-scheme: light;
+  }
+
+  :global([data-color-scheme='dark']) {
+    color-scheme: dark;
+  }
+
   /* `--emphasis` fades an event toward the background while it is hovered, and `--past-fade` once
    * it has ended. */
   :global(.appointment),
