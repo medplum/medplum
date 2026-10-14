@@ -202,6 +202,21 @@ describe('OrderLabsModal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
 
     expect(await screen.findByText('At least one test must be selected')).toBeInTheDocument();
+    expect(notifications.showErrorNotification).not.toHaveBeenCalled();
+    expect(onSaveDraft).not.toHaveBeenCalled();
+  });
+
+  test('Shows a notification when saving the draft fails', async () => {
+    const onSaveDraft = vi.fn();
+    const error = new Error('Network error');
+    vi.mocked(saveLabOrderDraft).mockRejectedValue(error);
+    setup({ onSaveDraft });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
+
+    await waitFor(() => {
+      expect(notifications.showErrorNotification).toHaveBeenCalledWith(error);
+    });
     expect(onSaveDraft).not.toHaveBeenCalled();
   });
 

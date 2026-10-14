@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
 import {
-  createReference,
+  badRequest,
   getExtensionValue,
   getIdentifier,
   getReferenceString,
   isReference,
+  OperationOutcomeError,
+  parseReference,
   resolveId,
   SNOMED,
 } from '@medplum/core';
@@ -40,6 +42,7 @@ import {
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_PHYSICIAN_AN,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
+  validateLabOrderInputs,
 } from '@medplum/health-gorilla-core';
 import type { TestSearch } from '@medplum/health-gorilla-react';
 import { getAutocompleteSearchFunction } from '@medplum/health-gorilla-react';
@@ -115,7 +118,7 @@ export async function getLabOrderDraftDefaults(
   const testMetadata: LabOrderDraftDefaults['testMetadata'] = {};
   await Promise.all(
     childRequests.map(async (child) => {
-      const code = child.code?.coding?.[0]?.code;
+      const code = getTestCode(child);
       if (!code) {
         return;
       }
@@ -253,21 +256,12 @@ export async function saveLabOrderDraft(
   }
 
   const response = await medplum.executeBatch(bundle);
-  // executeBatch leaves the client cache alone, so drop what the save changed before the draft is resumed again
-  for (const resourceType of ['ServiceRequest', 'QuestionnaireResponse', 'Specimen'] as const) {
-    medplum.invalidateSearches(resourceType);
+  const failed = response.entry?.find((entry) => !entry.response?.status?.startsWith('2'));
+  if (failed) {
+    throw new OperationOutcomeError(failed.response?.outcome ?? badRequest('Lab order draft was not saved'));
   }
-  for (const entry of entries) {
-    if (entry.request?.method !== 'POST' && entry.request?.url) {
-      medplum.invalidateUrl(medplum.fhirUrl(entry.request.url));
-    }
-  }
-
-  const saved = response.entry?.[orderIndex]?.resource;
-  if (saved?.resourceType !== 'ServiceRequest') {
-    throw new Error('Lab order draft was not saved', { cause: response });
-  }
-  return saved as WithId<ServiceRequest>;
+  notifyBatchModified(medplum, entries, response);
+  return response.entry?.[orderIndex]?.resource as WithId<ServiceRequest>;
 }
 
 function createLabOrderDraftBundle(inputs: PartialLabOrderInputs): Bundle {
@@ -278,10 +272,19 @@ function createLabOrderDraftBundle(inputs: PartialLabOrderInputs): Bundle {
       metadata && { ...metadata, aoeQuestionnaire: undefined },
     ])
   );
-  const bundle = createLabOrderBundle({ ...inputs, testMetadata, billingInformation: { billTo: 'patient' } });
+  const billingComplete = !validateLabOrderInputs(inputs)?.billingInformation;
+  const bundle = createLabOrderBundle({
+    ...inputs,
+    testMetadata,
+    billingInformation: billingComplete ? inputs.billingInformation : { billTo: 'patient' },
+  });
+  if (billingComplete) {
+    return bundle;
+  }
 
+  // Record the bill-to chosen so far in place of the placeholder
   const order = bundle.entry?.find(isLabOrderEntry)?.resource as ServiceRequest;
-  const { billTo, patientCoverage } = inputs.billingInformation ?? {};
+  const billTo = inputs.billingInformation?.billTo;
   const extension = (order.extension ?? []).filter(
     (ext) => ext.url !== MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO
   );
@@ -289,10 +292,6 @@ function createLabOrderDraftBundle(inputs: PartialLabOrderInputs): Bundle {
     extension.push({ url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: billTo });
   }
   order.extension = extension.length > 0 ? extension : undefined;
-  order.insurance =
-    billTo === 'insurance' && patientCoverage?.length
-      ? patientCoverage.map((coverage) => createReference(coverage))
-      : undefined;
   return bundle;
 }
 
@@ -326,14 +325,12 @@ async function targetExistingDraft(
     if (test?.resourceType !== 'ServiceRequest' || test.basedOn?.[0]?.reference !== orderEntry.fullUrl) {
       continue;
     }
-    const index = unmatchedTests.findIndex(
-      (currentTest) => currentTest.code?.coding?.[0]?.code === test.code?.coding?.[0]?.code
-    );
+    const index = unmatchedTests.findIndex((currentTest) => getTestCode(currentTest) === getTestCode(test));
     if (index === -1) {
       continue;
     }
     const [currentTest] = unmatchedTests.splice(index, 1);
-    const aoeEntry = entries.find((e) => !!e.fullUrl && e.fullUrl === test.supportingInfo?.[0]?.reference);
+    const aoeEntry = findEntry(entries, test.supportingInfo?.[0]?.reference);
     const currentAoeRef = getAoeReference(currentTest);
     updateEntry(entry, getReferenceString(currentTest), currentTest);
     if (currentAoeRef?.reference) {
@@ -353,8 +350,7 @@ async function targetExistingDraft(
   }
 
   if (currentSpecimen) {
-    const specimenRef = (orderEntry.resource as ServiceRequest).specimen?.[0]?.reference;
-    const specimenEntry = entries.find((e) => !!e.fullUrl && e.fullUrl === specimenRef);
+    const specimenEntry = findEntry(entries, (orderEntry.resource as ServiceRequest).specimen?.[0]?.reference);
     if (specimenEntry) {
       updateEntry(specimenEntry, getReferenceString(currentSpecimen), currentSpecimen);
     } else {
@@ -390,8 +386,41 @@ function updateEntry(entry: BundleEntry, reference: string, existing?: Resource)
   }
 }
 
+/**
+ * executeBatch does not tell the client what it changed, so cached reads and searches would
+ * show the draft as it was before the save when it is resumed again.
+ * @param medplum - The Medplum client.
+ * @param entries - The entries of the bundle that was executed.
+ * @param response - The batch response, whose entries are in the same order.
+ */
+function notifyBatchModified(medplum: MedplumClient, entries: BundleEntry[], response: Bundle): void {
+  entries.forEach((entry, index) => {
+    const resource = response.entry?.[index]?.resource as WithId<Resource> | undefined;
+    if (resource) {
+      const operation = entry.request?.method === 'PUT' ? 'update' : 'create';
+      medplum.notifyResourceModified({ resourceType: resource.resourceType, operation, id: resource.id, resource });
+    } else if (entry.request?.method === 'DELETE') {
+      const [resourceType, id] = parseReference({ reference: entry.request.url });
+      medplum.notifyResourceModified({ resourceType, operation: 'delete', id });
+    }
+  });
+}
+
 function isLabOrderEntry(entry: BundleEntry): boolean {
   return !!entry.resource?.meta?.profile?.includes(MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE);
+}
+
+/**
+ * @param entries - The bundle entries to search.
+ * @param placeholder - A `urn:uuid:` reference to another entry in the same bundle.
+ * @returns The entry that the placeholder refers to, if any.
+ */
+function findEntry(entries: BundleEntry[], placeholder: string | undefined): BundleEntry | undefined {
+  return placeholder ? entries.find((entry) => entry.fullUrl === placeholder) : undefined;
+}
+
+function getTestCode(test: ServiceRequest): string | undefined {
+  return test.code?.coding?.[0]?.code;
 }
 
 function getAoeReference(test: ServiceRequest): Reference<QuestionnaireResponse> | undefined {
