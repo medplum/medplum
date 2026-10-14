@@ -229,7 +229,11 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const pendingEncounterOpsRef = useRef(new Map<string, PatchOperation>());
 
   const flushEncounterOps = useDebouncedCallback(async (): Promise<void> => {
-    const ops = [...pendingEncounterOpsRef.current.values()];
+    // A remove on a missing path is rejected, and so is an empty location list, so clearing a service
+    // facility the encounter never had (or one selected and cleared within a single debounce) is a no-op.
+    const ops = [...pendingEncounterOpsRef.current.values()].filter(
+      (op) => !(op.op === 'remove' && op.path === '/location' && !encounter.location)
+    );
     pendingEncounterOpsRef.current.clear();
     if (ops.length === 0) {
       return;

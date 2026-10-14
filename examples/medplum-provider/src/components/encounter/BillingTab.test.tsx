@@ -12,6 +12,7 @@ import type {
   CodeableConcept,
   Coverage,
   Encounter,
+  Location,
   Organization,
   Patient,
   Practitioner,
@@ -865,6 +866,70 @@ describe('BillingTab', () => {
     expect(createSpy).not.toHaveBeenCalled();
 
     windowOpenSpy.mockRestore();
+  });
+
+  test('clears a stale service facility from the stored claim when the encounter has no location', async () => {
+    const user = userEvent.setup();
+    mockSearchResources({ Coverage: [mockCoverage] });
+    mockSearchOne({ Claim: { ...mockClaim, facility: { reference: 'Location/stale' } } });
+    const updateSpy = vi.spyOn(medplum, 'updateResource');
+    vi.spyOn(medplum, 'post').mockResolvedValue({
+      resourceType: 'Media',
+      content: { url: 'https://example.com/c.pdf' },
+    });
+    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    await setup();
+    await user.click(await screen.findByText('Export Claim'));
+    await user.click(await screen.findByText('CMS 1500 Form'));
+
+    await waitFor(() => expect(updateSpy).toHaveBeenCalled());
+    expect(updateSpy.mock.calls[0][0]).toEqual(expect.objectContaining({ id: 'claim-123', facility: undefined }));
+    windowOpenSpy.mockRestore();
+  });
+
+  test('drops a service facility removal when the encounter has no location', async () => {
+    const patchSpy = vi.spyOn(medplum, 'patchResource');
+    mockSearchResources({ Coverage: [mockCoverage] });
+    mockSearchOne();
+    // Select then clear within one debounce: the pending add is replaced by a remove, which is dropped.
+    await medplum.createResource<Location>({ resourceType: 'Location', id: 'loc-1', name: 'Main Clinic' });
+    vi.spyOn(medplum, 'searchResources').mockImplementation(((resourceType: string) =>
+      Promise.resolve(
+        resourceType === 'Location' ? [{ resourceType: 'Location', id: 'loc-1', name: 'Main Clinic' }] : []
+      )) as any);
+
+    await setup();
+    const facilityInput = await screen.findByPlaceholderText('Search for location');
+    await act(async () => {
+      fireEvent.change(facilityInput, { target: { value: 'Main' } });
+    });
+    await waitFor(
+      () => {
+        expect(medplum.searchResources).toHaveBeenCalledWith(
+          'Location',
+          expect.any(URLSearchParams),
+          expect.any(Object)
+        );
+        expect(screen.getByText('Main Clinic')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByText('Main Clinic'));
+    });
+    // The practitioner picker has a clear button too; the service facility picker is rendered last
+    const clearButtons = screen.getAllByTitle('Clear all');
+    await act(async () => {
+      fireEvent.click(clearButtons[clearButtons.length - 1]);
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, SAVE_TIMEOUT_MS + 50);
+      });
+    });
+    expect(patchSpy).not.toHaveBeenCalled();
   });
 
   test('shows error when export fails to return Media', async () => {
