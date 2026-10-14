@@ -104,6 +104,8 @@ describe('SchedulingWorkspace blocked time details', () => {
     await userEvent.click(await screen.findByText('Blocked'));
     const pane = within(slotDetails() as HTMLElement);
     const save = (): HTMLElement => pane.getByRole('button', { name: 'Save Changes' });
+    // Editing waits until no appointment is found holding the slot.
+    await waitFor(() => expect(pane.getByRole('button', { name: 'Edit' })).toBeEnabled());
 
     // Cancelling leaves the slot as it was.
     await userEvent.click(pane.getByRole('button', { name: 'Edit' }));
@@ -173,6 +175,7 @@ describe('SchedulingWorkspace blocked time details', () => {
 
     await userEvent.click(await screen.findByText('Blocked'));
     const pane = within(slotDetails() as HTMLElement);
+    await waitFor(() => expect(pane.getByRole('button', { name: 'Delete' })).toBeEnabled());
 
     // Backing out deletes nothing.
     await userEvent.click(pane.getByRole('button', { name: 'Delete' }));
@@ -193,5 +196,46 @@ describe('SchedulingWorkspace blocked time details', () => {
     await waitFor(() => expect(slotDetails()).not.toBeInTheDocument());
     expect(screen.queryByText('Blocked')).not.toBeInTheDocument();
     await expect(medplum.readResource('Slot', BLOCKED_SLOT.id)).rejects.toThrow();
+  });
+
+  test('blocked time an appointment holds is left to the appointment', async () => {
+    // As `$book` holds a buffer: a Slot of its own, apart from the visit's time.
+    await medplum.updateResource<Appointment>({ ...APPOINTMENT, slot: [createReference(BLOCKED_SLOT)] });
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await userEvent.click(await screen.findByText('Blocked'));
+    const pane = within(slotDetails() as HTMLElement);
+    expect(
+      await pane.findByText('This time is held by an appointment. Reschedule or cancel the appointment to change it.')
+    ).toBeInTheDocument();
+    expect(pane.getByRole('button', { name: 'Edit' })).toBeDisabled();
+    expect(pane.getByRole('button', { name: 'Delete' })).toBeDisabled();
+    expect(pane.getByText('Lunch')).toBeInTheDocument();
+  });
+
+  test('blocked time a finished appointment holds offers no reschedule or cancel', async () => {
+    await medplum.updateResource<Appointment>({
+      ...APPOINTMENT,
+      status: 'fulfilled',
+      slot: [createReference(BLOCKED_SLOT)],
+    });
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await userEvent.click(await screen.findByText('Blocked'));
+    const pane = within(slotDetails() as HTMLElement);
+    expect(await pane.findByText('This time is held by an appointment.')).toBeInTheDocument();
+    expect(pane.getByRole('button', { name: 'Edit' })).toBeDisabled();
+    expect(pane.getByRole('button', { name: 'Delete' })).toBeDisabled();
+  });
+
+  test('blocked time stays locked when the check for an appointment fails', async () => {
+    vi.spyOn(medplum, 'searchOne').mockRejectedValue(new Error('Forbidden'));
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await userEvent.click(await screen.findByText('Blocked'));
+    const pane = within(slotDetails() as HTMLElement);
+    expect(await pane.findByText('Forbidden')).toBeInTheDocument();
+    expect(pane.getByRole('button', { name: 'Edit' })).toBeDisabled();
+    expect(pane.getByRole('button', { name: 'Delete' })).toBeDisabled();
   });
 });

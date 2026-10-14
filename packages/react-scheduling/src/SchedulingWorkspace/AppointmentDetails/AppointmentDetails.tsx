@@ -26,20 +26,9 @@ import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../../serviceTypes';
 import { Detail } from '../Detail';
-import { formatWhen } from '../SchedulingWorkspace.utils';
+import { formatWhen, isCancelable, isReschedulable } from '../SchedulingWorkspace.utils';
 import classes from './AppointmentDetails.module.css';
 import { AppointmentDetailsForm } from './AppointmentDetailsForm';
-
-/** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
-const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
-
-/**
- * The statuses `Appointment/:id/$reschedule` accepts. It refuses any other with a 400.
- *
- * The same statuses a cancellation accepts today, but a guard of its own: what can be
- * called off and what can be moved are separate questions to the server.
- */
-const RESCHEDULABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
 
 export interface AppointmentCancelFormProps {
   readonly appointment: WithId<Appointment>;
@@ -276,7 +265,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     );
   }
 
-  const cancelable = CANCELABLE_STATUSES.has(appointment.status);
+  const cancelable = isCancelable(appointment);
   const { visitType, procedures } = partitionServiceTypes(appointment);
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
 
@@ -338,7 +327,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           <Button variant="outline" onClick={() => setEditing(true)}>
             Edit
           </Button>
-          {RESCHEDULABLE_STATUSES.has(appointment.status) && (
+          {isReschedulable(appointment) && (
             <Button
               variant="outline"
               leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
