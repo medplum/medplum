@@ -2042,7 +2042,7 @@ describe('Batch and Transaction processing', () => {
 
 describe('Transaction bundle SERIALIZABLE retry', () => {
   const app = express();
-  const shardId = normalizeShardId(TODO_SHARD_ID);
+  let shardId: string;
   let accessToken: string;
 
   beforeAll(async () => {
@@ -2052,6 +2052,7 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
       project: { features: ['transaction-bundles'] },
       withAccessToken: true,
     }));
+    shardId = normalizeShardId(TODO_SHARD_ID); // get via the project returned from createTestProject
   });
 
   afterEach(() => {

@@ -14,7 +14,7 @@ import { Column, Condition, SelectQuery } from '../sql';
 import { selectCoding } from './utils/terminology';
 
 const app = express();
-const shardId = normalizeShardId(TODO_SHARD_ID);
+let shardId: string;
 
 export const snomedJSON: CodeSystem = {
   resourceType: 'CodeSystem',
@@ -51,7 +51,7 @@ describe('CodeSystem $import', () => {
 
   beforeEach(async () => {
     accessToken = await getSuperAdminAccessToken();
-    expect(accessToken).toBeDefined();
+    shardId = normalizeShardId(TODO_SHARD_ID); // get via getSuperAdminTestProject
 
     const resS = await request(app)
       .get(`/fhir/R4/CodeSystem?url=${snomedJSON.url}`)
