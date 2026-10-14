@@ -37,6 +37,7 @@ export interface FhirEventSource {
   slots: Slot[];
   appointments: Appointment[];
   color?: string;
+  className?: string;
 }
 
 export type ExtendedEvent =
@@ -364,6 +365,8 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
           cx(props.eventClass, classes.event, {
             [classes.clickable]: evt.isInteractive,
             [classes.shortEvent]: evt.isShort,
+            // Judged when the event is drawn, so one that ends while on show stays unmarked until redrawn.
+            past: !!evt.event.end && evt.event.end.getTime() <= Date.now(),
           })
         }
         eventTimeClass={cx(props.eventTimeClass, classes.eventTime)}

@@ -132,6 +132,9 @@ export default {
  * Appointments are colored by visit type. Telehealth Consult names its color, grape, on its
  * HealthcareService; the others are given one picked from their reference.
  *
+ * Monday morning's visits ended before the pinned "now" (12:05 that day), so they are drawn
+ * faded: an imaging visit that was seen, and a telehealth visit the patient missed.
+ *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
  * somewhere else.

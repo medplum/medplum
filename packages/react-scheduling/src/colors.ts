@@ -20,6 +20,7 @@ export const FALLBACK_COLORS = [
   'yellow',
   'grape',
   'orange',
+  'green',
 ] satisfies (keyof MantineThemeColors)[];
 
 /**
