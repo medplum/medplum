@@ -330,8 +330,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
             <Button
               component="a"
               href={externalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              rel="noreferrer"
               variant="outline"
               rightSection={<IconExternalLink size={16} stroke={1.8} />}
             >

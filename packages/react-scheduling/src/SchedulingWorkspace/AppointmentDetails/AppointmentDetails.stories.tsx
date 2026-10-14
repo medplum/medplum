@@ -197,7 +197,7 @@ export const AuthorizationDetails = (): JSX.Element => {
 AuthorizationDetails.decorators = [withValueSets(AuthorizationValueSets)];
 
 /**
- * A visit synced with an external system, which links to it there in a new tab.
+ * A visit synced with an external system, which links to it there.
  *
  * @returns The story.
  */

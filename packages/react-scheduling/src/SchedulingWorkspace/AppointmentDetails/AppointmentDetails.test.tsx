@@ -499,14 +499,14 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText("An appointment in 'fulfilled' status cannot be cancelled.")).toBeInTheDocument();
   });
 
-  test('links to the visit in the external system in a new tab', async () => {
+  test('links to the visit in the external system', async () => {
     const url = 'https://foomedical.com/appointments?date=05%2F05%2F2020&mrn=123';
     renderDetails({ ...BOOKED_APPOINTMENT, extension: [{ url: SchedulingExternalUrlURI, valueUrl: url }] });
     await screen.findByText('Miles Cooper');
 
     const link = screen.getByRole('link', { name: 'View details' });
     expect(link).toHaveAttribute('href', url);
-    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).not.toHaveAttribute('target');
   });
 
   test.each(['javascript:alert(1)', 'http://foomedical.com/appointments', 'not a url'])(
