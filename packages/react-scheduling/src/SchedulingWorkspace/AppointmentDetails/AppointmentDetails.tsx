@@ -10,12 +10,13 @@ import {
   RecurrenceIdExtensionURI,
   RecurrenceTemplateExtensionURI,
   resolveId,
+  SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
 } from '@medplum/core';
 import type { Appointment, CodeableConcept, Parameters } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconArrowLeft, IconCalendarEvent } from '@tabler/icons-react';
+import { IconArrowLeft, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useState } from 'react';
 import { getNonPatientActors, getPatientParticipant } from '../../actors';
@@ -26,20 +27,9 @@ import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../../serviceTypes';
 import { Detail } from '../Detail';
-import { formatWhen } from '../SchedulingWorkspace.utils';
+import { formatWhen, isCancelable, isReschedulable } from '../SchedulingWorkspace.utils';
 import classes from './AppointmentDetails.module.css';
 import { AppointmentDetailsForm } from './AppointmentDetailsForm';
-
-/** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
-const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
-
-/**
- * The statuses `Appointment/:id/$reschedule` accepts. It refuses any other with a 400.
- *
- * The same statuses a cancellation accepts today, but a guard of its own: what can be
- * called off and what can be moved are separate questions to the server.
- */
-const RESCHEDULABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
 
 export interface AppointmentCancelFormProps {
   readonly appointment: WithId<Appointment>;
@@ -276,9 +266,10 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     );
   }
 
-  const cancelable = CANCELABLE_STATUSES.has(appointment.status);
+  const cancelable = isCancelable(appointment);
   const { visitType, procedures } = partitionServiceTypes(appointment);
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
+  const externalUrl = getExternalUrl(appointment);
 
   // Both pages fill the pane the same way, so what can be done to the visit sits at the
   // foot of either.
@@ -335,10 +326,21 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       {!editing && (
         <Stack gap="sm" className={classes.actions}>
           <Divider />
+          {externalUrl && (
+            <Button
+              component="a"
+              href={externalUrl}
+              rel="noreferrer"
+              variant="outline"
+              rightSection={<IconExternalLink size={16} stroke={1.8} />}
+            >
+              View details
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setEditing(true)}>
             Edit
           </Button>
-          {RESCHEDULABLE_STATUSES.has(appointment.status) && (
+          {isReschedulable(appointment) && (
             <Button
               variant="outline"
               leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
@@ -361,6 +363,19 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       )}
     </Stack>
   );
+}
+
+/**
+ * Reads the link to this visit in an external system.
+ * @param appointment - The appointment being described.
+ * @returns The link, or undefined when there is none or it is not `https`.
+ */
+function getExternalUrl(appointment: Appointment): string | undefined {
+  const value = getExtensionValue(appointment, SchedulingExternalUrlURI);
+  if (typeof value !== 'string' || !URL.canParse(value)) {
+    return undefined;
+  }
+  return new URL(value).protocol === 'https:' ? value : undefined;
 }
 
 /**

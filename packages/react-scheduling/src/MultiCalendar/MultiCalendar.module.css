@@ -1,35 +1,160 @@
-/* Booked and its successor states render as solid blocks; everything else
- * renders as a dashed outline over a pale tint of the calendar color. */
 .wrapper {
+  /* `--emphasis` fades an event toward the background while it is hovered, and `--past-fade` once
+   * it has ended. */
+  :global(.appointment),
+  :global(.slot) {
+    --emphasis: 100%;
+    --past-fade: 1;
+
+    &:global(.past) {
+      --past-fade: 0.5;
+    }
+
+    /* Only events that can be clicked answer to the pointer. */
+    &[role='button']:hover {
+      --emphasis: 80%;
+    }
+  }
+
+  /* Appointments are drawn as a light tint of their calendar color, with a bar of the full color
+   * down the leading edge. The tint is opaque, so the grid and other events don't show through,
+   * and a ring of the background keeps neighboring events of one color apart.
+   * `--appointment-bar`, `--appointment-tint` and `--appointment-text` are worked out from
+   * `--fc-event-color`; a color can set its own in their place.
+   * Hovering fades the bar and text, and leaves the tint. */
+  :global(.appointment) {
+    --appointment-bar: var(--fc-event-color);
+    --appointment-tint: light-dark(
+      color-mix(in oklab, var(--fc-event-color) 10%, var(--fc-classic-background)),
+      color-mix(in oklab, var(--fc-event-color) 22%, var(--fc-classic-background))
+    );
+    --appointment-text: light-dark(
+      color-mix(in oklch, var(--fc-event-color), black 40%),
+      color-mix(in oklch, var(--fc-event-color), white 55%)
+    );
+
+    border: 0;
+    padding-inline-start: 6px;
+    box-shadow: 0 0 0 1px var(--fc-classic-background);
+    background:
+      linear-gradient(
+        to right,
+        color-mix(
+            in oklab,
+            var(--appointment-bar) calc(var(--emphasis) * var(--past-fade)),
+            var(--fc-classic-background)
+          )
+          4px,
+        transparent 4px
+      ),
+      color-mix(in oklab, var(--appointment-tint) calc(100% * var(--past-fade)), var(--fc-classic-background));
+
+    .eventInner,
+    .eventTime {
+      color: color-mix(
+        in oklab,
+        var(--appointment-text) calc(var(--emphasis) * var(--past-fade)),
+        var(--fc-classic-background)
+      );
+    }
+  }
+
+  /* In light mode, Mantine's named colors are tinted with their lightest shade and written in their
+   * darkest, darkened further where that is hard to read on the tint. */
+  :global([data-color-scheme='light']) {
+    :global(.appointment.color-red) {
+      --appointment-tint: var(--mantine-color-red-0);
+      --appointment-text: color-mix(in oklch, var(--mantine-color-red-9), black 5%);
+    }
+
+    :global(.appointment.color-pink) {
+      --appointment-tint: var(--mantine-color-pink-0);
+      --appointment-text: var(--mantine-color-pink-9);
+    }
+
+    :global(.appointment.color-grape) {
+      --appointment-tint: var(--mantine-color-grape-0);
+      --appointment-text: var(--mantine-color-grape-9);
+    }
+
+    :global(.appointment.color-violet) {
+      --appointment-tint: var(--mantine-color-violet-0);
+      --appointment-text: var(--mantine-color-violet-9);
+    }
+
+    :global(.appointment.color-indigo) {
+      --appointment-tint: var(--mantine-color-indigo-0);
+      --appointment-text: var(--mantine-color-indigo-9);
+    }
+
+    :global(.appointment.color-blue) {
+      --appointment-tint: var(--mantine-color-blue-0);
+      --appointment-text: var(--mantine-color-blue-9);
+    }
+
+    :global(.appointment.color-cyan) {
+      --appointment-tint: var(--mantine-color-cyan-0);
+      --appointment-text: var(--mantine-color-cyan-9);
+    }
+
+    :global(.appointment.color-teal) {
+      --appointment-tint: var(--mantine-color-teal-0);
+      --appointment-text: color-mix(in oklch, var(--mantine-color-teal-9), black 6%);
+    }
+
+    :global(.appointment.color-green) {
+      --appointment-tint: var(--mantine-color-green-0);
+      --appointment-text: color-mix(in oklch, var(--mantine-color-green-9), black 12%);
+    }
+
+    :global(.appointment.color-lime) {
+      --appointment-tint: var(--mantine-color-lime-0);
+      --appointment-text: color-mix(in oklch, var(--mantine-color-lime-9), black 16%);
+    }
+
+    :global(.appointment.color-yellow) {
+      --appointment-tint: var(--mantine-color-yellow-0);
+      --appointment-text: color-mix(in oklch, var(--mantine-color-yellow-9), black 30%);
+    }
+
+    :global(.appointment.color-orange) {
+      --appointment-tint: var(--mantine-color-orange-0);
+      --appointment-text: color-mix(in oklch, var(--mantine-color-orange-9), black 13%);
+    }
+  }
+
+  /* Booked and its successor states are tinted; everything else is a dashed outline over the
+   * plain background. */
   :global(.appointment.pending),
   :global(.appointment.proposed),
   :global(.appointment.waitlist),
   :global(.appointment.cancelled),
   :global(.appointment.noshow),
   :global(.appointment.entered-in-error) {
-    background: color-mix(in oklch, var(--fc-event-color) 15%, var(--fc-classic-background));
+    background: var(--fc-classic-background);
 
     /* An outline drawn inside the event doesn't change its size the way a border
      * would. Skipped while focused so FullCalendar's focus ring still shows. */
     &:not(:focus-visible) {
-      outline: 2px dashed var(--fc-event-color);
+      outline: 2px dashed
+        color-mix(in oklab, var(--appointment-bar) calc(100% * var(--past-fade)), var(--fc-classic-background));
       outline-offset: -2px;
-    }
-
-    .eventInner,
-    .eventTime {
-      color: light-dark(
-        color-mix(in oklch, var(--fc-event-color), black 40%),
-        color-mix(in oklch, var(--fc-event-color), white 55%)
-      );
     }
   }
 
   /* Slots are drawn in one gray, whichever source they come from, leaving color to the
    * appointments. */
   :global(.slot) {
-    background: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-4));
-    color: var(--mantine-color-white);
+    background: color-mix(
+      in oklab,
+      light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-4)) calc(var(--emphasis) * var(--past-fade)),
+      var(--fc-classic-background)
+    );
+    color: color-mix(
+      in oklab,
+      var(--mantine-color-white) calc(var(--emphasis) * var(--past-fade)),
+      var(--fc-classic-background)
+    );
 
     .eventTime,
     .eventInner {

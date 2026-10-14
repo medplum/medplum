@@ -464,8 +464,8 @@ describe('SchedulingWorkspace', () => {
       // Imaging is drawn without waiting on Telehealth.
       await waitFor(() => expect(appointmentEvents('Miles Cooper')).toHaveLength(1));
       expect(appointmentEvents('Liam Jones')).toHaveLength(0);
-      // Dr. Brown's three telehealth Slots show as blocked beside the two blocks always on show.
-      await waitFor(() => expect(screen.getAllByText('Blocked')).toHaveLength(5));
+      // Dr. Brown's four telehealth Slots show as blocked beside the two blocks always on show.
+      await waitFor(() => expect(screen.getAllByText('Blocked')).toHaveLength(6));
 
       releaseTelehealth();
       await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(1));

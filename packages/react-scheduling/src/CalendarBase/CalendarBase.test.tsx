@@ -128,6 +128,28 @@ describe('CalendarBase', () => {
       expect(screen.getByText(/Bob Jones/)).toBeInTheDocument();
     });
 
+    test('marks events that have ended as past', async () => {
+      const ended = createAppointment({
+        id: 'apt-ended',
+        start: new Date(baseDate.getTime() - 60 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() - 30 * 60 * 1000).toISOString(),
+        participant: [{ actor: { reference: 'Patient/1', display: 'Homer Simpson' }, status: 'accepted' }],
+      });
+      // Under way: it started at `baseDate`, but has yet to end.
+      const current = createAppointment({
+        id: 'apt-current',
+        participant: [{ actor: { reference: 'Patient/2', display: 'Bob Jones' }, status: 'accepted' }],
+      });
+      vi.useFakeTimers({ toFake: ['Date'], now: baseDate.getTime() + 15 * 60 * 1000 });
+      try {
+        setup({ eventSources: [{ appointments: [ended, current], slots: [] }] });
+        expect(screen.getByText(/Homer Simpson/).closest('.appointment')).toHaveClass('past');
+        expect(screen.getByText(/Bob Jones/).closest('.appointment')).not.toHaveClass('past');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     test('renders "free" slots', async () => {
       const source = {
         schedule: DrAliceSmithSchedule,

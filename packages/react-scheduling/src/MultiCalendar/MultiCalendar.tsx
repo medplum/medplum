@@ -57,9 +57,10 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
       let colorName = source.color && Object.hasOwn(theme.colors, source.color) ? source.color : undefined;
       colorName ||= getSchedulingColor(source.schedule);
 
-      // Convert color name into a concrete color value we can pass to FullCalendar
-      const color = theme.colors[resolveThemeColor(theme, colorName, i)][7];
-      return { ...source, color };
+      // Convert color name into a concrete color value we can pass to FullCalendar, and a class
+      // that styles can pick the color out by.
+      const resolved = resolveThemeColor(theme, colorName, i);
+      return { ...source, color: theme.colors[resolved][7], className: `color-${resolved}` };
     });
   }, [sources, theme]);
 

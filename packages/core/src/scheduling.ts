@@ -97,6 +97,12 @@ export const SchedulingBookedByOperationURI =
 /** Extension URI marking which `Appointment.supportingInformation` entry is the site. */
 export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSite';
 
+/**
+ * This extension holds a `valueUrl` linking to the same `Appointment` in an external
+ * system, such as the scheduling system it is synced with.
+ */
+export const SchedulingExternalUrlURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingExternalUrl';
+
 /** Code system for `Appointment.participant.type`. */
 export const PARTICIPATION_TYPE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v3-ParticipationType`;
 
