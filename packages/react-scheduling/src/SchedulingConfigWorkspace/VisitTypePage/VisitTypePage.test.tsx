@@ -161,6 +161,22 @@ describe('VisitTypePage', () => {
     expect(getHealthcareServiceSchedulingParameterValues(lastSynced(onSynced))).toMatchObject({ duration: 45 });
   });
 
+  test("a stored color the calendar can't draw is shown as chosen, in the color the calendar draws instead", async () => {
+    const stored: HealthcareService = initialVisit;
+    await setup({
+      ...stored,
+      extension: [...(stored.extension ?? []), { url: SchedulingColorURI, valueString: '#228b22ff' }],
+    });
+    const swatchFill = (name: string): string | undefined =>
+      screen
+        .getByRole('radio', { name })
+        .querySelector<HTMLElement>('.mantine-ColorSwatch-colorOverlay')
+        ?.style.getPropertyValue('background-color');
+    expect(screen.getByRole('radio', { name: '#228b22ff' })).toBeChecked();
+    expect(swatchFill('#228b22ff')).toMatch(/^var\(--mantine-color-[a-z]+-7\)$/);
+    expect(swatchFill('#228b22ff')).toBe(swatchFill('Automatic'));
+  });
+
   test('a stored color outside the palette is shown as chosen, and Automatic takes it off', async () => {
     const stored: HealthcareService = initialVisit;
     const { onSynced } = await setup({

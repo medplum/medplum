@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { CheckIcon, ColorSwatch, getContrastColor, Group, Radio, Text, useMantineTheme } from '@mantine/core';
 import type { JSX } from 'react';
-import { FALLBACK_COLORS, fallbackColorIndex, resolveSchedulingColor } from '../../colors';
+import { colorFill, colorValue, FALLBACK_COLORS, fallbackColorIndex, resolveSchedulingColor } from '../../colors';
 
 export interface ServiceColorFieldProps {
-  /** The Mantine color the visit type names, or undefined to leave the calendar to pick one. */
+  /** The color the visit type names, a Mantine color or a hex code, or undefined to leave the calendar to pick one. */
   readonly value: string | undefined;
   readonly onChange: (value: string | undefined) => void;
   /** The visit type's reference, which the calendar picks its color from when it names none. Absent until saved. */
@@ -20,13 +20,16 @@ export interface ServiceColorFieldProps {
 export function ServiceColorField(props: ServiceColorFieldProps): JSX.Element {
   const { value, onChange, serviceReference } = props;
   const theme = useMantineTheme();
+  // The calendar picks a color by the visit type's reference when it names none, or one it can't draw. A new
+  // visit type has no reference yet, so the palette's first color stands in.
+  const fallbackIndex = serviceReference ? fallbackColorIndex(serviceReference) : 0;
   // Resolve the "automatic" color to display inside that button
-  const automaticColor =
-    serviceReference && resolveSchedulingColor(theme, undefined, fallbackColorIndex(serviceReference));
+  const automaticColor = serviceReference && resolveSchedulingColor(theme, undefined, fallbackIndex);
   // A color stored by another tool that the palette doesn't hold is offered too, so it isn't read as Automatic.
   const palette: readonly string[] = FALLBACK_COLORS;
   const colors = value && !palette.includes(value) ? [...palette, value] : palette;
-  const checkColor = (color: string): string => getContrastColor({ color: `${color}.7`, theme, autoContrast: true });
+  const checkColor = (color: string): string =>
+    getContrastColor({ color: colorValue(theme, color), theme, autoContrast: true });
 
   return (
     <Radio.Group
@@ -40,7 +43,7 @@ export function ServiceColorField(props: ServiceColorFieldProps): JSX.Element {
           <Group gap={6} wrap="nowrap">
             {automaticColor ? (
               <ColorSwatch
-                color={`var(--mantine-color-${automaticColor}-7)`}
+                color={colorFill(automaticColor)}
                 size={18}
                 withShadow={false}
                 c={checkColor(automaticColor)}
@@ -53,13 +56,17 @@ export function ServiceColorField(props: ServiceColorFieldProps): JSX.Element {
             <Text size="sm">Automatic</Text>
           </Group>
         </Radio.Card>
-        {colors.map((color) => (
-          <Radio.Card key={color} value={color} aria-label={color} w="auto" radius="xl" withBorder={false}>
-            <ColorSwatch color={`var(--mantine-color-${color}-7)`} size={28} withShadow={false} c={checkColor(color)}>
-              {value === color && <CheckIcon size={12} />}
-            </ColorSwatch>
-          </Radio.Card>
-        ))}
+        {colors.map((color) => {
+          // A stored color the calendar can't draw, such as another tool's, is shown as the calendar draws it.
+          const drawn = resolveSchedulingColor(theme, color, fallbackIndex);
+          return (
+            <Radio.Card key={color} value={color} aria-label={color} w="auto" radius="xl" withBorder={false}>
+              <ColorSwatch color={colorFill(drawn)} size={28} withShadow={false} c={checkColor(drawn)}>
+                {value === color && <CheckIcon size={12} />}
+              </ColorSwatch>
+            </Radio.Card>
+          );
+        })}
       </Group>
     </Radio.Group>
   );
