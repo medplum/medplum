@@ -1587,9 +1587,9 @@ export class Repository extends FhirRepository implements Disposable {
       }
 
       if (!this.context.skipBackgroundJobs) {
-        await addBackgroundJobs(resource, resource, {
-          project: await this.getProjectById(resource.meta?.project),
-          interaction: 'delete',
+        await this.postCommit(async () => {
+          const project = await this.getProjectById(resource.meta?.project);
+          await addBackgroundJobs(resource, resource, { project, interaction: 'delete' });
         });
       }
     } catch (err) {
