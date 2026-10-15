@@ -41,7 +41,8 @@ function updateAttributes(newUrl) {
   setAttribute('sidebar', onDocsPage ? 'open' : 'closed');
   setAttribute('docFooter', onDocsPage ? 'visible' : 'hidden');
 
-  const showToc = onDocsPage || pathname.startsWith('/blog/') || inSection(pathname, '/careers') || inSection(pathname, '/terms');
+  const showToc =
+    onDocsPage || pathname.startsWith('/blog/') || inSection(pathname, '/careers') || inSection(pathname, '/terms') || inSection(pathname, '/brand');
   setAttribute('toc', showToc ? 'visible' : 'hidden');
 
   const page = landingPages[pathname];

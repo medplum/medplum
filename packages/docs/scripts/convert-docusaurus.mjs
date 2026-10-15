@@ -30,6 +30,7 @@ const HAND_WRITTEN = [
   'blog/_index.md',
   'blog/archive.md',
   'blog/authors.md',
+  'brand/',
   'case-studies.md',
   'docs/api/fhir/_content.gotmpl',
   'docs/sdk/',
@@ -66,7 +67,7 @@ async function main() {
   const urlBySource = new Map(pages.map((p) => [p.sourcePath, p.url]));
 
   removeGeneratedContent();
-  for (const page of pages) {
+  for (const page of pages.filter((p) => !isHandWritten(p.destPath))) {
     writePage(page, urlBySource);
   }
   writeGeneratedIndexes(docusaurusRoot, pages);
@@ -170,12 +171,15 @@ function stripPage(destPath) {
 
 function removeGeneratedContent() {
   for (const file of walk(contentRoot)) {
-    const rel = toPosix(path.relative(contentRoot, file));
-    if (!HAND_WRITTEN.some((h) => (h.endsWith('/') ? rel.startsWith(h) : rel === h))) {
+    if (!isHandWritten(toPosix(path.relative(contentRoot, file)))) {
       fs.rmSync(file);
     }
   }
   removeEmptyDirs(contentRoot);
+}
+
+function isHandWritten(contentPath) {
+  return HAND_WRITTEN.some((h) => (h.endsWith('/') ? contentPath.startsWith(h) : contentPath === h));
 }
 
 function writePage(page, urlBySource) {

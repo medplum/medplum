@@ -1,0 +1,6 @@
+{{- /* Inlines an SVG from the page bundle so it can use currentColor. Params: src, width */ -}}
+{{- with .Page.Resources.Get (.Get "src") -}}
+  {{- .Content | replaceRE `^\s*(<\?xml[^>]*\?>\s*)?<svg` (printf `<svg width="%s"` ($.Get "width")) | safeHTML -}}
+{{- else -}}
+  {{- errorf "%s: inline-svg %q not found in the page bundle" .Position (.Get "src") -}}
+{{- end -}}

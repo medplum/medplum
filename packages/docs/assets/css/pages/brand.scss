@@ -1,0 +1,33 @@
+// /brand, ported from the Docusaurus brand.module.css
+.brand-container {
+  background-color: var(--oc-gray-4);
+  padding: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
+  margin-bottom: 64px;
+}
+
+.brand-logo-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 32px;
+  max-width: 100%;
+
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+.brand-color-card {
+  border-radius: 32px;
+  font-family: monospace;
+  padding: 32px;
+  width: 240px;
+  height: 160px;
+}
