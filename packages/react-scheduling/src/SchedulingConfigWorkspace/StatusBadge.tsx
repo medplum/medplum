@@ -6,14 +6,16 @@ import type { JSX } from 'react';
 /** Whether a visit type, or a provider, room, or device and its Schedule, can be booked. */
 export type ConfigStatus = 'active' | 'schedule-inactive' | 'inactive';
 
-const BADGES: Record<ConfigStatus, { readonly label: string; readonly color: string }> = {
+const BADGES: Record<ConfigStatus | 'new', { readonly label: string; readonly color: string }> = {
   active: { label: 'Active', color: 'green' },
   'schedule-inactive': { label: 'Schedule inactive', color: 'orange' },
   inactive: { label: 'Inactive', color: 'gray' },
+  new: { label: 'Not saved yet', color: 'blue' },
 };
 
 export interface StatusBadgeProps {
-  readonly status: ConfigStatus;
+  /** `new` for one being created. */
+  readonly status: ConfigStatus | 'new';
 }
 
 /**

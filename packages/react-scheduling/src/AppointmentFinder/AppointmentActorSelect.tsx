@@ -38,6 +38,11 @@ export interface AppointmentActorSelectProps {
   readonly required?: boolean;
   /** Whether to mark the field with an asterisk. Defaults to `required`. */
   readonly withAsterisk?: boolean;
+  /**
+   * The only schedules to offer, matched by name as the user types. Without these the
+   * server is searched for schedules offering `service`.
+   */
+  readonly candidates?: readonly ScheduleCandidate[];
 }
 
 /**
@@ -53,7 +58,7 @@ export interface AppointmentActorSelectProps {
  * @returns The field for one actor type.
  */
 export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.Element {
-  const { actorType, service, location, defaultValue, onChange, error, disabled } = props;
+  const { actorType, service, location, defaultValue, onChange, error, disabled, candidates } = props;
   const medplum = useMedplum();
   const resolvedService = useResource<HealthcareService>(service);
   const locationReference = location && getReferenceString(location);
@@ -63,16 +68,21 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
   const placeholder = props.placeholder ?? `Search ${lowercaseLabel}s`;
 
   const search = useCallback(
-    async (query: string, signal: AbortSignal): Promise<ScheduleCandidate[]> =>
-      resolvedService
+    async (query: string, signal: AbortSignal): Promise<ScheduleCandidate[]> => {
+      if (candidates) {
+        const needle = query.trim().toLowerCase();
+        return candidates.filter((candidate) => getCandidateDisplay(candidate).toLowerCase().includes(needle));
+      }
+      return resolvedService
         ? searchScheduleCandidates(medplum, resolvedService, {
             actorType,
             query,
             location: locationReference ? { reference: locationReference } : undefined,
             signal,
           })
-        : [],
-    [medplum, resolvedService, locationReference, actorType]
+        : [];
+    },
+    [medplum, resolvedService, locationReference, actorType, candidates]
   );
 
   const handleChange = useCallback((candidates: ScheduleCandidate[]) => onChange(candidates), [onChange]);

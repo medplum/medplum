@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, CloseButton, Group, Title, useMantineTheme } from '@mantine/core';
+import { Alert, CloseButton, Group, Tabs, Title, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
-  getExtensionValue,
+  extractServiceTypeReferences,
   getReferenceString,
   isDefined,
+  isResourceWithId,
   normalizeErrorString,
-  SchedulingScheduleColorURI,
 } from '@medplum/core';
-import type { Appointment, Extension, Location, Reference, Slot } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import type { Appointment, Extension, HealthcareService, Location, Reference, Slot } from '@medplum/fhirtypes';
+import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -22,12 +22,13 @@ import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.s
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
-import { fallbackColorIndex, resolveThemeColor } from '../colors';
+import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
 import type { DateTimeRange } from '../types';
 import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
+import { BlockTimeForm } from './BlockTimeForm/BlockTimeForm';
 import type { CalendarFilterValues } from './CalendarFilters';
 import { CalendarFilters } from './CalendarFilters';
 import type { ServiceTypeLegendItem } from './CalendarLegend';
@@ -37,13 +38,15 @@ import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
 import { getCalendarTimezones, groupAppointmentsByService } from './SchedulingWorkspace.utils';
+import { SlotDetails } from './SlotDetails';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
+type PaneTab = 'appointment' | 'block';
 
 const NO_CANDIDATES: CandidatesByActorType = { Practitioner: [], Location: [], Device: [] };
 
-const EMPTY_COLOR_INDEXES: ReadonlyMap<string, number> = new Map();
+const NO_SERVICES: ReadonlyMap<string, HealthcareService | undefined> = new Map();
 
 const NO_FILTERS: CalendarFilterValues = {};
 
@@ -52,6 +55,14 @@ const NONE_DESELECTED: DeselectedIdsByActorType = {
   Location: new Set(),
   Device: new Set(),
 };
+
+const RESOURCE_OPTIONS = {
+  // "free" Slots are left out: they are easy to misinterpret as being the _only_
+  // bookable times. "entered-in-error" status slots are also not shown here.
+  slotStatuses: ['busy', 'busy-unavailable', 'busy-tentative'],
+  // Cancelled and entered-in-error appointments are not displayed here.
+  appointmentStatuses: ['proposed', 'pending', 'booked', 'arrived', 'fulfilled', 'noshow', 'checked-in', 'waitlist'],
+} as const;
 
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
@@ -62,6 +73,8 @@ export interface SchedulingWorkspaceProps {
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
+  /** Called with the Slots written when time is blocked from the pane's Block tab. */
+  readonly onBlocked?: (slots: WithId<Slot>[]) => void | Promise<void>;
   readonly onCancelled?: (appointment: WithId<Appointment>) => void | Promise<void>;
   readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
   /** Called with the appointment as written, after its patient or its visit type's codes are edited. */
@@ -103,19 +116,24 @@ export interface SchedulingWorkspaceProps {
 /**
  * A data-coordination component pairing `CalendarsPanel` with {@link MultiCalendar}.
  *
- * - Picks a color for each Schedule so that it can render consistently across
- *   those components.
  * - Draws each appointment once, however many of the calendars on show it is held on,
- *   in the color of its service type, picked by hashing the HealthcareService's reference.
- *   A legend below the calendar keys those colors.
+ *   in the color of its service type: the one its HealthcareService names, or else one
+ *   picked by hashing the HealthcareService's reference. A service type's appointments are
+ *   drawn once its HealthcareService has been read, so none is repainted as it arrives;
+ *   until then, the Slots they hold show as blocked time. A legend below the calendar keys those colors.
  * - Books from the calendar: clicking open time opens {@link AppointmentBookingForm}
  *   in a pane on the right, with its time search opened on the day that was clicked.
  *   The form writes the booking and announces what it wrote, which is what puts the
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
+ * - Blocks time from the calendar: the same pane has a Block tab, writing a `busy` Slot
+ *   over the time on each calendar the user names, reported through `onBlocked`.
  * - Shows what is booked: clicking an appointment opens `AppointmentDetails` in the
  *   same pane the booking form uses, describing the visit and offering to cancel or
  *   reschedule it.
+ * - Shows blocked time: clicking a Slot opens `SlotDetails` in that same pane, saying
+ *   whose time it holds, when, and why, and offering to edit its time and comment or
+ *   delete it.
  * - Highlights the time last chosen, wherever it was chosen: the click that opened the
  *   pane, then whatever the form's time search settles on, and nothing while the form
  *   holds no time. The calendar is never moved to reach it — a highlight off the week
@@ -132,6 +150,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     diagnosisBinding,
     mrnSystem,
     onBooked,
+    onBlocked,
     appointmentCancellationReasonValueSet,
     canBypassSchedulingRules,
     appointmentExtensions,
@@ -144,7 +163,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const [candidatesByActorType, setCandidatesByActorType] = useState<CandidatesByActorType>(NO_CANDIDATES);
   const [candidatesLoading, setCandidatesLoading] = useState(false);
-  const [colorIndexes, setColorIndexes] = useState<ReadonlyMap<string, number>>(EMPTY_COLOR_INDEXES);
 
   const [deselectedIds, setDeselectedIds] = useState<DeselectedIdsByActorType>(NONE_DESELECTED);
 
@@ -158,10 +176,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // What was selected
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>();
+  const [selectedAppointment, setSelectedAppointment] = useState<WithId<Appointment>>();
+  const [selectedSlotId, setSelectedSlotId] = useState<string>();
 
-  // What the calendar highlights
+  const [paneTab, setPaneTab] = useState<PaneTab>('appointment');
+
+  // What the calendar highlights, one per pane tab: a hidden tab's form still reports its time
   const [highlight, setHighlight] = useState<DateTimeRange>();
+  const [blockHighlight, setBlockHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
   const [rescheduleFinderOpen, setRescheduleFinderOpen] = useState(false);
 
@@ -188,7 +210,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       .then((results) => {
         if (!controller.signal.aborted) {
           setSchedulesLoadingError(undefined);
-          setColorIndexes((previous) => numberNewCandidates(previous, results));
           setCandidatesByActorType(Object.fromEntries(results) as CandidatesByActorType);
         }
       })
@@ -205,23 +226,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     return () => controller.abort();
   }, [medplum, selectedService, selectedLocation]);
 
-  // Every candidate across all the bookable types gets its own color, shared between its
-  // CalendarsPanel row and its MultiCalendar source so the two always match. The fallback
-  // palette is picked by the number the calendar was given when it was first offered, so a
-  // filter narrowing the list leaves the colors of the calendars it keeps alone.
-  const colorByScheduleId = useMemo(() => {
-    const all = BOOKABLE_ACTOR_TYPES.flatMap((actorType) => candidatesByActorType[actorType]);
-    const map = new Map<string, keyof typeof theme.colors>();
-    for (const candidate of all) {
-      const extensionColor = getExtensionValue(candidate.schedule, SchedulingScheduleColorURI) as string | undefined;
-      map.set(
-        candidate.schedule.id,
-        resolveThemeColor(theme, extensionColor, colorIndexes.get(candidate.schedule.id) ?? 0)
-      );
-    }
-    return map;
-  }, [candidatesByActorType, colorIndexes, theme]);
-
   const activeCandidates = useMemo(() => {
     return BOOKABLE_ACTOR_TYPES.flatMap((actorType) =>
       candidatesByActorType[actorType].filter((c) => !deselectedIds[actorType].has(c.schedule.id))
@@ -234,41 +238,49 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     appointments,
     loading: resourcesLoading,
     error: resourcesError,
-  } = useSchedulingResources(schedules, range);
+  } = useSchedulingResources(schedules, range, RESOURCE_OPTIONS);
+  const services = useAppointmentServices(appointments);
 
-  const { sources, serviceTypes } = useMemo(() => {
+  const { sources, serviceTypes, servicesPending } = useMemo(() => {
+    const isSettled = (reference: string): boolean =>
+      services.has(reference) || medplum.getCachedReference({ reference }) !== undefined;
+    // The color the HealthcareService names, or else one picked by its reference, so it holds
+    // whichever week is on show, for everyone, and as other service types come and go.
+    const serviceColor = (reference: string): keyof typeof theme.colors => {
+      const service = services.get(reference) ?? medplum.getCachedReference<HealthcareService>({ reference });
+      return resolveThemeColor(theme, getSchedulingColor(service), fallbackColorIndex(reference));
+    };
     const actorsOnShow = new Set(
       activeCandidates
         .flatMap((candidate) => candidate.schedule.actor.map((actor) => actor.reference))
         .filter(isDefined)
     );
-    const visibleAppointments = (appointments ?? []).filter(
-      (appointment) =>
-        appointment.status !== 'cancelled' &&
-        appointment.participant.some(
-          (participant) => participant.actor?.reference && actorsOnShow.has(participant.actor.reference)
-        )
+    const visibleAppointments = (appointments ?? []).filter((appointment) =>
+      appointment.participant.some(
+        (participant) => participant.actor?.reference && actorsOnShow.has(participant.actor.reference)
+      )
     );
+    const allGroups = Array.from(groupAppointmentsByService(visibleAppointments));
+    // Held back until the service is read, or has failed to be, rather than drawn in one color
+    // and then repainted in the one it names.
+    const groups = allGroups
+      .filter(([reference]) => !reference || isSettled(reference))
+      .map(([reference, group]) => ({ reference, group, color: reference ? serviceColor(reference) : 'gray' }));
     // Appointments are drawn by service type rather than on the calendars they are held on,
     // so the Slots they hold have to be cleared here: a source only clears the ones behind
-    // its own appointments.
-    const openSlots = filterBookedSlots(slots ?? [], visibleAppointments);
+    // its own appointments. A held-back appointment's Slots stay, so its time isn't shown as free.
+    const openSlots = filterBookedSlots(
+      slots ?? [],
+      groups.flatMap(({ group }) => group)
+    );
     const calendarSources = activeCandidates.map((candidate): MultiCalendarSource => {
       const scheduleReference = getReferenceString(candidate.schedule);
       return {
         schedule: candidate.schedule,
-        color: colorByScheduleId.get(candidate.schedule.id),
         slots: openSlots.filter((slot: Slot) => slot.schedule?.reference === scheduleReference),
         appointments: [],
       };
     });
-    const groups = Array.from(groupAppointmentsByService(visibleAppointments), ([reference, group]) => ({
-      reference,
-      group,
-      // Picked by the service type's reference, so its color holds whichever week is on show,
-      // for everyone, and as other service types come and go.
-      color: reference ? resolveThemeColor(theme, undefined, fallbackColorIndex(reference)) : 'gray',
-    }));
     const serviceSources = groups.map(({ group, color }): MultiCalendarSource => ({
       color,
       slots: [],
@@ -284,20 +296,27 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       // By reference, so the order holds from week to week; the names load only as the legend
       // shows them. The appointments naming no service type go last.
       .sort((a, b) => Number(a.id === 'none') - Number(b.id === 'none') || a.id.localeCompare(b.id));
-    return { sources: [...calendarSources, ...serviceSources], serviceTypes: legend };
-  }, [activeCandidates, slots, appointments, colorByScheduleId, theme]);
+    return {
+      sources: [...calendarSources, ...serviceSources],
+      serviceTypes: legend,
+      servicesPending: groups.length < allGroups.length,
+    };
+  }, [activeCandidates, slots, appointments, services, medplum, theme]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
   const startBooking = useCallback((interval: DateTimeRange): void => {
-    setSelectedAppointmentId(undefined);
+    setSelectedAppointment(undefined);
+    setSelectedSlotId(undefined);
     setBookingSelection(interval);
     setHighlight(interval);
+    setBlockHighlight(interval);
   }, []);
 
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
     setHighlight(undefined);
+    setBlockHighlight(undefined);
     setTimeFinderOpen(false);
   }, []);
 
@@ -315,43 +334,85 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     [closeBooking, onBooked]
   );
 
+  const finishBlock = useCallback(
+    (slots: WithId<Slot>[]): void | Promise<void> => {
+      closeBooking();
+      return onBlocked?.(slots);
+    },
+    [closeBooking, onBlocked]
+  );
+
   const selectAppointment = useCallback(
     (appointment: Appointment): void => {
-      if (appointment.id) {
-        if (appointment.id !== selectedAppointmentId) {
+      if (isResourceWithId(appointment)) {
+        if (appointment.id !== selectedAppointment?.id) {
           setRescheduleFinderOpen(false);
         }
         closeBooking();
-        setSelectedAppointmentId(appointment.id);
+        setSelectedSlotId(undefined);
+        setSelectedAppointment(appointment);
       }
     },
-    [closeBooking, selectedAppointmentId]
+    [closeBooking, selectedAppointment?.id]
   );
 
   const closeAppointment = useCallback((): void => {
-    setSelectedAppointmentId(undefined);
+    setSelectedAppointment(undefined);
     setRescheduleFinderOpen(false);
   }, []);
 
+  const selectSlot = useCallback(
+    (slot: Slot): void => {
+      if (slot.id) {
+        closeBooking();
+        closeAppointment();
+        setSelectedSlotId(slot.id);
+      }
+    },
+    [closeBooking, closeAppointment]
+  );
+
+  // The open appointment is held apart from the calendar's, so that a visit cancelled from
+  // its pane stays open, showing it cancelled, once the calendar stops loading it.
+  useResourceModified('Appointment', (event) => {
+    if (!selectedAppointment || event.id !== selectedAppointment.id) {
+      return;
+    }
+    if (event.operation === 'delete') {
+      closeAppointment();
+    } else if (event.resource) {
+      setSelectedAppointment(event.resource);
+    }
+  });
+
   const openAppointment = useMemo((): WithId<Appointment> | undefined => {
-    if (selectedAppointmentId) {
-      return (appointments ?? []).find((a) => a.id === selectedAppointmentId);
+    if (!selectedAppointment) {
+      return undefined;
+    }
+    const loaded = appointments?.find((a) => a.id === selectedAppointment.id);
+    // One that left the calendar some other way, by paging or by hiding its calendars,
+    // closes with it.
+    const statuses: readonly string[] = RESOURCE_OPTIONS.appointmentStatuses;
+    return loaded ?? (statuses.includes(selectedAppointment.status) ? undefined : selectedAppointment);
+  }, [appointments, selectedAppointment]);
+
+  const openSlot = useMemo((): WithId<Slot> | undefined => {
+    if (selectedSlotId) {
+      return (slots ?? []).find((s) => s.id === selectedSlotId);
     }
     return undefined;
-  }, [appointments, selectedAppointmentId]);
+  }, [slots, selectedSlotId]);
+  // A Slot that leaves the calendar, by paging, hiding its calendar, or deletion, closes for good
+  // rather than reopening when it is loaded again.
+  if (selectedSlotId && slots && !openSlot) {
+    setSelectedSlotId(undefined);
+  }
 
-  const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => {
-    const color = colorByScheduleId.get(candidate.schedule.id);
-    if (!color) {
-      throw new Error('Got candidate without resolved color');
-    }
-    return {
-      id: candidate.schedule.id,
-      label: getCandidateDisplay(candidate),
-      color,
-      selected,
-    };
-  };
+  const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => ({
+    id: candidate.schedule.id,
+    label: getCandidateDisplay(candidate),
+    selected,
+  });
 
   const panelItems = Object.fromEntries(
     BOOKABLE_ACTOR_TYPES.map((actorType) => [
@@ -362,9 +423,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const displayError = resourcesError ?? schedulesLoadingError;
 
-  // The pane beside the calendar shows one thing at a time. Opening either side already
-  // closes the other, so this only decides which wins if they ever both hold something.
-  const showBooking = bookingSelection !== undefined && openAppointment === undefined;
+  // The pane beside the calendar shows one thing at a time. Opening any of them already
+  // closes the others, so this only decides which wins if they ever hold something together.
+  const showSlot = openSlot !== undefined && openAppointment === undefined;
+  const showBooking = bookingSelection !== undefined && openAppointment === undefined && openSlot === undefined;
+  const blocking = showBooking && paneTab === 'block';
 
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
@@ -386,10 +449,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           className={classes.multiCalendar}
           sources={sources}
           onRangeChange={setRange}
-          loading={resourcesLoading}
+          loading={resourcesLoading || servicesPending}
           onSelectInterval={startBooking}
           onSelectAppointment={selectAppointment}
-          selection={highlight}
+          onSelectSlot={selectSlot}
+          selection={blocking ? blockHighlight : highlight}
+          selectedId={openAppointment?.id ?? openSlot?.id}
         />
         <div className={classes.footer}>
           <CalendarTimezoneNotice timezones={timezones} anyUnknown={anyUnknown} />
@@ -420,27 +485,56 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           />
         </section>
       )}
-      {showBooking && (
-        <section className={cx(classes.pane, { [classes.paneWide]: timeFinderOpen })} aria-label="Book appointment">
+      {showSlot && (
+        <section key={openSlot.id} className={classes.pane} aria-label="Blocked time details">
           <Group justify="space-between" wrap="nowrap" mb="sm">
-            <Title order={4}>Book appointment</Title>
+            <Title order={4}>Blocked time</Title>
+            <CloseButton aria-label="Close blocked time details" onClick={() => setSelectedSlotId(undefined)} />
+          </Group>
+          <SlotDetails slot={openSlot} />
+        </section>
+      )}
+      {showBooking && (
+        <section
+          className={cx(classes.pane, { [classes.paneWide]: timeFinderOpen && !blocking })}
+          aria-label="Book appointment"
+        >
+          <Group justify="space-between" wrap="nowrap" mb="sm">
+            <Title order={4}>{blocking ? 'Block time' : 'Book appointment'}</Title>
             <CloseButton aria-label="Close booking form" onClick={closeBooking} />
           </Group>
-          <AppointmentBookingForm
-            key={bookingSelection.start.toDateString()}
-            defaultStart={bookingSelection.start}
-            procedureBinding={procedureBinding}
-            diagnosisBinding={diagnosisBinding}
-            mrnSystem={mrnSystem}
-            canBypassSchedulingRules={canBypassSchedulingRules}
-            appointmentExtensions={appointmentExtensions}
-            allowRecurring
-            onToggleTimeFinder={setTimeFinderOpen}
-            onChangeTime={setHighlight}
-            onBooked={finishBooking}
-            defaultLocation={selectedLocation}
-            defaultService={selectedService}
-          />
+          {/* Both panels stay mounted, so switching tabs loses nothing typed into either. */}
+          <Tabs value={paneTab} onChange={(value) => setPaneTab(value as PaneTab)}>
+            <Tabs.List mb="sm">
+              <Tabs.Tab value="appointment">Appointment</Tabs.Tab>
+              <Tabs.Tab value="block">Block</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="appointment">
+              <AppointmentBookingForm
+                key={bookingSelection.start.toDateString()}
+                defaultStart={bookingSelection.start}
+                procedureBinding={procedureBinding}
+                diagnosisBinding={diagnosisBinding}
+                mrnSystem={mrnSystem}
+                canBypassSchedulingRules={canBypassSchedulingRules}
+                appointmentExtensions={appointmentExtensions}
+                allowRecurring
+                onToggleTimeFinder={setTimeFinderOpen}
+                onChangeTime={setHighlight}
+                onBooked={finishBooking}
+                defaultLocation={selectedLocation}
+                defaultService={selectedService}
+              />
+            </Tabs.Panel>
+            <Tabs.Panel value="block">
+              <BlockTimeForm
+                candidatesByActorType={candidatesByActorType}
+                defaultRange={bookingSelection}
+                onChangeTime={setBlockHighlight}
+                onBlocked={finishBlock}
+              />
+            </Tabs.Panel>
+          </Tabs>
         </section>
       )}
     </div>
@@ -448,31 +542,52 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 }
 
 /**
- * Gives every calendar not yet numbered the next number, keeping the number the rest hold.
+ * Reads the HealthcareServices the appointments are for. We use
+ * `HealthcareService.name` to title events, and read an extension
+ * (see SchedulingColorURI) to choose a color to draw the event in.
  *
- * The number picks a calendar's fallback color, so it has to outlive the list a filter
- * narrows: numbering by position in that list would repaint every calendar surviving the
- * filter. Numbers run in the order calendars were first offered, which holds for as long
- * as the workspace is open.
- *
- * @param previous - The numbers already given out.
- * @param results - The candidates that just arrived, by actor type.
- * @returns The numbers, extended for whatever is new, or `previous` when nothing is.
+ * @param appointments - The appointments on the calendar.
+ * @returns The services whose reads have settled, by reference: undefined for one that could
+ * not be read.
  */
-function numberNewCandidates(
-  previous: ReadonlyMap<string, number>,
-  results: readonly (readonly [BookableActorType, ScheduleCandidate[]])[]
-): ReadonlyMap<string, number> {
-  let next: Map<string, number> | undefined;
-  for (const [, candidates] of results) {
-    for (const candidate of candidates) {
-      if (!previous.has(candidate.schedule.id)) {
-        next ??= new Map(previous);
-        next.set(candidate.schedule.id, next.size);
-      }
+function useAppointmentServices(
+  appointments: readonly Appointment[] | undefined
+): ReadonlyMap<string, HealthcareService | undefined> {
+  const medplum = useMedplum();
+  const [services, setServices] = useState(NO_SERVICES);
+
+  // A string, so the effect below runs only when the references themselves change.
+  const referencesKey = useMemo(() => {
+    const references = new Set(
+      (appointments ?? []).map((a) => extractServiceTypeReferences(a.serviceType)[0]?.reference).filter(isDefined)
+    );
+    return [...references].sort((a, b) => a.localeCompare(b)).join(',');
+  }, [appointments]);
+
+  useEffect(() => {
+    if (!referencesKey) {
+      return;
     }
-  }
-  return next ?? previous;
+    // No abort signal: these reads are shared, through the client's cache, with the event
+    // titles, which would fail along with them. A late result is still worth keeping.
+    // Each settles on its own, so one slow read doesn't hold back the other service types.
+    const settle = (reference: string, read: HealthcareService | undefined): void =>
+      setServices((previous) => {
+        // A failed read settles the service without forgetting one read before.
+        const service = read ?? previous.get(reference);
+        return previous.has(reference) && previous.get(reference) === service
+          ? previous
+          : new Map(previous).set(reference, service);
+      });
+    for (const reference of referencesKey.split(',')) {
+      medplum
+        .readReference<HealthcareService>({ reference })
+        .then((service) => settle(reference, service))
+        .catch(() => settle(reference, undefined));
+    }
+  }, [medplum, referencesKey]);
+
+  return services;
 }
 
 function toggleId(ids: ReadonlySet<string>, id: string): Set<string> {

@@ -12,6 +12,8 @@ export interface ConfigChange<T extends Resource = Resource> {
   readonly draft: T;
   /** For one being created, a search that finds it if it was created elsewhere meanwhile, which is then left alone. */
   readonly ifNoneExist?: string;
+  /** For one being created, the `urn:uuid` that other changes in the same save reference it by. */
+  readonly fullUrl?: string;
 }
 
 export interface ConfigSaveFailure {
@@ -90,9 +92,10 @@ export async function saveConfigChanges(
 }
 
 function toEntry(change: ConfigChange): BundleEntry {
-  const { stored, draft, ifNoneExist } = change;
+  const { stored, draft, ifNoneExist, fullUrl } = change;
   if (!stored) {
     return {
+      ...(fullUrl && { fullUrl }),
       resource: draft,
       request: { method: 'POST', url: draft.resourceType, ...(ifNoneExist && { ifNoneExist }) },
     };

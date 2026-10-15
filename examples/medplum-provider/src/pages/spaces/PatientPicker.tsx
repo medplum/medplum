@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Center, Loader, Menu, Stack, Text, TextInput, Tooltip } from '@mantine/core';
-import { useDebouncedCallback } from '@mantine/hooks';
+import { useDebouncedValue } from '@mantine/hooks';
 import { getDisplayString } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { ResourceAvatar, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 
 const MAX_RESULTS = 5;
@@ -18,38 +18,38 @@ export interface PatientPickerProps {
 export function PatientPicker({ onSelect }: PatientPickerProps): JSX.Element {
   const medplum = useMedplum();
   const [search, setSearch] = useState('');
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadPatients = useCallback(
-    async (query: string) => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams();
-        params.set('_sort', '-_lastUpdated');
-        params.set('_count', String(MAX_RESULTS));
-        const trimmed = query.trim();
-        if (trimmed) {
-          params.set('name', trimmed);
-        }
-        const results = await medplum.searchResources('Patient', params);
-        setPatients(results);
-      } catch (err) {
-        showErrorNotification(err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [medplum]
-  );
-
-  const debouncedLoadPatients = useDebouncedCallback((query: string) => {
-    loadPatients(query).catch(() => undefined);
-  }, 300);
+  const [debouncedSearch] = useDebouncedValue(search, 300);
+  const [results, setResults] = useState<{ query: string; patients: Patient[] }>();
+  const loading = results?.query !== debouncedSearch;
+  const patients = results?.patients ?? [];
 
   useEffect(() => {
-    debouncedLoadPatients(search);
-  }, [search, loadPatients, debouncedLoadPatients]);
+    // A slow response from an earlier query must not overwrite the current results
+    let active = true;
+    const params = new URLSearchParams();
+    params.set('_sort', '-_lastUpdated');
+    params.set('_count', String(MAX_RESULTS));
+    const trimmed = debouncedSearch.trim();
+    if (trimmed) {
+      params.set('name', trimmed);
+    }
+    medplum
+      .searchResources('Patient', params)
+      .then((patients) => {
+        if (active) {
+          setResults({ query: debouncedSearch, patients });
+        }
+      })
+      .catch((err) => {
+        showErrorNotification(err);
+        if (active) {
+          setResults({ query: debouncedSearch, patients: [] });
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [debouncedSearch, medplum]);
 
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => {

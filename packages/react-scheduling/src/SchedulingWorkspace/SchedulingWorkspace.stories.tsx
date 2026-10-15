@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
+import { SchedulingColorURI } from '@medplum/core';
 import type { Appointment, Location, Reference } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent } from '@tabler/icons-react';
@@ -25,6 +26,7 @@ import {
   PatientFixtures,
   PROCEDURE_VALUE_SET,
   SchedulingFixtures,
+  TelehealthService,
 } from '../stories/scheduling';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
@@ -44,8 +46,18 @@ const ELSEWHERE_FIXTURES = [
   ...AppointmentPatientFixtures,
 ];
 
-/** The same clinic, moved onto whatever clock the reader is on. */
-const LOCAL_FIXTURES = inViewerTimezone(ELSEWHERE_FIXTURES);
+/**
+ * The same clinic, moved onto whatever clock the reader is on, with Telehealth Consult naming the
+ * color it is drawn in.
+ */
+const LOCAL_FIXTURES = inViewerTimezone(ELSEWHERE_FIXTURES).map((resource) =>
+  resource.resourceType === 'HealthcareService' && resource.id === TelehealthService.id
+    ? {
+        ...resource,
+        extension: [...(resource.extension ?? []), { url: SchedulingColorURI, valueString: 'grape' }],
+      }
+    : resource
+);
 
 // Fixtures are per story rather than shared here: the two stories differ in nothing but
 // the zones theirs declare, and a set installed for both would decide that for both.
@@ -112,6 +124,19 @@ export default {
  * and find a time and its own hour is offered again, since the search is told to ignore
  * the visit being moved. Move it and the drawer goes back to the details, with the event
  * redrawn at its new time behind them.
+ *
+ * Blocked time opens in that pane too: click Exam Room A's "Blocked" block on Thursday to
+ * see whose time it holds, when, and why. "Edit" moves it or changes its notes, and
+ * "Delete" takes it off the calendar.
+ *
+ * Eliana Garcia's Tuesday telehealth visit with Dr. Brown is the second of three, weekly, and is
+ * marked as recurring; page a week back or forward for the first and third.
+ *
+ * Appointments are colored by visit type. Telehealth Consult names its color, grape, on its
+ * HealthcareService; the others are given one picked from their reference.
+ *
+ * Monday morning's visits ended before the pinned "now" (12:05 that day), so they are drawn
+ * faded: an imaging visit that was seen, and a telehealth visit the patient missed.
  *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled

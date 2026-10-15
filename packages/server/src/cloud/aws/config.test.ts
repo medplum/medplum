@@ -84,4 +84,42 @@ describe('Config', () => {
       })
     ).toHaveLength(1);
   });
+
+  test('Loads shard database secrets and typed shard parameters', async () => {
+    mockSSMClient.on(GetParametersByPathCommand).resolves({
+      Parameters: [
+        { Name: 'baseUrl', Value: 'https://www.example.com/' },
+        { Name: 'shards.shard-1.DatabaseSecrets', Value: 'ShardDatabaseSecretsArn' },
+        { Name: 'shards.shard-1.ReaderDatabaseSecrets', Value: 'ShardReaderSecretsArn' },
+        { Name: 'shards.shard-1.isDefaultShard', Value: 'false' },
+        { Name: 'shards.shard-1.database.ssl.require', Value: 'true' },
+      ],
+    });
+    mockSecretsManagerClient
+      .on(GetSecretValueCommand, { SecretId: 'ShardDatabaseSecretsArn' })
+      .resolves({ SecretString: JSON.stringify({ host: 'writer', dbname: 'medplum', port: 5432 }) })
+      .on(GetSecretValueCommand, { SecretId: 'ShardReaderSecretsArn' })
+      .resolves({ SecretString: JSON.stringify({ host: 'reader', dbname: 'medplum', port: 5432 }) });
+
+    const config = await loadConfig('aws:test');
+    const shard = config.shards?.['shard-1'];
+    assert(shard);
+    expect(shard.isDefaultShard).toBe(false);
+    expect(shard.database).toStrictEqual({ host: 'writer', dbname: 'medplum', port: 5432, ssl: { require: true } });
+    expect(shard.readonlyDatabase).toStrictEqual({ host: 'reader', dbname: 'medplum', port: 5432 });
+    expect(shard.id).toBe('shard-1');
+  });
+
+  test('Rejects shard secrets with a malformed shard ID', async () => {
+    mockSSMClient.on(GetParametersByPathCommand).resolves({
+      Parameters: [
+        { Name: 'baseUrl', Value: 'https://www.example.com/' },
+        { Name: 'shards.Shard_1.DatabaseSecrets', Value: 'ShardDatabaseSecretsArn' },
+      ],
+    });
+    await expect(loadConfig('aws:test')).rejects.toThrow(
+      'Invalid shard ID in parameter shards.Shard_1.DatabaseSecrets'
+    );
+    expect(mockSecretsManagerClient.commandCalls(GetSecretValueCommand)).toHaveLength(0);
+  });
 });

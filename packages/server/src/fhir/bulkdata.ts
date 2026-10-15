@@ -1,6 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, flatMapFilter, isNotFound, notFound, OperationOutcomeError, singularize } from '@medplum/core';
+import {
+  badRequest,
+  ContentType,
+  flatMapFilter,
+  isNotFound,
+  notFound,
+  OperationOutcomeError,
+  singularize,
+} from '@medplum/core';
 import type { AsyncJob, BulkDataExport } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
@@ -38,6 +46,9 @@ bulkDataRouter.get('/export/:id', async (req: Request, res: Response) => {
 
   if (bulkDataExport.status === 'cancelled') {
     res.status(404).json(notFound);
+    return;
+  } else if (bulkDataExport.status === 'error') {
+    res.status(400).json(badRequest('Bulk export failed'));
     return;
   } else if (bulkDataExport.status !== 'completed') {
     res.status(202).end();

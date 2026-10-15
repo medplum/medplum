@@ -27,7 +27,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
-import { LOCATION_SEARCH_CRITERIA } from '../constants';
+import { SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
@@ -627,7 +627,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           name="location"
           label="Location"
           placeholder="Any location"
-          searchCriteria={LOCATION_SEARCH_CRITERIA}
+          searchCriteria={SERVICE_FACILITY_SEARCH_CRITERIA}
           defaultValue={defaultLocation as WithId<Location> | Reference<WithId<Location>> | undefined}
           onChange={chooseLocation}
           clearable={false}

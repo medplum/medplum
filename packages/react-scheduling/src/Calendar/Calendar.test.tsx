@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { createReference } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { describe, expect, test } from 'vitest';
-import { render, screen } from '../test-utils/render';
+import { renderWithMedplum, screen } from '../test-utils/render';
 import { Calendar } from './Calendar';
 
 describe('Calendar', () => {
@@ -21,10 +23,7 @@ describe('Calendar', () => {
         end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
         participant: [
           {
-            actor: {
-              reference: 'Patient/123',
-              display: 'John Doe',
-            },
+            actor: createReference(HomerSimpson),
             status: 'accepted',
           },
           {
@@ -80,8 +79,8 @@ describe('Calendar', () => {
       },
     ];
 
-    render(<Calendar slots={slots} appointments={appointments} />);
-    expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+    renderWithMedplum(<Calendar slots={slots} appointments={appointments} />, new MockClient());
+    expect(screen.getByText(/Homer Simpson/)).toBeInTheDocument();
     expect(screen.getByText(/Jane Williams/)).toBeInTheDocument();
     expect(screen.getByText(/Available/)).toBeInTheDocument();
     expect(screen.getByText(/Blocked/)).toBeInTheDocument();

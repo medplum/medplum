@@ -25,6 +25,7 @@ import request from 'supertest';
 import { inviteUser } from '../../admin/invite';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
+import { clearBotAccessTokenCache } from '../../bots/utils';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import * as oathKeysModule from '../../oauth/keys';
 import { getLoginForAccessToken } from '../../oauth/utils';
@@ -879,6 +880,7 @@ describe('Execute', () => {
       ['systemEchoBot', 'linking'],
       ['systemEchoBot', 'own'],
     ])('Bot %s in %s project executes with correct accessToken', async (botName, whichProject) => {
+      clearBotAccessTokenCache();
       const generateAccessTokenSpy = vi.spyOn(oathKeysModule, 'generateAccessToken');
       generateAccessTokenSpy.mockClear();
 

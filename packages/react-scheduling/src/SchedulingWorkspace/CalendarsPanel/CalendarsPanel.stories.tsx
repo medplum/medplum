@@ -23,19 +23,19 @@ type PanelItems = Record<BookableActorType, CalendarsPanelItem[]>;
 // Every section is multi-select: any subset may be selected/visible.
 const items: PanelItems = {
   Practitioner: [
-    { id: 'prov-1', label: 'Lisa Caddy', color: 'indigo' },
-    { id: 'prov-2', label: 'Michelle Bryant', color: 'teal' },
-    { id: 'prov-3', label: 'Gerald Miller', color: 'pink' },
-    { id: 'prov-4', label: 'Tomas Erikson', color: 'violet' },
+    { id: 'prov-1', label: 'Lisa Caddy' },
+    { id: 'prov-2', label: 'Michelle Bryant' },
+    { id: 'prov-3', label: 'Gerald Miller' },
+    { id: 'prov-4', label: 'Tomas Erikson' },
   ],
   Device: [
-    { id: 'dev-1', label: 'Ultrasound Machine 1', color: 'blue' },
-    { id: 'dev-2', label: 'Ultrasound Machine 2', color: 'cyan' },
+    { id: 'dev-1', label: 'Ultrasound Machine 1' },
+    { id: 'dev-2', label: 'Ultrasound Machine 2' },
   ],
   Location: [
-    { id: 'room-1', label: 'Exam Room A', color: 'lime' },
-    { id: 'room-2', label: 'Exam Room B', color: 'red' },
-    { id: 'room-3', label: 'Exam Room C', color: 'yellow' },
+    { id: 'room-1', label: 'Exam Room A' },
+    { id: 'room-2', label: 'Exam Room B' },
+    { id: 'room-3', label: 'Exam Room C' },
   ],
 };
 

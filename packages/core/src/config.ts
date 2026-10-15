@@ -97,6 +97,8 @@ export interface MedplumSourceInfraConfig {
   guardDutyMalwareProtectionEnabled?: ValueOrExternalSecret<boolean>;
   /** With guardDutyMalwareProtectionEnabled, scan only via Binary $scan, and only block Binaries with threats found. */
   guardDutyMalwareProtectionOnDemandOnly?: ValueOrExternalSecret<boolean>;
+  /** Delete bot inputs written by the server's `storeBotInput` setting (`bot/` prefix) after this many days. */
+  storageBotInputExpirationDays?: ValueOrExternalSecret<number>;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanEnabled?: ValueOrExternalSecret<boolean>;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
@@ -272,6 +274,8 @@ export interface MedplumInfraConfig {
   guardDutyMalwareProtectionEnabled?: boolean;
   /** With guardDutyMalwareProtectionEnabled, scan only via Binary $scan, and only block Binaries with threats found. */
   guardDutyMalwareProtectionOnDemandOnly?: boolean;
+  /** Delete bot inputs written by the server's `storeBotInput` setting (`bot/` prefix) after this many days. */
+  storageBotInputExpirationDays?: number;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanEnabled: boolean;
   /** @deprecated Use guardDutyMalwareProtectionEnabled instead */

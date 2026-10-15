@@ -10,36 +10,26 @@ import {
   RecurrenceIdExtensionURI,
   RecurrenceTemplateExtensionURI,
   resolveId,
+  SchedulingExternalUrlURI,
   SchedulingMedicalNecessityURI,
 } from '@medplum/core';
 import type { Appointment, CodeableConcept, Parameters } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconArrowLeft, IconCalendarEvent } from '@tabler/icons-react';
-import type { JSX, ReactNode } from 'react';
+import { IconArrowLeft, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
+import type { JSX } from 'react';
 import { Fragment, useCallback, useState } from 'react';
-import { getNonPatientActors } from '../../actors';
-import { formatDayHeading, formatZonedTime } from '../../AppointmentFinder/AppointmentFinder.times';
+import { getNonPatientActors, getPatientParticipant } from '../../actors';
 import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentStatusBadge } from '../../AppointmentStatusBadge';
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../../serviceTypes';
+import { Detail } from '../Detail';
+import { formatWhen, isCancelable, isReschedulable } from '../SchedulingWorkspace.utils';
 import classes from './AppointmentDetails.module.css';
-import { getPatientParticipant } from './AppointmentDetails.utils';
 import { AppointmentDetailsForm } from './AppointmentDetailsForm';
-
-/** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
-const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
-
-/**
- * The statuses `Appointment/:id/$reschedule` accepts. It refuses any other with a 400.
- *
- * The same statuses a cancellation accepts today, but a guard of its own: what can be
- * called off and what can be moved are separate questions to the server.
- */
-const RESCHEDULABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
 
 export interface AppointmentCancelFormProps {
   readonly appointment: WithId<Appointment>;
@@ -276,9 +266,10 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     );
   }
 
-  const cancelable = CANCELABLE_STATUSES.has(appointment.status);
+  const cancelable = isCancelable(appointment);
   const { visitType, procedures } = partitionServiceTypes(appointment);
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
+  const externalUrl = getExternalUrl(appointment);
 
   // Both pages fill the pane the same way, so what can be done to the visit sits at the
   // foot of either.
@@ -335,10 +326,21 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       {!editing && (
         <Stack gap="sm" className={classes.actions}>
           <Divider />
+          {externalUrl && (
+            <Button
+              component="a"
+              href={externalUrl}
+              rel="noreferrer"
+              variant="outline"
+              rightSection={<IconExternalLink size={16} stroke={1.8} />}
+            >
+              View details
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setEditing(true)}>
             Edit
           </Button>
-          {RESCHEDULABLE_STATUSES.has(appointment.status) && (
+          {isReschedulable(appointment) && (
             <Button
               variant="outline"
               leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
@@ -363,45 +365,17 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   );
 }
 
-interface DetailProps {
-  readonly label: string;
-  /** Left out entirely when there is nothing on file for it. */
-  readonly value?: ReactNode;
-}
-
 /**
- * One labelled line of what is on file, or nothing at all when it is not.
- * @param props - The React props.
- * @returns The line, or null.
- */
-function Detail(props: DetailProps): JSX.Element | null {
-  if (!props.value) {
-    return null;
-  }
-  return (
-    <Stack gap={0}>
-      <Text size="xs" c="dimmed">
-        {props.label}
-      </Text>
-      <Text size="sm">{props.value}</Text>
-    </Stack>
-  );
-}
-
-/**
- * Says when the visit is, as far as it is known.
+ * Reads the link to this visit in an external system.
  * @param appointment - The appointment being described.
- * @returns The day and the times, or undefined for an appointment holding no time.
+ * @returns The link, or undefined when there is none or it is not `https`.
  */
-function formatWhen(appointment: Appointment): string | undefined {
-  if (!appointment.start) {
+function getExternalUrl(appointment: Appointment): string | undefined {
+  const value = getExtensionValue(appointment, SchedulingExternalUrlURI);
+  if (typeof value !== 'string' || !URL.canParse(value)) {
     return undefined;
   }
-  const start = new Date(appointment.start);
-  const times = [formatZonedTime(start), appointment.end && formatZonedTime(new Date(appointment.end))]
-    .filter(Boolean)
-    .join(' – ');
-  return `${formatDayHeading(start)} · ${times}`;
+  return new URL(value).protocol === 'https:' ? value : undefined;
 }
 
 /**

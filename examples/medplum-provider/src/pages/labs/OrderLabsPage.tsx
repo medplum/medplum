@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Container, Group, Input, Radio, Stack, TextInput } from '@mantine/core';
+import { Button, Center, Container, Group, Input, Loader, Radio, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { MedplumClient } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
@@ -40,6 +40,8 @@ import { PerformingLabInput } from '../../components/PerformingLabInput';
 import { CoverageInput } from '../../components/labs/CoverageInput';
 import { TestMetadataCardInput } from '../../components/labs/TestMetadataCardInput';
 import { addDiagnosesToEncounter } from '../../utils/encounter';
+import type { LabOrderDraftDefaults } from '../../utils/labOrderDraft';
+import { getLabOrderDraftDefaults } from '../../utils/labOrderDraft';
 import { showErrorNotification } from '../../utils/notifications';
 
 async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: ServiceRequest): Promise<void> {
@@ -59,18 +61,30 @@ export interface OrderLabsPageProps {
   task?: Task | Reference<Task> | undefined;
   tests?: TestCoding[] | undefined;
   performingLab?: LabOrganization | undefined;
+  draftOrder?: ServiceRequest | undefined;
   onSubmitLabOrder: (serviceRequest?: ServiceRequest) => void;
 }
 
 export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
-  const { patient: defaultPatient, encounter, task, tests, performingLab, onSubmitLabOrder } = props;
+  const {
+    patient: defaultPatient,
+    encounter,
+    task,
+    tests: defaultTests,
+    performingLab: defaultPerformingLab,
+    draftOrder,
+    onSubmitLabOrder,
+  } = props;
   const medplum = useMedplum();
   const { patientId } = useParams();
   const [requester, setRequester] = useState<Practitioner | undefined>(medplum.getProfile() as Practitioner);
   const defaultPatientResource = useResource(defaultPatient);
   const [patient, setPatient] = useState<Patient | undefined>(defaultPatientResource);
-  const encounterResource = useResource(encounter);
-  const taskResource = useResource(task);
+  const [draftDefaults, setDraftDefaults] = useState<LabOrderDraftDefaults | undefined>();
+  const tests = defaultTests ?? draftDefaults?.tests;
+  const performingLab = defaultPerformingLab ?? draftDefaults?.performingLab;
+  const encounterResource = useResource(encounter ?? draftDefaults?.encounter);
+  const taskResource = useResource(task ?? draftDefaults?.task);
   const labOrderReturn = useHealthGorillaLabOrder({
     patient,
     requester,
@@ -85,6 +99,8 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     setSpecimenCollectedDateTime,
     setOrderNotes,
     setPerformingLabAccountNumber,
+    setPerformingLabPhysicianAccountNumber,
+    updateTestMetadata,
     createOrderBundle,
   } = labOrderReturn;
 
@@ -105,6 +121,71 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
       prevTestsRef.current = tests;
     }
   }, [tests, setTests]);
+
+  // Resolve the draft's referenced resources before the form mounts, since the
+  // inputs only read their default values at mount.
+  useEffect(() => {
+    if (!draftOrder) {
+      setDraftDefaults(undefined);
+      return;
+    }
+    const loadDraftDefaults = async (): Promise<void> => {
+      try {
+        setDraftDefaults(await getLabOrderDraftDefaults(medplum, draftOrder));
+      } catch (error) {
+        showErrorNotification(error);
+        // Still show the form, so the order can be filled in by hand
+        setDraftDefaults({ tests: [], unresolvedTests: [], testMetadata: {}, diagnoses: [] });
+      }
+    };
+    loadDraftDefaults().catch(console.error);
+  }, [medplum, draftOrder]);
+
+  const appliedDraftRef = useRef<LabOrderDraftDefaults | undefined>(undefined);
+  useEffect(() => {
+    if (!draftDefaults || appliedDraftRef.current === draftDefaults) {
+      return;
+    }
+    appliedDraftRef.current = draftDefaults;
+    if (draftDefaults.unresolvedTests.length > 0) {
+      showNotification({
+        color: 'yellow',
+        title: 'Some tests could not be resumed',
+        message: `Not found in the lab's compendium, add them again: ${draftDefaults.unresolvedTests
+          .map((test) => test.display ?? test.code)
+          .join(', ')}`,
+      });
+    }
+    if (draftDefaults.patient) {
+      setPatient(draftDefaults.patient);
+    }
+    if (draftDefaults.requester) {
+      setRequester(draftDefaults.requester);
+    }
+    for (const test of draftDefaults.tests) {
+      const metadata = draftDefaults.testMetadata[test.code];
+      if (metadata) {
+        updateTestMetadata(test, metadata);
+      }
+    }
+    setDiagnoses(draftDefaults.diagnoses);
+    if (draftDefaults.billTo) {
+      updateBillingInformation({ billTo: draftDefaults.billTo });
+    }
+    setPerformingLabAccountNumber(draftDefaults.performingLabAccountNumber);
+    setPerformingLabPhysicianAccountNumber(draftDefaults.performingLabPhysicianAccountNumber);
+    setOrderNotes(draftDefaults.orderNotes);
+    setSpecimenCollectedDateTime(draftDefaults.specimenCollectedDateTime);
+  }, [
+    draftDefaults,
+    updateTestMetadata,
+    setDiagnoses,
+    updateBillingInformation,
+    setPerformingLabAccountNumber,
+    setPerformingLabPhysicianAccountNumber,
+    setOrderNotes,
+    setSpecimenCollectedDateTime,
+  ]);
 
   useEffect(() => {
     if (patientId) {
@@ -154,6 +235,17 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
       }
       await sendLabOrderToHealthGorilla(medplum, serviceRequest);
 
+      if (draftOrder?.id) {
+        // The resumed draft has been superseded by the order that was just sent.
+        try {
+          await medplum.patchResource('ServiceRequest', draftOrder.id, [
+            { op: 'replace', path: '/status', value: 'revoked' },
+          ]);
+        } catch (error) {
+          showErrorNotification(error);
+        }
+      }
+
       showNotification({
         title: 'Lab Order Submitted',
         message: 'The lab order has been successfully submitted.',
@@ -168,6 +260,14 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     }
   };
 
+  if (draftOrder && !draftDefaults) {
+    return (
+      <Center p="xl">
+        <Loader />
+      </Center>
+    );
+  }
+
   return (
     <HealthGorillaLabOrderProvider {...labOrderReturn}>
       <Container size="md">
@@ -178,7 +278,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
                 resourceType="Practitioner"
                 name="Requester"
                 onChange={setRequester}
-                defaultValue={requester}
+                defaultValue={draftDefaults?.requester ?? requester}
                 searchCriteria={{ identifier: `${NPI_SYSTEM}|` }}
               />
             </Input.Wrapper>
@@ -234,6 +334,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
                 binding="http://hl7.org/fhir/sid/icd-10-cm/vs/billable"
                 name="diagnoses"
                 maxValues={10}
+                defaultValue={draftDefaults?.diagnoses.map((concept) => concept.coding[0])}
                 onChange={(items) => {
                   const codeableConcepts = items.map((item) => ({
                     coding: [valueSetElementToCoding(item)],
@@ -264,10 +365,15 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
                 <CoverageInput patient={patient} error={createError?.validation?.billingInformation?.patientCoverage} />
               )}
             </Group>
-            <TextInput label="Order notes" onChange={(e) => setOrderNotes(e.currentTarget.value)} />
+            <TextInput
+              label="Order notes"
+              defaultValue={draftDefaults?.orderNotes}
+              onChange={(e) => setOrderNotes(e.currentTarget.value)}
+            />
             <DateTimeInput
               label="Specimen collection time"
               name=""
+              defaultValue={draftDefaults?.specimenCollectedDateTime?.toISOString()}
               onChange={(isoDateTimeString) => {
                 setSpecimenCollectedDateTime(isoDateTimeString ? new Date(isoDateTimeString) : undefined);
               }}

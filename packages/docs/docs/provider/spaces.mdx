@@ -166,9 +166,9 @@ One per turn (user, assistant, tool). Each is linked to its topic by `partOf`.
 | `identifier`                | system `http://medplum.com/ai-message`, value `ai-message`                                                                                                                                          |
 | `partOf[0].reference`       | `Communication/<topic-id>`                                                                                                                                                                          |
 | `status`                    | `completed`                                                                                                                                                                                         |
-| `payload[0].contentString`  | JSON of `{ role, content, tool_calls, tool_call_id, resources, componentCode, sequenceNumber }`                                                                                                     |
+| `payload[0].contentString`  | JSON of `{ role, content, tool_calls, tool_call_id, resources, componentCode }`                                                                                                                     |
 
-`sequenceNumber` is the source of truth for ordering; `_lastUpdated` is only used for pagination. The Provider UI persists every tool call and tool response on its own message so a mid-loop failure leaves a readable transcript.
+Messages are saved one at a time in conversation order and never updated, so `meta.lastUpdated` is their order; the Provider UI loads the newest 100. It persists every tool call and tool response on its own message so a mid-loop failure leaves a readable transcript.
 
 <MedplumCodeBlock language="ts" selectBlocks="loadConversationMessagesTs">{ExampleCode}</MedplumCodeBlock>
 

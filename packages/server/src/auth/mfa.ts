@@ -5,14 +5,15 @@ import { allOk, badRequest } from '@medplum/core';
 import type { Login, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
 import { authenticator } from 'otplib';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
+import { sendValidationErrors } from '../util/validator';
 import { assertMfaLoginActive } from './mfalimit';
 import type { MfaMethod } from './utils';
 import {
@@ -112,9 +113,7 @@ mfaRouter.post(
   '/login-enroll',
   [body('login').notEmpty().withMessage('Missing login')],
   async (req: Request, res: Response) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -242,9 +241,7 @@ mfaRouter.post(
   '/verify',
   [body('login').notEmpty().withMessage('Missing login'), body('token').notEmpty().withMessage('Missing token')],
   async (req: Request, res: Response) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -259,9 +256,7 @@ mfaRouter.post(
   '/send-email',
   [body('login').notEmpty().withMessage('Missing login')],
   async (req: Request, res: Response) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -317,9 +312,7 @@ mfaRouter.post(
       return;
     }
 
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 

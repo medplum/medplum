@@ -3,6 +3,9 @@
 
 import { OperationOutcomeError } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
+import { getConfig } from '../config/loader';
+import type { ShardConfig } from '../config/utils';
+import { unsafeConfigKeys } from '../config/utils';
 import { getLogger } from '../logger';
 
 /**
@@ -26,6 +29,92 @@ export const PLACEHOLDER_SHARD_ID = 'placeholder';
  * {@link normalizeShardId}.
  */
 export const TODO_SHARD_ID = 'todo';
+
+export function isReservedShardId(shardId: string): boolean {
+  return shardId === GLOBAL_SHARD_ID || shardId === PLACEHOLDER_SHARD_ID || shardId === TODO_SHARD_ID;
+}
+
+/**
+ * Lowercase letter first, then lowercase letters, digits, and hyphens. Rules out `.` (config keys are
+ * dot-split), `__proto__`, and integer-like keys (which JS orders before all others).
+ */
+const SHARD_ID_PATTERN = /^[a-z][a-z0-9-]*$/;
+
+export function isValidShardId(shardId: string): boolean {
+  return SHARD_ID_PATTERN.test(shardId) && !unsafeConfigKeys.has(shardId);
+}
+
+export function isShardingEnabled(): boolean {
+  return getConfig().shards !== undefined;
+}
+
+export function getGlobalShardConfig(): ShardConfig {
+  const config = getConfig();
+  return { id: GLOBAL_SHARD_ID, database: config.database, readonlyDatabase: config.readonlyDatabase };
+}
+
+/**
+ * @param shardId - The shard ID to look up.
+ * @returns The shard config, or undefined if no shard has this ID. Throws if config is not loaded.
+ */
+function tryGetShardConfig(shardId: string): ShardConfig | undefined {
+  if (shardId === GLOBAL_SHARD_ID) {
+    return getGlobalShardConfig();
+  }
+  const config = getConfig();
+  if (config.shards && Object.hasOwn(config.shards, shardId)) {
+    return config.shards[shardId];
+  }
+  return undefined;
+}
+
+export function getShardConfig(shardId: string): ShardConfig {
+  const shardConfig = tryGetShardConfig(shardId);
+  if (!shardConfig) {
+    throw new Error(`Shard config not found for shard ID: ${shardId}`);
+  }
+  return shardConfig;
+}
+
+/**
+ * @param shardId - The shard ID to check.
+ * @returns True if the shard ID is the global shard or a shard in the loaded config. Throws if config is not loaded.
+ */
+export function isConfiguredShardId(shardId: string): boolean {
+  // Read config before the global check so an unloaded config throws for every shard ID
+  const shards = getConfig().shards;
+  return shardId === GLOBAL_SHARD_ID || (shards !== undefined && Object.hasOwn(shards, shardId));
+}
+
+/**
+ * @returns The shard new projects are placed on: the shard that sets `isDefaultShard`, or the global shard.
+ */
+export function getDefaultShardId(): string {
+  for (const shardConfig of Object.values(getConfig().shards ?? {})) {
+    if (shardConfig.isDefaultShard) {
+      return shardConfig.id;
+    }
+  }
+  return GLOBAL_SHARD_ID;
+}
+
+/**
+ * Returns all shard configurations, starting with the global shard unless `excludeGlobal` is set.
+ * @param excludeGlobal - If true, the global shard will not be included in the iteration. (default: false)
+ * @returns An iterator over the shard configurations.
+ * @yields Each shard configuration.
+ */
+export function* getAllShards(excludeGlobal: boolean = false): Generator<ShardConfig> {
+  if (!excludeGlobal) {
+    yield getGlobalShardConfig();
+  }
+  const shards = getConfig().shards;
+  if (shards) {
+    for (const config of Object.values(shards)) {
+      yield config;
+    }
+  }
+}
 
 export type ShardRouting = { kind: 'global-only' } | { kind: 'project-shard'; shardId: string };
 

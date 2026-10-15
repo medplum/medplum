@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { splitN } from '@medplum/core';
+import { isObject, splitN } from '@medplum/core';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -8,9 +8,18 @@ import { join } from 'node:path';
 import { loadAwsConfig } from '../cloud/aws/config';
 import { loadAzureConfig } from '../cloud/azure/config';
 import { loadGcpConfig } from '../cloud/gcp/config';
+import { isReservedShardId, isValidShardId } from '../fhir/sharding';
 import type { MedplumServerConfig } from './types';
 import type { ServerConfig } from './utils';
-import { addDefaults, isArrayConfig, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
+import {
+  addDefaults,
+  isArrayConfig,
+  isBooleanConfig,
+  isFloatConfig,
+  isIntegerConfig,
+  isObjectConfig,
+  unsafeConfigKeys,
+} from './utils';
 
 let cachedConfig: ServerConfig | undefined = undefined;
 
@@ -63,9 +72,65 @@ export async function loadConfig(configName: string): Promise<ServerConfig> {
     throw new Error('Missing required config setting: baseUrl. Please set "baseUrl" in your configuration.');
   }
 
-  const withDefaults = addDefaults(config);
-  cachedConfig = withDefaults;
+  validateShardingConfig(config);
+  cachedConfig = addDefaults(config);
   return cachedConfig;
+}
+
+/**
+ * Validates `shards` as loaded, before defaults are applied. Values from SSM, secret managers, and
+ * env vars are not type-checked on the way in, so this checks the runtime shape.
+ * @param config - The merged config from all sources.
+ */
+function validateShardingConfig(config: MedplumServerConfig): void {
+  const shards: unknown = config.shards;
+  if (shards === undefined) {
+    return;
+  }
+  if (!isObject(shards)) {
+    throw new Error('Invalid shards config: expected an object keyed by shard ID');
+  }
+  const defaultShardIds: string[] = [];
+  for (const [shardId, shardConfig] of Object.entries(shards)) {
+    if (!isValidShardId(shardId)) {
+      throw new Error(
+        `Invalid shard ID "${shardId}": use lowercase letters, digits, and hyphens, starting with a letter; constructor and prototype are not allowed`
+      );
+    }
+    if (isReservedShardId(shardId)) {
+      throw new Error(`Cannot use reserved shard ID ${shardId}`);
+    }
+    if (!isObject(shardConfig)) {
+      throw new Error(`Invalid config for shard ${shardId}: expected an object`);
+    }
+    if (shardConfig.isDefaultShard !== undefined && typeof shardConfig.isDefaultShard !== 'boolean') {
+      throw new Error(`Invalid config for shard ${shardId}: isDefaultShard must be a boolean`);
+    }
+    validateShardDatabaseConfig(shardId, 'database', shardConfig.database);
+    if (shardConfig.readonlyDatabase !== undefined) {
+      validateShardDatabaseConfig(shardId, 'readonlyDatabase', shardConfig.readonlyDatabase);
+    }
+    if (shardConfig.isDefaultShard) {
+      defaultShardIds.push(shardId);
+    }
+  }
+  if (defaultShardIds.length > 1) {
+    throw new Error(`Only one shard can set isDefaultShard: ${defaultShardIds.join(', ')}`);
+  }
+}
+
+function validateShardDatabaseConfig(shardId: string, field: string, database: unknown): void {
+  if (!isObject(database)) {
+    throw new Error(`Invalid config for shard ${shardId}: ${field} must be an object`);
+  }
+  for (const key of ['host', 'dbname']) {
+    if (typeof database[key] !== 'string') {
+      throw new Error(`Invalid config for shard ${shardId}: ${field}.${key} must be a string`);
+    }
+  }
+  if (database.port !== undefined && typeof database.port !== 'number') {
+    throw new Error(`Invalid config for shard ${shardId}: ${field}.port must be a number`);
+  }
 }
 
 /**
@@ -100,6 +165,9 @@ async function loadSingleConfig(configName: string): Promise<MedplumServerConfig
 function deepMerge(base: Record<string, unknown>, overlay: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = { ...base };
   for (const key of Object.keys(overlay)) {
+    if (unsafeConfigKeys.has(key)) {
+      throw new Error(`Invalid config key: ${key}`);
+    }
     const baseVal = base[key];
     const overlayVal = overlay[key];
     if (
@@ -120,10 +188,14 @@ function deepMerge(base: Record<string, unknown>, overlay: Record<string, unknow
 
 /**
  * Loads the configuration setting for unit and integration tests.
+ * @param opts - Test config options
+ * @param opts.sharded - Whether to load the sharded test configuration.
  * @returns The configuration for tests.
  */
-export async function loadTestConfig(): Promise<ServerConfig> {
-  const config = await loadConfig('file:medplum.config.json');
+export async function loadTestConfig(opts?: { sharded?: boolean }): Promise<ServerConfig> {
+  const config = await loadConfig(
+    opts?.sharded ? 'file:medplum.config.json,file:medplum-sharded.config.json' : 'file:medplum.config.json'
+  );
   config.binaryStorage = 'file:' + mkdtempSync(join(tmpdir(), 'medplum-temp-storage'));
   config.allowedOrigins = undefined;
   config.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
@@ -158,6 +230,32 @@ export async function loadTestConfig(): Promise<ServerConfig> {
   config.defaultSuperAdminClientId = randomUUID();
   config.defaultSuperAdminClientSecret = randomUUID();
   config.mtlsCertHeader = 'x-mtls-cert';
+
+  if (opts?.sharded) {
+    if (!config.shards) {
+      throw new Error('Sharded configuration requires shards');
+    }
+
+    for (const shardConfig of Object.values(config.shards)) {
+      // Mirror the main database's dev → test rename, e.g. medplum_shard_1 → medplum_test_shard_1
+      const dbname = shardConfig.database.dbname;
+      if (!dbname?.startsWith('medplum_')) {
+        throw new Error(`Cannot derive test database name for shard ${shardConfig.id} from dbname: ${dbname}`);
+      }
+      shardConfig.database.dbname = 'medplum_test_' + dbname.slice('medplum_'.length);
+      shardConfig.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
+      shardConfig.database.port = process.env['POSTGRES_PORT']
+        ? Number.parseInt(process.env['POSTGRES_PORT'], 10)
+        : 5432;
+      shardConfig.database.runMigrations = false;
+      shardConfig.database.disableRunPostDeployMigrations = true;
+      shardConfig.readonlyDatabase = {
+        ...shardConfig.database,
+        username: 'medplum_test_readonly',
+        password: 'medplum_test_readonly',
+      };
+    }
+  }
   return config;
 }
 

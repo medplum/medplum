@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import { extractServiceTypeReferences, getExtensionValue, TimezoneExtensionURI } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
+import { formatDayHeading, formatZonedTime } from '../AppointmentFinder/AppointmentFinder.times';
 
 /** The zones the calendars on show are kept in, and whether any of them is unknown. */
 export interface CalendarTimezones {
@@ -68,4 +69,54 @@ export function groupAppointmentsByService(
     groups.set(reference, group);
   }
   return groups;
+}
+
+/**
+ * Says when a visit or a block of time is, as far as it is known.
+ * @param period - The appointment or slot being described.
+ * @param period.start - When it starts.
+ * @param period.end - When it ends.
+ * @returns The day and the times, naming the end's day too when it is another, or undefined
+ * for one holding no time.
+ */
+export function formatWhen(period: { readonly start?: string; readonly end?: string }): string | undefined {
+  if (!period.start) {
+    return undefined;
+  }
+  const start = new Date(period.start);
+  const end = period.end ? new Date(period.end) : undefined;
+  if (end && end.toDateString() !== start.toDateString()) {
+    return `${formatDayHeading(start)} · ${formatZonedTime(start)} – ${formatDayHeading(end)} · ${formatZonedTime(end)}`;
+  }
+  const times = [formatZonedTime(start), end && formatZonedTime(end)].filter(Boolean).join(' – ');
+  return `${formatDayHeading(start)} · ${times}`;
+}
+
+/** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
+const CANCELABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
+
+/**
+ * Whether the server would accept cancelling the appointment.
+ * @param appointment - The appointment to cancel.
+ * @returns True when its status is one `Appointment/:id/$cancel` accepts.
+ */
+export function isCancelable(appointment: Appointment): boolean {
+  return CANCELABLE_STATUSES.has(appointment.status);
+}
+
+/**
+ * The statuses `Appointment/:id/$reschedule` accepts. It refuses any other with a 400.
+ *
+ * The same statuses a cancellation accepts today, but a guard of its own: what can be
+ * called off and what can be moved are separate questions to the server.
+ */
+const RESCHEDULABLE_STATUSES: ReadonlySet<Appointment['status']> = new Set(['pending', 'booked']);
+
+/**
+ * Whether the server would accept rescheduling the appointment.
+ * @param appointment - The appointment to reschedule.
+ * @returns True when its status is one `Appointment/:id/$reschedule` accepts.
+ */
+export function isReschedulable(appointment: Appointment): boolean {
+  return RESCHEDULABLE_STATUSES.has(appointment.status);
 }

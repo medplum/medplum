@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { EventDisplayInfo } from '@fullcalendar/react';
 import { Badge, Divider, Group, Popover, Stack, Text } from '@mantine/core';
-import { getPrimaryProvider } from '@medplum/core';
+import { getExtension, getPrimaryProvider, RecurrenceIdExtensionURI } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import { ResourceName } from '@medplum/react';
+import { IconRepeat } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -16,6 +17,7 @@ import { partitionServiceTypes } from '../serviceTypes';
 // Its own sheet: importing CalendarBase's here would load it ahead of FullCalendar's theme,
 // which its rules are written to override.
 import classes from './AppointmentEvent.module.css';
+import { AppointmentPatientName } from './AppointmentPatientName';
 
 export interface AppointmentEventProps {
   readonly appointment: Appointment;
@@ -38,6 +40,7 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
   // A time grid says when the visit is by where it is drawn, so there the line under the service
   // type names the patient; a month's row has room for the service type and its time alone.
   const inTimeGrid = info.view.type.startsWith('timeGrid');
+  const recurring = getExtension(appointment, RecurrenceIdExtensionURI) !== undefined;
   // Each card is mounted only while its event is hovered: a card per event costs about twice
   // what drawing the event does, on every render, and most events are never hovered.
   const [opened, setOpened] = useState(false);
@@ -50,11 +53,14 @@ export function AppointmentEvent(props: AppointmentEventProps): JSX.Element {
       onMouseLeave={() => setOpened(false)}
     >
       {inTimeGrid ? (
-        <div className={info.timeClass}>{info.event.title}</div>
+        <div className={info.timeClass}>
+          <AppointmentPatientName appointment={appointment} />
+        </div>
       ) : (
         info.timeText && <div className={cx(info.timeClass, classes.time)}>{info.timeText}</div>
       )}
       <div className={cx(info.titleClass, classes.title)}>
+        {recurring && <IconRepeat size="1em" className={classes.recurring} role="img" aria-label="Recurring" />}
         {/* With no service type, a placeholder holds the title's place, so the patient stays under it. */}
         {hasServiceType ? (
           <ServiceTypeDisplay appointment={appointment} inherit />
@@ -94,7 +100,9 @@ function AppointmentCard(props: AppointmentEventProps): JSX.Element {
   return (
     <Stack gap={4}>
       <Group justify="space-between" gap="xs" wrap="nowrap">
-        <Text fw={500}>{info.event.title}</Text>
+        <Text fw={500}>
+          <AppointmentPatientName appointment={appointment} />
+        </Text>
         <AppointmentStatusBadge status={appointment.status} size="sm" />
       </Group>
       <Divider />

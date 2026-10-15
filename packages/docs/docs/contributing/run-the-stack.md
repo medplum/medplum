@@ -67,7 +67,7 @@ This will:
 
 1. Start the PostgreSQL server in a container
 2. Set up the appropriate configurations (see [postgres.conf](https://github.com/medplum/medplum/blob/main/postgres/postgres.conf))
-3. Create two databases for testing: `medplum` and `medplum_test` (see [init_test.sql](https://github.com/medplum/medplum/blob/main/postgres/init_test.sql))
+3. Create databases (see [init_test.sql](https://github.com/medplum/medplum/blob/main/postgres/init_test.sql))
 
 When `docker-compose` completes, you should see something like this in your terminal:
 

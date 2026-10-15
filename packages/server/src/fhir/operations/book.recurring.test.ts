@@ -332,6 +332,8 @@ describe('Appointment/$book and $hold with a recurrenceTemplate', () => {
 
     const response = await book(firstOccurrence(schedule, recurrenceTemplate(3)), operation);
     expect(response).toHaveStatus(400);
+    // Every occurrence has the same path, so the error names the one it's about.
+    expect(response.body.issue[0].details.text).toContain('Appointment 3 of 3');
 
     const appointments = await systemRepo.searchResources<Appointment>(
       parseSearchRequest(`Appointment?actor=${schedule.actor[0].reference}`)

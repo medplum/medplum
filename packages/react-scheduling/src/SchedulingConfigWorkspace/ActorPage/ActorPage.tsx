@@ -1,23 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Accordion,
-  Alert,
-  Box,
-  Divider,
-  Group,
-  SimpleGrid,
-  Stack,
-  Switch,
-  Text,
-  Title,
-  Tooltip,
-  VisuallyHidden,
-} from '@mantine/core';
+import { Alert, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
-  capitalize,
   deepEquals,
+  generateId,
   getDisplayString,
   getReferenceString,
   getSchedulingTimezone,
@@ -26,7 +13,7 @@ import {
 import type { HealthcareService, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getActorTypeLabel } from '../../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
 import { getAvailabilityFieldsError } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
@@ -39,17 +26,29 @@ import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
 import { ConfirmModal } from '../ConfirmModal';
 import { summarizeOffering } from '../offeringSummary';
-import { getActorStatus, isActorInactive } from '../SchedulingConfigWorkspace.utils';
+import { getActorStatus } from '../SchedulingConfigWorkspace.utils';
 import type { ConfigStatus } from '../StatusBadge';
 import { StatusBadge } from '../StatusBadge';
-import { OfferingEditor, OfferingMenu, OfferingSummary } from './OfferingEditor';
-import { OfferPicker } from './OfferPicker';
+import type { ActorGeneralFields, ActorResource, NewActorType } from './actorDraft';
+import { actorGeneralFieldsOf, buildActorResource, hasEditableName, newActorResource } from './actorDraft';
+import { ActorGeneral } from './ActorGeneral';
+import { OfferAllSwitch } from './OfferAllSwitch';
+import { OfferingEditor, OfferingSummary } from './OfferingEditor';
+import { OfferingsList } from './OfferingsList';
+import { ProviderFacilitiesFields } from './ProviderFacilitiesFields';
 import type { OfferingFields, ScheduleFields } from './scheduleDraft';
 import { buildScheduleDraft, newOfferingFields, scheduleFieldsOf, startingOfferingFields } from './scheduleDraft';
+import { useOfferAll } from './useOfferAll';
+import { useProviderFacilities } from './useProviderFacilities';
 
 export interface ActorPageProps {
-  /** The provider, room, or device, with its Schedules as stored. The first Schedule is the one edited. */
-  readonly actor: ConfigurableActor;
+  /**
+   * The provider, room, or device, with its Schedules as stored. The first Schedule is the one edited. Omitted
+   * to create a room or device.
+   */
+  readonly actor?: ConfigurableActor;
+  /** What to create when `actor` is omitted. Defaults to a room. */
+  readonly newActorType?: NewActorType;
   /** Every visit type loaded. */
   readonly services: readonly WithId<HealthcareService>[];
   /**
@@ -61,6 +60,8 @@ export interface ActorPageProps {
    * the visit type whose entry is open.
    */
   readonly onSynced: (resources: WithId<Resource>[], openServiceId: string | undefined) => void;
+  /** Called when a room or device that was being created is discarded instead. */
+  readonly onDiscardNew?: () => void;
   /** Called whenever the page starts or stops holding unsaved changes. */
   readonly onDirtyChange?: (dirty: boolean) => void;
 }
@@ -69,7 +70,8 @@ export interface ActorPageProps {
  * The page for one provider, room, or device: its own fields, and the visit types its Schedule offers, each
  * opening to the Schedule's own parameters and hours for it. Everything is saved together.
  *
- * An actor with no Schedule gets one, on save, once it offers a visit type.
+ * An actor with no Schedule gets one, on save, once it offers a visit type. A new room or device is created
+ * with an empty Schedule, and has to be created before it can offer anything.
  *
  * It opens on what is stored and is not reset by a change of props, so the caller remounts it with a `key`
  * when the actor or its Schedule is replaced.
@@ -77,37 +79,62 @@ export interface ActorPageProps {
  * @returns The page.
  */
 export function ActorPage(props: ActorPageProps): JSX.Element {
-  const { actor, services, initialOpenServiceId, onSynced, onDirtyChange } = props;
+  const {
+    actor,
+    newActorType = 'Location',
+    services,
+    initialOpenServiceId,
+    onSynced,
+    onDiscardNew,
+    onDirtyChange,
+  } = props;
   const medplum = useMedplum();
-  const resource = actor.resource;
-  const [schedule] = actor.schedules;
-  const actorName = getDisplayString(resource);
-  const typeLabel = getActorTypeLabel(resource.resourceType);
+  const stored = actor?.resource;
+  const [schedule] = actor?.schedules ?? [];
+  const creating = !stored;
 
   const servicesById = useMemo(() => new Map(services.map((service) => [service.id, service])), [services]);
+  const base = useMemo(() => stored ?? newActorResource(newActorType), [stored, newActorType]);
+  const [initialGeneral] = useState(() => actorGeneralFieldsOf(base));
+  const [general, setGeneral] = useState(initialGeneral);
   const [initial] = useState<ScheduleFields>(() => scheduleFieldsOf(schedule, servicesById));
   const [fields, setFields] = useState(initial);
-  const [actorDraft, setActorDraft] = useState<ConfigurableActorResource>(resource);
   const [open, setOpen] = useState<string | null>(() =>
     initialOpenServiceId && Object.hasOwn(initial.offerings, initialOpenServiceId) ? initialOpenServiceId : null
   );
-  const [stopping, setStopping] = useState<WithId<HealthcareService>>();
+  const offerAll = useOfferAll({ servicesById, schedule, fields, setFields, setOpenServiceId: setOpen });
+  const [confirmingFacilities, setConfirmingFacilities] = useState(false);
   const [saving, setSaving] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
-  const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'>>();
+  const [failure, setFailure] = useState<Pick<ConfigSaveFailure, 'conflict' | 'message'> & { change?: ConfigChange }>();
   const [reloading, setReloading] = useState(false);
+  // Bumped by Discard to remount the General fields, whose location input holds its own selection.
+  const [discards, setDiscards] = useState(0);
 
-  const draft = buildScheduleDraft(schedule, actorDraft, fields, initial, servicesById);
-  const actorDirty = !deepEquals(actorDraft, resource);
-  // Compares the fields rather than the draft, so edits the draft can't store yet, like an emptied week, still
-  // count and the save bar can say why it refuses.
-  const dirty = actorDirty || !deepEquals(fields, initial);
+  const actorDraft = useMemo(() => buildActorResource(base, general, initialGeneral), [base, general, initialGeneral]);
+  // The edited actor, for the Schedule code, which needs its id: undefined until the actor is stored.
+  const actorWithId = stored && (actorDraft as ConfigurableActorResource);
+  const typeLabel = getActorTypeLabel(actorDraft.resourceType);
+  const noun = typeLabel.toLowerCase();
+  const name = creating ? general.name.trim() : getDisplayString(stored);
+  const actorName = name || `this ${noun}`;
+
+  const facilities = useProviderFacilities(stored, actorName);
+
+  const scheduleDraft = actorWithId && buildScheduleDraft(schedule, actorWithId, fields, initial, servicesById);
+  const actorDirty = !deepEquals(general, initialGeneral);
+  // Compares the fields rather than the Schedule draft, so edits the draft can't store yet, like an emptied
+  // week, still count and the save bar can say why it refuses.
+  const dirty = creating || actorDirty || !deepEquals(fields, initial) || facilities.changes.length > 0;
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
-  const offered = Object.keys(fields.offerings).flatMap((id) => servicesById.get(id) ?? []);
+  const offered = useMemo(
+    () => services.filter((service) => Object.hasOwn(fields.offerings, service.id)),
+    [services, fields.offerings]
+  );
   const scheduleActive = schedule ? fields.active : undefined;
-  const status = getActorStatus(actorDraft, scheduleActive);
-  const alert = getBookingAlert(actorDraft, status);
+  const status = actorWithId && getActorStatus(actorWithId, scheduleActive);
+  const alert = status && getBookingAlert(actorDraft, status);
 
   function errorsFor(service: WithId<HealthcareService>): ReturnType<typeof getBlockingErrors> {
     const current = fields.offerings[service.id];
@@ -130,22 +157,24 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     return !deepEquals(fields.offerings[service.id], before);
   }
 
-  const checks = offered.map((service) => ({
-    service,
-    errors: errorsFor(service),
-    availabilityError: availabilityErrorFor(service),
-  }));
-  const blocking = checks.find(({ errors, availabilityError }) => Object.keys(errors).length > 0 || availabilityError);
-  const blockedReason =
-    blocking && Object.keys(blocking.errors).length > 0
-      ? `Fix the highlighted fields for ${blocking.service.name ?? 'this visit type'} before saving.`
-      : blocking?.availabilityError;
+  function blockedReasonFor(service: WithId<HealthcareService>): string | undefined {
+    if (Object.keys(errorsFor(service)).length > 0) {
+      return `Fix the highlighted fields for ${service.name ?? 'this visit type'} before saving.`;
+    }
+    return availabilityErrorFor(service);
+  }
 
-  // An inactive actor can't keep an active Schedule, so switching the actor off switches its Schedule off too.
-  // Switching it back on puts the Schedule back as stored.
-  function handleActorActiveChange(active: boolean): void {
-    setActorDraft(active === !isActorInactive(resource) ? resource : withActorActive(resource, active));
-    setFields((current) => ({ ...current, active: active && initial.active }));
+  const blocking = offered.find((service) => blockedReasonFor(service));
+  const nameError = hasEditableName(actorDraft) && !general.name.trim() ? 'A name is required.' : undefined;
+  const blockedReason = nameError ?? (blocking && blockedReasonFor(blocking));
+
+  function handleGeneralChange(next: ActorGeneralFields): void {
+    if (next.active !== general.active) {
+      // An inactive actor can't keep an active Schedule, so switching the actor off switches its Schedule off
+      // too. Switching it back on puts the Schedule back as stored.
+      setFields((current) => ({ ...current, active: next.active && initial.active }));
+    }
+    setGeneral(next);
   }
 
   function updateOffering(id: string, value: OfferingFields): void {
@@ -157,27 +186,56 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     setFields((current) => ({ ...current, offerings: { ...current.offerings, ...added } }));
   }
 
-  function stopOffering(service: WithId<HealthcareService>): void {
-    const { [service.id]: _removed, ...offerings } = fields.offerings;
-    setFields({ ...fields, offerings });
-    setOpen(null);
-    setStopping(undefined);
+  function stopOffering(stopped: WithId<HealthcareService>[]): void {
+    const ids = new Set(stopped.map((service) => service.id));
+    setFields((current) => ({
+      ...current,
+      offerings: Object.fromEntries(Object.entries(current.offerings).filter(([id]) => !ids.has(id))),
+    }));
+    setOpen((current) => (current && ids.has(current) ? null : current));
   }
 
   async function handleSave(): Promise<void> {
     if (blockedReason) {
       setTriedToSave(true);
+      // Opening it also lists it when the filter or paging hides it, so what to fix is on screen.
+      if (blocking) {
+        setOpen(blocking.id);
+      }
       return;
     }
+    if (facilities.confirmation) {
+      setConfirmingFacilities(true);
+      return;
+    }
+    await save();
+  }
+
+  async function handleConfirmFacilities(): Promise<void> {
+    setConfirmingFacilities(false);
+    await save();
+  }
+
+  async function save(): Promise<void> {
     setSaving(true);
     setFailure(undefined);
     try {
-      const changes: ConfigChange[] = [{ stored: resource, draft: actorDraft }];
-      if (draft) {
+      // A new actor is created with an empty Schedule, which refers to it by this until the server gives it an id.
+      const fullUrl = creating ? `urn:uuid:${generateId()}` : undefined;
+      const changes: ConfigChange[] = [{ stored, draft: actorDraft, fullUrl }];
+      if (fullUrl) {
+        changes.push({ draft: { resourceType: 'Schedule', active: general.active, actor: [{ reference: fullUrl }] } });
+      } else if (scheduleDraft) {
         // Conditional, so two pages offering this actor's first visit type at once can't each create a Schedule.
-        changes.push({ stored: schedule, draft, ifNoneExist: `actor=${getReferenceString(resource)}` });
+        changes.push({
+          stored: schedule,
+          draft: scheduleDraft,
+          ifNoneExist: `actor=${getReferenceString(actorDraft)}`,
+        });
       }
+      changes.push(...facilities.changes);
       const result = await saveConfigChanges(medplum, changes);
+      facilities.store(result.saved.map(({ resource: saved }) => saved));
       if (result.failures.length > 0) {
         setFailure(result.failures[0]);
       } else if (result.saved.length === 0) {
@@ -195,23 +253,36 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   }
 
   function handleDiscard(): void {
+    if (creating) {
+      onDiscardNew?.();
+      return;
+    }
+    setGeneral(initialGeneral);
+    setDiscards((count) => count + 1);
+    facilities.discard();
     setFields(initial);
-    setActorDraft(resource);
+    offerAll.reset();
     setOpen((current) => (current && Object.hasOwn(initial.offerings, current) ? current : null));
     setTriedToSave(false);
     setFailure(undefined);
   }
 
   async function handleReload(): Promise<void> {
+    if (creating) {
+      return;
+    }
     setReloading(true);
     try {
-      const [actor, reloadedSchedule] = await Promise.all([
-        medplum.readResource(resource.resourceType, resource.id, { cache: 'no-cache' }),
+      const [reloadedActor, reloadedSchedule] = await Promise.all([
+        medplum.readResource(stored.resourceType, stored.id, { cache: 'no-cache' }),
         schedule
           ? medplum.readResource('Schedule', schedule.id, { cache: 'no-cache' })
-          : medplum.searchOne('Schedule', { actor: getReferenceString(resource) }, { cache: 'no-cache' }),
+          : medplum.searchOne('Schedule', { actor: getReferenceString(stored) }, { cache: 'no-cache' }),
       ]);
-      onSynced(reloadedSchedule ? [actor, reloadedSchedule] : [actor], open ?? undefined);
+      await facilities.reload();
+      onSynced(reloadedSchedule ? [reloadedActor, reloadedSchedule] : [reloadedActor], open ?? undefined);
+      // When only a role changed, no version the page is keyed on did, so nothing remounts it.
+      handleDiscard();
     } catch (err) {
       setFailure({ conflict: false, message: `Could not reload it: ${normalizeErrorString(err)}` });
     } finally {
@@ -219,7 +290,10 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     }
   }
 
-  const conflictSubject = actorDirty ? `${actorName} or its Schedule` : `The Schedule for ${actorName}`;
+  let conflictSubject = actorDirty ? `${actorName} or its Schedule` : `The Schedule for ${actorName}`;
+  if (failure?.change?.draft.resourceType === 'PractitionerRole') {
+    conflictSubject = `The service facilities for ${actorName}`;
+  }
   const offerable = useMemo(
     () => services.filter((service) => service.active !== false && !Object.hasOwn(fields.offerings, service.id)),
     [services, fields.offerings]
@@ -229,13 +303,20 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
     <Stack gap="lg">
       <Stack gap={2}>
         <Text size="xs" fw={700} tt="uppercase" c="dimmed">
-          {typeLabel}
+          {creating ? `New ${noun}` : typeLabel}
         </Text>
         <Group gap="sm">
-          <Title order={2}>{actorName}</Title>
-          <StatusBadge status={status} />
+          <Title order={2}>{name || `Untitled ${noun}`}</Title>
+          <StatusBadge status={status ?? 'new'} />
         </Group>
       </Stack>
+
+      {creating && (
+        <Alert color="blue" variant="light">
+          Nothing is created until you press Create, which creates its Schedule too. It starts active, but can't be
+          booked until it's created and offers a visit type.
+        </Alert>
+      )}
 
       <SaveFailureAlert
         failure={failure}
@@ -246,11 +327,15 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
 
       <ConfigSection title="General">
         <ActorGeneral
+          key={discards}
           resource={actorDraft}
-          onActiveChange={handleActorActiveChange}
+          value={general}
+          onChange={handleGeneralChange}
           scheduleActive={scheduleActive}
           onScheduleActiveChange={(active) => setFields((current) => ({ ...current, active }))}
+          nameError={triedToSave || initialGeneral.name ? nameError : undefined}
         />
+        {facilities.field && <ProviderFacilitiesFields {...facilities.field} />}
         {alert && (
           <Alert color="blue" variant="light">
             {alert}
@@ -259,74 +344,67 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
       </ConfigSection>
 
       <ConfigSection title="Visit types offered">
-        {offered.length === 0 ? (
+        {!actorWithId && (
           <Text size="sm" c="dimmed">
-            {actorName} offers no visit types yet.
+            Visit types can be offered once {actorName} is created.
           </Text>
-        ) : (
-          <Accordion variant="separated" value={open} onChange={setOpen}>
-            {checks.map(({ service, errors, availabilityError }) => {
-              const timezone = getSchedulingTimezone(service, draft, resource);
-              return (
-                <Accordion.Item key={service.id} value={service.id}>
-                  {/* Beside the control rather than in it, which is itself a button. */}
-                  <Group gap={0} wrap="nowrap" pr="sm">
-                    <Accordion.Control>
-                      <OfferingSummary
-                        service={service}
-                        value={fields.offerings[service.id]}
-                        summary={draft ? summarizeOffering(service, draft) : ''}
-                        dirty={isOfferingDirty(service)}
-                      />
-                    </Accordion.Control>
-                    <OfferingMenu service={service} onStopOffering={() => setStopping(service)} />
-                  </Group>
-                  <Accordion.Panel>
-                    <Stack gap="lg">
-                      <Divider />
-                      <OfferingEditor
-                        service={service}
-                        value={fields.offerings[service.id]}
-                        initialParameters={startingOfferingFields(initial, service).parameters}
-                        onChange={(value) => updateOffering(service.id, value)}
-                        errors={errors}
-                        availabilityError={triedToSave ? availabilityError : undefined}
-                        timezone={
-                          timezone
-                            ? {
-                                zone: timezone,
-                                source: timezoneSource(fields.offerings[service.id], service, actorName),
-                              }
-                            : undefined
-                        }
-                      />
-                    </Stack>
-                  </Accordion.Panel>
-                </Accordion.Item>
-              );
-            })}
-          </Accordion>
         )}
-
-        <OfferPicker services={offerable} onOffer={offer} />
+        {actorWithId && <OfferAllSwitch actorName={actorName} {...offerAll.switchProps} />}
+        {actorWithId && (
+          <OfferingsList
+            actorName={actorName}
+            offeredServices={offered}
+            offersAllServices={fields.allServices}
+            openServiceId={open}
+            onOpenServiceIdChange={setOpen}
+            renderHeader={(service) => (
+              <OfferingSummary
+                service={service}
+                value={fields.offerings[service.id]}
+                summary={scheduleDraft ? summarizeOffering(service, scheduleDraft) : ''}
+                dirty={isOfferingDirty(service)}
+              />
+            )}
+            renderPanel={(service) => {
+              const timezone = getSchedulingTimezone(service, scheduleDraft, actorWithId);
+              return (
+                <OfferingEditor
+                  service={service}
+                  value={fields.offerings[service.id]}
+                  initialParameters={startingOfferingFields(initial, service).parameters}
+                  onChange={(value) => updateOffering(service.id, value)}
+                  errors={errorsFor(service)}
+                  availabilityError={triedToSave ? availabilityErrorFor(service) : undefined}
+                  timezone={
+                    timezone
+                      ? { zone: timezone, source: timezoneSource(fields.offerings[service.id], service, actorName) }
+                      : undefined
+                  }
+                />
+              );
+            }}
+            offerableServices={offerable}
+            onOffer={offer}
+            onStopOffering={stopOffering}
+          />
+        )}
       </ConfigSection>
 
       <ConfirmModal
-        opened={stopping !== undefined}
-        title={stopping && `Stop offering ${stopping.name ?? 'this visit type'}?`}
-        cancelLabel="Keep offering"
-        confirmLabel="Stop offering"
-        destructive
-        onCancel={() => setStopping(undefined)}
-        onConfirm={() => stopping && stopOffering(stopping)}
+        opened={confirmingFacilities}
+        title={facilities.confirmation?.title}
+        cancelLabel="Cancel"
+        confirmLabel={facilities.confirmation?.confirmLabel ?? 'Save'}
+        onCancel={() => setConfirmingFacilities(false)}
+        onConfirm={handleConfirmFacilities}
       >
-        {stopping &&
-          `${actorName} will no longer be offered for ${stopping.name ?? 'this visit type'} once you save. ` +
-            "Existing appointments aren't changed."}
+        {facilities.confirmation?.body}
       </ConfirmModal>
 
       <SaveBar
         dirty={dirty}
+        message={creating ? `New ${noun}, not created yet` : undefined}
+        saveLabel={creating ? 'Create' : undefined}
         saving={saving}
         blockedReason={blockedReason}
         onSave={handleSave}
@@ -336,7 +414,7 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   );
 }
 
-function getBookingAlert(resource: ConfigurableActorResource, status: ConfigStatus): string | undefined {
+function getBookingAlert(resource: ActorResource, status: ConfigStatus): string | undefined {
   const noun = getActorTypeLabel(resource.resourceType).toLowerCase();
   if (status === 'inactive') {
     return `This ${noun} is inactive and can't be booked.`;
@@ -346,103 +424,6 @@ function getBookingAlert(resource: ConfigurableActorResource, status: ConfigStat
     return `This ${noun}'s Schedule is switched off, so ${pronoun} can't be booked until it's switched back on. Appointments already booked stay booked.`;
   }
   return undefined;
-}
-
-function ActorGeneral(props: {
-  /** The provider, room, or device, as edited. */
-  readonly resource: ConfigurableActorResource;
-  readonly onActiveChange: (active: boolean) => void;
-  /** Whether the actor's Schedule is active, as edited, or undefined when it has none. */
-  readonly scheduleActive: boolean | undefined;
-  readonly onScheduleActiveChange: (active: boolean) => void;
-}): JSX.Element {
-  const { resource, onActiveChange, scheduleActive, onScheduleActiveChange } = props;
-  const typeLabel = getActorTypeLabel(resource.resourceType);
-  const active = !isActorInactive(resource);
-  // Only turning off is allowed while the actor is inactive, so a Schedule stored on can still be switched off.
-  const scheduleLocked = !active && !scheduleActive;
-  return (
-    <>
-      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-        <StatusSwitch
-          label={`${typeLabel} status`}
-          value={statusLabel(resource)}
-          checked={active}
-          onChange={onActiveChange}
-        />
-        {scheduleActive !== undefined && (
-          <StatusSwitch
-            label="Schedule status"
-            value={scheduleActive ? 'Active' : 'Inactive'}
-            checked={scheduleActive}
-            onChange={onScheduleActiveChange}
-            disabledReason={
-              scheduleLocked ? `Can't be switched on while the ${typeLabel.toLowerCase()} is inactive.` : undefined
-            }
-          />
-        )}
-      </SimpleGrid>
-      <ReadOnlyField label="Name" value={getDisplayString(resource)} />
-    </>
-  );
-}
-
-function StatusSwitch(props: {
-  readonly label: string;
-  readonly value: string;
-  readonly checked: boolean;
-  readonly onChange: (checked: boolean) => void;
-  /** Why the switch can't be used. Given, the switch is disabled and the reason shows on hover. */
-  readonly disabledReason?: string;
-}): JSX.Element {
-  const reasonId = useId();
-  return (
-    <Stack gap={2}>
-      <Text size="sm" fw={500}>
-        {props.label}
-      </Text>
-      <Tooltip label={props.disabledReason} disabled={!props.disabledReason} multiline w={280} withArrow>
-        {/* A disabled input emits no pointer events, so the tooltip hangs on a wrapper instead. */}
-        <Box w="fit-content">
-          <Switch
-            aria-label={props.label}
-            aria-describedby={props.disabledReason ? reasonId : undefined}
-            label={props.value}
-            checked={props.checked}
-            disabled={!!props.disabledReason}
-            onChange={(event) => props.onChange(event.currentTarget.checked)}
-          />
-        </Box>
-      </Tooltip>
-      {props.disabledReason && <VisuallyHidden id={reasonId}>{props.disabledReason}</VisuallyHidden>}
-    </Stack>
-  );
-}
-
-// A room's or device's other statuses, like suspended, read as on and are kept until switched.
-function statusLabel(resource: ConfigurableActorResource): string {
-  if (resource.resourceType === 'Practitioner') {
-    return resource.active === false ? 'Inactive' : 'Active';
-  }
-  return resource.status ? capitalize(resource.status) : 'Active';
-}
-
-function withActorActive(resource: ConfigurableActorResource, active: boolean): ConfigurableActorResource {
-  if (resource.resourceType === 'Practitioner') {
-    return { ...resource, active };
-  }
-  return { ...resource, status: active ? 'active' : 'inactive' };
-}
-
-function ReadOnlyField(props: { readonly label: string; readonly value: string }): JSX.Element {
-  return (
-    <Stack gap={2}>
-      <Text size="sm" fw={500}>
-        {props.label}
-      </Text>
-      <Text size="sm">{props.value}</Text>
-    </Stack>
-  );
 }
 
 function timezoneSource(offering: OfferingFields, service: WithId<HealthcareService>, actorName: string): string {

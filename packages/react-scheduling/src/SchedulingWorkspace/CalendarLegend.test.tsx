@@ -39,8 +39,8 @@ describe('CalendarLegend', () => {
     const legend = within(await screen.findByRole('dialog'));
     expect(await legend.findByText('Ultrasound Imaging')).toBeInTheDocument();
     expect(legend.getByText('No service type')).toBeInTheDocument();
-    // The calendars' own colors, which tint availability, are told apart from these.
-    expect(legend.getByText(/Shaded time is a calendar's availability/)).toBeInTheDocument();
+    // Blocked time is keyed beside them, in the gray every calendar's is drawn in.
+    expect(legend.getByText('Blocked time')).toBeInTheDocument();
     await userEvent.unhover(trigger);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
