@@ -37,7 +37,7 @@
 .recurring {
   float: right;
   margin-inline-start: 0.25em;
-  margin-top: 0.125em;
+  margin-top: 0.075em;
 }
 
 /* Set apart from the service types named by their HealthcareService. */

@@ -4,7 +4,7 @@ import type { EventDisplayInfo } from '@fullcalendar/react';
 import type { WithId } from '@medplum/core';
 import type { Schedule, Slot } from '@medplum/fhirtypes';
 import { ResourceName } from '@medplum/react';
-import { IconSquareRoundedXFilled } from '@tabler/icons-react';
+import { IconSquareXFilled } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment } from 'react';
 // Its own sheet, for the same reason as AppointmentEvent's: CalendarBase's would load ahead of
@@ -51,7 +51,7 @@ export function SlotEvent(props: SlotEventProps): JSX.Element {
       <div className={info.titleClass}>
         {blocked ? (
           <span className={classes.blocked}>
-            <IconSquareRoundedXFilled size="1em" className={classes.icon} aria-hidden />
+            <IconSquareXFilled size="1em" className={classes.icon} aria-hidden />
             {info.event.title}
           </span>
         ) : (

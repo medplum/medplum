@@ -35,7 +35,7 @@
     );
 
     border: 0;
-    padding-inline-start: 6px;
+    padding-inline-start: 4px;
     box-shadow: 0 0 0 1px var(--fc-classic-background);
     background:
       linear-gradient(
@@ -57,6 +57,14 @@
         var(--appointment-text) calc(var(--emphasis) * var(--past-fade)),
         var(--fc-classic-background)
       );
+    }
+
+    .eventInner {
+      padding-inline: 4px;
+    }
+
+    .eventTime {
+      padding-top: 0;
     }
   }
 
@@ -166,9 +174,9 @@
     /* An outline drawn inside the event doesn't change its size the way a border
      * would. Skipped while focused so FullCalendar's focus ring still shows. */
     &:not(:focus-visible) {
-      outline: 2px dashed
+      outline: 1px dashed
         color-mix(in oklab, var(--appointment-bar) calc(100% * var(--past-fade)), var(--fc-classic-background));
-      outline-offset: -2px;
+      outline-offset: -1px;
     }
   }
 
@@ -177,6 +185,7 @@
   :global(.slot) {
     --slot-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-4));
 
+    border: 0;
     background: color-mix(
       in oklab,
       var(--slot-color) calc(var(--emphasis) * var(--past-fade)),
@@ -192,9 +201,17 @@
       --slot-color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-3));
     }
 
-    .eventTime,
-    .eventInner {
+    .eventTime {
       color: inherit;
+    }
+
+    .eventInner {
+      padding: 4px 4px 0;
+      color: inherit;
+    }
+
+    .eventTitle {
+      padding-block: 0;
     }
   }
 }
