@@ -20,22 +20,19 @@ enableGitInfo = true
   source = "assets"
   target = "assets"
 
+# npm workspaces hoist dependencies to the monorepo root
 [[module.mounts]]
-  source = "node_modules/infima/dist/css/default/default.css"
+  source = "../../node_modules/infima/dist/css/default/default.css"
   target = "assets/infima.css"
 
 [[module.mounts]]
-  source = "node_modules/open-color/open-color.css"
+  source = "../../node_modules/open-color/open-color.css"
   target = "assets/open-color.css"
 
 [[module.mounts]]
-  source = "node_modules/@tabler/icons/icons"
+  source = "../../node_modules/@tabler/icons/icons"
   target = "assets/icons/tabler"
 
-[[module.mounts]]
-  source = "node_modules/@mermaid-js/tiny/dist"
-  target = "assets/js/vendor/mermaid"
-
-[[module.mounts]]
-  source = "node_modules/swup/dist"
-  target = "assets/js/vendor/swup"
+# Lets js.Build resolve bare imports (swup, mermaid) from the hoisted node_modules
+[security.node.permissions]
+  allowRead = ['.', '../../node_modules']

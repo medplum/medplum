@@ -29,10 +29,10 @@
   "overrides": {
     "adm-zip": "0.6.1",
     "esbuild": "0.28.2",
+    "import-in-the-middle": "3.4.0",
     "typescript": "6.0.3",
     "uuid": "14.0.2",
-    "whatwg-url": "14.0.0",
-    "import-in-the-middle": "3.4.0"
+    "whatwg-url": "14.0.0"
   },
   "devDependencies": {
     "@microsoft/api-documenter": "7.30.18",
@@ -64,5 +64,8 @@
   "packageManager": "npm@11.21.0+sha512.668bfc2a16a63677a22dd10bb63e5800bb4d9895b82f87c22d3ce37e9cd71b6c3a3121dc7f453181d94ae6e9680ae92c593fbb986514ef08bbf5c3ba46a8af3e",
   "engines": {
     "node": ">=22.22.0 <23.0.0 || >=24.2.0 <25.0.0"
+  },
+  "hugo-bin": {
+    "buildTags": "extended"
   }
 }
