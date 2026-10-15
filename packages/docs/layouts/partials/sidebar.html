@@ -4,7 +4,7 @@
 <div class="sidebar-viewport">
   <div class="sidebar-container">
     <nav class="sidebar">
-      {{ range site.Data.sidebar.items }}
+      {{ range hugo.Data.sidebar.items }}
         {{ template "sidebar-item" (dict "item" . "page" $) }}
       {{ end }}
     </nav>

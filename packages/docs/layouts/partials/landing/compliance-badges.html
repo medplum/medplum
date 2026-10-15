@@ -1,6 +1,6 @@
 {{- /* Compliance badge row. Params: badges (defaults to data/compliance.yml), variant ("products" for the products page) */ -}}
 {{- /* Badges are {id, label, image?, logoMaxHeight?}; a badge without an image uses the SOC 2 logo, matching ComplianceBadges.tsx */ -}}
-{{- $badges := .badges | default site.Data.compliance -}}
+{{- $badges := .badges | default hugo.Data.compliance -}}
 <div class="compliance-badges{{ with .variant }} compliance-badges-{{ . }}{{ end }}" style="--compliance-cols: {{ len $badges }}">
   {{ range $badges }}
     <div class="compliance-badge">

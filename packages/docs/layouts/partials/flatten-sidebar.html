@@ -1,5 +1,5 @@
 {{ $pages := slice }}
-{{ range site.Data.sidebar.items }}
+{{ range hugo.Data.sidebar.items }}
   {{ range partial "flatten-sidebar-item" . }}
     {{ $pages = $pages | append . }}
   {{ end }}

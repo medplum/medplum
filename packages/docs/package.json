@@ -14,9 +14,9 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "build": "rimraf public && hugo --minify",
+    "build": "rimraf public && node scripts/hugo.mjs --minify",
     "build:guides": "node scripts/build-decision-guides.mjs",
-    "dev": "hugo server --buildDrafts --buildFuture --noHTTPCache",
+    "dev": "node scripts/hugo.mjs server --buildDrafts --buildFuture --noHTTPCache",
     "preview": "http-server public -c-1",
     "pxtorem": "postcss assets/**/*.scss --replace --no-map"
   },
@@ -38,6 +38,7 @@
     "postcss-pxtorem": "6.1.0",
     "postcss-scss": "4.0.9",
     "rimraf": "6.1.3",
+    "sass-embedded": "1.105.1",
     "swup": "4.10.0"
   }
 }

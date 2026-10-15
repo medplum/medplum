@@ -7,7 +7,7 @@
       </div>
       <div class="footer-column">
         <div class="footer-row">
-          {{ range site.Data.footer.columns }}
+          {{ range hugo.Data.footer.columns }}
             <div class="footer-column">
               <div class="footer__title">{{ .title }}</div>
               <ul class="footer__items clean-list">
@@ -23,7 +23,7 @@
     <hr class="footer-separator" />
     <div class="footer-row">
       <div class="footer-column">
-        {{ range site.Data.footer.bottomLinks }}<a class="footer-bottom-link" href="{{ .to }}">{{ .label }}</a>{{ end }}
+        {{ range hugo.Data.footer.bottomLinks }}<a class="footer-bottom-link" href="{{ .to }}">{{ .label }}</a>{{ end }}
       </div>
       <div class="footer-column footer-right-aligned">© {{ now.Year }} Orangebot, Inc.</div>
     </div>

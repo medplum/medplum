@@ -1,6 +1,6 @@
 {{- /* Home page. Content lives in data/home.yml; ported from LandingPage.tsx in the medplum repo. */ -}}
 {{ define "page" }}
-  {{ $d := site.Data.home }}
+  {{ $d := hugo.Data.home }}
   <div class="landing">
     <div class="landing-content">
       <div class="landing-hero">

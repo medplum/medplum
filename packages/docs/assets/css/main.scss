@@ -1,31 +1,31 @@
-@import './fonts.scss';
+@use './fonts';
 
-@import './components/alert.scss';
-@import './components/animated-circle.scss';
-@import './components/blog.scss';
-@import './components/breadcrumbs.scss';
-@import './components/card.scss';
-@import './components/card-container.scss';
-@import './components/code.scss';
-@import './components/doc-footer.scss';
-@import './components/hero.scss';
-@import './components/hero-code.scss';
-@import './components/fhir.scss';
-@import './components/footer.scss';
-@import './components/jumbotron.scss';
-@import './components/navbar.scss';
-@import './components/profile-card.scss';
-@import './components/responsive-iframe.scss';
-@import './components/section.scss';
-@import './components/sidebar.scss';
-@import './components/table.scss';
-@import './components/tabs.scss';
-@import './components/testimonial.scss';
-@import './components/toc.scss';
+@use './components/alert';
+@use './components/animated-circle';
+@use './components/blog';
+@use './components/breadcrumbs';
+@use './components/card';
+@use './components/card-container';
+@use './components/code';
+@use './components/doc-footer';
+@use './components/hero';
+@use './components/hero-code';
+@use './components/fhir';
+@use './components/footer';
+@use './components/jumbotron';
+@use './components/navbar';
+@use './components/profile-card';
+@use './components/responsive-iframe';
+@use './components/section';
+@use './components/sidebar';
+@use './components/table';
+@use './components/tabs';
+@use './components/testimonial';
+@use './components/toc';
 
-@import './pages/home.scss';
-@import './pages/brand.scss';
-@import './pages/pricing.scss';
+@use './pages/home';
+@use './pages/brand';
+@use './pages/pricing';
 
 :root {
   /* Docusaurus overrides */

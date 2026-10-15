@@ -1,5 +1,5 @@
 baseURL = 'https://www.medplum.com/'
-languageCode = 'en-us'
+locale = 'en-US'
 title = 'Medplum'
 enableGitInfo = true
 

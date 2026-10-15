@@ -13,9 +13,9 @@
     {{ partial "head-tags.html" . }}
     {{ $js := resources.Get "js/main.mjs" | js.Build | minify | fingerprint }}
     <script src="{{ $js.RelPermalink }}" defer></script>
-    {{ $infima := resources.Get "infima.css" | toCSS }}
-    {{ $openColor := resources.Get "open-color.css" | toCSS }}
-    {{ $opts := dict "transpiler" "libsass" }}
+    {{ $infima := resources.Get "infima.css" }}
+    {{ $openColor := resources.Get "open-color.css" }}
+    {{ $opts := dict "transpiler" "dartsass" }}
     {{ $scss := resources.Get "css/main.scss" | toCSS $opts }}
     {{ $generated := resources.Get "css/generated/landing.css" }}
     {{ $style := slice $infima $openColor $scss $generated | resources.Concat "css/bundle.css" | minify | fingerprint }}
