@@ -113,15 +113,19 @@
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 }
 
-.todayNumber {
+.todayNumber,
+[aria-current=date] .dayCellTopInner {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
   border-radius: 9999px;
   background-color: var(--mantine-color-red-7);
   color: var(--mantine-color-white);
+}
+
+.todayNumber {
+  width: 28px;
+  height: 28px;
 
   &:first-child {
     margin-inline-start: -4px;
@@ -132,19 +136,11 @@
   }
 }
 
-.todayCellNumber,
-.narrowTodayCellNumber {
+[aria-current=date] .dayCellTopInner {
+  width: 1.75em;
+  height: 1.75em;
+  margin-inline: 0;
   font-weight: 450;
-}
-
-.todayCellNumber {
-  width: 24px;
-  height: 24px;
-}
-
-.narrowTodayCellNumber {
-  width: 20px;
-  height: 20px;
 }
 
 .slotHeaderInner {

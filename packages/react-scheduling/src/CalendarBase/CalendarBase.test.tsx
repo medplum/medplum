@@ -214,10 +214,9 @@ describe('CalendarBase', () => {
       others.forEach((inner) => expect(inner.querySelector('.todayNumber')).toBeNull());
 
       await userEvent.click(screen.getByText('Month'));
-      const cell = document.querySelector('.todayCellNumber, .narrowTodayCellNumber');
-      expect(cell).toHaveTextContent(today);
-      expect(cell).toHaveClass('todayNumber');
-      expect(document.querySelectorAll('.todayNumber')).toHaveLength(1);
+      const cells = document.querySelectorAll('[aria-current=date] .dayCellTopInner');
+      expect(cells).toHaveLength(1);
+      expect(cells[0]).toHaveTextContent(today);
     });
 
     test('hides slots in the month view', async () => {

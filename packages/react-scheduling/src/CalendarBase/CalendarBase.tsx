@@ -3,7 +3,6 @@
 import type {
   CalendarRef,
   DateTimeFormatPartWithWeek,
-  DayCellInfo,
   DayHeaderInfo,
   EventApi,
   EventClickInfo,
@@ -98,11 +97,11 @@ function renderEventContent(info: EventDisplayInfo): JSX.Element | true {
   );
 }
 
-function renderToday(textParts: DateTimeFormatPartWithWeek[], numberClassName: string): JSX.Element {
+function renderToday(textParts: DateTimeFormatPartWithWeek[]): JSX.Element {
   return (
     <>
       {textParts.map((part, i) => (
-        <span key={i} className={part.type === 'day' ? numberClassName : classes.todayText}>
+        <span key={i} className={part.type === 'day' ? classes.todayNumber : classes.todayText}>
           {part.value}
         </span>
       ))}
@@ -114,17 +113,7 @@ function renderDayHeaderContent(info: DayHeaderInfo): JSX.Element | string {
   if (info.inPopover || !info.dayNumberText || !info.isToday) {
     return info.text;
   }
-  return renderToday(info.textParts, classes.todayNumber);
-}
-
-function renderDayCellTopContent(info: DayCellInfo): JSX.Element | string {
-  if (!info.isToday) {
-    return info.text;
-  }
-  return renderToday(
-    info.textParts,
-    cx(classes.todayNumber, info.isNarrow ? classes.narrowTodayCellNumber : classes.todayCellNumber)
-  );
+  return renderToday(info.textParts);
 }
 
 function dayHeaderInnerClass(info: DayHeaderInfo): string {
@@ -387,7 +376,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         eventContent={renderEventContent}
         dayHeaderContent={renderDayHeaderContent}
         dayHeaderInnerClass={dayHeaderInnerClass}
-        dayCellTopContent={renderDayCellTopContent}
+        dayCellTopInnerClass={classes.dayCellTopInner}
         slotHeaderInnerClass={classes.slotHeaderInner}
         nowIndicatorLineClass={classes.nowIndicatorLine}
         nowIndicatorDotClass={classes.nowIndicatorDot}
