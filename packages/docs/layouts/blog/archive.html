@@ -1,0 +1,14 @@
+{{ define "main" }}
+  <h1>{{ .Title }}</h1>
+  {{- /* Years newest first, posts within a year oldest first, as on Docusaurus */ -}}
+  {{ range (where site.RegularPages "Section" "blog").GroupByDate "2006" }}
+    <section class="blog-archive-year">
+      <h2>{{ .Key }}</h2>
+      <ul>
+        {{ range .Pages.ByDate }}
+          <li><a href="{{ partial "href" . }}">{{ .Date.Format "January 2" }} - {{ .Title }}</a></li>
+        {{ end }}
+      </ul>
+    </section>
+  {{ end }}
+{{ end }}

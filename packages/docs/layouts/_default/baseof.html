@@ -9,7 +9,7 @@
     </script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ .Title }} | Medplum</title>
+    <title>{{ block "title" . }}{{ .Title }}{{ end }} | Medplum</title>
     {{ $js := resources.Get "js/main.mjs" | js.Build | minify | fingerprint }}
     <script src="{{ $js.RelPermalink }}" defer></script>
     {{ $infima := resources.Get "infima.css" | toCSS }}
@@ -25,7 +25,7 @@
     />
   </head>
   <body
-    {{ if eq .Section "docs" }}
+    {{ if or (eq .Section "docs") (eq .Type "docs_tags") }}
       data-sidebar="open"
     {{ else }}
       data-sidebar="closed"

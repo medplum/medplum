@@ -1,0 +1,87 @@
+// Blog lists, posts, authors, and the tag pages shared with the docs
+.blog-post-summary {
+  margin-bottom: 3rem;
+}
+
+.blog-post-meta {
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.blog-authors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  margin-bottom: 1.25rem;
+}
+
+.blog-author {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.blog-author-image {
+  border-radius: 50%;
+}
+
+.blog-author-name {
+  font-weight: 600;
+}
+
+.blog-author-title {
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.875rem;
+}
+
+.blog-author-list {
+  list-style: none;
+  padding: 0;
+
+  li {
+    margin-bottom: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+}
+
+.blog-pagination {
+  display: flex;
+  justify-content: space-between;
+  margin: 2rem 0;
+}
+
+.blog-pagination-older {
+  margin-left: auto;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.125rem 0.625rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.tag-count {
+  margin-left: 0.375rem;
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.8em;
+}
+
+.tag-index-group h2 {
+  margin-top: 2rem;
+}

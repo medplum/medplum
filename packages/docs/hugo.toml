@@ -3,6 +3,26 @@ languageCode = 'en-us'
 title = 'Medplum'
 enableGitInfo = true
 
+capitalizeListTitles = false
+
+# Docusaurus keeps docs and blog tags separate, at /docs/tags and /blog/tags
+[taxonomies]
+  docs_tag = "docs_tags"
+  blog_tag = "blog_tags"
+
+[permalinks.taxonomy]
+  docs_tags = "/docs/tags/"
+  blog_tags = "/blog/tags/"
+
+[permalinks.term]
+  docs_tags = "/docs/tags/:slug/"
+  blog_tags = "/blog/tags/:slug/"
+
+[pagination]
+  pagerSize = 10
+  # Docusaurus has no /page/1 redirect pages
+  disableAliases = true
+
 [frontmatter]
   date = [':filename', 'date', 'publishDate', 'lastmod']
 

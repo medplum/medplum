@@ -1,0 +1,10 @@
+{{ define "title" }}{{ partial "tagged-heading.html" (dict "page" . "noun" "post") }}{{ end }}
+{{ define "main" }}
+  <h1>{{ partial "tagged-heading.html" (dict "page" . "noun" "post") }}</h1>
+  <a href="/blog/tags">View All Tags</a>
+  {{ $paginator := .Paginate .Pages.ByDate.Reverse }}
+  {{ range $paginator.Pages }}
+    {{ partial "blog/summary.html" . }}
+  {{ end }}
+  {{ partial "blog/pagination.html" $paginator }}
+{{ end }}
