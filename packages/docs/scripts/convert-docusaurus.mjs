@@ -31,7 +31,6 @@ const HAND_WRITTEN = [
   'case-studies.md',
   'docs/sdk/',
   'enterprise.md',
-  'posts/',
   'pricing.md',
   'products/_index.md',
   'solutions/_index.md',
@@ -220,7 +219,7 @@ function convertFrontMatter(page, body) {
     const title = heading.replace(/`/g, '');
     result.splice(1, 0, `title: ${title.includes(':') ? JSON.stringify(title) : title}`);
   }
-  if (page.url !== '/' + stripPage(page.destPath) && !has('slug')) {
+  if (page.url !== '/' + stripPage(page.destPath) && !result.some((l) => l.startsWith('slug:'))) {
     result.push(`url: ${page.url}`);
   }
   return ['---', ...result, '---'].join('\n');

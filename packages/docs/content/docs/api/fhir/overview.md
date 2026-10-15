@@ -2,6 +2,7 @@
 id: overview
 title: Overview
 weight: 20
+url: /docs/api/fhir
 ---
 
 Medplum is based on the [FHIR API](https://www.hl7.org/fhir/R4/).
