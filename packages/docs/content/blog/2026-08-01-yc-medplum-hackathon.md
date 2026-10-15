@@ -3,7 +3,7 @@ id: 2026-08-01-yc-medplum-hackathon
 slug: yc-medplum-hackathon-2026
 title: 'YC x Medplum Hackathon'
 authors: reshma
-tags: [community]
+blog_tags: [community]
 ---
 
 Today is the day: Medplum is hosting the **Agentic Healthcare Hackathon** with Y Combinator at the YC office in San Francisco on **Saturday, August 1, 2026**.

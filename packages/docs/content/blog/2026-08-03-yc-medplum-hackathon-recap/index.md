@@ -3,7 +3,7 @@ id: 2026-08-03-yc-medplum-hackathon-recap
 slug: yc-medplum-hackathon-2026-recap
 title: 'That’s a Wrap: The YC x Medplum Hackathon'
 authors: [reshma, maddyli]
-tags: [community]
+blog_tags: [community]
 ---
 
 On **Saturday, August 1, 2026**, the Y Combinator office in San Francisco filled up with 160+ hackers for the

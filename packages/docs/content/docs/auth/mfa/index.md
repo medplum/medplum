@@ -2,7 +2,7 @@
 id: mfa
 title: Multi-Factor Authentication (MFA)
 weight: 70
-tags: [auth, security]
+docs_tags: [auth, security]
 ---
 
 Multi-Factor Authentication (MFA) adds an extra layer of security to user accounts by requiring a second authentication factor beyond a password. Medplum supports two MFA methods:

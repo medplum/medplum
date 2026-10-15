@@ -2,7 +2,7 @@
 id: index
 title: Stedi Integration
 weight: 30
-tags: [integration]
+docs_tags: [integration]
 ---
 
 {{< tip title="Planning this integration?" >}}

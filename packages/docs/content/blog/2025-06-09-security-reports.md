@@ -3,7 +3,7 @@ id: 2025-06-09-security-reports
 slug: security-reports
 title: Our Guide to Security Reports
 authors: cody
-tags: [security, compliance, auth, community]
+blog_tags: [security, compliance, auth, community]
 ---
 
 As a founder, you wear a lot of hats. One of mine is handling the security reports that land in our inbox.

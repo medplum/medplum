@@ -3,7 +3,7 @@ id: 2025-09-29-healthchain
 slug: healthchain
 title: 'HealthChain: A New Open Source Integration with Epic'
 authors: cody
-tags: [fhir-datastore, security, auth, community]
+blog_tags: [fhir-datastore, security, auth, community]
 ---
 
 We're excited to share a new open-source project from the community that addresses a common developer challenge: integrating with legacy healthcare systems. [HealthChain](https://dotimplement.github.io/HealthChain/), an open-source Python framework, makes it easier to connect AI/ML pipelines to healthcare systems.

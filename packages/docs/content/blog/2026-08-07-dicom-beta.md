@@ -3,7 +3,7 @@ id: 2026-08-07-dicom-beta
 slug: dicom-beta
 title: 'Medical Imaging in Medplum - DICOM & DICOMweb Beta'
 authors: cody
-tags: [integration, fhir-datastore, interop]
+blog_tags: [integration, fhir-datastore, interop]
 ---
 
 Medical imaging has been the part of the patient record that lives somewhere else. A digital health

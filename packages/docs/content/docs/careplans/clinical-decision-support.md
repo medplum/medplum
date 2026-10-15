@@ -2,7 +2,7 @@
 id: clinical-decision-support
 weight: 30
 title: Clinical Decision Support and Follow-Through
-tags: [care coordination, clinical decision support, compliance]
+docs_tags: [care coordination, clinical decision support, compliance]
 ---
 
 A recommendation is useful only if it reaches someone who can act on it. Sometimes a link in the chart is enough. Sometimes the recommendation needs an owner and follow-up that will still be there when the chart is closed.

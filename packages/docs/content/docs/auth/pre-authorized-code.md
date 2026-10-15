@@ -2,7 +2,7 @@
 id: pre-authorized-code
 title: Pre-Authorized Code
 weight: 120
-tags: [auth]
+docs_tags: [auth]
 ---
 
 Medplum supports the OAuth 2.0 pre-authorized code grant type, `urn:ietf:params:oauth:grant-type:pre-authorized_code`, as defined by [OpenID for Verifiable Credential Issuance 1.0](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html). This flow is useful for magic links and other issuer-initiated flows where user authentication and consent have already happened before the client asks Medplum for tokens.

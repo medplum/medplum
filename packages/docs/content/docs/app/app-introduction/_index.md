@@ -2,7 +2,7 @@
 id: index
 title: Introduction
 weight: 10
-tags:
+docs_tags:
   - app
 ---
 

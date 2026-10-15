@@ -3,7 +3,7 @@ id: 2023-04-04-post-install-verification
 slug: post-install-verification
 title: Post-Installation Steps to Verify Your Environment
 authors: reshma
-tags: [self-host]
+blog_tags: [self-host]
 ---
 
 This guide is for customers who are [self-hosting](/docs/self-hosting) Medplum, and this post assumes that your installation was complete and successful. We will refer to your base installation as `$domainName`, and this refers to the domain on which the Medplum app is running, for example on hosted Medplum the domain is `app.medplum.com.`

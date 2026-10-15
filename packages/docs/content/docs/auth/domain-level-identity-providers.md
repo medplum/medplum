@@ -2,7 +2,7 @@
 id: domain-level-identity-providers
 title: Domain-level Identity Providers
 weight: 90
-tags: [auth]
+docs_tags: [auth]
 ---
 
 A Domain-level Identity Provider (DL-IDP) is a server-level configuration that sets up an external identity provider for all users from a given domain. This identity provider will be used for _all_ Medplum applications the user logs into, **including the Medplum App**. Domain-level providers are primarily used to ensure that all practitioners access Medplum data via your corporate identity solution.

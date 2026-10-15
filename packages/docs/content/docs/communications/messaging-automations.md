@@ -2,7 +2,7 @@
 id: messaging-automations
 weight: 80
 title: Messaging Automations
-tags: [communications, messaging, bots, subscriptions]
+docs_tags: [communications, messaging, bots, subscriptions]
 keywords: [bot, subscription, task, auto-complete, reminder, cron, ooo, reroute, schedule]
 ---
 

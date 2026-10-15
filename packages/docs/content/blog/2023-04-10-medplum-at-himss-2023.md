@@ -3,7 +3,7 @@ id: 2023-04-10-medplum-at-himss-2023
 slug: medplum-at-himss-2023
 title: Medplum at HIMSS 2023
 authors: reshma
-tags: [interop]
+blog_tags: [interop]
 ---
 
 Medplum will be at HIMSS on April 17-19, 2023 participating in the **HIMSS23 Cancer Care: Treating the Whole Person Demonstration** hosted by the CDC in McCormick Place, North Building Hall B, Booth 7649.

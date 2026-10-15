@@ -3,7 +3,7 @@ id: 2022-12-06-what-is-onc-certification
 slug: what-is-onc-certification
 title: What is ONC Certification?
 authors: reshma
-tags: [compliance, billing]
+blog_tags: [compliance, billing]
 ---
 
 ## What is ONC Certification?

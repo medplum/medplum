@@ -3,7 +3,7 @@ id: 2023-05-08-codex-and-the-power-of-g10
 slug: codex-and-the-power-of-g10
 title: Power of g10 - Codex Case Study
 authors: reshma
-tags: [interop, fhir-datastore, compliance, case-study]
+blog_tags: [interop, fhir-datastore, compliance, case-study]
 ---
 
 [Codex Health](https://www.codex.health/) enables health systems manage their patient populations with effective remote patient monitoring (RPM) programs for diabetes, cardiovascular diseases and more.

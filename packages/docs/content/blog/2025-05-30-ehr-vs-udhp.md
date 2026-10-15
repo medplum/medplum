@@ -3,7 +3,7 @@ id: 2025-05-30-ehr-vs-udhp
 slug: ehr-vs-udhp
 title: EHRs, UDHPs, and Health Tech's Next Phase
 authors: cody
-tags: [self-host, fhir-datastore, integration, compliance, auth, community]
+blog_tags: [self-host, fhir-datastore, integration, compliance, auth, community]
 ---
 
 Healthcare technology relies on established systems like Electronic Health Records (EHRs) and is now incorporating concepts like Unified Digital Health Platforms (UDHPs). Understanding this evolution is key to navigating the industry's direction.

@@ -3,7 +3,7 @@ id: 2025-02-07-life-sciences-devtools
 slug: life-sciences-devtools
 title: Devtools for Life Sciences
 authors: reshma
-tags: [lifesciences]
+blog_tags: [lifesciences]
 ---
 
 On January 15, 2025 Medplum & Flexpa held a [JPMorgan companion event](https://lu.ma/bonej6ih) for the community.  During the event, there were demos of many different open source tools that aid in development for life science workflows.

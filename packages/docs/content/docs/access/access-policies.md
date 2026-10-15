@@ -2,7 +2,7 @@
 id: access-policies
 title: Access Policies
 weight: 20
-tags: [auth]
+docs_tags: [auth]
 ---
 
 ## Introduction

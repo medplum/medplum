@@ -2,7 +2,7 @@
 id: thread-lifecycle-participants-access-control
 weight: 30
 title: Thread Lifecycle, Participants, and Access Control
-tags: [communications, messaging, threads, Communication, access control]
+docs_tags: [communications, messaging, threads, Communication, access control]
 keywords: [Communication, recipient, sender, status, AccessPolicy, participants, thread]
 ---
 

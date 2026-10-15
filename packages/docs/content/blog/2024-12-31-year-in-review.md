@@ -3,7 +3,7 @@ id: 2024-12-31-year-in-review
 slug: 2024-year-in-review-medplum
 title: Medplum Year in Review 2024
 authors: reshma
-tags: [integration, fhir-datastore]
+blog_tags: [integration, fhir-datastore]
 ---
 
 ![2024 in Review](/img/blog/2024-in-review.png)

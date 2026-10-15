@@ -3,7 +3,7 @@ id: 2023-09-06-graphql-vs-rest
 slug: graphql-vs-rest
 title: GraphQL vs REST APIs
 authors: rahul
-tags: [fhir-datastore]
+blog_tags: [fhir-datastore]
 ---
 
 One of the most frequent questions we get from our users is whether they should use Medplum's [REST](http://hl7.org/fhir/R4/http.html) or [GraphQL](https://www.medplum.com/docs/graphql) APIs. Both have a FHIR specification, but they offer different tradeoffs for different use cases.

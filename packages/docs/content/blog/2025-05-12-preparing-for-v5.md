@@ -3,7 +3,7 @@ id: 2025-05-12-preparing-for-v5
 slug: preparing-for-v5
 title: Preparing for Medplum v5
 authors: cody
-tags: [self-host, fhir-datastore, integration, compliance, auth, community]
+blog_tags: [self-host, fhir-datastore, integration, compliance, auth, community]
 ---
 
 As the open source healthcare developer platform of choice for innovators worldwide, Medplum continues to evolve with the rapidly changing technology landscape. We're excited to announce our upcoming major version release, Medplum v5, scheduled for October 2025. This post outlines the significant changes coming in this release to help our users prepare accordingly.

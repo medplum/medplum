@@ -3,7 +3,7 @@ id: 2024-07-16-awell-health
 slug: awell-health-medplum
 title: Awell - clinical workflow automation on Medplum
 authors: nckhell
-tags: [community, careplan]
+blog_tags: [community, careplan]
 ---
 
 [Awell](https://www.awellhealth.com/?utm_medium=partners&utm_source=website&utm_campaign=medplum-profile) is a low-code platform designed to enable your clinical teams to design, operate and continuously improve your care flows with minimal engineering lift.

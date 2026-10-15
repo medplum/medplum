@@ -3,7 +3,7 @@ id: 2023-06-19-ensage-case-study
 slug: ensage-case-study
 title: Value Based Care and Elderly Populations - Ensage Case Study
 authors: reshma
-tags: [interop, fhir-datastore, compliance, case-study, geriatrics]
+blog_tags: [interop, fhir-datastore, compliance, case-study, geriatrics]
 ---
 
 <div class="responsive-iframe-wrapper">

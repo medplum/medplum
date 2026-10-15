@@ -2,7 +2,7 @@
 id: external-fhir-servers
 title: Connecting to External FHIR Servers
 weight: 30
-tags: [integration]
+docs_tags: [integration]
 ---
 
 When building an application, you many need to query or write data to an external FHIR server as part of your application's workflow. For example:

@@ -2,7 +2,7 @@
 id: on-behalf-of
 title: On-Behalf-Of
 weight: 310
-tags: [auth]
+docs_tags: [auth]
 ---
 
 The Medplum API supports an "On-Behalf-Of" feature to enable a Customer Server Side App to act on behalf of a Medplum user.

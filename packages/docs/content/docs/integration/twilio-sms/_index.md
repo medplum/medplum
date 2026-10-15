@@ -2,7 +2,7 @@
 id: index
 title: Twilio SMS Integration
 weight: 10
-tags: [integration, communications]
+docs_tags: [integration, communications]
 ---
 
 Medplum provides an integration with Twilio to send and receive SMS messages directly from your healthcare application. Messages are stored as FHIR `Communication` resources, enabling seamless integration with your clinical workflows.

@@ -5,7 +5,7 @@ weight: 10
 keywords:
   - charting
   - EHR
-tags:
+docs_tags:
   - charting
 ---
 

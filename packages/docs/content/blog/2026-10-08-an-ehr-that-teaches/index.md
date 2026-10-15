@@ -3,7 +3,7 @@ id: 2026-10-08-an-ehr-that-teaches
 slug: an-ehr-that-teaches
 title: 'An EHR That Teaches: Building an AI-Powered Clinical Learning Environment with Medplum'
 authors: [pauliusmui, misham]
-tags: [community]
+blog_tags: [community]
 ---
 
 ## Building an open-source, AI-enabled clinical learning environment with Medplum and PhenoML

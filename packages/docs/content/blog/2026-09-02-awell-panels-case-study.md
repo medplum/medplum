@@ -3,7 +3,7 @@ id: 2026-09-02-awell-panels-case-study
 slug: awell-panels-case-study
 title: 'Awell Panels: Worklists That Update Themselves'
 authors: thomas
-tags: [case-study, fhir-datastore, self-host, careplan]
+blog_tags: [case-study, fhir-datastore, self-host, careplan]
 ---
 
 [Awell](https://www.awellhealth.com/) builds care orchestration infrastructure, and on top of it **[Panels](https://panels.health)**, a work surface where care teams define a patient population, configure how they work it, and trigger what happens next. Panels is population and workflow agnostic by design: intake, surgery prep, prescription refill, chronic care management and post-discharge follow-up each need to see different data and follow different steps.

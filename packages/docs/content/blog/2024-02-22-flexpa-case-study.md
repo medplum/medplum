@@ -3,7 +3,7 @@ id: 2024-02-22-flexpa-case-study
 slug: flexpa-case-study
 title: Flexpa - sync health history to apps
 authors: jdjkelly
-tags: [billing, fhir-datastore, self-host]
+blog_tags: [billing, fhir-datastore, self-host]
 ---
 
 Claims data is a uniquely rich source of financial and clinical data important to many healthcare workflows. The EDI 837 Health Care Claim transaction is one of the oldest forms of electronic data exchange, stemming from being defined as a required data transmission specification by HIPAA.

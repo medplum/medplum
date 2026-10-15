@@ -3,7 +3,7 @@ id: 2023-10-27-digital-health-operations
 slug: digital-health-operations
 title: Digital Health is an Operations Game
 authors: rahul
-tags: ['care plans', 'workflow', 'tasks']
+blog_tags: ['care plans', 'workflow', 'tasks']
 keywords: ['digital health', 'healthcare operations', 'EHR']
 ---
 

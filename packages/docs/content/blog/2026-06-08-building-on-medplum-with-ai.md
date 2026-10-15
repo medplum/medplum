@@ -3,7 +3,7 @@ id: 2026-06-08-building-on-medplum-with-ai
 slug: building-on-medplum-with-ai
 title: 'Vibe Coding on Medplum'
 authors: everett
-tags: [ai]
+blog_tags: [ai]
 ---
 
 More and more Medplum users are building with AI coding assistants — Cursor, Claude, Copilot, and others. We have been talking to users about what works and wrote up what we have learned in a new guide: [Building on Medplum with AI Coding Assistants](/docs/building-with-ai-coding-assistants). This post is the short version of what is in there.

@@ -3,7 +3,7 @@ id: 2025-03-27-technical-guide-to-tefca
 slug: technical-guide-to-tefca
 title: Technical Guide to TEFCA
 authors: andrei-zudin
-tags: [self-host, integration, interop, community]
+blog_tags: [self-host, integration, interop, community]
 ---
 
 > [Andrei Zudin](https://www.linkedin.com/in/andrei-zudin-phd-1300021) is a healthcare interoperability expert and advisor to the Medplum community.  He is the former CTO and co-founder of [Health Gorilla](https://healthgorilla.com/).

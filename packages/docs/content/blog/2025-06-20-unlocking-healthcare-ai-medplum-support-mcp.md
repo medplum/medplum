@@ -3,7 +3,7 @@ id: 2025-06-20-unlocking-healthcare-ai-medplum-support-mcp
 slug: unlocking-healthcare-ai-medplum-support-mcp
 title: "Medplum Support for Anthropic's Model Context Protocol (MCP)"
 authors: cody
-tags: [self-host, fhir-datastore, integration, compliance, auth, community, ai]
+blog_tags: [self-host, fhir-datastore, integration, compliance, auth, community, ai]
 ---
 
 Medplum is the platform of choice for technical leaders in healthcare, and that has given us a unique perspective into the transformative power of AI in healthcare - we get asked about it every single day.

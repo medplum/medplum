@@ -3,7 +3,7 @@ id: 2026-06-22-ble-to-fhir-anybio-medplum
 slug: ble-to-fhir-anybio-medplum
 title: 'From BLE to FHIR: Streaming Clinical-Grade Biosignals with AnyBio + Medplum'
 authors: sainejob
-tags: [integration, fhir-datastore, interop]
+blog_tags: [integration, fhir-datastore, interop]
 ---
 
 If you're building a digital health product, you've probably hit the same wall everyone hits: the gap between a wearable's raw signal and a clinical-grade artifact in the EHR that is actionable by a clinician.

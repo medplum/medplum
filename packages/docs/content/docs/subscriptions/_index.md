@@ -1,7 +1,7 @@
 ---
 id: index
 title: Subscriptions
-tags:
+docs_tags:
   - subscription
 ---
 

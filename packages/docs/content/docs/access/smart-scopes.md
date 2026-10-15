@@ -2,7 +2,7 @@
 id: smart-scopes
 title: SMART Scopes
 weight: 90
-tags: [auth]
+docs_tags: [auth]
 ---
 
 SMART on FHIR’s authorization scheme uses [OAuth2 scopes](https://oauth.net/2/scope/) to communicate (and negotiate) access requirements.

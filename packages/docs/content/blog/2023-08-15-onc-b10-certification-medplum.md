@@ -3,7 +3,7 @@ id: 2023-08-15-onc-b10-certification-medplum
 slug: onc-b10-certification-medplum
 title: ONC Certified for (b)(10)
 authors: reshma
-tags: [fhir-datastore, compliance]
+blog_tags: [fhir-datastore, compliance]
 ---
 
 The Medplum team is pleased to announce that we have certified the [(b)(10) ONC Criteria](https://www.healthit.gov/test-method/electronic-health-information-export) - Electronic Health Information Export.

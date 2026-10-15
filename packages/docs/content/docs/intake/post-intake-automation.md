@@ -2,7 +2,7 @@
 id: post-intake-automation
 weight: 40
 title: Post Intake Automation
-tags: [intake, automation, subscription, bot, PlanDefinition, task]
+docs_tags: [intake, automation, subscription, bot, PlanDefinition, task]
 keywords: [QuestionnaireResponse, Subscription, Bot, PlanDefinition, apply, Task, CarePlan, RequestGroup, workflow, automation]
 ---
 

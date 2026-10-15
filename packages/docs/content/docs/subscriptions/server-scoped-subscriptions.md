@@ -2,7 +2,7 @@
 id: server-scoped-subscriptions
 title: Server-Scoped Subscriptions
 weight: 50
-tags:
+docs_tags:
   - subscription
   - self-hosting
 ---

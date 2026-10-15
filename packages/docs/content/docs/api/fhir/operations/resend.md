@@ -2,7 +2,7 @@
 id: resend
 title: Resource $resend
 weight: 80
-tags:
+docs_tags:
   - subscription
 ---
 

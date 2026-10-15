@@ -2,7 +2,7 @@
 id: google-auth
 title: Google Authentication
 weight: 60
-tags: [auth]
+docs_tags: [auth]
 ---
 
 Medplum supports using Google Authentication as an external identity provider, as well as [other external identity providers](/docs/auth/external-identity-providers) using the OAuth2 protocol. Google Authentication allows users to log in to your application using their Google profile.

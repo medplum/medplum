@@ -2,7 +2,7 @@
 id: enabling-rollbacks
 title: Enabling Rollbacks for Medplum Server
 weight: 1110
-tags:
+docs_tags:
   - self-hosting
   - upgrades
   - rollbacks

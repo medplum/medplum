@@ -3,7 +3,7 @@ id: 2023-12-18-radai-case-study
 slug: radai-case-study
 title: Rad AI Omni Reporting - Case Study
 authors: reshma
-tags: [ai, interop, radiology, case-study]
+blog_tags: [ai, interop, radiology, case-study]
 ---
 
 ## Medplum’s Open-Source FHIRcast Hub Enables Rad AI Omni Reporting's Interactive Measurements

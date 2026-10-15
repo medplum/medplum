@@ -3,7 +3,7 @@ id: 2026-09-02-fhir-database
 slug: traditional-fhir
 title: 'How Medplum thinks about FHIR'
 authors: maddyli
-tags: [fhir, traditional-ehr]
+blog_tags: [fhir, traditional-ehr]
 ---
 
 Most folks, before encountering Medplum, think of FHIR in one of two ways:

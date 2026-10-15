@@ -2,7 +2,7 @@
 id: use-subscription
 title: useSubscription Hook
 weight: 40
-tags:
+docs_tags:
   - subscription
 ---
 

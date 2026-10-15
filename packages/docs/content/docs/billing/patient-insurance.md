@@ -2,7 +2,7 @@
 id: patient-insurance
 title: Representing Patient Insurance Coverage
 weight: 30
-tags:
+docs_tags:
   - billing
   - insurance
   - coverage

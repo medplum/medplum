@@ -3,7 +3,7 @@ id: 2026-07-01-forward-deployed-engineering
 slug: fde
 title: 'Forward Deployed Engineering, Medplum-Style'
 authors: maddyli
-tags: [forward-deployed-engineering, hiring, customers]
+blog_tags: [forward-deployed-engineering, hiring, customers]
 ---
 
 You have probably noticed that "Forward Deployed Engineer" is having a moment. Over the last couple of years the role has spread from

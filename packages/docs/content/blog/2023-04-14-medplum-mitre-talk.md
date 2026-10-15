@@ -3,7 +3,7 @@ id: 2023-04-14-medplum-mitre-talk
 slug: medplum-mitre-talk
 title: Medplum Talk at MITRE OHS
 authors: reshma
-tags: [interop, fhir-datastore]
+blog_tags: [interop, fhir-datastore]
 ---
 
 [MITRE](https://www.mitre.org/) Open Health Solutions is a leader in healthcare open source and are the makers of [Inferno](https://inferno.healthit.gov/), [Synthea](https://synthea.mitre.org/) and more - which are tools we use all the time here.

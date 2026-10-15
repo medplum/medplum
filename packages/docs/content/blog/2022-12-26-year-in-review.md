@@ -3,7 +3,7 @@ id: 2022-12-26-year-in-review
 slug: 2022-year-in-review-medplum
 title: Medplum Year in Review 2022
 authors: reshma
-tags: [integration, fhir-datastore]
+blog_tags: [integration, fhir-datastore]
 ---
 
 ![2022 in Review](/img/blog/2022-in-review.png)

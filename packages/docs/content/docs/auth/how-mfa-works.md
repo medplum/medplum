@@ -3,7 +3,7 @@ id: how-mfa-works
 title: "MFA Under the Hood: Routes & User Flows"
 weight: 75
 sidebar_label: How MFA Works
-tags: [auth, security]
+docs_tags: [auth, security]
 ---
 
 This page is a deep dive into how Multi-Factor Authentication works in Medplum: the underlying HTTP routes and the user flows that combine them. It is intended for developers building their **own** MFA management UI — those who cannot use Medplum's [`SignInForm`](https://storybook.medplum.com/?path=/story/medplum-auth-signinform--basic) component or the [Medplum App Security page](/docs/auth/mfa) and need to drive enrollment and challenge completion directly.

@@ -3,7 +3,7 @@ id: 2026-08-03-profile-case-study
 slug: profile-case-study
 title: "Profile Health: Genetic Intelligence for Longevity Medicine"
 authors: mandi
-tags: [case-study, ai, genomics, questionnaires, terminology, integration]
+blog_tags: [case-study, ai, genomics, questionnaires, terminology, integration]
 ---
 
 [Profile Health](https://profilehealth.com/) is building **genetic intelligence for longevity and functional medicine** — the concierge, naturopathic, and longevity practices that treat chronic, whole-person conditions rather than single episodes of care. Their thesis is simple: the most valuable signal in medicine — a patient's whole **genome**, enriched with a lifetime of their clinical records — sits scattered, unread, and never makes it into the exam room. Profile fuses the two and hands the result to the physician, so care can get ahead of disease instead of reacting to it.

@@ -6,7 +6,7 @@ keywords:
   - DocumentReference
   - Binary
   - attachments
-tags:
+docs_tags:
   - fhir-datastore
 ---
 

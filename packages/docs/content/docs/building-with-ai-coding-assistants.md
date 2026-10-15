@@ -2,7 +2,7 @@
 id: building-with-ai-coding-assistants
 sidebar_label: AI Coding Assistants
 title: Building on Medplum with AI Coding Assistants
-tags: [ai, agentic-engineering, best-practices, mcp]
+docs_tags: [ai, agentic-engineering, best-practices, mcp]
 keywords: [vibe coding, agentic engineering, llm, agent, mcp, skills, cursor, claude, copilot]
 ---
 

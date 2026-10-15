@@ -6,7 +6,7 @@ keywords:
   - formulary
   - medication
   - pharmacy
-tags:
+docs_tags:
   - administration
   - medication
   - pharmacy

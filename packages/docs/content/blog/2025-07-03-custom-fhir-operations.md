@@ -3,7 +3,7 @@ id: 2025-07-03-custom-fhir-operations
 slug: custom-fhir-operations
 title: "Medplum Supports Custom FHIR Operations"
 authors: cody
-tags: [fhir-datastore, integration, auth, community, ai]
+blog_tags: [fhir-datastore, integration, auth, community, ai]
 ---
 
 Healthcare APIs need flexibility. While FHIR's standard CRUD operations (create, read, update, delete) handle most use cases, real-world healthcare workflows often require custom logic that goes beyond basic data manipulation. That's why we're excited to introduce custom FHIR operations in Medplum.

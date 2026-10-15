@@ -8,7 +8,7 @@ keywords:
   - lab codes
   - diagnostic codes
   - LIS/LIMS
-tags:
+docs_tags:
   - lab
   - diagnostics
   - loinc

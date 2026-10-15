@@ -2,7 +2,7 @@
 id: logout
 title: Logout
 weight: 100
-tags: [auth]
+docs_tags: [auth]
 ---
 
 There are two different methods to "logout" and revoke access tokens:

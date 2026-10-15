@@ -3,7 +3,7 @@ id: 2025-09-22-events-calendar
 slug: events-calendar
 title: 'Medplum Events Calendar'
 authors: reshma
-tags: [community]
+blog_tags: [community]
 ---
 
 ### Upcoming

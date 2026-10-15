@@ -3,7 +3,7 @@ id: 2024-12-28-fhir-workflow-patterns-to-simplify-your-life
 slug: fhir-workflow-patterns-to-simplify-your-life
 title: FHIR Workflow Patterns to Simplify Your Life
 authors: rahul
-tags: [fhir-datastore]
+blog_tags: [fhir-datastore]
 ---
 
 If you've worked with FHIR before, you've probably noticed there are a lot of resources. And I mean a lot! At first glance, it might seem overwhelming to figure out how they all fit together. But here's the thing: once you understand a few core patterns, the whole system starts to make much more sense.

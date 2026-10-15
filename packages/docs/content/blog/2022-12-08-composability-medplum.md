@@ -3,7 +3,7 @@ id: 2022-12-08-composability-medplum
 slug: composability-medplum
 title: Composability, Open Source, Standards, API-First
 authors: reshma
-tags: [integration]
+blog_tags: [integration]
 ---
 
 ![Composability venn diagram](/img/blog/composability-venn-diagram.png)

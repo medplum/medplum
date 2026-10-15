@@ -3,7 +3,7 @@ id: 2026-06-25-scheduling-beta
 slug: scheduling-beta
 title: 'Medplum Scheduling API - Beta Release'
 authors: noahsilas
-tags: [fhir]
+blog_tags: [fhir]
 ---
 
 After several months of preview as an [Alpha](/docs/compliance/alpha-beta) product, we are pleased to announce that [Medplum's Scheduling API](/docs/scheduling) has graduated to [Beta](/docs/compliance/alpha-beta).

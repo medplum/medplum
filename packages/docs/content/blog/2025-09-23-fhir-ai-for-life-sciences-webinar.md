@@ -3,7 +3,7 @@ id: 2025-09-23-fhir-ai-for-life-sciences-webinar
 slug: fhir-ai-for-life-sciences
 title: 'FHIR + AI for Life Sciences'
 authors: kerbearasaurus
-tags: [community]
+blog_tags: [community]
 ---
 
 Hello everyone,

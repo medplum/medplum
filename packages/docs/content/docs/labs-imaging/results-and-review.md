@@ -2,7 +2,7 @@
 id: results-and-review
 title: Results and Review
 weight: 30
-tags:
+docs_tags:
   - labs
   - diagnostics
   - DiagnosticReport

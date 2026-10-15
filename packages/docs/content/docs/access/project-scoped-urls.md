@@ -2,7 +2,7 @@
 id: project-scoped-urls
 title: Project-Scoped URLs
 weight: 40
-tags: [auth]
+docs_tags: [auth]
 ---
 
 Medplum serves its API under project-scoped base URLs in addition to the standard root URL. A project-scoped URL names the target [Project](/docs/access/projects) in the path, and Medplum verifies that every authenticated request made through it belongs to that project.

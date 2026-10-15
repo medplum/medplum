@@ -2,7 +2,7 @@
 id: message-response-tracking-and-routing
 weight: 50
 title: Message Response Tracking and Routing
-tags: [communications, task, routing]
+docs_tags: [communications, task, routing]
 keywords: [task, routing, assignment, communication, thread, pool, reroute, claim]
 ---
 

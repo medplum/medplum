@@ -3,7 +3,7 @@ id: 2025-05-15-so-youre-thinking-about-forking
 slug: so-youre-thinking-about-forking
 title: So You’re Thinking About Forking
 authors: cody
-tags: [self-host, fhir-datastore, integration, compliance, auth, community]
+blog_tags: [self-host, fhir-datastore, integration, compliance, auth, community]
 ---
 
 Forking can look like the fastest path to control, but it often becomes a long‑term maintenance tax. Here’s a pragmatic checklist to decide—and alternatives that usually win.

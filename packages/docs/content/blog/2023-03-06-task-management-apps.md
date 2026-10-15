@@ -3,7 +3,7 @@ id: 2023-03-06-task-management-apps
 slug: task-management-apps
 title: Task Management Apps
 authors: reshma
-tags: [react, fhir-datastore]
+blog_tags: [react, fhir-datastore]
 ---
 
 Great workflow apps are core for us at Medplum, and we provide tools to build **highly ergonomic asynchronous task tracking systems providers**. Some examples of task management apps in the medical context are apps that:

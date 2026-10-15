@@ -3,7 +3,7 @@ id: 2025-03-23-medplum-for-mirth-users
 slug: medplum-for-mirth-users
 title: Medplum for Mirth Users
 authors: cody
-tags: [self-host, integration, interop, community]
+blog_tags: [self-host, integration, interop, community]
 ---
 
 > *Modern Healthcare Integration in the Wake of NextGen's Announcement*

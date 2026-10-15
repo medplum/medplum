@@ -2,7 +2,7 @@
 id: session-management
 title: Access Token Management
 weight: 80
-tags: [auth]
+docs_tags: [auth]
 ---
 
 This guide explains how Medplum manages authentication tokens and how to implement secure token handling in your applications.

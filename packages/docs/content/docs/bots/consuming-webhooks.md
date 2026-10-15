@@ -2,7 +2,7 @@
 id: consuming-webhooks
 title: Consuming Webhooks
 weight: 10010
-tags: [bots, subscriptions, auth, security]
+docs_tags: [bots, subscriptions, auth, security]
 ---
 
 Many SaaS products including popular services like Stripe and Okta support Webhooks, allowing a web application to register a Medplum URL to receive notifications. When a certain event occurs in the source application, such as a new user signup or a change to a record, the source application sends an HTTP POST request to the URL registered by the destination application. This HTTP POST request contains information about the event that occurred.

@@ -1,0 +1,198 @@
+[
+  {
+    "key": "reshma",
+    "name": "Reshma Khilnani",
+    "title": "Medplum Core Team",
+    "url": "https://github.com/reshmakh",
+    "image_url": "https://github.com/reshmakh.png"
+  },
+  {
+    "key": "cody",
+    "name": "Cody Ebberson",
+    "title": "Medplum Core Team",
+    "url": "https://github.com/codyebberson",
+    "image_url": "https://github.com/codyebberson.png"
+  },
+  {
+    "key": "rahul",
+    "name": "Rahul Agarwal",
+    "title": "Medplum Core Team",
+    "url": "https://github.com/rahul1",
+    "image_url": "https://github.com/rahul1.png"
+  },
+  {
+    "key": "mattlong",
+    "name": "Matt Long",
+    "title": "Medplum Core Team",
+    "url": "https://github.com/mattlong",
+    "image_url": "https://github.com/mattlong.png"
+  },
+  {
+    "key": "jdjkelly",
+    "name": "Joshua Kelly",
+    "title": "Flexpa CTO",
+    "url": "https://github.com/jdjkelly",
+    "image_url": "https://github.com/jdjkelly.png"
+  },
+  {
+    "key": "nckhell",
+    "name": "Nick Hellemans",
+    "title": "Head of Product, Awell",
+    "url": "https://github.com/nckhell/",
+    "image_url": "https://github.com/nckhell.png"
+  },
+  {
+    "key": "andrewdilling",
+    "name": "Andrew Dilling",
+    "title": "Head of Product, Chamber Cardio",
+    "url": "https://github.com/andrewdilling",
+    "image_url": "https://github.com/andrewdilling.png"
+  },
+  {
+    "key": "andrei-zudin",
+    "name": "Andrei Zudin",
+    "title": "Head of Interoperability and Security, RhythmX",
+    "url": "https://github.com/andrei-zudin",
+    "image_url": "https://github.com/andrei-zudin.png"
+  },
+  {
+    "key": "finnbergquist",
+    "name": "Finn Bergquist",
+    "title": "Forward Deployed Engineer, Medplum",
+    "url": "https://github.com/finnbergquist",
+    "image_url": "https://github.com/finnbergquist.png"
+  },
+  {
+    "key": "petch",
+    "name": "Petch Jirapinyo",
+    "title": "Co-Founder and CEO, Everself",
+    "url": "https://everself.com/",
+    "image_url": "/img/people/petch.jpg"
+  },
+  {
+    "key": "ThatOneBro",
+    "name": "Derrick Farris",
+    "title": "Founding Engineer, Medplum",
+    "url": "https://github.com/ThatOneBro",
+    "image_url": "https://github.com/ThatOneBro.png"
+  },
+  {
+    "key": "kerbearasaurus",
+    "name": "Kerry Weinberg",
+    "title": "CEO, phenoml",
+    "url": "https://github.com/kerbearasaurus",
+    "image_url": "https://github.com/kerbearasaurus.png"
+  },
+  {
+    "key": "mattwiller",
+    "name": "Matt Willer",
+    "title": "Founding Engineer, Medplum",
+    "url": "https://github.com/mattwiller",
+    "image_url": "https://github.com/mattwiller.png"
+  },
+  {
+    "key": "codyhall",
+    "name": "Cody Hall",
+    "title": "CTO and Co-Founder, Unity AI",
+    "url": "https://github.com/codyhall",
+    "image_url": "https://github.com/codyhall.png"
+  },
+  {
+    "key": "everett",
+    "name": "Everett Williams",
+    "title": "Deployment Strategist, Medplum",
+    "url": "https://github.com/everett-williams",
+    "image_url": "https://github.com/everett-williams.png"
+  },
+  {
+    "key": "noahsilas",
+    "name": "Noah Silas",
+    "title": "Engineer, Medplum",
+    "url": "https://github.com/noahsilas",
+    "image_url": "https://github.com/noahsilas.png"
+  },
+  {
+    "key": "techdavidy",
+    "name": "David Yanez",
+    "title": "Medplum Core Team",
+    "url": "https://github.com/techdavidy",
+    "image_url": "https://github.com/techdavidy.png"
+  },
+  {
+    "key": "deam65",
+    "name": "Darren Eam",
+    "title": "Medplum Core Team",
+    "url": "https://github.com/deam65",
+    "image_url": "https://github.com/deam65.png"
+  },
+  {
+    "key": "kevinwadeshaw",
+    "name": "Kevin Wadeshaw",
+    "title": "Medplum Core Team",
+    "url": "https://github.com/kevinwadeshaw",
+    "image_url": "https://github.com/kevinwadeshaw.png"
+  },
+  {
+    "key": "maddyli",
+    "name": "Maddy Li",
+    "title": "Medplum Core Team",
+    "url": "https://github.com/maddyli",
+    "image_url": "https://github.com/maddyli.png"
+  },
+  {
+    "key": "oleg-mp",
+    "name": "Oleg Rocklin",
+    "title": "Medplum Core Team",
+    "url": "https://github.com/oleg-mp",
+    "image_url": "https://github.com/oleg-mp.png"
+  },
+  {
+    "key": "andystoneman",
+    "name": "Andy Stoneman",
+    "title": "Forward Deployed Engineer, Medplum",
+    "url": "https://github.com/andystoneman",
+    "image_url": "https://github.com/andystoneman.png"
+  },
+  {
+    "key": "sainejob",
+    "name": "Stephen Saine",
+    "title": "AnyBio",
+    "url": "https://github.com/sainejob",
+    "image_url": "https://github.com/sainejob.png"
+  },
+  {
+    "key": "mandi",
+    "name": "Mandi Bateman",
+    "title": "CEO, Profile Health",
+    "url": "https://www.linkedin.com/in/mandibateman/",
+    "image_url": "/img/avatars/mandi-bateman.jpg"
+  },
+  {
+    "key": "lasha",
+    "name": "Lasha Khoshtaria",
+    "title": "Co-founder & CEO, MediMind",
+    "url": "https://www.linkedin.com/in/dr-lasha-khoshtaria-551135305/",
+    "image_url": "/img/avatars/lasha-khoshtaria.jpg"
+  },
+  {
+    "key": "thomas",
+    "name": "Thomas Vande Casteele",
+    "title": "Co-Founder and CEO, Awell",
+    "url": "https://www.linkedin.com/in/thomasvdc/",
+    "image_url": "/img/people/thomas-vande-casteele.jpg"
+  },
+  {
+    "key": "pauliusmui",
+    "name": "Paulius Mui, MD",
+    "title": "CEO, Distillemr",
+    "url": "https://www.linkedin.com/in/pauliusmui/",
+    "image_url": "/img/avatars/paulius-mui.webp"
+  },
+  {
+    "key": "misham",
+    "name": "Misha Manulis",
+    "title": "CTO, Distillemr",
+    "url": "https://www.linkedin.com/in/mishamanulis",
+    "image_url": "/img/avatars/misha-manulis.webp"
+  }
+]

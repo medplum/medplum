@@ -2,7 +2,7 @@
 id: direct-external-auth
 title: Direct External Authentication
 weight: 110
-tags: [auth]
+docs_tags: [auth]
 ---
 
 Medplum supports authenticating users directly with an external Identity Provider (IDP) access token, without requiring a token exchange or authorization code flow. This is useful when your application already holds a valid JWT from an external IDP and wants to access the Medplum API directly.

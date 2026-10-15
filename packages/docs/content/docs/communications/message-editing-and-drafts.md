@@ -2,7 +2,7 @@
 id: message-editing-and-drafts
 weight: 60
 title: Message Editing and Drafts
-tags: [communications, messaging, drafts, editing]
+docs_tags: [communications, messaging, drafts, editing]
 keywords: [draft, preparation, entered-in-error, correction, inResponseTo, payload, patchResource]
 ---
 

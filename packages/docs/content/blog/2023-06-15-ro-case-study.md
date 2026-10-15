@@ -3,7 +3,7 @@ id: 2023-06-15-ro-case-study
 slug: ro-case-study
 title: At Home Diagnostics - Ro Case Study
 authors: reshma
-tags: [interop, fhir-datastore, compliance, case-study]
+blog_tags: [interop, fhir-datastore, compliance, case-study]
 ---
 
 <div class="responsive-iframe-wrapper">

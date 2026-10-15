@@ -3,7 +3,7 @@ id: 2025-02-01-podcast-appearances
 slug: podcast-appearances
 title: Talks & Podcasts with the Medplum Team
 authors: reshma
-tags: [news, press]
+blog_tags: [news, press]
 ---
 
 On occasion, the [Medplum team](/about) gives talks about our community, product and philosophy. You can find them here:

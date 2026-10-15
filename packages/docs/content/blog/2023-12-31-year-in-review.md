@@ -3,7 +3,7 @@ id: 2023-12-31-year-in-review
 slug: 2023-year-in-review-medplum
 title: Medplum Year in Review 2023
 authors: reshma
-tags: [integration, fhir-datastore]
+blog_tags: [integration, fhir-datastore]
 ---
 
 ![2023 in Review](/img/blog/2023-in-review.png)

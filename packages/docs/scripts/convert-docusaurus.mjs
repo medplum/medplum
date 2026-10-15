@@ -28,6 +28,8 @@ const HAND_WRITTEN = [
   '_index.md',
   'about.md',
   'blog/_index.md',
+  'blog/archive.md',
+  'blog/authors.md',
   'case-studies.md',
   'docs/api/fhir/_content.gotmpl',
   'docs/sdk/',
@@ -68,6 +70,8 @@ async function main() {
     writePage(page, urlBySource);
   }
   writeGeneratedIndexes(docusaurusRoot, pages);
+  writeTagPages(pages);
+  writeAuthors(docusaurusRoot);
   syncStatic(docusaurusRoot);
   await writeSidebar(docusaurusRoot, pages);
 
@@ -209,6 +213,10 @@ function convertFrontMatter(page, body) {
     // Docs slugs relative to the docs root become explicit URLs (or nothing, for the docs home)
     if (page.section === 'docs' && /^slug:\s*['"]?\//.test(line)) {
       continue;
+    }
+    // Docs and blog tags are separate taxonomies, as in Docusaurus (see hugo.toml)
+    if (line.startsWith('tags:') && (page.section === 'docs' || page.section === 'blog')) {
+      line = `${page.section}_tags:` + line.slice('tags:'.length);
     }
     result.push(line);
   }
@@ -451,6 +459,71 @@ function writeGeneratedIndexes(docusaurusRoot, pages) {
     fs.mkdirSync(path.join(contentRoot, dir), { recursive: true });
     fs.writeFileSync(path.join(contentRoot, dir, '_index.md'), ['---', ...frontMatter, '---', ''].join('\n'), 'utf8');
   }
+}
+
+// Blog authors (blog/authors.yml) as an ordered list in data/authors.json; the authors page keeps the file's order
+function writeAuthors(docusaurusRoot) {
+  const authors = [];
+  for (const line of fs.readFileSync(path.join(docusaurusRoot, 'blog/authors.yml'), 'utf8').split('\n')) {
+    const key = /^(\w[\w-]*):\s*$/.exec(line)?.[1];
+    const field = /^\s+(\w+):\s*(.*?)\s*$/.exec(line);
+    if (key) {
+      authors.push({ key });
+    } else if (field && authors.length > 0) {
+      authors.at(-1)[field[1]] = field[2].replace(/^(['"])(.*)\1$/, '$2');
+    }
+  }
+  fs.writeFileSync(path.join(hugoRoot, 'data/authors.json'), JSON.stringify(authors, null, 2) + '\n', 'utf8');
+}
+
+// Tag pages. Docusaurus tag URLs kebab-case the label (PlanDefinition -> plan-definition) where Hugo would just
+// lowercase it (plandefinition), so those tags get a term page setting the Docusaurus slug
+function writeTagPages(pages) {
+  // Taxonomy pages titled as on Docusaurus, rather than by their taxonomy name
+  for (const taxonomy of ['docs_tags', 'blog_tags']) {
+    fs.mkdirSync(path.join(contentRoot, taxonomy), { recursive: true });
+    fs.writeFileSync(path.join(contentRoot, taxonomy, '_index.md'), '---\ntitle: Tags\n---\n', 'utf8');
+  }
+  const labels = new Set(pages.filter((p) => p.section === 'docs').flatMap((p) => parseTags(p.frontMatter)));
+  for (const label of labels) {
+    const hugoKey = label
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    const slug = kebabCase(label);
+    if (slug !== hugoKey) {
+      const dir = path.join(contentRoot, 'docs_tags', hugoKey);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, '_index.md'), `---\ntitle: ${JSON.stringify(label)}\nslug: ${slug}\n---\n`, 'utf8');
+    }
+  }
+}
+
+function parseTags(frontMatter) {
+  const inline = frontMatter && /^tags:\s*\[(.*)\]\s*$/m.exec(frontMatter);
+  if (inline) {
+    return inline[1]
+      .split(',')
+      .map((t) => t.trim().replace(/^['"]|['"]$/g, ''))
+      .filter(Boolean);
+  }
+  const block = frontMatter && /^tags:\s*\n((?:[ \t]+-.*\n?)+)/m.exec(frontMatter);
+  return block
+    ? block[1]
+        .split('\n')
+        .map((l) =>
+          l
+            .replace(/^\s*-\s*/, '')
+            .trim()
+            .replace(/^['"]|['"]$/g, '')
+        )
+        .filter(Boolean)
+    : [];
+}
+
+// lodash's kebabCase, which Docusaurus uses for tag permalinks
+function kebabCase(text) {
+  return (text.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g) ?? []).map((w) => w.toLowerCase()).join('-');
 }
 
 // URL of a page in a directory Hugo generates itself (SDK, FHIR reference), at the same path as on Docusaurus

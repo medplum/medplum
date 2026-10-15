@@ -2,7 +2,7 @@
 id: external-ids
 title: Using External IDs
 weight: 90
-tags: [auth]
+docs_tags: [auth]
 ---
 
 By default, Medplum uses email address as a unique identifier for a user. When using External Identity Providers, you may instead want to use the external ID rather than email. This document describes the additional changes to use external ID.

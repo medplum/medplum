@@ -2,7 +2,7 @@
 id: client-credentials
 title: Client Credentials
 weight: 40
-tags: [auth]
+docs_tags: [auth]
 ---
 
 The Medplum API uses standard OAuth2/OpenID authentication. The "Client Credentials Flow" is recommended for machine-to-machine access.

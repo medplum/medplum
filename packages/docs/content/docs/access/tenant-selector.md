@@ -2,7 +2,7 @@
 id: tenant-selector
 title: Building a Tenant Selector
 weight: 110
-tags: [auth, multi-tenant]
+docs_tags: [auth, multi-tenant]
 keywords: [tenant selector, active tenant, allowed tenants, MSO, multi-tenant, ProjectMembership, organization, tenant context]
 ---
 

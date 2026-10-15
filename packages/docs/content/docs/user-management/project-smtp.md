@@ -2,7 +2,7 @@
 id: project-smtp
 title: Project SMTP
 weight: 120
-tags: [auth]
+docs_tags: [auth]
 ---
 
 By default, all emails sent on behalf of your project use the Medplum server's email provider and sender address. Projects can instead send email through their own SMTP relay (such as SendGrid, Mailgun, or Amazon SES SMTP) so that emails arrive from your own domain.

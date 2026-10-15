@@ -3,7 +3,7 @@ id: 2026-05-08-plumcon-2026-lineup
 slug: plumcon-2026
 title: 'PlumCon 2026 - Agenda'
 authors: reshma
-tags: [community]
+blog_tags: [community]
 ---
 
 - [Register here](https://luma.com/7xjt6cmh) for PlumCon 2026, September 3, 2026 in San Francisco

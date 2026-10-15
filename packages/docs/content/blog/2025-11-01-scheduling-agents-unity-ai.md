@@ -3,7 +3,7 @@ id: 2025-11-01-scheduling-agents-unity-ai
 slug: scheduling-agents-unity-ai
 title: 'Scheduling Agents for Healthcare Operations: A Deep Dive with Unity AI'
 authors: codyhall
-tags: [community]
+blog_tags: [community]
 ---
 
 <div class="responsive-iframe-wrapper">

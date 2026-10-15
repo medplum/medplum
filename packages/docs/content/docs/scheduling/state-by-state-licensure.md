@@ -3,7 +3,7 @@ id: state-by-state-licensure
 title: Matching Patients to Providers by State-by-State Licensure
 sidebar_label: Matching Patients to Providers by State-by-State Licensure
 weight: 130
-tags: [scheduling]
+docs_tags: [scheduling]
 ---
 
 {{< info title="Scheduling operations do not enforce licensure" >}}

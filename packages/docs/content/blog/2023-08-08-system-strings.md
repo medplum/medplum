@@ -3,7 +3,7 @@ id: 2023-08-08-system-strings
 slug: demystifying-fhir-systems
 title: Demystifying FHIR Systems
 authors: rahul
-tags: [fhir-datastore]
+blog_tags: [fhir-datastore]
 ---
 
 One of the main sources of confusion when starting an implementation is with FHIR system strings.

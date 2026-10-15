@@ -3,7 +3,7 @@ id: 2026-07-17-everself-case-study
 slug: everself-case-study
 title: "Everself: Enhanced Obesity Care"
 authors: [petch, finnbergquist]
-tags: [case-study, communications, scheduling, ai]
+blog_tags: [case-study, communications, scheduling, ai]
 ---
 
 [Everself](https://everself.com/) is building the **second line of defense for obesity care**. Every month, more than a million patients drop off GLP-1 medications, and most regain the weight within three to six months. Until now, the only durable alternative has been invasive bariatric surgery, which can require weeks away from work. Everself fills the gap with an **outpatient endoscopic weight loss procedure** that delivers bariatric-level results without surgery, wrapped in a longitudinal care program delivered by a full care team.

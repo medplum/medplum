@@ -3,7 +3,7 @@ id: 2023-04-07-dependency-warnings
 slug: dependency-warnings
 title: Dependency Warnings
 authors: cody
-tags: [self-host]
+blog_tags: [self-host]
 ---
 
 Today, we received a thoughtful email from an engineering leader who installed Medplum for the first time:

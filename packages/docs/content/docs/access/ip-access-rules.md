@@ -2,7 +2,7 @@
 id: ip-access-rules
 title: IP Access Rules
 weight: 30
-tags: [auth]
+docs_tags: [auth]
 ---
 
 One valuable way to prevent unauthorized data access is to restrict access to clinical data by the user's IP address. This article will discuss the benefits of IP address restrictions and provide a step-by-step guide on configuring these settings in Medplum's [AccessPolicy](/docs/api/fhir/medplum/accesspolicy).

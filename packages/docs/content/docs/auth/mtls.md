@@ -2,7 +2,7 @@
 id: mtls
 title: Mutual TLS (mTLS)
 weight: 50
-tags: [auth]
+docs_tags: [auth]
 ---
 
 Mutual TLS (mTLS) is a client authentication mechanism built on top of standard TLS. In addition to the server presenting a certificate to the client (standard TLS), the client also presents an X.509 certificate to the server, which verifies it against a configured trust store. This provides strong, cryptographic proof of client identity without transmitting a shared secret.

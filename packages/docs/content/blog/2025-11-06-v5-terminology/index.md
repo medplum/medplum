@@ -3,7 +3,7 @@ id: 2025-11-06-v5-terminology
 slug: v5-terminology
 title: 'Terminology Service Updates in Medplum v5'
 authors: mattwiller
-tags: [fhir-datastore]
+blog_tags: [fhir-datastore]
 ---
 
 As part of the [Medplum v5 release][v5], we've been hard at work delivering several key improvements to our

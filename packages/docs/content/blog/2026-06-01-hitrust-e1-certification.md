@@ -3,7 +3,7 @@ id: 2026-06-01-hitrust-e1-certification
 slug: hitrust-e1-certification
 title: 'Medplum Achieves HITRUST e1 Certification'
 authors: reshma
-tags: [security, compliance]
+blog_tags: [security, compliance]
 ---
 
 _Demonstrating commitment to cybersecurity and information protection: HITRUST Certification validates the Medplum Platform is meeting rigorous cybersecurity and data protection standards through independent assessment and assurance._

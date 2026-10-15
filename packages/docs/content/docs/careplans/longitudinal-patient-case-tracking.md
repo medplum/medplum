@@ -2,7 +2,7 @@
 id: longitudinal-patient-case-tracking
 weight: 20
 title: Longitudinal Patient Case Tracking
-tags: [care plans, episode of care, longitudinal tracking]
+docs_tags: [care plans, episode of care, longitudinal tracking]
 ---
 
 A patient may have several visits, messages, and follow-up Tasks during one care program. The team still needs a way to answer: who is responsible for this case, and is it still active?

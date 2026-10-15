@@ -7,7 +7,7 @@ keywords:
   - drugs
   - drug codes
   - medications
-tags:
+docs_tags:
   - medications
   - rxnorm
 ---

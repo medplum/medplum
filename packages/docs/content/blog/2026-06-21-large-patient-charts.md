@@ -3,7 +3,7 @@ id: 2026-06-21-large-patient-charts
 slug: large-patient-charts
 title: 'Large Patient Charts'
 authors: cody
-tags: [fhir]
+blog_tags: [fhir]
 ---
 
 There's a piece of conventional wisdom in health tech that won't die: FHIR is fine for interoperability, but too slow and bloated for real-time clinical apps.

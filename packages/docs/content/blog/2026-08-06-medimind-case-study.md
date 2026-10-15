@@ -3,7 +3,7 @@ id: 2026-08-06-medimind-case-study
 slug: medimind-case-study
 title: 'MediMind: An AI-Native Hospital System'
 authors: lasha
-tags: [case-study, ai, self-hosting, integration, migration]
+blog_tags: [case-study, ai, self-hosting, integration, migration]
 ---
 
 [MediMind](https://medimind.md/) is a **proactive, AI-native hospital system** built from the ground up on FHIR R4, now under contract with a **25-hospital network** in the Republic of Georgia. Here is why we rebuilt what a hospital runs on instead of adding features to what was already there, and why we built it on Medplum.

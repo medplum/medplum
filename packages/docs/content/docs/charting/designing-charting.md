@@ -7,7 +7,7 @@ keywords:
   - visit templates
   - discovery
   - EMR
-tags:
+docs_tags:
   - charting
 ---
 

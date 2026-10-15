@@ -6,7 +6,7 @@ keywords:
   - SDC
   - extract
   - bots
-tags:
+docs_tags:
   - questionnaires
 ---
 

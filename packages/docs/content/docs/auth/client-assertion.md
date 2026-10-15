@@ -2,7 +2,7 @@
 id: client-assertion
 title: Client Assertion (JWT Bearer)
 weight: 45
-tags: [auth]
+docs_tags: [auth]
 ---
 
 Client Assertion is an alternative to the [Client Credentials](./client-credentials) flow that authenticates the client using a **signed JWT** instead of a shared client secret. The client signs the JWT with a private key; Medplum verifies it against the public keys published at the client's JWKS URI.

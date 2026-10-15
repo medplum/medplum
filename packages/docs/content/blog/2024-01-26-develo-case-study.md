@@ -3,7 +3,7 @@ id: 2024-01-26-develo-case-study
 slug: develo-case-study
 title: Develo Pediatric EHR
 authors: reshma
-tags: [pediatrics, fhir-datastore, self-host, ai]
+blog_tags: [pediatrics, fhir-datastore, self-host, ai]
 ---
 
 [Develo](https://getdevelo.com/) has built a **full-featured EHR and customer relationship management (CRM)** for pediatrics, encompassing core [scheduling](/docs/scheduling), [clinical](/docs/charting), and [billing](/docs/billing) workflows along with family engagement capabilities.

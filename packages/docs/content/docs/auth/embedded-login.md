@@ -2,7 +2,7 @@
 id: embedded-login
 title: Embedded Login
 weight: 35
-tags: [auth]
+docs_tags: [auth]
 ---
 
 ## Introduction

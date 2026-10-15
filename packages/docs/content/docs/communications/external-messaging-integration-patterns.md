@@ -2,7 +2,7 @@
 id: external-messaging-integration-patterns
 weight: 110
 title: External Messaging Integration Patterns
-tags: [communications, messaging, bots, SMS, integration]
+docs_tags: [communications, messaging, bots, SMS, integration]
 keywords:
   [
     Communication,

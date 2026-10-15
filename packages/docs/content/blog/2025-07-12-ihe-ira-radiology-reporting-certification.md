@@ -3,7 +3,7 @@ id: 2025-07-12-ihe-ira-radiology-reporting-certification
 slug: ihe-ira-radiology-reporting
 title: 'Medplum Certifies IRA'
 authors: ThatOneBro
-tags: [fhir-datastore, integration, auth, community, ai]
+blog_tags: [fhir-datastore, integration, auth, community, ai]
 ---
 
 Medplum has become one of the first platforms to achieve certification for the **Hub role** in the Integrated Reporting Applications (IRA) IHE Profile, marking a milestone in radiology workflow interoperability. This certification positions Medplum as a central orchestrator for real-time synchronization between radiology applications, addressing one of healthcare's most persistent challenges: fragmented diagnostic workflows.

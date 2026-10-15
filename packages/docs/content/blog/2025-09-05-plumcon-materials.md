@@ -3,7 +3,7 @@ id: 2025-09-05-plumcon-materials
 slug: plumcon-2025-materials
 title: 'PlumCon 2025 - Materials & Agenda'
 authors: reshma
-tags: [community]
+blog_tags: [community]
 ---
 
 On August 28, 2025 Medplum hosted our first annual _developer conference_ PlumCon in San Francisco. Thank you to everyone who attended and made this inaugural event such a success!

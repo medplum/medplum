@@ -7,7 +7,7 @@ keywords:
   - Patient
   - Observation
   - Condition
-tags:
+docs_tags:
   - charting
 ---
 

@@ -2,7 +2,7 @@
 id: ordering-labs-imaging
 title: Order Labs and Imaging
 weight: 20
-tags:
+docs_tags:
   - labs
   - imaging
   - CPOE

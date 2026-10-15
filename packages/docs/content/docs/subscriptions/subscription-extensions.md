@@ -2,7 +2,7 @@
 id: subscription-extensions
 title: Subscription Extensions
 weight: 40
-tags:
+docs_tags:
   - subscription
 ---
 

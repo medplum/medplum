@@ -7,7 +7,7 @@ keywords:
   - PlanDefinition
   - SOAP
   - ClinicalImpression
-tags:
+docs_tags:
   - charting
 ---
 

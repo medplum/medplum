@@ -3,7 +3,7 @@ id: 2024-11-14-zero-downtime-postgres-major-version-upgrade
 slug: zero-downtime-postgres-major-version-upgrade
 title: Achieving a zero-downtime Postgres major version upgrade
 authors: mattlong
-tags: [self-host, fhir-datastore]
+blog_tags: [self-host, fhir-datastore]
 ---
 
 Medplum is built on Postgres. Until recently, our hosted Medplum service was using an Amazon Web Services (AWS) RDS Aurora Postgres cluster running version 12.16. Since v12 is rather outdated and nearing the end of its standard support window on RDS, it was time to plan our upgrade to the newest version available on RDS, v16.4. Various methods to upgrade to a new major version on various places across the downtime vs level-of-effort continuum; we decided to upgrade our database with no downtime. This is how we did it.

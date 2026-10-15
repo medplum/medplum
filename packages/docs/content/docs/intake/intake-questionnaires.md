@@ -2,7 +2,7 @@
 id: intake-questionnaires
 weight: 30
 title: "Intake Questionnaires: Design and Extraction"
-tags: [intake, questionnaire, SDC, bot, extraction]
+docs_tags: [intake, questionnaire, SDC, bot, extraction]
 keywords: [Questionnaire, QuestionnaireResponse, linkId, repeats, group, SDC, extract, bot, getQuestionnaireAnswers, getGroupRepeatedAnswers, upsert]
 ---
 

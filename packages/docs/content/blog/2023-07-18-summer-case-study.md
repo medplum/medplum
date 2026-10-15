@@ -3,7 +3,7 @@ id: 2023-07-18-summer-case-study
 slug: summer-case-study
 title: 24/7 Pediatrician Access - Summer Health Case Study
 authors: reshma
-tags: [pediatrics, auth, case-study, ai]
+blog_tags: [pediatrics, auth, case-study, ai]
 ---
 
 [Summer Health](https://www.summerhealth.com/) is an innovator in direct-to-patient pediatrics, with a focus on messaging and mobile access for parents via SMS. Their fast growing practice is available nationwide and is known for excellent patient engagement.

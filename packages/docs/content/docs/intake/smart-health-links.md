@@ -2,7 +2,7 @@
 id: smart-health-links
 weight: 1010
 title: SMART Health Links
-tags: [intake, automation]
+docs_tags: [intake, automation]
 keywords: [cms, ktc, smart, health, links, shl, fhir, interoperability]
 ---
 

@@ -2,7 +2,7 @@
 id: index
 title: User Management Guide
 weight: 20
-tags: [auth]
+docs_tags: [auth]
 ---
 
 This guide walks through how to **create and manage users** via the Medplum App and via API. Medplum supports multiple authentication options, but always maintains a representation of the user identities, and gives developers control over which authentication method to use for an identity, as well as what access controls are applied.
