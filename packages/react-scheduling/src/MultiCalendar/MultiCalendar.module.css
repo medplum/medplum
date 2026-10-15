@@ -68,6 +68,10 @@
     }
   }
 
+  :global(.dayGridMonth) :global(.appointment) .eventTime {
+    padding-top: 1px;
+  }
+
   /* In light mode, Mantine's named colors are tinted with their lightest shade and written in their
    * darkest, darkened further where that is hard to read on the tint. */
   :global([data-color-scheme='light']) {
