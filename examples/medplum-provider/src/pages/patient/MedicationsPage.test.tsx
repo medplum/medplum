@@ -14,7 +14,8 @@ import { MedplumProvider } from '@medplum/react';
 import type * as ScriptSureReactModule from '@medplum/scriptsure-react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
+import type { JSX } from 'react';
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { MedicationsPage } from './MedicationsPage';
 
@@ -105,6 +106,16 @@ function LocationCapture(props: { sink: SetupHandle['location'] }): null {
   return null;
 }
 
+// The list tabs are MedplumLinks, which navigate through MedplumProvider rather than react-router.
+function RouterMedplumProvider(props: { medplum: MockClient; children: React.ReactNode }): JSX.Element {
+  const navigate = useNavigate();
+  return (
+    <MedplumProvider medplum={props.medplum} navigate={(path) => navigate(path)?.catch(console.error)}>
+      {props.children}
+    </MedplumProvider>
+  );
+}
+
 async function setup(url: string, medplum = new MockClient()): Promise<SetupHandle> {
   const searchSpy = vi.spyOn(medplum, 'search') as unknown as ReturnType<typeof vi.fn>;
   if (!searchSpy.getMockImplementation()) {
@@ -113,8 +124,8 @@ async function setup(url: string, medplum = new MockClient()): Promise<SetupHand
   const location: SetupHandle['location'] = { current: null };
   await act(async () => {
     render(
-      <MedplumProvider medplum={medplum}>
-        <MemoryRouter initialEntries={[url]} initialIndex={0}>
+      <MemoryRouter initialEntries={[url]} initialIndex={0}>
+        <RouterMedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
             <LocationCapture sink={location} />
@@ -123,8 +134,8 @@ async function setup(url: string, medplum = new MockClient()): Promise<SetupHand
               <Route path="/Patient/:patientId/MedicationRequest/:medicationRequestId" element={<MedicationsPage />} />
             </Routes>
           </MantineProvider>
-        </MemoryRouter>
-      </MedplumProvider>
+        </RouterMedplumProvider>
+      </MemoryRouter>
     );
   });
   return { medplum, location };
@@ -259,18 +270,19 @@ describe('MedicationsPage', () => {
     const handle = await setup(`/Patient/${HomerSimpson.id}/MedicationRequest/${fullMedicationRequest.id}`, medplum);
 
     expect(await screen.findByText('Full current detail')).toBeInTheDocument();
+    const countDetailReads = (): number =>
+      readResource.mock.calls.filter(
+        ([resourceType, id]) => resourceType === 'MedicationRequest' && id === fullMedicationRequest.id
+      ).length;
+    const readsBeforeTabChange = countDetailReads();
 
     fireEvent.click(screen.getByText('Draft'));
 
     await waitFor(() => {
       expect(handle.location.current?.search).toContain('status=draft');
       expect(screen.getByText('Full current detail')).toBeInTheDocument();
+      expect(countDetailReads()).toBeGreaterThan(readsBeforeTabChange);
     });
-    expect(
-      readResource.mock.calls.filter(
-        ([resourceType, id]) => resourceType === 'MedicationRequest' && id === fullMedicationRequest.id
-      )
-    ).toHaveLength(2);
   });
 
   test('Pagination control changes the URL _offset and re-queries', async () => {

@@ -4,7 +4,6 @@ import {
   Badge,
   Button,
   Checkbox,
-  Container,
   Divider,
   Group,
   Input,
@@ -51,7 +50,6 @@ import type { AsyncAutocompleteOption } from '@medplum/react';
 import {
   AsyncAutocomplete,
   OperationOutcomeAlert,
-  Panel,
   ResourceInput,
   useMedplum,
   useMedplumProfile,
@@ -1274,192 +1272,318 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
   };
 
   return (
-    <Container size="md">
-      <Panel>
-        <Group justify="flex-end" mb="sm">
-          <ScriptSurePracticeSwitcher />
-        </Group>
-        {replacementMedicationRequest && (
-          <Text size="sm" c="dimmed" mb="sm">
-            Review and edit the replacement prescription before sending it to ScriptSure.
-          </Text>
-        )}
-        <Tabs value={activeTab} onChange={(v) => setActiveTab(v ?? 'single')}>
-          <Tabs.List>
-            <Tabs.Tab value="single">{replacementMedicationRequest ? 'Medication' : 'Single medication'}</Tabs.Tab>
-            {!replacementMedicationRequest && (
+    <>
+      <Group justify="flex-end" mb="sm">
+        <ScriptSurePracticeSwitcher />
+      </Group>
+      {replacementMedicationRequest && (
+        <Text size="sm" c="dimmed" mb="sm">
+          Review and edit the replacement prescription before sending it to ScriptSure.
+        </Text>
+      )}
+      <Tabs value={activeTab} onChange={(v) => setActiveTab(v ?? 'single')}>
+        <Tabs.List>
+          <Tabs.Tab value="single">{replacementMedicationRequest ? 'Medication' : 'Single medication'}</Tabs.Tab>
+          {!replacementMedicationRequest && (
+            <>
+              <Tabs.Tab value="compound">Compound</Tabs.Tab>
+              <Tabs.Tab value="order-set">Order set</Tabs.Tab>
+            </>
+          )}
+        </Tabs.List>
+
+        <Tabs.Panel value="single" pt="md">
+          <Stack gap="md">
+            <Input.Wrapper label="Patient" required>
+              <ResourceInput<Patient>
+                key={patient?.id ?? 'patient-input'}
+                resourceType="Patient"
+                name="patient"
+                defaultValue={patient}
+                onChange={setPatient}
+              />
+            </Input.Wrapper>
+
+            <Input.Wrapper label="Requester" required>
+              <ResourceInput<Practitioner>
+                key={requester?.id ?? 'requester-input'}
+                resourceType="Practitioner"
+                name="requester"
+                defaultValue={requester}
+                onChange={setRequester}
+              />
+            </Input.Wrapper>
+
+            <div>
+              <AsyncAutocomplete<Medication>
+                key={replacementMedicationRequest?.id ?? 'new-medication'}
+                required
+                maxValues={1}
+                minInputLength={2}
+                label="Search medication"
+                placeholder="Type drug name"
+                loadOptions={loadMedicationOptions}
+                toOption={medicationSearchToOption}
+                itemComponent={MedicationSearchItem}
+                defaultValue={replacementMedication}
+                onChange={(items) => {
+                  setTermMedication(items[0]);
+                  setFreeSig('');
+                }}
+              />
+              {loadingFormats && <Text size="sm">Loading formulations…</Text>}
+            </div>
+
+            {formulationSigChoices.length > 0 && (
+              <Radio.Group
+                label={`Formulation & directions (${formulationSigChoices.length})`}
+                description="Pick the formulation and pre-built sig in one step"
+                value={selectedChoiceKey}
+                onChange={(v) => {
+                  const [fStr, sStr] = v.split(':');
+                  const fIdx = Number.parseInt(fStr, 10);
+                  const sIdx = Number.parseInt(sStr, 10);
+                  const fm = formatMedications[fIdx];
+                  if (fm) {
+                    setSelectedFormat(fm);
+                    setSigIndex(Math.max(sIdx, 0));
+                  }
+                }}
+              >
+                <ScrollArea.Autosize mah={320} mt="xs" type="auto" offsetScrollbars>
+                  <Stack gap="xs" pr="sm">
+                    {formulationSigChoices.map((choice) => (
+                      <Radio
+                        key={`${choice.formatIndex}:${choice.sigIndex}`}
+                        value={`${choice.formatIndex}:${choice.sigIndex}`}
+                        label={
+                          <Stack gap={0}>
+                            <Text size="sm" fw={500}>
+                              {choice.formatLabel}
+                            </Text>
+                            {choice.sigLine && (
+                              <Text size="xs" c="dimmed">
+                                {choice.sigLine}
+                                {choice.quantity > 0 ? ` · qty ${choice.quantity}` : ''}
+                              </Text>
+                            )}
+                          </Stack>
+                        }
+                      />
+                    ))}
+                  </Stack>
+                </ScrollArea.Autosize>
+              </Radio.Group>
+            )}
+
+            {selectedFormat && sigOptions.length === 0 && (
+              <TextInput
+                label="Sig (directions)"
+                required
+                value={freeSig}
+                onChange={(e) => setFreeSig(e.currentTarget.value)}
+              />
+            )}
+
+            <Group grow>
+              <TextInput
+                type="date"
+                label="Written / start date"
+                value={writtenDateYmd}
+                onChange={(e) => setWrittenDateYmd(e.currentTarget.value)}
+              />
+              <TextInput
+                type="date"
+                label="Earliest fill (optional)"
+                value={fillDateYmd}
+                onChange={(e) => setFillDateYmd(e.currentTarget.value)}
+              />
+            </Group>
+
+            <Group grow align="flex-start">
+              <NumberInput
+                label="Days supply"
+                description="Auto-estimated from sig × quantity"
+                value={daysSupply}
+                onChange={(v) => {
+                  setDaysSupplyTouched(true);
+                  setDaysSupply(Number(v) || 0);
+                }}
+                min={1}
+              />
+              <NumberInput
+                label="Quantity to dispense"
+                description="Amount to send (e.g. tablets)"
+                value={quantity}
+                onChange={(v) => setQuantity(Number(v) || 0)}
+                min={0}
+              />
+              <NumberInput
+                label="Refills"
+                description="Number of refills allowed"
+                value={refill}
+                onChange={(v) => setRefill(Number(v) || 0)}
+                min={0}
+              />
+            </Group>
+
+            <Select
+              label="Quantity qualifier (dispense unit)"
+              description="How the dispensed amount is counted (NCI potency unit)"
+              data={qtyQualifierSelectData}
+              value={manualQtyQualifier}
+              onChange={(v) => setManualQtyQualifier(v ?? DEFAULT_QUANTITY_QUALIFIER)}
+              searchable
+            />
+
+            <Textarea
+              label="Notes to pharmacist"
+              placeholder="Shown on the ScriptSure pending order"
+              value={notesPharmacist}
+              onChange={(e) => setNotesPharmacist(e.currentTarget.value)}
+              minRows={2}
+            />
+            <Textarea
+              label="Patient instructions (additional)"
+              placeholder="Optional extra directions for the patient label"
+              value={patientInstruction}
+              onChange={(e) => setPatientInstruction(e.currentTarget.value)}
+              minRows={2}
+            />
+
+            <Checkbox
+              label="Allow substitution"
+              checked={useSubstitution}
+              onChange={(e) => setUseSubstitution(e.currentTarget.checked)}
+            />
+
+            <OptionalContextFields
+              medplum={medplum}
+              patient={patient}
+              primaryCondition={primaryCondition}
+              setPrimaryCondition={setPrimaryCondition}
+              coverage={coverage}
+              setCoverage={setCoverage}
+              pharmacyOrg={pharmacyOrg}
+              setPharmacyOrg={setPharmacyOrg}
+            />
+
+            {onAddedToCart && !replacementMedicationRequest && cartCount > 0 && (
+              <Group gap={6} justify="center">
+                <IconShoppingCart size={16} />
+                <Text size="sm" c="dimmed">
+                  {cartCount} in cart — review and check out on the Draft tab
+                </Text>
+              </Group>
+            )}
+            {onAddedToCart && !replacementMedicationRequest ? (
+              <Group grow>
+                <Button
+                  onClick={() => {
+                    addToCart().catch(showErrorNotification);
+                  }}
+                  loading={isAddingToCart}
+                  disabled={submitting}
+                  leftSection={<IconShoppingCart size={16} />}
+                >
+                  Add to cart
+                </Button>
+                <Button variant="default" onClick={submitSingle} loading={submitting} disabled={isAddingToCart}>
+                  Prescribe this medication
+                </Button>
+              </Group>
+            ) : (
               <>
-                <Tabs.Tab value="compound">Compound</Tabs.Tab>
-                <Tabs.Tab value="order-set">Order set</Tabs.Tab>
+                {submitOutcome && <OperationOutcomeAlert outcome={submitOutcome} />}
+                <Button onClick={submitSingle} loading={submitting} fullWidth>
+                  {replacementMedicationRequest ? 'Re-prescribe' : 'Prescribe now'}
+                </Button>
               </>
             )}
-          </Tabs.List>
+          </Stack>
+        </Tabs.Panel>
 
-          <Tabs.Panel value="single" pt="md">
+        {!replacementMedicationRequest && (
+          <Tabs.Panel value="compound" pt="md">
             <Stack gap="md">
               <Input.Wrapper label="Patient" required>
                 <ResourceInput<Patient>
-                  key={patient?.id ?? 'patient-input'}
+                  key={patient?.id ?? 'patient-compound'}
                   resourceType="Patient"
-                  name="patient"
+                  name="patient-compound"
                   defaultValue={patient}
                   onChange={setPatient}
                 />
               </Input.Wrapper>
 
-              <Input.Wrapper label="Requester" required>
-                <ResourceInput<Practitioner>
-                  key={requester?.id ?? 'requester-input'}
-                  resourceType="Practitioner"
-                  name="requester"
-                  defaultValue={requester}
-                  onChange={setRequester}
-                />
-              </Input.Wrapper>
-
-              <div>
-                <AsyncAutocomplete<Medication>
-                  key={replacementMedicationRequest?.id ?? 'new-medication'}
-                  required
-                  maxValues={1}
-                  minInputLength={2}
-                  label="Search medication"
-                  placeholder="Type drug name"
-                  loadOptions={loadMedicationOptions}
-                  toOption={medicationSearchToOption}
-                  itemComponent={MedicationSearchItem}
-                  defaultValue={replacementMedication}
-                  onChange={(items) => {
-                    setTermMedication(items[0]);
-                    setFreeSig('');
-                  }}
-                />
-                {loadingFormats && <Text size="sm">Loading formulations…</Text>}
-              </div>
-
-              {formulationSigChoices.length > 0 && (
-                <Radio.Group
-                  label={`Formulation & directions (${formulationSigChoices.length})`}
-                  description="Pick the formulation and pre-built sig in one step"
-                  value={selectedChoiceKey}
-                  onChange={(v) => {
-                    const [fStr, sStr] = v.split(':');
-                    const fIdx = Number.parseInt(fStr, 10);
-                    const sIdx = Number.parseInt(sStr, 10);
-                    const fm = formatMedications[fIdx];
-                    if (fm) {
-                      setSelectedFormat(fm);
-                      setSigIndex(Math.max(sIdx, 0));
-                    }
-                  }}
-                >
-                  <ScrollArea.Autosize mah={320} mt="xs" type="auto" offsetScrollbars>
-                    <Stack gap="xs" pr="sm">
-                      {formulationSigChoices.map((choice) => (
-                        <Radio
-                          key={`${choice.formatIndex}:${choice.sigIndex}`}
-                          value={`${choice.formatIndex}:${choice.sigIndex}`}
-                          label={
-                            <Stack gap={0}>
-                              <Text size="sm" fw={500}>
-                                {choice.formatLabel}
-                              </Text>
-                              {choice.sigLine && (
-                                <Text size="xs" c="dimmed">
-                                  {choice.sigLine}
-                                  {choice.quantity > 0 ? ` · qty ${choice.quantity}` : ''}
-                                </Text>
-                              )}
-                            </Stack>
-                          }
-                        />
-                      ))}
-                    </Stack>
-                  </ScrollArea.Autosize>
-                </Radio.Group>
-              )}
-
-              {selectedFormat && sigOptions.length === 0 && (
-                <TextInput
-                  label="Sig (directions)"
-                  required
-                  value={freeSig}
-                  onChange={(e) => setFreeSig(e.currentTarget.value)}
-                />
-              )}
+              <ResourceInput<Practitioner>
+                resourceType="Practitioner"
+                name="requester-c"
+                label="Requester"
+                defaultValue={requester}
+                onChange={setRequester}
+              />
 
               <Group grow>
                 <TextInput
                   type="date"
                   label="Written / start date"
-                  value={writtenDateYmd}
-                  onChange={(e) => setWrittenDateYmd(e.currentTarget.value)}
+                  value={compoundWrittenYmd}
+                  onChange={(e) => setCompoundWrittenYmd(e.currentTarget.value)}
                 />
                 <TextInput
                   type="date"
                   label="Earliest fill (optional)"
-                  value={fillDateYmd}
-                  onChange={(e) => setFillDateYmd(e.currentTarget.value)}
+                  value={compoundFillYmd}
+                  onChange={(e) => setCompoundFillYmd(e.currentTarget.value)}
                 />
               </Group>
-
-              <Group grow align="flex-start">
-                <NumberInput
-                  label="Days supply"
-                  description="Auto-estimated from sig × quantity"
-                  value={daysSupply}
-                  onChange={(v) => {
-                    setDaysSupplyTouched(true);
-                    setDaysSupply(Number(v) || 0);
-                  }}
-                  min={1}
-                />
-                <NumberInput
-                  label="Quantity to dispense"
-                  description="Amount to send (e.g. tablets)"
-                  value={quantity}
-                  onChange={(v) => setQuantity(Number(v) || 0)}
-                  min={0}
-                />
-                <NumberInput
-                  label="Refills"
-                  description="Number of refills allowed"
-                  value={refill}
-                  onChange={(v) => setRefill(Number(v) || 0)}
-                  min={0}
-                />
-              </Group>
-
-              <Select
-                label="Quantity qualifier (dispense unit)"
-                description="How the dispensed amount is counted (NCI potency unit)"
-                data={qtyQualifierSelectData}
-                value={manualQtyQualifier}
-                onChange={(v) => setManualQtyQualifier(v ?? DEFAULT_QUANTITY_QUALIFIER)}
-                searchable
+              <NumberInput
+                label="Days supply"
+                description="Therapy length (days) for the compound order"
+                value={compoundDaysSupply}
+                onChange={(v) => setCompoundDaysSupply(Number(v) || 0)}
+                min={1}
               />
-
               <Textarea
                 label="Notes to pharmacist"
-                placeholder="Shown on the ScriptSure pending order"
-                value={notesPharmacist}
-                onChange={(e) => setNotesPharmacist(e.currentTarget.value)}
+                value={compoundNotesPharmacist}
+                onChange={(e) => setCompoundNotesPharmacist(e.currentTarget.value)}
                 minRows={2}
               />
               <Textarea
                 label="Patient instructions (additional)"
-                placeholder="Optional extra directions for the patient label"
-                value={patientInstruction}
-                onChange={(e) => setPatientInstruction(e.currentTarget.value)}
+                description="Appended to the first drug line sig sent to ScriptSure"
+                value={compoundPatientInstruction}
+                onChange={(e) => setCompoundPatientInstruction(e.currentTarget.value)}
                 minRows={2}
               />
 
-              <Checkbox
-                label="Allow substitution"
-                checked={useSubstitution}
-                onChange={(e) => setUseSubstitution(e.currentTarget.checked)}
-              />
-
+              {compoundLines.map((line, idx) => (
+                <CompoundLineEditor
+                  key={line.id}
+                  index={idx}
+                  line={line}
+                  searchMedications={searchMedications}
+                  onChange={(next) => updateCompoundLine(line.id, next)}
+                />
+              ))}
+              <Button
+                variant="light"
+                onClick={() =>
+                  setCompoundLines((prev) => [
+                    ...prev,
+                    {
+                      id: `line-${Date.now()}-${prev.length}`,
+                      quantity: 30,
+                      refill: 0,
+                      useSubstitution: true,
+                    },
+                  ])
+                }
+              >
+                Add drug line
+              </Button>
               <OptionalContextFields
                 medplum={medplum}
                 patient={patient}
@@ -1470,154 +1594,26 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
                 pharmacyOrg={pharmacyOrg}
                 setPharmacyOrg={setPharmacyOrg}
               />
-
-              {onAddedToCart && !replacementMedicationRequest && cartCount > 0 && (
-                <Group gap={6} justify="center">
-                  <IconShoppingCart size={16} />
-                  <Text size="sm" c="dimmed">
-                    {cartCount} in cart — review and check out on the Draft tab
-                  </Text>
-                </Group>
-              )}
-              {onAddedToCart && !replacementMedicationRequest ? (
-                <Group grow>
-                  <Button
-                    onClick={() => {
-                      addToCart().catch(showErrorNotification);
-                    }}
-                    loading={isAddingToCart}
-                    disabled={submitting}
-                    leftSection={<IconShoppingCart size={16} />}
-                  >
-                    Add to cart
-                  </Button>
-                  <Button variant="default" onClick={submitSingle} loading={submitting} disabled={isAddingToCart}>
-                    Prescribe this medication
-                  </Button>
-                </Group>
-              ) : (
-                <>
-                  {submitOutcome && <OperationOutcomeAlert outcome={submitOutcome} />}
-                  <Button onClick={submitSingle} loading={submitting} fullWidth>
-                    {replacementMedicationRequest ? 'Re-prescribe' : 'Prescribe now'}
-                  </Button>
-                </>
-              )}
+              <Button onClick={submitCompound} loading={submitting}>
+                Prescribe
+              </Button>
             </Stack>
           </Tabs.Panel>
+        )}
 
-          {!replacementMedicationRequest && (
-            <Tabs.Panel value="compound" pt="md">
-              <Stack gap="md">
-                <Input.Wrapper label="Patient" required>
-                  <ResourceInput<Patient>
-                    key={patient?.id ?? 'patient-compound'}
-                    resourceType="Patient"
-                    name="patient-compound"
-                    defaultValue={patient}
-                    onChange={setPatient}
-                  />
-                </Input.Wrapper>
-
-                <ResourceInput<Practitioner>
-                  resourceType="Practitioner"
-                  name="requester-c"
-                  label="Requester"
-                  defaultValue={requester}
-                  onChange={setRequester}
-                />
-
-                <Group grow>
-                  <TextInput
-                    type="date"
-                    label="Written / start date"
-                    value={compoundWrittenYmd}
-                    onChange={(e) => setCompoundWrittenYmd(e.currentTarget.value)}
-                  />
-                  <TextInput
-                    type="date"
-                    label="Earliest fill (optional)"
-                    value={compoundFillYmd}
-                    onChange={(e) => setCompoundFillYmd(e.currentTarget.value)}
-                  />
-                </Group>
-                <NumberInput
-                  label="Days supply"
-                  description="Therapy length (days) for the compound order"
-                  value={compoundDaysSupply}
-                  onChange={(v) => setCompoundDaysSupply(Number(v) || 0)}
-                  min={1}
-                />
-                <Textarea
-                  label="Notes to pharmacist"
-                  value={compoundNotesPharmacist}
-                  onChange={(e) => setCompoundNotesPharmacist(e.currentTarget.value)}
-                  minRows={2}
-                />
-                <Textarea
-                  label="Patient instructions (additional)"
-                  description="Appended to the first drug line sig sent to ScriptSure"
-                  value={compoundPatientInstruction}
-                  onChange={(e) => setCompoundPatientInstruction(e.currentTarget.value)}
-                  minRows={2}
-                />
-
-                {compoundLines.map((line, idx) => (
-                  <CompoundLineEditor
-                    key={line.id}
-                    index={idx}
-                    line={line}
-                    searchMedications={searchMedications}
-                    onChange={(next) => updateCompoundLine(line.id, next)}
-                  />
-                ))}
-                <Button
-                  variant="light"
-                  onClick={() =>
-                    setCompoundLines((prev) => [
-                      ...prev,
-                      {
-                        id: `line-${Date.now()}-${prev.length}`,
-                        quantity: 30,
-                        refill: 0,
-                        useSubstitution: true,
-                      },
-                    ])
-                  }
-                >
-                  Add drug line
-                </Button>
-                <OptionalContextFields
-                  medplum={medplum}
-                  patient={patient}
-                  primaryCondition={primaryCondition}
-                  setPrimaryCondition={setPrimaryCondition}
-                  coverage={coverage}
-                  setCoverage={setCoverage}
-                  pharmacyOrg={pharmacyOrg}
-                  setPharmacyOrg={setPharmacyOrg}
-                />
-                <Button onClick={submitCompound} loading={submitting}>
-                  Prescribe
-                </Button>
-              </Stack>
-            </Tabs.Panel>
-          )}
-
-          {!replacementMedicationRequest && (
-            <Tabs.Panel value="order-set" pt="md">
-              <OrderSetTabPanel
-                patient={patient}
-                requester={requester}
-                onPatientChange={setPatient}
-                onRequesterChange={setRequester}
-                onOrderComplete={onOrderComplete}
-              />
-            </Tabs.Panel>
-          )}
-        </Tabs>
-      </Panel>
-    </Container>
+        {!replacementMedicationRequest && (
+          <Tabs.Panel value="order-set" pt="md">
+            <OrderSetTabPanel
+              patient={patient}
+              requester={requester}
+              onPatientChange={setPatient}
+              onRequesterChange={setRequester}
+              onOrderComplete={onOrderComplete}
+            />
+          </Tabs.Panel>
+        )}
+      </Tabs>
+    </>
   );
 }
 
