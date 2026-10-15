@@ -336,3 +336,18 @@ li + li {
 .align-right {
   text-align: right;
 }
+
+/*
+ * Kapa AI sidebar (assets/js/components/kapa.mjs). The widget is fixed to the right edge and would cover the
+ * page, so inset the page by its width while it is open; 300ms matches the widget's slide transition.
+ * Below this breakpoint the widget goes full screen, so there is nothing left to inset.
+ */
+@media screen and (min-width: 997px) {
+  body {
+    transition: padding-right 300ms ease;
+  }
+
+  html[data-kapa-sidebar='open'] body {
+    padding-right: var(--kapa-sidebar-width);
+  }
+}

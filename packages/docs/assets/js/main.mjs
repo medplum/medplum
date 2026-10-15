@@ -5,6 +5,7 @@ import { destroyCountUps, initCountUps } from './components/count-up.mjs';
 import { closeMobileNav, initMobileNav } from './components/mobile-nav.mjs';
 import { destroyProducts, initProducts } from './components/products/index.mjs';
 import { destroySolutions, initSolutions } from './components/solutions/index.mjs';
+import { initKapa } from './components/kapa.mjs';
 import { initMermaid } from './components/mermaid.mjs';
 import { initTabs } from './components/tabs.mjs';
 import { destroyToc, initToc } from './components/toc.mjs';
@@ -138,6 +139,11 @@ export const swup = new Swup({
 
 swup.hooks.on('visit:start', closeMobileNav);
 
+// Report swup navigations to Google Analytics, which only sees full page loads (gtag is production-only)
+swup.hooks.on('page:view', () => {
+  window.gtag?.('event', 'page_view', { page_location: window.location.href, page_title: document.title });
+});
+
 swup.hooks.before('content:replace', (visit) => {
   updateAttributes(visit.to.url);
   updateActiveNavbarLinks(visit.to.url);
@@ -171,3 +177,4 @@ initSolutions();
 initTabs();
 initMermaid();
 initToc();
+initKapa(swup);
