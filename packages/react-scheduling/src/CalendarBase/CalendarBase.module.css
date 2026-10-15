@@ -98,11 +98,8 @@
 }
 
 .dayHeaderText {
-  display: flex;
-  align-items: center;
   margin-block: 6px; /* plus the theme's 2px on the header inner */
   font-weight: 450;
-  white-space: pre;
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 
   [aria-current=date] & {
