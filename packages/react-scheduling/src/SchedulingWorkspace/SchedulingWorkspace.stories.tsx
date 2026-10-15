@@ -9,6 +9,7 @@ import type { JSX } from 'react';
 import {
   withBookStub,
   withCancelStub,
+  withConfirmStub,
   withFindStub,
   withFixtures,
   withMockedDate,
@@ -67,6 +68,7 @@ export default {
   decorators: [
     withBookStub(),
     withCancelStub(),
+    withConfirmStub(),
     withRescheduleStub(),
     // Cancellation reasons, plus the code value sets for visit types that ask for codes.
     withValueSets({ ...CancellationReasonValueSets, ...AuthorizationValueSets }),
