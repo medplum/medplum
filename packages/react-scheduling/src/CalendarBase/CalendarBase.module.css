@@ -121,8 +121,8 @@
 }
 
 [aria-current=date] .dayNumber {
-  width: 28px;
-  height: 28px;
+  width: 2em;
+  height: 2em;
 
   &:first-child {
     margin-inline-start: -4px;
