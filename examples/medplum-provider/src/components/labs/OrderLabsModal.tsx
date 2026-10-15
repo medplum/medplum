@@ -286,15 +286,6 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
         onExitTransitionEnd={onExitTransitionEnd}
         size="xl"
         title={draftOrder ? 'Resume Lab Order' : 'Order Labs'}
-        actions={
-          loadingDraft ? undefined : (
-            <Group justify="flex-end">
-              <Button onClick={submitOrder} loading={isSubmitting} disabled={isSubmitting}>
-                Submit Order
-              </Button>
-            </Group>
-          )
-        }
       >
         {loadingDraft ? (
           <Center p="xl">
@@ -407,6 +398,11 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
                 setSpecimenCollectedDateTime(isoDateTimeString ? new Date(isoDateTimeString) : undefined);
               }}
             />
+            <Group>
+              <Button onClick={submitOrder} loading={isSubmitting} disabled={isSubmitting}>
+                Submit Order
+              </Button>
+            </Group>
           </Stack>
         )}
       </Modal>
