@@ -12,7 +12,10 @@ import { getGlobalSystemRepo } from './repo';
  * @param membership - The membership, if there is one. Without it, only the project is checked.
  * @returns The reason the membership or project is inactive, or undefined if both are active.
  */
-export function getInactiveReason(project: Project, membership?: ProjectMembership): string | undefined {
+export function getInactiveReason(
+  project: Project,
+  membership?: ProjectMembership
+): 'Profile not active' | 'Project not active' | undefined {
   if (membership?.active === false) {
     return 'Profile not active';
   }

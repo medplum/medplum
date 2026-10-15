@@ -405,7 +405,10 @@ export async function getMembershipsForLogin(login: Login): Promise<WithId<Proje
   }
 
   const projects = await systemRepo.readReferences<Project>(memberships.map((m) => m.project));
-  const activeMemberships = memberships.filter((_, i) => !getInactiveReason(projects[i] as Project));
+  const activeMemberships = memberships.filter((_, i) => {
+    const project = projects[i];
+    return project instanceof Error || !getInactiveReason(project);
+  });
   if (memberships.length > 0 && activeMemberships.length === 0) {
     throw new OperationOutcomeError(badRequest('Project not active'));
   }
