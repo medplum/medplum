@@ -207,11 +207,9 @@ describe('CalendarBase', () => {
       setup({ eventSources: [] });
       const today = String(new Date().getDate());
 
-      const header = document.querySelector('.todayNumber');
-      expect(header).toHaveTextContent(today);
-      const others = document.querySelectorAll('.otherDayHeaderInner');
-      expect(others.length).toBeGreaterThan(0);
-      others.forEach((inner) => expect(inner.querySelector('.todayNumber')).toBeNull());
+      const headers = document.querySelectorAll('[aria-current=date] .dayNumber');
+      expect(headers).toHaveLength(1);
+      expect(headers[0]).toHaveTextContent(today);
 
       await userEvent.click(screen.getByText('Month'));
       const cells = document.querySelectorAll('[aria-current=date] .dayCellTopInner');

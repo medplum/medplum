@@ -97,23 +97,20 @@
   }
 }
 
-.todayText,
-.todayNumber {
-  white-space: pre;
-}
-
-.dayHeaderInner {
-  flex-direction: row;
+.dayHeaderText {
+  display: flex;
   align-items: center;
-  margin-block: 8px;
+  margin-block: 6px; /* plus the theme's 2px on the header inner */
   font-weight: 450;
-}
-
-.otherDayHeaderInner {
+  white-space: pre;
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+
+  [aria-current=date] & {
+    color: inherit;
+  }
 }
 
-.todayNumber,
+[aria-current=date] .dayNumber,
 [aria-current=date] .dayCellTopInner {
   display: inline-flex;
   align-items: center;
@@ -123,7 +120,7 @@
   color: var(--mantine-color-white);
 }
 
-.todayNumber {
+[aria-current=date] .dayNumber {
   width: 28px;
   height: 28px;
 
