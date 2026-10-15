@@ -17,7 +17,7 @@ import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
 import { getAllowedProjects } from '../fhir/accesspolicy';
-import { findProjectMembership } from '../fhir/projectmembership';
+import { findProjectMembership, getInactiveReason } from '../fhir/projectmembership';
 import type { Repository } from '../fhir/repo';
 import { getPermittedProjectIds, getShardSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
@@ -344,7 +344,7 @@ async function resolveCronJob(
     return undefined;
   }
 
-  if (!project.features?.includes('cron') || project.active === false) {
+  if (!project.features?.includes('cron') || getInactiveReason(project)) {
     // addCronJobs refuses to register without the feature, so a job that outlived it must not run.
     // The schedule stays registered: the feature or the project can come back, and nothing
     // re-registers a dropped job, so unregistering would strand the Cron.

@@ -9,6 +9,7 @@ import * as semver from 'semver';
 import type { MedplumBullmqConfig, WorkerName } from '../config/types';
 import type { ServerConfig } from '../config/utils';
 import type { Repository } from '../fhir/repo';
+import { getInactiveReason } from '../fhir/projectmembership';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { addToUpDownCounter, BASE_METRIC_OPTIONS, getQueueMetricName, incrementCounter } from '../otel/otel';
@@ -75,8 +76,9 @@ export function isJobActive(asyncJob: WithId<AsyncJob>): boolean {
  */
 export async function assertProjectActive(projectId: string): Promise<void> {
   const project = await getGlobalSystemRepo().readResource<Project>('Project', projectId);
-  if (project.active === false) {
-    throw new OperationOutcomeError(badRequest('Project not active'));
+  const inactiveReason = getInactiveReason(project);
+  if (inactiveReason) {
+    throw new OperationOutcomeError(badRequest(inactiveReason));
   }
 }
 

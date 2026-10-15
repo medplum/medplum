@@ -43,7 +43,7 @@ import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInAuthenticatedContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
-import { findProjectMembership } from '../fhir/projectmembership';
+import { findProjectMembership, getInactiveReason } from '../fhir/projectmembership';
 import type { ResendSubscriptionsOptions, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
@@ -359,7 +359,7 @@ export async function addSubscriptionJobs(
     return;
   }
 
-  if (project.active === false) {
+  if (getInactiveReason(project)) {
     logFn('Project is not active, skipping subscriptions');
     return;
   }
@@ -651,7 +651,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     // Jobs queued before the project was deactivated are dropped, not delivered late.
     if (!job.data.target.system) {
       const project = await systemRepo.readResource<Project>('Project', job.data.target.projectId);
-      if (project.active === false) {
+      if (getInactiveReason(project)) {
         logFn(`Project ${project.id} is not active`);
         return;
       }

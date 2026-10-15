@@ -35,6 +35,7 @@ import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
+import { getInactiveReason } from '../fhir/projectmembership';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
 import { getLogger } from '../logger';
@@ -158,8 +159,9 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
   }
 
   const project = await systemRepo.readReference(membership.project);
-  if (project.active === false) {
-    sendTokenError(res, 'access_denied', 'Project not active');
+  const inactiveReason = getInactiveReason(project, membership);
+  if (inactiveReason) {
+    sendTokenError(res, 'access_denied', inactiveReason);
     return;
   }
 
@@ -330,14 +332,10 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
 
   if (login.membership) {
     const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
-    if (membership.active === false) {
-      sendTokenError(res, 'access_denied', 'Profile not active');
-      return;
-    }
-
     const project = await systemRepo.readReference(membership.project);
-    if (project.active === false) {
-      sendTokenError(res, 'access_denied', 'Project not active');
+    const inactiveReason = getInactiveReason(project, membership);
+    if (inactiveReason) {
+      sendTokenError(res, 'access_denied', inactiveReason);
       return;
     }
   }

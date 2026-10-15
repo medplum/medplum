@@ -44,6 +44,7 @@ import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '.
 import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
+import { getInactiveReason } from '../fhir/projectmembership';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
@@ -404,7 +405,7 @@ export async function getMembershipsForLogin(login: Login): Promise<WithId<Proje
   }
 
   const projects = await systemRepo.readReferences<Project>(memberships.map((m) => m.project));
-  const activeMemberships = memberships.filter((_, i) => (projects[i] as Project).active !== false);
+  const activeMemberships = memberships.filter((_, i) => !getInactiveReason(projects[i] as Project));
   if (memberships.length > 0 && activeMemberships.length === 0) {
     throw new OperationOutcomeError(badRequest('Project not active'));
   }
@@ -465,15 +466,12 @@ export async function setLoginMembership(
     throw new OperationOutcomeError(badRequest('Invalid profile'));
   }
 
-  if (membership.active === false) {
-    throw new OperationOutcomeError(badRequest('Profile not active'));
-  }
-
   // Get the project
   const globalSystemRepo = getGlobalSystemRepo();
   const project = await globalSystemRepo.readReference<Project>(membership.project);
-  if (project.active === false) {
-    throw new OperationOutcomeError(badRequest('Project not active'));
+  const inactiveReason = getInactiveReason(project, membership);
+  if (inactiveReason) {
+    throw new OperationOutcomeError(badRequest(inactiveReason));
   }
   const projectSystemRepo = await getProjectSystemRepo(project);
 
@@ -1075,11 +1073,8 @@ export async function getLoginForAccessToken(
   }
 
   const membership = await globalSystemRepo.readReference<ProjectMembership>(login.membership);
-  if (membership.active === false) {
-    return undefined;
-  }
   const project = await globalSystemRepo.readReference<Project>(membership.project);
-  if (project.active === false) {
+  if (getInactiveReason(project, membership)) {
     return undefined;
   }
   const systemRepo = await getProjectSystemRepo(project);
@@ -1117,12 +1112,12 @@ export async function getLoginForBasicAuth(req: Request, token: string): Promise
   }
 
   const membership = await getClientApplicationMembership(systemRepo, client, getProjectIdFromUrl(req.originalUrl));
-  if (!membership || membership.active === false) {
+  if (!membership) {
     return undefined;
   }
 
   const project = await systemRepo.readReference<Project>(membership.project);
-  if (project.active === false) {
+  if (getInactiveReason(project, membership)) {
     return undefined;
   }
 
@@ -1230,7 +1225,7 @@ async function tryAddOnBehalfOf(
     }
   }
 
-  if (onBehalfOfMembership?.active === false) {
+  if (getInactiveReason(authState.project, onBehalfOfMembership)) {
     throw new OperationOutcomeError(forbidden);
   }
 
@@ -1402,12 +1397,12 @@ async function tryExternalAuthLogin(
     membership = entries?.[0]?.resource;
   }
 
-  if (!membership || membership.active === false) {
+  if (!membership) {
     return undefined;
   }
 
   const project = await systemRepo.readReference<Project>(membership.project);
-  if (project.active === false) {
+  if (getInactiveReason(project, membership)) {
     return undefined;
   }
 
