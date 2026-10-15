@@ -38,6 +38,15 @@ enableGitInfo = true
   source = "../core/dist/docs"
   target = "assets/sdk"
 
+# Example source shown in the docs by the code-example shortcode, at assets/code/<repo path>
+[[module.mounts]]
+  source = "../examples/src"
+  target = "assets/code/packages/examples/src"
+
+[[module.mounts]]
+  source = "../../examples/medplum-demo-bots/src"
+  target = "assets/code/examples/medplum-demo-bots/src"
+
 # Lets js.Build resolve bare imports (swup, mermaid) from the hoisted node_modules
 [security.node.permissions]
   allowRead = ['.', '../../node_modules']

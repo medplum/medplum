@@ -1,1 +1,1 @@
-{{ partial "admonition" (dict "type" "note" "title" (.Get "title") "inner" (.Inner | markdownify)) }}
+{{ partial "admonition" (dict "type" "note" "title" (.Get "title") "inner" (.Page.RenderString (dict "display" "block") .Inner)) }}
