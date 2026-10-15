@@ -779,7 +779,7 @@ A single response to the questionnaire will extract a Bundle containing two reso
 
 ## Approach 2: Subscription + Bot
 
-A [Medplum Bot](/docs/bots/) is a TypeScript function that runs server-side in response to a FHIR event. For questionnaire parsing, the typical wiring is:
+A [Medplum Bot](/docs/bots) is a TypeScript function that runs server-side in response to a FHIR event. For questionnaire parsing, the typical wiring is:
 
 1. Create a `Subscription` that fires on `QuestionnaireResponse` creation (or status change to `completed`).
 2. The Bot receives the `QuestionnaireResponse` as its input.

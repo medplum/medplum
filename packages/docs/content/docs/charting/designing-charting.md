@@ -54,4 +54,4 @@ Clinical operations teams often maintain a fuller discovery checklist (specialti
 - [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses)
 - [Authoring Clinical Protocols](/docs/careplans/protocols)
 - [Provider Visits](/docs/provider/visits)
-- [Scheduling](/docs/scheduling/)
+- [Scheduling](/docs/scheduling)

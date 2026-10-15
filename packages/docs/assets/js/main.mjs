@@ -15,22 +15,35 @@ function setAttribute(key, value) {
 // Full-width marketing pages, keyed by path (see data-page in layouts/_default/baseof.html)
 const landingPages = {
   '/': 'home',
-  '/products/': 'products',
   '/products': 'products',
-  '/solutions/': 'solutions',
   '/solutions': 'solutions',
 };
 
+// Deployed URLs have no trailing slash; the Hugo dev server's do
+function normalizePath(url) {
+  const pathname = new URL(url, window.location.origin).pathname;
+  return pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname;
+}
+
+function inSection(pathname, section) {
+  return pathname === section || pathname.startsWith(section + '/');
+}
+
+function isCurrentPage(href) {
+  return normalizePath(href) === normalizePath(window.location.href);
+}
+
 function updateAttributes(newUrl) {
-  const onDocsPage = newUrl.includes('/docs/');
+  const pathname = normalizePath(newUrl);
+  const onDocsPage = inSection(pathname, '/docs');
   setAttribute('breadcrumbs', onDocsPage ? 'visible' : 'hidden');
   setAttribute('sidebar', onDocsPage ? 'open' : 'closed');
   setAttribute('docFooter', onDocsPage ? 'visible' : 'hidden');
 
-  const showToc = onDocsPage || newUrl.includes('/blog/') || newUrl.includes('/careers/') || newUrl.includes('/terms');
+  const showToc = onDocsPage || pathname.startsWith('/blog/') || inSection(pathname, '/careers') || inSection(pathname, '/terms');
   setAttribute('toc', showToc ? 'visible' : 'hidden');
 
-  const page = landingPages[new URL(newUrl, window.location.origin).pathname];
+  const page = landingPages[pathname];
   if (page) {
     setAttribute('page', page);
   } else {
@@ -69,7 +82,7 @@ function updateActiveLinks() {
   });
 
   document.querySelectorAll('.sidebar-link[href]').forEach((link) => {
-    if (link.href === window.location.href) {
+    if (isCurrentPage(link.href)) {
       link.closest('.sidebar-category-header-wrapper')?.classList.add('active');
       link.classList.add('active');
       // Open every category containing the page; the sidebar is outside #swup, so its server-rendered state goes stale
@@ -93,7 +106,7 @@ document.body.addEventListener('click', (e) => {
   if (target.matches('.sidebar-category-link')) {
     const category = target.closest('.sidebar-category');
     if (category) {
-      if (target.href === window.location.href) {
+      if (isCurrentPage(target.href)) {
         category.classList.toggle('expanded');
       } else {
         category.classList.add('expanded');

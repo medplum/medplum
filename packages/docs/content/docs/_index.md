@@ -1,7 +1,6 @@
 ---
 id: home
 title: Welcome to Medplum
-slug: /
 weight: 20
 ---
 
@@ -63,7 +62,7 @@ Medplum is a **headless EHR**. Using [Medplum products](./products) you can buil
 
 ## Reference Material
 
-Medplum is [open source](https://github.com/medplum/medplum). [Reference material](/docs/api/) and [sample applications](https://github.com/medplum) are available for browsing without authentication.
+Medplum is [open source](https://github.com/medplum/medplum). [Reference material](/docs/api) and [sample applications](https://github.com/medplum) are available for browsing without authentication.
 
 ## Community
 

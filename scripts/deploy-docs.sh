@@ -12,4 +12,4 @@ set -e
 set -x
 
 # Fast upload the docs to S3
-node scripts/s3deploy.mjs packages/docs/build "s3://${DOCS_DESTINATION}"
+node scripts/s3deploy.mjs packages/docs/public "s3://${DOCS_DESTINATION}"

@@ -15,7 +15,7 @@ A charting UI reads patient-level data that persists across visits and encounter
 
 ## Patient Summary and Queries
 
-Demographics come from the [`Patient`](/docs/api/fhir/resources/patient) resource. You can load related records with [Patient `$everything`](/docs/api/fhir/operations/patient-everything), but that response can be large for a dashboard view. Prefer targeted searches for active [`CarePlan`](/docs/api/fhir/resources/careplan), [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest), [`Condition`](/docs/api/fhir/resources/condition), and other slices your UI needs. See [Search](/docs/search/) to compose queries.
+Demographics come from the [`Patient`](/docs/api/fhir/resources/patient) resource. You can load related records with [Patient `$everything`](/docs/api/fhir/operations/patient-everything), but that response can be large for a dashboard view. Prefer targeted searches for active [`CarePlan`](/docs/api/fhir/resources/careplan), [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest), [`Condition`](/docs/api/fhir/resources/condition), and other slices your UI needs. See [Search](/docs/search) to compose queries.
 
 React components that help assemble timelines and summaries include [PatientTimeline](https://storybook.medplum.com/?path=/docs/medplum-patienttimeline--patient), [Timeline](https://storybook.medplum.com/?path=/docs/medplum-timeline--basic), [Search control](https://storybook.medplum.com/?path=/docs/medplum-searchcontrol--checkboxes), [ResourceAvatar](https://storybook.medplum.com/?path=/docs/medplum-resourceavatar--image), [FhirPathDisplay](https://storybook.medplum.com/?path=/docs/medplum-fhirpathdisplay--id), and tab navigation (for example [Mantine Tabs](https://mantine.dev/core/tabs/), used throughout Medplum apps).
 
@@ -65,7 +65,7 @@ risk -->|subject| homer
 
 During a visit, resources typically link to an [`Encounter`](/docs/api/fhir/resources/encounter). Notes often use [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression); measurements use [`Observation`](/docs/api/fhir/resources/observation); orders use [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) and [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest).
 
-Note capture varies by product: some apps use a simple free-text area and persist narrative on [`Encounter`](/docs/api/fhir/resources/encounter) and/or [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression). Others drive charting from a library of [Questionnaires](/docs/questionnaires/) and use [Bots](/docs/bots/) or [`$extract`](/docs/api/fhir/operations/extract) to create the right resources. Medplum is headless, so either pattern (or a mix) is valid – see [Visit Templates and the SOAP Approach](/docs/charting/visit-templates) for template-driven visits.
+Note capture varies by product: some apps use a simple free-text area and persist narrative on [`Encounter`](/docs/api/fhir/resources/encounter) and/or [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression). Others drive charting from a library of [Questionnaires](/docs/questionnaires) and use [Bots](/docs/bots) or [`$extract`](/docs/api/fhir/operations/extract) to create the right resources. Medplum is headless, so either pattern (or a mix) is valid – see [Visit Templates and the SOAP Approach](/docs/charting/visit-templates) for template-driven visits.
 
 ```mermaid
 flowchart BT
@@ -97,7 +97,7 @@ flowchart BT
 | [`Observation`](/docs/api/fhir/resources/observation)               | Vitals and other measurements tied to the encounter. |
 | [`RiskAssessment`](/docs/api/fhir/resources/riskassessment)       | Structured risk scores for the encounter when used. |
 
-Encounter billing often references [CPT](https://www.ama-assn.org/practice-management/cpt/cpt-overview-and-code-approval) and [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) on billing-related structures; see [Provider visits](/docs/provider/visits) and [Billing](/docs/billing/).
+Encounter billing often references [CPT](https://www.ama-assn.org/practice-management/cpt/cpt-overview-and-code-approval) and [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) on billing-related structures; see [Provider visits](/docs/provider/visits) and [Billing](/docs/billing).
 
 ## Patient Demographics
 
@@ -700,7 +700,7 @@ External PDFs and images are indexed with [`DocumentReference`](/docs/api/fhir/r
 ## See Also
 
 - [Visit Templates and the SOAP Approach](/docs/charting/visit-templates)
-- [Intake](/docs/intake/)
+- [Intake](/docs/intake)
 - [Patient](/docs/api/fhir/resources/patient) FHIR resource API
 - [Observation](/docs/api/fhir/resources/observation) FHIR resource API
 - [Condition](/docs/api/fhir/resources/condition) FHIR resource API

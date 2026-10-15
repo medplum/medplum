@@ -49,7 +49,7 @@ For issuer-initiated workflows such as wallet handoff or magic links, use [**Pre
 
 ## User Management
 
-See our [User Management](/docs/user-management/) section for more information:
+See our [User Management](/docs/user-management) section for more information:
 
 - scoping users, and distinguishing [Project vs Server Scoped users](/docs/user-management/project-vs-server-scoped-users.mdx)
 - enabling [Open Patient Registration](/docs/user-management/open-patient-registration)

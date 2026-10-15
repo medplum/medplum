@@ -383,7 +383,7 @@ Medplum provides building blocks for custom integrations. **Any system that expo
 
 ## Integration Building Blocks and Testing
 
-Complex integrations are built by composing [bots](/docs/bots/), [subscriptions](/docs/subscriptions), [authentication and authorization](/docs/auth) and the [TypeScript SDK](/docs/sdk/).
+Complex integrations are built by composing [bots](/docs/bots), [subscriptions](/docs/subscriptions), [authentication and authorization](/docs/auth) and the [TypeScript SDK](/docs/sdk).
 
 - [Running on localhost](/docs/contributing/run-the-stack) is useful for testing integrations
 - [CLI](/docs/cli/external-fhir-servers) is commonly used to test connectivity to external FHIR Servers

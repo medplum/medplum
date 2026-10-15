@@ -41,7 +41,7 @@ Orders are usually [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) a
 
 - [Chart Data Model](/docs/charting/chart-data-model)
 - [Visit Templates and the SOAP Approach](/docs/charting/visit-templates)
-- [Questionnaires](/docs/questionnaires/)
+- [Questionnaires](/docs/questionnaires)
 - [Charting Demo Video](https://youtu.be/PHZr9q20tbM) on YouTube (3 min)
 - [Sample ICD-9 ValueSet Bundle](https://drive.google.com/file/d/1cFHGBud9IlGH86yilxe-KkDxGUbGr2Mn/view?usp=sharing)
 - [Charting Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acharting) on GitHub

@@ -6,7 +6,7 @@
     {{- $ancestors = after 1 $ancestors }}
   {{- end }}
   {{- range $ancestors }}
-  <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+  <a href="{{ partial "href" . }}">{{ .Title }}</a>
   <span class="separator">&gt;</span>
   {{- end }}
   <span class="active"> {{ .Title }} </span>

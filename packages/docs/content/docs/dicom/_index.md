@@ -68,7 +68,7 @@ frame, which is what [WADO-RS frame retrieval](./dicomweb-api.md#wado-rs-retriev
 See the [Data Model](./data-model.md) for the full mapping from DICOM attributes to resource fields.
 
 Because these are ordinary Medplum resources, they are searchable with the standard FHIR search API,
-readable through the [TypeScript SDK](/docs/sdk/), subject to
+readable through the [TypeScript SDK](/docs/sdk), subject to
 [access policies](/docs/access/access-policies), and able to trigger [Bots](/docs/bots) on create or
 update.
 

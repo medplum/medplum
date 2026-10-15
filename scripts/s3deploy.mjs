@@ -95,8 +95,8 @@ async function main() {
       // Special case for root iframe.html (Storybook nested page)
       s3Key += 'iframe.html';
     } else if (relativePath.endsWith('/index.html')) {
-      // Special case for directories with index.html
-      s3Key += relativePath.slice(0, -'index.html'.length);
+      // Serve foo/index.html at /foo (no trailing slash)
+      s3Key += relativePath.slice(0, -'/index.html'.length);
     } else if (relativePath.endsWith('.html')) {
       // Regular HTML files
       s3Key += relativePath.slice(0, -ext.length);

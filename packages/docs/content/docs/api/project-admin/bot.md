@@ -5,7 +5,7 @@ title: Bot Endpoint
 
 ## POST `/admin/projects/:projectId/bot`
 
-Creates a new [Medplum Bot](/docs/). Posting to this endpoint creates a [`Bot`](/docs/api/fhir/medplum/bot) resource and a corresponding [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resource.
+Creates a new [Medplum Bot](/docs). Posting to this endpoint creates a [`Bot`](/docs/api/fhir/medplum/bot) resource and a corresponding [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resource.
 
 ### Parameters
 
