@@ -288,12 +288,7 @@ describe('saveLabOrderDraft', () => {
     return { saved, defaults: await getLabOrderDraftDefaults(medplum, saved) };
   }
 
-  async function getTestsByCode(draft: WithId<ServiceRequest>): Promise<Record<string, WithId<ServiceRequest>>> {
-    const tests = await medplum.searchResources('ServiceRequest', { 'based-on': getReferenceString(draft) });
-    return Object.fromEntries(tests.map((test) => [test.code?.coding?.[0]?.code, test]));
-  }
-
-  test('updates the draft, its tests, AOE answers and specimen in place when re-saved', async () => {
+  test('updates the draft in place, keeping the fields the form does not set', async () => {
     const first = await saveLabOrderDraft(medplum, { ...inputs, billingInformation: { billTo: 'patient' } });
     const otherExtension = { url: 'https://example.com/other', valueString: 'kept' };
     const draft = await medplum.updateResource({
@@ -301,7 +296,6 @@ describe('saveLabOrderDraft', () => {
       encounter: { reference: 'Encounter/enc-1' },
       extension: [...(first.extension ?? []), otherExtension],
     });
-    const before = await getTestsByCode(draft);
     const coverage = await medplum.createResource<Coverage>({
       resourceType: 'Coverage',
       status: 'active',
@@ -313,19 +307,13 @@ describe('saveLabOrderDraft', () => {
       testMetadata: { CBC: { priority: 'routine', aoeResponses: aoe(false) }, BMP: { aoeResponses: aoe(true) } },
       billingInformation: { billTo: 'insurance', patientCoverage: [coverage] },
       orderNotes: 'Not fasting',
-      specimenCollectedDateTime: new Date('2024-03-02T10:00:00.000Z'),
     });
 
     expect(saved.id).toBe(draft.id);
-    expect(saved.specimen).toEqual(draft.specimen);
     expect(saved.insurance).toEqual([createReference(coverage)]);
     // Fields the form does not edit are kept, and the form's own extensions are replaced
     expect(saved.encounter).toEqual({ reference: 'Encounter/enc-1' });
     expect(saved.extension).toEqual([otherExtension, { url: 'billTo', valueString: 'insurance' }]);
-    const after = await getTestsByCode(saved);
-    expect(after.CBC.id).toBe(before.CBC.id);
-    expect(after.CBC.supportingInfo).toEqual(before.CBC.supportingInfo);
-    expect(after.BMP.supportingInfo).toEqual(before.BMP.supportingInfo);
     expect(defaults).toMatchObject({
       tests: [cbc, bmp],
       testMetadata: {
@@ -334,40 +322,48 @@ describe('saveLabOrderDraft', () => {
       },
       billTo: 'insurance',
       orderNotes: 'Not fasting',
-      specimenCollectedDateTime: new Date('2024-03-02T10:00:00.000Z'),
     });
   });
 
-  test('adds and deletes tests, AOE answers and the specimen across re-saves', async () => {
-    const draft = await saveLabOrderDraft(medplum, { ...inputs, specimenCollectedDateTime: undefined });
-    const before = await getTestsByCode(draft);
+  test('replaces the tests, AOE answers and specimen without leaving the old ones behind', async () => {
+    const draft = await saveLabOrderDraft(medplum, inputs);
+    const oldTests = await medplum.searchResources('ServiceRequest', { 'based-on': getReferenceString(draft) });
+    const oldReferences = [
+      ...oldTests.flatMap((test) => [createReference(test), test.supportingInfo?.[0]]),
+      draft.specimen?.[0],
+    ] as Reference[];
     const collected = new Date('2024-03-02T10:00:00.000Z');
 
-    const second = await resaveDraft(draft, {
+    const { saved, defaults } = await resaveDraft(draft, {
       selectedTests: [cbc, tsh],
       testMetadata: { CBC: {}, TSH: { aoeResponses: aoe(true) } },
       specimenCollectedDateTime: collected,
     });
 
-    const afterSecond = await getTestsByCode(second.saved);
-    expect(Object.keys(afterSecond).sort()).toEqual(['CBC', 'TSH']);
-    expect(afterSecond.CBC.id).toBe(before.CBC.id);
-    expect(afterSecond.CBC.supportingInfo).toBeUndefined();
-    await expect(medplum.readResource('ServiceRequest', before.BMP.id)).rejects.toThrow();
-    await expect(medplum.readReference(before.BMP.supportingInfo?.[0] as Reference)).rejects.toThrow();
-    await expect(medplum.readReference(before.CBC.supportingInfo?.[0] as Reference)).rejects.toThrow();
-    expect(second.defaults.testMetadata.TSH?.aoeResponses?.item).toEqual(aoe(true).item);
-    expect(second.defaults.specimenCollectedDateTime).toEqual(collected);
+    const tests = await medplum.searchResources('ServiceRequest', { 'based-on': getReferenceString(saved) });
+    expect(tests.map((test) => test.code?.coding?.[0]?.code).sort()).toEqual(['CBC', 'TSH']);
+    for (const reference of oldReferences) {
+      await expect(medplum.readReference(reference)).rejects.toThrow();
+    }
+    expect(defaults.testMetadata).toEqual({
+      CBC: { priority: 'routine', notes: undefined, aoeResponses: undefined },
+      TSH: { priority: 'routine', notes: undefined, aoeResponses: expect.objectContaining({ item: aoe(true).item }) },
+    });
+    expect(defaults.specimenCollectedDateTime).toEqual(collected);
+  });
 
-    const third = await resaveDraft(second.saved, {
-      selectedTests: [cbc, tsh],
-      testMetadata: { CBC: { aoeResponses: aoe(false) }, TSH: { aoeResponses: aoe(true) } },
+  test('clears the values removed from a resumed draft', async () => {
+    const draft = await saveLabOrderDraft(medplum, inputs);
+
+    const { saved, defaults } = await resaveDraft(draft, {
+      diagnoses: [],
+      orderNotes: undefined,
       specimenCollectedDateTime: undefined,
     });
 
-    expect(third.defaults.testMetadata.CBC?.aoeResponses?.item).toEqual(aoe(false).item);
-    expect(third.defaults.specimenCollectedDateTime).toBeUndefined();
-    await expect(medplum.readReference(second.saved.specimen?.[0] as Reference)).rejects.toThrow();
+    expect(defaults).toMatchObject({ diagnoses: [], orderNotes: undefined, specimenCollectedDateTime: undefined });
+    expect(saved.specimen).toBeUndefined();
+    await expect(medplum.readReference(draft.specimen?.[0] as Reference)).rejects.toThrow();
   });
 
   test('throws when part of the save fails', async () => {

@@ -9,7 +9,6 @@ import {
   isReference,
   OperationOutcomeError,
   parseReference,
-  resolveId,
   SNOMED,
 } from '@medplum/core';
 import type {
@@ -118,7 +117,7 @@ export async function getLabOrderDraftDefaults(
   const testMetadata: LabOrderDraftDefaults['testMetadata'] = {};
   await Promise.all(
     childRequests.map(async (child) => {
-      const code = getTestCode(child);
+      const code = child.code?.coding?.[0]?.code;
       if (!code) {
         return;
       }
@@ -296,8 +295,10 @@ function createLabOrderDraftBundle(inputs: PartialLabOrderInputs): Bundle {
 }
 
 /**
- * Turns the creates in a new draft's bundle into updates of an existing draft's resources, and
- * deletes the per-test requests, AOE answers and specimen the form no longer has.
+ * Turns a new draft's bundle into an update of an existing draft. The top-level lab order is
+ * updated in place, keeping its ID and the fields the form does not set, such as its encounter.
+ * Its per-test requests, AOE answers and specimen are only reached through the lab order, so the
+ * current ones are deleted and the bundle creates them again.
  * @param medplum - The Medplum client.
  * @param entries - The entries of the bundle built from the form, which are modified in place.
  * @param orderEntry - The entry for the top-level lab order.
@@ -313,76 +314,30 @@ async function targetExistingDraft(
     medplum.readResource('ServiceRequest', draftId, { cache: 'no-cache' }),
     medplum.searchResources('ServiceRequest', { 'based-on': `ServiceRequest/${draftId}` }, { cache: 'no-cache' }),
   ]);
-  const currentSpecimenRef = current.specimen?.find((ref): ref is Reference<Specimen> => isReference(ref, 'Specimen'));
-  const currentSpecimen = currentSpecimenRef
-    ? await medplum.readReference(currentSpecimenRef, { cache: 'no-cache' })
-    : undefined;
-  const deletes: string[] = [];
 
-  const unmatchedTests = [...currentTests];
-  for (const entry of entries) {
-    const test = entry.resource as ServiceRequest | undefined;
-    if (test?.resourceType !== 'ServiceRequest' || test.basedOn?.[0]?.reference !== orderEntry.fullUrl) {
-      continue;
-    }
-    const index = unmatchedTests.findIndex((currentTest) => getTestCode(currentTest) === getTestCode(test));
-    if (index === -1) {
-      continue;
-    }
-    const [currentTest] = unmatchedTests.splice(index, 1);
-    const aoeEntry = findEntry(entries, test.supportingInfo?.[0]?.reference);
-    const currentAoeRef = getAoeReference(currentTest);
-    updateEntry(entry, getReferenceString(currentTest), currentTest);
-    if (currentAoeRef?.reference) {
-      if (aoeEntry) {
-        updateEntry(aoeEntry, currentAoeRef.reference);
-      } else {
-        deletes.push(currentAoeRef.reference);
-      }
-    }
-  }
-  for (const removedTest of unmatchedTests) {
-    deletes.push(getReferenceString(removedTest));
-    const aoeRef = getAoeReference(removedTest);
-    if (aoeRef?.reference) {
-      deletes.push(aoeRef.reference);
-    }
-  }
-
-  if (currentSpecimen) {
-    const specimenEntry = findEntry(entries, (orderEntry.resource as ServiceRequest).specimen?.[0]?.reference);
-    if (specimenEntry) {
-      updateEntry(specimenEntry, getReferenceString(currentSpecimen), currentSpecimen);
-    } else {
-      deletes.push(getReferenceString(currentSpecimen));
-    }
-  }
-
-  const formExtensions = (orderEntry.resource as ServiceRequest).extension ?? [];
-  updateEntry(orderEntry, getReferenceString(current), current);
+  const order = orderEntry.resource as ServiceRequest;
   const extension = [
     ...(current.extension ?? []).filter((ext) => !FORM_EXTENSION_URLS.has(ext.url)),
-    ...formExtensions,
+    ...(order.extension ?? []),
   ];
-  (orderEntry.resource as ServiceRequest).extension = extension.length > 0 ? extension : undefined;
+  orderEntry.request = { method: 'PUT', url: getReferenceString(current) };
+  // The builder sets every field it owns, as undefined when cleared, so cleared values replace the draft's
+  orderEntry.resource = {
+    ...current,
+    ...order,
+    id: current.id,
+    meta: { ...current.meta, ...order.meta },
+    extension: extension.length > 0 ? extension : undefined,
+  };
 
-  entries.push(...deletes.map((url): BundleEntry => ({ request: { method: 'DELETE', url } })));
-}
-
-/**
- * Turns a create entry into an update of the resource at `reference`. Fields of `existing` that the
- * form does not set, such as the draft's encounter, are kept. The entry's `fullUrl` is left as is,
- * so other entries' references to it resolve to the updated resource.
- * @param entry - The bundle entry to modify in place.
- * @param reference - The reference string of the resource to update.
- * @param existing - The current version of the resource, to keep the fields the form does not set.
- */
-function updateEntry(entry: BundleEntry, reference: string, existing?: Resource): void {
-  const resource = entry.resource as Resource;
-  entry.request = { method: 'PUT', url: reference };
-  entry.resource = { ...existing, ...resource, id: resolveId({ reference }) } as Resource;
-  if (existing?.meta && resource.meta) {
-    entry.resource.meta = { ...existing.meta, ...resource.meta };
+  const deletes = [
+    ...currentTests.flatMap((test) => [getReferenceString(test), getAoeReference(test)?.reference]),
+    current.specimen?.find((ref) => isReference(ref, 'Specimen'))?.reference,
+  ];
+  for (const url of deletes) {
+    if (url) {
+      entries.push({ request: { method: 'DELETE', url } });
+    }
   }
 }
 
@@ -408,19 +363,6 @@ function notifyBatchModified(medplum: MedplumClient, entries: BundleEntry[], res
 
 function isLabOrderEntry(entry: BundleEntry): boolean {
   return !!entry.resource?.meta?.profile?.includes(MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE);
-}
-
-/**
- * @param entries - The bundle entries to search.
- * @param placeholder - A `urn:uuid:` reference to another entry in the same bundle.
- * @returns The entry that the placeholder refers to, if any.
- */
-function findEntry(entries: BundleEntry[], placeholder: string | undefined): BundleEntry | undefined {
-  return placeholder ? entries.find((entry) => entry.fullUrl === placeholder) : undefined;
-}
-
-function getTestCode(test: ServiceRequest): string | undefined {
-  return test.code?.coding?.[0]?.code;
 }
 
 function getAoeReference(test: ServiceRequest): Reference<QuestionnaireResponse> | undefined {
