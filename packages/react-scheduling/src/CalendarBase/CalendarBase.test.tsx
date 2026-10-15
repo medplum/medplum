@@ -150,6 +150,39 @@ describe('CalendarBase', () => {
       }
     });
 
+    test('marks the selected appointment or slot', async () => {
+      const homer = createAppointment({
+        id: 'apt-homer',
+        participant: [{ actor: { reference: 'Patient/1', display: 'Homer Simpson' }, status: 'accepted' }],
+      });
+      const bob = createAppointment({
+        id: 'apt-bob',
+        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
+        participant: [{ actor: { reference: 'Patient/2', display: 'Bob Jones' }, status: 'accepted' }],
+      });
+      const slot = createSlot({
+        start: new Date(baseDate.getTime() + 120 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 150 * 60 * 1000).toISOString(),
+      });
+      const eventSources = [{ schedule: DrAliceSmithSchedule, appointments: [homer, bob], slots: [slot] }];
+
+      const { container, rerender } = setup({ eventSources, selectedId: 'apt-homer' });
+      expect(screen.getByText(/Homer Simpson/).closest('.appointment')).toHaveClass('selected');
+      expect(screen.getByText(/Bob Jones/).closest('.appointment')).not.toHaveClass('selected');
+
+      rerender(<CalendarBase eventSources={eventSources} selectedId="apt-bob" />);
+      expect(screen.getByText(/Homer Simpson/).closest('.appointment')).not.toHaveClass('selected');
+      expect(screen.getByText(/Bob Jones/).closest('.appointment')).toHaveClass('selected');
+
+      rerender(<CalendarBase eventSources={eventSources} selectedId={slot.id} />);
+      expect(container.querySelector('.slot')).toHaveClass('selected');
+      expect(screen.getByText(/Bob Jones/).closest('.appointment')).not.toHaveClass('selected');
+
+      rerender(<CalendarBase eventSources={eventSources} />);
+      expect(container.querySelector('.selected')).toBeNull();
+    });
+
     test('renders "free" slots', async () => {
       const source = {
         schedule: DrAliceSmithSchedule,
@@ -168,6 +201,23 @@ describe('CalendarBase', () => {
       };
       setup({ eventSources: [source] });
       expect(screen.getByText(/Blocked/)).toBeInTheDocument();
+    });
+
+    test("circles today's date in the day headers and in month view", async () => {
+      setup({ eventSources: [] });
+      const today = String(new Date().getDate());
+
+      const header = document.querySelector('.todayNumber');
+      expect(header).toHaveTextContent(today);
+      const others = document.querySelectorAll('.otherDayHeaderInner');
+      expect(others.length).toBeGreaterThan(0);
+      others.forEach((inner) => expect(inner.querySelector('.todayNumber')).toBeNull());
+
+      await userEvent.click(screen.getByText('Month'));
+      const cell = document.querySelector('.todayCellNumber, .narrowTodayCellNumber');
+      expect(cell).toHaveTextContent(today);
+      expect(cell).toHaveClass('todayNumber');
+      expect(document.querySelectorAll('.todayNumber')).toHaveLength(1);
     });
 
     test('hides slots in the month view', async () => {

@@ -30,6 +30,7 @@ export interface MultiCalendarProps {
   onDoubleClickAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onRangeChange?: (range: DateTimeRange) => void;
   selection?: DateTimeRange;
+  selectedId?: string;
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
   loading?: boolean;
@@ -72,6 +73,7 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
       {...calendarBaseProps}
       eventInnerClass={classes.eventInner}
       eventTimeClass={classes.eventTime}
+      eventTitleClass={classes.eventTitle}
       availableTime={props.availableTime}
       eventContent={(info) => {
         const ext = info.event.extendedProps as ExtendedEvent;

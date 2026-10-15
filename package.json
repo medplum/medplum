@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "5.2.4",
+  "version": "5.2.5",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -27,9 +27,6 @@
     "trailingComma": "es5"
   },
   "overrides": {
-    "@microsoft/api-documenter": {
-      "js-yaml": "4.3.1"
-    },
     "adm-zip": "0.6.1",
     "esbuild": "0.28.2",
     "typescript": "6.0.3",

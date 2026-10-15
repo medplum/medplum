@@ -66,7 +66,8 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
   const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<LabItem>();
   const [loading, setLoading] = useState(false);
-  const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
+  // The order modal is either closed, creating a new order, or resuming a draft.
+  const [orderModal, setOrderModal] = useState<'new' | WithId<ServiceRequest>>();
 
   // The active search is parsed from the URL query string, then has the tab's
   // default status filter and a default sort applied.
@@ -167,7 +168,7 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
   );
 
   const handleNewOrderCreated = useCallback((): void => {
-    setNewOrderModalOpened(false);
+    setOrderModal(undefined);
     const openTab = tabs.find((t) => t.value === 'open');
     fetchData()
       .then(() => (openTab ? navigate(openTab.uri)?.catch(console.error) : undefined))
@@ -182,7 +183,7 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
         color="blue"
         size={32}
         aria-label="Order Labs"
-        onClick={() => setNewOrderModalOpened(true)}
+        onClick={() => setOrderModal('new')}
       >
         <IconPlus size={16} />
       </ActionIcon>
@@ -221,13 +222,18 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
           )
         }
         renderDetail={(item) => (
-          <LabDetailPane item={item} onOrderChange={() => fetchData().catch(showErrorNotification)} />
+          <LabDetailPane
+            item={item}
+            onOrderChange={() => fetchData().catch(showErrorNotification)}
+            onResumeOrder={setOrderModal}
+          />
         )}
       />
 
       <OrderLabsModal
-        opened={newOrderModalOpened}
-        onClose={() => setNewOrderModalOpened(false)}
+        opened={!!orderModal}
+        onClose={() => setOrderModal(undefined)}
+        draftOrder={orderModal === 'new' ? undefined : orderModal}
         onSubmitLabOrder={handleNewOrderCreated}
       />
     </Box>

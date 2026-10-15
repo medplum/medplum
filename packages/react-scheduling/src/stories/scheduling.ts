@@ -9,6 +9,9 @@ import {
   deepClone,
   getReferenceString,
   HL7_V2_0203,
+  RecurrenceIdExtensionURI,
+  RecurrenceTemplateExtensionURI,
+  RecurringAppointmentSeriesIdentifierSystem,
   REQUIRES_DIAGNOSIS_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SCHEDULING_REQUIREMENT_CODES,
@@ -44,7 +47,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { getBrowserTimezone } from '../AppointmentFinder/AppointmentFinder.times';
 import { setScheduleAvailability } from '../availability';
-import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, NPI_SYSTEM } from '../constants';
+import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, NPI_SYSTEM, SERVICE_FACILITY_ROLE_SYSTEM } from '../constants';
 import {
   getHealthcareServiceSchedulingParameterValues,
   setHealthcareServiceSchedulingParameterValues,
@@ -803,6 +806,36 @@ export const DrPatelSchedule = buildSchedule('schedule-dr-patel', 'Practitioner/
   name: 'Walk-in Clinic',
 });
 
+/** Works at both clinics: the main clinic as another system linked her, the satellite as the workspace did. */
+export const DrBrooksPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-brooks',
+  name: [{ given: ['Elena'], family: 'Brooks', prefix: ['Dr.'] }],
+  extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
+};
+
+/** Written by a sync rather than the workspace, so the workspace won't change it. */
+export const DrBrooksLinkedRole: WithId<PractitionerRole> = {
+  resourceType: 'PractitionerRole',
+  id: 'role-dr-brooks-main-clinic',
+  identifier: [{ system: 'http://example.org/provider-location-link', value: 'dr-brooks|main-clinic' }],
+  practitioner: { reference: 'Practitioner/dr-brooks' },
+  location: [{ reference: 'Location/main-clinic' }],
+  active: true,
+};
+
+/** The workspace's own role for her, so the satellite can be removed from her page. */
+export const DrBrooksRole: WithId<PractitionerRole> = {
+  resourceType: 'PractitionerRole',
+  id: 'role-dr-brooks-satellite',
+  identifier: [{ system: SERVICE_FACILITY_ROLE_SYSTEM, value: 'dr-brooks' }],
+  practitioner: { reference: 'Practitioner/dr-brooks' },
+  location: [{ reference: 'Location/satellite-clinic' }],
+  active: true,
+};
+
+export const DrBrooksSchedule = buildSchedule('schedule-dr-brooks', 'Practitioner/dr-brooks', 'Dr. Elena Brooks');
+
 /**
  * Visit types nobody offers, so the config workspace has enough to page through and search when offering from an
  * actor's page.
@@ -860,6 +893,10 @@ export const ConfigFixtures = [
   ExamRoomC,
   DrPatelPractitioner,
   DrPatelSchedule,
+  DrBrooksPractitioner,
+  DrBrooksLinkedRole,
+  DrBrooksRole,
+  DrBrooksSchedule,
 ];
 
 const SPECIALTY_CLINICS = [
@@ -1332,6 +1369,7 @@ export const DrBrownAppointments: WithId<Appointment>[] = DrBrownSlots.map((slot
     ],
     createReference(DrBrownPractitioner)
   ),
+  ...(idx === 1 && garciaSeriesOccurrence(2)),
 }));
 
 /**
@@ -1408,6 +1446,54 @@ export const MondayTelehealthAppointment: WithId<Appointment> = {
   ),
 };
 
+/**
+ * Eliana Garcia sees Dr. Brown weekly, three times: this week's visit is the second, and
+ * the first and third are a week either side, each holding its own Slot.
+ */
+const GarciaSeriesOtherWeeks = (
+  [
+    [1, -1],
+    [3, 1],
+  ] as const
+).map(([position, weeks]) => {
+  const slot: WithId<Slot> = {
+    ...DrBrownSlots[1],
+    id: `brown-garcia-${position}`,
+    start: addMinutes(new Date(DrBrownSlots[1].start), weeks * 7 * 24 * 60).toISOString(),
+    end: addMinutes(new Date(DrBrownSlots[1].end), weeks * 7 * 24 * 60).toISOString(),
+  };
+  const appointment: WithId<Appointment> = {
+    ...DrBrownAppointments[1],
+    id: `appointment-${slot.id}`,
+    start: slot.start,
+    end: slot.end,
+    slot: [createReference(slot)],
+    ...garciaSeriesOccurrence(position),
+  };
+  return { slot, appointment };
+});
+
+export const GarciaSeriesSlots = GarciaSeriesOtherWeeks.map(({ slot }) => slot);
+export const GarciaSeriesAppointments = GarciaSeriesOtherWeeks.map(({ appointment }) => appointment);
+
+/**
+ * Tags an occurrence of Eliana Garcia's series as `$book` does, keeping the template on the
+ * first occurrence alone.
+ * @param position - Which occurrence it is, counting from 1.
+ * @returns The appointment's identifier and extensions.
+ */
+function garciaSeriesOccurrence(position: number): Pick<Appointment, 'identifier' | 'extension'> {
+  return {
+    identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'garcia-weekly-telehealth' }],
+    extension: [
+      ...(position === 1
+        ? [{ url: RecurrenceTemplateExtensionURI, extension: [{ url: 'occurrenceCount', valuePositiveInt: 3 }] }]
+        : []),
+      { url: RecurrenceIdExtensionURI, valuePositiveInt: position },
+    ],
+  };
+}
+
 export const ChenInfusionHeldSlot: WithId<Slot> = {
   resourceType: 'Slot',
   id: 'slot-chen-infusion-thu',
@@ -1481,6 +1567,8 @@ export const CalendarWeekFixtures = [
   ...MondayImagingHeldSlots,
   MondayTelehealthHeldSlot,
   MondayTelehealthAppointment,
+  ...GarciaSeriesSlots,
+  ...GarciaSeriesAppointments,
   DrChenPractitioner,
   InfusionService,
   DrChenInfusionSchedule,

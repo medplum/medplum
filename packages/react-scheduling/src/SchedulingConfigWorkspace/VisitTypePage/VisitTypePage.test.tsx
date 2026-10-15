@@ -409,36 +409,50 @@ describe('VisitTypePage', () => {
       });
     }
 
-    test('restricting a visit type offered everywhere asks first, and cancelling changes nothing', async () => {
-      await setup();
+    test('saving a visit type offered everywhere with a service facility asks, and cancelling saves nothing', async () => {
+      const { medplum } = await setup();
 
       await pick('Downtown Clinic');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await save();
 
       const dialog = await screen.findByRole('dialog', { name: 'Offer Initial Visit only at Downtown Clinic?' });
       await act(async () => {
         fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
       });
-      expect(picker()).toHaveAttribute('placeholder', 'Offered at every service facility');
-      expect(screen.queryByText('Downtown Clinic')).not.toBeInTheDocument();
-      expect(saveBar()).toBeNull();
+      expect(medplum.executeBatch).not.toHaveBeenCalled();
+      expect(chips()).toHaveTextContent('Downtown Clinic');
+      expect(saveBar()).not.toBeNull();
     });
 
-    test('holds a visit type at the service facilities added', async () => {
+    test('holds a visit type at the service facilities added, once confirmed', async () => {
       const { onSynced } = await setup();
 
       await pick('Downtown Clinic');
-      await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Limit to Downtown Clinic' }));
-      });
-      expect(picker()).toHaveAttribute('placeholder', 'Add a service facility');
       await pick('Northside');
       await save();
+      const dialog = await screen.findByRole('dialog', { name: 'Offer Initial Visit only at 2 service facilities?' });
+      expect(dialog).toHaveTextContent('After this save, only at Downtown Clinic and Northside.');
+      await act(async () => {
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Limit to 2 service facilities' }));
+      });
 
       await waitFor(() => expect(onSynced).toHaveBeenCalled());
       expect(lastSynced(onSynced).location?.map((location) => location.reference)).toEqual([
         'Location/downtown',
         'Location/northside',
       ]);
+    });
+
+    test('a new visit type is created at its service facilities without asking', async () => {
+      const { onSynced } = await setup(null);
+
+      fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Consult' } });
+      await pick('Downtown Clinic');
+      await save();
+
+      await waitFor(() => expect(onSynced).toHaveBeenCalled());
+      expect(lastSynced(onSynced).location?.map((location) => location.reference)).toEqual(['Location/downtown']);
     });
 
     test('Discard takes an added service facility off the field as well as the draft', async () => {
@@ -457,26 +471,7 @@ describe('VisitTypePage', () => {
       expect(saveBar()).toBeNull();
     });
 
-    test('clearing several service facilities at once asks before offering it everywhere', async () => {
-      await setup({
-        ...initialVisit,
-        name: 'Cystoscopy',
-        location: [
-          { reference: 'Location/downtown', display: 'Downtown Clinic' },
-          { reference: 'Location/northside', display: 'Northside' },
-        ],
-      });
-      await settleAutocomplete();
-
-      await act(async () => {
-        fireEvent.click(screen.getByTitle('Clear all'));
-      });
-
-      const dialog = await screen.findByRole('dialog', { name: 'Offer Cystoscopy at every service facility?' });
-      expect(dialog).toHaveTextContent('That leaves no service facilities listed');
-    });
-
-    test('removing the last service facility asks first, then offers it everywhere', async () => {
+    test('saving with the last service facility removed asks, then offers it everywhere', async () => {
       const { onSynced } = await setup({
         ...initialVisit,
         name: 'Cystoscopy',
@@ -486,12 +481,12 @@ describe('VisitTypePage', () => {
       // The input looks the stored reference up after it mounts.
       await settleAutocomplete();
       await removePill('Downtown Clinic');
+      expect(picker()).toHaveAttribute('placeholder', 'Offered at every service facility');
+      await save();
       const dialog = await screen.findByRole('dialog', { name: 'Offer Cystoscopy at every service facility?' });
       await act(async () => {
         fireEvent.click(within(dialog).getByRole('button', { name: 'Offer everywhere' }));
       });
-      expect(picker()).toHaveAttribute('placeholder', 'Offered at every service facility');
-      await save();
 
       await waitFor(() => expect(onSynced).toHaveBeenCalled());
       expect(lastSynced(onSynced).location).toBeUndefined();

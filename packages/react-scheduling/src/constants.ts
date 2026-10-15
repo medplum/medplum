@@ -7,6 +7,9 @@ export const LOCATION_PHYSICAL_TYPE_CODE_SYSTEM = HTTP_TERMINOLOGY_HL7_ORG + '/C
 /** The identifier system for a US National Provider Identifier. */
 export const NPI_SYSTEM = HTTP_HL7_ORG + '/fhir/sid/us-npi';
 
+/** Marks the PractitionerRole the scheduling configuration keeps for a provider, valued with the provider's id. */
+export const SERVICE_FACILITY_ROLE_SYSTEM = 'https://medplum.com/fhir/scheduling-service-facility-role';
+
 // Note that these are used by the `Appointment.cancelationReason` field (one
 // "L" in that field name in R4).
 export const APPOINTMENT_CANCELLATION_REASON_VALUE_SET =
