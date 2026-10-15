@@ -29,13 +29,13 @@ const MERMAID_RE = /<pre class=mermaid>\s*([\s\S]*?)\s*<\/pre>/g;
 
 function decodeHtmlEntities(str) {
   return str
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&#x2F;/g, '/')
-    .replace(/&#x27;/g, "'");
+    .replace(/&#x27;/g, "'")
+    .replace(/&amp;/g, '&');
 }
 
 async function renderMermaidToSvg(mermaidSource, tmpDir, index) {
