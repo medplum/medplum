@@ -18,5 +18,8 @@ npm --version
 # Install
 [ ! -d "node_modules" ] && npm ci
 
+# Chromium for rendering Mermaid diagrams to static SVG
+npx playwright install --with-deps chromium
+
 # Build
 npm run build:docs

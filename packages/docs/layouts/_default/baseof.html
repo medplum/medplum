@@ -12,6 +12,10 @@
     <title>{{ .Title }} | Medplum</title>
     {{ $js := resources.Get "js/main.mjs" | js.Build | minify | fingerprint }}
     <script src="{{ $js.RelPermalink }}" defer></script>
+    {{ if hugo.IsServer }}
+      {{ $mermaidDev := resources.Get "js/mermaid-dev.mjs" | js.Build }}
+      <script src="{{ $mermaidDev.RelPermalink }}" defer></script>
+    {{ end }}
     {{ $infima := resources.Get "infima.css" | toCSS }}
     {{ $openColor := resources.Get "open-color.css" | toCSS }}
     {{ $opts := dict "transpiler" "libsass" }}

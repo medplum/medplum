@@ -1,4 +1,3 @@
-import mermaid from 'mermaid';
 import Swup from 'swup';
 import { destroyAnimatedCircles, initAnimatedCircles } from './components/animated-circle.mjs';
 import { initBuildDropdowns } from './components/build-dropdown.mjs';
@@ -8,8 +7,6 @@ import { destroyProducts, initProducts } from './components/products/index.mjs';
 import { destroySolutions, initSolutions } from './components/solutions/index.mjs';
 import { initTabs } from './components/tabs.mjs';
 import { destroyToc, initToc } from './components/toc.mjs';
-
-mermaid.initialize({ startOnLoad: true });
 
 function setAttribute(key, value) {
   document.body.dataset[key] = value;
@@ -145,7 +142,6 @@ swup.hooks.on('content:replace', (visit) => {
   initTabs();
   initToc();
   updateActiveLinks();
-  mermaid.run().catch(console.error);
 });
 
 updateAttributes(window.location.href);
