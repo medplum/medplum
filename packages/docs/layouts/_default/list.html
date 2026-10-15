@@ -1,4 +1,5 @@
 {{ define "main" }}
   {{ if not .Params.hideTitle }}<h1>{{ .Title }}</h1>{{ end }}
   {{ .Content }}
+  {{ if .Params.generatedIndex }}{{ partial "generated-index.html" . }}{{ end }}
 {{ end }}

@@ -29,6 +29,7 @@ const HAND_WRITTEN = [
   'about.md',
   'blog/_index.md',
   'case-studies.md',
+  'docs/api/fhir/_content.gotmpl',
   'docs/sdk/',
   'enterprise.md',
   'pricing.md',
@@ -66,6 +67,7 @@ async function main() {
   for (const page of pages) {
     writePage(page, urlBySource);
   }
+  writeGeneratedIndexes(docusaurusRoot, pages);
   syncStatic(docusaurusRoot);
   await writeSidebar(docusaurusRoot, pages);
 
@@ -430,6 +432,27 @@ function rewriteDocLinks(body, sourcePath, urlBySource) {
   });
 }
 
+// Docusaurus categories linking to a generated index (_category_.json) become section pages listing their docs,
+// unless the directory already has an index page
+function writeGeneratedIndexes(docusaurusRoot, pages) {
+  for (const file of walk(path.join(docusaurusRoot, 'docs')).filter((f) => path.basename(f) === '_category_.json')) {
+    const category = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const dir = toPosix(path.relative(docusaurusRoot, path.dirname(file)));
+    if (category.link?.type !== 'generated-index' || pages.some((p) => stripPage(p.destPath) === dir)) {
+      continue;
+    }
+    const frontMatter = [
+      `title: ${JSON.stringify(category.link.title ?? category.label)}`,
+      `sidebar_label: ${JSON.stringify(category.label)}`,
+      ...(category.link.description ? [`description: ${JSON.stringify(category.link.description)}`] : []),
+      ...(category.position === undefined ? [] : [`weight: ${Math.round(category.position * 10) + 10}`]),
+      'generatedIndex: true',
+    ];
+    fs.mkdirSync(path.join(contentRoot, dir), { recursive: true });
+    fs.writeFileSync(path.join(contentRoot, dir, '_index.md'), ['---', ...frontMatter, '---', ''].join('\n'), 'utf8');
+  }
+}
+
 // URL of a page in a directory Hugo generates itself (SDK, FHIR reference), at the same path as on Docusaurus
 function generatedDocUrl(sourcePath) {
   const rel = /\/packages\/docs\/(docs\/.+)\.mdx?$/.exec(sourcePath)?.[1];
@@ -511,6 +534,8 @@ async function writeSidebar(docusaurusRoot, pages) {
           type: 'category',
           label: item.label,
           ...(item.link?.type === 'doc' ? { id: toHugoPath(item.link.id) } : {}),
+          // A generated index is the Hugo section page at the same URL
+          ...(item.link?.type === 'generated-index' && item.link.slug ? { id: 'docs' + item.link.slug } : {}),
           items: convertItems(item.items),
         };
       default:

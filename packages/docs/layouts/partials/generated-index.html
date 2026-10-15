@@ -1,0 +1,13 @@
+{{- /* A section's pages as a card grid, like a Docusaurus generated-index category page */ -}}
+{{- $idx := partialCached "fhir/index.html" . -}}
+{{ with .Description }}<p>{{ . }}</p>{{ end }}
+<div class="generated-index">
+  {{- range .Pages }}
+    {{- $description := .Description | default (.Summary | plainify) -}}
+    {{- with .Params.fhirType }}{{ $description = (index $idx.types (lower .)).sd.description | plainify }}{{ end }}
+    <a class="generated-index-card" href="{{ partial "href" . }}">
+      <span class="generated-index-title">{{ .Title }}</span>
+      {{- with $description }}<span class="generated-index-description">{{ . }}</span>{{ end }}
+    </a>
+  {{- end }}
+</div>
