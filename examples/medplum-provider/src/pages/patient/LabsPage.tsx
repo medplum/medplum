@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Flex, Modal, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Box, Flex, Stack, Text, Tooltip } from '@mantine/core';
 import type { Filter, SearchRequest, SortRule, WithId } from '@medplum/core';
 import { formatSearchQuery, getReferenceString, Operator, parseSearchRequest } from '@medplum/core';
 import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
@@ -14,9 +14,9 @@ import { LabDetailPane } from '../../components/labs/LabDetailPane';
 import { LabListItem } from '../../components/labs/LabListItem';
 import { LabResultListItem } from '../../components/labs/LabResultListItem';
 import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
+import { OrderLabsModal } from '../../components/labs/OrderLabsModal';
 import { usePatient } from '../../hooks/usePatient';
 import { showErrorNotification } from '../../utils/notifications';
-import { OrderLabsPage } from '../labs/OrderLabsPage';
 
 export type LabTab = 'open' | 'completed' | 'revoked';
 type LabItem = WithId<ServiceRequest> | WithId<DiagnosticReport>;
@@ -230,18 +230,12 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
         )}
       />
 
-      <Modal
+      <OrderLabsModal
         opened={!!orderModal}
         onClose={() => setOrderModal(undefined)}
-        size="xl"
-        centered
-        title={orderModal === 'new' ? 'Order Labs' : 'Resume Lab Order'}
-      >
-        <OrderLabsPage
-          draftOrder={orderModal === 'new' ? undefined : orderModal}
-          onSubmitLabOrder={handleNewOrderCreated}
-        />
-      </Modal>
+        draftOrder={orderModal === 'new' ? undefined : orderModal}
+        onSubmitLabOrder={handleNewOrderCreated}
+      />
     </Box>
   );
 }

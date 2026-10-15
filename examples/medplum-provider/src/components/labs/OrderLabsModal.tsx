@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Center, Container, Group, Input, Loader, Radio, Stack, TextInput } from '@mantine/core';
+import { Button, Center, Group, Input, Loader, Radio, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { MedplumClient } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
@@ -27,7 +27,7 @@ import type { AsyncAutocompleteOption } from '@medplum/react';
 import {
   AsyncAutocomplete,
   DateTimeInput,
-  Panel,
+  Modal,
   ResourceInput,
   useMedplum,
   useResource,
@@ -36,13 +36,13 @@ import {
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
-import { PerformingLabInput } from '../../components/PerformingLabInput';
-import { CoverageInput } from '../../components/labs/CoverageInput';
-import { TestMetadataCardInput } from '../../components/labs/TestMetadataCardInput';
 import { addDiagnosesToEncounter } from '../../utils/encounter';
 import type { LabOrderDraftDefaults } from '../../utils/labOrderDraft';
 import { getLabOrderDraftDefaults } from '../../utils/labOrderDraft';
 import { showErrorNotification } from '../../utils/notifications';
+import { PerformingLabInput } from '../PerformingLabInput';
+import { CoverageInput } from './CoverageInput';
+import { TestMetadataCardInput } from './TestMetadataCardInput';
 
 async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: ServiceRequest): Promise<void> {
   return medplum.executeBot(
@@ -55,7 +55,9 @@ async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: Ser
   );
 }
 
-export interface OrderLabsPageProps {
+export interface OrderLabsModalProps {
+  opened: boolean;
+  onClose: () => void;
   patient?: Patient | Reference<Patient> | undefined;
   encounter?: Encounter | Reference<Encounter> | undefined;
   task?: Task | Reference<Task> | undefined;
@@ -65,8 +67,22 @@ export interface OrderLabsPageProps {
   onSubmitLabOrder: (serviceRequest?: ServiceRequest) => void;
 }
 
-export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
+/**
+ * The form's state lives in hooks on {@link OrderLabsForm}, so it is remounted once the modal has
+ * finished closing; each open then starts from a blank order rather than the previous one's tests.
+ * @param props - The OrderLabsModal React props.
+ * @returns The OrderLabsModal React node.
+ */
+export function OrderLabsModal(props: OrderLabsModalProps): JSX.Element {
+  const [instance, setInstance] = useState(0);
+  return <OrderLabsForm key={instance} {...props} onExitTransitionEnd={() => setInstance((i) => i + 1)} />;
+}
+
+function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () => void }): JSX.Element {
   const {
+    opened,
+    onClose,
+    onExitTransitionEnd,
     patient: defaultPatient,
     encounter,
     task,
@@ -260,18 +276,22 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     }
   };
 
-  if (draftOrder && !draftDefaults) {
-    return (
-      <Center p="xl">
-        <Loader />
-      </Center>
-    );
-  }
+  const loadingDraft = !!draftOrder && !draftDefaults;
 
   return (
     <HealthGorillaLabOrderProvider {...labOrderReturn}>
-      <Container size="md">
-        <Panel>
+      <Modal
+        opened={opened}
+        onClose={onClose}
+        onExitTransitionEnd={onExitTransitionEnd}
+        size="xl"
+        title={draftOrder ? 'Resume Lab Order' : 'Order Labs'}
+      >
+        {loadingDraft ? (
+          <Center p="xl">
+            <Loader />
+          </Center>
+        ) : (
           <Stack gap="md">
             <Input.Wrapper label="Requester" required error={createError?.validation?.requester?.message}>
               <ResourceInput<Practitioner>
@@ -384,8 +404,8 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
               </Button>
             </Group>
           </Stack>
-        </Panel>
-      </Container>
+        )}
+      </Modal>
     </HealthGorillaLabOrderProvider>
   );
 }

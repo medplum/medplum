@@ -9,7 +9,7 @@ import { MedplumProvider } from '@medplum/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '../../test-utils/render';
 import * as notifications from '../../utils/notifications';
-import { OrderLabsPage } from './OrderLabsPage';
+import { OrderLabsModal } from './OrderLabsModal';
 
 vi.mock('@medplum/health-gorilla-react', async () => {
   const actual = await vi.importActual('@medplum/health-gorilla-react');
@@ -43,7 +43,7 @@ import { useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { MemoryRouter, useParams } from 'react-router';
 import { getLabOrderDraftDefaults } from '../../utils/labOrderDraft';
 
-describe('OrderLabsPage', () => {
+describe('OrderLabsModal', () => {
   let medplum: MockClient;
   let mockOnSubmitLabOrder: () => void;
   let mockLabOrderReturn: ReturnType<typeof useHealthGorillaLabOrder>;
@@ -127,7 +127,9 @@ describe('OrderLabsPage', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <OrderLabsPage
+          <OrderLabsModal
+            opened
+            onClose={vi.fn()}
             patient={props.patient}
             draftOrder={props.draftOrder}
             onSubmitLabOrder={mockOnSubmitLabOrder}
