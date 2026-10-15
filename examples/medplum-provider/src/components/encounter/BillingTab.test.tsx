@@ -25,6 +25,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { CPT_COPYRIGHT_NOTICE, SAVE_TIMEOUT_MS } from '../../config/constants';
 import { ChartNoteStatus } from '../../types/encounter';
 import * as chargeItemsUtils from '../../utils/chargeitems';
+import * as operationsUtils from '../../utils/operations';
 import { BillingTab } from './BillingTab';
 
 vi.mock('@mantine/notifications', async () => {
@@ -112,6 +113,8 @@ describe('BillingTab', () => {
     vi.clearAllMocks();
     // BillingTab fetches its own charge items; default to a single CPT charge item.
     vi.spyOn(chargeItemsUtils, 'getChargeItemsForEncounter').mockResolvedValue([mockChargeItem]);
+    // Both claim submission operations are deployed unless a test says otherwise.
+    vi.spyOn(operationsUtils, 'isCustomOperationAvailable').mockResolvedValue(true);
   });
 
   const setup = async (props: Partial<Parameters<typeof BillingTab>[0]> = {}): Promise<void> => {
@@ -281,6 +284,41 @@ describe('BillingTab', () => {
     });
 
     windowOpenSpy.mockRestore();
+  });
+
+  test('disables Submit Claim when no claim submission operation is deployed', async () => {
+    vi.spyOn(operationsUtils, 'isCustomOperationAvailable').mockResolvedValue(false);
+    mockSearchResources({ Coverage: [mockCoverage] });
+    mockSearchOne({ Claim: mockClaim });
+    await setup();
+
+    const button = await screen.findByText('Submit Claim');
+    await waitFor(() => expect(button.closest('[data-disabled]')).toBeInTheDocument());
+    await userEvent.setup().hover(button);
+    expect(await screen.findByText('Claim submission is not enabled for this project')).toBeInTheDocument();
+  });
+
+  test('only offers the deployed claim submission operations', async () => {
+    vi.spyOn(operationsUtils, 'isCustomOperationAvailable').mockImplementation(
+      async (_medplum, code) => code === operationsUtils.CANDID_SUBMIT_CLAIM_OPERATION
+    );
+    vi.spyOn(medplum, 'readReference').mockResolvedValue({
+      resourceType: 'Condition',
+      id: 'condition-1',
+      code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'R51', display: 'Headache' }] },
+    } as any);
+    mockSearchResources({ Coverage: [mockCoverage] });
+    mockSearchOne({ Claim: mockClaim });
+    await setup({
+      encounter: { ...mockEncounter, diagnosis: [{ condition: { reference: 'Condition/condition-1' } }] },
+    });
+    await screen.findByText('Headache');
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByText('Submit Claim'));
+
+    expect(await screen.findByRole('button', { name: /Submit to Candid/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Submit to Stedi/i })).not.toBeInTheDocument();
   });
 
   test('shows missing diagnosis notification when submitting without conditions', async () => {
